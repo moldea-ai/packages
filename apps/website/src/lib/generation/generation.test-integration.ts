@@ -293,7 +293,7 @@ describe('adapter and route generation', () => {
       entry: { implementationStatus: 'available', implementation: { kind: 'built-in' } },
     });
     expect(custom?.entry.targets?.[0]?.qualificationEvidence).toStrictEqual({
-      url: 'https://skill.moldea.ai/qualification/custom/custom/',
+      url: 'https://skill.moldea.ai/evidence/qualification/custom/custom/',
     });
     expect(openAi).toMatchObject({
       implementedPackageSlug: 'adapter-openai',

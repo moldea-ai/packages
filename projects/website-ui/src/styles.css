@@ -204,6 +204,11 @@
     @apply w-full border-collapse text-sm;
   }
 
+  .prose-moldea .table-scroll table {
+    /* let the frame own the rounded perimeter while collapsed cell borders draw the grid */
+    @apply my-0 border-hidden;
+  }
+
   .prose-moldea th {
     @apply bg-muted text-start font-semibold text-foreground;
   }
