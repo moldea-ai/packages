@@ -19,6 +19,10 @@ import {
   createMemoryRepositoryReader,
   type IMemoryRepositoryEntry,
 } from '@moldea.ai/repository/memory';
+import {
+  describeRepositoryReaderConformance,
+  type IRepositoryReaderConformanceEntry,
+} from '@moldea.ai/repository/testing';
 
 const repositoryPath: IRepositoryPath = parseRepositoryPath('/file.txt');
 const root: IRepositoryPath = REPOSITORY_ROOT;
@@ -41,6 +45,9 @@ const memoryEntries: readonly IMemoryRepositoryEntry[] = [
   { content: new Uint8Array([1]), path: repositoryPath, type: 'file' },
 ];
 const reader: IRepositoryReader = createMemoryRepositoryReader(memoryEntries);
+const conformanceEntry: IRepositoryReaderConformanceEntry<IRepositoryPath> = entry;
+const conformanceRunner: typeof describeRepositoryReaderConformance =
+  describeRepositoryReaderConformance;
 const pathException = new RepositoryPathException(pathExceptionOptions);
 const sourceException = new RepositorySourceException(sourceExceptionOptions);
 
@@ -48,7 +55,15 @@ if (!isRepositoryPath(repositoryPath)) {
   throw new Error('The packaged repository path predicate rejected a valid path.');
 }
 
-void [entry, listOptions, reader, pathException, sourceException];
+void [
+  entry,
+  listOptions,
+  reader,
+  conformanceEntry,
+  conformanceRunner,
+  pathException,
+  sourceException,
+];
 
 // @ts-expect-error A plain string has not passed runtime repository-path validation.
 const forgedPath: IRepositoryPath = '/unvalidated.txt';

@@ -41,6 +41,14 @@ interface IPackDryRunResult {
   readonly version: string;
 }
 
+// public manifest fields verified at the package boundary
+interface IRepositoryPackageManifest {
+  readonly dependencies?: Readonly<Record<string, string>>;
+  readonly exports?: unknown;
+  readonly peerDependencies?: Readonly<Record<string, string>>;
+  readonly peerDependenciesMeta?: Readonly<Record<string, { readonly optional?: boolean }>>;
+}
+
 /** Executes native or JavaScript package-manager entrypoints without a platform shell. */
 const runPackageManager = (
   packageManagerEntrypoint: string,
@@ -103,7 +111,7 @@ describe('published package artifacts', () => {
     void forgedPath;
   });
 
-  test('packs only the intended public-package files and one runtime dependency', () => {
+  test('packs the intended public files, runtime dependency, and optional testing peers', () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
 
     if (packageManagerEntrypoint === undefined) {
@@ -117,14 +125,18 @@ describe('published package artifacts', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const manifest = JSON.parse(
       readFileSync(path.join(projectDirectory, 'package.json'), 'utf8'),
-    ) as { readonly dependencies?: Readonly<Record<string, string>> };
+    ) as IRepositoryPackageManifest;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/repository', version: '1.0.2' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/repository', version: '1.1.0' });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/memory.js');
     expect(packedPaths).toContain('dist/memory.d.ts');
+    expect(packedPaths).toContain('dist/testing.js');
+    expect(packedPaths).toContain('dist/testing/index.d.ts');
+    expect(packedPaths).toContain('dist/testing/reader-conformance.d.ts');
+    expect(packedPaths).toContain('dist/testing/types.d.ts');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
     expect(packedPaths).toContain('cover.png');
@@ -140,6 +152,28 @@ describe('published package artifacts', () => {
       ),
     ).toBe(true);
     expect(manifest.dependencies).toStrictEqual({ 'error-message-utils': '1.2.11' });
+    expect(manifest.exports).toStrictEqual({
+      '.': {
+        import: './dist/index.js',
+        types: './dist/index.d.ts',
+      },
+      './memory': {
+        import: './dist/memory.js',
+        types: './dist/memory.d.ts',
+      },
+      './testing': {
+        import: './dist/testing.js',
+        types: './dist/testing/index.d.ts',
+      },
+    });
+    expect(manifest.peerDependencies).toStrictEqual({
+      vitest: '4.1.10',
+      'web-utils-kit': '1.3.1',
+    });
+    expect(manifest.peerDependenciesMeta).toStrictEqual({
+      vitest: { optional: true },
+      'web-utils-kit': { optional: true },
+    });
   });
 
   test('loads only the documented named runtime exports through package self-resolution', () => {
@@ -169,20 +203,38 @@ describe('published package artifacts', () => {
     });
   });
 
-  test('emits declarations for both public entry points without leaking internal workspace imports', () => {
+  test('loads the documented testing export through package self-resolution', async () => {
+    const repositoryTesting = await import('@moldea.ai/repository/testing');
+
+    expect(Object.keys(repositoryTesting).sort()).toStrictEqual([
+      'describeRepositoryReaderConformance',
+    ]);
+  });
+
+  test('emits declarations for all public entry points without leaking workspace imports', () => {
     const indexDeclaration = readFileSync(path.join(distributionDirectory, 'index.d.ts'), 'utf8');
     const memoryDeclaration = readFileSync(path.join(distributionDirectory, 'memory.d.ts'), 'utf8');
+    const testingDeclaration = readFileSync(
+      path.join(distributionDirectory, 'testing', 'index.d.ts'),
+      'utf8',
+    );
     const allDeclarations = readDistributionFiles('.d.ts').join('\n');
 
     expect(indexDeclaration).toContain('IRepositoryReader');
     expect(indexDeclaration).toContain('parseRepositoryPath');
     expect(memoryDeclaration).toContain('IMemoryRepositoryEntry');
     expect(memoryDeclaration).toContain('createMemoryRepositoryReader');
+    expect(testingDeclaration).toContain('IRepositoryReaderCasePathFixture');
+    expect(testingDeclaration).toContain('IRepositoryReaderConformanceEntry');
+    expect(testingDeclaration).toContain('IRepositoryReaderConformanceFixture');
+    expect(testingDeclaration).toContain('IRepositoryReaderConformanceReader');
+    expect(testingDeclaration).toContain('IRepositoryReaderSnapshotMutationFixture');
+    expect(testingDeclaration).toContain('describeRepositoryReaderConformance');
     expect(allDeclarations).not.toMatch(/from ['"]@moldea\.ai\//u);
     expect(allDeclarations).not.toContain('packages/');
   });
 
-  test('typechecks a consumer through both built package entry points', () => {
+  test('typechecks a consumer through all built package entry points', () => {
     execFileSync(
       process.execPath,
       [typescriptEntrypoint, '--project', path.join(publicApiFixtureDirectory, 'tsconfig.json')],
@@ -195,9 +247,12 @@ describe('published package artifacts', () => {
 
   test('keeps the runtime artifact environment-neutral', () => {
     const javascript = readDistributionFiles('.js').join('\n');
+    const testingJavascript = readFileSync(path.join(distributionDirectory, 'testing.js'), 'utf8');
 
     expect(javascript).not.toMatch(/from ['"]node:/u);
     expect(javascript).not.toMatch(/require\(['"](?:node:)?/u);
     expect(javascript).not.toContain('process.');
+    expect(testingJavascript).toMatch(/from ['"]vitest['"]/u);
+    expect(testingJavascript).toMatch(/from ['"]web-utils-kit['"]/u);
   });
 });

@@ -7,8 +7,7 @@ import {
   type IRepositoryEntry,
   type IRepositoryPath,
 } from '@moldea.ai/repository';
-
-import type { IRepositoryReaderCasePathFixture } from '../../../repository/src/conformance/reader-conformance.test-utilities.js';
+import type { IRepositoryReaderCasePathFixture } from '@moldea.ai/repository/testing';
 
 interface ICanonicalDirectoryEntry {
   readonly path: string;

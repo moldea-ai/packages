@@ -129,4 +129,4 @@ pnpm --filter @moldea.ai/repository-fs test:integration
 pnpm --filter @moldea.ai/repository-fs test
 ```
 
-Unit and integration tests are colocated with their owning modules. Integration tests materialize the canonical repository-reader fixture in isolated temporary directories, run the shared reader conformance contract, and validate real package tarballs together with `@moldea.ai/repository`.
+Unit and integration tests are colocated with their owning modules. Integration tests materialize the canonical repository-reader fixture in isolated temporary directories, run the shared reader conformance contract through `@moldea.ai/repository/testing`, and validate real package tarballs together with `@moldea.ai/repository`.

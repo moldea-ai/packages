@@ -88,8 +88,8 @@ describe('loadMoldeaCliPackageMetadata', () => {
       },
       installedPackageVersions: {
         '@moldea.ai/core': '2.0.1',
-        '@moldea.ai/repository': '1.0.2',
-        '@moldea.ai/repository-fs': '1.0.3',
+        '@moldea.ai/repository': '1.1.0',
+        '@moldea.ai/repository-fs': '1.0.4',
       },
       supportedNodeRange: '^22.11.0 || ^24.11.0',
       version: '1.0.1',

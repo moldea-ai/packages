@@ -18,6 +18,7 @@ The package exists so every source implementation can present the same reader co
 - the asynchronous `IRepositoryReader` contract
 - source-operation and path-validation exceptions
 - an immutable in-memory reader for fixtures and already-fetched snapshots
+- the shared Vitest conformance contract for official reader implementations
 
 ## What it deliberately does not own
 
@@ -27,5 +28,6 @@ The package does not access a filesystem or network, discover repositories, foll
 
 - `@moldea.ai/repository` exports the reader, entry, path, and exception contracts.
 - `@moldea.ai/repository/memory` exports the immutable reference reader.
+- `@moldea.ai/repository/testing` exports the shared reader conformance runner and fixture contracts for development use.
 
 Use the generated [API reference](./api/) for the exact exported surface.
