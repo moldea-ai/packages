@@ -1,6 +1,7 @@
 // @vitest-environment node
+import { describeRepositoryReaderConformance } from '@moldea.ai/repository/testing';
+
 import type { IRepositoryEntry } from './contracts.js';
-import { describeRepositoryReaderConformance } from './conformance/reader-conformance.test-utilities.js';
 import { RepositoryPathException, RepositorySourceException } from './exceptions.js';
 import { createMemoryRepositoryReader, type IMemoryRepositoryEntry } from './memory.js';
 import { createValidMemoryEntries } from './memory.test-fixtures.js';

@@ -85,6 +85,29 @@ const bytes = await reader.readFile(parseRepositoryPath('/moldea/moldea.yaml'));
 The reader copies input buffers, synthesizes missing parent directories, returns fresh output
 buffers, preserves symlinks without following them, and remains immutable for its complete lifetime.
 
+## Shared reader conformance
+
+Official source implementations use the `testing` subpath to register the same reader-contract checks in their Vitest suites. Install its exact testing peers in the implementing package:
+
+```bash
+pnpm add -D vitest@4.1.10 web-utils-kit@1.3.1
+```
+
+```typescript
+import {
+  describeRepositoryReaderConformance,
+  type IRepositoryReaderConformanceFixture,
+} from '@moldea.ai/repository/testing';
+
+export const registerReaderConformance = <TPath extends string>(
+  fixture: IRepositoryReaderConformanceFixture<TPath>,
+): void => {
+  describeRepositoryReaderConformance('provider', fixture);
+};
+```
+
+The peers are optional for ordinary package installation and are required only when importing `@moldea.ai/repository/testing`. The testing entry point registers tests but does not access a repository source itself.
+
 ## Development
 
 From the monorepo root:
@@ -97,6 +120,4 @@ pnpm --filter @moldea.ai/repository test:integration
 pnpm --filter @moldea.ai/repository test
 ```
 
-Unit and integration tests are colocated with the source modules they exercise. The `test` command
-runs both suites. The shared reader conformance suite is owned by this project. Repository-format
-fixtures and diagnostics belong to `@moldea.ai/core`, not this package.
+Unit and integration tests are colocated with the source modules they exercise. The `test` command runs both suites. The shared reader conformance suite is published from this project for official reader implementations. Repository-format fixtures and diagnostics belong to `@moldea.ai/core`, not this package.

@@ -11,10 +11,10 @@ import {
   type IRepositoryEntry,
   type IRepositoryPath,
 } from '@moldea.ai/repository';
+import { describeRepositoryReaderConformance } from '@moldea.ai/repository/testing';
 import { afterAll, describe, expect, test } from 'vitest';
 import { expectToRejectCode } from 'web-utils-kit';
 
-import { describeRepositoryReaderConformance } from '../../../repository/src/conformance/reader-conformance.test-utilities.js';
 import { createFilesystemRepositoryTestFixtures } from './factory.test-fixtures.js';
 import { createFilesystemRepositoryReader } from './factory.js';
 
