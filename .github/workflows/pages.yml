@@ -90,19 +90,19 @@ jobs:
       - name: Build and validate static website
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          SITE_URL: ${{ steps.pages.outputs.origin }}
+          SITE_URL: https://${{ steps.pages.outputs.host }}
         run: pnpm website:build
 
       - name: Test static artifact integration
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          SITE_URL: ${{ steps.pages.outputs.origin }}
+          SITE_URL: https://${{ steps.pages.outputs.host }}
         run: pnpm --filter @moldea.ai/packages-website test:integration
 
       - name: Test browser behavior
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          SITE_URL: ${{ steps.pages.outputs.origin }}
+          SITE_URL: https://${{ steps.pages.outputs.host }}
         run: pnpm --filter @moldea.ai/packages-website test:e2e
 
       - name: Upload GitHub Pages artifact
@@ -121,3 +121,54 @@ jobs:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  submit-sitemap:
+    name: Submit Sitemap to Google Search Console
+    needs: deploy
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SEARCH_CONSOLE_PROPERTY: sc-domain:moldea.ai
+      SITEMAP_URL: https://packages.moldea.ai/sitemap-index.xml
+    steps:
+      - name: Checkout exact main commit
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Verify deployed sitemap
+        run: curl --fail --silent --show-error --location "$SITEMAP_URL" >/dev/null
+
+      - name: Authenticate to Google Search Console
+        id: google-auth
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GOOGLE_SEARCH_CONSOLE_CREDENTIALS }}
+          service_account: moldea-sitemap-submitter@moldea-prod.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/webmasters
+          create_credentials_file: false
+
+      - name: Submit sitemap
+        env:
+          ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
+        run: |
+          property_path="$(
+            node -p 'encodeURIComponent(process.env.SEARCH_CONSOLE_PROPERTY)'
+          )"
+          sitemap_path="$(
+            node -p 'encodeURIComponent(process.env.SITEMAP_URL)'
+          )"
+
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --request PUT \
+            --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+            "https://www.googleapis.com/webmasters/v3/sites/${property_path}/sitemaps/${sitemap_path}"
