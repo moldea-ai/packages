@@ -84,7 +84,7 @@ describe('runtime compatibility Markdown generation', () => {
                 },
               ],
               qualificationEvidence: {
-                url: 'https://skill.moldea.ai/qualification/openai/typescript/',
+                url: 'https://skill.moldea.ai/evidence/qualification/openai/typescript/',
               },
             },
           ],
@@ -99,7 +99,7 @@ describe('runtime compatibility Markdown generation', () => {
     expect(markdown).toContain('#### Provider limits');
     expect(markdown).toContain('#### Known limitations');
     expect(markdown).toContain(
-      '[View profile and results](https://skill.moldea.ai/qualification/openai/typescript/)',
+      '[View profile and results](https://skill.moldea.ai/evidence/qualification/openai/typescript/)',
     );
     expect(markdown).toContain('`>=1.0.0 <2.0.0 \\|\\| >=3.0.0 <4.0.0`');
     expect(markdown).toContain('`>=4.0.0 <5.0.0 \\|\\| >=6.0.0 <7.0.0`');

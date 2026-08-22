@@ -18,7 +18,7 @@ test('links only profiled targets to canonical qualification evidence', async ({
   await expect(evidenceLink).toContainText('Qualification evidence');
   await expect(evidenceLink).toHaveAttribute(
     'href',
-    'https://skill.moldea.ai/qualification/custom/custom/',
+    'https://skill.moldea.ai/evidence/qualification/custom/custom/',
   );
   await expect(evidenceLink).toHaveAttribute('target', '_blank');
   await expect(evidenceLink).toHaveAttribute('rel', 'noopener noreferrer');

@@ -72,7 +72,7 @@ describe('runtime compatibility normalization', () => {
                 },
               ],
               qualificationEvidence: {
-                url: 'https://skill.moldea.ai/qualification/openai/typescript/',
+                url: 'https://skill.moldea.ai/evidence/qualification/openai/typescript/',
               },
             },
           ],
@@ -99,7 +99,7 @@ describe('runtime compatibility normalization', () => {
       'zeta',
     ]);
     expect(normalized.adapters['openai']?.targets?.[0]?.qualificationEvidence).toStrictEqual({
-      url: 'https://skill.moldea.ai/qualification/openai/typescript/',
+      url: 'https://skill.moldea.ai/evidence/qualification/openai/typescript/',
     });
     expect(normalized.adapters['openai']?.targets?.[0]?.qualificationEvidence).not.toBe(
       matrix.adapters['openai']?.targets?.[0]?.qualificationEvidence,

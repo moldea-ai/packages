@@ -188,32 +188,36 @@ describe('runtime compatibility matrix validation', () => {
         {
           adapterId: 'custom',
           targetId: 'custom',
-          url: 'https://skill.moldea.ai/qualification/custom/custom/',
+          url: 'https://skill.moldea.ai/evidence/qualification/custom/custom/',
         },
       ]);
     }
   });
 
   test.each([
-    ['without HTTPS', 'http://skill.moldea.ai/qualification/custom/custom/', 'must use HTTPS'],
+    [
+      'without HTTPS',
+      'http://skill.moldea.ai/evidence/qualification/custom/custom/',
+      'must use HTTPS',
+    ],
     [
       'from another origin',
-      'https://packages.moldea.ai/qualification/custom/custom/',
+      'https://packages.moldea.ai/evidence/qualification/custom/custom/',
       'must use origin https://skill.moldea.ai',
     ],
     [
       'for another adapter',
-      'https://skill.moldea.ai/qualification/openai/custom/',
+      'https://skill.moldea.ai/evidence/qualification/openai/custom/',
       'must match adapter custom and implementation custom',
     ],
     [
       'for another implementation',
-      'https://skill.moldea.ai/qualification/custom/typescript/',
+      'https://skill.moldea.ai/evidence/qualification/custom/typescript/',
       'must match adapter custom and implementation custom',
     ],
     [
       'with a query',
-      'https://skill.moldea.ai/qualification/custom/custom/?attempt=latest',
+      'https://skill.moldea.ai/evidence/qualification/custom/custom/?attempt=latest',
       'must omit query and fragment data',
     ],
   ])('rejects qualification evidence %s', (_description, url, expectedMessage) => {

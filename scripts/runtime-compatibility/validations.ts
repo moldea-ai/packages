@@ -748,7 +748,7 @@ const validateQualificationEvidence = (
   }
 
   if (targetId !== null) {
-    const expectedPath = `/qualification/${adapterId}/${targetId}/`;
+    const expectedPath = `/evidence/qualification/${adapterId}/${targetId}/`;
     const expectedUrl = `${QUALIFICATION_EVIDENCE_ORIGIN}${expectedPath}`;
 
     if (url.pathname !== expectedPath) {

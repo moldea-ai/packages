@@ -447,7 +447,7 @@ adapters:
         kind: custom
         language: any
         qualificationEvidence:
-          url: 'https://skill.moldea.ai/qualification/custom/custom/'
+          url: 'https://skill.moldea.ai/evidence/qualification/custom/custom/'
         patterns:
           - id: explicit-repository-relationships
             kind: runtime
