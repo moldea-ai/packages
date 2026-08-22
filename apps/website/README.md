@@ -34,7 +34,7 @@ The sibling platform repository is a design and specification reference only. Th
 
 ## Deployment
 
-Pull requests build and verify the site without deploying it. Relevant pushes to `main` rebuild from the exact pushed commit, read the configured host and base path from GitHub Pages, build the canonical HTTPS origin from that host, pass those values to Astro and the artifact checks, upload `apps/website/dist` with GitHub's official Pages artifact action, and deploy through the `github-pages` environment. After deployment, the workflow verifies the public sitemap index and submits `https://packages.moldea.ai/sitemap-index.xml` to the `sc-domain:moldea.ai` Google Search Console property. The workflow is separate from npm publication.
+Pull requests build and verify the site without deploying it. Relevant pushes to `main` rebuild from the exact pushed commit, read the configured host and base path from GitHub Pages, build the canonical HTTPS origin from that host, pass those values to Astro and the artifact checks, upload `apps/website/dist` with GitHub's official Pages artifact action, and deploy through the `github-pages` environment. After deployment, the workflow submits `https://packages.moldea.ai/sitemap-index.xml` to the `sc-domain:moldea.ai` Google Search Console property. The workflow is separate from npm publication.
 
 If Pages has never been enabled, a repository owner must once select **GitHub Actions** under **Settings → Pages → Build and deployment → Source**. Normal publication is automatic after that setting; no recurring manual dispatch or artifact promotion is required.
 

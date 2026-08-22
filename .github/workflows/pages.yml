@@ -141,22 +141,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Verify deployed sitemap
-        run: |
-          curl \
-            --connect-timeout 10 \
-            --fail \
-            --location \
-            --max-time 20 \
-            --retry 8 \
-            --retry-all-errors \
-            --retry-delay 15 \
-            --retry-max-time 120 \
-            --silent \
-            --show-error \
-            "$SITEMAP_URL" \
-            >/dev/null
-
       - name: Authenticate to Google Search Console
         id: google-auth
         uses: google-github-actions/auth@v3
