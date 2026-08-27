@@ -1,8 +1,8 @@
 import { MOLDEA_CLI_COMMANDS } from '../command-line/index.js';
 import {
-  resolveInstalledMoldeaCliCompatibility,
-  type IMoldeaCliCompatibilityResolver,
-} from '../compatibility/index.js';
+  resolveInstalledMoldeaCliComposition,
+  type IMoldeaCliCompositionResolver,
+} from '../composition/index.js';
 import {
   executeMoldeaCliCoreInspection,
   type IMoldeaCliCoreInspectionExecutor,
@@ -20,7 +20,7 @@ import {
 
 import { MOLDEA_CLI_EXIT_CODES } from './constants.js';
 import {
-  createMoldeaCliCompatibilityExecutionResult,
+  createMoldeaCliCompositionExecutionResult,
   createMoldeaCliErrorResult,
   createMoldeaCliInspectExecutionResult,
   createMoldeaCliValidateExecutionResult,
@@ -32,7 +32,7 @@ import type { IMoldeaCliCommandExecutor, IMoldeaCliExecutionResult } from './typ
  * @param workingTreeDiscovery The Git working-tree discovery operation.
  * @param workingTreeSnapshotExecutor The complete working-tree snapshot operation.
  * @param coreInspectionExecutor The attempt-local Core inspection composition.
- * @param compatibilityResolver The installed executable-integrity and compatibility boundary.
+ * @param compositionResolver The installed executable-integrity and composition boundary.
  * @returns A command executor for the current behavioral slice.
  */
 export const createMoldeaCliCommandExecutor =
@@ -40,16 +40,16 @@ export const createMoldeaCliCommandExecutor =
     workingTreeDiscovery: IGitWorkingTreeDiscovery = discoverGitWorkingTree,
     workingTreeSnapshotExecutor: IWorkingTreeSnapshotExecutor = executeWorkingTreeSnapshot,
     coreInspectionExecutor: IMoldeaCliCoreInspectionExecutor = executeMoldeaCliCoreInspection,
-    compatibilityResolver: IMoldeaCliCompatibilityResolver = resolveInstalledMoldeaCliCompatibility,
+    compositionResolver: IMoldeaCliCompositionResolver = resolveInstalledMoldeaCliComposition,
   ): IMoldeaCliCommandExecutor =>
   async (input): Promise<IMoldeaCliExecutionResult> => {
-    const compatibilityResolution = compatibilityResolver({
+    const compositionResolution = compositionResolver({
       packageMetadata: input.packageMetadata,
     });
 
-    if (compatibilityResolution.kind === 'invalid') {
+    if (compositionResolution.kind === 'invalid') {
       return createMoldeaCliErrorResult(
-        createMoldeaCliOwnedError('COMPATIBILITY_STATE_INVALID'),
+        createMoldeaCliOwnedError('COMPOSITION_STATE_INVALID'),
         input.invocation.command,
         input.packageMetadata.version,
         input.invocation.options.isJson,
@@ -57,9 +57,9 @@ export const createMoldeaCliCommandExecutor =
       );
     }
 
-    if (input.invocation.command === MOLDEA_CLI_COMMANDS.Compatibility) {
-      return createMoldeaCliCompatibilityExecutionResult(
-        compatibilityResolution.result,
+    if (input.invocation.command === MOLDEA_CLI_COMMANDS.Composition) {
+      return createMoldeaCliCompositionExecutionResult(
+        compositionResolution.result,
         input.packageMetadata.version,
         input.invocation.options.isJson,
       );

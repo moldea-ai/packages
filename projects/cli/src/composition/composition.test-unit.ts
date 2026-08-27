@@ -2,25 +2,25 @@
 import { describe, expect, test } from 'vitest';
 
 import {
-  resolveInstalledMoldeaCliCompatibility,
-  resolveMoldeaCliCompatibility,
-} from './compatibility.js';
+  resolveInstalledMoldeaCliComposition,
+  resolveMoldeaCliComposition,
+} from './composition.js';
 import {
-  createTestCompatibilityState,
+  createTestCompositionState,
   INSTALLED_PACKAGE_METADATA,
-} from './compatibility.test-fixtures.js';
+} from './composition.test-fixtures.js';
 
-describe('CLI compatibility resolution', () => {
+describe('CLI composition resolution', () => {
   test('returns one all-or-nothing valid result for explicit state', () => {
-    const resolution = resolveMoldeaCliCompatibility(createTestCompatibilityState());
+    const resolution = resolveMoldeaCliComposition(createTestCompositionState());
 
     expect(resolution.kind).toBe('valid');
     expect(Object.isFrozen(resolution)).toBe(true);
   });
 
   test('returns the shared invalid outcome without a partial result', () => {
-    const state = createTestCompatibilityState();
-    const resolution = resolveMoldeaCliCompatibility({
+    const state = createTestCompositionState();
+    const resolution = resolveMoldeaCliComposition({
       ...state,
       packageMetadata: { ...state.packageMetadata, dependencies: null },
     });
@@ -30,9 +30,9 @@ describe('CLI compatibility resolution', () => {
     expect(Object.isFrozen(resolution)).toBe(true);
   });
 
-  test('derives installed compatibility without generated release metadata', () => {
+  test('derives installed composition without generated release metadata', () => {
     expect(
-      resolveInstalledMoldeaCliCompatibility({ packageMetadata: INSTALLED_PACKAGE_METADATA }).kind,
+      resolveInstalledMoldeaCliComposition({ packageMetadata: INSTALLED_PACKAGE_METADATA }).kind,
     ).toBe('valid');
   });
 });

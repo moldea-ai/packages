@@ -7,7 +7,7 @@ import {
   MOLDEA_CLI_CUSTOM_ADAPTER_ID,
   MOLDEA_CLI_FOUNDATIONAL_PACKAGE_NAMES,
 } from './constants.js';
-import type { IMoldeaCliCompatibilityStateInput } from './types.js';
+import type { IMoldeaCliCompositionStateInput } from './types.js';
 
 const ADAPTER_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
@@ -57,10 +57,10 @@ const createActiveAdapterMap = (
 /**
  * Verifies the installed package manifest and actual executable adapter composition.
  * @param input The installed package, Core, adapter, Git, and JSON-schema state.
- * @returns Whether every runtime compatibility invariant is satisfied.
+ * @returns Whether every runtime composition invariant is satisfied.
  */
-export const isMoldeaCliCompatibilityStateValid = (
-  input: IMoldeaCliCompatibilityStateInput,
+export const isMoldeaCliCompositionStateValid = (
+  input: IMoldeaCliCompositionStateInput,
 ): boolean => {
   const { dependencies, installedPackageVersions, supportedNodeRange, version } =
     input.packageMetadata;

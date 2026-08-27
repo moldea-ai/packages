@@ -1,12 +1,12 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
-import { createTestCompatibilityState } from './compatibility.test-fixtures.js';
-import { createMoldeaCliCompatibilityResult } from './transformers.js';
+import { createTestCompositionState } from './composition.test-fixtures.js';
+import { createMoldeaCliCompositionResult } from './transformers.js';
 
-describe('createMoldeaCliCompatibilityResult', () => {
-  test('reports only executable technical compatibility state', () => {
-    const result = createMoldeaCliCompatibilityResult(createTestCompatibilityState());
+describe('createMoldeaCliCompositionResult', () => {
+  test('reports only executable technical composition state', () => {
+    const result = createMoldeaCliCompositionResult(createTestCompositionState());
 
     expect(result).toMatchObject({
       minimumGitVersion: '2.30.0',

@@ -1,7 +1,7 @@
 import type { IDiagnostic, IDiagnosticEntity } from '@moldea.ai/core';
 
 import { MOLDEA_CLI_COMMANDS, type IMoldeaCliCommand } from '../command-line/index.js';
-import type { IMoldeaCliCompatibilityResult } from '../compatibility/index.js';
+import type { IMoldeaCliCompositionResult } from '../composition/index.js';
 import { MOLDEA_CLI_JSON_SCHEMA_VERSION } from '../json-output-contract/index.js';
 import { serializeJsonDeterministically } from '../json-serialization/index.js';
 
@@ -9,7 +9,7 @@ import { MOLDEA_CLI_COMMAND_HELP, MOLDEA_CLI_TOP_LEVEL_HELP } from './constants.
 import type {
   IMoldeaCliError,
   IMoldeaCliInspectResult,
-  IMoldeaCliJsonCompatibilityEnvelope,
+  IMoldeaCliJsonCompositionEnvelope,
   IMoldeaCliJsonErrorEnvelope,
   IMoldeaCliJsonInspectEnvelope,
   IMoldeaCliJsonValidateEnvelope,
@@ -135,17 +135,17 @@ export const formatMoldeaCliJsonError = (
 };
 
 /**
- * Formats one valid compatibility result for human stdout.
- * @param result The exact installed compatibility composition.
+ * Formats one valid composition result for human stdout.
+ * @param result The exact installed composition.
  * @param cliVersion The installed CLI package version.
  * @returns A deterministic complete human report ending with LF.
  */
-export const formatMoldeaCliHumanCompatibilityResult = (
-  result: IMoldeaCliCompatibilityResult,
+export const formatMoldeaCliHumanCompositionResult = (
+  result: IMoldeaCliCompositionResult,
   cliVersion: string,
 ): string => {
   const lines = [
-    'The installed CLI compatibility state is valid.',
+    'The installed CLI composition state is valid.',
     `CLI version: ${cliVersion}`,
     `Supported Node.js: ${result.supportedNodeRange}`,
     `JSON output schema: ${MOLDEA_CLI_JSON_SCHEMA_VERSION}`,
@@ -166,18 +166,18 @@ export const formatMoldeaCliHumanCompatibilityResult = (
 };
 
 /**
- * Formats one valid compatibility result as a version 2 JSON envelope.
- * @param result The exact installed compatibility composition.
+ * Formats one valid composition result as a version 2 JSON envelope.
+ * @param result The exact installed composition.
  * @param cliVersion The installed CLI package version.
  * @returns One compact deterministic JSON document ending with LF.
  */
-export const formatMoldeaCliJsonCompatibilityResult = (
-  result: IMoldeaCliCompatibilityResult,
+export const formatMoldeaCliJsonCompositionResult = (
+  result: IMoldeaCliCompositionResult,
   cliVersion: string,
 ): string => {
-  const envelope: IMoldeaCliJsonCompatibilityEnvelope = {
+  const envelope: IMoldeaCliJsonCompositionEnvelope = {
     cliVersion,
-    command: MOLDEA_CLI_COMMANDS.Compatibility,
+    command: MOLDEA_CLI_COMMANDS.Composition,
     error: null,
     result,
     schemaVersion: MOLDEA_CLI_JSON_SCHEMA_VERSION,
@@ -204,7 +204,7 @@ export const formatMoldeaCliHumanValidateResult = (result: IMoldeaCliValidateRes
 };
 
 /**
- * Formats one completed validation result as a version 1 JSON envelope.
+ * Formats one completed validation result as a version 2 JSON envelope.
  * @param result The content-minimized validation result.
  * @param cliVersion The installed CLI package version.
  * @returns One compact deterministic JSON document ending with LF.
@@ -281,7 +281,7 @@ export const formatMoldeaCliHumanInspectResult = (result: IMoldeaCliInspectResul
 };
 
 /**
- * Formats one completed inspection result as a version 1 JSON envelope.
+ * Formats one completed inspection result as a version 2 JSON envelope.
  * @param result The complete inspection result and its source descriptor.
  * @param cliVersion The installed CLI package version.
  * @returns One compact deterministic JSON document ending with LF.

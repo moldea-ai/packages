@@ -200,7 +200,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     };
 
     assertRuntimeInvariant(cliManifest?.name === '@moldea.ai/cli', 'The CLI identity is invalid.');
-    assertRuntimeInvariant(cliManifest?.version === '4.0.1', 'The CLI version is invalid.');
+    assertRuntimeInvariant(cliManifest?.version === '5.0.0', 'The CLI version is invalid.');
     assertRuntimeInvariant(
       cliManifest?.engines?.node === '^22.11.0 || ^24.11.0',
       'The CLI runtime range is invalid.',
@@ -234,36 +234,38 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
 
     assertRuntimeInvariant(versionResult.status === 0, 'The installed CLI version command failed.');
     assertRuntimeInvariant(versionResult.stderr === '', 'The version command wrote stderr.');
-    assertRuntimeInvariant(versionResult.stdout === '4.0.1\n', 'The version output is invalid.');
+    assertRuntimeInvariant(versionResult.stdout === '5.0.0\n', 'The version output is invalid.');
 
-    const compatibilityResult = executeCli(
+    const compositionResult = executeCli(
       executablePath,
-      ['compatibility', '--json'],
+      ['composition', '--json'],
       consumerDirectory,
       environment,
     );
-    const compatibilityEnvelope = JSON.parse(compatibilityResult.stdout);
+    const compositionEnvelope = JSON.parse(compositionResult.stdout);
     assertRuntimeInvariant(
-      compatibilityResult.status === 0,
-      'The installed CLI compatibility command failed.',
+      compositionResult.status === 0,
+      'The installed CLI composition command failed.',
     );
     assertRuntimeInvariant(
-      compatibilityResult.stderr === '',
-      'The compatibility command wrote stderr.',
+      compositionResult.stderr === '',
+      'The composition command wrote stderr.',
     );
     assertRuntimeInvariant(
-      compatibilityEnvelope.status === 'valid' &&
-        compatibilityEnvelope.result?.supportedNodeRange === '^22.11.0 || ^24.11.0' &&
-        typeof compatibilityEnvelope.result?.minimumGitVersion === 'string' &&
-        JSON.stringify(compatibilityEnvelope.result?.repositoryFormatVersions) === '[1]',
-      'The compatibility result is invalid.',
+      compositionEnvelope.status === 'valid' &&
+        compositionEnvelope.result?.supportedNodeRange === '^22.11.0 || ^24.11.0' &&
+        typeof compositionEnvelope.result?.minimumGitVersion === 'string' &&
+        JSON.stringify(compositionEnvelope.result?.repositoryFormatVersions) === '[1]',
+      'The composition result is invalid.',
     );
     assertRuntimeInvariant(
-      compatibilityEnvelope.cliVersion === '4.0.1' && compatibilityEnvelope.schemaVersion === 2,
-      'The compatibility envelope is invalid.',
+      compositionEnvelope.cliVersion === '5.0.0' &&
+        compositionEnvelope.command === 'composition' &&
+        compositionEnvelope.schemaVersion === 2,
+      'The composition envelope is invalid.',
     );
     assertRuntimeInvariant(
-      JSON.stringify(compatibilityEnvelope.result?.packages) ===
+      JSON.stringify(compositionEnvelope.result?.packages) ===
         JSON.stringify([
           { name: '@moldea.ai/adapter-anthropic', version: '2.0.3' },
           { name: '@moldea.ai/adapter-claude-agent-sdk', version: '1.0.2' },
@@ -279,10 +281,10 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
           { name: '@moldea.ai/repository', version: '1.1.0' },
           { name: '@moldea.ai/repository-fs', version: '1.0.4' },
         ]),
-      'The compatibility package list is invalid.',
+      'The composition package list is invalid.',
     );
     assertRuntimeInvariant(
-      JSON.stringify(compatibilityEnvelope.result?.adapters) ===
+      JSON.stringify(compositionEnvelope.result?.adapters) ===
         JSON.stringify(
           [
             'anthropic',
@@ -299,6 +301,24 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
           ].map((id) => ({ id, repositoryFormatVersions: [1] })),
         ),
       'The executable adapter list is invalid.',
+    );
+
+    const removedCompatibilityResult = executeCli(
+      executablePath,
+      ['compatibility', '--json'],
+      consumerDirectory,
+      environment,
+    );
+    const removedCompatibilityEnvelope = JSON.parse(removedCompatibilityResult.stdout);
+    assertRuntimeInvariant(
+      removedCompatibilityResult.status === 2 &&
+        removedCompatibilityResult.stderr === '' &&
+        removedCompatibilityEnvelope.command === null &&
+        removedCompatibilityEnvelope.error?.code === 'INVALID_ARGUMENT' &&
+        removedCompatibilityEnvelope.result === null &&
+        removedCompatibilityEnvelope.schemaVersion === 2 &&
+        removedCompatibilityEnvelope.status === 'error',
+      'The removed compatibility command was not rejected.',
     );
 
     executeFixtureGit(consumerDirectory, hooksDirectory, environment, ['init']);
@@ -419,7 +439,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       'Inspection omitted the Claude Agent SDK adapter evidence.',
     );
     assertRuntimeInvariant(
-      !`${compatibilityResult.stdout}${validateResult.stdout}${inspectResult.stdout}`.includes(
+      !`${compositionResult.stdout}${validateResult.stdout}${inspectResult.stdout}`.includes(
         '\u001b[',
       ),
       'JSON output contains ANSI control sequences.',

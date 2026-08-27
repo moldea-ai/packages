@@ -194,7 +194,7 @@ describe('published CLI package and executable', () => {
     const manifest = readCliPackageManifest();
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '4.0.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '5.0.0' });
     expect(packedPaths).toContain('dist/moldea.js');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
@@ -457,7 +457,7 @@ describe('published CLI package and executable', () => {
           cwd: consumerDirectory,
           encoding: 'utf8',
         }),
-      ).toBe('4.0.1\n');
+      ).toBe('5.0.0\n');
       const topLevelHelp = runPackageManager(
         packageManagerEntrypoint,
         ['exec', 'moldea', '--help'],
@@ -476,7 +476,7 @@ describe('published CLI package and executable', () => {
 
       expect(zeroArgumentHelp).toMatchObject({ status: 0, stderr: '', stdout: topLevelHelp });
 
-      for (const command of ['compatibility', 'inspect', 'validate']) {
+      for (const command of ['composition', 'inspect', 'validate']) {
         const commandHelp = spawnSync(
           process.execPath,
           [installedExecutablePath, command, '--help'],
@@ -492,12 +492,13 @@ describe('published CLI package and executable', () => {
         ['--help', 'extra'],
         ['--version', '--no-color'],
         ['unknown'],
+        ['compatibility'],
         ['validate', '--unknown'],
         ['validate', '--repository', '.', '--repository', '..'],
         ['validate', '--repository'],
         ['validate', '--max-entries', '0'],
         ['validate', '--max-entries', '1', '--max-entries', '2'],
-        ['compatibility', '--repository', '.'],
+        ['composition', '--repository', '.'],
       ]) {
         const usageFailure = spawnSync(
           process.execPath,
@@ -528,34 +529,34 @@ describe('published CLI package and executable', () => {
         status: 'error',
       });
 
-      const humanCompatibility = spawnPackageManager(
+      const humanComposition = spawnPackageManager(
         packageManagerEntrypoint,
-        ['exec', 'moldea', 'compatibility'],
+        ['exec', 'moldea', 'composition'],
         consumerDirectory,
       );
 
-      expect(humanCompatibility.status).toBe(0);
-      expect(humanCompatibility.stderr).toBe('');
-      expect(humanCompatibility.stdout).toContain(
-        'The installed CLI compatibility state is valid.\nCLI version: 4.0.1\n',
+      expect(humanComposition.status).toBe(0);
+      expect(humanComposition.stderr).toBe('');
+      expect(humanComposition.stdout).toContain(
+        'The installed CLI composition state is valid.\nCLI version: 5.0.0\n',
       );
-      expect(humanCompatibility.stdout).toContain('custom: repository formats 1\n');
-      expect(humanCompatibility.stdout).toContain('anthropic: repository formats 1\n');
-      expect(humanCompatibility.stdout).toContain('claude-agent-sdk: repository formats 1\n');
-      expect(humanCompatibility.stdout).toContain('eve: repository formats 1\n');
-      expect(humanCompatibility.stdout).toContain('google-genai: repository formats 1\n');
-      expect(humanCompatibility.stdout).toContain('langchain: repository formats 1\n');
-      expect(humanCompatibility.stdout).toContain('langgraph: repository formats 1\n');
-      expect(humanCompatibility.stdout).toContain('openai: repository formats 1\n');
-      expect(humanCompatibility.stdout).toContain('openai-agents-sdk: repository formats 1\n');
-      expect(humanCompatibility.stdout).toContain('vercel-ai-sdk: repository formats 1\n');
+      expect(humanComposition.stdout).toContain('custom: repository formats 1\n');
+      expect(humanComposition.stdout).toContain('anthropic: repository formats 1\n');
+      expect(humanComposition.stdout).toContain('claude-agent-sdk: repository formats 1\n');
+      expect(humanComposition.stdout).toContain('eve: repository formats 1\n');
+      expect(humanComposition.stdout).toContain('google-genai: repository formats 1\n');
+      expect(humanComposition.stdout).toContain('langchain: repository formats 1\n');
+      expect(humanComposition.stdout).toContain('langgraph: repository formats 1\n');
+      expect(humanComposition.stdout).toContain('openai: repository formats 1\n');
+      expect(humanComposition.stdout).toContain('openai-agents-sdk: repository formats 1\n');
+      expect(humanComposition.stdout).toContain('vercel-ai-sdk: repository formats 1\n');
 
-      const jsonCompatibility = spawnPackageManager(
+      const jsonComposition = spawnPackageManager(
         packageManagerEntrypoint,
-        ['exec', 'moldea', 'compatibility', '--json'],
+        ['exec', 'moldea', 'composition', '--json'],
         consumerDirectory,
       );
-      const compatibilityEnvelope = JSON.parse(jsonCompatibility.stdout) as {
+      const compositionEnvelope = JSON.parse(jsonComposition.stdout) as {
         readonly command: string;
         readonly result: {
           readonly adapters: readonly {
@@ -567,10 +568,10 @@ describe('published CLI package and executable', () => {
         readonly status: string;
       };
 
-      expect(jsonCompatibility.status).toBe(0);
-      expect(jsonCompatibility.stderr).toBe('');
-      expect(compatibilityEnvelope).toMatchObject({
-        command: 'compatibility',
+      expect(jsonComposition.status).toBe(0);
+      expect(jsonComposition.stderr).toBe('');
+      expect(compositionEnvelope).toMatchObject({
+        command: 'composition',
         result: {
           packages: [
             { name: '@moldea.ai/adapter-anthropic', version: '2.0.3' },
@@ -590,8 +591,8 @@ describe('published CLI package and executable', () => {
         },
         status: 'valid',
       });
-      expect(compatibilityEnvelope.result.adapters).toHaveLength(11);
-      for (const adapter of compatibilityEnvelope.result.adapters) {
+      expect(compositionEnvelope.result.adapters).toHaveLength(11);
+      for (const adapter of compositionEnvelope.result.adapters) {
         expect(adapter.repositoryFormatVersions).toStrictEqual([1]);
       }
 
@@ -604,7 +605,7 @@ describe('published CLI package and executable', () => {
       expect(jsonUsageFailure.status).toBe(2);
       expect(jsonUsageFailure.stderr).toBe('');
       expect(jsonUsageFailure.stdout).toBe(
-        '{"cliVersion":"4.0.1","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n',
+        '{"cliVersion":"5.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n',
       );
 
       const nonRepositoryCommand = spawnPackageManager(
@@ -652,7 +653,7 @@ describe('published CLI package and executable', () => {
       expect(discoveredRepositoryCommand.stderr).toBe('');
       expect(discoveredRepositoryCommand.stdout).not.toContain(consumerDirectory);
       expect(discoveredRepositoryCommand.stdout).toBe(
-        '{"cliVersion":"4.0.1","command":"inspect","error":null,"result":{"inspection":{"diagnostics":[{"code":"MOLDEA_MANIFEST_MISSING","details":{},"entity":null,"message":"The project manifest is missing.","path":"/moldea/moldea.yaml","pointer":null,"range":null,"source":"core"},{"code":"MOLDEA_PROJECT_FILE_MISSING","details":{},"entity":null,"message":"The project file is missing.","path":"/moldea/project.md","pointer":null,"range":null,"source":"core"}],"evidence":[],"formatVersion":null,"project":null,"valid":false},"source":{"kind":"git-working-tree"}},"schemaVersion":2,"status":"invalid"}\n',
+        '{"cliVersion":"5.0.0","command":"inspect","error":null,"result":{"inspection":{"diagnostics":[{"code":"MOLDEA_MANIFEST_MISSING","details":{},"entity":null,"message":"The project manifest is missing.","path":"/moldea/moldea.yaml","pointer":null,"range":null,"source":"core"},{"code":"MOLDEA_PROJECT_FILE_MISSING","details":{},"entity":null,"message":"The project file is missing.","path":"/moldea/project.md","pointer":null,"range":null,"source":"core"}],"evidence":[],"formatVersion":null,"project":null,"valid":false},"source":{"kind":"git-working-tree"}},"schemaVersion":2,"status":"invalid"}\n',
       );
 
       const invalidValidationCommand = spawnPackageManager(
@@ -666,7 +667,7 @@ describe('published CLI package and executable', () => {
       expect(invalidValidationCommand.stderr).toBe('');
       expect(invalidValidationCommand.stdout).not.toContain(consumerDirectory);
       expect(invalidValidationCommand.stdout).toBe(
-        '{"cliVersion":"4.0.1","command":"validate","error":null,"result":{"diagnostics":[{"code":"MOLDEA_MANIFEST_MISSING","details":{},"entity":null,"message":"The project manifest is missing.","path":"/moldea/moldea.yaml","pointer":null,"range":null,"source":"core"},{"code":"MOLDEA_PROJECT_FILE_MISSING","details":{},"entity":null,"message":"The project file is missing.","path":"/moldea/project.md","pointer":null,"range":null,"source":"core"}],"formatVersion":null,"source":{"kind":"git-working-tree"}},"schemaVersion":2,"status":"invalid"}\n',
+        '{"cliVersion":"5.0.0","command":"validate","error":null,"result":{"diagnostics":[{"code":"MOLDEA_MANIFEST_MISSING","details":{},"entity":null,"message":"The project manifest is missing.","path":"/moldea/moldea.yaml","pointer":null,"range":null,"source":"core"},{"code":"MOLDEA_PROJECT_FILE_MISSING","details":{},"entity":null,"message":"The project file is missing.","path":"/moldea/project.md","pointer":null,"range":null,"source":"core"}],"formatVersion":null,"source":{"kind":"git-working-tree"}},"schemaVersion":2,"status":"invalid"}\n',
       );
 
       const moldeaDirectory = path.join(consumerDirectory, 'moldea');
@@ -739,7 +740,7 @@ process.exit(0);
       expect(validJsonValidationCommand.status).toBe(0);
       expect(validJsonValidationCommand.stderr).toBe('');
       expect(validJsonValidationCommand.stdout).toBe(
-        '{"cliVersion":"4.0.1","command":"validate","error":null,"result":{"diagnostics":[],"formatVersion":1,"source":{"kind":"git-working-tree"}},"schemaVersion":2,"status":"valid"}\n',
+        '{"cliVersion":"5.0.0","command":"validate","error":null,"result":{"diagnostics":[],"formatVersion":1,"source":{"kind":"git-working-tree"}},"schemaVersion":2,"status":"valid"}\n',
       );
 
       const validHumanInspectionCommand = spawnPackageManager(
@@ -792,7 +793,7 @@ Adapter evidence items: 0
       expect(validJsonInspectionCommand.status).toBe(0);
       expect(validJsonInspectionCommand.stderr).toBe('');
       expect(validInspectionEnvelope).toMatchObject({
-        cliVersion: '4.0.1',
+        cliVersion: '5.0.0',
         command: 'inspect',
         error: null,
         result: {
@@ -877,7 +878,7 @@ Adapter evidence items: 0
       expect(inventoryLimitCommand.status).toBe(3);
       expect(inventoryLimitCommand.stderr).toBe('');
       expect(inventoryLimitCommand.stdout).toBe(
-        '{"cliVersion":"4.0.1","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n',
+        '{"cliVersion":"5.0.0","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n',
       );
 
       const environmentWithoutPath = Object.fromEntries(
@@ -899,12 +900,12 @@ Adapter evidence items: 0
       expect(missingGitResult.status).toBe(3);
       expect(missingGitResult.stderr).toBe('');
       expect(missingGitResult.stdout).toBe(
-        '{"cliVersion":"4.0.1","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":2,"status":"error"}\n',
+        '{"cliVersion":"5.0.0","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":2,"status":"error"}\n',
       );
 
-      const compatibilityWithoutGit = spawnSync(
+      const compositionWithoutGit = spawnSync(
         process.execPath,
-        [installedExecutablePath, 'compatibility', '--json'],
+        [installedExecutablePath, 'composition', '--json'],
         {
           cwd: consumerDirectory,
           encoding: 'utf8',
@@ -915,10 +916,10 @@ Adapter evidence items: 0
         },
       );
 
-      expect(compatibilityWithoutGit.status).toBe(0);
-      expect(compatibilityWithoutGit.stderr).toBe('');
-      expect(JSON.parse(compatibilityWithoutGit.stdout)).toMatchObject({
-        command: 'compatibility',
+      expect(compositionWithoutGit.status).toBe(0);
+      expect(compositionWithoutGit.stderr).toBe('');
+      expect(JSON.parse(compositionWithoutGit.stdout)).toMatchObject({
+        command: 'composition',
         status: 'valid',
       });
 
@@ -1042,7 +1043,7 @@ setInterval(() => undefined, 1000);
 
       const mismatchedDependencyResult = spawnSync(
         process.execPath,
-        [installedExecutablePath, 'compatibility', '--json'],
+        [installedExecutablePath, 'composition', '--json'],
         {
           cwd: consumerDirectory,
           encoding: 'utf8',
@@ -1056,8 +1057,8 @@ setInterval(() => undefined, 1000);
       expect(mismatchedDependencyResult.status).toBe(3);
       expect(mismatchedDependencyResult.stderr).toBe('');
       expect(JSON.parse(mismatchedDependencyResult.stdout)).toMatchObject({
-        command: 'compatibility',
-        error: { code: 'COMPATIBILITY_STATE_INVALID' },
+        command: 'composition',
+        error: { code: 'COMPOSITION_STATE_INVALID' },
         result: null,
         status: 'error',
       });

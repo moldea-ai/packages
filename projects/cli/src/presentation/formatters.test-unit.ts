@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest';
 import type { ICoreDiagnostic } from '@moldea.ai/core';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
-import type { IMoldeaCliCompatibilityResult } from '../compatibility/index.js';
+import type { IMoldeaCliCompositionResult } from '../composition/index.js';
 
 import {
   MOLDEA_CLI_COMMAND_HELP,
@@ -14,12 +14,12 @@ import {
 import { createMoldeaCliOwnedError } from './errors.js';
 import {
   formatMoldeaCliHelp,
-  formatMoldeaCliHumanCompatibilityResult,
+  formatMoldeaCliHumanCompositionResult,
   formatMoldeaCliHumanError,
   formatMoldeaCliHumanInspectResult,
   formatMoldeaCliHumanValidateResult,
   formatMoldeaCliJsonError,
-  formatMoldeaCliJsonCompatibilityResult,
+  formatMoldeaCliJsonCompositionResult,
   formatMoldeaCliJsonInspectResult,
   formatMoldeaCliJsonValidateResult,
 } from './formatters.js';
@@ -43,7 +43,7 @@ describe('CLI presentation formatters', () => {
     expect(formatMoldeaCliHelp(null)).toBe(MOLDEA_CLI_TOP_LEVEL_HELP);
     expect(formatMoldeaCliHelp('validate')).toBe(MOLDEA_CLI_COMMAND_HELP.validate);
     expect(formatMoldeaCliHelp('inspect')).toBe(MOLDEA_CLI_COMMAND_HELP.inspect);
-    expect(formatMoldeaCliHelp('compatibility')).toBe(MOLDEA_CLI_COMMAND_HELP.compatibility);
+    expect(formatMoldeaCliHelp('composition')).toBe(MOLDEA_CLI_COMMAND_HELP.composition);
   });
 
   test('formats one safe human error line', () => {
@@ -86,19 +86,19 @@ describe('CLI presentation formatters', () => {
     ).toContain('"retryable":true,"source":"cli"');
   });
 
-  test('formats the safe compatibility-state integrity error', () => {
-    const error = createMoldeaCliOwnedError('COMPATIBILITY_STATE_INVALID');
+  test('formats the safe composition-state integrity error', () => {
+    const error = createMoldeaCliOwnedError('COMPOSITION_STATE_INVALID');
 
     expect(formatMoldeaCliHumanError(error)).toBe(
-      'cli:COMPATIBILITY_STATE_INVALID The installed compatibility state is invalid.\n',
+      'cli:COMPOSITION_STATE_INVALID The installed composition state is invalid.\n',
     );
-    expect(formatMoldeaCliJsonError(error, 'compatibility', '1.0.0')).toContain(
+    expect(formatMoldeaCliJsonError(error, 'composition', '1.0.0')).toContain(
       '"retryable":false,"source":"cli"',
     );
   });
 
-  test('formats exact human and JSON compatibility reports from executable state', () => {
-    const result: IMoldeaCliCompatibilityResult = Object.freeze({
+  test('formats exact human and JSON composition reports from executable state', () => {
+    const result: IMoldeaCliCompositionResult = Object.freeze({
       adapters: Object.freeze([
         Object.freeze({
           id: 'custom',
@@ -118,8 +118,8 @@ describe('CLI presentation formatters', () => {
       supportedNodeRange: '^22.11.0 || ^24.11.0',
     });
 
-    expect(formatMoldeaCliHumanCompatibilityResult(result, '1.0.0')).toBe(
-      `The installed CLI compatibility state is valid.
+    expect(formatMoldeaCliHumanCompositionResult(result, '1.0.0')).toBe(
+      `The installed CLI composition state is valid.
 CLI version: 1.0.0
 Supported Node.js: ^22.11.0 || ^24.11.0
 JSON output schema: 2
@@ -133,8 +133,8 @@ Adapters:
   openai: repository formats 1
 `,
     );
-    expect(formatMoldeaCliJsonCompatibilityResult(result, '1.0.0')).toBe(
-      '{"cliVersion":"1.0.0","command":"compatibility","error":null,"result":{"adapters":[{"id":"custom","repositoryFormatVersions":[1]},{"id":"openai","repositoryFormatVersions":[1]}],"minimumGitVersion":"2.30.0","packages":[{"name":"@moldea.ai/adapter-openai","version":"1.0.0"},{"name":"@moldea.ai/core","version":"1.0.0"}],"repositoryFormatVersions":[1],"supportedNodeRange":"^22.11.0 || ^24.11.0"},"schemaVersion":2,"status":"valid"}\n',
+    expect(formatMoldeaCliJsonCompositionResult(result, '1.0.0')).toBe(
+      '{"cliVersion":"1.0.0","command":"composition","error":null,"result":{"adapters":[{"id":"custom","repositoryFormatVersions":[1]},{"id":"openai","repositoryFormatVersions":[1]}],"minimumGitVersion":"2.30.0","packages":[{"name":"@moldea.ai/adapter-openai","version":"1.0.0"},{"name":"@moldea.ai/core","version":"1.0.0"}],"repositoryFormatVersions":[1],"supportedNodeRange":"^22.11.0 || ^24.11.0"},"schemaVersion":2,"status":"valid"}\n',
     );
   });
 

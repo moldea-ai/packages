@@ -2,29 +2,29 @@ import type { IRuntimeAdapter } from '@moldea.ai/core/adapter';
 
 import type { IMoldeaCliPackageMetadata } from '../package-metadata/index.js';
 
-// one exact installed package version reported by the compatibility command
-export interface IMoldeaCliPackageCompatibility {
+// one exact installed package version reported by the composition command
+export interface IMoldeaCliPackageComposition {
   readonly name: string;
   readonly version: string;
 }
 
 // one executable adapter and the repository formats accepted by its implementation
-export interface IMoldeaCliAdapterCompatibility {
+export interface IMoldeaCliAdapterComposition {
   readonly id: string;
   readonly repositoryFormatVersions: readonly number[];
 }
 
-// compact technical compatibility state derived by the installed CLI
-export interface IMoldeaCliCompatibilityResult {
-  readonly adapters: readonly IMoldeaCliAdapterCompatibility[];
+// compact technical composition state derived by the installed CLI
+export interface IMoldeaCliCompositionResult {
+  readonly adapters: readonly IMoldeaCliAdapterComposition[];
   readonly minimumGitVersion: string;
-  readonly packages: readonly IMoldeaCliPackageCompatibility[];
+  readonly packages: readonly IMoldeaCliPackageComposition[];
   readonly repositoryFormatVersions: readonly number[];
   readonly supportedNodeRange: string;
 }
 
 // actual runtime and package state checked before any command produces a result
-export interface IMoldeaCliCompatibilityStateInput {
+export interface IMoldeaCliCompositionStateInput {
   readonly activeAdapters: readonly IRuntimeAdapter[];
   readonly coreSupportedRepositoryFormatVersions: readonly number[];
   readonly minimumGitVersion: string;
@@ -33,21 +33,21 @@ export interface IMoldeaCliCompatibilityStateInput {
 }
 
 // installed input resolved through the executable's fixed runtime composition
-export interface IMoldeaCliInstalledCompatibilityInput {
+export interface IMoldeaCliInstalledCompositionInput {
   readonly packageMetadata: IMoldeaCliPackageMetadata;
 }
 
-// all-or-nothing runtime compatibility resolution
-export type IMoldeaCliCompatibilityResolution =
+// all-or-nothing runtime composition resolution
+export type IMoldeaCliCompositionResolution =
   | {
       readonly kind: 'invalid';
     }
   | {
       readonly kind: 'valid';
-      readonly result: IMoldeaCliCompatibilityResult;
+      readonly result: IMoldeaCliCompositionResult;
     };
 
-// injectable installed compatibility boundary used by command execution
-export type IMoldeaCliCompatibilityResolver = (
-  input: IMoldeaCliInstalledCompatibilityInput,
-) => IMoldeaCliCompatibilityResolution;
+// injectable installed composition boundary used by command execution
+export type IMoldeaCliCompositionResolver = (
+  input: IMoldeaCliInstalledCompositionInput,
+) => IMoldeaCliCompositionResolution;

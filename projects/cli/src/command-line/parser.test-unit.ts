@@ -10,7 +10,7 @@ describe('parseMoldeaCliArguments', () => {
     [['--help'], null],
     [['validate', '--help'], 'validate'],
     [['inspect', '--help'], 'inspect'],
-    [['compatibility', '--help'], 'compatibility'],
+    [['composition', '--help'], 'composition'],
   ])('parses help arguments %o', (commandLineArguments, expectedCommand) => {
     expect(parseMoldeaCliArguments(commandLineArguments)).toStrictEqual({
       command: expectedCommand,
@@ -22,7 +22,7 @@ describe('parseMoldeaCliArguments', () => {
     expect(parseMoldeaCliArguments(['--version'])).toStrictEqual({ kind: 'version' });
   });
 
-  test.each(['validate', 'inspect', 'compatibility'])(
+  test.each(['validate', 'inspect', 'composition'])(
     'parses the %s command with default options',
     (command) => {
       const result = parseMoldeaCliArguments([command]);
@@ -94,10 +94,10 @@ describe('parseMoldeaCliArguments', () => {
     expect(commandLineArguments).toStrictEqual(originalArguments);
   });
 
-  test('normalizes every compatibility option', () => {
-    expect(parseMoldeaCliArguments(['compatibility', '--json', '--no-color'])).toStrictEqual({
+  test('normalizes every composition option', () => {
+    expect(parseMoldeaCliArguments(['composition', '--json', '--no-color'])).toStrictEqual({
       invocation: {
-        command: 'compatibility',
+        command: 'composition',
         options: {
           isColorDisabled: true,
           isJson: true,
@@ -111,6 +111,7 @@ describe('parseMoldeaCliArguments', () => {
 
   test.each([
     [['unknown'], null, false],
+    [['compatibility'], null, false],
     [['--json'], null, true],
     [['--help', '--json'], null, true],
     [['--version', '--json'], null, true],
@@ -123,8 +124,8 @@ describe('parseMoldeaCliArguments', () => {
     [['validate', '--repository', '--json'], 'validate', true],
     [['validate', '--repository', ''], 'validate', false],
     [['validate', '--repository', 'before\0after'], 'validate', false],
-    [['compatibility', '--repository', '.'], 'compatibility', false],
-    [['compatibility', '--max-entries', '1'], 'compatibility', false],
+    [['composition', '--repository', '.'], 'composition', false],
+    [['composition', '--max-entries', '1'], 'composition', false],
   ])(
     'rejects invalid argument shape %o',
     (commandLineArguments, expectedCommand, expectedIsJson) => {

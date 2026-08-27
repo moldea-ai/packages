@@ -18,10 +18,10 @@ import type {
   IWebsiteModel,
 } from '../model/types.ts';
 import {
-  parseRuntimeTargetMaturity,
-  type IRuntimeTargetMaturity,
-  type IRuntimeTargetMaturityRegistry,
-} from '../runtime-target-maturity/index.ts';
+  createRuntimeCompatibilityPublication,
+  type IRuntimeCompatibilityPublicationV1,
+} from '../runtime-compatibility-publication/index.ts';
+import { parseRuntimeTargetMaturity } from '../runtime-target-maturity/index.ts';
 import { REPOSITORY_FORMAT_GUIDE_URL } from '../site/constants.ts';
 
 const REPOSITORY_URL = 'https://github.com/moldea-ai/packages';
@@ -231,29 +231,14 @@ const loadCompatibilityMatrix = (repositoryRoot: string): IRuntimeCompatibilityM
   return result.matrix;
 };
 
-const requireTargetMaturity = (
-  targetMaturities: IRuntimeTargetMaturityRegistry,
-  adapterId: string,
-  targetId: string,
-): IRuntimeTargetMaturity => {
-  const maturity = targetMaturities[adapterId]?.[targetId];
-
-  if (maturity === undefined) {
-    throw new Error(`Runtime target maturity is missing for ${adapterId}/${targetId}.`);
-  }
-
-  return maturity;
-};
-
 /** Transforms the canonical matrix into validated public adapter status routes. */
 export const buildAdapterPages = (
-  matrix: IRuntimeCompatibilityMatrix,
+  publication: IRuntimeCompatibilityPublicationV1,
   packages: IPublicPackage[],
-  targetMaturities: IRuntimeTargetMaturityRegistry,
 ): IAdapterPage[] => {
   const packageByName = new Map(packages.map((packageModel) => [packageModel.name, packageModel]));
 
-  return Object.entries(matrix.adapters)
+  return Object.entries(publication.adapters)
     .map(([id, entry]): IAdapterPage => {
       const implementedPackage =
         entry.implementation.kind === 'package'
@@ -276,13 +261,7 @@ export const buildAdapterPages = (
       }
 
       return {
-        entry: {
-          ...entry,
-          targets: entry.targets?.map((target) => ({
-            ...target,
-            maturity: requireTargetMaturity(targetMaturities, id, target.id),
-          })),
-        },
+        entry,
         id,
         implementedPackageSlug: implementedPackage?.slug ?? null,
         route: `/adapters/${id}/`,
@@ -307,6 +286,7 @@ export const createRouteManifest = (
     '/404.html',
     '/adapters/',
     '/compatibility/',
+    '/compatibility/runtimes.json',
     '/llms.txt',
     '/packages/',
     '/robots.txt',
@@ -525,7 +505,11 @@ export const createWebsiteModel = (): IWebsiteModel => {
     readFileSync(join(repositoryRoot, 'apps/website/content/runtime-target-maturity.yaml'), 'utf8'),
     matrix,
   );
-  const adapters = buildAdapterPages(matrix, packages, targetMaturities);
+  const runtimeCompatibilityPublication = createRuntimeCompatibilityPublication(
+    matrix,
+    targetMaturities,
+  );
+  const adapters = buildAdapterPages(runtimeCompatibilityPublication, packages);
   const routes = createRouteManifest(packages, adapters);
   const searchRecords = createSearchRecords(packages, adapters);
 
@@ -535,6 +519,7 @@ export const createWebsiteModel = (): IWebsiteModel => {
     llmsText: createLlmsText(packages, adapters),
     packages,
     routes,
+    runtimeCompatibilityPublication,
     searchRecords,
   };
 };

@@ -2,7 +2,7 @@ import type { IRuntimeAdapter } from '@moldea.ai/core/adapter';
 
 import type { IMoldeaCliPackageMetadata } from '../package-metadata/index.js';
 
-import type { IMoldeaCliCompatibilityStateInput } from './types.js';
+import type { IMoldeaCliCompositionStateInput } from './types.js';
 
 const PACKAGE_VERSIONS = {
   '@moldea.ai/adapter-anthropic': '2.0.3',
@@ -20,7 +20,7 @@ const PACKAGE_VERSIONS = {
   '@moldea.ai/repository-fs': '1.0.4',
 } as const;
 
-// exact installed package metadata used by compatibility tests
+// exact installed package metadata used by composition tests
 export const INSTALLED_PACKAGE_METADATA: IMoldeaCliPackageMetadata = Object.freeze({
   dependencies: Object.freeze(
     Object.fromEntries(
@@ -29,10 +29,10 @@ export const INSTALLED_PACKAGE_METADATA: IMoldeaCliPackageMetadata = Object.free
   ),
   installedPackageVersions: Object.freeze({ ...PACKAGE_VERSIONS }),
   supportedNodeRange: '^22.11.0 || ^24.11.0',
-  version: '4.0.1',
+  version: '5.0.0',
 });
 
-/** Creates one minimal runtime adapter for compatibility-composition tests. */
+/** Creates one minimal runtime adapter for composition tests. */
 export const createTestRuntimeAdapter = (
   id: string,
   supportedRepositoryFormatVersions: readonly 1[] = [1],
@@ -42,8 +42,8 @@ export const createTestRuntimeAdapter = (
   supportedRepositoryFormatVersions,
 });
 
-/** Creates the exact valid current runtime compatibility state. */
-export const createTestCompatibilityState = (): IMoldeaCliCompatibilityStateInput => ({
+/** Creates the exact valid current runtime composition state. */
+export const createTestCompositionState = (): IMoldeaCliCompositionStateInput => ({
   activeAdapters: [
     createTestRuntimeAdapter('anthropic'),
     createTestRuntimeAdapter('claude-agent-sdk'),

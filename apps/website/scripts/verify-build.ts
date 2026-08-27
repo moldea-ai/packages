@@ -5,6 +5,7 @@ import { parseSearchDocuments } from '@moldea.ai/website-ui/search';
 import { DEFAULT_BASE_PATH, normalizeBasePath } from '@moldea.ai/website-ui/site';
 
 import { loadWebsiteModel } from '../src/lib/generation/generation.ts';
+import { serializeRuntimeCompatibilityPublication } from '../src/lib/runtime-compatibility-publication/index.ts';
 import { DEFAULT_SITE_URL } from '../src/lib/site/constants.ts';
 
 const EXCLUDED_DIRECTORY_NAMES = new Set(['_archive', '_archives', '_backup', '_backups']);
@@ -198,6 +199,22 @@ export const verifyProductionBuild = (): void => {
     if (!existsSync(join(distDirectory, requiredPath))) {
       throw new Error(`Production artifact is missing ${requiredPath}.`);
     }
+  }
+
+  const runtimeCompatibilityPath = join(distDirectory, 'compatibility', 'runtimes.json');
+  const runtimeCompatibilitySource = readFileSync(runtimeCompatibilityPath, 'utf8');
+  const expectedRuntimeCompatibilitySource = serializeRuntimeCompatibilityPublication(
+    model.runtimeCompatibilityPublication,
+  );
+
+  try {
+    JSON.parse(runtimeCompatibilitySource);
+  } catch {
+    throw new Error('The runtime compatibility publication is not valid JSON.');
+  }
+
+  if (runtimeCompatibilitySource !== expectedRuntimeCompatibilitySource) {
+    throw new Error('The runtime compatibility publication contradicts its canonical sources.');
   }
 
   const files = listFiles(distDirectory);

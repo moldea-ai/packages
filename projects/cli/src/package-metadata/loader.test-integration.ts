@@ -119,7 +119,7 @@ describe('loadMoldeaCliPackageMetadata', () => {
     [{ dependencies: {}, engines: null }, {}, null],
     [{ dependencies: {}, engines: { node: 24 } }, {}, null],
   ])(
-    'retains invalid composition fields for compatibility-state reporting %o',
+    'retains invalid composition fields for composition-state reporting %o',
     async (fields, dependencies, supportedNodeRange) => {
       const manifestPath = await writeManifest({
         ...fields,
@@ -136,7 +136,7 @@ describe('loadMoldeaCliPackageMetadata', () => {
     },
   );
 
-  test('retains the actual resolved package version for compatibility rejection', async () => {
+  test('retains the actual resolved package version for composition rejection', async () => {
     const manifestPath = await writeManifest({
       dependencies: {
         '@moldea.ai/core': '1.0.0',
