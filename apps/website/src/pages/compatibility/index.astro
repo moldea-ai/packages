@@ -50,11 +50,17 @@ const compatibilityRows = model.adapters.flatMap<ICompatibilityRow>((adapter) =>
       <p class="eyebrow mb-5">Canonical compatibility</p>
       <h1 class="section-title font-semibold">Claims backed by verified repository data.</h1>
       <p class="mt-7 max-w-3xl text-xl leading-9 text-muted-foreground">
-        This page is generated from <code
+        This page combines technical compatibility from <code
           class="rounded bg-code px-1.5 py-1 font-mono text-sm text-code-foreground"
           >compatibility/runtimes.yaml</code
-        > through the repository's strict parser. Omitted fields stay omitted; planned adapters do not
-        inherit target details.
+        > with target maturity from <code
+          class="rounded bg-code px-1.5 py-1 font-mono text-sm text-code-foreground"
+          >apps/website/content/runtime-target-maturity.yaml</code
+        >. The same validated sources publish a <a
+          class="font-semibold text-foreground underline underline-offset-4 hover:text-primary"
+          href={withBase('/compatibility/runtimes.json', basePath)}
+          >machine-readable JSON view</a
+        >.
       </p>
     </div>
 

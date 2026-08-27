@@ -1,15 +1,15 @@
 import { MOLDEA_CLI_CUSTOM_ADAPTER_ID } from './constants.js';
 import type {
-  IMoldeaCliAdapterCompatibility,
-  IMoldeaCliCompatibilityResult,
-  IMoldeaCliCompatibilityStateInput,
+  IMoldeaCliAdapterComposition,
+  IMoldeaCliCompositionResult,
+  IMoldeaCliCompositionStateInput,
 } from './types.js';
 
 const compareIdentifiers = (left: string, right: string): number =>
   left < right ? -1 : left > right ? 1 : 0;
 
-/** Recursively freezes a compatibility result without retaining mutable input ownership. */
-const freezeCompatibilityValue = <TValue extends object>(value: TValue): TValue => {
+/** Recursively freezes a composition result without retaining mutable input ownership. */
+const freezeCompositionValue = <TValue extends object>(value: TValue): TValue => {
   const pendingValues: object[] = [value];
   const visitedValues = new Set<object>();
 
@@ -34,14 +34,14 @@ const freezeCompatibilityValue = <TValue extends object>(value: TValue): TValue 
 };
 
 /**
- * Creates the compact immutable compatibility result from validated installed state.
+ * Creates the compact immutable composition result from validated installed state.
  * @param input The already validated installed and executable composition.
- * @returns A deeply immutable compatibility result in deterministic report order.
+ * @returns A deeply immutable composition result in deterministic report order.
  */
-export const createMoldeaCliCompatibilityResult = (
-  input: IMoldeaCliCompatibilityStateInput,
-): IMoldeaCliCompatibilityResult => {
-  const adapters: IMoldeaCliAdapterCompatibility[] = [
+export const createMoldeaCliCompositionResult = (
+  input: IMoldeaCliCompositionStateInput,
+): IMoldeaCliCompositionResult => {
+  const adapters: IMoldeaCliAdapterComposition[] = [
     {
       id: MOLDEA_CLI_CUSTOM_ADAPTER_ID,
       repositoryFormatVersions: [...input.coreSupportedRepositoryFormatVersions].sort(
@@ -59,7 +59,7 @@ export const createMoldeaCliCompatibilityResult = (
     .map(([name, version]) => ({ name, version }))
     .sort((left, right) => compareIdentifiers(left.name, right.name));
 
-  return freezeCompatibilityValue({
+  return freezeCompositionValue({
     adapters,
     minimumGitVersion: input.minimumGitVersion,
     packages,

@@ -102,10 +102,10 @@ Options:
 `,
     ],
     [
-      'compatibility',
-      `Usage: moldea compatibility [options]
+      'composition',
+      `Usage: moldea composition [options]
 
-Report the installed CLI compatibility state.
+Report the installed CLI composition state.
 
 Options:
   --json      Emit one machine-readable JSON result.
@@ -208,18 +208,18 @@ Options:
     });
   });
 
-  test('reports compatibility and maps failed command execution to a safe error', async () => {
-    const compatibilityResult = await runMoldeaCli({
-      commandLineArguments: ['compatibility', '--json'],
+  test('reports composition and maps failed command execution to a safe error', async () => {
+    const compositionResult = await runMoldeaCli({
+      commandLineArguments: ['composition', '--json'],
       invocationDirectory: INVOCATION_DIRECTORY,
       packageMetadata: INSTALLED_PACKAGE_METADATA,
     });
 
-    expect(compatibilityResult.exitCode).toBe(0);
-    expect(compatibilityResult.stderr).toBe('');
-    expect(JSON.parse(compatibilityResult.stdout)).toMatchObject({
+    expect(compositionResult.exitCode).toBe(0);
+    expect(compositionResult.stderr).toBe('');
+    expect(JSON.parse(compositionResult.stdout)).toMatchObject({
       cliVersion: '3.3.7',
-      command: 'compatibility',
+      command: 'composition',
       result: { repositoryFormatVersions: [1] },
       status: 'valid',
     });

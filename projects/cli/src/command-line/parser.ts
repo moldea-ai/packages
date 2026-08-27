@@ -116,7 +116,7 @@ export const parseMoldeaCliArguments = (
       return createArgumentError('INVALID_ARGUMENT', command, isJson);
     }
 
-    if (command === MOLDEA_CLI_COMMANDS.Compatibility) {
+    if (command === MOLDEA_CLI_COMMANDS.Composition) {
       return createArgumentError('INVALID_ARGUMENT', command, isJson);
     }
 

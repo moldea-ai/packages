@@ -22,7 +22,7 @@ order: 30
 | `SIGINT` before output completes          | no completed result required |                   `130` |
 | `SIGTERM` before output completes         | no completed result required |                   `143` |
 
-`compatibility` succeeds with `valid` and never uses `invalid`. A contradictory installed release fails with `cli:COMPATIBILITY_STATE_INVALID` and exit code `3`.
+`composition` succeeds with `valid` and never uses `invalid`. A contradictory installed release fails with `cli:COMPOSITION_STATE_INVALID` and exit code `3`.
 
 ## Safe operational errors
 

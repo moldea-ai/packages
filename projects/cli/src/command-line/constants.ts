@@ -1,6 +1,6 @@
 // version 1 command names accepted by the executable
 export const MOLDEA_CLI_COMMANDS = {
-  Compatibility: 'compatibility',
+  Composition: 'composition',
   Inspect: 'inspect',
   Validate: 'validate',
 } as const;

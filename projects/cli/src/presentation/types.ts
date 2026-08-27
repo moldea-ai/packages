@@ -7,7 +7,7 @@ import type {
 import type { IRepositorySourceErrorCode } from '@moldea.ai/repository';
 
 import type { IMoldeaCliCommand } from '../command-line/index.js';
-import type { IMoldeaCliCompatibilityResult } from '../compatibility/index.js';
+import type { IMoldeaCliCompositionResult } from '../composition/index.js';
 
 import type { MOLDEA_CLI_ERROR_DEFINITIONS } from './constants.js';
 
@@ -55,12 +55,12 @@ export interface IMoldeaCliInspectResult {
   readonly source: IMoldeaCliSource;
 }
 
-// version 2 JSON envelope for a completed compatibility command
-export interface IMoldeaCliJsonCompatibilityEnvelope {
+// version 2 JSON envelope for a completed composition command
+export interface IMoldeaCliJsonCompositionEnvelope {
   readonly cliVersion: string;
-  readonly command: 'compatibility';
+  readonly command: 'composition';
   readonly error: null;
-  readonly result: IMoldeaCliCompatibilityResult;
+  readonly result: IMoldeaCliCompositionResult;
   readonly schemaVersion: 2;
   readonly status: 'valid';
 }

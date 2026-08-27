@@ -1,7 +1,7 @@
 ---
 title: Command-line interface
 navigationTitle: Overview
-description: The canonical read-only local composition for deterministic validation, inspection, and compatibility reporting.
+description: The canonical read-only local composition for deterministic validation, inspection, and installed-state reporting.
 order: 0
 ---
 
@@ -18,7 +18,7 @@ The package exposes no supported JavaScript or TypeScript import API. Its public
 
 ## Composition
 
-The CLI composes `@moldea.ai/repository`, `@moldea.ai/repository-fs`, `@moldea.ai/core`, and the currently active package-backed adapters. The `custom` runtime remains built into Core. The CLI derives technical compatibility from this executable composition and does not carry matrix target maturity.
+The CLI composes `@moldea.ai/repository`, `@moldea.ai/repository-fs`, `@moldea.ai/core`, and the currently active package-backed adapters. The `custom` runtime remains built into Core. The CLI reports only this installed executable composition and does not carry technical matrix targets or target maturity.
 
 The Agent Skill consumes this local executable as its deterministic package layer. Complete skill installation, workflows, tutorials, target maturity, and qualification presentation belong to the separate public experiences; this documentation covers only the CLI contract.
 

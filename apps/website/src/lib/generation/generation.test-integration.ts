@@ -7,6 +7,7 @@ import { afterEach, beforeAll, describe, expect, test } from 'vitest';
 
 import type { IRuntimeCompatibilityMatrix } from '../../../../../scripts/runtime-compatibility/types.ts';
 import type { IWebsiteModel } from '../model/types.ts';
+import { createRuntimeCompatibilityPublication } from '../runtime-compatibility-publication/index.ts';
 import { REPOSITORY_FORMAT_GUIDE_URL } from '../site/constants.ts';
 
 import {
@@ -327,9 +328,22 @@ describe('adapter and route generation', () => {
       },
     };
 
-    expect(() => buildAdapterPages(matrix, [], {})).toThrow(
+    expect(() => buildAdapterPages(createRuntimeCompatibilityPublication(matrix, {}), [])).toThrow(
       'Available adapter missing has no implemented public package.',
     );
+  });
+
+  test('uses one combined publication for adapter pages and the machine route', () => {
+    const model = getCurrentWebsiteModel();
+
+    expect(model.runtimeCompatibilityPublication).toMatchObject({
+      matrixVersion: 2,
+      schemaVersion: 1,
+    });
+    expect(model.adapters.map(({ id, entry }) => [id, entry])).toStrictEqual(
+      Object.entries(model.runtimeCompatibilityPublication.adapters),
+    );
+    expect(model.routes).toContain('/compatibility/runtimes.json');
   });
 
   test('rejects two package documents resolving to one route', () => {

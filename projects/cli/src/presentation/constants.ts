@@ -2,8 +2,8 @@ import { MOLDEA_CLI_COMMANDS } from '../command-line/index.js';
 
 // stable safe presentation contracts for errors implemented by the CLI
 export const MOLDEA_CLI_ERROR_DEFINITIONS = Object.freeze({
-  COMPATIBILITY_STATE_INVALID: Object.freeze({
-    message: 'The installed compatibility state is invalid.',
+  COMPOSITION_STATE_INVALID: Object.freeze({
+    message: 'The installed composition state is invalid.',
     retryable: false,
     source: 'cli',
   }),
@@ -100,7 +100,7 @@ export const MOLDEA_CLI_TOP_LEVEL_HELP = `Usage: moldea <command> [options]
 Commands:
   validate       Validate the current moldea project.
   inspect        Inspect the current moldea project.
-  compatibility  Report the installed CLI compatibility state.
+  composition    Report the installed CLI composition state.
 
 Global options:
   --help     Show top-level help.
@@ -124,9 +124,9 @@ const INSPECTION_OPTIONS_HELP = `Options:
 
 // complete command-specific help keyed by the closed command set
 export const MOLDEA_CLI_COMMAND_HELP = {
-  [MOLDEA_CLI_COMMANDS.Compatibility]: `Usage: moldea compatibility [options]
+  [MOLDEA_CLI_COMMANDS.Composition]: `Usage: moldea composition [options]
 
-Report the installed CLI compatibility state.
+Report the installed CLI composition state.
 
 Options:
   --json      Emit one machine-readable JSON result.

@@ -1,15 +1,15 @@
 import type { IProjectInspectionResult } from '@moldea.ai/core';
 
 import type { IMoldeaCliCommand } from '../command-line/index.js';
-import type { IMoldeaCliCompatibilityResult } from '../compatibility/index.js';
+import type { IMoldeaCliCompositionResult } from '../composition/index.js';
 import {
   createMoldeaCliInspectResult,
   createMoldeaCliValidateResult,
-  formatMoldeaCliHumanCompatibilityResult,
+  formatMoldeaCliHumanCompositionResult,
   formatMoldeaCliHumanError,
   formatMoldeaCliHumanInspectResult,
   formatMoldeaCliHumanValidateResult,
-  formatMoldeaCliJsonCompatibilityResult,
+  formatMoldeaCliJsonCompositionResult,
   formatMoldeaCliJsonError,
   formatMoldeaCliJsonInspectResult,
   formatMoldeaCliJsonValidateResult,
@@ -20,14 +20,14 @@ import { MOLDEA_CLI_EXIT_CODES } from './constants.js';
 import type { IMoldeaCliExecutionResult } from './types.js';
 
 /**
- * Creates one process-neutral result for a valid compatibility composition.
- * @param result The exact installed compatibility result.
+ * Creates one process-neutral result for a valid installed composition.
+ * @param result The exact installed composition result.
  * @param cliVersion The installed CLI package version.
  * @param isJson Whether machine-readable output was requested.
  * @returns The complete immutable successful process output.
  */
-export const createMoldeaCliCompatibilityExecutionResult = (
-  result: IMoldeaCliCompatibilityResult,
+export const createMoldeaCliCompositionExecutionResult = (
+  result: IMoldeaCliCompositionResult,
   cliVersion: string,
   isJson: boolean,
 ): IMoldeaCliExecutionResult =>
@@ -35,8 +35,8 @@ export const createMoldeaCliCompatibilityExecutionResult = (
     exitCode: MOLDEA_CLI_EXIT_CODES.Success,
     stderr: '',
     stdout: isJson
-      ? formatMoldeaCliJsonCompatibilityResult(result, cliVersion)
-      : formatMoldeaCliHumanCompatibilityResult(result, cliVersion),
+      ? formatMoldeaCliJsonCompositionResult(result, cliVersion)
+      : formatMoldeaCliHumanCompositionResult(result, cliVersion),
   });
 
 /**

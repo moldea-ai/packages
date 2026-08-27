@@ -11,7 +11,7 @@ import { parseRepositoryPath, type IRepositoryReader } from '@moldea.ai/reposito
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import type { IMoldeaCliCommand } from '../command-line/index.js';
-import type { IMoldeaCliCompatibilityResolver } from '../compatibility/index.js';
+import type { IMoldeaCliCompositionResolver } from '../composition/index.js';
 import type { IMoldeaCliCoreInspectionExecutor } from '../core-composition/index.js';
 import type { IGitWorkingTreeDiscovery } from '../git-working-tree/index.js';
 import type { IMoldeaCliOwnedErrorCode } from '../presentation/index.js';
@@ -402,12 +402,12 @@ Adapter evidence items: 0
     });
   });
 
-  test('does not discover a working tree for compatibility', async () => {
+  test('does not discover a working tree for composition', async () => {
     const workingTreeDiscovery = vi.fn<IGitWorkingTreeDiscovery>();
     const snapshot = createCompletedSnapshotExecutor();
     const executeCommand = createMoldeaCliCommandExecutor(workingTreeDiscovery, snapshot.executor);
 
-    const result = await executeCommand(createCommandInput('compatibility', true));
+    const result = await executeCommand(createCommandInput('composition', true));
     const envelope = JSON.parse(result.stdout) as {
       readonly command: string;
       readonly result: {
@@ -420,7 +420,7 @@ Adapter evidence items: 0
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe('');
     expect(envelope).toMatchObject({
-      command: 'compatibility',
+      command: 'composition',
       result: { repositoryFormatVersions: [1] },
       status: 'valid',
     });
@@ -441,26 +441,26 @@ Adapter evidence items: 0
     expect(snapshot.execution.calls).toBe(0);
   });
 
-  test.each(['validate', 'inspect', 'compatibility'] as const)(
-    'rejects invalid installed compatibility before %s side effects',
+  test.each(['validate', 'inspect', 'composition'] as const)(
+    'rejects invalid installed composition before %s side effects',
     async (command) => {
       const workingTreeDiscovery = vi.fn<IGitWorkingTreeDiscovery>();
       const snapshot = createCompletedSnapshotExecutor();
       const coreInspection = vi.fn<IMoldeaCliCoreInspectionExecutor>();
-      const compatibilityResolver = vi
-        .fn<IMoldeaCliCompatibilityResolver>()
+      const compositionResolver = vi
+        .fn<IMoldeaCliCompositionResolver>()
         .mockReturnValue(Object.freeze({ kind: 'invalid' }));
       const executeCommand = createMoldeaCliCommandExecutor(
         workingTreeDiscovery,
         snapshot.executor,
         coreInspection,
-        compatibilityResolver,
+        compositionResolver,
       );
 
       await expect(executeCommand(createCommandInput(command, true))).resolves.toStrictEqual({
         exitCode: 3,
         stderr: '',
-        stdout: `{"cliVersion":"3.3.7","command":"${command}","error":{"code":"COMPATIBILITY_STATE_INVALID","details":{},"message":"The installed compatibility state is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n`,
+        stdout: `{"cliVersion":"3.3.7","command":"${command}","error":{"code":"COMPOSITION_STATE_INVALID","details":{},"message":"The installed composition state is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n`,
       });
       expect(workingTreeDiscovery).not.toHaveBeenCalled();
       expect(snapshot.execution.calls).toBe(0);
