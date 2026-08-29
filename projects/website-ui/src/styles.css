@@ -27,7 +27,26 @@
   }
 
   ::selection {
-    @apply bg-primary text-primary-foreground;
+    color: var(--website-ui-selection-foreground, var(--primary-foreground));
+    background-color: var(--website-ui-selection-background, var(--primary));
+  }
+
+  code::selection {
+    color: var(
+      --website-ui-code-selection-foreground,
+      var(--website-ui-selection-foreground, var(--primary-foreground))
+    );
+    background-color: var(
+      --website-ui-code-selection-background,
+      var(--website-ui-selection-background, var(--primary))
+    );
+  }
+
+  .dark {
+    --website-ui-selection-background: color-mix(in oklab, var(--foreground) 40%, transparent);
+    --website-ui-selection-foreground: var(--primary-foreground);
+    --website-ui-code-selection-background: var(--website-ui-selection-background);
+    --website-ui-code-selection-foreground: var(--website-ui-selection-foreground);
   }
 
   a,
@@ -241,6 +260,38 @@
 
   .replay-markdown > :last-child {
     @apply mb-0;
+  }
+}
+
+@layer utilities {
+  /* preserve legible selection colors when a surface differs from the active theme. */
+  .dark-surface-selection {
+    --website-ui-selection-background: color-mix(
+      in oklab,
+      var(--website-ui-dark-foreground) 40%,
+      transparent
+    );
+    --website-ui-selection-foreground: var(--website-ui-dark-primary-foreground);
+    --website-ui-code-selection-background: var(--website-ui-dark-secondary);
+    --website-ui-code-selection-foreground: var(--website-ui-dark-foreground);
+  }
+
+  .light-surface-selection {
+    --website-ui-selection-background: var(--website-ui-light-primary);
+    --website-ui-selection-foreground: var(--website-ui-light-primary-foreground);
+    --website-ui-code-selection-background: var(--website-ui-light-secondary);
+    --website-ui-code-selection-foreground: var(--website-ui-light-foreground);
+  }
+
+  .theme-surface-selection {
+    --website-ui-selection-background: var(--primary);
+    --website-ui-selection-foreground: var(--primary-foreground);
+    --website-ui-code-selection-background: var(--website-ui-selection-background);
+    --website-ui-code-selection-foreground: var(--website-ui-selection-foreground);
+  }
+
+  .dark .theme-surface-selection {
+    --website-ui-selection-background: color-mix(in oklab, var(--foreground) 40%, transparent);
   }
 }
 

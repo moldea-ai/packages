@@ -6,6 +6,7 @@ import { withBase } from '@moldea.ai/website-ui/site';
 
 import AdapterCard from '../components/adapter-card.astro';
 import PackageCard from '../components/package-card.astro';
+import { RepositoryFormatOverview } from '../components/repository-format-overview/index.ts';
 import BaseLayout from '../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../lib/generation/generation.ts';
 
@@ -20,7 +21,7 @@ const basePath = import.meta.env.BASE_URL;
 ---
 
 <BaseLayout
-  title="moldea packages"
+  title="Open-source behavioral integrity for AI agents"
   description="The open-source deterministic package foundation that powers moldea, the behavioral integrity layer for AI agents."
 >
   <section class="relative overflow-hidden border-b border-border">
@@ -67,108 +68,7 @@ const basePath = import.meta.env.BASE_URL;
     </div>
   </section>
 
-  <section
-    class="page-shell py-section-gap"
-    aria-labelledby="architecture-title"
-  >
-    <div class="mb-10 grid gap-5 lg:grid-cols-2 lg:items-end">
-      <div>
-        <p class="eyebrow mb-4">One directional architecture</p>
-        <h2
-          id="architecture-title"
-          class="section-title max-w-3xl font-semibold"
-        >
-          From source bytes to trusted structure.
-        </h2>
-      </div>
-      <div class="max-w-xl lg:justify-self-end">
-        <p class="leading-7 text-muted-foreground">
-          Repository readers preserve exact source state, Core turns it into deterministic project
-          structure, and runtime adapters add source-grounded evidence. The Agent Skill consumes
-          that foundation as its semantic operating layer; package contracts never depend back on
-          the skill or this website.
-        </p>
-        <ActionLink
-          class="mt-5 font-bold"
-          href={withBase(model.repositoryFormatSpecification.route, basePath)}
-          variant="link"
-        >
-          Explore the Repository Format
-          <ArrowRight
-            class="size-4"
-            aria-hidden="true"
-          />
-        </ActionLink>
-      </div>
-    </div>
-
-    <div class="surface-card overflow-hidden p-4 sm:p-6 lg:p-8">
-      <div class="grid gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
-        <div class="rounded-xl bg-primary p-6 text-primary-foreground">
-          <Workflow
-            class="mb-8 size-6"
-            aria-hidden="true"
-          />
-          <p class="eyebrow mb-2 text-current/65">Semantic operating layer</p>
-          <h3 class="text-2xl font-semibold">Agent Skill</h3>
-          <p class="mt-2 text-sm leading-6 text-current/70">
-            Adoption, workflows, tutorials, and agent interaction live separately.
-          </p>
-        </div>
-        <ArrowRight
-          class="mx-auto hidden size-5 lg:block"
-          aria-hidden="true"
-        />
-        <div class="rounded-xl border bg-accent p-6 text-accent-foreground">
-          <Layers
-            class="mb-8 size-6"
-            aria-hidden="true"
-          />
-          <p class="eyebrow mb-2">Local composition</p>
-          <h3 class="text-2xl font-semibold">{cliPackage?.name}</h3>
-          <p class="mt-2 text-sm leading-6">
-            Git-aware inventory composes Repository FS, Core, and active runtime adapters.
-          </p>
-        </div>
-      </div>
-
-      <div
-        class="my-4 flex justify-center"
-        aria-hidden="true"
-      >
-        <span class="h-7 w-px bg-border"></span>
-      </div>
-
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {
-          toolingPackages
-            .filter(({ slug }) => slug !== 'cli')
-            .map((packageModel) => (
-              <a
-                class="interactive-card rounded-xl border bg-muted/60 p-5 hover:bg-muted"
-                href={withBase(packageModel.route, basePath)}
-              >
-                <p class="mb-5 font-mono text-xs text-muted-foreground">{packageModel.name}</p>
-                <p class="text-sm leading-6">
-                  <InlineBrandText text={packageModel.description} />
-                </p>
-              </a>
-            ))
-        }
-        {
-          adapterPackages.map((packageModel) => (
-            <a
-              class="interactive-card rounded-xl border bg-muted/60 p-5 hover:bg-muted"
-              href={withBase(packageModel.route, basePath)}
-            >
-              <p class="mb-5 font-mono text-xs text-muted-foreground">{packageModel.name}</p>
-              <p class="text-sm leading-6">Runtime-specific evidence flows into Core.</p>
-            </a>
-          ))
-        }
-      </div>
-    </div>
-  </section>
+  <RepositoryFormatOverview repositoryFormatRoute={model.repositoryFormatSpecification.route} />
 
   <section class="border-y bg-sidebar py-section-gap">
     <div class="page-shell">
@@ -233,6 +133,109 @@ const basePath = import.meta.env.BASE_URL;
       Company names and marks belong to their respective owners. Compatibility does not imply
       endorsement.
     </p>
+  </section>
+
+  <section
+    class="page-shell py-section-gap"
+    aria-labelledby="architecture-title"
+  >
+    <div class="mb-10 grid gap-5 lg:grid-cols-2 lg:items-end">
+      <div>
+        <p class="eyebrow mb-4">One directional architecture</p>
+        <h2
+          id="architecture-title"
+          class="section-title max-w-3xl font-semibold"
+        >
+          From source bytes to trusted structure.
+        </h2>
+      </div>
+      <div class="max-w-xl lg:justify-self-end">
+        <p class="leading-7 text-muted-foreground">
+          Repository readers preserve exact source state, Core turns it into deterministic project
+          structure, and runtime adapters add source-grounded evidence. The Agent Skill consumes
+          that foundation as its semantic operating layer; package contracts never depend back on
+          the skill or this website.
+        </p>
+        <ActionLink
+          class="mt-5 font-bold"
+          href={withBase(model.repositoryFormatSpecification.route, basePath)}
+          variant="link"
+        >
+          Explore the Repository Format
+          <ArrowRight
+            class="size-4"
+            aria-hidden="true"
+          />
+        </ActionLink>
+      </div>
+    </div>
+
+    <div class="surface-card overflow-hidden p-4 sm:p-6 lg:p-8">
+      <div class="grid gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+        <div class="dark-surface-selection rounded-xl bg-primary p-6 text-primary-foreground">
+          <Workflow
+            class="mb-8 size-6"
+            aria-hidden="true"
+          />
+          <p class="eyebrow mb-2 text-current/65">Semantic operating layer</p>
+          <h3 class="text-2xl font-semibold">Agent Skill</h3>
+          <p class="mt-2 text-sm leading-6 text-current/70">
+            Adoption, workflows, tutorials, and agent interaction live separately.
+          </p>
+        </div>
+        <ArrowRight
+          class="mx-auto hidden size-5 lg:block"
+          aria-hidden="true"
+        />
+        <div class="rounded-xl border bg-accent p-6 text-accent-foreground">
+          <Layers
+            class="mb-8 size-6"
+            aria-hidden="true"
+          />
+          <p class="eyebrow mb-2">Local composition</p>
+          <h3 class="text-2xl font-semibold">{cliPackage?.name}</h3>
+          <p class="mt-2 text-sm leading-6">
+            Git-aware inventory composes Repository FS, Core, and active runtime adapters.
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="my-4 flex justify-center"
+        aria-hidden="true"
+      >
+        <span class="h-7 w-px bg-border"></span>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          toolingPackages
+            .filter(({ slug }) => slug !== 'cli')
+            .map((packageModel) => (
+              <a
+                class="interactive-card rounded-xl border bg-muted/60 p-5 hover:bg-muted"
+                href={withBase(packageModel.route, basePath)}
+              >
+                <p class="mb-5 font-mono text-xs text-muted-foreground">{packageModel.name}</p>
+                <p class="text-sm leading-6">
+                  <InlineBrandText text={packageModel.description} />
+                </p>
+              </a>
+            ))
+        }
+        {
+          adapterPackages.map((packageModel) => (
+            <a
+              class="interactive-card rounded-xl border bg-muted/60 p-5 hover:bg-muted"
+              href={withBase(packageModel.route, basePath)}
+            >
+              <p class="mb-5 font-mono text-xs text-muted-foreground">{packageModel.name}</p>
+              <p class="text-sm leading-6">Runtime-specific evidence flows into Core.</p>
+            </a>
+          ))
+        }
+      </div>
+    </div>
   </section>
 
   <section class="border-t border-border">

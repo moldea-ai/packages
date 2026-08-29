@@ -9,6 +9,7 @@ import {
 } from '../../../lib/generation/api-reference.ts';
 import { loadWebsiteModel } from '../../../lib/generation/generation.ts';
 import type { IPackageDocument, IPublicPackage } from '../../../lib/model/types.ts';
+import { createScopedSeoMetadata } from '../../../lib/seo/index.ts';
 
 interface Props {
   document: IPackageDocument | null;
@@ -46,14 +47,17 @@ const isApi = kind === 'api';
 const rendered = document
   ? await renderMarkdownDocument(document.markdown, { basePath: import.meta.env.BASE_URL })
   : null;
-const pageTitle = isApi
+const contentTitle = isApi
   ? `${packageModel.name} API`
   : document?.slug
     ? document.title
     : packageModel.name;
-const pageDescription = isApi
+const contentDescription = isApi
   ? `Generated public API reference for ${packageModel.name}, derived from its package exports.`
   : (document?.description ?? packageModel.description);
+const seoMetadata = document?.slug
+  ? createScopedSeoMetadata(document.title, document.description, packageModel.name)
+  : { description: contentDescription, title: contentTitle };
 const currentRoute = isApi ? `${packageModel.route}api/` : (document?.route ?? packageModel.route);
 const breadcrumbs = [
   { href: '/', label: 'Home' },
@@ -64,8 +68,8 @@ const breadcrumbs = [
 ---
 
 <BaseLayout
-  title={pageTitle}
-  description={pageDescription}
+  title={seoMetadata.title}
+  description={seoMetadata.description}
   {breadcrumbs}
 >
   <DocumentationPage
@@ -74,8 +78,8 @@ const breadcrumbs = [
     {document}
     headings={rendered?.headings}
     {packageModel}
-    {pageDescription}
-    {pageTitle}
+    pageDescription={contentDescription}
+    pageTitle={contentTitle}
   >
     {
       rendered ? (

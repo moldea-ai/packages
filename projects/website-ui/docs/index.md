@@ -13,7 +13,7 @@ The package does not own site metadata, navigation data, domain status mappings,
 
 ## Public boundaries
 
-- `styles.css` provides Tailwind, the Ubuntu Sans variable font, shared tokens, global focus behavior, responsive shells, action states, prose, tables, light/dark themes, and reduced-motion behavior.
+- `styles.css` provides Tailwind, the Ubuntu Sans variable font, shared tokens, global focus behavior, responsive shells, action states, surface-aware text selection, prose, tables, light/dark themes, and reduced-motion behavior.
 - `tokens.css` exposes the design tokens without the global component layer when a consumer needs only the theme contract.
 - `site`, `search`, `theme`, and `evaluation-replay-model` expose typed utilities and normalized contracts.
 - `markdown` exposes a build-time renderer with raw HTML disabled, sanitization, Shiki highlighting, safe link treatment, stable headings, and accessible table wrappers.

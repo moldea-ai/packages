@@ -78,6 +78,16 @@
 }
 
 :root {
+  /* stable theme values support surfaces that intentionally differ from the active theme. */
+  --website-ui-light-foreground: oklch(18.142% 0.01839 215.333);
+  --website-ui-light-primary: oklch(15.434% 0.00002 271.152);
+  --website-ui-light-primary-foreground: oklch(99.048% 0.00493 166.268);
+  --website-ui-light-secondary: oklch(96.563% 0.00641 197.995);
+  --website-ui-dark-foreground: oklch(97.024% 0.00684 124.958);
+  --website-ui-dark-primary: oklch(15.434% 0.00002 271.152);
+  --website-ui-dark-primary-foreground: oklch(99.048% 0.00493 166.268);
+  --website-ui-dark-secondary: oklch(37.306% 0.03436 260.191);
+
   --shadow-xs-value: 0 1px 2px oklch(0.18 0.018 215 / 8%);
   --shadow-sm-value:
     0 1px 2px oklch(18.142% 0.01839 215.333 / 4%),
@@ -97,12 +107,12 @@
     inset 0 1px 0 oklch(100% 0.00011 271.152 / 82%), 0 1px 2px oklch(18.142% 0.01839 215.333 / 6%);
 
   --background: oklch(99.426% 0.00274 84.294);
-  --foreground: oklch(18.142% 0.01839 215.333);
+  --foreground: var(--website-ui-light-foreground);
   --card: var(--background);
   --elevated: oklch(100% 0.00011 271.152);
-  --primary: oklch(15.434% 0.00002 271.152);
-  --primary-foreground: oklch(99.048% 0.00493 166.268);
-  --secondary: oklch(96.563% 0.00641 197.995);
+  --primary: var(--website-ui-light-primary);
+  --primary-foreground: var(--website-ui-light-primary-foreground);
+  --secondary: var(--website-ui-light-secondary);
   --secondary-foreground: oklch(48.046% 0.02817 216.324);
   --muted: var(--secondary);
   --muted-foreground: var(--secondary-foreground);
@@ -141,12 +151,12 @@
   --shadow-inset-value: inset 0 0 oklch(0% 0 0 / 0%);
 
   --background: oklch(27.837% 0.03355 257.693);
-  --foreground: oklch(97.024% 0.00684 124.958);
+  --foreground: var(--website-ui-dark-foreground);
   --card: var(--background);
   --elevated: oklch(31.5% 0.034 258);
-  --primary: oklch(15.434% 0.00002 271.152);
-  --primary-foreground: oklch(99.048% 0.00493 166.268);
-  --secondary: oklch(37.306% 0.03436 260.191);
+  --primary: var(--website-ui-dark-primary);
+  --primary-foreground: var(--website-ui-dark-primary-foreground);
+  --secondary: var(--website-ui-dark-secondary);
   --secondary-foreground: oklch(83.038% 0.0135 209.117);
   --muted: var(--secondary);
   --muted-foreground: var(--secondary-foreground);
