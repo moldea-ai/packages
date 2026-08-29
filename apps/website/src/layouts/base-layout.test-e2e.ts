@@ -62,6 +62,40 @@ const calculateContrastRatio = (firstColor: string, secondColor: string): number
   return (lighterLuminance + 0.05) / (darkerLuminance + 0.05);
 };
 
+test('keeps multiline shared titles legible with Ubuntu Sans', async ({ page }) => {
+  await page.setViewportSize({ height: 800, width: 1024 });
+  await page.goto(toPublicPath('/'));
+
+  const displayTitleTypography = await page.locator('.display-title').evaluate((element) => {
+    const computedStyle = getComputedStyle(element);
+
+    return {
+      blockHeight: element.getBoundingClientRect().height,
+      fontSize: Number.parseFloat(computedStyle.fontSize),
+      lineHeight: Number.parseFloat(computedStyle.lineHeight),
+    };
+  });
+  const sectionTitleTypography = await page
+    .getByRole('heading', {
+      level: 2,
+      name: 'Runtime-specific evidence, built in.',
+    })
+    .evaluate((element) => {
+      const computedStyle = getComputedStyle(element);
+
+      return {
+        blockHeight: element.getBoundingClientRect().height,
+        fontSize: Number.parseFloat(computedStyle.fontSize),
+        lineHeight: Number.parseFloat(computedStyle.lineHeight),
+      };
+    });
+
+  expect(displayTitleTypography.blockHeight).toBeGreaterThan(displayTitleTypography.lineHeight);
+  expect(displayTitleTypography.lineHeight).toBeGreaterThan(displayTitleTypography.fontSize);
+  expect(sectionTitleTypography.blockHeight).toBeGreaterThan(sectionTitleTypography.lineHeight);
+  expect(sectionTitleTypography.lineHeight).toBeGreaterThan(sectionTitleTypography.fontSize);
+});
+
 test('publishes unique canonical, social, and structured search metadata', async ({ page }) => {
   const homeUrl = new URL(toPublicPath('/'), DEFAULT_SITE_URL).href;
 
