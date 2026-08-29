@@ -30,6 +30,8 @@ The default build inputs are `SITE_URL=https://packages.moldea.ai` and `BASE_PAT
 
 The application uses Astro static output, Tailwind CSS 4's CSS-first configuration, Ubuntu Sans Variable, and Lucide Astro icons. Website UI supplies the platform-aligned semantic OKLCH tokens, action and link states, accessible breadcrumbs, pre-paint theme initialization, theme controls, local static search, and shared responsive prose primitives. Light and dark themes have distinct token sets, reduced-motion behavior is centralized, and documentation remains ordinary static HTML when JavaScript is disabled.
 
+Every indexable page publishes a unique title and description, an absolute self-canonical URL, complete Open Graph and Twitter image metadata, and Schema.org breadcrumbs. The canonical root also publishes the `WebSite` identity used for the search-result site name. Production artifact verification requires the sitemap to match the complete canonical page set and rejects duplicate metadata, malformed structured data, noindex sitemap entries, and missing social-card fields.
+
 The sibling platform repository is a design and specification reference only. The build never imports it, links it as a workspace, fetches private files, or requires it in CI.
 
 ## Deployment

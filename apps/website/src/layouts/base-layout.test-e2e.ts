@@ -3,6 +3,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 
+import { DEFAULT_SITE_URL, SITE_NAME, SOCIAL_IMAGE_ALT } from '../lib/site/constants.ts';
+
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const toPublicPath = (route: string): string => withBase(route, basePath);
 const REPRESENTATIVE_PATHS = [
@@ -59,6 +61,67 @@ const calculateContrastRatio = (firstColor: string, secondColor: string): number
 
   return (lighterLuminance + 0.05) / (darkerLuminance + 0.05);
 };
+
+test('publishes unique canonical, social, and structured search metadata', async ({ page }) => {
+  const homeUrl = new URL(toPublicPath('/'), DEFAULT_SITE_URL).href;
+
+  await page.goto(toPublicPath('/'));
+  await expect(page).toHaveTitle(`Open-source behavioral integrity for AI agents · ${SITE_NAME}`);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', homeUrl);
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', homeUrl);
+  await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
+    'content',
+    SOCIAL_IMAGE_ALT,
+  );
+  await expect(page.locator('meta[name="twitter:image:alt"]')).toHaveAttribute(
+    'content',
+    SOCIAL_IMAGE_ALT,
+  );
+
+  const homeStructuredData = page.locator('script[type="application/ld+json"]');
+
+  if (basePath === '/') {
+    const source = await homeStructuredData.textContent();
+
+    expect(source).not.toBeNull();
+    expect(JSON.parse(source ?? '')).toStrictEqual({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE_NAME,
+      alternateName: 'packages.moldea.ai',
+      url: homeUrl,
+    });
+  } else {
+    await expect(homeStructuredData).toHaveCount(0);
+  }
+
+  const limitationsRoute = '/adapters/openai/limitations/';
+  const limitationsUrl = new URL(toPublicPath(limitationsRoute), DEFAULT_SITE_URL).href;
+
+  await page.goto(toPublicPath(limitationsRoute));
+  await expect(page).toHaveTitle(
+    'Boundaries and limitations · @moldea.ai/adapter-openai · moldea packages',
+  );
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    'content',
+    /^@moldea\.ai\/adapter-openai: /u,
+  );
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', limitationsUrl);
+
+  const breadcrumbSource = await page.locator('script[type="application/ld+json"]').textContent();
+  const breadcrumbStructuredData = JSON.parse(breadcrumbSource ?? '') as {
+    '@type': string;
+    itemListElement: Array<{ item?: string; name: string; position: number }>;
+  };
+
+  expect(breadcrumbStructuredData['@type']).toBe('BreadcrumbList');
+  expect(breadcrumbStructuredData.itemListElement[0]).toStrictEqual({
+    '@type': 'ListItem',
+    position: 1,
+    name: 'Home',
+    item: homeUrl,
+  });
+});
 
 test('renders standalone moldea references as inline code in visible prose', async ({ page }) => {
   await page.goto(toPublicPath('/'));

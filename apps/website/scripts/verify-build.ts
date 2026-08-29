@@ -6,7 +6,8 @@ import { DEFAULT_BASE_PATH, normalizeBasePath } from '@moldea.ai/website-ui/site
 
 import { loadWebsiteModel } from '../src/lib/generation/generation.ts';
 import { serializeRuntimeCompatibilityPublication } from '../src/lib/runtime-compatibility-publication/index.ts';
-import { DEFAULT_SITE_URL } from '../src/lib/site/constants.ts';
+import { DEFAULT_SITE_URL, SITE_NAME } from '../src/lib/site/constants.ts';
+import { verifySeoArtifacts } from './seo-verification/index.ts';
 
 const EXCLUDED_DIRECTORY_NAMES = new Set(['_archive', '_archives', '_backup', '_backups']);
 
@@ -55,6 +56,20 @@ const getHtmlIdList = (html: string): string[] => {
 
 const getHtmlIds = (html: string): Set<string> => new Set(getHtmlIdList(html));
 
+/** Resolves one generated HTML artifact to its deployed public URL. */
+const getDeployedPageUrl = (
+  distDirectory: string,
+  htmlPath: string,
+  basePath: string,
+  siteUrl: string,
+): URL => {
+  const relativeHtmlPath = relative(distDirectory, htmlPath).replaceAll(sep, '/');
+  const logicalPagePath =
+    relativeHtmlPath === 'index.html' ? '/' : `/${relativeHtmlPath.replace(/index\.html$/, '')}`;
+
+  return new URL(`${basePath}${logicalPagePath.replace(/^\//, '')}`, siteUrl);
+};
+
 const verifyHtmlLinks = (
   distDirectory: string,
   htmlPath: string,
@@ -63,9 +78,7 @@ const verifyHtmlLinks = (
 ): void => {
   const html = readFileSync(htmlPath, 'utf8');
   const relativeHtmlPath = relative(distDirectory, htmlPath).replaceAll(sep, '/');
-  const logicalPagePath =
-    relativeHtmlPath === 'index.html' ? '/' : `/${relativeHtmlPath.replace(/index\.html$/, '')}`;
-  const deployedPageUrl = new URL(`${basePath}${logicalPagePath.replace(/^\//, '')}`, siteUrl);
+  const deployedPageUrl = getDeployedPageUrl(distDirectory, htmlPath, basePath, siteUrl);
   const ids = getHtmlIdList(html);
   const seenIds = new Set<string>();
 
@@ -219,6 +232,19 @@ export const verifyProductionBuild = (): void => {
 
   const files = listFiles(distDirectory);
   const htmlPaths = files.filter((path) => path.endsWith('.html'));
+
+  verifySeoArtifacts({
+    homePageUrl: new URL(basePath, siteUrl).href,
+    htmlArtifacts: htmlPaths.map((path) => ({
+      source: readFileSync(path, 'utf8'),
+      url: getDeployedPageUrl(distDirectory, path, basePath, siteUrl).href,
+    })),
+    sitemapSources: files
+      .filter((path) => /^sitemap-(?!index).+\.xml$/u.test(relative(distDirectory, path)))
+      .map((path) => readFileSync(path, 'utf8')),
+    siteName: SITE_NAME,
+    websiteStructuredDataUrl: basePath === '/' ? new URL('/', siteUrl).href : null,
+  });
 
   for (const htmlPath of htmlPaths) verifyHtmlLinks(distDirectory, htmlPath, basePath, siteUrl);
 
