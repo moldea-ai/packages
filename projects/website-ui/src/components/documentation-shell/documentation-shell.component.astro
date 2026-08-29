@@ -1,0 +1,239 @@
+---
+import { ArrowLeft, ArrowRight, ChevronDown, Menu } from '@lucide/astro';
+
+import { withBase } from '../../site/index.ts';
+import Breadcrumbs, { type IBreadcrumb } from '../breadcrumbs/breadcrumbs.component.astro';
+
+import DocumentationOutline from './documentation-outline.component.astro';
+
+export interface IDocumentationNavigationItem {
+  href: string;
+  label: string;
+}
+
+export interface IDocumentationNavigationGroup {
+  items: readonly IDocumentationNavigationItem[];
+  label?: string;
+}
+
+export interface IDocumentationOutlineHeading {
+  depth: 2 | 3;
+  id: string;
+  text: string;
+}
+
+export interface IDocumentationAdjacentPage {
+  href: string;
+  label: string;
+}
+
+export interface Props {
+  basePath?: string;
+  breadcrumbs: readonly IBreadcrumb[];
+  currentRoute: string;
+  headings?: readonly IDocumentationOutlineHeading[];
+  mobileNavigationLabel?: string;
+  navigationAriaLabel?: string;
+  navigationGroups?: readonly IDocumentationNavigationGroup[];
+  nextPage?: IDocumentationAdjacentPage;
+  outlineEmptyLabel?: string;
+  outlineLabel?: string;
+  previousPage?: IDocumentationAdjacentPage;
+}
+
+const {
+  basePath = import.meta.env.BASE_URL,
+  breadcrumbs,
+  currentRoute,
+  headings = [],
+  mobileNavigationLabel = 'Documentation navigation',
+  navigationAriaLabel = 'Documentation navigation',
+  navigationGroups = [],
+  nextPage,
+  outlineEmptyLabel = 'A concise overview.',
+  outlineLabel = 'On this page',
+  previousPage,
+} = Astro.props;
+const hasNavigation = navigationGroups.some((group) => group.items.length > 0);
+const hasOutline = headings.length > 0;
+const contentGridClass = hasNavigation
+  ? 'lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_13rem]'
+  : hasOutline
+    ? 'xl:grid-cols-[minmax(0,1fr)_15rem]'
+    : '';
+---
+
+<div class="docs-shell pt-7">
+  <Breadcrumbs
+    basePath={basePath}
+    items={breadcrumbs}
+  />
+
+  {
+    hasNavigation && (
+      <details class="surface-card mt-6 lg:hidden">
+        <summary class="flex min-h-12 list-none items-center gap-2 px-4 font-semibold [&::-webkit-details-marker]:hidden">
+          <Menu
+            class="size-4"
+            aria-hidden="true"
+          />
+          {mobileNavigationLabel}
+        </summary>
+        <nav
+          class="grid gap-5 border-t border-border p-4"
+          aria-label={navigationAriaLabel}
+        >
+          {navigationGroups.map((group) => (
+            <div>
+              {group.label && <p class="eyebrow mb-2 px-2">{group.label}</p>}
+              <div class="grid gap-1">
+                {group.items.map((item) => (
+                  <a
+                    class:list={[
+                      'rounded-lg px-3 py-2.5 text-sm font-medium',
+                      item.href === currentRoute
+                        ? 'bg-accent text-accent-foreground'
+                        : 'hover:bg-muted',
+                    ]}
+                    href={withBase(item.href, basePath)}
+                    aria-current={item.href === currentRoute ? 'page' : undefined}
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+      </details>
+    )
+  }
+
+  {
+    hasOutline && (
+      <details class="surface-card group sticky top-16 z-40 mt-3 xl:hidden">
+        <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+          {outlineLabel}
+          <ChevronDown
+            class="size-4"
+            aria-hidden="true"
+          />
+        </summary>
+        <nav
+          class="grid max-h-[55vh] gap-2 overflow-y-auto border-t border-border p-4"
+          aria-label={outlineLabel}
+        >
+          <DocumentationOutline headings={headings} />
+        </nav>
+      </details>
+    )
+  }
+
+  <div class:list={['mt-7 grid min-w-0 gap-10', contentGridClass]}>
+    {
+      hasNavigation && (
+        <aside class="hidden lg:block">
+          <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pe-2">
+            <nav
+              class="grid gap-6"
+              aria-label={navigationAriaLabel}
+            >
+              {navigationGroups.map((group) => (
+                <div>
+                  {group.label && <p class="eyebrow mb-2 px-2">{group.label}</p>}
+                  <div class="grid gap-1">
+                    {group.items.map((item) => (
+                      <a
+                        class:list={[
+                          'rounded-lg px-3 py-2 text-sm font-medium',
+                          item.href === currentRoute
+                            ? 'bg-accent text-accent-foreground'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                        ]}
+                        href={withBase(item.href, basePath)}
+                        aria-current={item.href === currentRoute ? 'page' : undefined}
+                      >
+                        {item.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </nav>
+          </div>
+        </aside>
+      )
+    }
+
+    <article class="min-w-0">
+      <slot name="header" />
+      <slot />
+
+      {
+        (previousPage || nextPage) && (
+          <nav
+            class="mt-14 grid gap-3 border-t border-border pt-8 sm:grid-cols-2"
+            aria-label="Previous and next documentation"
+          >
+            {previousPage ? (
+              <a
+                class="surface-card interactive-card flex min-h-24 items-center gap-3 p-4"
+                href={withBase(previousPage.href, basePath)}
+              >
+                <ArrowLeft
+                  class="size-4 shrink-0"
+                  aria-hidden="true"
+                />
+                <span>
+                  <span class="block text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                    Previous
+                  </span>
+                  <span class="mt-1 block font-semibold">{previousPage.label}</span>
+                </span>
+              </a>
+            ) : (
+              <span />
+            )}
+            {nextPage && (
+              <a
+                class="surface-card interactive-card flex min-h-24 items-center justify-between gap-3 p-4"
+                href={withBase(nextPage.href, basePath)}
+              >
+                <span class="min-w-0 flex-1 text-end">
+                  <span class="block text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                    Next
+                  </span>
+                  <span class="mt-1 block font-semibold">{nextPage.label}</span>
+                </span>
+                <ArrowRight
+                  class="size-4 shrink-0"
+                  aria-hidden="true"
+                />
+              </a>
+            )}
+          </nav>
+        )
+      }
+    </article>
+
+    {
+      (hasOutline || hasNavigation) && (
+        <aside class="hidden xl:block">
+          <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pe-2">
+            <p class="eyebrow mb-4">{outlineLabel}</p>
+            {hasOutline ? (
+              <nav
+                class="grid gap-2 border-s ps-4"
+                aria-label={outlineLabel}
+              >
+                <DocumentationOutline headings={headings} />
+              </nav>
+            ) : (
+              <p class="text-sm text-muted-foreground">{outlineEmptyLabel}</p>
+            )}
+          </div>
+        </aside>
+      )
+    }
+  </div>
+</div>

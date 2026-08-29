@@ -1,5 +1,5 @@
 ---
-import { ArrowRight, ArrowUpRight, GitFork, Layers, ShieldCheck, Workflow } from '@lucide/astro';
+import { ArrowRight, GitFork, Layers, ShieldCheck, Workflow } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import { withBase } from '@moldea.ai/website-ui/site';
@@ -8,7 +8,6 @@ import AdapterCard from '../components/adapter-card.astro';
 import PackageCard from '../components/package-card.astro';
 import BaseLayout from '../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../lib/generation/generation.ts';
-import { REPOSITORY_FORMAT_GUIDE_URL } from '../lib/site/constants.ts';
 
 const model = loadWebsiteModel();
 const toolingPackages = model.packages.filter(({ family }) => family === 'skill-core-tooling');
@@ -91,13 +90,11 @@ const basePath = import.meta.env.BASE_URL;
         </p>
         <ActionLink
           class="mt-5 font-bold"
-          href={REPOSITORY_FORMAT_GUIDE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={withBase(model.repositoryFormatSpecification.route, basePath)}
           variant="link"
         >
           Explore the Repository Format
-          <ArrowUpRight
+          <ArrowRight
             class="size-4"
             aria-hidden="true"
           />

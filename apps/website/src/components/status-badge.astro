@@ -1,4 +1,6 @@
 ---
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+
 interface Props {
   kind: 'available' | 'deprecated' | 'experimental' | 'in-development' | 'planned' | 'supported';
   label?: string;
@@ -6,23 +8,27 @@ interface Props {
 }
 
 const { kind, label = kind, truncate = false } = Astro.props;
-const styles = {
-  available: 'border-foreground/25 bg-secondary text-foreground',
-  deprecated: 'border-dotted border-destructive/40 bg-destructive/10 text-foreground',
-  experimental:
-    'border-dashed border-warning/60 bg-warning/15 text-warning-foreground dark:text-foreground',
-  'in-development': 'border-info/40 bg-info/10 text-foreground',
-  planned: 'border-border bg-muted text-muted-foreground',
-  supported: 'border-foreground/25 bg-secondary text-foreground',
-};
+const tones = {
+  available: 'success',
+  deprecated: 'danger',
+  experimental: 'warning',
+  'in-development': 'info',
+  planned: 'neutral',
+  supported: 'success',
+} as const;
+const borderStyles = {
+  available: 'solid',
+  deprecated: 'dotted',
+  experimental: 'dashed',
+  'in-development': 'solid',
+  planned: 'solid',
+  supported: 'solid',
+} as const;
 ---
 
-<span
-  class:list={[
-    'min-h-6 max-w-full rounded-full border px-2.5 py-1 text-start text-[0.68rem] font-bold tracking-[0.08em] uppercase',
-    truncate ? 'block min-w-0 truncate' : 'inline-flex items-center break-words whitespace-normal',
-    styles[kind],
-  ]}
->
+<StatusBadge
+  borderStyle={borderStyles[kind]}
   {label}
-</span>
+  tone={tones[kind]}
+  {truncate}
+/>

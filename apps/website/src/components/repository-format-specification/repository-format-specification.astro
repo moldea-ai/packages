@@ -1,0 +1,116 @@
+---
+import { Braces, ExternalLink } from '@lucide/astro';
+import ActionLink from '@moldea.ai/website-ui/action-link';
+import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';
+import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
+import type { IRenderedMarkdownDocument } from '@moldea.ai/website-ui/markdown';
+import { withBase } from '@moldea.ai/website-ui/site';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+
+import type { IRepositoryFormatSpecification } from '../../lib/repository-format-specification/index.ts';
+
+interface Props {
+  rendered: IRenderedMarkdownDocument;
+  specification: IRepositoryFormatSpecification;
+}
+
+const { rendered, specification } = Astro.props;
+const basePath = import.meta.env.BASE_URL;
+const majorSections = rendered.headings.filter(({ depth }) => depth === 2).slice(0, 8);
+const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Repository Format specification' }];
+---
+
+<DocumentationShell
+  {basePath}
+  {breadcrumbs}
+  currentRoute={specification.route}
+  headings={rendered.headings}
+>
+  <header
+    slot="header"
+    class="mb-10 border-b border-border pb-8"
+  >
+    <div class="mb-5 flex flex-wrap items-center gap-3">
+      <StatusBadge
+        label="Official specification"
+        tone="info"
+      />
+      <span class="text-sm font-semibold text-muted-foreground">
+        Repository Format version {specification.formatVersion}
+      </span>
+    </div>
+    <h1 class="max-w-4xl text-4xl leading-tight font-semibold tracking-[-0.04em] sm:text-5xl">
+      {specification.title}
+    </h1>
+    <p class="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground">
+      <InlineBrandText text={specification.description} />
+    </p>
+    <div class="mt-7 flex flex-wrap gap-3">
+      <ActionLink
+        href={specification.sourceUrl}
+        size="md"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Canonical source <ExternalLink
+          class="size-3.5"
+          aria-hidden="true"
+        />
+      </ActionLink>
+      <ActionLink
+        href={withBase('/packages/core/', basePath)}
+        size="md"
+        variant="outline"
+      >
+        <Braces
+          class="size-3.5"
+          aria-hidden="true"
+        />
+        Core reference implementation
+      </ActionLink>
+    </div>
+
+    <div class="mt-8 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.8fr)]">
+      <section
+        class="surface-card min-w-0 p-5"
+        aria-labelledby="minimum-repository-title"
+      >
+        <div class="mb-4 flex items-center gap-2">
+          <h2
+            id="minimum-repository-title"
+            class="font-semibold"
+          >
+            Minimum repository
+          </h2>
+        </div>
+        <pre
+          class="overflow-x-auto rounded-lg border bg-code p-4 text-sm leading-6 text-code-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          tabindex="0"
+          aria-label="Minimum Repository Format tree"><code>moldea/
+  moldea.yaml
+  project.md</code></pre>
+      </section>
+      <nav
+        class="surface-card grid content-start gap-2 p-5"
+        aria-label="Major specification sections"
+      >
+        <p class="eyebrow mb-2">Start with the contract</p>
+        {
+          majorSections.map((heading) => (
+            <a
+              class="rounded-md px-2 py-1.5 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+              href={`#${heading.id}`}
+            >
+              {heading.text}
+            </a>
+          ))
+        }
+      </nav>
+    </div>
+  </header>
+
+  <div
+    class="prose-moldea"
+    set:html={rendered.html}
+  />
+</DocumentationShell>

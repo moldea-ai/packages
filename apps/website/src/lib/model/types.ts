@@ -2,6 +2,7 @@ import type {
   IRuntimeCompatibilityPublicationAdapter,
   IRuntimeCompatibilityPublicationV1,
 } from '../runtime-compatibility-publication/index.ts';
+import type { IRepositoryFormatSpecification } from '../repository-format-specification/index.ts';
 
 // documentation source attached to one generated package route
 export interface IPackageDocument {
@@ -70,6 +71,7 @@ export interface IWebsiteModel {
   generatedNotice: string;
   llmsText: string;
   packages: IPublicPackage[];
+  repositoryFormatSpecification: IRepositoryFormatSpecification;
   routes: string[];
   runtimeCompatibilityPublication: IRuntimeCompatibilityPublicationV1;
   searchRecords: ISearchRecord[];

@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.1.5
+pnpm add @moldea.ai/website-ui@1.2.0
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -22,6 +22,7 @@ Tailwind scans the shipped Astro components through the package stylesheet's exp
 
 ```typescript
 import { searchDocuments } from '@moldea.ai/website-ui/search';
+import { renderMarkdownDocument } from '@moldea.ai/website-ui/markdown';
 import { withBase } from '@moldea.ai/website-ui/site';
 import { isDarkTheme } from '@moldea.ai/website-ui/theme';
 ```
@@ -36,13 +37,25 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/action-link`
 - `@moldea.ai/website-ui/brand-logo`
 - `@moldea.ai/website-ui/breadcrumbs`
+- `@moldea.ai/website-ui/documentation-shell`
+- `@moldea.ai/website-ui/evaluation-replay`
+- `@moldea.ai/website-ui/evaluation-replay-model`
 - `@moldea.ai/website-ui/inline-brand-text`
 - `@moldea.ai/website-ui/local-search`
+- `@moldea.ai/website-ui/markdown`
 - `@moldea.ai/website-ui/navigation-progress`
+- `@moldea.ai/website-ui/site-footer`
+- `@moldea.ai/website-ui/site-header`
+- `@moldea.ai/website-ui/status-badge`
+- `@moldea.ai/website-ui/tabbed-panels`
 - `@moldea.ai/website-ui/theme-bootstrap`
 - `@moldea.ai/website-ui/theme-control`
 
 `ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
+
+`SiteHeader`, `SiteFooter`, and `DocumentationShell` own responsive structure while consumers retain navigation data, accessible labels, copy, branding, actions, and page content. `TabbedPanels` keeps every panel readable without JavaScript and adds WAI-ARIA tab behavior, including Arrow Left, Arrow Right, Home, and End, after enhancement. `StatusBadge` exposes semantic tones and border treatments without defining domain status mappings.
+
+The compiled `markdown` entry renders sanitized documents and fragments with stable headings, syntax highlighting, safe external links, base-aware internal links, and keyboard-scrollable tables. Raw HTML is disabled. The replay component accepts only the normalized contracts from `evaluation-replay-model`; semantic and qualification evidence conversion remains application-owned.
 
 ## Development
 

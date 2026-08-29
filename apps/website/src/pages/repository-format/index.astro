@@ -1,0 +1,24 @@
+---
+import { renderMarkdownDocument } from '@moldea.ai/website-ui/markdown';
+
+import { RepositoryFormatSpecification } from '../../components/repository-format-specification/index.ts';
+import BaseLayout from '../../layouts/base-layout.astro';
+import { loadWebsiteModel } from '../../lib/generation/generation.ts';
+
+const { repositoryFormatSpecification: specification } = loadWebsiteModel();
+const rendered = await renderMarkdownDocument(specification.markdown, {
+  basePath: import.meta.env.BASE_URL,
+});
+const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Repository Format specification' }];
+---
+
+<BaseLayout
+  title={specification.title}
+  description={specification.description}
+  {breadcrumbs}
+>
+  <RepositoryFormatSpecification
+    {rendered}
+    {specification}
+  />
+</BaseLayout>

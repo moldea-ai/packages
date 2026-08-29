@@ -1,0 +1,23 @@
+---
+import type { IDocumentationOutlineHeading } from './documentation-shell.component.astro';
+
+interface Props {
+  headings: readonly IDocumentationOutlineHeading[];
+}
+
+const { headings } = Astro.props;
+---
+
+{
+  headings.map((heading) => (
+    <a
+      class:list={[
+        'text-sm leading-5 text-muted-foreground hover:text-foreground',
+        heading.depth === 3 && 'ps-3',
+      ]}
+      href={`#${heading.id}`}
+    >
+      {heading.text}
+    </a>
+  ))
+}

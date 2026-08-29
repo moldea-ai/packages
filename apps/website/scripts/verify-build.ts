@@ -249,6 +249,39 @@ export const verifyProductionBuild = (): void => {
 
   verifyLlmsLinks(llmsText, distDirectory, basePath, siteUrl);
 
+  const specification = model.repositoryFormatSpecification;
+  const specificationPath = routeToArtifactPath(distDirectory, specification.route);
+  const specificationHtml = readFileSync(specificationPath, 'utf8');
+  const specificationUrl = new URL(`${basePath}${specification.route.replace(/^\//, '')}`, siteUrl);
+
+  if (
+    !specificationHtml.includes('Official specification') ||
+    !specificationHtml.includes(`Repository Format version ${specification.formatVersion}`) ||
+    !specificationHtml.includes('id="manifest-property-reference"') ||
+    !specificationHtml.includes(specification.sourceUrl) ||
+    !specificationHtml.includes(
+      `href="${new URL(`${basePath}packages/core/`, specificationUrl).pathname}"`,
+    )
+  ) {
+    throw new Error('The Repository Format artifact omits required authority or contract links.');
+  }
+  if (
+    !llmsLines.some((line) =>
+      line.startsWith(`- [Repository Format specification](${specificationUrl.href})`),
+    )
+  ) {
+    throw new Error('llms.txt omits the official Repository Format specification.');
+  }
+  if (
+    !searchDocuments.some(
+      (document) =>
+        document.url.endsWith(specification.route) &&
+        document.searchText.includes('Manifest property reference'),
+    )
+  ) {
+    throw new Error('The production search index omits the Repository Format specification.');
+  }
+
   for (const searchDocument of searchDocuments) {
     const artifactPath = getArtifactPathFromPublicUrl(
       distDirectory,

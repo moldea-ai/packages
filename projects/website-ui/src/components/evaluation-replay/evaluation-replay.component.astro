@@ -1,0 +1,257 @@
+---
+import {
+  Bot,
+  ChevronDown,
+  CircleCheck,
+  CircleX,
+  GitCompareArrows,
+  Scale,
+  ShieldCheck,
+  SquareTerminal,
+  UserRound,
+} from '@lucide/astro';
+
+import type { IEvaluationReplayModel } from '@moldea.ai/website-ui/evaluation-replay-model';
+
+import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
+import StatusBadge from '../status-badge/status-badge.component.astro';
+import EvaluationReplayMarkdown from './evaluation-replay-markdown.component.astro';
+import EvaluationReplayPathTree from './evaluation-replay-path-tree.component.astro';
+
+export interface Props {
+  id: string;
+  replay: IEvaluationReplayModel | null;
+}
+
+const { id, replay } = Astro.props;
+const roleDetails = {
+  'coding-agent': { icon: Bot, label: 'Coding agent' },
+  developer: { icon: UserRound, label: 'Developer' },
+  'deterministic-verifier': { icon: ShieldCheck, label: 'Deterministic verifier' },
+  'independent-judge': { icon: Scale, label: 'Independent judge' },
+} as const;
+const workspaceLabels = {
+  created: 'Created',
+  deleted: 'Deleted',
+  modified: 'Modified',
+} as const;
+---
+
+<div class="min-w-0">
+  {
+    replay === null || replay.trials.length === 0 ? (
+      <p class="rounded-xl border border-border bg-muted/30 p-4 text-sm leading-6 text-muted-foreground">
+        No trial was recorded for this scenario in the selected attempt.
+      </p>
+    ) : (
+      <div class="grid gap-8">
+        {replay.trials.map((trial) => (
+          <section
+            class="min-w-0"
+            aria-labelledby={`${id}-replay-${trial.id}-title`}
+          >
+            <div class="flex flex-wrap items-center gap-3 border-b border-border pb-3">
+              <h4
+                id={`${id}-replay-${trial.id}-title`}
+                class="font-semibold"
+              >
+                {trial.title}
+              </h4>
+              <time
+                class="font-mono text-xs text-muted-foreground"
+                datetime={trial.evaluatedAt}
+              >
+                {trial.evaluatedAt}
+              </time>
+            </div>
+
+            <ol class="mt-5 grid gap-4">
+              {trial.steps.map((step) => {
+                if (step.kind === 'message') {
+                  const { icon: RoleIcon, label } = roleDetails[step.role];
+                  return (
+                    <li class="min-w-0 sm:px-8">
+                      <article class="min-w-0 rounded-xl border border-border bg-background p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                          <div class="flex min-w-0 items-center gap-2">
+                            <span class="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                              <RoleIcon
+                                class="size-4"
+                                aria-hidden="true"
+                              />
+                            </span>
+                            <p class="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                              {label}
+                            </p>
+                          </div>
+                          <span class="text-xs text-muted-foreground">
+                            {step.source === 'recorded' ? 'Recorded message' : 'Derived summary'}
+                          </span>
+                        </div>
+                        <div class="mt-3 min-w-0">
+                          <EvaluationReplayMarkdown markdown={step.content} />
+                        </div>
+                      </article>
+                    </li>
+                  );
+                }
+
+                if (step.kind === 'command') {
+                  return (
+                    <li class="min-w-0 sm:px-8">
+                      <article class="min-w-0 overflow-hidden rounded-xl border border-border bg-code text-code-foreground">
+                        <header class="flex flex-wrap items-center justify-between gap-2 border-b border-code-foreground/15 px-4 py-3">
+                          <span class="inline-flex items-center gap-2 text-xs font-bold tracking-wide uppercase">
+                            <SquareTerminal
+                              class="size-4"
+                              aria-hidden="true"
+                            />
+                            {step.isAggregate
+                              ? 'Recorded activity'
+                              : 'Normalized recorded operation'}
+                          </span>
+                          <span class="inline-flex items-center gap-1.5 text-xs font-semibold">
+                            {step.status === 'passed' ? (
+                              <CircleCheck
+                                class="size-4"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <CircleX
+                                class="size-4"
+                                aria-hidden="true"
+                              />
+                            )}
+                            {step.status === 'passed' ? 'Completed' : 'Failed'}
+                          </span>
+                        </header>
+                        <div class="min-w-0 px-4 py-3">
+                          <code class="block font-mono text-sm font-semibold break-all">
+                            {step.operation}
+                          </code>
+                          <ul class="mt-2 grid gap-1 text-sm text-code-foreground/80">
+                            {step.results.map((result) => (
+                              <li class="break-words">
+                                <InlineBrandText
+                                  text={result}
+                                  variant="compact"
+                                />
+                              </li>
+                            ))}
+                          </ul>
+                          {step.exitCode !== null && (
+                            <p class="mt-2 font-mono text-xs text-code-foreground/70">
+                              Exit code: {step.exitCode}
+                            </p>
+                          )}
+                        </div>
+                      </article>
+                    </li>
+                  );
+                }
+
+                if (step.kind === 'workspace') {
+                  const totalChanges = step.groups.reduce(
+                    (sum, group) => sum + group.changes.length,
+                    0,
+                  );
+                  return (
+                    <li class="min-w-0 sm:px-8">
+                      <article class="rounded-xl border border-border bg-muted/30 p-4 sm:p-5">
+                        <div class="flex items-center gap-2">
+                          <GitCompareArrows
+                            class="size-4 text-muted-foreground"
+                            aria-hidden="true"
+                          />
+                          <h5 class="font-semibold">Workspace changes</h5>
+                        </div>
+                        {totalChanges === 0 ? (
+                          <p class="mt-3 text-sm leading-6 text-muted-foreground">
+                            No project-visible files or folders changed.
+                          </p>
+                        ) : (
+                          <div class="mt-4 grid gap-4 lg:grid-cols-3">
+                            {step.groups.map((group) => (
+                              <section aria-labelledby={`${id}-replay-${trial.id}-${group.status}`}>
+                                <div class="flex items-center justify-between gap-2">
+                                  <h6
+                                    id={`${id}-replay-${trial.id}-${group.status}`}
+                                    class="text-sm font-semibold"
+                                  >
+                                    {workspaceLabels[group.status]}
+                                  </h6>
+                                  <span class="font-mono text-xs text-muted-foreground">
+                                    {group.changes.length}
+                                  </span>
+                                </div>
+                                {group.tree.length === 0 ? (
+                                  <p class="mt-2 text-xs text-muted-foreground">No paths</p>
+                                ) : (
+                                  <div class="mt-2">
+                                    <EvaluationReplayPathTree nodes={group.tree} />
+                                  </div>
+                                )}
+                              </section>
+                            ))}
+                          </div>
+                        )}
+                      </article>
+                    </li>
+                  );
+                }
+
+                const { icon: RoleIcon, label } = roleDetails[step.role];
+                return (
+                  <li class="min-w-0 sm:px-8">
+                    <details
+                      class="group/verdict min-w-0 overflow-hidden rounded-xl border border-border bg-muted/30"
+                      data-replay-verdict
+                    >
+                      <summary class="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 p-4 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring">
+                        <p class="font-semibold">Trial verdict</p>
+                        <span class="flex items-center gap-3">
+                          <StatusBadge
+                            label={step.status === 'passed' ? 'Passed' : 'Failed'}
+                            tone={step.status === 'passed' ? 'success' : 'danger'}
+                          />
+                          <ChevronDown
+                            class="size-4 shrink-0 text-muted-foreground transition-transform group-open/verdict:rotate-180 motion-reduce:transition-none"
+                            aria-hidden="true"
+                          />
+                        </span>
+                      </summary>
+                      <div class="border-t border-border bg-background p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                          <div class="flex min-w-0 items-center gap-2">
+                            <RoleIcon
+                              class="size-4 shrink-0 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                            <p class="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                              {label}
+                            </p>
+                          </div>
+                          <span class="text-xs text-muted-foreground">
+                            {step.source === 'recorded'
+                              ? 'Recorded rationale'
+                              : 'Derived rationale'}
+                          </span>
+                        </div>
+                        <h5 class="mt-4 font-semibold">
+                          {step.status === 'passed' ? 'Why it passed' : 'Why it failed'}
+                        </h5>
+                        <div class="mt-2 min-w-0 text-muted-foreground">
+                          <EvaluationReplayMarkdown markdown={step.rationale} />
+                        </div>
+                      </div>
+                    </details>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        ))}
+      </div>
+    )
+  }
+</div>

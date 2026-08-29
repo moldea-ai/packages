@@ -1,0 +1,36 @@
+---
+export type IStatusBadgeTone = 'danger' | 'info' | 'neutral' | 'success' | 'warning';
+
+export interface Props {
+  borderStyle?: 'dashed' | 'dotted' | 'solid';
+  label: string;
+  tone: IStatusBadgeTone;
+  truncate?: boolean;
+}
+
+const { borderStyle = 'solid', label, tone, truncate = false } = Astro.props;
+const borderStyleClasses = {
+  dashed: 'border-dashed',
+  dotted: 'border-dotted',
+  solid: 'border-solid',
+} as const;
+const toneClasses = {
+  danger: 'border-destructive/40 bg-destructive/10 text-foreground',
+  info: 'border-info/40 bg-info/10 text-foreground',
+  neutral: 'border-border bg-muted text-muted-foreground',
+  success: 'border-foreground/25 bg-secondary text-foreground',
+  warning: 'border-warning/60 bg-warning/15 text-warning-foreground dark:text-foreground',
+} as const;
+---
+
+<span
+  class:list={[
+    'min-h-6 max-w-full rounded-full border px-2.5 py-1 text-start text-[0.68rem] font-bold tracking-[0.08em] uppercase',
+    truncate ? 'block min-w-0 truncate' : 'inline-flex items-center break-words whitespace-normal',
+    borderStyleClasses[borderStyle],
+    toneClasses[tone],
+  ]}
+  data-status-badge={tone}
+>
+  {label}
+</span>

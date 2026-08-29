@@ -8,7 +8,9 @@ The repository is intentionally separate from the hosted [`platform`](https://gi
 
 ## Specifications
 
-The product and package specifications are currently maintained in the `platform` repository:
+The official [Repository Format version `1` specification](specifications/repository-format.md) is maintained in this repository and published at [`https://packages.moldea.ai/repository-format/`](https://packages.moldea.ai/repository-format/). It is the public contract for canonical files, manifest properties, deterministic validation, semantic evaluation boundaries, and conformance. `@moldea.ai/core` remains its executable reference implementation.
+
+The remaining product and package design specifications are maintained in the `platform` repository:
 
 - [`moldea` packages](https://github.com/moldea-ai/platform/blob/main/moldea/context/packages.md): monorepo organization, package catalog, dependencies, distribution, and shared conventions.
 - [`@moldea.ai/repository`](https://github.com/moldea-ai/platform/blob/main/moldea/context/repository-package.md): source-neutral repository-reader contract and in-memory reference implementation.
@@ -48,6 +50,8 @@ fixtures/                      # Repository-wide conformance fixtures
 docs/
   npm-releases.md             # Trusted npm publication and bootstrap process
   runtime-compatibility.md     # Generated compatibility presentation
+specifications/
+  repository-format.md         # Official Repository Format version 1 contract
 packages/                      # Private shared implementation packages
   adapter-static-analysis/    # Provider-neutral adapter source-analysis primitives
 projects/
@@ -176,9 +180,9 @@ Turborepo derives build order from declared workspace dependencies. Package depe
 
 ## Package documentation and generated artifacts
 
-Every implemented public project owns its full documentation under `projects/<project>/docs/**`. Package specifications, implementation, tests, public exports, manifests, technical compatibility source, and package-owned documentation are authoritative; the website discovers, validates, renders, searches, and presents them while owning target maturity. Concise package READMEs remain the GitHub and npm entry points.
+Every implemented public project owns its full documentation under `projects/<project>/docs/**`. The cross-package Repository Format contract is owned by [`specifications/repository-format.md`](specifications/repository-format.md). Package specifications, implementation, tests, public exports, manifests, technical compatibility source, and package-owned documentation are authoritative; the website discovers, validates, renders, searches, and presents them while owning target maturity. Concise package READMEs remain the GitHub and npm entry points.
 
-Generated files are not edited directly. Technical runtime compatibility changes begin in [`compatibility/runtimes.yaml`](compatibility/runtimes.yaml), while website target maturity is edited only in [`apps/website/content/runtime-target-maturity.yaml`](apps/website/content/runtime-target-maturity.yaml). The website build requires an exact one-to-one match between those maturity entries and the matrix targets and publishes their deterministic combined view at [`https://packages.moldea.ai/compatibility/runtimes.json`](https://packages.moldea.ai/compatibility/runtimes.json). A target may link only to its canonical profile on `https://skill.moldea.ai`; qualification execution, fixtures, caches, and results remain owned by the skill repository. Run `pnpm compatibility:generate` to update [`docs/runtime-compatibility.md`](docs/runtime-compatibility.md). The website model, public compatibility JSON, API reference, route manifest, search input, and `llms.txt` are generated during documentation checks and builds from their canonical repository sources; none is maintained independently. CI reruns the applicable generators and fails when canonical inputs are invalid, routes contradict one another, public exports are omitted, links break, or the static artifact is incomplete.
+Generated files are not edited directly. Repository Format changes begin in [`specifications/repository-format.md`](specifications/repository-format.md), whose metadata, required sections, manifest property reference, internal anchors, and marked complete example are verified before publication. Technical runtime compatibility changes begin in [`compatibility/runtimes.yaml`](compatibility/runtimes.yaml), while website target maturity is edited only in [`apps/website/content/runtime-target-maturity.yaml`](apps/website/content/runtime-target-maturity.yaml). The website build requires an exact one-to-one match between those maturity entries and the matrix targets and publishes their deterministic combined view at [`https://packages.moldea.ai/compatibility/runtimes.json`](https://packages.moldea.ai/compatibility/runtimes.json). A target may link only to its canonical profile on `https://skill.moldea.ai`; qualification execution, fixtures, caches, and results remain owned by the skill repository. Run `pnpm compatibility:generate` to update [`docs/runtime-compatibility.md`](docs/runtime-compatibility.md). The website model, public Repository Format page, public compatibility JSON, API reference, route manifest, search input, and `llms.txt` are generated during documentation checks and builds from their canonical repository sources; none is maintained independently. CI reruns the applicable generators and fails when canonical inputs are invalid, routes contradict one another, public exports are omitted, links break, or the static artifact is incomplete.
 
 ## Coding-agent maintenance rule
 
@@ -192,7 +196,7 @@ Generated output changes through its canonical source and generator. Technical c
 
 ## Packages website and deployment
 
-[`apps/website`](apps/website/) is the private Astro static application for the public packages ecosystem. It consumes `@moldea.ai/website-ui` through the workspace protocol for shared design tokens, interaction states, theme behavior, search behavior, and small components while retaining local ownership of layouts, navigation, content generation, SEO identity, and assets. It uses `SITE_URL` and `BASE_PATH`; the defaults match the established `https://packages.moldea.ai/` custom domain, while explicit inputs continue to support a GitHub project-site base path without component changes. See its [application README](apps/website/README.md) for focused commands and source boundaries.
+[`apps/website`](apps/website/) is the private Astro static application for the public packages ecosystem. It consumes `@moldea.ai/website-ui` through the workspace protocol for shared design tokens, interaction states, theme behavior, search behavior, sanitized Markdown, responsive shells, and reusable components while retaining local ownership of navigation data, content generation, page composition, SEO identity, and assets. It uses `SITE_URL` and `BASE_PATH`; the defaults match the established `https://packages.moldea.ai/` custom domain, while explicit inputs continue to support a GitHub project-site base path without component changes. See its [application README](apps/website/README.md) for focused commands and source boundaries.
 
 Pull requests run non-deploying repository verification, including documentation discovery, generated API, route, and local search-index checks, website unit and browser tests, type checking, linting, the complete static build, internal-link validation, and final artifact inspection. Relevant pushes to `main` trigger [the Pages workflow](.github/workflows/pages.yml), read the configured host and base path from GitHub Pages, build the canonical HTTPS origin from that host, rebuild from the exact merged commit, and deploy with GitHub's official Pages artifact flow. After a successful push deployment, the workflow submits `https://packages.moldea.ai/sitemap-index.xml` to the `sc-domain:moldea.ai` Google Search Console property. npm publication remains a separate workflow and is never triggered merely by website or full-documentation changes.
 

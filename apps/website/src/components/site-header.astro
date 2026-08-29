@@ -1,6 +1,5 @@
 ---
-import { GitFork, Menu, Search } from '@lucide/astro';
-import ThemeControl from '@moldea.ai/website-ui/theme-control';
+import SiteHeaderShell from '@moldea.ai/website-ui/site-header';
 import { isPublicRouteActive, withBase } from '@moldea.ai/website-ui/site';
 
 import Logo from './logo.astro';
@@ -9,6 +8,7 @@ const navigation = [
   { href: '/packages/', label: 'Packages' },
   { href: '/adapters/', label: 'Adapters' },
   { href: '/compatibility/', label: 'Compatibility' },
+  { href: '/repository-format/', label: 'Repository Format' },
 ] as const;
 const currentPathname = Astro.url.pathname;
 const basePath = import.meta.env.BASE_URL;
@@ -21,120 +21,16 @@ const searchHref = withBase('/search/', basePath);
 const isSearchActive = isPublicRouteActive(currentPathname, '/search/', basePath);
 ---
 
-<header class="sticky top-0 z-50 border-b border-border bg-background/92 backdrop-blur-lg">
-  <div class="page-shell flex min-h-16 items-center justify-between gap-4">
-    <Logo />
-
-    <nav
-      class="hidden items-center gap-1 md:flex"
-      aria-label="Primary navigation"
-    >
-      {
-        navigationItems.map(({ href, isActive, label }) => (
-          <a
-            class:list={[
-              'rounded-lg px-3 py-2 text-sm transition-colors',
-              isActive
-                ? 'bg-secondary/70 font-bold text-foreground dark:bg-secondary/50'
-                : 'font-semibold text-muted-foreground hover:bg-muted hover:text-foreground',
-            ]}
-            href={href}
-            aria-current={isActive ? 'page' : undefined}
-          >
-            {label}
-          </a>
-        ))
-      }
-    </nav>
-
-    <div class="hidden items-center gap-2 md:flex">
-      <a
-        class:list={[
-          'inline-flex size-10 items-center justify-center rounded-lg transition-colors',
-          isSearchActive ? 'bg-secondary/70 dark:bg-secondary/50' : 'hover:bg-muted',
-        ]}
-        href={searchHref}
-        aria-label="Search documentation"
-        aria-current={isSearchActive ? 'page' : undefined}
-      >
-        <Search
-          class="size-4"
-          aria-hidden="true"
-        />
-      </a>
-      <a
-        class="inline-flex size-10 items-center justify-center rounded-lg hover:bg-muted"
-        href="https://github.com/moldea-ai/packages"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="moldea packages on GitHub"
-      >
-        <GitFork
-          class="size-4"
-          aria-hidden="true"
-        />
-      </a>
-      <ThemeControl storageKey="moldea-website-theme" />
-    </div>
-
-    <details class="group relative md:hidden">
-      <summary
-        class="flex size-10 list-none items-center justify-center rounded-lg border border-input bg-background hover:bg-muted [&::-webkit-details-marker]:hidden"
-        aria-label="Open navigation"
-      >
-        <Menu
-          class="size-5"
-          aria-hidden="true"
-        />
-      </summary>
-      <div
-        class="surface-card absolute end-0 top-12 w-[min(19rem,calc(100vw-2rem))] space-y-1 p-3 shadow-raised"
-      >
-        <nav
-          class="grid gap-1"
-          aria-label="Mobile navigation"
-        >
-          {
-            navigationItems.map(({ href, isActive, label }) => (
-              <a
-                class:list={[
-                  'rounded-lg px-3 py-3 transition-colors',
-                  isActive
-                    ? 'bg-secondary/70 font-bold text-foreground dark:bg-secondary/50'
-                    : 'font-semibold text-muted-foreground hover:bg-muted hover:text-foreground',
-                ]}
-                href={href}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {label}
-              </a>
-            ))
-          }
-          <a
-            class:list={[
-              'rounded-lg px-3 py-3 transition-colors',
-              isSearchActive
-                ? 'bg-secondary/70 font-bold text-foreground dark:bg-secondary/50'
-                : 'font-semibold text-muted-foreground hover:bg-muted hover:text-foreground',
-            ]}
-            href={searchHref}
-            aria-current={isSearchActive ? 'page' : undefined}
-          >
-            Search
-          </a>
-          <a
-            class="rounded-lg px-3 py-3 font-semibold hover:bg-muted"
-            href="https://github.com/moldea-ai/packages"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Source on GitHub
-          </a>
-        </nav>
-        <div class="mt-3 border-t border-border pt-3">
-          <ThemeControl storageKey="moldea-website-theme" />
-        </div>
-      </div>
-    </details>
-  </div>
-</header>
+<SiteHeaderShell
+  breakpoint="lg"
+  mobileNavigationAriaLabel="Mobile navigation"
+  navigationItems={navigationItems}
+  searchAriaLabel="Search documentation"
+  searchHref={searchHref}
+  searchIsActive={isSearchActive}
+  sourceAriaLabel="moldea packages on GitHub"
+  sourceHref="https://github.com/moldea-ai/packages"
+  themeStorageKey="moldea-website-theme"
+>
+  <Logo slot="brand" />
+</SiteHeaderShell>
