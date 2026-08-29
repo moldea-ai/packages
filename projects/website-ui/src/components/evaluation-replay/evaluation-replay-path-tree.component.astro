@@ -1,0 +1,57 @@
+---
+import { File, Folder, Link2 } from '@lucide/astro';
+
+import type { IEvaluationReplayPathTreeNode } from '@moldea.ai/website-ui/evaluation-replay-model';
+
+interface Props {
+  nodes: readonly IEvaluationReplayPathTreeNode[];
+}
+
+const { nodes } = Astro.props;
+---
+
+<ul class="grid gap-2">
+  {
+    nodes.map((node) => {
+      const NodeIcon = node.kind === 'folder' ? Folder : node.kind === 'symlink' ? Link2 : File;
+
+      return (
+        <li class="min-w-0">
+          <div class="flex min-w-0 items-start gap-2 rounded-lg border border-border bg-background px-3 py-2">
+            <NodeIcon
+              class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <div class="min-w-0 flex-1">
+              {node.kind === 'folder' ? (
+                <>
+                  <code class="block font-mono text-xs font-semibold break-all">{node.name}/</code>
+                  <p class="mt-1 text-xs text-muted-foreground">
+                    {node.changeCount} affected {node.changeCount === 1 ? 'path' : 'paths'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <code
+                    class="block font-mono text-xs break-all"
+                    title={node.path}
+                  >
+                    {node.name}
+                  </code>
+                  <p class="mt-1 text-xs text-muted-foreground">
+                    {node.kind === 'symlink' ? 'Symbolic link' : 'File'}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+          {node.children.length > 0 && (
+            <div class="ms-3 mt-2 border-s border-border ps-3 sm:ms-4 sm:ps-4">
+              <Astro.self nodes={node.children} />
+            </div>
+          )}
+        </li>
+      );
+    })
+  }
+</ul>

@@ -8,7 +8,6 @@ import { afterEach, beforeAll, describe, expect, test } from 'vitest';
 import type { IRuntimeCompatibilityMatrix } from '../../../../../scripts/runtime-compatibility/types.ts';
 import type { IWebsiteModel } from '../model/types.ts';
 import { createRuntimeCompatibilityPublication } from '../runtime-compatibility-publication/index.ts';
-import { REPOSITORY_FORMAT_GUIDE_URL } from '../site/constants.ts';
 
 import {
   buildAdapterPages,
@@ -369,14 +368,22 @@ describe('createLlmsText', () => {
   test('is deterministic under reversed source enumeration', () => {
     const model = getCurrentWebsiteModel();
 
-    expect(createLlmsText([...model.packages].reverse(), [...model.adapters].reverse())).toBe(
-      createLlmsText(model.packages, model.adapters),
-    );
+    expect(
+      createLlmsText(
+        [...model.packages].reverse(),
+        [...model.adapters].reverse(),
+        model.repositoryFormatSpecification,
+      ),
+    ).toBe(createLlmsText(model.packages, model.adapters, model.repositoryFormatSpecification));
   });
 
   test('represents every public package and canonical adapter without exposing the website package', () => {
     const model = getCurrentWebsiteModel();
-    const text = createLlmsText(model.packages, model.adapters);
+    const text = createLlmsText(
+      model.packages,
+      model.adapters,
+      model.repositoryFormatSpecification,
+    );
     const lines = text.split('\n');
 
     for (const packageModel of model.packages) {
@@ -404,14 +411,20 @@ describe('createLlmsText', () => {
     expect(text).toContain('available; built into @moldea.ai/core; custom: supported');
     expect(text).toContain('typescript-messages-api-0-117: experimental');
     expect(text).toContain('typescript-responses-api-7: experimental');
-    expect(text.split(REPOSITORY_FORMAT_GUIDE_URL)).toHaveLength(2);
+    expect(text).toContain(
+      `[Repository Format specification](${model.repositoryFormatSpecification.route})`,
+    );
   });
 });
 
 describe('createSearchRecords', () => {
   test('represents every public package and canonical adapter', () => {
     const model = getCurrentWebsiteModel();
-    const searchRecords = createSearchRecords(model.packages, model.adapters);
+    const searchRecords = createSearchRecords(
+      model.packages,
+      model.adapters,
+      model.repositoryFormatSpecification,
+    );
 
     for (const packageModel of model.packages) {
       expect(
@@ -427,6 +440,10 @@ describe('createSearchRecords', () => {
       expect(searchRecords.some(({ route }) => route === adapter.route)).toBe(true);
     }
 
+    expect(
+      searchRecords.some(({ route }) => route === model.repositoryFormatSpecification.route),
+    ).toBe(true);
+
     expect(searchRecords.some(({ searchText }) => searchText.includes('experimental'))).toBe(true);
     expect(JSON.stringify(searchRecords)).not.toContain('@moldea.ai/packages-website');
   });
@@ -435,7 +452,13 @@ describe('createSearchRecords', () => {
     const model = getCurrentWebsiteModel();
 
     expect(
-      createSearchRecords([...model.packages].reverse(), [...model.adapters].reverse()),
-    ).toStrictEqual(createSearchRecords(model.packages, model.adapters));
+      createSearchRecords(
+        [...model.packages].reverse(),
+        [...model.adapters].reverse(),
+        model.repositoryFormatSpecification,
+      ),
+    ).toStrictEqual(
+      createSearchRecords(model.packages, model.adapters, model.repositoryFormatSpecification),
+    );
   });
 });

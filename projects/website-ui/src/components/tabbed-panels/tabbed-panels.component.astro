@@ -1,0 +1,149 @@
+---
+export interface ITabbedPanelItem {
+  id: string;
+  label: string;
+  slotName: string;
+}
+
+export interface Props {
+  ariaLabel: string;
+  id: string;
+  items: readonly ITabbedPanelItem[];
+}
+
+const { ariaLabel, id, items } = Astro.props;
+const isStableIdentifier = (candidate: string): boolean => /^[a-z][a-z0-9-]*$/u.test(candidate);
+const uniqueIds = new Set(items.map((item) => item.id));
+const uniqueSlots = new Set(items.map((item) => item.slotName));
+
+if (
+  !isStableIdentifier(id) ||
+  items.length < 2 ||
+  uniqueIds.size !== items.length ||
+  uniqueSlots.size !== items.length ||
+  items.some(
+    (item) =>
+      !isStableIdentifier(item.id) ||
+      !isStableIdentifier(item.slotName) ||
+      item.label.trim().length === 0,
+  )
+) {
+  throw new Error('Tabbed panel configuration is invalid.');
+}
+---
+
+<div
+  class="flex min-w-0 flex-col gap-2"
+  data-tabbed-panels-root
+>
+  <nav
+    class="inline-flex h-8 w-fit max-w-full items-center justify-start overflow-x-auto overflow-y-hidden rounded-lg bg-secondary p-1 text-secondary-foreground"
+    aria-label={ariaLabel}
+    data-tabbed-panels-controls
+  >
+    {
+      items.map((item, index) => {
+        const panelId = `${id}-${item.id}-panel`;
+
+        return (
+          <a
+            class="inline-flex h-6 shrink-0 items-center justify-center rounded-md border border-transparent px-2.5 text-sm font-medium whitespace-nowrap transition-colors outline-none select-none hover:[text-shadow:0_0_0_currentColor,0.02em_0_0_currentColor,-0.02em_0_0_currentColor] focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background data-active:bg-background data-active:text-foreground data-active:shadow-inset data-active:[text-shadow:0_0_0_currentColor,0.02em_0_0_currentColor,-0.02em_0_0_currentColor] dark:data-active:border-border dark:data-active:bg-border/30"
+            href={`#${panelId}`}
+            data-active={index === 0 ? true : undefined}
+            data-tabbed-panel-control
+            data-panel-id={panelId}
+          >
+            {item.label}
+          </a>
+        );
+      })
+    }
+  </nav>
+
+  {
+    items.map((item) => {
+      const panelId = `${id}-${item.id}-panel`;
+      const headingId = `${id}-${item.id}-heading`;
+
+      return (
+        <section
+          id={panelId}
+          class="scroll-mt-24 pt-4 outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          aria-labelledby={headingId}
+          data-tabbed-panel
+        >
+          <h3
+            id={headingId}
+            class="sr-only"
+          >
+            {item.label}
+          </h3>
+          <slot name={item.slotName} />
+        </section>
+      );
+    })
+  }
+</div>
+
+<script>
+  const initializeTabbedPanels = (): void => {
+    const roots = document.querySelectorAll<HTMLElement>('[data-tabbed-panels-root]');
+
+    for (const root of roots) {
+      if (root.dataset['enhanced'] === 'true') continue;
+      const controls = root.querySelector<HTMLElement>('[data-tabbed-panels-controls]');
+      const tabs = [...root.querySelectorAll<HTMLAnchorElement>('[data-tabbed-panel-control]')];
+      const panels = [...root.querySelectorAll<HTMLElement>('[data-tabbed-panel]')];
+      if (controls === null || tabs.length < 2 || panels.length !== tabs.length) continue;
+
+      const selectTab = (selectedIndex: number, shouldFocus: boolean): void => {
+        for (const [index, tab] of tabs.entries()) {
+          const isSelected = index === selectedIndex;
+          tab.setAttribute('aria-selected', String(isSelected));
+          tab.tabIndex = isSelected ? 0 : -1;
+          tab.toggleAttribute('data-active', isSelected);
+          const panel = panels.find(({ id }) => id === tab.dataset['panelId']);
+          if (panel !== undefined) panel.hidden = !isSelected;
+        }
+        if (shouldFocus) tabs[selectedIndex]?.focus();
+      };
+
+      controls.setAttribute('role', 'tablist');
+      for (const [index, tab] of tabs.entries()) {
+        const panel = panels.find(({ id }) => id === tab.dataset['panelId']);
+        if (panel === undefined) continue;
+        const tabId = `${panel.id}-tab`;
+        tab.id = tabId;
+        tab.setAttribute('aria-controls', panel.id);
+        tab.setAttribute('role', 'tab');
+        panel.setAttribute('aria-labelledby', tabId);
+        panel.setAttribute('role', 'tabpanel');
+        tab.addEventListener('click', (event) => {
+          event.preventDefault();
+          selectTab(index, false);
+        });
+        tab.addEventListener('keydown', (event) => {
+          const nextIndex =
+            event.key === 'ArrowRight'
+              ? (index + 1) % tabs.length
+              : event.key === 'ArrowLeft'
+                ? (index - 1 + tabs.length) % tabs.length
+                : event.key === 'Home'
+                  ? 0
+                  : event.key === 'End'
+                    ? tabs.length - 1
+                    : null;
+          if (nextIndex === null) return;
+          event.preventDefault();
+          selectTab(nextIndex, true);
+        });
+      }
+
+      root.dataset['enhanced'] = 'true';
+      selectTab(0, false);
+    }
+  };
+
+  initializeTabbedPanels();
+  document.addEventListener('astro:page-load', initializeTabbedPanels);
+</script>

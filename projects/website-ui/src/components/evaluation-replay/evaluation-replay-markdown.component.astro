@@ -1,0 +1,19 @@
+---
+import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
+
+interface Props {
+  markdown: string;
+}
+
+const { markdown } = Astro.props;
+const html = await renderMarkdownFragment(markdown, {
+  basePath: import.meta.env.BASE_URL,
+  localLinks: 'unwrap',
+  productNameTreatment: 'code',
+});
+---
+
+<div
+  class="prose-moldea prose-moldea-wrap-code replay-markdown min-w-0"
+  set:html={html}
+/>

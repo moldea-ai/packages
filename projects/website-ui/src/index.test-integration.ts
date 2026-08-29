@@ -80,8 +80,10 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.1.5' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.2.0' });
+    expect(packedPaths).toContain('dist/evaluation-replay.js');
     expect(packedPaths).toContain('dist/index.js');
+    expect(packedPaths).toContain('dist/markdown.js');
     expect(packedPaths).toContain('dist/site/index.d.ts');
     expect(packedPaths).toContain('src/styles.css');
     expect(packedPaths).toContain('src/tokens.css');
@@ -89,6 +91,10 @@ describe('published website UI package', () => {
     expect(packedPaths).toContain(
       'src/components/navigation-progress/navigation-progress.component.astro',
     );
+    expect(packedPaths).toContain(
+      'src/components/evaluation-replay/evaluation-replay.component.astro',
+    );
+    expect(packedPaths).toContain('src/components/tabbed-panels/tabbed-panels.component.astro');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
     expect(packedPaths).toContain('cover.png');
@@ -176,13 +182,25 @@ describe('published website UI package', () => {
         "import ActionLink from '@moldea.ai/website-ui/action-link';",
         "import BrandLogo from '@moldea.ai/website-ui/brand-logo';",
         "import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';",
+        "import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';",
+        "import EvaluationReplay from '@moldea.ai/website-ui/evaluation-replay';",
         "import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';",
         "import LocalSearch from '@moldea.ai/website-ui/local-search';",
         "import NavigationProgress from '@moldea.ai/website-ui/navigation-progress';",
+        "import SiteFooter from '@moldea.ai/website-ui/site-footer';",
+        "import SiteHeader from '@moldea.ai/website-ui/site-header';",
+        "import StatusBadge from '@moldea.ai/website-ui/status-badge';",
+        "import TabbedPanels from '@moldea.ai/website-ui/tabbed-panels';",
         "import ThemeBootstrap from '@moldea.ai/website-ui/theme-bootstrap';",
         "import ThemeControl from '@moldea.ai/website-ui/theme-control';",
+        "import { buildEvaluationReplayPathTree } from '@moldea.ai/website-ui/evaluation-replay-model';",
+        "import { renderMarkdownDocument } from '@moldea.ai/website-ui/markdown';",
         "import { withBase } from '@moldea.ai/website-ui/site';",
         "import '../styles.css';",
+        '',
+        "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## Shared Markdown');",
+        "const tree = buildEvaluationReplayPathTree([{ path: 'src/index.ts', type: 'file' }]);",
+        "const navigationItems = [{ href: '/', isActive: true, label: 'Home' }];",
         '---',
         '<html lang="en" data-theme="system">',
         '  <head>',
@@ -191,13 +209,23 @@ describe('published website UI package', () => {
         '  </head>',
         '  <body>',
         '    <NavigationProgress />',
+        '    <SiteHeader navigationItems={navigationItems} searchAriaLabel="Search fixture" searchHref="/search/" searchIsActive={false} sourceAriaLabel="Fixture source" sourceHref="https://example.com/source" themeStorageKey="fixture-theme">',
+        '      <span slot="brand">Fixture brand</span>',
+        '    </SiteHeader>',
         '    <BrandLogo compact darkCompactLogoPath="/dark-icon.png" darkLogoPath="/dark.png" homeLabel="Fixture home" lightCompactLogoPath="/light-icon.png" lightLogoPath="/light.png" suffix="fixture" />',
         '    <Breadcrumbs items={[{ href: "/", label: "Home" }, { label: "Fixture" }]} />',
         '    <InlineBrandText text="Use moldea here." />',
+        '    <InlineBrandText text="Use MOLDEA compactly." variant="compact" />',
         '    <ActionButton>Run</ActionButton>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
+        '    <StatusBadge label="Available" tone="success" />',
+        '    <TabbedPanels ariaLabel="Fixture views" id="fixture-tabs" items={[{ id: "first", label: "First", slotName: "first" }, { id: "second", label: "Second", slotName: "second" }]}><p slot="first">First panel</p><p slot="second">Second panel</p></TabbedPanels>',
+        '    <EvaluationReplay id="fixture-replay" replay={null} />',
+        '    <DocumentationShell breadcrumbs={[{ href: "/", label: "Home" }, { label: "Docs" }]} currentRoute="/docs/" headings={rendered.headings}><div class="prose-moldea" set:html={rendered.html} /></DocumentationShell>',
+        '    <p>{tree[0]?.name}</p>',
         '    <ThemeControl storageKey="fixture-theme" />',
         '    <LocalSearch action="/search/" failureMessage="Search unavailable." initialPrompt="Enter a query." placeholder="e.g. repository snapshots" searchIndexUrl="/search-index.json" />',
+        '    <SiteFooter><p slot="brand">Fixture footer</p><nav slot="primary-navigation" aria-label="Fixture documentation">Docs</nav><nav slot="secondary-navigation" aria-label="Fixture project">Project</nav></SiteFooter>',
         '  </body>',
         '</html>',
         '',
@@ -223,6 +251,12 @@ describe('published website UI package', () => {
     );
     expect(readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8')).toContain(
       'Page navigation progress',
+    );
+    expect(readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8')).toContain(
+      'Shared Markdown',
+    );
+    expect(readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8')).toContain(
+      'First panel',
     );
   }, 180_000);
 });

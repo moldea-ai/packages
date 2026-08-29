@@ -10,7 +10,7 @@ export interface IBreadcrumb {
 
 export interface Props {
   basePath?: string;
-  items: IBreadcrumb[];
+  items: readonly IBreadcrumb[];
 }
 
 const { basePath = import.meta.env.BASE_URL, items } = Astro.props;

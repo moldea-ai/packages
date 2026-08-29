@@ -3,6 +3,7 @@
 @import './tokens.css';
 
 @source './components/**/*.{astro,ts}';
+@source './markdown/**/*.ts';
 
 @layer base {
   * {
@@ -219,6 +220,27 @@
 
   .table-scroll {
     @apply my-5 max-w-full overflow-x-auto rounded-xl border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .markdown-badge {
+    @apply inline-flex min-h-6 max-w-full items-center rounded-full border px-2.5 py-1 text-start align-middle text-[0.68rem] leading-none font-bold tracking-[0.08em] uppercase;
+  }
+
+  .replay-markdown {
+    @apply text-sm leading-6;
+  }
+
+  .replay-markdown :is(h1, h2, h3, h4, h5, h6) {
+    @apply mt-5 mb-2 border-0 pt-0 text-base leading-6 font-semibold;
+  }
+
+  .replay-markdown :is(p, ul, ol, pre, blockquote),
+  .replay-markdown .table-scroll {
+    @apply my-3;
+  }
+
+  .replay-markdown > :last-child {
+    @apply mb-0;
   }
 }
 

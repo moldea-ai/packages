@@ -1,80 +1,78 @@
 ---
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
+import SiteFooterShell from '@moldea.ai/website-ui/site-footer';
 import { withBase } from '@moldea.ai/website-ui/site';
 
-import { REPOSITORY_FORMAT_GUIDE_URL } from '../lib/site/constants.ts';
 import Logo from './logo.astro';
 
 const basePath = import.meta.env.BASE_URL;
 ---
 
-<footer class="mt-section-gap border-t border-border">
-  <div class="page-shell grid gap-10 py-12 md:grid-cols-[1fr_auto_auto]">
-    <div class="max-w-md space-y-4">
-      <Logo />
-      <p class="text-sm leading-6 text-muted-foreground">
-        <InlineBrandText
-          text="The open-source technical foundation that powers moldea, the behavioral integrity layer for AI agents."
-        />
-      </p>
-    </div>
-    <nav
-      class="grid content-start gap-3 text-sm"
-      aria-label="Documentation"
-    >
-      <p class="font-bold">Documentation</p>
-      <a
-        class="text-muted-foreground hover:text-foreground"
-        href={withBase('/packages/', basePath)}
-        >Packages</a
-      >
-      <a
-        class="text-muted-foreground hover:text-foreground"
-        href={withBase('/adapters/', basePath)}
-        >Adapters</a
-      >
-      <a
-        class="text-muted-foreground hover:text-foreground"
-        href={withBase('/compatibility/', basePath)}
-      >
-        Compatibility
-      </a>
-      <a
-        class="text-muted-foreground hover:text-foreground"
-        href={REPOSITORY_FORMAT_GUIDE_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Repository Format
-      </a>
-      <a
-        class="text-muted-foreground hover:text-foreground"
-        href={withBase('/llms.txt', basePath)}
-        >llms.txt</a
-      >
-    </nav>
-    <nav
-      class="grid content-start gap-3 text-sm"
-      aria-label="Project links"
-    >
-      <p class="font-bold">Project</p>
-      <a
-        class="text-muted-foreground hover:text-foreground"
-        href="https://github.com/moldea-ai/packages"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        GitHub
-      </a>
-      <a
-        class="text-muted-foreground hover:text-foreground"
-        href="https://github.com/moldea-ai/packages/issues"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Issues
-      </a>
-      <span class="text-muted-foreground">MIT licensed</span>
-    </nav>
+<SiteFooterShell>
+  <div slot="brand">
+    <Logo />
+    <p class="mt-4 text-sm leading-6 text-muted-foreground">
+      <InlineBrandText
+        text="The open-source technical foundation that powers moldea, the behavioral integrity layer for AI agents."
+      />
+    </p>
   </div>
-</footer>
+  <nav
+    slot="primary-navigation"
+    class="grid content-start gap-3 text-sm"
+    aria-label="Documentation"
+  >
+    <p class="font-bold">Documentation</p>
+    <a
+      class="text-muted-foreground hover:text-foreground"
+      href={withBase('/packages/', basePath)}
+      >Packages</a
+    >
+    <a
+      class="text-muted-foreground hover:text-foreground"
+      href={withBase('/adapters/', basePath)}
+      >Adapters</a
+    >
+    <a
+      class="text-muted-foreground hover:text-foreground"
+      href={withBase('/compatibility/', basePath)}
+    >
+      Compatibility
+    </a>
+    <a
+      class="text-muted-foreground hover:text-foreground"
+      href={withBase('/repository-format/', basePath)}
+    >
+      Repository Format
+    </a>
+    <a
+      class="text-muted-foreground hover:text-foreground"
+      href={withBase('/llms.txt', basePath)}
+      >llms.txt</a
+    >
+  </nav>
+  <nav
+    slot="secondary-navigation"
+    class="grid content-start gap-3 text-sm"
+    aria-label="Project links"
+  >
+    <p class="font-bold">Project</p>
+    <a
+      class="text-muted-foreground hover:text-foreground"
+      href="https://github.com/moldea-ai/packages"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      GitHub
+    </a>
+    <a
+      class="text-muted-foreground hover:text-foreground"
+      href="https://github.com/moldea-ai/packages/issues"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Issues
+    </a>
+    <span class="text-muted-foreground">MIT licensed</span>
+  </nav>
+</SiteFooterShell>

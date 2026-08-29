@@ -18,16 +18,19 @@ import type {
   IWebsiteModel,
 } from '../model/types.ts';
 import {
+  loadRepositoryFormatSpecification,
+  type IRepositoryFormatSpecification,
+} from '../repository-format-specification/index.ts';
+import {
   createRuntimeCompatibilityPublication,
   type IRuntimeCompatibilityPublicationV1,
 } from '../runtime-compatibility-publication/index.ts';
 import { parseRuntimeTargetMaturity } from '../runtime-target-maturity/index.ts';
-import { REPOSITORY_FORMAT_GUIDE_URL } from '../site/constants.ts';
 
 const REPOSITORY_URL = 'https://github.com/moldea-ai/packages';
 const EXCLUDED_DIRECTORY_NAMES = new Set(['_archive', '_archives', '_backup', '_backups']);
 const GENERATED_NOTICE =
-  'Generated from project manifests, package-owned documentation, public exports, compatibility/runtimes.yaml, and the website-owned runtime target maturity file. Do not edit generated output.';
+  'Generated from project manifests, package-owned documentation, public exports, specifications/repository-format.md, compatibility/runtimes.yaml, and the website-owned runtime target maturity file. Do not edit generated output.';
 
 const PackageManifestSchema = z.object({
   bin: z.record(z.string(), z.string()).optional(),
@@ -289,6 +292,7 @@ export const createRouteManifest = (
     '/compatibility/runtimes.json',
     '/llms.txt',
     '/packages/',
+    '/repository-format/',
     '/robots.txt',
     '/search/',
     '/search-index.json',
@@ -332,6 +336,7 @@ const describeAdapter = (adapter: IAdapterPage): string => {
 export const createSearchRecords = (
   packages: IPublicPackage[],
   adapters: IAdapterPage[],
+  specification: IRepositoryFormatSpecification,
 ): ISearchRecord[] => {
   const recordsByRoute = new Map<string, ISearchRecord>();
 
@@ -394,13 +399,30 @@ export const createSearchRecords = (
     });
   }
 
+  recordsByRoute.set(specification.route, {
+    description: specification.description,
+    route: specification.route,
+    searchText: normalizeSearchText(
+      [
+        specification.title,
+        `Repository Format version ${specification.formatVersion}`,
+        specification.markdown,
+      ].join(' '),
+    ),
+    title: specification.title,
+  });
+
   return [...recordsByRoute.values()].sort(
     (left, right) => left.route.localeCompare(right.route) || left.title.localeCompare(right.title),
   );
 };
 
 /** Creates the concise machine-oriented ecosystem map from generated public models. */
-export const createLlmsText = (packages: IPublicPackage[], adapters: IAdapterPage[]): string => {
+export const createLlmsText = (
+  packages: IPublicPackage[],
+  adapters: IAdapterPage[],
+  specification: IRepositoryFormatSpecification,
+): string => {
   const lines = [
     '# moldea packages',
     '',
@@ -484,7 +506,7 @@ export const createLlmsText = (packages: IPublicPackage[], adapters: IAdapterPag
     '',
     '## Canonical references',
     '',
-    `- [Repository Format guide](${REPOSITORY_FORMAT_GUIDE_URL})`,
+    `- [Repository Format specification](${specification.route}): Official version ${specification.formatVersion} repository contract.`,
     '- [Complete runtime compatibility matrix](/compatibility/)',
     `- [Source repository](${REPOSITORY_URL})`,
     '',
@@ -500,6 +522,7 @@ export const createLlmsText = (packages: IPublicPackage[], adapters: IAdapterPag
 export const createWebsiteModel = (): IWebsiteModel => {
   const repositoryRoot = getRepositoryRoot();
   const packages = discoverPublicPackages(repositoryRoot);
+  const repositoryFormatSpecification = loadRepositoryFormatSpecification();
   const matrix = loadCompatibilityMatrix(repositoryRoot);
   const targetMaturities = parseRuntimeTargetMaturity(
     readFileSync(join(repositoryRoot, 'apps/website/content/runtime-target-maturity.yaml'), 'utf8'),
@@ -511,13 +534,14 @@ export const createWebsiteModel = (): IWebsiteModel => {
   );
   const adapters = buildAdapterPages(runtimeCompatibilityPublication, packages);
   const routes = createRouteManifest(packages, adapters);
-  const searchRecords = createSearchRecords(packages, adapters);
+  const searchRecords = createSearchRecords(packages, adapters, repositoryFormatSpecification);
 
   return {
     adapters,
     generatedNotice: GENERATED_NOTICE,
-    llmsText: createLlmsText(packages, adapters),
+    llmsText: createLlmsText(packages, adapters, repositoryFormatSpecification),
     packages,
+    repositoryFormatSpecification,
     routes,
     runtimeCompatibilityPublication,
     searchRecords,

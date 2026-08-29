@@ -1,17 +1,25 @@
 ---
 export interface Props {
   text: string;
+  variant?: 'badge' | 'compact';
 }
 
-const { text } = Astro.props;
-const segments = text.split(/(\bmoldea\b)/gu);
+const { text, variant = 'badge' } = Astro.props;
+const segments = text.split(/(\bmoldea\b)/giu);
 ---
 
 {
   segments.map((segment) =>
-    segment === 'moldea' ? (
-      <code class="rounded-md bg-code px-1.5 py-1 font-mono text-[0.86em] font-semibold text-code-foreground">
-        {segment}
+    /^moldea$/iu.test(segment) ? (
+      <code
+        class:list={[
+          'font-mono font-semibold',
+          variant === 'badge'
+            ? 'rounded-md bg-code px-1.5 py-1 text-[0.86em] text-code-foreground'
+            : 'text-[0.92em]',
+        ]}
+      >
+        moldea
       </code>
     ) : (
       segment
