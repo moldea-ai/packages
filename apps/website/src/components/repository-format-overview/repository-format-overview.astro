@@ -1,0 +1,310 @@
+---
+import {
+  ArrowDown,
+  ArrowRight,
+  BookOpenText,
+  Braces,
+  CodeXml,
+  FileCode,
+  FileText,
+  GitBranch,
+  Link2,
+  ScanSearch,
+} from '@lucide/astro';
+import ActionLink from '@moldea.ai/website-ui/action-link';
+import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
+import { withBase } from '@moldea.ai/website-ui/site';
+
+interface Props {
+  repositoryFormatRoute: string;
+}
+
+const { repositoryFormatRoute } = Astro.props;
+const basePath = import.meta.env.BASE_URL;
+---
+
+<section
+  class="dark-surface-selection border-y border-primary-foreground/15 bg-primary text-primary-foreground"
+  aria-labelledby="repository-format-overview-title"
+>
+  <div class="page-shell py-section-gap">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.72fr)] lg:items-end">
+      <div>
+        <p class="eyebrow mb-4 text-current/55">Repository Format</p>
+        <h2
+          id="repository-format-overview-title"
+          class="section-title max-w-4xl font-semibold"
+        >
+          The structure behind every evaluation.
+        </h2>
+      </div>
+      <div class="max-w-2xl lg:justify-self-end">
+        <p class="text-lg leading-8 text-current/70">
+          Core consumes one coherent repository snapshot, validates Repository Format, and returns a
+          structured inspection result. When valid, it contains a deeply immutable project index
+          alongside deterministic evidence and diagnostics.
+        </p>
+        <ActionLink
+          class="light-surface-selection mt-5 w-fit border-primary-foreground/20 bg-primary-foreground text-primary hover:bg-primary-foreground/85 dark:bg-primary-foreground dark:text-primary dark:hover:bg-primary-foreground/85"
+          href={withBase(repositoryFormatRoute, basePath)}
+          variant="outline"
+        >
+          Read the format specification
+          <ArrowRight
+            class="size-4"
+            aria-hidden="true"
+          />
+        </ActionLink>
+      </div>
+    </div>
+
+    <div
+      class="mt-10 rounded-2xl border border-primary-foreground/15 bg-primary-foreground/5 p-3 sm:p-5 lg:p-6"
+    >
+      <div
+        class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_3rem_minmax(14rem,0.72fr)_3rem_minmax(0,1fr)] lg:items-stretch"
+      >
+        <article class="rounded-xl border border-primary-foreground/15 bg-primary/45 p-5 sm:p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="eyebrow mb-2 text-current/50">01 · Input</p>
+              <h3 class="text-xl font-semibold">Repository snapshot</h3>
+            </div>
+            <GitBranch
+              class="size-5 text-current/65"
+              aria-hidden="true"
+            />
+          </div>
+          <div class="mt-8 space-y-3 font-mono text-sm">
+            <p class="flex items-center gap-3">
+              <span
+                class="flex size-7 items-center justify-center rounded-md border border-primary-foreground/15 bg-primary-foreground/5"
+              >
+                <FileCode
+                  class="size-3.5"
+                  aria-hidden="true"
+                />
+              </span>
+              source/**
+            </p>
+            <p class="flex items-center gap-3">
+              <span
+                class="flex size-7 items-center justify-center rounded-md border border-primary-foreground/15 bg-primary-foreground/5"
+              >
+                <FileText
+                  class="size-3.5"
+                  aria-hidden="true"
+                />
+              </span>
+              moldea/project.md
+            </p>
+            <p class="flex items-center gap-3">
+              <span
+                class="flex size-7 items-center justify-center rounded-md border border-primary-foreground/15 bg-primary-foreground/5"
+              >
+                <BookOpenText
+                  class="size-3.5"
+                  aria-hidden="true"
+                />
+              </span>
+              moldea/context/**
+            </p>
+            <p class="flex items-center gap-3">
+              <span
+                class="flex size-7 items-center justify-center rounded-md border border-primary-foreground/15 bg-primary-foreground/5"
+              >
+                <FileText
+                  class="size-3.5"
+                  aria-hidden="true"
+                />
+              </span>
+              moldea/agents/**
+            </p>
+          </div>
+        </article>
+
+        <div
+          class="flex items-center justify-center text-current/35"
+          aria-hidden="true"
+        >
+          <ArrowDown class="size-5 lg:hidden" />
+          <ArrowRight class="hidden size-5 lg:block" />
+        </div>
+
+        <article
+          class="light-surface-selection flex flex-col justify-between rounded-xl bg-primary-foreground p-5 text-primary sm:p-6"
+        >
+          <div>
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="eyebrow mb-2 text-current/50">02 · Interpret</p>
+                <h3 class="font-mono text-base font-semibold">@moldea.ai/core</h3>
+              </div>
+              <span
+                class="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"
+              >
+                <Braces
+                  class="size-4"
+                  aria-hidden="true"
+                />
+              </span>
+            </div>
+            <p class="mt-8 text-2xl leading-tight font-semibold">One deterministic pass.</p>
+          </div>
+          <ol class="mt-8 space-y-2 text-sm font-semibold">
+            <li class="flex items-center gap-2">
+              <span class="size-1.5 rounded-full bg-current/40"></span>
+              Validate
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="size-1.5 rounded-full bg-current/40"></span>
+              Normalize
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="size-1.5 rounded-full bg-current/40"></span>
+              Index
+            </li>
+          </ol>
+        </article>
+
+        <div
+          class="flex items-center justify-center text-current/35"
+          aria-hidden="true"
+        >
+          <ArrowDown class="size-5 lg:hidden" />
+          <ArrowRight class="hidden size-5 lg:block" />
+        </div>
+
+        <article class="rounded-xl border border-primary-foreground/15 bg-primary/45 p-5 sm:p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="eyebrow mb-2 text-current/50">03 · Output</p>
+              <h3 class="text-xl font-semibold">Structured result</h3>
+            </div>
+            <Braces
+              class="size-5 text-current/65"
+              aria-hidden="true"
+            />
+          </div>
+          <div
+            class="mt-8 overflow-hidden rounded-lg border border-primary-foreground/15 bg-primary/55 p-4 font-mono text-xs leading-6 sm:text-sm"
+            aria-label="Project inspection result structure"
+          >
+            <p><span class="text-current/50">&#123;</span></p>
+            <p class="ps-4"><span class="text-current/55">valid:</span> true,</p>
+            <p class="ps-4"><span class="text-current/55">project:</span> &#123;</p>
+            <p class="ps-8"><span class="text-current/55">context:</span> [...],</p>
+            <p class="ps-8"><span class="text-current/55">decisions:</span> [...],</p>
+            <p class="ps-8"><span class="text-current/55">agents:</span> [...]</p>
+            <p class="ps-4">&#125;,</p>
+            <p class="ps-4"><span class="text-current/55">evidence:</span> [...],</p>
+            <p class="ps-4"><span class="text-current/55">diagnostics:</span> []</p>
+            <p><span class="text-current/50">&#125;</span></p>
+          </div>
+        </article>
+      </div>
+
+      <div class="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
+        <article class="rounded-xl border border-primary-foreground/15 bg-primary/45 p-5 sm:p-6">
+          <div class="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <div>
+              <p class="eyebrow mb-3 text-current/50">Shared evidence model</p>
+              <h3 class="max-w-xl text-2xl leading-tight font-semibold">
+                Code, context, and instructions stay connected.
+              </h3>
+              <p class="mt-4 max-w-2xl leading-7 text-current/65">
+                <InlineBrandText
+                  text="Repository Format names the durable project assets. Runtime adapters add source-grounded code evidence. moldea can then trace explicit relationships across the complete repository state."
+                />
+              </p>
+            </div>
+            <Link2
+              class="hidden size-7 text-current/50 sm:block"
+              aria-hidden="true"
+            />
+          </div>
+
+          <div class="mt-7 grid gap-2 sm:grid-cols-3 sm:gap-3">
+            <div
+              class="rounded-lg border border-primary-foreground/15 bg-primary-foreground/5 p-3 text-center sm:p-4"
+            >
+              <CodeXml
+                class="mx-auto mb-3 size-4 text-current/60"
+                aria-hidden="true"
+              />
+              <p class="text-xs font-semibold sm:text-sm">Code</p>
+            </div>
+            <div
+              class="rounded-lg border border-primary-foreground/15 bg-primary-foreground/5 p-3 text-center sm:p-4"
+            >
+              <BookOpenText
+                class="mx-auto mb-3 size-4 text-current/60"
+                aria-hidden="true"
+              />
+              <p class="text-xs font-semibold sm:text-sm">Context</p>
+            </div>
+            <div
+              class="rounded-lg border border-primary-foreground/15 bg-primary-foreground/5 p-3 text-center sm:p-4"
+            >
+              <FileText
+                class="mx-auto mb-3 size-4 text-current/60"
+                aria-hidden="true"
+              />
+              <p class="text-xs font-semibold sm:text-sm">Instructions</p>
+            </div>
+          </div>
+        </article>
+
+        <div
+          class="grid gap-3"
+          aria-label="Evaluation layers"
+        >
+          <article
+            class="rounded-xl border border-primary-foreground/15 bg-primary-foreground/5 p-5 sm:p-6"
+          >
+            <div class="flex items-center gap-3">
+              <span
+                class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary-foreground/15 bg-primary/40"
+              >
+                <ScanSearch
+                  class="size-4"
+                  aria-hidden="true"
+                />
+              </span>
+              <div>
+                <p class="eyebrow mb-1 text-current/50">Mechanically provable</p>
+                <h3 class="font-semibold">Deterministic evaluation</h3>
+              </div>
+            </div>
+            <p class="mt-4 text-sm leading-6 text-current/65">
+              Validates structure, references, identities, digests, and supported runtime links.
+            </p>
+          </article>
+
+          <article
+            class="rounded-xl border border-primary-foreground/15 bg-primary-foreground/5 p-5 sm:p-6"
+          >
+            <div class="flex items-center gap-3">
+              <span
+                class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary-foreground/15 bg-primary/40"
+              >
+                <Link2
+                  class="size-4"
+                  aria-hidden="true"
+                />
+              </span>
+              <div>
+                <p class="eyebrow mb-1 text-current/50">Meaning-aware</p>
+                <h3 class="font-semibold">Semantic evaluation</h3>
+              </div>
+            </div>
+            <p class="mt-4 text-sm leading-6 text-current/65">
+              Assesses whether implementation, project context, and agent instructions remain
+              aligned.
+            </p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

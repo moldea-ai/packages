@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.2.0
+pnpm add @moldea.ai/website-ui@1.2.1
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -17,6 +17,10 @@ The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. I
 ```
 
 Tailwind scans the shipped Astro components through the package stylesheet's explicit source declaration.
+
+## Surface-aware selection
+
+Add `dark-surface-selection` to an intentionally dark surface and `light-surface-selection` to an intentionally light surface when it differs from the active theme. Use `theme-surface-selection` when a nested surface returns to the active website theme. These utilities keep ordinary and inline-code text selection legible across nested light and dark surfaces.
 
 ## Utilities
 
