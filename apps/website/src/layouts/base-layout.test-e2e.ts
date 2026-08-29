@@ -1,11 +1,11 @@
 // @vitest-environment node
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
+import { DEFAULT_BASE_PATH, normalizeBasePath, withBase } from '@moldea.ai/website-ui/site';
 
 import { DEFAULT_SITE_URL, SITE_NAME, SOCIAL_IMAGE_ALT } from '../lib/site/constants.ts';
 
-const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
+const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const toPublicPath = (route: string): string => withBase(route, basePath);
 const REPRESENTATIVE_PATHS = [
   '/',
