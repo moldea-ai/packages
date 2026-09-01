@@ -609,7 +609,7 @@ test('shows the same company marks in the compatibility summary and accordions',
   const compatibilityAccordions = page.locator('details');
   await expect(
     compatibilityTable.getByRole('link', {
-      name: /typescript-(?:generate-stream-text|tool-loop-agent)-7, experimental/u,
+      name: /typescript-(?:generate-stream-text|tool-loop-agent)-7, supported/u,
     }),
   ).toHaveCount(2);
 

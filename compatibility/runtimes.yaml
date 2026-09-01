@@ -79,8 +79,10 @@ adapters:
           - Beta resources, client.messages.stream, parse helpers, and tool-runner abstractions are not interpreted; an exact stream property on direct messages.create requests is tolerated, but its semantics are not validated.
           - Client-tool input-schema contents, including the provider-required top-level type object, are not validated; the target establishes only direct schema wiring.
           - Source forms outside the verified TypeScript ESM target, dynamic factories, mutable requests, provider tools, output schemas, runtime variables, and handoffs are outside the initial target.
-        lastVerifiedAt: '2026-08-17'
-    lastVerifiedAt: '2026-08-17'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/anthropic/typescript-messages-api-0-117/'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'
   claude-agent-sdk:
     implementation:
       kind: package
@@ -287,8 +289,10 @@ adapters:
             Tool output schemas, agent input schemas, external MCP tools, resources, prompts, skills, plugins, hooks, sessions, permission approval, sandboxing, workflows, model selection, and provider behavior are not interpreted.
           - >-
             Establishing query-configured Agent or SDK MCP tool availability does not prove that filesystem-loaded settings, managed policy, hooks, later session state, allowedTools, canUseTool, permission mode, or user approval preserve or permit a particular invocation, and no evidence claims that Claude will actually invoke the subagent or tool.
-        lastVerifiedAt: '2026-08-19'
-    lastVerifiedAt: '2026-08-19'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/claude-agent-sdk/typescript-query-subagents-0-3/'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'
   cloudflare-agents:
     implementation:
       kind: package
@@ -363,7 +367,9 @@ adapters:
           - Bare Agent classes, factories, indirect subclasses, decorators, executable fields, static blocks, computed members, generators, and non-pass-through constructors are outside the target.
           - Dynamic session builders, onCompaction interpretation, runtime mutation, channel-provided tool replacement, and open tools maps are outside the target.
           - Agent input and output schemas are not supported for Think.
-        lastVerifiedAt: '2026-08-19'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-think-0-16-ai-sdk-7/'
+        lastVerifiedAt: '2026-09-01'
       - id: typescript-ai-chat-agent-0-10-ai-sdk-7
         kind: package
         language: typescript
@@ -428,8 +434,10 @@ adapters:
           - Nested or indirect generation, request variables, prepareStep instruction interpretation, and generation functions other than generateText and streamText are outside the target.
           - Output variants other than Output.object and all agent input schemas are outside the target.
           - Dynamic, provider, MCP-generated, or inline tools without exact repository registration identities are outside the target.
-        lastVerifiedAt: '2026-08-19'
-    lastVerifiedAt: '2026-08-19'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-ai-chat-agent-0-10-ai-sdk-7/'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'
   custom:
     implementation:
       kind: built-in
@@ -453,8 +461,8 @@ adapters:
             kind: runtime
             support: full
             description: Universal Core validation of explicit repository relationships without runtime-specific inference.
-        lastVerifiedAt: '2026-08-15'
-    lastVerifiedAt: '2026-08-15'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'
   eve:
     implementation:
       kind: package
@@ -631,8 +639,10 @@ adapters:
           - Flat and packaged Markdown skill paths may establish implementation-path relationships, but the target emits no Markdown skill-registration evidence because it does not reproduce Eve frontmatter acceptance and collision resolution.
           - Dynamic capabilities, remote agents, extensions, connections, channels, schedules, hooks, sandboxes, approvals, auth, state, sessions, compaction, task orchestration, and runtime-variable providers are not interpreted.
           - Eve 0.39.x requires Node.js 24 or newer for the inspected application runtime. The adapter records but does not validate that application prerequisite and may itself run on another adapter-supported Node.js line.
-        lastVerifiedAt: '2026-08-19'
-    lastVerifiedAt: '2026-08-19'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/eve/typescript-filesystem-agent-0-39/'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'
   google-genai:
     implementation:
       kind: package
@@ -738,8 +748,10 @@ adapters:
           - Dynamic configuration, callable tools, MCP helpers, provider/server tools, automatic function execution, streaming, chats, live sessions, and Interactions API calls are outside the initial target.
           - Function input-schema contents, including top-level object shape and parameter-name restrictions, are not validated; the target establishes only direct parametersJsonSchema wiring.
           - Source forms outside the verified TypeScript ESM target, legacy @google/generative-ai, alternative parameters schemas, output schemas, runtime variables, and handoffs are outside the initial target.
-        lastVerifiedAt: '2026-08-19'
-    lastVerifiedAt: '2026-08-19'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/google-genai/typescript-models-generate-content-2/'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'
   langchain:
     implementation:
       kind: package
@@ -859,8 +871,10 @@ adapters:
           - The target does not infer supervisors, routing targets, handoffs, or subagent control transfer.
           - Direct LangGraph applications remain outside this adapter target.
           - Lockfiles and installed package versions are not inspected.
-        lastVerifiedAt: '2026-08-20'
-    lastVerifiedAt: '2026-08-20'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/langchain/typescript-create-agent-1-5/'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'
   langgraph:
     implementation:
       kind: package
@@ -972,7 +986,9 @@ adapters:
           - Graph nodes do not become manifest tools, skills, subagents, or handoffs merely from their graph position.
           - Compiled-graph description is not validated without a supported supervisor registration.
           - Lockfiles and installed package versions are not inspected.
-        lastVerifiedAt: '2026-08-21'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/langgraph/typescript-state-graph-1-4/'
+        lastVerifiedAt: '2026-09-01'
       - id: typescript-functional-api-1-4
         kind: package
         language: typescript
@@ -1045,8 +1061,10 @@ adapters:
           - Tasks do not become manifest tools, skills, or handoffs merely because they are exported or invoked.
           - Interrupt payloads, checkpoint behavior, replay determinism, idempotency, and human-approval semantics are not validated.
           - Lockfiles and installed package versions are not inspected.
-        lastVerifiedAt: '2026-08-21'
-    lastVerifiedAt: '2026-08-21'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/langgraph/typescript-functional-api-1-4/'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'
   openai:
     implementation:
       kind: package
@@ -1119,8 +1137,10 @@ adapters:
           - Package versions are classified from nearest package manifests; lockfiles and installed node_modules are not inspected.
           - Source forms outside the verified TypeScript ESM target, Realtime, Assistants, Agents SDK, streaming semantics, and provider-hosted configuration are not interpreted.
           - Agent input and output schemas, tool implementations and output schemas, skills, variables, and runtime-native routing do not produce evidence.
-        lastVerifiedAt: '2026-08-17'
-    lastVerifiedAt: '2026-08-17'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/openai/typescript-responses-api-7/'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'
   openai-agents-sdk:
     implementation:
       kind: package
@@ -1242,8 +1262,10 @@ adapters:
           - Agent output, tool input, and tool output schema contents are not validated; the target establishes only direct schema wiring.
           - Handoff input schemas, callbacks, filters, enablement, runtime variables, guardrails, prompt templates, sessions, tracing, approvals, models, and provider behavior are not interpreted.
           - Custom Handoff objects, agents as tools, hosted tools, MCP tools, Realtime agents, sandbox agents, and dynamically assembled agent graphs are outside the initial target.
-        lastVerifiedAt: '2026-08-19'
-    lastVerifiedAt: '2026-08-19'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/openai-agents-sdk/typescript-agent-handoffs-0-16/'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'
   vercel-ai-sdk:
     implementation:
       kind: package
@@ -1345,7 +1367,9 @@ adapters:
           - Only Output.object establishes an agent output-schema relationship.
           - prepareCall and prepareStep function bodies are not interpreted; prepareCall therefore leaves instruction, tool, and output-schema wiring unresolved.
           - Lockfiles and installed package versions are not inspected.
-        lastVerifiedAt: '2026-08-19'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-tool-loop-agent-7/'
+        lastVerifiedAt: '2026-09-01'
       - id: typescript-generate-stream-text-7
         kind: package
         language: typescript
@@ -1431,5 +1455,7 @@ adapters:
           - Only Output.object establishes an agent output-schema relationship.
           - prepareStep function bodies are not interpreted.
           - Lockfiles and installed package versions are not inspected.
-        lastVerifiedAt: '2026-08-19'
-    lastVerifiedAt: '2026-08-19'
+        qualificationEvidence:
+          url: 'https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-generate-stream-text-7/'
+        lastVerifiedAt: '2026-09-01'
+    lastVerifiedAt: '2026-09-01'

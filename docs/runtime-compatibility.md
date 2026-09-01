@@ -25,7 +25,7 @@ The matrix publishes only the verified targets and support boundaries shown belo
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-08-17`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers or unsupported indirect integration patterns.
 
@@ -34,7 +34,8 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-08-17`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/anthropic/typescript-messages-api-0-117/)
 
 | Ecosystem | Package             | Role      | Verified range       |
 | --------- | ------------------- | --------- | -------------------- |
@@ -80,7 +81,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers, main-thread agent selection, tool aliases, string-array prompts, filesystem-defined agents, dynamic agent construction, observer behavior, external MCP configuration, or other unsupported indirect integration patterns.
 
@@ -89,7 +90,8 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/claude-agent-sdk/typescript-query-subagents-0-3/)
 
 | Ecosystem | Package                          | Role      | Verified range     |
 | --------- | -------------------------------- | --------- | ------------------ |
@@ -168,7 +170,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `recommended`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Project-local guidance should document Cloudflare bindings, Durable Object wiring, and deployment-specific behavior outside the verified static source boundary.
 
@@ -177,7 +179,8 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-ai-chat-agent-0-10-ai-sdk-7/)
 
 | Ecosystem | Package               | Role        | Verified range     |
 | --------- | --------------------- | ----------- | ------------------ |
@@ -216,7 +219,8 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `schema`, `tool-registration`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-think-0-16-ai-sdk-7/)
 
 | Ecosystem | Package             | Role        | Verified range     |
 | --------- | ------------------- | ----------- | ------------------ |
@@ -256,7 +260,7 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `required`
-- Last verified: `2026-08-15`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Project-local guidance defines the custom runtime integration.
 
@@ -265,7 +269,7 @@ Runtime guidance notes: Project-local guidance defines the custom runtime integr
 - Kind: `custom`
 - Language: `any`
 - Evidence kinds: Not available
-- Last verified: `2026-08-15`
+- Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/custom/custom/)
 
 #### Patterns
@@ -281,7 +285,7 @@ Runtime guidance notes: Project-local guidance defines the custom runtime integr
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Project-local guidance is needed only for unsupported dynamic capabilities, extensions, remote agents, non-canonical or composed instructions, positive single-file subagent analysis, Markdown skill registration, framework-tool overrides, or other repository-specific Eve patterns outside the verified static filesystem target.
 
@@ -290,7 +294,8 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `schema`, `skill-registration`, `tool-registration`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/eve/typescript-filesystem-agent-0-39/)
 
 | Ecosystem | Package | Role      | Verified range     |
 | --------- | ------- | --------- | ------------------ |
@@ -368,7 +373,7 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers or unsupported indirect integration patterns.
 
@@ -377,7 +382,8 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/google-genai/typescript-models-generate-content-2/)
 
 | Ecosystem | Package         | Role      | Verified range    |
 | --------- | --------------- | --------- | ----------------- |
@@ -430,7 +436,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-08-20`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers, middleware-driven relationships, supervisor composition around a supported LangChain boundary, headless tools, dynamic tool collections, or other unsupported indirect LangChain integration patterns.
 
@@ -439,7 +445,8 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `instruction-loader`, `language`, `runtime-package`, `schema`, `tool-registration`
-- Last verified: `2026-08-20`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/langchain/typescript-create-agent-1-5/)
 
 | Ecosystem | Package           | Role        | Verified range   |
 | --------- | ----------------- | ----------- | ---------------- |
@@ -495,7 +502,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `recommended`
-- Last verified: `2026-08-21`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Project-local guidance is recommended for prompt ownership, model and tool boundaries, node responsibilities, dynamic routing, state semantics, subgraphs, persistence, interrupts, human control, supervisor composition, and other repository-specific LangGraph behavior not represented by the initial static targets.
 
@@ -504,7 +511,8 @@ Runtime guidance notes: Project-local guidance is recommended for prompt ownersh
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `language`, `runtime-package`, `runtime-pattern`
-- Last verified: `2026-08-21`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/langgraph/typescript-functional-api-1-4/)
 
 | Ecosystem | Package                | Role        | Verified range    |
 | --------- | ---------------------- | ----------- | ----------------- |
@@ -552,7 +560,8 @@ Runtime guidance notes: Project-local guidance is recommended for prompt ownersh
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `language`, `runtime-package`, `runtime-pattern`, `schema`
-- Last verified: `2026-08-21`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/langgraph/typescript-state-graph-1-4/)
 
 | Ecosystem | Package                | Role        | Verified range    |
 | --------- | ---------------------- | ----------- | ----------------- |
@@ -613,7 +622,7 @@ Runtime guidance notes: Project-local guidance is recommended for prompt ownersh
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `recommended`
-- Last verified: `2026-08-17`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Document project-specific model selection, tool execution, streaming, retry, and error behavior that static inspection cannot establish.
 
@@ -622,7 +631,8 @@ Runtime guidance notes: Document project-specific model selection, tool executio
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-08-17`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/openai/typescript-responses-api-7/)
 
 | Ecosystem | Package  | Role      | Verified range   |
 | --------- | -------- | --------- | ---------------- |
@@ -662,7 +672,7 @@ Runtime guidance notes: Document project-specific model selection, tool executio
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers, dynamic graph construction, or unsupported indirect integration patterns.
 
@@ -671,7 +681,8 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `schema`, `tool-registration`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/openai-agents-sdk/typescript-agent-handoffs-0-16/)
 
 | Ecosystem | Package          | Role      | Verified range     |
 | --------- | ---------------- | --------- | ------------------ |
@@ -726,7 +737,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Supported repository-format versions: `1`
 - Compatible Core range: `^2.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers or unsupported dynamic integration patterns.
 
@@ -735,7 +746,8 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-generate-stream-text-7/)
 
 | Ecosystem | Package | Role      | Verified range    |
 | --------- | ------- | --------- | ----------------- |
@@ -782,7 +794,8 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `instruction-loader`, `language`, `runtime-package`, `schema`, `tool-registration`
-- Last verified: `2026-08-19`
+- Last verified: `2026-09-01`
+- Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-tool-loop-agent-7/)
 
 | Ecosystem | Package | Role      | Verified range    |
 | --------- | ------- | --------- | ----------------- |
