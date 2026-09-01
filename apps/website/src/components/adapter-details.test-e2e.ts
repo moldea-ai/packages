@@ -6,7 +6,7 @@ import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const toPublicPath = (route: string): string => withBase(route, basePath);
 
-test('links only profiled targets to canonical qualification evidence', async ({ page }) => {
+test('links qualified targets to canonical evidence', async ({ page }) => {
   await page.setViewportSize({ height: 740, width: 320 });
   await page.goto(toPublicPath('/adapters/custom/'));
 
@@ -48,5 +48,15 @@ test('links only profiled targets to canonical qualification evidence', async ({
   }
 
   await page.goto(toPublicPath('/adapters/openai/'));
-  await expect(page.getByRole('link', { name: /qualification evidence/iu })).toHaveCount(0);
+  await expect(
+    page.getByRole('link', {
+      name: 'View qualification evidence for openai target typescript-responses-api-7',
+    }),
+  ).toHaveAttribute(
+    'href',
+    'https://skill.moldea.ai/evidence/qualification/openai/typescript-responses-api-7/',
+  );
+
+  await page.goto(toPublicPath('/adapters/vercel-ai-sdk/'));
+  await expect(page.getByRole('link', { name: /qualification evidence/iu })).toHaveCount(2);
 });

@@ -164,7 +164,7 @@ describe('runtime compatibility matrix validation', () => {
     expect(parseRuntimeCompatibilityMatrix(stringify(matrix)).valid).toBe(true);
   });
 
-  test('publishes qualification evidence only for the committed Custom profile', () => {
+  test('publishes canonical qualification evidence for every committed target', () => {
     const result = parseRuntimeCompatibilityMatrix(canonicalSource);
 
     expect(result.valid).toBe(true);
@@ -186,9 +186,74 @@ describe('runtime compatibility matrix validation', () => {
 
       expect(qualificationTargets).toStrictEqual([
         {
+          adapterId: 'anthropic',
+          targetId: 'typescript-messages-api-0-117',
+          url: 'https://skill.moldea.ai/evidence/qualification/anthropic/typescript-messages-api-0-117/',
+        },
+        {
+          adapterId: 'claude-agent-sdk',
+          targetId: 'typescript-query-subagents-0-3',
+          url: 'https://skill.moldea.ai/evidence/qualification/claude-agent-sdk/typescript-query-subagents-0-3/',
+        },
+        {
+          adapterId: 'cloudflare-agents',
+          targetId: 'typescript-ai-chat-agent-0-10-ai-sdk-7',
+          url: 'https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-ai-chat-agent-0-10-ai-sdk-7/',
+        },
+        {
+          adapterId: 'cloudflare-agents',
+          targetId: 'typescript-think-0-16-ai-sdk-7',
+          url: 'https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-think-0-16-ai-sdk-7/',
+        },
+        {
           adapterId: 'custom',
           targetId: 'custom',
           url: 'https://skill.moldea.ai/evidence/qualification/custom/custom/',
+        },
+        {
+          adapterId: 'eve',
+          targetId: 'typescript-filesystem-agent-0-39',
+          url: 'https://skill.moldea.ai/evidence/qualification/eve/typescript-filesystem-agent-0-39/',
+        },
+        {
+          adapterId: 'google-genai',
+          targetId: 'typescript-models-generate-content-2',
+          url: 'https://skill.moldea.ai/evidence/qualification/google-genai/typescript-models-generate-content-2/',
+        },
+        {
+          adapterId: 'langchain',
+          targetId: 'typescript-create-agent-1-5',
+          url: 'https://skill.moldea.ai/evidence/qualification/langchain/typescript-create-agent-1-5/',
+        },
+        {
+          adapterId: 'langgraph',
+          targetId: 'typescript-functional-api-1-4',
+          url: 'https://skill.moldea.ai/evidence/qualification/langgraph/typescript-functional-api-1-4/',
+        },
+        {
+          adapterId: 'langgraph',
+          targetId: 'typescript-state-graph-1-4',
+          url: 'https://skill.moldea.ai/evidence/qualification/langgraph/typescript-state-graph-1-4/',
+        },
+        {
+          adapterId: 'openai',
+          targetId: 'typescript-responses-api-7',
+          url: 'https://skill.moldea.ai/evidence/qualification/openai/typescript-responses-api-7/',
+        },
+        {
+          adapterId: 'openai-agents-sdk',
+          targetId: 'typescript-agent-handoffs-0-16',
+          url: 'https://skill.moldea.ai/evidence/qualification/openai-agents-sdk/typescript-agent-handoffs-0-16/',
+        },
+        {
+          adapterId: 'vercel-ai-sdk',
+          targetId: 'typescript-generate-stream-text-7',
+          url: 'https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-generate-stream-text-7/',
+        },
+        {
+          adapterId: 'vercel-ai-sdk',
+          targetId: 'typescript-tool-loop-agent-7',
+          url: 'https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-tool-loop-agent-7/',
         },
       ]);
     }

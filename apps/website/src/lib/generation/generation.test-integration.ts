@@ -282,7 +282,7 @@ describe('discoverPublicPackages', () => {
 });
 
 describe('adapter and route generation', () => {
-  test('preserves built-in and experimental package-backed availability states', () => {
+  test('preserves available implementations with supported qualified targets', () => {
     const model = getCurrentWebsiteModel();
     const custom = model.adapters.find(({ id }) => id === 'custom');
     const openAi = model.adapters.find(({ id }) => id === 'openai');
@@ -299,15 +299,28 @@ describe('adapter and route generation', () => {
       implementedPackageSlug: 'adapter-openai',
       entry: {
         implementationStatus: 'available',
-        targets: [{ maturity: 'experimental' }],
+        targets: [
+          {
+            maturity: 'supported',
+            qualificationEvidence: {
+              url: 'https://skill.moldea.ai/evidence/qualification/openai/typescript-responses-api-7/',
+            },
+          },
+        ],
       },
     });
-    expect(openAi?.entry.targets?.[0]?.qualificationEvidence).toBeUndefined();
     expect(anthropic).toMatchObject({
       implementedPackageSlug: 'adapter-anthropic',
       entry: {
         implementationStatus: 'available',
-        targets: [{ maturity: 'experimental' }],
+        targets: [
+          {
+            maturity: 'supported',
+            qualificationEvidence: {
+              url: 'https://skill.moldea.ai/evidence/qualification/anthropic/typescript-messages-api-0-117/',
+            },
+          },
+        ],
       },
     });
   });
@@ -409,8 +422,8 @@ describe('createLlmsText', () => {
     for (const route of internalLinks) expect(model.routes).toContain(route);
     expect(text).not.toContain('@moldea.ai/packages-website');
     expect(text).toContain('available; built into @moldea.ai/core; custom: supported');
-    expect(text).toContain('typescript-messages-api-0-117: experimental');
-    expect(text).toContain('typescript-responses-api-7: experimental');
+    expect(text).toContain('typescript-messages-api-0-117: supported');
+    expect(text).toContain('typescript-responses-api-7: supported');
     expect(text).toContain(
       `[Repository Format specification](${model.repositoryFormatSpecification.route})`,
     );
@@ -444,7 +457,7 @@ describe('createSearchRecords', () => {
       searchRecords.some(({ route }) => route === model.repositoryFormatSpecification.route),
     ).toBe(true);
 
-    expect(searchRecords.some(({ searchText }) => searchText.includes('experimental'))).toBe(true);
+    expect(searchRecords.some(({ searchText }) => searchText.includes('supported'))).toBe(true);
     expect(JSON.stringify(searchRecords)).not.toContain('@moldea.ai/packages-website');
   });
 

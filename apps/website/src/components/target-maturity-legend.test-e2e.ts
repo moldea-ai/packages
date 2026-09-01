@@ -15,16 +15,16 @@ test('renders the maturity legend and one target per compatibility row', async (
     name: 'Official moldea runtime adapter compatibility summary',
   });
   const targetCells = compatibilityTable.locator('[headers="target-maturity-heading"]');
-  const experimentalTargets = compatibilityTable.getByRole('link', { name: /, experimental$/u });
+  const supportedTargets = compatibilityTable.getByRole('link', { name: /, supported$/u });
   const customTarget = compatibilityTable.getByRole('link', { name: 'custom, supported' });
   const langChainTarget = compatibilityTable.getByRole('link', {
-    name: 'typescript-create-agent-1-5, experimental',
+    name: 'typescript-create-agent-1-5, supported',
   });
   const langGraphStateGraphTarget = compatibilityTable.getByRole('link', {
-    name: 'typescript-state-graph-1-4, experimental',
+    name: 'typescript-state-graph-1-4, supported',
   });
   const langGraphFunctionalApiTarget = compatibilityTable.getByRole('link', {
-    name: 'typescript-functional-api-1-4, experimental',
+    name: 'typescript-functional-api-1-4, supported',
   });
 
   await expect(maturityLegend.getByRole('list', { name: 'Target maturity legend' })).toContainText(
@@ -39,8 +39,8 @@ test('renders the maturity legend and one target per compatibility row', async (
   await expect(
     maturityLegend.getByTitle('Documented for existing users; new adoption is discouraged.'),
   ).toBeVisible();
-  await expect(experimentalTargets).toHaveCount(13);
-  await expect(compatibilityTable.getByRole('link', { name: /, supported$/u })).toHaveCount(1);
+  await expect(supportedTargets).toHaveCount(14);
+  await expect(compatibilityTable.getByRole('link', { name: /, experimental$/u })).toHaveCount(0);
   await expect(compatibilityTable.getByRole('link', { name: /, deprecated$/u })).toHaveCount(0);
   expect(
     await targetCells.evaluateAll((cells) =>
@@ -56,12 +56,12 @@ test('renders the maturity legend and one target per compatibility row', async (
   );
   await expect(
     compatibilityTable.getByRole('link', {
-      name: 'typescript-think-0-16-ai-sdk-7, experimental',
+      name: 'typescript-think-0-16-ai-sdk-7, supported',
     }),
   ).toBeVisible();
   await expect(
     compatibilityTable.getByRole('link', {
-      name: 'typescript-ai-chat-agent-0-10-ai-sdk-7, experimental',
+      name: 'typescript-ai-chat-agent-0-10-ai-sdk-7, supported',
     }),
   ).toBeVisible();
   await expect(langGraphStateGraphTarget).toBeVisible();
@@ -70,7 +70,7 @@ test('renders the maturity legend and one target per compatibility row', async (
     await customTarget
       .locator('span')
       .evaluate((element) => getComputedStyle(element).backgroundColor),
-  ).not.toBe(
+  ).toBe(
     await langChainTarget
       .locator('span')
       .evaluate((element) => getComputedStyle(element).backgroundColor),
@@ -80,10 +80,13 @@ test('renders the maturity legend and one target per compatibility row', async (
       customTarget.locator('span').evaluate((element) => getComputedStyle(element).borderStyle),
       langChainTarget.locator('span').evaluate((element) => getComputedStyle(element).borderStyle),
       maturityLegend
+        .getByText('experimental', { exact: true })
+        .evaluate((element) => getComputedStyle(element).borderStyle),
+      maturityLegend
         .getByText('deprecated', { exact: true })
         .evaluate((element) => getComputedStyle(element).borderStyle),
     ]),
-  ).toStrictEqual(['solid', 'dashed', 'dotted']);
+  ).toStrictEqual(['solid', 'solid', 'dashed', 'dotted']);
 
   await page.getByRole('button', { name: 'Use dark theme' }).click();
   await expect(page.locator('html')).toHaveClass(/dark/);
@@ -101,7 +104,7 @@ test('truncates long targets and keeps target navigation usable at 320px', async
   await page.goto(toPublicPath('/compatibility/'));
 
   const targetLink = page.getByRole('link', {
-    name: 'typescript-create-agent-1-5, experimental',
+    name: 'typescript-create-agent-1-5, supported',
   });
   const targetBadge = targetLink.locator('span');
   const expectedTargetPath = `${toPublicPath(
