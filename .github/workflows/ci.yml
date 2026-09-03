@@ -188,6 +188,7 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     env:
+      PNPM_VERSION: 11.21.0
       VITEST_VERSION: 3.2.4
     steps:
       - name: Checkout
@@ -197,8 +198,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -240,7 +239,7 @@ jobs:
           fetch-depth: 0
           path: skill
           persist-credentials: false
-          ref: f28bcd31eb9656aa15cff2cc104484e12f0ab231 # compatibility-bridge-4.0.2 comparator
+          ref: b81f30153549bd1718290c22e8d9ffefc37f52ad # compatibility-bridge-4.0.2 comparator
           repository: moldea-ai/skill
 
       - name: Setup Node.js
