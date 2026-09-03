@@ -239,7 +239,7 @@ jobs:
           fetch-depth: 0
           path: skill
           persist-credentials: false
-          ref: 774f2b41f191dd6fb57d9265daa0881b7c352657 # compatibility-bridge-4.0.2 comparator
+          ref: 69702faa1fcfe4c36fb05ec9ea1ffa0a82bd00e7 # compatibility-bridge-4.0.2 comparator
           repository: moldea-ai/skill
 
       - name: Setup Node.js
