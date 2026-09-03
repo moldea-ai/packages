@@ -19,7 +19,7 @@ export const createRuntimeAwareCore = (adapter: IRuntimeAdapter) => {
 
 ## Built-in `custom`
 
-`custom` is recognized and validated by Core without a separate package. Project-local runtime guidance is required because no provider-specific adapter can infer a custom integration. It must never be installed or documented as `@moldea.ai/adapter-custom`.
+`custom` is recognized and validated by Core without a separate package. Repository Format permits project-local runtime guidance to be omitted, while the Runtime Compatibility Matrix requires appropriate guidance before a custom runtime receives a supported production-readiness claim because no provider-specific adapter can infer that integration. `custom` must never be installed or documented as `@moldea.ai/adapter-custom`.
 
 ## Invocation lifecycle
 
