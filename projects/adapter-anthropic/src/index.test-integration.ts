@@ -82,7 +82,7 @@ describe('@moldea.ai/adapter-anthropic public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-anthropic',
-      version: '2.0.4',
+      version: '2.0.5',
     });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
@@ -112,7 +112,7 @@ describe('@moldea.ai/adapter-anthropic public API', () => {
     ).toBe(true);
     expect(manifest.dependencies).toStrictEqual({
       '@moldea.ai/core': 'workspace:^2.0.0',
-      '@moldea.ai/repository': 'workspace:^1.0.0',
+      '@moldea.ai/repository': 'workspace:>=1.1.1',
       semver: '7.8.5',
       typescript: '6.0.3',
     });
