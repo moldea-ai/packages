@@ -8,10 +8,10 @@ The package implements the official `vercel-ai-sdk` runtime adapter for `@moldea
 
 ## Supported targets
 
-Version `1.0.4` supports:
+Version `1.0.5` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^2.0.0`
+- `@moldea.ai/core >=2.0.2`
 - TypeScript ESM `.ts`, `.tsx`, and `.mts` source
 - npm `ai >=7.0.66 <8.0.0`
 - directly exported `ToolLoopAgent` definitions

@@ -82,7 +82,7 @@ describe('@moldea.ai/adapter-openai-agents-sdk public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-openai-agents-sdk',
-      version: '1.0.6',
+      version: '1.0.7',
     });
     expect(packedPaths).toEqual(
       expect.arrayContaining([
@@ -115,7 +115,7 @@ describe('@moldea.ai/adapter-openai-agents-sdk public API', () => {
       ),
     ).toBe(true);
     expect(manifest.dependencies).toStrictEqual({
-      '@moldea.ai/core': 'workspace:^2.0.0',
+      '@moldea.ai/core': 'workspace:>=2.0.2',
       '@moldea.ai/repository': 'workspace:>=1.1.1',
       semver: '7.8.5',
       typescript: '6.0.3',

@@ -8,10 +8,10 @@ The package implements the official `claude-agent-sdk` runtime adapter for `@mol
 
 ## Supported target
 
-Version `1.0.4` supports:
+Version `1.0.5` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^2.0.0`
+- `@moldea.ai/core >=2.0.2`
 - TypeScript ESM source
 - npm `@anthropic-ai/claude-agent-sdk >=0.3.234 <0.4.0`
 - directly exported functions containing direct `query({ ... })` calls

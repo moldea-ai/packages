@@ -200,7 +200,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     };
 
     assertRuntimeInvariant(cliManifest?.name === '@moldea.ai/cli', 'The CLI identity is invalid.');
-    assertRuntimeInvariant(cliManifest?.version === '5.0.2', 'The CLI version is invalid.');
+    assertRuntimeInvariant(cliManifest?.version === '5.0.3', 'The CLI version is invalid.');
     assertRuntimeInvariant(
       cliManifest?.engines?.node === '>=22.11.0',
       'The CLI runtime range is invalid.',
@@ -234,7 +234,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
 
     assertRuntimeInvariant(versionResult.status === 0, 'The installed CLI version command failed.');
     assertRuntimeInvariant(versionResult.stderr === '', 'The version command wrote stderr.');
-    assertRuntimeInvariant(versionResult.stdout === '5.0.2\n', 'The version output is invalid.');
+    assertRuntimeInvariant(versionResult.stdout === '5.0.3\n', 'The version output is invalid.');
 
     const compositionResult = executeCli(
       executablePath,
@@ -259,7 +259,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       'The composition result is invalid.',
     );
     assertRuntimeInvariant(
-      compositionEnvelope.cliVersion === '5.0.2' &&
+      compositionEnvelope.cliVersion === '5.0.3' &&
         compositionEnvelope.command === 'composition' &&
         compositionEnvelope.schemaVersion === 2,
       'The composition envelope is invalid.',
@@ -267,16 +267,16 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(
       JSON.stringify(compositionEnvelope.result?.packages) ===
         JSON.stringify([
-          { name: '@moldea.ai/adapter-anthropic', version: '2.0.5' },
-          { name: '@moldea.ai/adapter-claude-agent-sdk', version: '1.0.4' },
-          { name: '@moldea.ai/adapter-cloudflare-agents', version: '1.0.4' },
-          { name: '@moldea.ai/adapter-eve', version: '1.0.4' },
-          { name: '@moldea.ai/adapter-google-genai', version: '1.0.7' },
-          { name: '@moldea.ai/adapter-langchain', version: '1.0.4' },
-          { name: '@moldea.ai/adapter-langgraph', version: '1.0.4' },
-          { name: '@moldea.ai/adapter-openai', version: '2.0.8' },
-          { name: '@moldea.ai/adapter-openai-agents-sdk', version: '1.0.6' },
-          { name: '@moldea.ai/adapter-vercel-ai-sdk', version: '1.0.4' },
+          { name: '@moldea.ai/adapter-anthropic', version: '2.0.6' },
+          { name: '@moldea.ai/adapter-claude-agent-sdk', version: '1.0.5' },
+          { name: '@moldea.ai/adapter-cloudflare-agents', version: '1.0.5' },
+          { name: '@moldea.ai/adapter-eve', version: '1.0.5' },
+          { name: '@moldea.ai/adapter-google-genai', version: '1.0.8' },
+          { name: '@moldea.ai/adapter-langchain', version: '1.0.5' },
+          { name: '@moldea.ai/adapter-langgraph', version: '1.0.5' },
+          { name: '@moldea.ai/adapter-openai', version: '2.0.9' },
+          { name: '@moldea.ai/adapter-openai-agents-sdk', version: '1.0.7' },
+          { name: '@moldea.ai/adapter-vercel-ai-sdk', version: '1.0.5' },
           { name: '@moldea.ai/core', version: '2.0.2' },
           { name: '@moldea.ai/repository', version: '1.1.1' },
           { name: '@moldea.ai/repository-fs', version: '1.0.6' },

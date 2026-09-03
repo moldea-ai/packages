@@ -4,21 +4,21 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const EXPECTED_CLI_VERSION = '5.0.2';
+const EXPECTED_CLI_VERSION = '5.0.3';
 const EXPECTED_PNPM_VERSION = '11.21.0';
 const EXPECTED_VITEST_VERSION = '3.2.4';
 const PEER_WARNING_PATTERN = /(?:unmet peer|peer dependenc(?:y|ies)|ERR_PNPM_PEER_DEP_ISSUES)/iu;
 const PACKAGE_VERSIONS = {
-  '@moldea.ai/adapter-anthropic': '2.0.5',
-  '@moldea.ai/adapter-claude-agent-sdk': '1.0.4',
-  '@moldea.ai/adapter-cloudflare-agents': '1.0.4',
-  '@moldea.ai/adapter-eve': '1.0.4',
-  '@moldea.ai/adapter-google-genai': '1.0.7',
-  '@moldea.ai/adapter-langchain': '1.0.4',
-  '@moldea.ai/adapter-langgraph': '1.0.4',
-  '@moldea.ai/adapter-openai': '2.0.8',
-  '@moldea.ai/adapter-openai-agents-sdk': '1.0.6',
-  '@moldea.ai/adapter-vercel-ai-sdk': '1.0.4',
+  '@moldea.ai/adapter-anthropic': '2.0.6',
+  '@moldea.ai/adapter-claude-agent-sdk': '1.0.5',
+  '@moldea.ai/adapter-cloudflare-agents': '1.0.5',
+  '@moldea.ai/adapter-eve': '1.0.5',
+  '@moldea.ai/adapter-google-genai': '1.0.8',
+  '@moldea.ai/adapter-langchain': '1.0.5',
+  '@moldea.ai/adapter-langgraph': '1.0.5',
+  '@moldea.ai/adapter-openai': '2.0.9',
+  '@moldea.ai/adapter-openai-agents-sdk': '1.0.7',
+  '@moldea.ai/adapter-vercel-ai-sdk': '1.0.5',
   '@moldea.ai/cli': EXPECTED_CLI_VERSION,
   '@moldea.ai/core': '2.0.2',
   '@moldea.ai/repository': '1.1.1',

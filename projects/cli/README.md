@@ -6,7 +6,7 @@ The canonical read-only local command-line composition for deterministic inspect
 
 The package's version 5 surface provides the `moldea` executable with the version 1 command grammar and version 2 JSON envelope. It includes deterministic help and version output, resource-limit validation, safe human or JSON errors, Git-owned working-tree discovery, bounded strict tracked/untracked candidate probing, submodule and nested-repository ownership filtering, deterministic stage collapse, no-follow current entry-type normalization, bounded effective `core.symlinks` resolution, portable logical-path normalization with exact Unicode code-point ordering, bounded effective Git content-transformation classification, exact-path Repository FS construction, private immutable reader wrappers for materialized Git symlinks and guarded regular-file reads, bounded whole-operation snapshot stabilization, attempt-local Core execution, safe Repository/Core operational-error translation, operation-scoped process-signal cancellation, deterministic content-minimized `validate` human and JSON results, concise content-free `inspect` human summaries, complete Core-result `inspect` JSON output, command-wide installation-integrity verification, and compact deterministic `composition` human and JSON reporting.
 
-Version 5 bundles Anthropic adapter `2.0.5`, whose client-tool names must match `^[A-Za-z0-9_-]{1,64}$`.
+Version 5 bundles Anthropic adapter `2.0.6`, whose client-tool names must match `^[A-Za-z0-9_-]{1,64}$`.
 
 Tarball, installed-bin, and cross-repository skill checks remain the release boundary for every published version.
 
