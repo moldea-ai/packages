@@ -56,7 +56,7 @@ const expectPublicPackageManifest = (
     sideEffects: false,
     type: 'module',
     types: './dist/index.d.ts',
-    version: '1.0.5',
+    version: '1.0.6',
   });
   expect(manifest.exports).toStrictEqual({
     '.': {
@@ -184,7 +184,7 @@ describe('published Repository FS package artifacts', () => {
     ) as IRepositoryFilesystemPackageManifest;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/repository-fs', version: '1.0.5' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/repository-fs', version: '1.0.6' });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/contracts/index.d.ts');
@@ -203,7 +203,7 @@ describe('published Repository FS package artifacts', () => {
       ),
     ).toBe(true);
     expect(packedPaths.every((filePath) => !filePath.includes('.test-'))).toBe(true);
-    expectPublicPackageManifest(manifest, 'workspace:^1.0.0');
+    expectPublicPackageManifest(manifest, 'workspace:>=1.1.1');
   });
 
   test('loads only the documented named runtime exports', () => {
@@ -252,7 +252,7 @@ describe('published Repository FS package artifacts', () => {
         ).toString('utf8'),
       ) as IRepositoryFilesystemPackageManifest;
 
-      expectPublicPackageManifest(manifest, '^1.0.0');
+      expectPublicPackageManifest(manifest, '>=1.1.1');
     } finally {
       rmSync(packDirectory, { force: true, recursive: true });
     }

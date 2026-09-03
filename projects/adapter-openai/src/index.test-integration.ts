@@ -82,7 +82,7 @@ describe('@moldea.ai/adapter-openai public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-openai',
-      version: '2.0.7',
+      version: '2.0.8',
     });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
@@ -112,7 +112,7 @@ describe('@moldea.ai/adapter-openai public API', () => {
     ).toBe(true);
     expect(manifest.dependencies).toStrictEqual({
       '@moldea.ai/core': 'workspace:^2.0.0',
-      '@moldea.ai/repository': 'workspace:^1.0.0',
+      '@moldea.ai/repository': 'workspace:>=1.1.1',
       semver: '7.8.5',
       typescript: '6.0.3',
     });

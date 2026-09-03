@@ -24,7 +24,7 @@ describe('createMoldeaCliCompositionResult', () => {
     });
     expect(result.packages).toContainEqual({
       name: '@moldea.ai/adapter-openai',
-      version: '2.0.7',
+      version: '2.0.8',
     });
     expect(JSON.stringify(result)).not.toContain('maturity');
     expect(JSON.stringify(result)).not.toContain('matrix');

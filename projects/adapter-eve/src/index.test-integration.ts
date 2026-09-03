@@ -77,7 +77,7 @@ describe('@moldea.ai/adapter-eve public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-eve',
-      version: '1.0.3',
+      version: '1.0.4',
     });
     expect(packResult.files.map(({ path: filePath }) => filePath)).toEqual(
       expect.arrayContaining([
@@ -90,7 +90,7 @@ describe('@moldea.ai/adapter-eve public API', () => {
     );
     expect(manifest.dependencies).toStrictEqual({
       '@moldea.ai/core': 'workspace:^2.0.0',
-      '@moldea.ai/repository': 'workspace:^1.0.0',
+      '@moldea.ai/repository': 'workspace:>=1.1.1',
       semver: '7.8.5',
       typescript: '6.0.3',
     });

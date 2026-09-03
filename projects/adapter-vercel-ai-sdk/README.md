@@ -8,7 +8,7 @@ The package implements the official `vercel-ai-sdk` runtime adapter for `@moldea
 
 ## Supported targets
 
-Version `1.0.3` supports:
+Version `1.0.4` supports:
 
 - Repository Format version `1`
 - `@moldea.ai/core ^2.0.0`
