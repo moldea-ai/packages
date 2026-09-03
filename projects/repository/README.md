@@ -87,7 +87,7 @@ buffers, preserves symlinks without following them, and remains immutable for it
 
 ## Shared reader conformance
 
-Official source implementations use the `testing` subpath to register the same reader-contract checks in their Vitest suites. Install its exact testing peers in the implementing package:
+Official source implementations use the `testing` subpath to register the same reader-contract checks in their Vitest suites. Install compatible testing peers in the implementing package. The testing subpath supports Vitest `>=1.0.0` and web-utils-kit `>=1.3.1`:
 
 ```bash
 pnpm add -D vitest@4.1.10 web-utils-kit@1.3.1

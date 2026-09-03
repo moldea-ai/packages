@@ -6,7 +6,7 @@ The canonical read-only local command-line composition for deterministic inspect
 
 The package's version 5 surface provides the `moldea` executable with the version 1 command grammar and version 2 JSON envelope. It includes deterministic help and version output, resource-limit validation, safe human or JSON errors, Git-owned working-tree discovery, bounded strict tracked/untracked candidate probing, submodule and nested-repository ownership filtering, deterministic stage collapse, no-follow current entry-type normalization, bounded effective `core.symlinks` resolution, portable logical-path normalization with exact Unicode code-point ordering, bounded effective Git content-transformation classification, exact-path Repository FS construction, private immutable reader wrappers for materialized Git symlinks and guarded regular-file reads, bounded whole-operation snapshot stabilization, attempt-local Core execution, safe Repository/Core operational-error translation, operation-scoped process-signal cancellation, deterministic content-minimized `validate` human and JSON results, concise content-free `inspect` human summaries, complete Core-result `inspect` JSON output, command-wide installation-integrity verification, and compact deterministic `composition` human and JSON reporting.
 
-Version 5 bundles Anthropic adapter `2.0.3`, whose client-tool names must match `^[A-Za-z0-9_-]{1,64}$`.
+Version 5 bundles Anthropic adapter `2.0.4`, whose client-tool names must match `^[A-Za-z0-9_-]{1,64}$`.
 
 Tarball, installed-bin, and cross-repository skill checks remain the release boundary for every published version.
 
@@ -53,7 +53,7 @@ The executable performs no network requests, telemetry, repository writes, or co
 The version 1 consumer runtime range is:
 
 ```text
-^22.11.0 || ^24.11.0
+>=22.11.0
 ```
 
 The package is Node.js-specific. `validate` and `inspect` require Git `2.30.0` or later; commands compare the numeric Git version and accept standard platform or vendor suffixes.
@@ -125,6 +125,6 @@ pnpm --filter @moldea.ai/cli test
 
 Unit, integration, and end-to-end tests are colocated with their owning modules. The end-to-end suite installs real package tarballs and executes the resulting package bin without requiring any `@moldea.ai/*` package to be published. It verifies command, output, exit, security, package-content, process-signal, and repository-immutability behavior at the consumer boundary.
 
-CI separately packs Repository, Repository FS, Core, every active package-backed adapter, and CLI and installs them with npm scripts disabled and strict engine validation on Node.js `22.11.0`, latest Node.js 22, Node.js `24.11.0`, and latest Node.js 24. Dedicated runtime harnesses verify each adapter's installed inspection boundary and the CLI's installed identities plus real `version`, `composition`, `validate`, and `inspect` execution. Linux owns this consumer-runtime matrix, while the complete repository tests continue to run on Linux, macOS, and Windows.
+CI separately packs Repository, Repository FS, Core, every active package-backed adapter, and CLI and installs them with npm scripts disabled and strict engine validation on Node.js `22.11.0`, latest Node.js 22, Node.js `24.11.0`, and latest Node.js 24, and Node.js `26.8.1`. Dedicated runtime harnesses verify each adapter's installed inspection boundary and the CLI's installed identities plus real `version`, `composition`, `validate`, and `inspect` execution. Linux owns this consumer-runtime matrix, while the complete repository tests continue to run on Linux, macOS, and Windows.
 
 Every active package-backed adapter has its own repository fixtures, package tests, packed-runtime consumer check, and verified compatibility claim. Qualification execution remains outside this repository; targets with a committed skill profile may publish its canonical evidence URL through the compatibility matrix.

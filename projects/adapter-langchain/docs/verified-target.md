@@ -12,4 +12,4 @@ Positive agent evidence requires a directly exported TypeScript `const` initiali
 
 Instruction relationships require a direct loader call in `systemPrompt` or a direct `SystemMessage(loaderCall)` construction. Agent output schemas may be direct or wrapped by a supported one-schema `toolStrategy(...)` or `providerStrategy(...)` call. Normal function tools require the two-argument `tool(implementation, fields)` overload and an explicit manifest registration binding. Agent registration requires a closed tool array.
 
-Middleware must be absent or a provably immutable empty array before instruction, agent output-schema, or tool-registration conclusions are produced. The adapter itself supports Node.js `^22.11.0 || ^24.11.0`.
+Middleware must be absent or a provably immutable empty array before instruction, agent output-schema, or tool-registration conclusions are produced. The adapter itself supports Node.js `>=22.11.0`.

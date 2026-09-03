@@ -14,4 +14,4 @@ Graph runtime-pattern evidence covers supported positional nodes, direct edges, 
 
 Functional API agent evidence requires a directly exported immutable `const` initialized by the package-root `entrypoint(...)` helper. The workflow may be inline, module-local, or a directly resolved relative ESM import. Task, interrupt, previous-state, and final-state observations must occur directly in that workflow's own lexical body.
 
-Named import aliases and `.ts`, `.tsx`, and `.mts` sources are supported. The adapter itself supports Node.js `^22.11.0 || ^24.11.0`.
+Named import aliases and `.ts`, `.tsx`, and `.mts` sources are supported. The adapter itself supports Node.js `>=22.11.0`.

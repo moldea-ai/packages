@@ -115,13 +115,13 @@ describe('CLI presentation formatters', () => {
         Object.freeze({ name: '@moldea.ai/core', version: '1.0.0' }),
       ]),
       repositoryFormatVersions: Object.freeze([1]),
-      supportedNodeRange: '^22.11.0 || ^24.11.0',
+      supportedNodeRange: '>=22.11.0',
     });
 
     expect(formatMoldeaCliHumanCompositionResult(result, '1.0.0')).toBe(
       `The installed CLI composition state is valid.
 CLI version: 1.0.0
-Supported Node.js: ^22.11.0 || ^24.11.0
+Supported Node.js: >=22.11.0
 JSON output schema: 2
 Minimum Git: 2.30.0
 Repository formats: 1
@@ -134,7 +134,7 @@ Adapters:
 `,
     );
     expect(formatMoldeaCliJsonCompositionResult(result, '1.0.0')).toBe(
-      '{"cliVersion":"1.0.0","command":"composition","error":null,"result":{"adapters":[{"id":"custom","repositoryFormatVersions":[1]},{"id":"openai","repositoryFormatVersions":[1]}],"minimumGitVersion":"2.30.0","packages":[{"name":"@moldea.ai/adapter-openai","version":"1.0.0"},{"name":"@moldea.ai/core","version":"1.0.0"}],"repositoryFormatVersions":[1],"supportedNodeRange":"^22.11.0 || ^24.11.0"},"schemaVersion":2,"status":"valid"}\n',
+      '{"cliVersion":"1.0.0","command":"composition","error":null,"result":{"adapters":[{"id":"custom","repositoryFormatVersions":[1]},{"id":"openai","repositoryFormatVersions":[1]}],"minimumGitVersion":"2.30.0","packages":[{"name":"@moldea.ai/adapter-openai","version":"1.0.0"},{"name":"@moldea.ai/core","version":"1.0.0"}],"repositoryFormatVersions":[1],"supportedNodeRange":">=22.11.0"},"schemaVersion":2,"status":"valid"}\n',
     );
   });
 

@@ -178,13 +178,13 @@ export const expectPackageManifest = (
 ): void => {
   expect(manifest).toMatchObject({
     bin: { moldea: './dist/moldea.js' },
-    engines: { node: '^22.11.0 || ^24.11.0' },
+    engines: { node: '>=22.11.0' },
     exports: {},
     files: ['cover.png', 'dist', 'LICENSE', 'README.md'],
     name: '@moldea.ai/cli',
     preferUnplugged: true,
     type: 'module',
-    version: '5.0.0',
+    version: '5.0.1',
   });
   expect(manifest.dependencies).toStrictEqual({
     '@moldea.ai/adapter-anthropic': anthropicAdapterVersion,

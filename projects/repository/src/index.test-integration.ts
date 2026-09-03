@@ -128,7 +128,7 @@ describe('published package artifacts', () => {
     ) as IRepositoryPackageManifest;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/repository', version: '1.1.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/repository', version: '1.1.1' });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/memory.js');
@@ -167,8 +167,8 @@ describe('published package artifacts', () => {
       },
     });
     expect(manifest.peerDependencies).toStrictEqual({
-      vitest: '4.1.10',
-      'web-utils-kit': '1.3.1',
+      vitest: '>=1.0.0',
+      'web-utils-kit': '>=1.3.1',
     });
     expect(manifest.peerDependenciesMeta).toStrictEqual({
       vitest: { optional: true },

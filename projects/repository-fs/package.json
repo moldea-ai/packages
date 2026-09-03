@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/repository-fs",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A coherent, read-only repository reader over an explicitly selected local filesystem root.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/repository-fs#readme",
   "bugs": {
@@ -30,7 +30,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "engines": {
-    "node": "^22.11.0 || ^24.11.0"
+    "node": ">=22.11.0"
   },
   "scripts": {
     "build": "vite build --emptyOutDir && tsc -p tsconfig.build.json",
