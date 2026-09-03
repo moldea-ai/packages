@@ -101,7 +101,7 @@ describe('langChainAdapter Core integration', () => {
     ['absent', '{}'],
     ['supported', '{"dependencies":{"@langchain/core":"~1.2.8"}}'],
     ['ambiguous', '{"dependencies":{"@langchain/core":"workspace:*"}}'],
-    ['unsupported', '{"dependencies":{"@langchain/core":"1.1.0"}}'],
+    ['unsupported', '{"dependencies":{"@langchain/core":"1.1.1"}}'],
   ] as const)(
     'emits no runtime-package evidence when the primary is absent and the companion is %s',
     async (_companionState, packageManifest) => {

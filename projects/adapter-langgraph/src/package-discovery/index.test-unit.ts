@@ -23,13 +23,13 @@ describe('discoverLangGraphPackages', () => {
     ['supported', '~1.4.12', '~1.2.9', 'supported'],
     ['incomplete', '~1.4.12', undefined, 'incomplete'],
     ['unsupported primary', '1.3.0', '~1.2.9', 'unsupported'],
-    ['unsupported companion', '~1.4.12', '1.1.0', 'unsupported'],
+    ['unsupported companion', '~1.4.12', '1.1.1', 'unsupported'],
     ['ambiguous primary', 'workspace:*', '~1.2.9', 'ambiguous'],
     ['ambiguous companion', '~1.4.12', 'workspace:*', 'ambiguous'],
     ['absent packages', undefined, undefined, 'absent'],
     ['absent primary', undefined, '~1.2.9', 'absent'],
     ['absent primary with ambiguous companion', undefined, 'workspace:*', 'absent'],
-    ['absent primary with unsupported companion', undefined, '1.1.0', 'absent'],
+    ['absent primary with unsupported companion', undefined, '1.1.1', 'absent'],
   ] as const)(
     'classifies the %s package pair',
     async (_description, primary, companion, expectedClassification) => {

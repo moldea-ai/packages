@@ -11,7 +11,7 @@ describe('createMoldeaCliCompositionResult', () => {
     expect(result).toMatchObject({
       minimumGitVersion: '2.30.0',
       repositoryFormatVersions: [1],
-      supportedNodeRange: '^22.11.0 || ^24.11.0',
+      supportedNodeRange: '>=22.11.0',
     });
     expect(result.adapters).toHaveLength(11);
     expect(result.adapters[0]).toStrictEqual({
@@ -24,7 +24,7 @@ describe('createMoldeaCliCompositionResult', () => {
     });
     expect(result.packages).toContainEqual({
       name: '@moldea.ai/adapter-openai',
-      version: '2.0.6',
+      version: '2.0.7',
     });
     expect(JSON.stringify(result)).not.toContain('maturity');
     expect(JSON.stringify(result)).not.toContain('matrix');

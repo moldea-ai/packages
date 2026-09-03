@@ -26,4 +26,4 @@ Raw directory selection is a sensitive mode because it deliberately admits the w
 
 ## Runtime
 
-The package supports Node.js `^22.11.0 || ^24.11.0` and uses Node filesystem primitives. It is not browser-compatible. Creation and every reader operation support cancellation; a creation signal does not remain attached to later operations.
+The package supports Node.js `>=22.11.0` and uses Node filesystem primitives. It is not browser-compatible. Creation and every reader operation support cancellation; a creation signal does not remain attached to later operations.

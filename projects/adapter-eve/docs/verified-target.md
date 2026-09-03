@@ -12,4 +12,4 @@ Positive agent evidence requires an uncollided flat or nested `agent.ts` that di
 
 Instructions require one exclusive exact-lowercase `instructions.md` or one exact-shape `instructions.ts`. Tools are discovered recursively under `tools/`, use Eve's exact path-segment grammar, and flatten path separators to hyphens. Positive skill registration is limited to uncollided direct TypeScript `defineSkill(...)` modules.
 
-The adapter itself supports Node.js `^22.11.0 || ^24.11.0`. Applications that execute Eve `0.39.x` require Node.js 24 or newer according to Eve's package metadata.
+The adapter itself supports Node.js `>=22.11.0`. Applications that execute Eve `0.39.x` require Node.js 24 or newer according to Eve's package metadata.

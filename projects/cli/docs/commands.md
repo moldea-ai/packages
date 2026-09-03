@@ -34,4 +34,4 @@ The default repository is the invocation directory. Relative repository selectio
 
 ## Runtime requirements
 
-The CLI supports Node.js `^22.11.0 || ^24.11.0`. `validate` and `inspect` require Git `2.30.0` or later and a usable non-sparse working tree. `composition`, help, version, and argument validation do not require Git.
+The CLI supports Node.js `>=22.11.0`. `validate` and `inspect` require Git `2.30.0` or later and a usable non-sparse working tree. `composition`, help, version, and argument validation do not require Git.

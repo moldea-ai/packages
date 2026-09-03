@@ -23,13 +23,13 @@ describe('discoverLangChainPackages', () => {
     ['supported', '~1.5.9', '~1.2.8', 'supported'],
     ['incomplete', '~1.5.9', undefined, 'incomplete'],
     ['unsupported primary', '1.4.0', '~1.2.8', 'unsupported'],
-    ['unsupported companion', '~1.5.9', '1.1.0', 'unsupported'],
+    ['unsupported companion', '~1.5.9', '1.1.1', 'unsupported'],
     ['ambiguous primary', 'workspace:*', '~1.2.8', 'ambiguous'],
     ['ambiguous companion', '~1.5.9', 'workspace:*', 'ambiguous'],
     ['absent packages', undefined, undefined, 'absent'],
     ['absent primary', undefined, '~1.2.8', 'absent'],
     ['absent primary with ambiguous companion', undefined, 'workspace:*', 'absent'],
-    ['absent primary with unsupported companion', undefined, '1.1.0', 'absent'],
+    ['absent primary with unsupported companion', undefined, '1.1.1', 'absent'],
   ] as const)(
     'classifies the %s package pair',
     async (_description, primary, companion, expectedClassification) => {

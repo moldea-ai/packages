@@ -37,7 +37,7 @@ const createSources = (): IMoldeaCliImplementationSources => ({
   activeAdapters: [],
   cliManifest: {
     dependencies: { ...FOUNDATIONAL_DEPENDENCIES },
-    engines: { node: '^22.11.0 || ^24.11.0' },
+    engines: { node: '>=22.11.0' },
     name: '@moldea.ai/cli',
     version: '1.0.0',
   },
@@ -131,13 +131,13 @@ describe('CLI implementation validation', () => {
   test.each([
     ['22.11.0', true],
     ['22.99.0', true],
+    ['23.0.0', true],
+    ['24.10.9', true],
     ['24.11.0', true],
     ['24.99.0', true],
+    ['25.0.0', true],
+    ['26.0.0', true],
     ['22.10.9', false],
-    ['23.0.0', false],
-    ['24.10.9', false],
-    ['25.0.0', false],
-    ['26.0.0', false],
   ])('publishes the intended Node.js runtime boundary for %s -> %s', (version, isSupported) => {
     const sources = createSources();
     validateMoldeaCliImplementation(sources);
