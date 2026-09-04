@@ -291,6 +291,34 @@ describe('npm release workflow planning', () => {
     });
   });
 
+  test('recovers a changed package whose unchanged stable version remains unpublished', () => {
+    expect(
+      createNpmReleaseWorkflowPlan({
+        eventName: 'push',
+        mode: '',
+        project: '',
+        projectChanges: createProjectChanges({
+          'repository-fs': {
+            currentVersion: '2.0.0',
+            isChanged: true,
+            previousVersion: '2.0.0',
+          },
+        }),
+        publishedVersions: createPublishedVersions({
+          'repository-fs': ['1.0.0'],
+        }),
+      }),
+    ).toStrictEqual({
+      mode: 'trusted',
+      previousVersions: {
+        ...NO_PREVIOUS_VERSIONS,
+        'repository-fs': '1.0.0',
+      },
+      projects: ['repository-fs'],
+      trigger: 'automatic',
+    });
+  });
+
   test('selects a changed published version for release tag validation', () => {
     expect(
       createNpmReleaseWorkflowPlan({

@@ -193,11 +193,18 @@ export const createNpmReleaseWorkflowPlan = (
     throw new TypeError('The npm release workflow trigger is invalid.');
   }
 
-  selectChangedNpmReleaseProjects(sources.projectChanges);
-
   const projects = NPM_RELEASE_PROJECT_ORDER.filter((project) => {
     const change = sources.projectChanges[project];
     const publishedVersions = sources.publishedVersions[project];
+    const isUnpublishedRetry =
+      valid(change.currentVersion) === change.currentVersion &&
+      prerelease(change.currentVersion) === null &&
+      change.previousVersion === change.currentVersion &&
+      !publishedVersions.includes(change.currentVersion);
+
+    if (change.isChanged && !isUnpublishedRetry) {
+      requireChangedReleaseVersion(project, change.previousVersion, change.currentVersion);
+    }
 
     requireStableReleaseVersion(project, change.currentVersion);
 
