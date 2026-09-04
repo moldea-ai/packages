@@ -93,9 +93,9 @@ describe('working-tree snapshot integration', () => {
 
       expect(result).toStrictEqual({
         kind: 'completed',
-        result: process.platform === 'win32' ? initialContent : replacementContent,
+        result: replacementContent,
       });
-      expect(operationCalls).toBe(process.platform === 'win32' ? 1 : 2);
+      expect(operationCalls).toBe(2);
     } finally {
       rmSync(temporaryDirectory, { force: true, recursive: true });
     }
@@ -281,14 +281,7 @@ describe('working-tree snapshot integration', () => {
         },
       });
 
-      expect(result).toStrictEqual(
-        process.platform === 'win32'
-          ? {
-              kind: 'completed',
-              result: new TextEncoder().encode('initial bytes'),
-            }
-          : { errorCode: 'WORKING_TREE_UNSTABLE', kind: 'failed' },
-      );
+      expect(result).toStrictEqual({ errorCode: 'WORKING_TREE_UNSTABLE', kind: 'failed' });
     } finally {
       rmSync(temporaryDirectory, { force: true, recursive: true });
     }
