@@ -129,5 +129,9 @@ export const NPM_RELEASE_CHECKSUM_FILE_NAME = 'SHA256SUMS';
 export const NPM_RELEASE_ENVIRONMENT = 'npm-release';
 export const NPM_RELEASE_GITHUB_REF = 'refs/heads/main';
 export const NPM_RELEASE_GITHUB_REPOSITORY = 'moldea-ai/packages';
+export const NPM_RELEASE_REGISTRY_PROPAGATION_DELAYS_MS = [
+  2_000, 4_000, 8_000, 16_000, 30_000, 30_000, 30_000,
+] as const;
 export const NPM_RELEASE_REGISTRY_URL = 'https://registry.npmjs.org/';
 export const NPM_RELEASE_REPOSITORY_URL = 'git+https://github.com/moldea-ai/packages.git';
+export const NPM_RELEASE_WORKSPACE_PROTOCOL_PREFIX = 'workspace:';

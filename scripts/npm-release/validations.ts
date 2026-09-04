@@ -5,6 +5,7 @@ import {
   NPM_RELEASE_MODES,
   NPM_RELEASE_PROJECTS,
   NPM_RELEASE_REPOSITORY_URL,
+  NPM_RELEASE_WORKSPACE_PROTOCOL_PREFIX,
 } from './constants.ts';
 import type {
   INpmReleaseCandidate,
@@ -18,7 +19,6 @@ import type {
 
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/u;
 const MOLDEA_PACKAGE_PREFIX = '@moldea.ai/';
-const WORKSPACE_PROTOCOL_PREFIX = 'workspace:';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -136,11 +136,11 @@ const requirePublishedDependencies = (
       continue;
     }
 
-    if (!sourceRange.startsWith(WORKSPACE_PROTOCOL_PREFIX)) {
+    if (!sourceRange.startsWith(NPM_RELEASE_WORKSPACE_PROTOCOL_PREFIX)) {
       throw new TypeError(`The ${packageName} release dependency must use the workspace protocol.`);
     }
 
-    const publishedRange = sourceRange.slice(WORKSPACE_PROTOCOL_PREFIX.length);
+    const publishedRange = sourceRange.slice(NPM_RELEASE_WORKSPACE_PROTOCOL_PREFIX.length);
     const availableVersions = dependencyVersions[packageName];
 
     if (

@@ -8,7 +8,7 @@ import {
 } from './artifacts.ts';
 import { NPM_RELEASE_CHECKSUM_FILE_NAME, NPM_RELEASE_PROJECTS } from './constants.ts';
 import { loadGitTagCommit } from './git.ts';
-import { loadNpmRegistryVersions } from './registry.ts';
+import { loadNpmRegistryDependencyVersions, loadNpmRegistryVersions } from './registry.ts';
 import { createNpmReleaseCandidate, createNpmReleaseIdentity } from './validations.ts';
 
 const repositoryRoot = new URL('../../', import.meta.url);
@@ -56,14 +56,15 @@ if (!expectedArtifactNames.includes(identity.artifactName)) {
   throw new TypeError(`The ${identity.artifactName} release artifact is unavailable.`);
 }
 
-const moldeaDependencyNames = Object.keys(identity.manifest.dependencies).filter((packageName) =>
-  packageName.startsWith('@moldea.ai/'),
+const moldeaDependencyEntries = Object.entries(identity.manifest.dependencies).filter(
+  ([packageName]) => packageName.startsWith('@moldea.ai/'),
 );
 const [publishedVersions, dependencyVersionEntries] = await Promise.all([
   loadNpmRegistryVersions(identity.manifest.name),
   Promise.all(
-    moldeaDependencyNames.map(
-      async (packageName) => [packageName, await loadNpmRegistryVersions(packageName)] as const,
+    moldeaDependencyEntries.map(
+      async ([packageName, sourceRange]) =>
+        [packageName, await loadNpmRegistryDependencyVersions(packageName, sourceRange)] as const,
     ),
   ),
 ]);
