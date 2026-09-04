@@ -1,4 +1,4 @@
-import type { IIndexedAgent } from '@moldea.ai/core';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 
 import type {
   ICloudflareAgentsClassDefinition,
@@ -8,8 +8,10 @@ import type {
 } from '../contracts/index.js';
 
 // supported runtime agent retained for relationship inspection
+export type ICloudflareAgentsScopedAgent = Pick<IIndexedAgent, 'declaration' | 'id'>;
+
 export interface ICloudflareAgentsInspectedAgent {
-  readonly agent: IIndexedAgent;
+  readonly agent: ICloudflareAgentsScopedAgent;
   readonly analysis: ICloudflareAgentsSourceAnalysis;
   readonly definition: ICloudflareAgentsClassDefinition;
   readonly instructions: ICloudflareAgentsRelationship;

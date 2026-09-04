@@ -1,13 +1,13 @@
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
+  IRuntimeAdapterEvidence,
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
+import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import type { IEveAgentDefinition } from '../contracts/index.js';
 import { inspectEveAgent } from './agent-inspection.js';
-import { compareEveStrings } from './common.js';
 import { inspectEveInstructions } from './instruction-inspection.js';
 import { createEveInspectionSession } from './session.js';
 import { inspectEveSkills } from './skill-inspection.js';
@@ -38,20 +38,15 @@ export const inspectEve = async (
   const evidence: IRuntimeAdapterEvidence[] = [];
   const diagnostics: IAdapterDiagnostic[] = [];
   const definitions: IEveAgentDefinition[] = [];
-  const agents = [...context.agents].sort((left, right) => compareEveStrings(left.id, right.id));
+  const definition = await inspectEveAgent(session, context.agent, evidence, diagnostics);
 
-  for (const agent of agents) {
-    context.signal?.throwIfAborted();
-    const definition = await inspectEveAgent(session, agent, evidence, diagnostics);
-
-    if (definition !== null) {
-      definitions.push(definition);
-    }
+  if (definition !== null) {
+    definitions.push(definition);
   }
 
   const preparedToolNames = new Map<string, ReadonlySet<string>>();
 
-  for (const definition of definitions) {
+  if (definition !== null) {
     context.signal?.throwIfAborted();
     await inspectEveInstructions(session, definition, evidence, diagnostics);
     preparedToolNames.set(
@@ -61,8 +56,40 @@ export const inspectEve = async (
     await inspectEveSkills(session, definition, evidence, diagnostics);
   }
 
+  const ambiguousParentRoots = new Map<IRepositoryPath, number>();
+
+  if (definition?.root.agentKind === 'root') {
+    const runtimeAgent = definition.agent.declaration.bindings?.runtimeAgent;
+
+    if (runtimeAgent !== undefined) {
+      const parentResolution = context.resolveAgent(runtimeAgent);
+
+      if (parentResolution.kind === 'ambiguous') {
+        ambiguousParentRoots.set(definition.root.agentRoot, parentResolution.candidateCount);
+      }
+    }
+
+    for (const candidate of definition.rootIndex.subagentCandidates) {
+      if (!candidate.isDirectoryBacked || candidate.isExtensionReserved) {
+        continue;
+      }
+
+      const resolution = context.resolveAgent({ path: candidate.agentPath, symbol: 'default' });
+
+      if (resolution.kind !== 'matched' || resolution.agent.id === definition.agent.id) {
+        continue;
+      }
+
+      const relatedDefinition = await inspectEveAgent(session, resolution.agent, [], []);
+
+      if (relatedDefinition !== null) {
+        definitions.push(relatedDefinition);
+      }
+    }
+  }
+
   context.signal?.throwIfAborted();
-  inspectEveSubagents(definitions, preparedToolNames, evidence, diagnostics);
+  inspectEveSubagents(definitions, preparedToolNames, ambiguousParentRoots, evidence, diagnostics);
 
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),

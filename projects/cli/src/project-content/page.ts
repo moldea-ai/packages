@@ -1,87 +1,84 @@
+import type { IJsonValue } from '../json-serialization/index.js';
 import {
+  calculateMoldeaCliJsonDigest,
   decodeMoldeaCliCursor,
   encodeMoldeaCliCursor,
   MoldeaCliOutputPageException,
 } from '../output-page/index.js';
 
-import type {
-  IMoldeaCliContentAsset,
-  IMoldeaCliContentPageInput,
-  IMoldeaCliContentResult,
-} from './types.js';
+import type { IMoldeaCliContentPageInput, IMoldeaCliContentResult } from './types.js';
 
-/** Creates public content metadata without retaining its body. */
-const createContentMetadata = (
-  asset: IMoldeaCliContentAsset,
-): Omit<IMoldeaCliContentAsset, 'content'> => ({
-  digest: asset.digest,
-  path: asset.path,
-  scalarLength: asset.scalarLength,
-  utf8ByteLength: asset.utf8ByteLength,
-});
-
-/** Creates one candidate content result ending at a scalar offset. */
+/** Creates one candidate content result ending at a Unicode scalar boundary. */
 const createCandidate = (
-  asset: IMoldeaCliContentAsset,
+  input: IMoldeaCliContentPageInput,
   scalars: readonly string[],
-  scalarStart: number,
   scalarEnd: number,
-): IMoldeaCliContentResult => ({
-  asset: createContentMetadata(asset),
-  chunk: {
-    content: scalars.slice(scalarStart, scalarEnd).join(''),
-    scalarEnd,
-    scalarStart,
-  },
-  cursor:
-    scalarEnd < scalars.length
-      ? encodeMoldeaCliCursor('content', { path: asset.path }, asset.digest, `scalar:${scalarEnd}`)
-      : null,
-  snapshotDigest: asset.digest,
-});
+  snapshotDigest: string,
+): IMoldeaCliContentResult => {
+  const content = scalars.slice(0, scalarEnd).join('');
+  const byteEnd = input.page.byteStart + Buffer.byteLength(content, 'utf8');
+  const isComplete = byteEnd === input.page.totalBytes;
 
-/**
- * Selects the largest Unicode-scalar-safe content chunk within an exact output budget.
- * @param input The canonical asset, cursor, byte budget, and final result measurement.
- * @returns A content result with a continuation cursor when more scalars remain.
- * @throws
- * - CURSOR_INVALID: The continuation cursor is invalid for this request.
- * - CURSOR_SNAPSHOT_CHANGED: The continuation cursor belongs to a different repository snapshot.
- * - OUTPUT_BUDGET_TOO_SMALL: The output byte budget cannot contain the next complete result.
- */
+  return {
+    asset: {
+      contentIdentity: input.page.contentIdentity,
+      path: input.page.path,
+      totalBytes: input.page.totalBytes,
+    },
+    chunk: {
+      byteEnd,
+      byteStart: input.page.byteStart,
+      content,
+    },
+    cursor: isComplete
+      ? null
+      : encodeMoldeaCliCursor(
+          'content',
+          { path: input.page.path },
+          snapshotDigest,
+          `byte:${byteEnd}`,
+          `byte:${byteEnd}`,
+        ),
+    snapshotDigest,
+  };
+};
+
+/** Creates the stable identity shared by every page of one canonical file snapshot. */
+const createSnapshotDigest = (input: IMoldeaCliContentPageInput): string =>
+  calculateMoldeaCliJsonDigest({
+    contentIdentity: input.page.contentIdentity,
+    path: input.page.path,
+    totalBytes: input.page.totalBytes,
+  } satisfies IJsonValue);
+
+/** Selects the largest Unicode-safe content prefix within the exact output budget. */
 export const createMoldeaCliContentPage = (
   input: IMoldeaCliContentPageInput,
 ): IMoldeaCliContentResult => {
-  const scalars = Array.from(input.asset.content);
+  const snapshotDigest = createSnapshotDigest(input);
   const cursorState =
     input.cursor === null
       ? null
       : decodeMoldeaCliCursor({
           command: 'content',
           cursor: input.cursor,
-          filters: { path: input.asset.path },
-          snapshotDigest: input.asset.digest,
+          filters: { path: input.page.path },
+          snapshotDigest,
         });
-  const scalarStart =
-    cursorState === null || !/^scalar:\d+$/u.test(cursorState.lastKey)
-      ? cursorState === null
-        ? 0
-        : -1
-      : Number(cursorState.lastKey.slice('scalar:'.length));
+  const expectedSourceCursor = `byte:${input.page.byteStart}`;
 
   if (
-    !Number.isSafeInteger(scalarStart) ||
-    scalarStart < 0 ||
-    scalarStart > scalars.length ||
-    (input.cursor !== null && scalarStart === scalars.length)
+    (cursorState === null && input.page.byteStart !== 0) ||
+    (cursorState !== null && cursorState.sourceCursor !== expectedSourceCursor)
   ) {
     throw new MoldeaCliOutputPageException('CURSOR_INVALID');
   }
 
-  if (scalars.length === 0) {
-    const emptyResult = createCandidate(input.asset, scalars, 0, 0);
+  const scalars = Array.from(input.page.content);
+  const emptyResult = createCandidate(input, scalars, 0, snapshotDigest);
 
-    if (input.measure(emptyResult) > input.maxOutputBytes) {
+  if (scalars.length === 0) {
+    if (!input.page.isComplete || input.measure(emptyResult) > input.maxOutputBytes) {
       throw new MoldeaCliOutputPageException('OUTPUT_BUDGET_TOO_SMALL');
     }
 
@@ -92,13 +89,13 @@ export const createMoldeaCliContentPage = (
     });
   }
 
-  let lower = scalarStart + 1;
+  let lower = 1;
   let upper = scalars.length;
   let selected: IMoldeaCliContentResult | null = null;
 
   while (lower <= upper) {
     const scalarEnd = lower + Math.floor((upper - lower) / 2);
-    const candidate = createCandidate(input.asset, scalars, scalarStart, scalarEnd);
+    const candidate = createCandidate(input, scalars, scalarEnd, snapshotDigest);
 
     if (input.measure(candidate) <= input.maxOutputBytes) {
       selected = candidate;

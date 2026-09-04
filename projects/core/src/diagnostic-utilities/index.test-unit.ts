@@ -94,8 +94,8 @@ describe('Core diagnostic normalization', () => {
       ...DEFAULT_CORE_RESOURCE_LIMITS,
       maxDiagnostics: 2,
     });
-    const inner = createCoreDiagnosticCollector(limits, 'inspect-project');
-    const outer = createCoreDiagnosticCollector(limits, 'inspect-project');
+    const inner = createCoreDiagnosticCollector(limits, 'validate-project');
+    const outer = createCoreDiagnosticCollector(limits, 'validate-project');
     const diagnostic = { code: 'MOLDEA_MANIFEST_PATH_INVALID' as const, path: null };
 
     inner.add(diagnostic);
@@ -111,7 +111,7 @@ describe('Core diagnostic normalization', () => {
   test('combines Core and adapter diagnostics in deterministic public order', () => {
     const collector = createCoreDiagnosticCollector(
       DEFAULT_CORE_RESOURCE_LIMITS,
-      'inspect-project',
+      'validate-project',
     );
     collector.add({
       code: 'MOLDEA_MANIFEST_PATH_INVALID',

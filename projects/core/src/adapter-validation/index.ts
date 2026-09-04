@@ -5,10 +5,13 @@ import {
   parseRepositoryPath,
   type IRepositoryEntry,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 
-import type { IRuntimeAdapterEvidence, IRuntimeAdapterEvidenceKind } from '../adapter/index.js';
+import type {
+  IRuntimeAdapterEvidence,
+  IRuntimeAdapterEvidenceKind,
+  IRuntimeAdapterRepository,
+} from '../adapter/index.js';
 import type {
   ICoreResourceLimits,
   IIndexedAgent,
@@ -103,7 +106,7 @@ interface IAdapterValidationContext {
   readonly adapterId: string;
   readonly agents: readonly IIndexedAgent[];
   readonly project: IMoldeaProjectIndex;
-  readonly repository: IRepositoryReader;
+  readonly repository: IRuntimeAdapterRepository;
   readonly limits: ICoreResourceLimits;
   readonly signal?: AbortSignal;
 }

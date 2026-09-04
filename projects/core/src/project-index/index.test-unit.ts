@@ -127,14 +127,18 @@ const createBaseInput = (): IProjectIndexInput => {
       id: 'alpha',
       mirrors: [
         {
+          byteLength: 0,
           canonicalDigest: agents[1]!.instruction!.digest,
           digest: agents[1]!.instruction!.digest,
           path: parseRepositoryPath('/mirrors/zeta.md'),
+          scalarLength: 0,
         },
         {
+          byteLength: 0,
           canonicalDigest: agents[1]!.instruction!.digest,
           digest: agents[1]!.instruction!.digest,
           path: parseRepositoryPath('/mirrors/alpha.md'),
+          scalarLength: 0,
         },
       ],
     },

@@ -1,33 +1,37 @@
 ---
 title: Repository access
 navigationTitle: Overview
-description: Source-neutral, read-only repository contracts and an immutable in-memory reference reader.
+description: Source-neutral, resource-bounded repository contracts and an immutable in-memory reader.
 order: 0
 ---
 
-# Repository access without source assumptions
+# Bounded repository access without source assumptions
 
-`@moldea.ai/repository` defines the smallest public boundary through which `moldea` code can observe a repository snapshot. It gives callers portable logical paths, exact entry metadata, exact file bytes, cancellation, and a stable operational exception model without assuming a filesystem, Git host, archive, or network protocol.
+`@moldea.ai/repository` version 2 defines the public boundary through which `moldea` code observes one coherent repository snapshot. Metadata lookup is content-free. Descendant enumeration, file content, and repository comparison are explicitly bounded and resumable.
 
-The package exists so every source implementation can present the same reader contract while Core remains source-neutral. `@moldea.ai/repository-fs` implements the contract for an explicitly selected local directory; Core consumes the contract to interpret `moldea` content; the CLI composes both.
+The package keeps Core independent from source mechanics. `@moldea.ai/repository-fs` implements this contract for an explicitly selected local directory, other source packages can implement the same contract, and Core interprets only the portable entries and bytes returned through it.
 
 ## What it owns
 
-- root-absolute logical repository paths and their validation
-- exact file, directory, and symlink entry types
-- the asynchronous `IRepositoryReader` contract
-- source-operation and path-validation exceptions
-- an immutable in-memory reader for fixtures and already-fetched snapshots
-- the shared Vitest conformance contract for official reader implementations
+- root-absolute logical repository paths
+- immutable source snapshot identity
+- exact metadata lookup
+- deterministic bounded descendant pages
+- bounded regular-file byte ranges
+- bounded deterministic comparison pages
+- integrity-protected, source-bound continuation cursors
+- source and path exception contracts
+- an immutable in-memory reference reader
+- shared conformance tests for official readers
 
-## What it deliberately does not own
+## What it does not own
 
-The package does not access a filesystem or network, discover repositories, follow symlinks, decode file content, interpret the `moldea` format, apply Git ignore rules, or expose writes. A source implementation decides how a coherent snapshot is obtained; a consumer such as Core decides what the bytes mean.
+The package does not access a filesystem or network, discover repositories, follow symlinks, decode file content, interpret the `moldea` format, apply Git ignore rules, or expose writes. Source implementations decide how to preserve snapshot coherence. Consumers decide what returned bytes mean.
 
 ## Entry points
 
-- `@moldea.ai/repository` exports the reader, entry, path, and exception contracts.
+- `@moldea.ai/repository` exports contracts, logical-path functions, exceptions, identity, and comparison.
 - `@moldea.ai/repository/memory` exports the immutable reference reader.
-- `@moldea.ai/repository/testing` exports the shared reader conformance runner and fixture contracts for development use.
+- `@moldea.ai/repository/testing` exports the shared reader conformance suite.
 
 Use the generated [API reference](./api/) for the exact exported surface.

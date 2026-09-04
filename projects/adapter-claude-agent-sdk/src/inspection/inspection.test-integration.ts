@@ -64,7 +64,7 @@ const createEntries = (
 ];
 
 const inspect = async (replacements: Readonly<Record<string, IFixtureReplacement>> = {}) =>
-  createCore({ adapters: [claudeAgentSdkAdapter] }).inspectProject({
+  createCore({ adapters: [claudeAgentSdkAdapter] }).validateProject({
     repository: createMemoryRepositoryReader(createEntries(replacements)),
   });
 
@@ -93,11 +93,11 @@ describe('claudeAgentSdkAdapter Core integration', () => {
     expect(result.diagnostics).toStrictEqual([]);
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
-    expect(result.project).not.toBeNull();
+    expect(result.summary).not.toBeNull();
   });
 
   test('produces deterministic evidence for reversed entries and concurrent inspections', async () => {
-    const reversed = await createCore({ adapters: [claudeAgentSdkAdapter] }).inspectProject({
+    const reversed = await createCore({ adapters: [claudeAgentSdkAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),
     });
     const concurrent = await Promise.all([inspect(), inspect(), inspect(), inspect()]);
@@ -367,7 +367,7 @@ describe('claudeAgentSdkAdapter Core integration', () => {
         type: 'file',
       },
     ]);
-    const result = await createCore({ adapters: [claudeAgentSdkAdapter] }).inspectProject({
+    const result = await createCore({ adapters: [claudeAgentSdkAdapter] }).validateProject({
       repository,
     });
 

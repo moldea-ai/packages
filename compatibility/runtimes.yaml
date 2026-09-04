@@ -5,11 +5,11 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-anthropic'
       distribution: public
-      versionRange: '^2.0.0'
+      versionRange: '^3.0.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: optional
       notes: Project-local guidance is needed only for repository-specific wrappers or unsupported indirect integration patterns.
@@ -88,11 +88,11 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-claude-agent-sdk'
       distribution: public
-      versionRange: '^1.0.0'
+      versionRange: '^2.0.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: optional
       notes: Project-local guidance is needed only for repository-specific wrappers, main-thread agent selection, tool aliases, string-array prompts, filesystem-defined agents, dynamic agent construction, observer behavior, external MCP configuration, or other unsupported indirect integration patterns.
@@ -298,11 +298,11 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-cloudflare-agents'
       distribution: public
-      versionRange: '^1.0.0'
+      versionRange: '^2.0.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: recommended
       notes: Project-local guidance should document Cloudflare bindings, Durable Object wiring, and deployment-specific behavior outside the verified static source boundary.
@@ -446,7 +446,7 @@ adapters:
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: required
       notes: Project-local guidance defines the custom runtime integration.
@@ -468,11 +468,11 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-eve'
       distribution: public
-      versionRange: '^1.0.0'
+      versionRange: '^2.0.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: optional
       notes: Project-local guidance is needed only for unsupported dynamic capabilities, extensions, remote agents, non-canonical or composed instructions, positive single-file subagent analysis, Markdown skill registration, framework-tool overrides, or other repository-specific Eve patterns outside the verified static filesystem target.
@@ -648,11 +648,11 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-google-genai'
       distribution: public
-      versionRange: '^1.0.3'
+      versionRange: '^2.0.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: optional
       notes: Project-local guidance is needed only for repository-specific wrappers or unsupported indirect integration patterns.
@@ -757,11 +757,11 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-langchain'
       distribution: public
-      versionRange: '^1.0.0'
+      versionRange: '^2.0.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: optional
       notes: Project-local guidance is needed only for repository-specific wrappers, middleware-driven relationships, supervisor composition around a supported LangChain boundary, headless tools, dynamic tool collections, or other unsupported indirect LangChain integration patterns.
@@ -880,11 +880,11 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-langgraph'
       distribution: public
-      versionRange: '^1.0.0'
+      versionRange: '^2.0.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: recommended
       notes: Project-local guidance is recommended for prompt ownership, model and tool boundaries, node responsibilities, dynamic routing, state semantics, subgraphs, persistence, interrupts, human control, supervisor composition, and other repository-specific LangGraph behavior not represented by the initial static targets.
@@ -1070,11 +1070,11 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-openai'
       distribution: public
-      versionRange: '^2.0.0'
+      versionRange: '^3.0.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: recommended
       notes: Document project-specific model selection, tool execution, streaming, retry, and error behavior that static inspection cannot establish.
@@ -1146,11 +1146,11 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-openai-agents-sdk'
       distribution: public
-      versionRange: '^1.0.0'
+      versionRange: '^2.0.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: optional
       notes: Project-local guidance is needed only for repository-specific wrappers, dynamic graph construction, or unsupported indirect integration patterns.
@@ -1271,11 +1271,11 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-vercel-ai-sdk'
       distribution: public
-      versionRange: '^1.0.0'
+      versionRange: '^2.0.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
-    compatibleCoreRange: '^2.0.0'
+    compatibleCoreRange: '^3.0.0'
     runtimeGuidance:
       expectation: optional
       notes: Project-local guidance is needed only for repository-specific wrappers or unsupported dynamic integration patterns.

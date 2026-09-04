@@ -6,9 +6,14 @@ import type {
   IStaticAnalysisPackageDeclaration,
   IStaticAnalysisSourceResult,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, ISourceRange, IRuntimeAdapterEvidence } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
-import type { IRepositoryEntry, IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
+import type { ISourceRange } from '@moldea.ai/core';
+import type {
+  IAdapterDiagnostic,
+  IIndexedAgent,
+  IRuntimeAdapterEvidence,
+  IRuntimeAdapterRepository,
+} from '@moldea.ai/core/adapter';
+import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 export type IEveAdapterDiagnosticCode =
   | 'EVE_PACKAGE_MANIFEST_INVALID'
@@ -131,8 +136,14 @@ export interface IEveAgentRootIndex {
   readonly toolCandidates: readonly IEveToolCandidate[];
 }
 
+// manifest agent fields required by bounded Eve relationship inspection
+export type IEveScopedAgent = Pick<
+  IIndexedAgent,
+  'declaration' | 'description' | 'handoffDescription' | 'id'
+>;
+
 export interface IEveInspectionSession {
-  readonly reader: IRepositoryReader;
+  readonly reader: IRuntimeAdapterRepository;
   readonly signal?: AbortSignal;
   analyzeSource(path: IRepositoryPath): Promise<IEveSourceAnalysisResult>;
   discoverPackage(path: IRepositoryPath): Promise<IEvePackageDiscoveryResult>;
@@ -141,7 +152,7 @@ export interface IEveInspectionSession {
 }
 
 export interface IEveAgentDefinition {
-  readonly agent: IIndexedAgent;
+  readonly agent: IEveScopedAgent;
   readonly analysis: IEveSourceAnalysis;
   readonly definition: Extract<IEveDefinitionResult, { readonly kind: 'present-supported' }>;
   readonly packageObservation: IEvePackageObservation;

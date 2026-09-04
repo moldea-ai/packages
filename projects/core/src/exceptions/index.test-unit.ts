@@ -50,12 +50,12 @@ describe('Core exceptions', () => {
 
   test('derives retryability from the operation error code', () => {
     expect(
-      new CoreOperationException({ code: 'ABORTED', operation: 'inspect-project' }),
+      new CoreOperationException({ code: 'ABORTED', operation: 'validate-project' }),
     ).toMatchObject({ retryable: true });
     expect(
       new CoreOperationException({
         code: 'ADAPTER_EXECUTION_FAILED',
-        operation: 'inspect-project',
+        operation: 'validate-project',
       }),
     ).toMatchObject({ retryable: false });
   });

@@ -1,20 +1,37 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
-import { parseRepositoryPath } from '@moldea.ai/repository';
+import type { IRuntimeAdapterRepository } from '@moldea.ai/core/adapter';
+import { parseRepositoryPath, type IRepositoryReader } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import { discoverLangGraphPackages } from './index.js';
 
+const createAdapterRepository = (source: IRepositoryReader): IRuntimeAdapterRepository => ({
+  snapshot: source.snapshot,
+  getEntry: (path, options) => source.getEntry(path, options),
+  limits: {
+    maxEntries: 4_096,
+    maxFileBytes: 1_048_576,
+    maxPageBytes: 65_536,
+    maxPageEntries: 256,
+    maxTotalBytesRead: 16_777_216,
+  },
+  listEntriesPage: (options) => source.listEntriesPage(options),
+  readFilePage: (path, options) => source.readFilePage(path, options),
+});
+
 const discover = (dependencies: Readonly<Record<string, string>>) =>
   discoverLangGraphPackages(
-    createMemoryRepositoryReader([
-      {
-        content: JSON.stringify({ dependencies }),
-        path: '/package.json',
-        type: 'file',
-      },
-    ]),
+    createAdapterRepository(
+      createMemoryRepositoryReader([
+        {
+          content: JSON.stringify({ dependencies }),
+          path: '/package.json',
+          type: 'file',
+        },
+      ]),
+    ),
     parseRepositoryPath('/src/agent.ts'),
   );
 
@@ -48,20 +65,22 @@ describe('discoverLangGraphPackages', () => {
 
   test('stops at an owning manifest that omits the primary package', async () => {
     const result = await discoverLangGraphPackages(
-      createMemoryRepositoryReader([
-        {
-          content: JSON.stringify({
-            dependencies: { '@langchain/langgraph': '~1.4.12' },
-          }),
-          path: '/package.json',
-          type: 'file',
-        },
-        {
-          content: JSON.stringify({ dependencies: { typescript: '6.0.3' } }),
-          path: '/apps/api/package.json',
-          type: 'file',
-        },
-      ]),
+      createAdapterRepository(
+        createMemoryRepositoryReader([
+          {
+            content: JSON.stringify({
+              dependencies: { '@langchain/langgraph': '~1.4.12' },
+            }),
+            path: '/package.json',
+            type: 'file',
+          },
+          {
+            content: JSON.stringify({ dependencies: { typescript: '6.0.3' } }),
+            path: '/apps/api/package.json',
+            type: 'file',
+          },
+        ]),
+      ),
       parseRepositoryPath('/apps/api/src/agent.ts'),
     );
 

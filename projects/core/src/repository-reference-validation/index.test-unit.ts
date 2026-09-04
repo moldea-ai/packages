@@ -6,7 +6,6 @@ import {
   parseRepositoryPath,
   type IRepositoryEntry,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 
 import type { ICanonicalDiscoveryResult } from '../canonical-discovery/index.js';
@@ -15,6 +14,7 @@ import { createCoreDiagnostic } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 import type { IMoldeaManifestV1, IRepositoryReference } from '../format/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 
 import { validateRepositoryReferences } from './index.js';
 
@@ -23,9 +23,19 @@ const PROJECT_PATH = parseRepositoryPath('/moldea/project.md');
 const SHARED_FILE_PATH = parseRepositoryPath('/src/shared.ts');
 const EXACT_IMPACT_PATH = parseRepositoryPath('/src/exact.ts');
 
+const createEntry = (
+  path: IRepositoryPath,
+  type: IRepositoryEntry['type'] = 'file',
+): IRepositoryEntry => ({
+  byteLength: type === 'file' ? 0 : null,
+  contentIdentity: null,
+  path,
+  type,
+});
+
 interface IReaderFixture {
   readonly lookups: IRepositoryPath[];
-  readonly reader: IRepositoryReader;
+  readonly reader: IRepositoryInspectionReader;
 }
 
 const createDiscovery = (
@@ -61,8 +71,8 @@ const createReaderFixture = (
         lookups.push(path);
         return Promise.resolve(entries.get(path) ?? null);
       },
-      listEntries: () => createEmptyEntryIterable(),
-      readFile: () => Promise.resolve(new Uint8Array()),
+      iterateEntries: () => createEmptyEntryIterable(),
+      readCompleteFile: () => Promise.resolve(new Uint8Array()),
     },
   };
 };
@@ -151,8 +161,8 @@ describe('Core repository reference validation', () => {
     };
     const fixture = createReaderFixture(
       new Map([
-        [SHARED_FILE_PATH, { path: SHARED_FILE_PATH, type: 'file' }],
-        [EXACT_IMPACT_PATH, { path: EXACT_IMPACT_PATH, type: 'file' }],
+        [SHARED_FILE_PATH, createEntry(SHARED_FILE_PATH)],
+        [EXACT_IMPACT_PATH, createEntry(EXACT_IMPACT_PATH)],
       ]),
     );
 
@@ -410,12 +420,12 @@ describe('Core repository reference validation', () => {
     };
     const fixture = createReaderFixture(
       new Map([
-        [directoryReferencePath, { path: directoryReferencePath, type: 'directory' }],
-        [symlinkReferencePath, { path: symlinkReferencePath, type: 'symlink' }],
-        [directoryImpactPath, { path: directoryImpactPath, type: 'directory' }],
-        [symlinkImpactPath, { path: symlinkImpactPath, type: 'symlink' }],
-        [directoryToolPath, { path: directoryToolPath, type: 'directory' }],
-        [symlinkSkillPath, { path: symlinkSkillPath, type: 'symlink' }],
+        [directoryReferencePath, createEntry(directoryReferencePath, 'directory')],
+        [symlinkReferencePath, createEntry(symlinkReferencePath, 'symlink')],
+        [directoryImpactPath, createEntry(directoryImpactPath, 'directory')],
+        [symlinkImpactPath, createEntry(symlinkImpactPath, 'symlink')],
+        [directoryToolPath, createEntry(directoryToolPath, 'directory')],
+        [symlinkSkillPath, createEntry(symlinkSkillPath, 'symlink')],
       ]),
     );
     const diagnostics = await validateRepositoryReferences(
@@ -555,13 +565,13 @@ describe('Core repository reference validation', () => {
     });
     const controller = new AbortController();
     let receivedSignal: AbortSignal | undefined;
-    const repository: IRepositoryReader = {
+    const repository: IRepositoryInspectionReader = {
       getEntry: (_path, options) => {
         receivedSignal = options?.signal;
         return Promise.reject(sourceError);
       },
-      listEntries: () => createEmptyEntryIterable(),
-      readFile: () => Promise.resolve(new Uint8Array()),
+      iterateEntries: () => createEmptyEntryIterable(),
+      readCompleteFile: () => Promise.resolve(new Uint8Array()),
     };
     const validation = validateRepositoryReferences(
       repository,
@@ -602,7 +612,7 @@ describe('Core repository reference validation', () => {
     await expect(validation).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxDiagnostics',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: false,
     });
   });

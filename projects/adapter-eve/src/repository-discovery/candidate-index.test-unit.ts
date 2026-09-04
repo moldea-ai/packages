@@ -6,6 +6,8 @@ import type { IRepositoryEntry } from '@moldea.ai/repository';
 import { createEveAgentRootIndex } from './candidate-index.js';
 
 const entry = (path: string, type: IRepositoryEntry['type'] = 'file'): IRepositoryEntry => ({
+  byteLength: type === 'file' ? 0 : null,
+  contentIdentity: type === 'file' ? 'sha256:empty' : null,
   path: path as never,
   type,
 });

@@ -1,64 +1,38 @@
 import type {
   IDiagnostic,
-  IIndexedTextAsset,
-  IProjectInspectionResult,
-  IRuntimeAdapterEvidence,
+  IProjectInspectionItem,
+  IProjectInspectionPageResult,
+  IProjectValidationResult,
 } from '@moldea.ai/core';
-import type {
-  IAgentManifestEntry,
-  IRepositoryReference,
-  IRelationshipManifestEntry,
-  IUnresolvedRequirementManifestEntry,
-} from '@moldea.ai/core/format';
 
-import { calculateMoldeaCliJsonDigest } from '../output-page/index.js';
 import type { IJsonValue } from '../json-serialization/index.js';
+import { calculateMoldeaCliJsonDigest } from '../output-page/index.js';
 
 import { MOLDEA_CLI_GIT_WORKING_TREE_SOURCE } from './constants.js';
 import type {
-  IMoldeaCliAssetMetadata,
   IMoldeaCliDiagnosticRecord,
-  IMoldeaCliEvidenceReferenceRecord,
   IMoldeaCliEvidenceRecord,
   IMoldeaCliInspectProjection,
+  IMoldeaCliInspectProjectMetadata,
   IMoldeaCliInspectRecord,
-  IMoldeaCliRelationshipRecord,
-  IMoldeaCliRequirementRecord,
-  IMoldeaCliUnresolvedRecord,
+  IMoldeaCliMetadataRecord,
   IMoldeaCliValidateProjection,
 } from './types.js';
 
-/** Rejects a Core result whose completion fields contradict its validity. */
-const assertProjectInspectionInvariant = (inspection: IProjectInspectionResult): void => {
-  const hasDiagnostics = inspection.diagnostics.length > 0;
-  const hasProject = inspection.project !== null;
-  const isConsistent = inspection.valid
-    ? hasProject && !hasDiagnostics
-    : !hasProject && hasDiagnostics;
+/** Rejects a Core validation result whose completion fields contradict its validity. */
+const assertProjectValidationInvariant = (validation: IProjectValidationResult): void => {
+  const isConsistent = validation.valid
+    ? validation.summary !== null && validation.diagnostics.length === 0
+    : validation.diagnostics.length > 0;
 
   if (!isConsistent) {
-    throw new TypeError('The Core inspection result is internally inconsistent.');
+    throw new TypeError('The Core validation result is internally inconsistent.');
   }
 };
 
-/** Creates one stable composite key without exposing cursor internals. */
+/** Creates one stable composite record key. */
 const createRecordKey = (kind: string, ...parts: readonly unknown[]): string =>
   JSON.stringify([kind, ...parts]);
-
-/** Compares projected records by their complete stable composite keys. */
-const compareRecordKeys = (
-  left: IMoldeaCliInspectRecord,
-  right: IMoldeaCliInspectRecord,
-): number => (left.key < right.key ? -1 : left.key > right.key ? 1 : 0);
-
-/** Removes canonical text while retaining exact asset identity and size metadata. */
-const createAssetMetadata = (asset: IIndexedTextAsset): IMoldeaCliAssetMetadata =>
-  Object.freeze({
-    digest: asset.digest,
-    path: asset.path,
-    scalarLength: asset.scalarLength,
-    utf8ByteLength: asset.utf8ByteLength,
-  });
 
 /** Projects one diagnostic without retaining arbitrary detail payloads. */
 export const createMoldeaCliDiagnosticRecord = (
@@ -84,496 +58,136 @@ export const createMoldeaCliDiagnosticRecord = (
     source: diagnostic.source,
   });
 
-/** Projects one adapter evidence item through its bounded metadata allowlist. */
-const createEvidenceRecords = (
-  evidence: IRuntimeAdapterEvidence,
-  occurrence: number,
-): readonly (IMoldeaCliEvidenceRecord | IMoldeaCliEvidenceReferenceRecord)[] => {
-  const evidenceKey = createRecordKey(
-    'evidence',
-    evidence.source,
-    evidence.kind,
-    evidence.agentId,
-    evidence.capabilityKind,
-    evidence.capabilityId,
-    evidence.runtimeName,
-    occurrence,
-  );
-  const summary: IMoldeaCliEvidenceRecord = Object.freeze({
-    agentId: evidence.agentId,
-    capabilityId: evidence.capabilityId,
-    capabilityKind: evidence.capabilityKind,
-    evidenceKind: evidence.kind,
-    key: evidenceKey,
-    kind: 'evidence',
-    referenceCount: evidence.references.length,
-    runtimeName: evidence.runtimeName,
-    source: evidence.source,
-  });
+/** Projects one bounded Core inspection item through the schema 4 allowlist. */
+const createInspectRecord = (
+  item: IProjectInspectionItem,
+  index: number,
+): IMoldeaCliInspectRecord => {
+  const order = index.toString().padStart(6, '0');
 
-  return Object.freeze([
-    summary,
-    ...evidence.references.map((reference, index): IMoldeaCliEvidenceReferenceRecord =>
-      Object.freeze({
-        evidenceKey,
-        key: createRecordKey(
-          'evidence-reference',
-          evidenceKey,
-          reference.path,
-          reference.symbol ?? null,
-          index,
-        ),
-        kind: 'evidence-reference',
-        path: reference.path,
-        symbol: reference.symbol ?? null,
-      }),
-    ),
-  ]);
-};
+  if (item.kind === 'diagnostic') {
+    return Object.freeze({
+      ...createMoldeaCliDiagnosticRecord(item.diagnostic, index),
+      key: createRecordKey(order, 'diagnostic', item.diagnostic.source, item.diagnostic.code),
+    });
+  }
 
-/** Adds one exact or glob relationship record to the projection. */
-const addRelationship = (
-  records: IMoldeaCliRelationshipRecord[],
-  ownerKind: IMoldeaCliRelationshipRecord['ownerKind'],
-  ownerId: string,
-  agentId: string | null,
-  field: string,
-  path: string,
-  symbol: string | null = null,
-): void => {
-  const declarationKind = path.includes('*') ? 'glob' : 'exact';
-
-  records.push(
-    Object.freeze({
-      agentId,
-      declarationKind,
-      field,
+  if (item.kind === 'evidence') {
+    const evidence = item.evidence;
+    const record: IMoldeaCliEvidenceRecord = {
+      agentId: evidence.agentId,
+      capabilityId: evidence.capabilityId,
+      capabilityKind: evidence.capabilityKind,
+      evidenceKind: evidence.kind,
       key: createRecordKey(
-        'relationship',
-        ownerKind,
-        agentId,
-        ownerId,
-        field,
-        declarationKind,
-        path,
-        symbol,
+        order,
+        'evidence',
+        evidence.source,
+        evidence.kind,
+        evidence.agentId,
+        evidence.capabilityKind,
+        evidence.capabilityId,
+        evidence.runtimeName,
       ),
-      kind: 'relationship',
-      ownerId,
-      ownerKind,
-      path,
-      symbol,
-    }),
-  );
-};
+      kind: 'evidence',
+      references: Object.freeze(
+        evidence.references.map((reference) =>
+          Object.freeze({ path: reference.path, symbol: reference.symbol ?? null }),
+        ),
+      ),
+      runtimeName: evidence.runtimeName,
+      source: evidence.source,
+    };
 
-/** Adds reference-list and impact relationships from a context or decision owner. */
-const addRelationshipEntry = (
-  records: IMoldeaCliRelationshipRecord[],
-  ownerKind: 'context' | 'decision',
-  ownerId: string,
-  relationship: IRelationshipManifestEntry | null,
-): void => {
-  for (const reference of relationship?.bindings ?? []) {
-    addRelationship(
-      records,
-      ownerKind,
-      ownerId,
-      null,
-      'bindings',
-      reference.path,
-      reference.symbol ?? null,
-    );
+    return Object.freeze(record);
   }
 
-  for (const pattern of relationship?.affectedBy ?? []) {
-    addRelationship(records, ownerKind, ownerId, null, 'affectedBy', pattern);
-  }
-};
+  const metadata = item.metadata;
+  const record: IMoldeaCliMetadataRecord = {
+    agentId: metadata.agentId,
+    byteLength: metadata.byteLength,
+    canonicalDigest: metadata.canonicalDigest,
+    decisionId: metadata.decisionId,
+    digest: metadata.digest,
+    key: createRecordKey(order, 'metadata', metadata.path, metadata.kind, metadata.agentId),
+    kind: 'metadata',
+    metadataKind: metadata.kind,
+    path: metadata.path,
+    scalarLength: metadata.scalarLength,
+  };
 
-/** Adds unresolved requirement metadata and its related-path relationships. */
-const addUnresolved = (
-  records: IMoldeaCliUnresolvedRecord[],
-  relationships: IMoldeaCliRelationshipRecord[],
-  unresolved: Readonly<Record<string, IUnresolvedRequirementManifestEntry>> | undefined,
-  agentId: string | null,
-): void => {
-  for (const requirementId of Object.keys(unresolved ?? {}).sort()) {
-    const requirement = unresolved?.[requirementId];
-
-    if (requirement === undefined) {
-      continue;
-    }
-
-    records.push(
-      Object.freeze({
-        agentId,
-        category: requirement.category,
-        effect: requirement.effect,
-        key: createRecordKey('unresolved', agentId, requirementId),
-        kind: 'unresolved',
-        relatedCount: requirement.related?.length ?? 0,
-        requirementId,
-      }),
-    );
-
-    for (const reference of requirement.related ?? []) {
-      addRelationship(
-        relationships,
-        'unresolved',
-        requirementId,
-        agentId,
-        'related',
-        reference.path,
-        reference.symbol ?? null,
-      );
-    }
-  }
-};
-
-/** Adds one capability requirement and its complete repository relationships. */
-const addCapability = (
-  requirements: IMoldeaCliRequirementRecord[],
-  relationships: IMoldeaCliRelationshipRecord[],
-  capabilityKind: 'skill' | 'tool',
-  capabilityId: string,
-  capability:
-    | NonNullable<IAgentManifestEntry['skills']>[string]
-    | NonNullable<IAgentManifestEntry['tools']>[string],
-  agentId: string,
-): void => {
-  requirements.push(
-    Object.freeze({
-      agentId,
-      capabilityId,
-      capabilityKind,
-      implementationPath: capability.implementation.path,
-      implementationSymbol: capability.implementation.symbol ?? null,
-      key: createRecordKey('requirement', agentId, capabilityKind, capabilityId),
-      kind: 'requirement',
-      name: capability.name,
-      registrationPath: capability.registration?.path ?? null,
-    }),
-  );
-  const ownerKind = capabilityKind;
-
-  addRelationship(
-    relationships,
-    ownerKind,
-    capabilityId,
-    agentId,
-    'implementation',
-    capability.implementation.path,
-    capability.implementation.symbol ?? null,
-  );
-
-  if (capability.registration !== undefined) {
-    addRelationship(
-      relationships,
-      ownerKind,
-      capabilityId,
-      agentId,
-      'registration',
-      capability.registration.path,
-      capability.registration.symbol ?? null,
-    );
-  }
-
-  if (capabilityKind === 'tool') {
-    const tool = capability as NonNullable<IAgentManifestEntry['tools']>[string];
-
-    for (const field of ['inputSchema', 'outputSchema'] as const) {
-      const reference = tool[field];
-
-      if (reference !== undefined) {
-        addRelationship(
-          relationships,
-          ownerKind,
-          capabilityId,
-          agentId,
-          field,
-          reference.path,
-          reference.symbol ?? null,
-        );
-      }
-    }
-  }
-
-  for (const pattern of capability.affectedBy ?? []) {
-    addRelationship(relationships, ownerKind, capabilityId, agentId, 'affectedBy', pattern);
-  }
-};
-
-/** Adds all repository relationships declared by one indexed agent. */
-const addAgentRelationships = (
-  relationships: IMoldeaCliRelationshipRecord[],
-  requirements: IMoldeaCliRequirementRecord[],
-  agentId: string,
-  declaration: IAgentManifestEntry,
-): void => {
-  const ownerKind = 'agent';
-
-  for (const field of [
-    'runtimeAgent',
-    'inputSchema',
-    'outputSchema',
-    'instructionLoader',
-  ] as const) {
-    const reference = declaration.bindings?.[field];
-
-    if (reference !== undefined) {
-      addRelationship(
-        relationships,
-        ownerKind,
-        agentId,
-        agentId,
-        field,
-        reference.path,
-        reference.symbol ?? null,
-      );
-    }
-  }
-
-  for (const variableId of Object.keys(declaration.bindings?.variableProviders ?? {}).sort()) {
-    const reference: IRepositoryReference | undefined =
-      declaration.bindings?.variableProviders?.[variableId];
-
-    if (reference !== undefined) {
-      addRelationship(
-        relationships,
-        ownerKind,
-        agentId,
-        agentId,
-        `variableProvider:${variableId}`,
-        reference.path,
-        reference.symbol ?? null,
-      );
-    }
-  }
-
-  for (const pattern of declaration.affectedBy ?? []) {
-    addRelationship(relationships, ownerKind, agentId, agentId, 'affectedBy', pattern);
-  }
-
-  for (const capabilityId of Object.keys(declaration.tools ?? {}).sort()) {
-    const capability = declaration.tools?.[capabilityId];
-
-    if (capability !== undefined) {
-      addCapability(requirements, relationships, 'tool', capabilityId, capability, agentId);
-    }
-  }
-
-  for (const capabilityId of Object.keys(declaration.skills ?? {}).sort()) {
-    const capability = declaration.skills?.[capabilityId];
-
-    if (capability !== undefined) {
-      addCapability(requirements, relationships, 'skill', capabilityId, capability, agentId);
-    }
-  }
-};
-
-/** Collects every canonical body used to assert that projections remain content-free. */
-const collectCanonicalBodies = (inspection: IProjectInspectionResult): readonly string[] => {
-  const project = inspection.project;
-
-  if (project === null) {
-    return Object.freeze([]);
-  }
-
-  return Object.freeze([
-    project.manifest.asset.content,
-    project.project.content,
-    ...project.context.map(({ asset }) => asset.content),
-    ...project.decisions.flatMap(({ decision }) => [decision.asset.content, decision.body]),
-    ...project.runtimes.map(({ asset }) => asset.content),
-    ...project.agents.flatMap(({ description, instruction, handoffDescription }) => [
-      description.asset.content,
-      description.value,
-      instruction.content,
-      ...(handoffDescription === null
-        ? []
-        : [handoffDescription.asset.content, handoffDescription.value]),
-    ]),
-  ]);
+  return Object.freeze(record);
 };
 
 /** Creates content-free validation metadata and ordered diagnostic records. */
 export const createMoldeaCliValidateProjection = (
-  inspection: IProjectInspectionResult,
+  validation: IProjectValidationResult,
 ): IMoldeaCliValidateProjection => {
-  assertProjectInspectionInvariant(inspection);
+  assertProjectValidationInvariant(validation);
   const diagnostics = Object.freeze(
-    inspection.diagnostics.map((diagnostic, index) =>
-      createMoldeaCliDiagnosticRecord(diagnostic, index),
-    ),
+    validation.diagnostics
+      .map((diagnostic, index) => createMoldeaCliDiagnosticRecord(diagnostic, index))
+      .sort((left, right) => (left.key < right.key ? -1 : left.key > right.key ? 1 : 0)),
   );
   const snapshotDigest = calculateMoldeaCliJsonDigest({
     diagnostics,
-    formatVersion: inspection.formatVersion,
+    formatVersion: validation.formatVersion,
+    summary: validation.summary,
+    valid: validation.valid,
   } as unknown as IJsonValue);
 
   return Object.freeze({
-    canonicalBodies: collectCanonicalBodies(inspection),
     diagnostics,
-    formatVersion: inspection.formatVersion,
+    formatVersion: validation.formatVersion,
     snapshotDigest,
     source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
+    valid: validation.valid,
   });
 };
 
-/**
- * Projects one complete Core inspection through the schema 3 metadata allowlist.
- * @param inspection The immutable Core inspection result.
- * @returns Ordered metadata records, aggregate counts, and canonical-body guard seeds.
- * @throws If the Core result contradicts its valid, project, and diagnostic invariants.
- */
+/** Projects one bounded Core page through the content-free schema 4 allowlist. */
 export const createMoldeaCliInspectProjection = (
-  inspection: IProjectInspectionResult,
+  inspection: IProjectInspectionPageResult,
 ): IMoldeaCliInspectProjection => {
-  assertProjectInspectionInvariant(inspection);
-  const project = inspection.project;
-  const relationships: IMoldeaCliRelationshipRecord[] = [];
-  const requirements: IMoldeaCliRequirementRecord[] = [];
-  const unresolved: IMoldeaCliUnresolvedRecord[] = [];
-  const records: IMoldeaCliInspectRecord[] = [
-    ...inspection.diagnostics.map((diagnostic, index) =>
-      createMoldeaCliDiagnosticRecord(diagnostic, index),
-    ),
-    ...inspection.evidence.flatMap(createEvidenceRecords),
-  ];
-
-  if (project !== null) {
-    for (const context of project.context) {
-      records.push(
-        Object.freeze({
-          asset: createAssetMetadata(context.asset),
-          key: createRecordKey('context', context.asset.path),
-          kind: 'context',
-        }),
-      );
-      addRelationshipEntry(relationships, 'context', context.asset.path, context.relationships);
-    }
-
-    for (const indexedDecision of project.decisions) {
-      const { decision } = indexedDecision;
-
-      records.push(
-        Object.freeze({
-          asset: createAssetMetadata(decision.asset),
-          createdAt: decision.createdAt,
-          decisionId: decision.id,
-          key: createRecordKey('decision', decision.id, decision.path),
-          kind: 'decision',
-          status: decision.status,
-          supersedesCount: decision.supersedes.length,
-        }),
-      );
-
-      for (const supersededDecisionId of decision.supersedes) {
-        records.push(
-          Object.freeze({
-            decisionId: decision.id,
-            key: createRecordKey('decision-supersession', decision.id, supersededDecisionId),
-            kind: 'decision-supersession',
-            supersededDecisionId,
-          }),
-        );
-      }
-      addRelationshipEntry(relationships, 'decision', decision.id, indexedDecision.relationships);
-    }
-
-    for (const runtime of project.runtimes) {
-      records.push(
-        Object.freeze({
-          asset: createAssetMetadata(runtime.asset),
-          key: createRecordKey('runtime', runtime.asset.path),
-          kind: 'runtime',
-        }),
-      );
-    }
-
-    for (const agent of project.agents) {
-      records.push(
-        Object.freeze({
-          agentId: agent.id,
-          contextCount: agent.context.length,
-          decisionCount: agent.decisions.length,
-          description: createAssetMetadata(agent.description.asset),
-          handoffDescription:
-            agent.handoffDescription === null
-              ? null
-              : createAssetMetadata(agent.handoffDescription.asset),
-          instruction: createAssetMetadata(agent.instruction),
-          key: createRecordKey('agent', agent.id),
-          kind: 'agent',
-          runtimeId: agent.declaration.runtime.id,
-        }),
-      );
-      for (const contextPath of agent.context) {
-        addRelationship(relationships, 'agent', agent.id, agent.id, 'context', contextPath);
-      }
-
-      for (const decisionPath of agent.decisions) {
-        addRelationship(relationships, 'agent', agent.id, agent.id, 'decisions', decisionPath);
-      }
-      addAgentRelationships(relationships, requirements, agent.id, agent.declaration);
-
-      for (const mirror of agent.mirrors) {
-        records.push(
-          Object.freeze({
-            agentId: agent.id,
-            canonicalDigest: mirror.canonicalDigest,
-            digest: mirror.digest,
-            key: createRecordKey('mirror', agent.id, mirror.path),
-            kind: 'mirror',
-            path: mirror.path,
-          }),
-        );
-      }
-
-      addUnresolved(unresolved, relationships, agent.declaration.unresolved, agent.id);
-    }
-
-    addUnresolved(unresolved, relationships, project.unresolved, null);
-    records.push(...relationships, ...requirements, ...unresolved);
-  }
-
-  records.sort(compareRecordKeys);
-  const counts = Object.freeze({
-    agents: records.filter(({ kind }) => kind === 'agent').length,
-    context: records.filter(({ kind }) => kind === 'context').length,
-    decisions: records.filter(({ kind }) => kind === 'decision').length,
-    decisionSupersessions: records.filter(({ kind }) => kind === 'decision-supersession').length,
-    diagnostics: records.filter(({ kind }) => kind === 'diagnostic').length,
-    evidence: records.filter(({ kind }) => kind === 'evidence').length,
-    evidenceReferences: records.filter(({ kind }) => kind === 'evidence-reference').length,
-    mirrors: records.filter(({ kind }) => kind === 'mirror').length,
-    relationships: relationships.length,
-    requirements: requirements.length,
-    runtimes: records.filter(({ kind }) => kind === 'runtime').length,
-    unresolved: unresolved.length,
-  });
-  const projectMetadata =
-    project === null
+  const project: IMoldeaCliInspectProjectMetadata | null =
+    inspection.summary === null
       ? null
       : Object.freeze({
-          manifest: createAssetMetadata(project.manifest.asset),
-          project: createAssetMetadata(project.project),
+          manifest: Object.freeze({
+            digest: inspection.summary.manifestDigest,
+            path: inspection.summary.manifestPath,
+          }),
+          project: Object.freeze({
+            digest: inspection.summary.projectDigest,
+            path: inspection.summary.projectPath,
+          }),
         });
-  const snapshotDigest = calculateMoldeaCliJsonDigest({
-    counts,
-    formatVersion: inspection.formatVersion,
-    project: projectMetadata,
-    records,
-  } as unknown as IJsonValue);
+  const records = Object.freeze(
+    inspection.page.records.map(({ item }, index) => createInspectRecord(item, index)),
+  );
+  const sourceCursors = new Map(
+    inspection.page.records.map((record, index) => {
+      const projected = records[index];
+
+      if (projected === undefined) {
+        throw new TypeError('A projected inspection record is missing.');
+      }
+
+      return [projected.key, record.nextCursor] as const;
+    }),
+  );
+  const snapshotDigest = inspection.inspectionDigest;
 
   return Object.freeze({
-    canonicalBodies: collectCanonicalBodies(inspection),
-    counts,
+    counts: inspection.counts,
     formatVersion: inspection.formatVersion,
-    project: projectMetadata,
-    records: Object.freeze(records),
+    getSourceCursor: (record: IMoldeaCliInspectRecord): string | null =>
+      sourceCursors.get(record.key) ?? null,
+    project,
+    records,
     snapshotDigest,
     source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
+    valid: inspection.valid,
+    view: inspection.view,
   });
 };

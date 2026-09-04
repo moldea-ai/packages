@@ -9,38 +9,38 @@ import type { IMoldeaCliCommandExecutor } from './types.js';
 const INVOCATION_DIRECTORY = '/workspace';
 const INSTALLED_PACKAGE_METADATA = Object.freeze({
   dependencies: Object.freeze({
-    '@moldea.ai/adapter-anthropic': 'workspace:2.0.2',
-    '@moldea.ai/adapter-claude-agent-sdk': 'workspace:1.0.1',
-    '@moldea.ai/adapter-cloudflare-agents': 'workspace:1.0.1',
-    '@moldea.ai/adapter-eve': 'workspace:1.0.1',
-    '@moldea.ai/adapter-google-genai': 'workspace:1.0.4',
-    '@moldea.ai/adapter-langchain': 'workspace:1.0.1',
-    '@moldea.ai/adapter-langgraph': 'workspace:1.0.1',
-    '@moldea.ai/adapter-openai': 'workspace:2.0.5',
-    '@moldea.ai/adapter-openai-agents-sdk': 'workspace:1.0.3',
-    '@moldea.ai/adapter-vercel-ai-sdk': 'workspace:1.0.1',
-    '@moldea.ai/core': 'workspace:2.0.1',
-    '@moldea.ai/repository': 'workspace:1.0.2',
-    '@moldea.ai/repository-fs': 'workspace:1.0.3',
+    '@moldea.ai/adapter-anthropic': 'workspace:3.0.0',
+    '@moldea.ai/adapter-claude-agent-sdk': 'workspace:2.0.0',
+    '@moldea.ai/adapter-cloudflare-agents': 'workspace:2.0.0',
+    '@moldea.ai/adapter-eve': 'workspace:2.0.0',
+    '@moldea.ai/adapter-google-genai': 'workspace:2.0.0',
+    '@moldea.ai/adapter-langchain': 'workspace:2.0.0',
+    '@moldea.ai/adapter-langgraph': 'workspace:2.0.0',
+    '@moldea.ai/adapter-openai': 'workspace:3.0.0',
+    '@moldea.ai/adapter-openai-agents-sdk': 'workspace:2.0.0',
+    '@moldea.ai/adapter-vercel-ai-sdk': 'workspace:2.0.0',
+    '@moldea.ai/core': 'workspace:3.0.0',
+    '@moldea.ai/repository': 'workspace:2.0.0',
+    '@moldea.ai/repository-fs': 'workspace:2.0.0',
     semver: '7.8.5',
   }),
   installedPackageVersions: Object.freeze({
-    '@moldea.ai/adapter-anthropic': '2.0.2',
-    '@moldea.ai/adapter-claude-agent-sdk': '1.0.1',
-    '@moldea.ai/adapter-cloudflare-agents': '1.0.1',
-    '@moldea.ai/adapter-eve': '1.0.1',
-    '@moldea.ai/adapter-google-genai': '1.0.4',
-    '@moldea.ai/adapter-langchain': '1.0.1',
-    '@moldea.ai/adapter-langgraph': '1.0.1',
-    '@moldea.ai/adapter-openai': '2.0.5',
-    '@moldea.ai/adapter-openai-agents-sdk': '1.0.3',
-    '@moldea.ai/adapter-vercel-ai-sdk': '1.0.1',
-    '@moldea.ai/core': '2.0.1',
-    '@moldea.ai/repository': '1.0.2',
-    '@moldea.ai/repository-fs': '1.0.3',
+    '@moldea.ai/adapter-anthropic': '3.0.0',
+    '@moldea.ai/adapter-claude-agent-sdk': '2.0.0',
+    '@moldea.ai/adapter-cloudflare-agents': '2.0.0',
+    '@moldea.ai/adapter-eve': '2.0.0',
+    '@moldea.ai/adapter-google-genai': '2.0.0',
+    '@moldea.ai/adapter-langchain': '2.0.0',
+    '@moldea.ai/adapter-langgraph': '2.0.0',
+    '@moldea.ai/adapter-openai': '3.0.0',
+    '@moldea.ai/adapter-openai-agents-sdk': '2.0.0',
+    '@moldea.ai/adapter-vercel-ai-sdk': '2.0.0',
+    '@moldea.ai/core': '3.0.0',
+    '@moldea.ai/repository': '2.0.0',
+    '@moldea.ai/repository-fs': '2.0.0',
   }),
   supportedNodeRange: '>=22.11.0',
-  version: '3.3.7',
+  version: '7.0.0',
 });
 
 describe('runMoldeaCli', () => {
@@ -141,7 +141,7 @@ Options:
         invocationDirectory: INVOCATION_DIRECTORY,
         packageMetadata: INSTALLED_PACKAGE_METADATA,
       }),
-    ).resolves.toStrictEqual({ exitCode: 0, stderr: '', stdout: '3.3.7\n' });
+    ).resolves.toStrictEqual({ exitCode: 0, stderr: '', stdout: '7.0.0\n' });
     expect(executeCommand).not.toHaveBeenCalled();
   });
 
@@ -170,7 +170,7 @@ Options:
       exitCode: 2,
       stderr: '',
       stdout:
-        '{"cliVersion":"3.3.7","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":3,"status":"error"}\n',
+        '{"cliVersion":"7.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":4,"status":"error"}\n',
     });
   });
 
@@ -226,7 +226,7 @@ Options:
     expect(compositionResult.exitCode).toBe(0);
     expect(compositionResult.stderr).toBe('');
     expect(JSON.parse(compositionResult.stdout)).toMatchObject({
-      cliVersion: '3.3.7',
+      cliVersion: '7.0.0',
       command: 'composition',
       result: { repositoryFormatVersions: [1] },
       status: 'valid',
@@ -247,7 +247,7 @@ Options:
       exitCode: 3,
       stderr: '',
       stdout:
-        '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":3,"status":"error"}\n',
+        '{"cliVersion":"7.0.0","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":4,"status":"error"}\n',
     });
   });
 });

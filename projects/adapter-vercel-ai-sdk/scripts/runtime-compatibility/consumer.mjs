@@ -54,7 +54,7 @@ const repository = createMemoryRepositoryReader([
     type: 'file',
   },
 ]);
-const result = await createCore({ adapters: [vercelAiSdkAdapter] }).inspectProject({
+const result = await createCore({ adapters: [vercelAiSdkAdapter] }).validateProject({
   repository,
 });
 

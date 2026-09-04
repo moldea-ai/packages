@@ -1,12 +1,18 @@
 import {
   REPOSITORY_ROOT,
   RepositorySourceException,
+  createRepositoryComparison,
   parseRepositoryPath,
+  type IRepositoryComparison,
   type IRepositoryEntry,
-  type IRepositoryListOptions,
+  type IRepositoryEntryPage,
+  type IRepositoryEntryPageOptions,
+  type IRepositoryFilePage,
+  type IRepositoryFilePageOptions,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
   type IRepositoryReader,
+  type IRepositorySnapshot,
 } from '@moldea.ai/repository';
 
 import { GitContentTransformUnsupportedException } from './exception.js';
@@ -20,7 +26,7 @@ const throwIfAborted = (signal: AbortSignal | undefined, path: IRepositoryPath):
   throw new RepositorySourceException({
     cause: signal.reason,
     code: 'ABORTED',
-    operation: 'read-file',
+    operation: 'read-file-page',
     path,
     retryable: false,
   });
@@ -30,13 +36,15 @@ const throwIfAborted = (signal: AbortSignal | undefined, path: IRepositoryPath):
 const createInvalidSourceException = (path: IRepositoryPath): RepositorySourceException =>
   new RepositorySourceException({
     code: 'INVALID_SOURCE_DATA',
-    operation: 'read-file',
+    operation: 'read-file-page',
     path,
     retryable: false,
   });
 
 // immutable guarded-read view over one coherent logical repository reader
 class GitContentTransformationGuardRepositoryReader implements IRepositoryReader {
+  public readonly snapshot: IRepositorySnapshot;
+
   readonly #guardedPaths: ReadonlySet<IRepositoryPath>;
 
   readonly #reader: IRepositoryReader;
@@ -44,6 +52,15 @@ class GitContentTransformationGuardRepositoryReader implements IRepositoryReader
   public constructor(reader: IRepositoryReader, guardedPaths: ReadonlySet<IRepositoryPath>) {
     this.#reader = reader;
     this.#guardedPaths = guardedPaths;
+    this.snapshot = reader.snapshot;
+  }
+
+  /** Creates a bounded comparison from this guarded logical snapshot. */
+  public compare(
+    candidate: IRepositoryReader,
+    options?: IRepositoryOperationOptions,
+  ): Promise<IRepositoryComparison> {
+    return createRepositoryComparison(this, candidate, options);
   }
 
   /**
@@ -83,14 +100,14 @@ class GitContentTransformationGuardRepositoryReader implements IRepositoryReader
    * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
    * - ABORTED: The repository operation was aborted.
    */
-  public async readFile(
+  public async readFilePage(
     path: IRepositoryPath,
-    options?: IRepositoryOperationOptions,
-  ): Promise<Uint8Array> {
+    options: IRepositoryFilePageOptions,
+  ): Promise<IRepositoryFilePage> {
     const parsedPath = parseRepositoryPath(path);
 
     if (!this.#guardedPaths.has(parsedPath)) {
-      return this.#reader.readFile(parsedPath, options);
+      return this.#reader.readFilePage(parsedPath, options);
     }
 
     throwIfAborted(options?.signal, parsedPath);
@@ -108,7 +125,7 @@ class GitContentTransformationGuardRepositoryReader implements IRepositoryReader
     }
 
     if (entry?.type !== 'file') {
-      return this.#reader.readFile(parsedPath, options);
+      return this.#reader.readFilePage(parsedPath, options);
     }
 
     throw new GitContentTransformUnsupportedException(parsedPath);
@@ -129,8 +146,8 @@ class GitContentTransformationGuardRepositoryReader implements IRepositoryReader
    * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
    * - ABORTED: The repository operation was aborted.
    */
-  public listEntries(options?: IRepositoryListOptions): AsyncIterable<IRepositoryEntry> {
-    return this.#reader.listEntries(options);
+  public listEntriesPage(options: IRepositoryEntryPageOptions): Promise<IRepositoryEntryPage> {
+    return this.#reader.listEntriesPage(options);
   }
 }
 

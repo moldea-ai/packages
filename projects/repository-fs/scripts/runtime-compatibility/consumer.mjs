@@ -10,12 +10,24 @@ import {
 } from '@moldea.ai/repository';
 import * as repositoryFilesystem from '@moldea.ai/repository-fs';
 
-/** Collects one public reader listing without assuming an array-backed implementation. */
-const collectEntries = async (entries) => {
+/** Collects one public reader listing through its bounded continuation contract. */
+const collectEntries = async (reader) => {
   const collectedEntries = [];
+  let cursor;
 
-  for await (const entry of entries) {
-    collectedEntries.push(entry);
+  while (cursor !== null) {
+    const page = await reader.listEntriesPage({
+      ...(cursor === undefined ? {} : { cursor }),
+      maxEntries: 2,
+    });
+    collectedEntries.push(...page.entries);
+
+    if (page.isComplete) {
+      return collectedEntries;
+    }
+
+    assert.notEqual(page.nextCursor, null);
+    cursor = page.nextCursor;
   }
 
   return collectedEntries;
@@ -26,9 +38,13 @@ assert.deepStrictEqual(Object.keys(repositoryFilesystem).sort(), [
   'createFilesystemRepositoryReader',
 ]);
 assert.deepStrictEqual(repositoryFilesystem.DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS, {
-  maxCachedBytes: 134_217_728,
-  maxEntries: 100_000,
-  maxFileBytes: 8_388_608,
+  maxCachedBytes: 67_108_864,
+  maxConcurrentOperations: 16,
+  maxDirectoryEntries: 131_072,
+  maxEntries: 131_072,
+  maxPageEntries: 4_096,
+  maxQueuedOperations: 256,
+  maxReadBytes: 1_048_576,
 });
 assert.equal(
   Object.isFrozen(repositoryFilesystem.DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS),
@@ -53,17 +69,45 @@ try {
   });
 
   assert.equal(Object.isFrozen(reader), true);
-  assert.deepStrictEqual(Object.keys(reader).sort(), ['getEntry', 'listEntries', 'readFile']);
+  assert.equal(typeof reader.getEntry, 'function');
+  assert.equal(typeof reader.listEntriesPage, 'function');
+  assert.equal(typeof reader.readFilePage, 'function');
+  assert.equal(typeof reader.compare, 'function');
   assert.deepStrictEqual(await reader.getEntry(REPOSITORY_ROOT), {
+    byteLength: null,
+    contentIdentity: null,
     path: REPOSITORY_ROOT,
     type: 'directory',
   });
-  assert.deepStrictEqual(await reader.getEntry(filePath), { path: filePath, type: 'file' });
-  assert.deepStrictEqual(await collectEntries(reader.listEntries()), [
-    { path: parseRepositoryPath('/nested'), type: 'directory' },
-    { path: filePath, type: 'file' },
+  assert.deepStrictEqual(
+    { ...(await reader.getEntry(filePath)), contentIdentity: 'present' },
+    { byteLength: 4, contentIdentity: 'present', path: filePath, type: 'file' },
+  );
+  assert.deepStrictEqual(await collectEntries(reader), [
+    {
+      byteLength: null,
+      contentIdentity: null,
+      path: parseRepositoryPath('/nested'),
+      type: 'directory',
+    },
+    {
+      byteLength: 4,
+      contentIdentity: (await reader.getEntry(filePath)).contentIdentity,
+      path: filePath,
+      type: 'file',
+    },
   ]);
-  assert.deepStrictEqual(await reader.readFile(filePath), fileBytes);
+  assert.deepStrictEqual(
+    await reader.readFilePage(filePath, { maxBytes: fileBytes.byteLength, offset: 0 }),
+    {
+      bytes: fileBytes,
+      isComplete: true,
+      nextOffset: null,
+      offset: 0,
+      snapshot: reader.snapshot,
+      totalBytes: fileBytes.byteLength,
+    },
+  );
 
   const missingRoot = path.join(temporaryDirectory, 'private-missing-root');
   let rejection;

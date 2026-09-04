@@ -8,12 +8,13 @@ import {
   RepositorySourceException,
   type IRepositoryEntry,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  overrideCoreTestRepositoryReader,
+  type ICoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
-} from '@moldea.ai/repository/memory';
+} from '../repository.test-fixtures.js';
 
 import { discoverCanonicalAssets } from '../canonical-discovery/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
@@ -86,7 +87,7 @@ const createDecisionContent = (decision: IDecisionFixture): string => {
 const createRepository = (
   decisions: readonly IDecisionFixture[],
   additionalEntries: readonly IMemoryRepositoryEntry[] = [],
-): IRepositoryReader => {
+): ICoreTestRepositoryReader => {
   return createMemoryRepositoryReader([
     { content: 'version: 1\n', path: '/moldea/moldea.yaml', type: 'file' },
     { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
@@ -99,7 +100,7 @@ const createRepository = (
   ]);
 };
 
-const readDiscoveredGraph = async (repository: IRepositoryReader) => {
+const readDiscoveredGraph = async (repository: ICoreTestRepositoryReader) => {
   const discovery = await discoverCanonicalAssets(repository, options.limits);
 
   expect(discovery.diagnostics).toStrictEqual([]);
@@ -116,23 +117,25 @@ const simplifyDiagnostics = (diagnostics: readonly ICoreDiagnostic[]) => {
   }));
 };
 
-const reverseEnumeration = (repository: IRepositoryReader): IRepositoryReader => ({
-  getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-  listEntries: (operationOptions): AsyncIterable<IRepositoryEntry> => ({
-    async *[Symbol.asyncIterator]() {
-      const entries: IRepositoryEntry[] = [];
+const reverseEnumeration = (repository: ICoreTestRepositoryReader): ICoreTestRepositoryReader =>
+  overrideCoreTestRepositoryReader(repository, {
+    getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
+    iterateEntries: (operationOptions): AsyncIterable<IRepositoryEntry> => ({
+      async *[Symbol.asyncIterator]() {
+        const entries: IRepositoryEntry[] = [];
 
-      for await (const entry of repository.listEntries(operationOptions)) {
-        entries.push(entry);
-      }
+        for await (const entry of repository.iterateEntries(operationOptions)) {
+          entries.push(entry);
+        }
 
-      for (const entry of entries.reverse()) {
-        yield entry;
-      }
-    },
-  }),
-  readFile: (path, operationOptions) => repository.readFile(path, operationOptions),
-});
+        for (const entry of entries.reverse()) {
+          yield entry;
+        }
+      },
+    }),
+    readCompleteFile: (path, operationOptions) =>
+      repository.readCompleteFile(path, operationOptions),
+  });
 
 describe('Core decision graph inspection through the memory repository reader', () => {
   test.each(fixture.cases)(
@@ -176,14 +179,14 @@ describe('Core decision graph inspection through the memory repository reader', 
 
     const repository = createRepository(case_.decisions);
     const readPaths: IRepositoryPath[] = [];
-    const observedRepository: IRepositoryReader = {
+    const observedRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-      listEntries: (operationOptions) => repository.listEntries(operationOptions),
-      readFile: (path, operationOptions) => {
+      iterateEntries: (operationOptions) => repository.iterateEntries(operationOptions),
+      readCompleteFile: (path, operationOptions) => {
         readPaths.push(path);
-        return repository.readFile(path, operationOptions);
+        return repository.readCompleteFile(path, operationOptions);
       },
-    };
+    });
 
     await readDiscoveredGraph(observedRepository);
 
@@ -226,8 +229,7 @@ describe('Core decision graph inspection through the memory repository reader', 
       readDecisionGraph(repository, [createDecisionPath(decision)], options, controller.signal),
     ).rejects.toMatchObject({
       code: 'ABORTED',
-      operation: 'read-file',
-      path: createDecisionPath(decision),
+      operation: 'validate-project',
     });
   });
 
@@ -240,15 +242,15 @@ describe('Core decision graph inspection through the memory repository reader', 
     const repository = createRepository([decision]);
     const sourceFailure = new RepositorySourceException({
       code: 'SOURCE_UNAVAILABLE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: createDecisionPath(decision),
       retryable: false,
     });
-    const failingRepository: IRepositoryReader = {
+    const failingRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-      listEntries: (operationOptions) => repository.listEntries(operationOptions),
-      readFile: () => Promise.reject(sourceFailure),
-    };
+      iterateEntries: (operationOptions) => repository.iterateEntries(operationOptions),
+      readCompleteFile: () => Promise.reject(sourceFailure),
+    });
 
     await expect(
       readDecisionGraph(failingRepository, [createDecisionPath(decision)], options),
@@ -257,17 +259,17 @@ describe('Core decision graph inspection through the memory repository reader', 
 
   test('rejects reader bytes that violate the source-neutral contract', async () => {
     const decisionPath = parseRepositoryPath('/moldea/decisions/1767225600000-accepted.md');
-    const repository: IRepositoryReader = {
+    const repository = overrideCoreTestRepositoryReader(createMemoryRepositoryReader([]), {
       getEntry: () => Promise.resolve(null),
-      listEntries: () => {
+      iterateEntries: () => {
         throw new TypeError('The malformed reader fixture does not support listing.');
       },
-      readFile: () => Promise.resolve('not bytes' as never),
-    };
+      readCompleteFile: () => Promise.resolve('not bytes' as never),
+    });
 
     await expect(readDecisionGraph(repository, [decisionPath], options)).rejects.toMatchObject({
       code: 'INVALID_SOURCE_DATA',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: decisionPath,
       retryable: false,
     });
@@ -287,7 +289,7 @@ describe('Core decision graph inspection through the memory repository reader', 
     ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxFileBytes',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: false,
     });
   });

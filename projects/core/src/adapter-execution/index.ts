@@ -1,7 +1,13 @@
 import { RepositoryPathException, RepositorySourceException } from '@moldea.ai/repository';
 
-import type { IRuntimeAdapterContext, IRuntimeAdapterEvidence } from '../adapter/index.js';
-import type { IMoldeaProjectIndex } from '../contracts/index.js';
+import type {
+  IRuntimeAdapterAgentResolution,
+  IRuntimeAdapterContext,
+  IRuntimeAdapterEvidence,
+  IRuntimeAdapterRepository,
+  IRuntimeAdapterResolvedAgent,
+} from '../adapter/index.js';
+import type { IIndexedAgent, IMoldeaProjectIndex } from '../contracts/index.js';
 import {
   normalizeRuntimeAdapterEvidence,
   validateRuntimeAdapterResult,
@@ -12,6 +18,7 @@ import type { IAdapterDiagnostic } from '../diagnostics/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import type { ICoreOptionsSnapshot, IRuntimeAdapterSnapshot } from '../options/index.js';
+import type { IRepositoryReference } from '../format/index.js';
 import type { IRepositoryInspectionSession } from '../repository-inspection-session/index.js';
 
 // complete normalized output from every applicable runtime adapter
@@ -25,31 +32,99 @@ const isInspectionBoundaryFailure = (error: unknown): boolean => {
     error instanceof RepositoryPathException ||
     error instanceof RepositorySourceException ||
     (error instanceof CoreOperationException &&
-      error.operation === 'inspect-project' &&
+      error.operation === 'validate-project' &&
       (error.code === 'ABORTED' || error.code === 'RESOURCE_LIMIT_EXCEEDED'))
   );
 };
 
+interface IRuntimeAgentBindingEntry {
+  readonly agent: IIndexedAgent;
+  readonly resolved: IRuntimeAdapterResolvedAgent;
+}
+
+type IRuntimeAgentBindingResolution =
+  | { readonly candidateCount: number; readonly kind: 'ambiguous' }
+  | ({ readonly kind: 'matched' } & IRuntimeAgentBindingEntry);
+
+type IRuntimeAgentBindingIndex = ReadonlyMap<string, IRuntimeAgentBindingResolution>;
+
+const getRuntimeBindingKey = (reference: IRepositoryReference): string =>
+  JSON.stringify([reference.path, reference.symbol ?? null]);
+
+/** Builds one compact exact-binding index for a single configured runtime. */
+const createRuntimeAgentBindingIndex = (
+  agents: readonly IIndexedAgent[],
+): IRuntimeAgentBindingIndex => {
+  const candidates = new Map<string, IRuntimeAgentBindingResolution>();
+
+  for (const agent of agents) {
+    const runtimeAgent = agent.declaration.bindings?.runtimeAgent;
+
+    if (runtimeAgent === undefined) {
+      continue;
+    }
+
+    const key = getRuntimeBindingKey(runtimeAgent);
+    const existing = candidates.get(key);
+
+    if (existing !== undefined) {
+      candidates.set(key, {
+        candidateCount: existing.kind === 'matched' ? 2 : existing.candidateCount + 1,
+        kind: 'ambiguous',
+      });
+      continue;
+    }
+
+    candidates.set(key, {
+      agent,
+      kind: 'matched',
+      resolved: freezeRecursively({
+        declaration: agent.declaration,
+        description: agent.description,
+        handoffDescription: agent.handoffDescription,
+        id: agent.id,
+      }),
+    });
+  }
+
+  return candidates;
+};
+
 const invokeAdapter = async (
   adapter: IRuntimeAdapterSnapshot,
+  agent: IIndexedAgent,
+  agentBindings: IRuntimeAgentBindingIndex,
   project: IMoldeaProjectIndex,
   session: IRepositoryInspectionSession,
   options: ICoreOptionsSnapshot,
   outputCounts: IRuntimeAdapterOutputCounts,
   signal?: AbortSignal,
 ): Promise<IRuntimeAdapterInspectionResult> => {
-  const agents = freezeRecursively(
-    project.agents.filter(({ declaration }) => declaration.runtime.id === adapter.id),
-  );
+  const scopedAgent = freezeRecursively(agent);
+  const resolvedAgents = new Map<string, IIndexedAgent>([[scopedAgent.id, scopedAgent]]);
+  const repository: IRuntimeAdapterRepository = session.adapterRepository;
+  const resolveAgent = (reference: IRepositoryReference): IRuntimeAdapterAgentResolution => {
+    const resolution = agentBindings.get(getRuntimeBindingKey(reference));
 
-  if (agents.length === 0) {
-    return freezeRecursively({ diagnostics: [], evidence: [] });
-  }
+    if (resolution === undefined) {
+      return Object.freeze({ kind: 'absent' });
+    }
+
+    if (resolution.kind === 'ambiguous') {
+      return Object.freeze({
+        candidateCount: resolution.candidateCount,
+        kind: 'ambiguous',
+      });
+    }
+
+    resolvedAgents.set(resolution.agent.id, resolution.agent);
+    return Object.freeze({ agent: resolution.resolved, kind: 'matched' });
+  };
 
   const context: IRuntimeAdapterContext = Object.freeze({
-    agents,
-    project,
-    repository: session.reader,
+    agent: scopedAgent,
+    repository,
+    resolveAgent,
     ...(signal === undefined ? {} : { signal }),
   });
 
@@ -70,7 +145,7 @@ const invokeAdapter = async (
       adapterId: adapter.id,
       cause: error,
       code: 'ADAPTER_EXECUTION_FAILED',
-      operation: 'inspect-project',
+      operation: 'validate-project',
     });
   }
 
@@ -78,10 +153,10 @@ const invokeAdapter = async (
     candidate,
     {
       adapterId: adapter.id,
-      agents,
+      agents: [...resolvedAgents.values()],
       limits: options.limits,
       project,
-      repository: session.reader,
+      repository: session.adapterRepository,
       ...(signal === undefined ? {} : { signal }),
     },
     outputCounts,
@@ -117,11 +192,36 @@ export const inspectRuntimeAdapters = async (
   const evidence: IRuntimeAdapterEvidence[] = [];
   const diagnostics: IAdapterDiagnostic[] = [];
   const outputCounts: IRuntimeAdapterOutputCounts = { diagnostics: 0, evidence: 0 };
+  const agentsByRuntimeId = new Map<string, IIndexedAgent[]>();
+
+  for (const agent of project.agents) {
+    const runtimeAgents = agentsByRuntimeId.get(agent.declaration.runtime.id);
+
+    if (runtimeAgents === undefined) {
+      agentsByRuntimeId.set(agent.declaration.runtime.id, [agent]);
+    } else {
+      runtimeAgents.push(agent);
+    }
+  }
 
   for (const adapter of options.adapters) {
-    const result = await invokeAdapter(adapter, project, session, options, outputCounts, signal);
-    evidence.push(...result.evidence);
-    diagnostics.push(...result.diagnostics);
+    const agents = agentsByRuntimeId.get(adapter.id) ?? [];
+    const agentBindings = createRuntimeAgentBindingIndex(agents);
+
+    for (const agent of agents) {
+      const result = await invokeAdapter(
+        adapter,
+        agent,
+        agentBindings,
+        project,
+        session,
+        options,
+        outputCounts,
+        signal,
+      );
+      evidence.push(...result.evidence);
+      diagnostics.push(...result.diagnostics);
+    }
   }
 
   return freezeRecursively({

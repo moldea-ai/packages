@@ -7,12 +7,13 @@ import {
   parseRepositoryPath,
   type IRepositoryEntry,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  overrideCoreTestRepositoryReader,
+  type ICoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
-} from '@moldea.ai/repository/memory';
+} from '../repository.test-fixtures.js';
 
 import { discoverCanonicalAssets } from '../canonical-discovery/index.js';
 import { createCore } from '../core/index.js';
@@ -69,23 +70,25 @@ const createEntries = (
   })),
 ];
 
-const reverseEnumeration = (repository: IRepositoryReader): IRepositoryReader => ({
-  getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-  listEntries: (operationOptions): AsyncIterable<IRepositoryEntry> => ({
-    async *[Symbol.asyncIterator]() {
-      const entries: IRepositoryEntry[] = [];
+const reverseEnumeration = (repository: ICoreTestRepositoryReader): ICoreTestRepositoryReader =>
+  overrideCoreTestRepositoryReader(repository, {
+    getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
+    iterateEntries: (operationOptions): AsyncIterable<IRepositoryEntry> => ({
+      async *[Symbol.asyncIterator]() {
+        const entries: IRepositoryEntry[] = [];
 
-      for await (const entry of repository.listEntries(operationOptions)) {
-        entries.push(entry);
-      }
+        for await (const entry of repository.iterateEntries(operationOptions)) {
+          entries.push(entry);
+        }
 
-      for (const entry of entries.reverse()) {
-        yield entry;
-      }
-    },
-  }),
-  readFile: (path, operationOptions) => repository.readFile(path, operationOptions),
-});
+        for (const entry of entries.reverse()) {
+          yield entry;
+        }
+      },
+    }),
+    readCompleteFile: (path, operationOptions) =>
+      repository.readCompleteFile(path, operationOptions),
+  });
 
 const simplifyDiagnostics = (diagnostics: readonly ICoreDiagnostic[]) => {
   return diagnostics.map(({ code, details, entity, path, pointer }) => ({
@@ -97,7 +100,7 @@ const simplifyDiagnostics = (diagnostics: readonly ICoreDiagnostic[]) => {
   }));
 };
 
-const inspectFixture = async (repository: IRepositoryReader, manifestContent: string) => {
+const inspectFixture = async (repository: ICoreTestRepositoryReader, manifestContent: string) => {
   const discovery = await discoverCanonicalAssets(repository, options.limits);
   const manifestResult = await createCore().parseManifest({
     content: manifestContent,
@@ -161,14 +164,14 @@ describe('Core runtime guidance through the memory repository reader', () => {
       path: manifestPath,
     });
     const readPaths: IRepositoryPath[] = [];
-    const observedRepository: IRepositoryReader = {
+    const observedRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-      listEntries: (operationOptions) => repository.listEntries(operationOptions),
-      readFile: (path, operationOptions) => {
+      iterateEntries: (operationOptions) => repository.iterateEntries(operationOptions),
+      readCompleteFile: (path, operationOptions) => {
         readPaths.push(path);
-        return repository.readFile(path, operationOptions);
+        return repository.readCompleteFile(path, operationOptions);
       },
-    };
+    });
 
     if (manifestResult.manifest === null) {
       throw new TypeError('The shared-guidance manifest must be valid.');

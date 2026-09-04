@@ -8,7 +8,9 @@ export const REPOSITORY_SOURCE_ERROR_MESSAGES = Object.freeze({
   ENTRY_NOT_DIRECTORY: 'The requested repository entry is not a directory.',
   ENTRY_NOT_FILE: 'The requested repository entry is not a file.',
   ENTRY_NOT_FOUND: 'The requested repository entry was not found.',
+  INVALID_PAGE_REQUEST: 'The repository page request is invalid.',
   INVALID_SOURCE_DATA: 'The repository source returned invalid data.',
+  PROVIDER_INCOMPLETE: 'The repository provider could not expose a complete result.',
   RESOURCE_LIMIT_EXCEEDED: 'A repository reading resource limit was exceeded.',
   SNAPSHOT_CHANGED: 'The repository snapshot changed during the operation.',
   SOURCE_UNAVAILABLE: 'The repository source is unavailable.',
@@ -26,6 +28,7 @@ export const CORE_CONFIGURATION_ERROR_MESSAGES = Object.freeze({
 export const CORE_OPERATION_ERROR_MESSAGES = Object.freeze({
   ABORTED: 'The Core operation was aborted.',
   ADAPTER_EXECUTION_FAILED: 'A runtime adapter failed during inspection.',
+  CONTENT_INVALID: 'The requested canonical content is invalid.',
   INVALID_ARGUMENT: 'The Core operation received an invalid argument.',
   RESOURCE_LIMIT_EXCEEDED: 'A Core resource limit was exceeded.',
 } as const satisfies Readonly<Record<ICoreOperationErrorCode, string>>);

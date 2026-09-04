@@ -156,7 +156,7 @@ describe('createWorkingTreeSnapshotExecutor', () => {
     expect(operation).toHaveBeenCalledOnce();
   });
 
-  test.each(['create-reader', 'read-file'] as const)(
+  test.each(['create-reader', 'read-file-page'] as const)(
     'retries a SNAPSHOT_CHANGED failure from %s',
     async (operationName) => {
       const identityInspector = createStableIdentityInspector();
@@ -172,7 +172,7 @@ describe('createWorkingTreeSnapshotExecutor', () => {
       } else {
         repositoryReaderFactory.mockResolvedValue(reader);
         operation
-          .mockRejectedValueOnce(createSourceException('SNAPSHOT_CHANGED', 'read-file'))
+          .mockRejectedValueOnce(createSourceException('SNAPSHOT_CHANGED', 'read-file-page'))
           .mockResolvedValue('accepted');
       }
 
@@ -351,7 +351,7 @@ describe('createWorkingTreeSnapshotExecutor', () => {
   );
 
   test.each([
-    [createSourceException('ENTRY_NOT_FOUND', 'read-file')],
+    [createSourceException('ENTRY_NOT_FOUND', 'read-file-page')],
     [createSourceException('ACCESS_DENIED', 'create-reader')],
   ])('does not retry an ineligible reader-creation failure', async (exception) => {
     const identityInspector = createStableIdentityInspector();
@@ -404,7 +404,7 @@ describe('createWorkingTreeSnapshotExecutor', () => {
     const repositoryReaderFactory = vi
       .fn<IWorkingTreeRepositoryReaderFactory>()
       .mockResolvedValue(createMemoryRepositoryReader([]));
-    const exception = createSourceException('RESOURCE_LIMIT_EXCEEDED', 'read-file', false);
+    const exception = createSourceException('RESOURCE_LIMIT_EXCEEDED', 'read-file-page', false);
     const executeSnapshot = createWorkingTreeSnapshotExecutor(
       identityInspector,
       inventoryProbe,

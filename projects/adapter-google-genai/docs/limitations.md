@@ -18,4 +18,4 @@ The current target does not claim support for:
 - response-schema, tool-output-schema, or agent input/output-schema evidence
 - backend, project, location, API version, authentication mode, model, contents, response, retry, or transport validation
 
-Package detection uses nearest manifests rather than lockfiles or installed modules. Static dependency ranges are observations, not proof of an installed build. The adapter sees only Core-provided logical repository entries and never executes source, reads host files or environment variables, initializes tools, or contacts Google services.
+Package detection uses nearest manifests rather than lockfiles or installed modules. Static dependency ranges are observations, not proof of an installed build. Each invocation sees one declared agent and bounded logical repository operations, not a complete agent collection or project body index. The adapter never executes source, reads host files or environment variables, initializes tools, or contacts Google services.

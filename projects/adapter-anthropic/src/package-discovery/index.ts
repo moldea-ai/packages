@@ -2,8 +2,9 @@ import {
   createPackageManifestCandidatePaths as createCandidatePaths,
   discoverPackage,
 } from '@moldea.ai/adapter-static-analysis';
+import { readRuntimeAdapterFile, type IRuntimeAdapterRepository } from '@moldea.ai/core/adapter';
 
-import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
+import type { IRepositoryPath } from '@moldea.ai/repository';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import { ANTHROPIC_SDK_PACKAGE_NAME, ANTHROPIC_SDK_SUPPORTED_RANGE } from '../constants/index.js';
@@ -37,7 +38,7 @@ export const createPackageManifestCandidatePaths = (
  * - ABORTED: The repository operation was aborted.
  */
 export const discoverAnthropicPackage = async (
-  repository: IRepositoryReader,
+  repository: IRuntimeAdapterRepository,
   sourcePath: IRepositoryPath,
   signal?: AbortSignal,
 ): Promise<IAnthropicPackageDiscoveryResult> => {
@@ -46,7 +47,8 @@ export const discoverAnthropicPackage = async (
     packageName: ANTHROPIC_SDK_PACKAGE_NAME,
     reader: {
       getEntry: (path) => repository.getEntry(parseRepositoryPath(path), repositoryOptions),
-      readFile: (path) => repository.readFile(parseRepositoryPath(path), repositoryOptions),
+      readFile: (path) =>
+        readRuntimeAdapterFile(repository, parseRepositoryPath(path), repositoryOptions),
     },
     ...(signal === undefined ? {} : { signal }),
     sourcePath,

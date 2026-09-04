@@ -1,2 +1,2 @@
 // factory
-export { createFilesystemRepositoryReader } from './factory.js';
+export { createFilesystemRepositoryReader } from './filesystem-repository-reader.js';

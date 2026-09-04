@@ -56,7 +56,7 @@ const expectPublicPackageManifest = (
     sideEffects: false,
     type: 'module',
     types: './dist/index.d.ts',
-    version: '1.0.6',
+    version: '2.0.0',
   });
   expect(manifest.exports).toStrictEqual({
     '.': {
@@ -184,7 +184,7 @@ describe('published Repository FS package artifacts', () => {
     ) as IRepositoryFilesystemPackageManifest;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/repository-fs', version: '1.0.6' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/repository-fs', version: '2.0.0' });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/contracts/index.d.ts');
@@ -203,7 +203,7 @@ describe('published Repository FS package artifacts', () => {
       ),
     ).toBe(true);
     expect(packedPaths.every((filePath) => !filePath.includes('.test-'))).toBe(true);
-    expectPublicPackageManifest(manifest, 'workspace:>=1.1.1');
+    expectPublicPackageManifest(manifest, 'workspace:2.0.0');
   });
 
   test('loads only the documented named runtime exports', () => {
@@ -227,9 +227,13 @@ describe('published Repository FS package artifacts', () => {
       ],
       frozen: true,
       limits: {
-        maxCachedBytes: 134_217_728,
-        maxEntries: 100_000,
-        maxFileBytes: 8_388_608,
+        maxCachedBytes: 67_108_864,
+        maxConcurrentOperations: 16,
+        maxDirectoryEntries: 131_072,
+        maxEntries: 131_072,
+        maxPageEntries: 4_096,
+        maxQueuedOperations: 256,
+        maxReadBytes: 1_048_576,
       },
     });
   });
@@ -252,7 +256,7 @@ describe('published Repository FS package artifacts', () => {
         ).toString('utf8'),
       ) as IRepositoryFilesystemPackageManifest;
 
-      expectPublicPackageManifest(manifest, '>=1.1.1');
+      expectPublicPackageManifest(manifest, '2.0.0');
     } finally {
       rmSync(packDirectory, { force: true, recursive: true });
     }
@@ -415,9 +419,13 @@ describe('published Repository FS package artifacts', () => {
         factory: 'function',
         frozen: true,
         limits: {
-          maxCachedBytes: 134_217_728,
-          maxEntries: 100_000,
-          maxFileBytes: 8_388_608,
+          maxCachedBytes: 67_108_864,
+          maxConcurrentOperations: 16,
+          maxDirectoryEntries: 131_072,
+          maxEntries: 131_072,
+          maxPageEntries: 4_096,
+          maxQueuedOperations: 256,
+          maxReadBytes: 1_048_576,
         },
       });
     } finally {

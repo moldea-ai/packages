@@ -1,5 +1,5 @@
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
@@ -17,7 +17,6 @@ import {
 import {
   addClaudeAgentSdkDiagnostic,
   analyzeClaudeAgentSdkBoundReference,
-  compareClaudeAgentSdkStrings,
   createClaudeAgentSdkEvidence,
   isClaudeAgentSdkMachineString,
 } from './common.js';
@@ -168,26 +167,27 @@ export const inspectClaudeAgentSdk = async (
   const session = createClaudeAgentSdkInspectionSession(context);
   const evidence: IRuntimeAdapterEvidence[] = [];
   const diagnostics: IAdapterDiagnostic[] = [];
-  const agents = [...context.agents].sort((left, right) =>
-    compareClaudeAgentSdkStrings(left.id, right.id),
-  );
   const inspectedAgents: IClaudeAgentSdkInspectedAgent[] = [];
+  const inspected = await inspectAgent(session, context.agent, evidence, diagnostics);
 
-  for (const agent of agents) {
-    context.signal?.throwIfAborted();
-    const inspected = await inspectAgent(session, agent, evidence, diagnostics);
-
-    if (inspected !== null) {
-      inspectedAgents.push(inspected);
-    }
+  if (inspected !== null) {
+    inspectedAgents.push(inspected);
   }
 
-  for (const inspected of inspectedAgents) {
+  if (inspected !== null) {
     context.signal?.throwIfAborted();
     await inspectClaudeAgentSdkRelationships(session, inspected, evidence, diagnostics);
 
     if (inspected.kind === 'query-wrapper') {
-      await inspectClaudeAgentSdkHandoffs(context, session, inspected, evidence, diagnostics);
+      inspectedAgents.push(
+        ...(await inspectClaudeAgentSdkHandoffs(
+          context,
+          session,
+          inspected,
+          evidence,
+          diagnostics,
+        )),
+      );
     }
   }
 

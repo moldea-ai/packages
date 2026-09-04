@@ -7,12 +7,13 @@ import {
   parseRepositoryPath,
   type IRepositoryEntry,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  overrideCoreTestRepositoryReader,
+  type ICoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
-} from '@moldea.ai/repository/memory';
+} from '../repository.test-fixtures.js';
 
 import { discoverCanonicalAssets } from '../canonical-discovery/index.js';
 import { createCore } from '../core/index.js';
@@ -87,23 +88,25 @@ const createRepositoryEntries = (
   })),
 ];
 
-const reverseEnumeration = (repository: IRepositoryReader): IRepositoryReader => ({
-  getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-  listEntries: (operationOptions): AsyncIterable<IRepositoryEntry> => ({
-    async *[Symbol.asyncIterator]() {
-      const entries: IRepositoryEntry[] = [];
+const reverseEnumeration = (repository: ICoreTestRepositoryReader): ICoreTestRepositoryReader =>
+  overrideCoreTestRepositoryReader(repository, {
+    getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
+    iterateEntries: (operationOptions): AsyncIterable<IRepositoryEntry> => ({
+      async *[Symbol.asyncIterator]() {
+        const entries: IRepositoryEntry[] = [];
 
-      for await (const entry of repository.listEntries(operationOptions)) {
-        entries.push(entry);
-      }
+        for await (const entry of repository.iterateEntries(operationOptions)) {
+          entries.push(entry);
+        }
 
-      for (const entry of entries.reverse()) {
-        yield entry;
-      }
-    },
-  }),
-  readFile: (path, operationOptions) => repository.readFile(path, operationOptions),
-});
+        for (const entry of entries.reverse()) {
+          yield entry;
+        }
+      },
+    }),
+    readCompleteFile: (path, operationOptions) =>
+      repository.readCompleteFile(path, operationOptions),
+  });
 
 const simplifyDiagnostics = (diagnostics: readonly ICoreDiagnostic[]) => {
   return diagnostics.map(({ code, details, entity, path, pointer }) => ({
@@ -115,7 +118,7 @@ const simplifyDiagnostics = (diagnostics: readonly ICoreDiagnostic[]) => {
   }));
 };
 
-const validateRepositoryRelationships = async (repository: IRepositoryReader) => {
+const validateRepositoryRelationships = async (repository: ICoreTestRepositoryReader) => {
   const discovery = await discoverCanonicalAssets(repository, options.limits);
   const manifestPath = discovery.inventory.manifest;
 
@@ -125,7 +128,7 @@ const validateRepositoryRelationships = async (repository: IRepositoryReader) =>
   }
 
   const manifestResult = await createCore().parseManifest({
-    content: await repository.readFile(manifestPath),
+    content: await repository.readCompleteFile(manifestPath),
     path: manifestPath,
   });
   const decisionGraph = await readDecisionGraph(repository, discovery.inventory.decisions, options);
@@ -186,7 +189,7 @@ describe('Core manifest relationships through the memory repository reader', () 
     ]);
     const discovery = await discoverCanonicalAssets(repository, options.limits);
     const manifestResult = await createCore().parseManifest({
-      content: await repository.readFile(parseRepositoryPath('/moldea/moldea.yaml')),
+      content: await repository.readCompleteFile(parseRepositoryPath('/moldea/moldea.yaml')),
       path: parseRepositoryPath('/moldea/moldea.yaml'),
     });
     const decisionGraph = await readDecisionGraph(

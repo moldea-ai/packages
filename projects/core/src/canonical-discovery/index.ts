@@ -4,7 +4,6 @@ import {
   parseRepositoryPath,
   type IRepositoryEntry,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 
 import {
@@ -19,6 +18,7 @@ import {
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
 import { compareExactStrings } from '../format-validation/index.js';
 import { freezeRecursively } from '../immutable/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 
 const MOLDEA_ROOT = parseRepositoryPath('/moldea');
 const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
@@ -84,7 +84,7 @@ const createWorkingInventory = (): IWorkingInventory => ({
 });
 
 const invalidSourceData = (
-  operation: 'get-entry' | 'list-entries',
+  operation: 'get-entry' | 'list-entries-page',
   path: IRepositoryPath | null,
 ): never => {
   throw new RepositorySourceException({
@@ -97,7 +97,7 @@ const invalidSourceData = (
 
 const copyReaderEntry = (
   candidate: unknown,
-  operation: 'get-entry' | 'list-entries',
+  operation: 'get-entry' | 'list-entries-page',
   expectedPath?: IRepositoryPath,
 ): IRepositoryEntry => {
   if (typeof candidate !== 'object' || candidate === null) {
@@ -107,6 +107,8 @@ const copyReaderEntry = (
   const record = candidate as Readonly<Record<string, unknown>>;
   const pathCandidate = record['path'];
   const typeCandidate = record['type'];
+  const byteLength = record['byteLength'];
+  const contentIdentity = record['contentIdentity'];
 
   if (typeof pathCandidate !== 'string' || !isRepositoryPath(pathCandidate)) {
     return invalidSourceData(operation, expectedPath ?? null);
@@ -122,11 +124,26 @@ const copyReaderEntry = (
     return invalidSourceData(operation, path);
   }
 
-  return { path, type: typeCandidate };
+  if (
+    typeCandidate === 'file'
+      ? !Number.isSafeInteger(byteLength) ||
+        (byteLength as number) < 0 ||
+        (contentIdentity !== null && typeof contentIdentity !== 'string')
+      : byteLength !== null || contentIdentity !== null
+  ) {
+    return invalidSourceData(operation, path);
+  }
+
+  return {
+    byteLength: byteLength as number | null,
+    contentIdentity: contentIdentity as string | null,
+    path,
+    type: typeCandidate,
+  };
 };
 
 const readExactEntry = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   path: IRepositoryPath,
   signal: AbortSignal | undefined,
 ): Promise<IRepositoryEntry | null> => {
@@ -195,7 +212,7 @@ const retainCanonicalFile = (
   }
 
   if (agentId === null) {
-    return invalidSourceData('list-entries', path);
+    return invalidSourceData('list-entries-page', path);
   }
 
   const agent = getAgent(inventory.agents, agentId);
@@ -274,7 +291,7 @@ const checkFoundationListing = (
   exactEntry: IRepositoryEntry | null,
 ): void => {
   if (exactEntry === null || exactEntry.type !== listedEntry.type) {
-    return invalidSourceData('list-entries', listedEntry.path);
+    return invalidSourceData('list-entries-page', listedEntry.path);
   }
 };
 
@@ -296,12 +313,12 @@ const checkFoundationListing = (
  * - ABORTED: Discovery or a repository operation was aborted.
  */
 export const discoverCanonicalAssets = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   limits: ICoreResourceLimits,
   signal?: AbortSignal,
   foundations?: ICanonicalDiscoveryFoundationEntries,
 ): Promise<ICanonicalDiscoveryResult> => {
-  const diagnostics = createCoreDiagnosticCollector(limits, 'inspect-project');
+  const diagnostics = createCoreDiagnosticCollector(limits, 'validate-project');
   const working = createWorkingInventory();
   const moldeaEntry =
     foundations === undefined
@@ -349,15 +366,15 @@ export const discoverCanonicalAssets = async (
   const listOptions =
     signal === undefined ? { prefix: MOLDEA_ROOT } : { prefix: MOLDEA_ROOT, signal };
 
-  for await (const candidate of repository.listEntries(listOptions)) {
-    const entry = copyReaderEntry(candidate, 'list-entries');
+  for await (const candidate of repository.iterateEntries(listOptions)) {
+    const entry = copyReaderEntry(candidate, 'list-entries-page');
 
     if (!entry.path.startsWith('/moldea/')) {
-      return invalidSourceData('list-entries', entry.path);
+      return invalidSourceData('list-entries-page', entry.path);
     }
 
     if (seenPaths.has(entry.path)) {
-      return invalidSourceData('list-entries', entry.path);
+      return invalidSourceData('list-entries-page', entry.path);
     }
 
     seenPaths.add(entry.path);
@@ -403,11 +420,11 @@ export const discoverCanonicalAssets = async (
   }
 
   if ((manifestEntry !== null) !== listedManifest) {
-    return invalidSourceData('list-entries', MANIFEST_PATH);
+    return invalidSourceData('list-entries-page', MANIFEST_PATH);
   }
 
   if ((projectEntry !== null) !== listedProject) {
-    return invalidSourceData('list-entries', PROJECT_PATH);
+    return invalidSourceData('list-entries-page', PROJECT_PATH);
   }
 
   return finalizeResult(working, diagnostics);

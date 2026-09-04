@@ -62,7 +62,7 @@ const repository = createMemoryRepositoryReader([
 ]);
 const result = await createCore({
   adapters: [anthropicAdapterPackage.anthropicAdapter],
-}).inspectProject({ repository });
+}).validateProject({ repository });
 
 assert.equal(result.valid, true);
 assert.deepStrictEqual(result.diagnostics, []);

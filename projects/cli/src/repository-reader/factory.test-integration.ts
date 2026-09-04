@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { parseRepositoryPath, type IRepositoryEntry } from '@moldea.ai/repository';
+import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import { createWorkingTreeRepositoryReader } from './factory.js';
 
@@ -83,33 +83,36 @@ describe('working-tree reader composition with repository-fs', () => {
       },
     });
 
-    const entries: IRepositoryEntry[] = [];
+    const entries = (await reader.listEntriesPage({ maxEntries: 16 })).entries;
 
-    for await (const entry of reader.listEntries()) {
-      entries.push(entry);
-    }
-
-    expect(entries).toStrictEqual([
+    expect(entries.map(({ path, type }) => ({ path, type }))).toStrictEqual([
       { path: parseRepositoryPath('/moldea'), type: 'directory' },
       { path: guardedPath, type: 'file' },
       { path: linkPath, type: 'symlink' },
       { path: projectPath, type: 'file' },
     ]);
-    await expect(reader.readFile(linkPath)).rejects.toMatchObject({
+    await expect(
+      reader.readFilePage(linkPath, { maxBytes: 1024, offset: 0 }),
+    ).rejects.toMatchObject({
       code: 'ENTRY_NOT_FILE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: linkPath,
       retryable: false,
     });
-    await expect(reader.readFile(guardedPath)).rejects.toMatchObject({
+    await expect(
+      reader.readFilePage(guardedPath, { maxBytes: 1024, offset: 0 }),
+    ).rejects.toMatchObject({
       code: 'SOURCE_UNAVAILABLE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: guardedPath,
       retryable: false,
     });
-    await expect(reader.readFile(projectPath)).resolves.toStrictEqual(
-      new TextEncoder().encode('project context'),
-    );
+    await expect(
+      reader.readFilePage(projectPath, { maxBytes: 1024, offset: 0 }),
+    ).resolves.toMatchObject({
+      bytes: new TextEncoder().encode('project context'),
+      isComplete: true,
+    });
     await expect(reader.getEntry(parseRepositoryPath('/unselected.txt'))).resolves.toBeNull();
   });
 });

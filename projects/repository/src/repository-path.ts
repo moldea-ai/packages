@@ -67,5 +67,32 @@ export const parseRepositoryPath = (value: string): IRepositoryPath => {
   return value;
 };
 
+/**
+ * Compares logical paths by path segments so a directory's descendants remain contiguous.
+ * @param left The first validated logical path.
+ * @param right The second validated logical path.
+ * @returns A negative value, zero, or a positive value for deterministic traversal order.
+ */
+export const compareRepositoryPaths = (left: IRepositoryPath, right: IRepositoryPath): number => {
+  const leftSegments = left.split('/');
+  const rightSegments = right.split('/');
+  const sharedLength = Math.min(leftSegments.length, rightSegments.length);
+
+  for (let index = 0; index < sharedLength; index += 1) {
+    const leftSegment = leftSegments[index] ?? '';
+    const rightSegment = rightSegments[index] ?? '';
+
+    if (leftSegment < rightSegment) {
+      return -1;
+    }
+
+    if (leftSegment > rightSegment) {
+      return 1;
+    }
+  }
+
+  return leftSegments.length - rightSegments.length;
+};
+
 // canonical logical repository root
 export const REPOSITORY_ROOT = parseRepositoryPath('/');

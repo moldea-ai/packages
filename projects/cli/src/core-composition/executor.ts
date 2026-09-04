@@ -41,10 +41,19 @@ export const createMoldeaCliCoreInspectionExecutor = (
       }),
     });
 
-    return core.inspectProject({
+    const projectInput = {
       repository: input.repository,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
-    });
+    };
+
+    return input.command === 'inspect'
+      ? core.inspectProjectPage({
+          ...projectInput,
+          ...(input.cursor === undefined ? {} : { cursor: input.cursor }),
+          maxItems: Math.min(256, input.resourceLimits.maxEntries),
+          view: 'all',
+        })
+      : core.validateProject(projectInput);
   };
 };
 

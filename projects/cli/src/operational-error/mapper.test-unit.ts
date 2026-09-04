@@ -63,7 +63,7 @@ describe('mapMoldeaCliOperationalError', () => {
     const sourceError = new RepositorySourceException({
       cause: new Error('private provider detail'),
       code: 'ACCESS_DENIED',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path,
       retryable: true,
     });
@@ -132,7 +132,7 @@ describe('mapMoldeaCliOperationalError', () => {
   test('omits a repository exception path that does not satisfy the logical-path contract', () => {
     const sourceError = new RepositorySourceException({
       code: 'SOURCE_UNAVAILABLE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: null,
       retryable: false,
     });

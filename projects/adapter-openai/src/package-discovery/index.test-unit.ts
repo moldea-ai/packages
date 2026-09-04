@@ -1,10 +1,25 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
-import { parseRepositoryPath } from '@moldea.ai/repository';
+import type { IRuntimeAdapterRepository } from '@moldea.ai/core/adapter';
+import { parseRepositoryPath, type IRepositoryReader } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import { createPackageManifestCandidatePaths, discoverOpenAiPackage } from './index.js';
+
+const createAdapterRepository = (source: IRepositoryReader): IRuntimeAdapterRepository => ({
+  snapshot: source.snapshot,
+  getEntry: (path, options) => source.getEntry(path, options),
+  limits: {
+    maxEntries: 4_096,
+    maxFileBytes: 1_048_576,
+    maxPageBytes: 65_536,
+    maxPageEntries: 256,
+    maxTotalBytesRead: 16_777_216,
+  },
+  listEntriesPage: (options) => source.listEntriesPage(options),
+  readFilePage: (path, options) => source.readFilePage(path, options),
+});
 
 describe('createPackageManifestCandidatePaths', () => {
   test('creates nearest-first candidates without enumeration', () => {
@@ -39,7 +54,10 @@ describe('discoverOpenAiPackage', () => {
     ]);
 
     await expect(
-      discoverOpenAiPackage(repository, parseRepositoryPath('/src/agent.ts')),
+      discoverOpenAiPackage(
+        createAdapterRepository(repository),
+        parseRepositoryPath('/src/agent.ts'),
+      ),
     ).resolves.toStrictEqual({
       kind: 'observed',
       observation: {
@@ -75,7 +93,10 @@ describe('discoverOpenAiPackage', () => {
     ]);
 
     await expect(
-      discoverOpenAiPackage(supportedRepository, parseRepositoryPath('/src/agent.ts')),
+      discoverOpenAiPackage(
+        createAdapterRepository(supportedRepository),
+        parseRepositoryPath('/src/agent.ts'),
+      ),
     ).resolves.toStrictEqual({
       kind: 'observed',
       observation: {
@@ -90,7 +111,10 @@ describe('discoverOpenAiPackage', () => {
       },
     });
     await expect(
-      discoverOpenAiPackage(mixedRepository, parseRepositoryPath('/src/agent.ts')),
+      discoverOpenAiPackage(
+        createAdapterRepository(mixedRepository),
+        parseRepositoryPath('/src/agent.ts'),
+      ),
     ).resolves.toMatchObject({
       kind: 'observed',
       observation: { compatibility: 'ambiguous' },
@@ -112,7 +136,10 @@ describe('discoverOpenAiPackage', () => {
     ]);
 
     await expect(
-      discoverOpenAiPackage(repository, parseRepositoryPath('/apps/api/src/agent.ts')),
+      discoverOpenAiPackage(
+        createAdapterRepository(repository),
+        parseRepositoryPath('/apps/api/src/agent.ts'),
+      ),
     ).resolves.toStrictEqual({ kind: 'absent' });
   });
 
@@ -127,7 +154,10 @@ describe('discoverOpenAiPackage', () => {
     ]);
 
     await expect(
-      discoverOpenAiPackage(repository, parseRepositoryPath('/src/agent.ts')),
+      discoverOpenAiPackage(
+        createAdapterRepository(repository),
+        parseRepositoryPath('/src/agent.ts'),
+      ),
     ).resolves.toStrictEqual({ kind: 'invalid', path: '/package.json' });
   });
 
@@ -142,13 +172,19 @@ describe('discoverOpenAiPackage', () => {
     ]);
 
     await expect(
-      discoverOpenAiPackage(repository, parseRepositoryPath('/src/agent.ts')),
+      discoverOpenAiPackage(
+        createAdapterRepository(repository),
+        parseRepositoryPath('/src/agent.ts'),
+      ),
     ).resolves.toStrictEqual({ kind: 'invalid', path: '/src/package.json' });
   });
 
   test('reports absence when no package manifest exists', async () => {
     await expect(
-      discoverOpenAiPackage(createMemoryRepositoryReader([]), parseRepositoryPath('/src/agent.ts')),
+      discoverOpenAiPackage(
+        createAdapterRepository(createMemoryRepositoryReader([])),
+        parseRepositoryPath('/src/agent.ts'),
+      ),
     ).resolves.toStrictEqual({ kind: 'absent' });
   });
 });

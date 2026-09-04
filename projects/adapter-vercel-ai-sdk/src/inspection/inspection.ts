@@ -1,5 +1,5 @@
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
@@ -20,7 +20,6 @@ import {
 import {
   addVercelAiSdkDiagnostic,
   analyzeVercelAiSdkBoundReference,
-  compareVercelAiSdkStrings,
   createVercelAiSdkEvidence,
   isVercelAiSdkMachineString,
 } from './common.js';
@@ -177,9 +176,7 @@ export const inspectVercelAiSdk = async (
   const session = createVercelAiSdkInspectionSession(context);
   const evidence: IRuntimeAdapterEvidence[] = [];
   const diagnostics: IAdapterDiagnostic[] = [];
-  const agents = [...context.agents].sort((left, right) =>
-    compareVercelAiSdkStrings(left.id, right.id),
-  );
+  const agents = [context.agent];
   const inspectedAgents: IVercelAiSdkInspectedAgent[] = [];
 
   for (const agent of agents) {

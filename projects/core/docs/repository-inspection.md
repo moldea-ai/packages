@@ -1,14 +1,14 @@
 ---
-title: Repository inspection
-description: Content-free changed-path scope matching, canonical inspection, project indexes, and security boundaries.
+title: Repository validation and inspection
+description: Cheap relationship matching, content-free project output, explicit content ranges, and trust boundaries.
 order: 20
 ---
 
-# Repository inspection
+# Repository validation and inspection
 
-## Changed-path scope matching
+## Changed-path preactivation
 
-Use `matchManifestScope` when a caller needs to decide whether a known changed-path set intersects declared `moldea` relationships without loading a project index.
+Use `matchManifestScope` when a caller needs to decide whether known changed paths intersect declared `moldea` relationships.
 
 ```typescript
 import { createCore } from '@moldea.ai/core';
@@ -23,35 +23,44 @@ const result = await createCore().matchManifestScope({
 });
 ```
 
-Core parses only the caller-supplied manifest, validates and deduplicates repository-logical paths, indexes exact relationship targets, and compiles simple globs once. Native Windows, UNC, backslash, and traversal path forms are rejected. The result contains stable owner identity, relationship field, declaration pointer, matched path or pattern, counts, and SHA-256 digests. Core does not read repository files, expose canonical document bodies, or execute runtime adapters for this operation.
+Core reads only the supplied manifest, validates and deduplicates repository-logical paths, indexes exact targets, and compiles supported globs once. The result contains stable ownership and match metadata. Empty changes and manifests without relationships return valid non-relevant results. Invalid manifests return structural diagnostics and cannot establish relevance.
 
-Empty path sets and manifests without relationships produce a valid non-relevant result. Invalid manifests produce their normal structural diagnostics and no relevance. The existing Core entry and byte limits bound inputs, declarations, and matches without imposing a small repository-size cap.
+This operation creates no repository reader, reads no canonical body beyond the supplied manifest, and invokes no runtime adapter.
 
-## Complete repository inspection
+## Content-free validation
 
-`inspectProject` consumes one coherent `IRepositoryReader`. Core discovers canonical `moldea/**` assets, reads only paths required by the format and configured adapters, validates structural relationships, and returns one deeply immutable result.
+`validateProject` validates one coherent `IRepositoryReader` snapshot and returns no canonical document body.
 
 ```typescript
 import { createCore } from '@moldea.ai/core';
 import type { IRepositoryReader } from '@moldea.ai/repository';
 
-export const inspect = async (repository: IRepositoryReader) => {
-  return createCore().inspectProject({ repository });
+export const validate = async (repository: IRepositoryReader) => {
+  return createCore().validateProject({ repository });
 };
 ```
 
-## Project index
+The result contains source identity, validity, format version, summary counts and digests, diagnostics, and runtime evidence. Core internally composes canonical discovery, project and context validation, decision graphs, registered-agent assets, mirrors, references, relationships, and configured adapters through one budget-aware reader session.
 
-A valid `IMoldeaProjectIndex` contains the normalized manifest and project description, context assets, decisions, runtime guidance, agents, unresolved requirements, mirrors, relationships, and content digests needed to reason about one repository state. Canonical normalized content is intentionally present in the index; callers must protect serialized inspection output.
+Structural repository errors return diagnostics. Reader access failures, snapshot drift, cancellation, resource exhaustion, invalid operation input, and invalid adapter output reject with typed exceptions.
 
-Core checks exact canonical paths, regular-file requirements, reference targets, decision graphs, active relationships, agent identity and descriptions, instruction variables, capability declarations, mirror consistency, and runtime availability. It does not fetch missing content or infer relationships that are absent from the repository contract.
+## Bounded inspection views
 
-## All-or-nothing semantics
+`inspectProjectPage` reruns deterministic validation for the supplied snapshot and projects one bounded content-free view:
 
-Universal validation completes before package-backed adapter invocation. If universal diagnostics exist, `project` is `null`, evidence is empty, and adapters are not called. Adapter diagnostics likewise make the final result invalid and remove the project index rather than returning a partially trusted index.
+- `metadata`: canonical paths, kinds, sizes, digests, and agent or decision identity
+- `diagnostics`: structural diagnostics
+- `evidence`: validated runtime evidence
+- `all`: all three item kinds in deterministic order
 
-Operational failures such as reader access, snapshot loss, cancellation, resource exhaustion, or an invalid adapter result throw typed exceptions instead of becoming repository diagnostics. This separates malformed repository content from an operation that could not be completed reliably.
+The caller supplies `maxItems` and an optional opaque semantic cursor. Cursors bind progress to the inspection digest and selected view, so a cursor cannot resume another project state or output shape.
+
+## Explicit canonical content
+
+`readCanonicalContentPage` is the only project-level Core operation that returns canonical text. It requires an explicit `/moldea/**` file path, byte offset, and `maxBytes`. It returns no more than the requested limit and adjusts the end boundary so a UTF-8 scalar is never split.
+
+Callers should request canonical content only after a concrete task requires that exact file. Default validation and inspection must remain content-free.
 
 ## Security and source neutrality
 
-Core treats repository bytes as untrusted, executes no repository code, follows no symlink, receives no host path or source credential, and performs no network access. Its results and diagnostics use logical repository paths only.
+Core treats repository bytes as untrusted, executes no repository code, follows no symlink, receives no host path or source credential, and performs no network access. Results use logical paths and bounded data only.

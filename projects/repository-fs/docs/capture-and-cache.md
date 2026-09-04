@@ -1,25 +1,23 @@
 ---
-title: Capture, cache, and concurrency
-description: Verified lazy byte capture, cache accounting, cancellation, and permanent snapshot invalidation.
+title: File ranges, cache, and concurrency
+description: Verified bounded byte ranges, LRU cache accounting, cancellation, and operation gating.
 order: 20
 ---
 
-# Capture, cache, and concurrency
+# File ranges, cache, and concurrency
 
-The inventory is frozen at reader creation. On platforms with sufficiently strong metadata, a regular file is captured on its first read; Windows eagerly captures selected files before publishing the reader because available metadata cannot prove every same-size in-place change.
+`readFilePage` reads only the requested bounded range. The request must use a non-negative safe-integer offset and a positive `maxBytes` no greater than `maxReadBytes`.
 
-## Verified capture
+## Verified range reads
 
-A first read verifies the resolved root, every directory component, the open file handle, the current path, and the creation fingerprint. The reader reserves the exact frozen length before allocation, reads in bounded chunks, and verifies coherence again before committing bytes.
+The reader observes file metadata, opens the file without following symlinks where supported, verifies identity before reading, fills only the bounded range, and verifies identity again before returning. Missing, redirected, truncated, replaced, oversized, or otherwise changed files fail without returning partial bytes.
 
-Only a complete verified capture enters the private cache. Oversized, truncated, replaced, redirected, cancelled, or otherwise changed reads commit nothing. Repeated successful reads perform no host access and return a fresh detached `Uint8Array` each time.
+Every successful result includes the page offset, total file length, completion state, next offset, and reader snapshot. Returned buffers are detached from cache storage and other caller results.
 
-## Concurrency and cancellation
+## Bounded LRU cache
 
-Concurrent first reads of the same path share one physical capture while each waiter remains independently cancellable. Cancelling one waiter does not cancel work still needed by another. Cancelling the final waiter abandons the capture, completes coherence-aware cleanup, and releases its reservation before a later attempt begins.
+Only complete verified ranges enter the cache. The cache key contains path, offset, and range size. Reading a cached page refreshes its recency. Before retaining a new page, the reader evicts the oldest pages until total retained bytes fit `maxCachedBytes`. A single page larger than the cache budget is returned but not retained.
 
-Different paths may capture concurrently. Reservation registration order owns cache capacity; completion timing cannot make committed plus in-flight bytes exceed `maxCachedBytes`.
+## Operation gate
 
-## Permanent invalidation
-
-The first `SNAPSHOT_CHANGED` failure permanently invalidates the shared reader state, aborts pending captures, clears cached bytes and reservations, and prevents any active or later operation from returning repository data. This fail-closed behavior prevents a reader from mixing bytes across source states. Recovery requires constructing and verifying a new reader.
+At most `maxConcurrentOperations` filesystem operations run simultaneously. Up to `maxQueuedOperations` may wait. Further operations fail with `RESOURCE_LIMIT_EXCEEDED`. Each waiting or active operation is independently cancellable; cancellation does not consume a result or disable the reader.

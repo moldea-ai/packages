@@ -1,4 +1,4 @@
-import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
+import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICanonicalDiscoveryResult } from '../canonical-discovery/index.js';
 import type { IIndexedContextAsset, IIndexedTextAsset } from '../contracts/index.js';
@@ -11,6 +11,7 @@ import { compareExactStrings, hasNonWhitespace } from '../format-validation/inde
 import type { IMoldeaManifestV1 } from '../format/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { readRepositoryTextAsset } from '../repository-text/index.js';
 
 // internal project and focused-context assets retained for provisional indexing
@@ -55,13 +56,13 @@ const addDiagnostics = (
  * - ABORTED: Project inspection or the repository read was aborted.
  */
 export const readProjectFile = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   path: IRepositoryPath | null,
   options: ICoreOptionsSnapshot,
   signal?: AbortSignal,
 ): Promise<IProjectFileInspectionResult> => {
   options = createCoreOperationOptionsSnapshot(options);
-  const collector = createCoreDiagnosticCollector(options.limits, 'inspect-project');
+  const collector = createCoreDiagnosticCollector(options.limits, 'validate-project');
   let project: IIndexedTextAsset | null = null;
 
   if (path !== null) {
@@ -106,7 +107,7 @@ export const readProjectFile = async (
  * - ABORTED: Project asset inspection or a repository operation was aborted.
  */
 export const readProjectAssets = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   manifest: IMoldeaManifestV1 | null,
   discovery: ICanonicalDiscoveryResult,
   options: ICoreOptionsSnapshot,
@@ -114,7 +115,7 @@ export const readProjectAssets = async (
   projectFile?: IProjectFileInspectionResult,
 ): Promise<IProjectAssetInspectionResult> => {
   options = createCoreOperationOptionsSnapshot(options);
-  const collector = createCoreDiagnosticCollector(options.limits, 'inspect-project');
+  const collector = createCoreDiagnosticCollector(options.limits, 'validate-project');
   const context: IIndexedContextAsset[] = [];
   const inspectedProject =
     projectFile ??

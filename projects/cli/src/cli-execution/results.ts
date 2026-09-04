@@ -1,4 +1,4 @@
-import type { IProjectInspectionResult } from '@moldea.ai/core';
+import type { IProjectInspectionPageResult, IProjectValidationResult } from '@moldea.ai/core';
 
 import type { IMoldeaCliCommand } from '../command-line/index.js';
 import type { IMoldeaCliCompositionResult } from '../composition/index.js';
@@ -10,8 +10,8 @@ import {
 } from '../output-page/index.js';
 import {
   createMoldeaCliContentPage,
-  type IMoldeaCliContentAsset,
   type IMoldeaCliContentResult,
+  type IMoldeaCliProjectContentExecutor,
 } from '../project-content/index.js';
 import {
   createMoldeaCliScopeProjection,
@@ -108,7 +108,7 @@ export const createMoldeaCliErrorResult = (
  * - OUTPUT_BUDGET_TOO_SMALL: The output byte budget cannot contain the next complete result.
  */
 export const createMoldeaCliValidateExecutionResult = (
-  inspection: IProjectInspectionResult,
+  inspection: IProjectValidationResult,
   cliVersion: string,
   isJson: boolean,
   cursor: string | null,
@@ -121,6 +121,7 @@ export const createMoldeaCliValidateExecutionResult = (
     page,
     snapshotDigest: projection.snapshotDigest,
     source: projection.source,
+    valid: projection.valid,
   });
   const page = createMoldeaCliOutputPage({
     command: 'validate',
@@ -140,13 +141,12 @@ export const createMoldeaCliValidateExecutionResult = (
   });
   const result = Object.freeze(createResult(page));
 
-  assertMoldeaCliJsonResultIsContentFree(result, projection.canonicalBodies);
+  assertMoldeaCliJsonResultIsContentFree(result);
 
   return Object.freeze({
-    exitCode:
-      result.diagnosticCount === 0
-        ? MOLDEA_CLI_EXIT_CODES.Success
-        : MOLDEA_CLI_EXIT_CODES.StructuralInvalid,
+    exitCode: result.valid
+      ? MOLDEA_CLI_EXIT_CODES.Success
+      : MOLDEA_CLI_EXIT_CODES.StructuralInvalid,
     stderr: '',
     stdout: isJson
       ? formatMoldeaCliJsonValidateResult(result, cliVersion)
@@ -162,7 +162,7 @@ export const createMoldeaCliValidateExecutionResult = (
  * - OUTPUT_BUDGET_TOO_SMALL: The output byte budget cannot contain the next complete result.
  */
 export const createMoldeaCliInspectExecutionResult = (
-  inspection: IProjectInspectionResult,
+  inspection: IProjectInspectionPageResult,
   cliVersion: string,
   isJson: boolean,
   cursor: string | null,
@@ -176,6 +176,8 @@ export const createMoldeaCliInspectExecutionResult = (
     project: projection.project,
     snapshotDigest: projection.snapshotDigest,
     source: projection.source,
+    valid: projection.valid,
+    view: projection.view,
   });
   const page = createMoldeaCliOutputPage({
     command: 'inspect',
@@ -191,11 +193,12 @@ export const createMoldeaCliInspectExecutionResult = (
         (page) => formatMoldeaCliHumanInspectResult(createResult(page)),
       ),
     records: projection.records,
+    sourceCursorForRecord: projection.getSourceCursor,
     snapshotDigest: projection.snapshotDigest,
   });
   const result = Object.freeze(createResult(page));
 
-  assertMoldeaCliJsonResultIsContentFree(result, projection.canonicalBodies);
+  assertMoldeaCliJsonResultIsContentFree(result);
 
   return Object.freeze({
     exitCode: inspection.valid
@@ -272,14 +275,13 @@ export const createMoldeaCliScopeExecutionResult = (
  * - OUTPUT_BUDGET_TOO_SMALL: The output byte budget cannot contain the next complete result.
  */
 export const createMoldeaCliContentExecutionResult = (
-  asset: IMoldeaCliContentAsset,
+  pageResult: Awaited<ReturnType<IMoldeaCliProjectContentExecutor>>,
   cliVersion: string,
   isJson: boolean,
   cursor: string | null,
   maxOutputBytes: number,
 ): IMoldeaCliExecutionResult => {
   const result: IMoldeaCliContentResult = createMoldeaCliContentPage({
-    asset,
     cursor,
     maxOutputBytes,
     measure: (candidate) =>
@@ -288,6 +290,7 @@ export const createMoldeaCliContentExecutionResult = (
           ? formatMoldeaCliJsonContentResult(candidate, cliVersion)
           : formatMoldeaCliHumanContentResult(candidate),
       ),
+    page: pageResult,
   });
 
   return Object.freeze({

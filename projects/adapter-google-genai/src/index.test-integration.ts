@@ -82,7 +82,7 @@ describe('@moldea.ai/adapter-google-genai public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-google-genai',
-      version: '1.0.8',
+      version: '2.0.0',
     });
     expect(packedPaths).toEqual(
       expect.arrayContaining([
@@ -115,8 +115,8 @@ describe('@moldea.ai/adapter-google-genai public API', () => {
       ),
     ).toBe(true);
     expect(manifest.dependencies).toStrictEqual({
-      '@moldea.ai/core': 'workspace:>=2.0.2',
-      '@moldea.ai/repository': 'workspace:>=1.1.1',
+      '@moldea.ai/core': 'workspace:3.0.0',
+      '@moldea.ai/repository': 'workspace:2.0.0',
       semver: '7.8.5',
       typescript: '6.0.3',
     });

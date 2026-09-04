@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, expect, test, vi } from 'vitest';
 
-import type { ICore, IProjectInspectionResult } from '@moldea.ai/core';
+import type {
+  ICore,
+  IProjectInspectionPageResult,
+  IProjectValidationResult,
+} from '@moldea.ai/core';
 import type { IRuntimeAdapter } from '@moldea.ai/core/adapter';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
@@ -18,32 +22,59 @@ const RESOURCE_LIMITS = Object.freeze({
   maxTotalBytes: 8192,
 });
 
-const INSPECTION_RESULT = Object.freeze({
+const SOURCE = Object.freeze({ id: 'memory:test', sourceKind: 'memory' });
+const VALIDATION_RESULT = Object.freeze({
   diagnostics: Object.freeze([]),
   evidence: Object.freeze([]),
   formatVersion: null,
-  project: null,
+  source: SOURCE,
+  summary: null,
   valid: false,
-}) satisfies IProjectInspectionResult;
+}) satisfies IProjectValidationResult;
+const INSPECTION_RESULT = Object.freeze({
+  counts: Object.freeze({
+    agents: 0,
+    context: 0,
+    decisions: 0,
+    diagnostics: 0,
+    evidence: 0,
+    metadata: 0,
+    mirrors: 0,
+    runtimes: 0,
+    unresolved: 0,
+  }),
+  formatVersion: null,
+  inspectionDigest: `sha256:${'1'.repeat(64)}`,
+  page: Object.freeze({
+    isComplete: true,
+    nextCursor: null,
+    records: Object.freeze([]),
+    totalItems: 0,
+  }),
+  source: SOURCE,
+  summary: null,
+  valid: false,
+  view: 'all',
+}) satisfies IProjectInspectionPageResult;
 
-/** Creates a complete Core test double around the observable inspection boundary. */
-const createCoreDouble = (): {
-  readonly core: ICore;
-  readonly inspectProject: ReturnType<typeof vi.fn<ICore['inspectProject']>>;
-} => {
-  const inspectProject = vi.fn<ICore['inspectProject']>().mockResolvedValue(INSPECTION_RESULT);
-
-  return {
-    core: {
-      calculateContentDigest: vi.fn<ICore['calculateContentDigest']>(),
-      inspectProject,
-      matchManifestScope: vi.fn<ICore['matchManifestScope']>(),
-      normalizeText: vi.fn<ICore['normalizeText']>(),
-      parseDecision: vi.fn<ICore['parseDecision']>(),
-      parseManifest: vi.fn<ICore['parseManifest']>(),
-    },
-    inspectProject,
+/** Creates a complete Core double around the two CLI project operations. */
+const createCoreDouble = () => {
+  const inspectProjectPage = vi
+    .fn<ICore['inspectProjectPage']>()
+    .mockResolvedValue(INSPECTION_RESULT);
+  const validateProject = vi.fn<ICore['validateProject']>().mockResolvedValue(VALIDATION_RESULT);
+  const core: ICore = {
+    calculateContentDigest: vi.fn<ICore['calculateContentDigest']>(),
+    inspectProjectPage,
+    matchManifestScope: vi.fn<ICore['matchManifestScope']>(),
+    normalizeText: vi.fn<ICore['normalizeText']>(),
+    parseDecision: vi.fn<ICore['parseDecision']>(),
+    parseManifest: vi.fn<ICore['parseManifest']>(),
+    readCanonicalContentPage: vi.fn<ICore['readCanonicalContentPage']>(),
+    validateProject,
   };
+
+  return { core, inspectProjectPage, validateProject };
 };
 
 /** Creates a minimal adapter definition for deterministic registry-order tests. */
@@ -54,7 +85,7 @@ const createAdapter = (id: string): IRuntimeAdapter => ({
 });
 
 describe('createMoldeaCliCoreInspectionExecutor', () => {
-  test('creates fresh Core state with the exact mapped CLI resource limits', async () => {
+  test('creates fresh Core state with exact limits and validates without a project projection', async () => {
     const controller = new AbortController();
     const reader = createMemoryRepositoryReader([]);
     const coreDouble = createCoreDouble();
@@ -63,32 +94,13 @@ describe('createMoldeaCliCoreInspectionExecutor', () => {
 
     await expect(
       executeInspection({
+        command: 'validate',
         repository: reader,
         resourceLimits: RESOURCE_LIMITS,
         signal: controller.signal,
       }),
-    ).resolves.toBe(INSPECTION_RESULT);
-    expect(coreFactory).toHaveBeenCalledOnce();
-    const coreFactoryInput = coreFactory.mock.calls[0]?.[0];
-
-    if (coreFactoryInput?.adapters === undefined) {
-      throw new TypeError('The Core factory input is required.');
-    }
-
-    expect(coreFactoryInput.adapters.map(({ id }) => id)).toStrictEqual([
-      'anthropic',
-      'claude-agent-sdk',
-      'cloudflare-agents',
-      'eve',
-      'google-genai',
-      'langchain',
-      'langgraph',
-      'openai',
-      'openai-agents-sdk',
-      'vercel-ai-sdk',
-    ]);
-    expect(coreFactoryInput.adapters[0]).toBe(ACTIVE_RUNTIME_ADAPTERS[0]);
-    expect(coreFactoryInput.limits).toStrictEqual({
+    ).resolves.toBe(VALIDATION_RESULT);
+    expect(coreFactory.mock.calls[0]?.[0]?.limits).toStrictEqual({
       maxDiagnostics: 32,
       maxEntries: 128,
       maxEvidence: 16,
@@ -96,14 +108,16 @@ describe('createMoldeaCliCoreInspectionExecutor', () => {
       maxManifestBytes: 2048,
       maxTotalBytesRead: 8192,
     });
-    expect(Object.isFrozen(coreFactoryInput.adapters)).toBe(true);
-    expect(Object.isFrozen(coreFactoryInput.limits)).toBe(true);
-    expect(coreDouble.inspectProject).toHaveBeenCalledWith({
+    expect(coreDouble.validateProject).toHaveBeenCalledWith({
       repository: reader,
       signal: controller.signal,
     });
 
-    await executeInspection({ repository: reader, resourceLimits: RESOURCE_LIMITS });
+    await executeInspection({
+      command: 'validate',
+      repository: reader,
+      resourceLimits: RESOURCE_LIMITS,
+    });
 
     expect(coreFactory).toHaveBeenCalledTimes(2);
     expect(ACTIVE_RUNTIME_ADAPTERS.map(({ id }) => id)).toStrictEqual([
@@ -118,10 +132,31 @@ describe('createMoldeaCliCoreInspectionExecutor', () => {
       'openai-agents-sdk',
       'vercel-ai-sdk',
     ]);
-    expect(Object.isFrozen(ACTIVE_RUNTIME_ADAPTERS)).toBe(true);
   });
 
-  test('normalizes the active package-backed adapter set by ID before Core creation', async () => {
+  test('passes the opaque Core cursor only to bounded inspection pages', async () => {
+    const reader = createMemoryRepositoryReader([]);
+    const coreDouble = createCoreDouble();
+    const executeInspection = createMoldeaCliCoreInspectionExecutor(() => coreDouble.core);
+
+    await expect(
+      executeInspection({
+        command: 'inspect',
+        cursor: 'core3:all:1:memory%3Atest',
+        repository: reader,
+        resourceLimits: RESOURCE_LIMITS,
+      }),
+    ).resolves.toBe(INSPECTION_RESULT);
+    expect(coreDouble.inspectProjectPage).toHaveBeenCalledWith({
+      cursor: 'core3:all:1:memory%3Atest',
+      maxItems: 128,
+      repository: reader,
+      view: 'all',
+    });
+    expect(coreDouble.validateProject).not.toHaveBeenCalled();
+  });
+
+  test('normalizes the active adapter set by ID before Core creation', async () => {
     const reader = createMemoryRepositoryReader([]);
     const coreDouble = createCoreDouble();
     const coreFactory = vi.fn<IMoldeaCliCoreFactory>().mockReturnValue(coreDouble.core);
@@ -132,7 +167,11 @@ describe('createMoldeaCliCoreInspectionExecutor', () => {
       alphaAdapter,
     ]);
 
-    await executeInspection({ repository: reader, resourceLimits: RESOURCE_LIMITS });
+    await executeInspection({
+      command: 'validate',
+      repository: reader,
+      resourceLimits: RESOURCE_LIMITS,
+    });
 
     expect(coreFactory.mock.calls[0]?.[0]?.adapters).toStrictEqual([alphaAdapter, zetaAdapter]);
   });

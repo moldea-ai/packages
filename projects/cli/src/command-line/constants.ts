@@ -1,4 +1,4 @@
-// schema 3 command names accepted by the executable
+// schema 4 command names accepted by the executable
 export const MOLDEA_CLI_COMMANDS = {
   Composition: 'composition',
   Content: 'content',
@@ -7,7 +7,7 @@ export const MOLDEA_CLI_COMMANDS = {
   Validate: 'validate',
 } as const;
 
-// option names supported by the schema 3 command grammar
+// option names supported by the schema 4 command grammar
 export const MOLDEA_CLI_OPTIONS = {
   Help: '--help',
   Json: '--json',

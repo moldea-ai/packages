@@ -1,7 +1,11 @@
 import type ts from 'typescript';
 
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type {
+  IAdapterDiagnostic,
+  IRuntimeAdapterContext,
+  IRuntimeAdapterEvidence,
+  IRuntimeAdapterResolvedAgent,
+} from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 
 import { CLOUDFLARE_AGENTS_ADAPTER_ID } from '../constants/index.js';
@@ -28,10 +32,11 @@ import {
   type ICloudflareAgentsResolvedToolMap,
 } from './resolution.js';
 import type { ICloudflareAgentsInspectedAgent } from './types.js';
+import type { ICloudflareAgentsScopedAgent } from './types.js';
 
 const inspectBinding = async (
   session: ICloudflareAgentsInspectionSession,
-  agent: IIndexedAgent,
+  agent: ICloudflareAgentsScopedAgent,
   relationship: ICloudflareAgentsRelationship,
   analysis: ICloudflareAgentsSourceAnalysis,
   reference: IRepositoryReference,
@@ -80,7 +85,7 @@ const inspectBinding = async (
 
 const inspectToolReference = async (
   session: ICloudflareAgentsInspectionSession,
-  agent: IIndexedAgent,
+  agent: ICloudflareAgentsScopedAgent,
   capabilityId: string,
   relationship: ICloudflareAgentsRelationship,
   relationshipAnalysis: ICloudflareAgentsSourceAnalysis,
@@ -126,7 +131,8 @@ const inspectToolReference = async (
 const inspectTools = async (
   session: ICloudflareAgentsInspectionSession,
   inspected: ICloudflareAgentsInspectedAgent,
-  agents: readonly IIndexedAgent[],
+  context: IRuntimeAdapterContext,
+  isResolvedAgentSupported: (agent: IRuntimeAdapterResolvedAgent) => Promise<boolean>,
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],
 ): Promise<void> => {
@@ -154,7 +160,8 @@ const inspectTools = async (
   await inspectCloudflareAgentsHandoffs(
     session,
     inspected.agent,
-    agents,
+    context,
+    isResolvedAgentSupported,
     resolvedMaps,
     evidence,
     diagnostics,
@@ -307,11 +314,11 @@ const inspectTools = async (
 export const inspectCloudflareAgentsRelationships = async (
   session: ICloudflareAgentsInspectionSession,
   inspectedAgents: readonly ICloudflareAgentsInspectedAgent[],
+  context: IRuntimeAdapterContext,
+  isResolvedAgentSupported: (agent: IRuntimeAdapterResolvedAgent) => Promise<boolean>,
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],
 ): Promise<void> => {
-  const verifiedAgents = Object.freeze(inspectedAgents.map(({ agent }) => agent));
-
   for (const inspected of inspectedAgents) {
     const bindings = inspected.agent.declaration.bindings;
 
@@ -346,6 +353,13 @@ export const inspectCloudflareAgentsRelationships = async (
       );
     }
 
-    await inspectTools(session, inspected, verifiedAgents, evidence, diagnostics);
+    await inspectTools(
+      session,
+      inspected,
+      context,
+      isResolvedAgentSupported,
+      evidence,
+      diagnostics,
+    );
   }
 };

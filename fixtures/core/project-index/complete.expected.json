@@ -78,9 +78,11 @@
       },
       "mirrors": [
         {
+          "byteLength": 50,
           "canonicalDigest": "sha256:08bd85d6e1246e203458e6c91225d17d375b5d5d9ed94aee42457a8d3dcbd2e5",
           "digest": "sha256:08bd85d6e1246e203458e6c91225d17d375b5d5d9ed94aee42457a8d3dcbd2e5",
-          "path": "/apps/alpha.md"
+          "path": "/apps/alpha.md",
+          "scalarLength": 50
         }
       ]
     },

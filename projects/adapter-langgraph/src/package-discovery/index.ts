@@ -1,5 +1,6 @@
 import { discoverPackages } from '@moldea.ai/adapter-static-analysis';
-import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
+import { readRuntimeAdapterFile, type IRuntimeAdapterRepository } from '@moldea.ai/core/adapter';
+import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import {
   LANGGRAPH_CORE_PACKAGE_NAME,
@@ -40,7 +41,7 @@ const classifyTarget = (
 
 /** Discovers exact LangGraph primary and companion declarations in one owning manifest read. */
 export const discoverLangGraphPackages = async (
-  reader: IRepositoryReader,
+  reader: IRuntimeAdapterRepository,
   sourcePath: IRepositoryPath,
   signal?: AbortSignal,
 ): Promise<ILangGraphPackageDiscoveryResult> => {
@@ -56,7 +57,11 @@ export const discoverLangGraphPackages = async (
       getEntry: (path) =>
         reader.getEntry(path as IRepositoryPath, signal === undefined ? undefined : { signal }),
       readFile: (path) =>
-        reader.readFile(path as IRepositoryPath, signal === undefined ? undefined : { signal }),
+        readRuntimeAdapterFile(
+          reader,
+          path as IRepositoryPath,
+          signal === undefined ? undefined : { signal },
+        ),
     },
     ...(signal === undefined ? {} : { signal }),
     sourcePath,

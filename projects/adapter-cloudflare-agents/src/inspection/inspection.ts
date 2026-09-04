@@ -1,5 +1,8 @@
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type {
+  IRuntimeAdapterEvidence,
+  IRuntimeAdapterResolvedAgent,
+} from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
@@ -22,13 +25,12 @@ import {
 import {
   addCloudflareAgentsDiagnostic,
   analyzeCloudflareAgentsBoundReference,
-  compareCloudflareAgentsStrings,
   createCloudflareAgentsEvidence,
 } from './common.js';
 import { inspectCloudflareAgentsPackage } from './package-inspection.js';
 import { inspectCloudflareAgentsRelationships } from './relationships.js';
 import { createCloudflareAgentsInspectionSession } from './session.js';
-import type { ICloudflareAgentsInspectedAgent } from './types.js';
+import type { ICloudflareAgentsInspectedAgent, ICloudflareAgentsScopedAgent } from './types.js';
 
 const combineRelationships = (
   relationships: readonly ICloudflareAgentsRelationship[],
@@ -47,7 +49,7 @@ const combineRelationships = (
 
 const inspectAgent = async (
   session: ICloudflareAgentsInspectionSession,
-  agent: IIndexedAgent,
+  agent: ICloudflareAgentsScopedAgent,
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],
 ): Promise<ICloudflareAgentsInspectedAgent | null> => {
@@ -220,10 +222,20 @@ export const inspectCloudflareAgents = async (
   const session = createCloudflareAgentsInspectionSession(context);
   const evidence: IRuntimeAdapterEvidence[] = [];
   const diagnostics: IAdapterDiagnostic[] = [];
-  const agents = [...context.agents].sort((left, right) =>
-    compareCloudflareAgentsStrings(left.id, right.id),
-  );
+  const agents = [context.agent];
   const inspectedAgents: ICloudflareAgentsInspectedAgent[] = [];
+  const relatedInspectionCache = new Map<string, Promise<boolean>>();
+  const isResolvedAgentSupported = (agent: IRuntimeAdapterResolvedAgent): Promise<boolean> => {
+    const cached = relatedInspectionCache.get(agent.id);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const inspection = inspectAgent(session, agent, [], []).then((result) => result !== null);
+    relatedInspectionCache.set(agent.id, inspection);
+    return inspection;
+  };
 
   for (const agent of agents) {
     context.signal?.throwIfAborted();
@@ -235,7 +247,14 @@ export const inspectCloudflareAgents = async (
   }
 
   context.signal?.throwIfAborted();
-  await inspectCloudflareAgentsRelationships(session, inspectedAgents, evidence, diagnostics);
+  await inspectCloudflareAgentsRelationships(
+    session,
+    inspectedAgents,
+    context,
+    isResolvedAgentSupported,
+    evidence,
+    diagnostics,
+  );
 
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),

@@ -1,8 +1,11 @@
 import ts from 'typescript';
 
 import { getStaticString, normalizeText } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import {
+  readRuntimeAdapterFile,
+  type IAdapterDiagnostic,
+  type IRuntimeAdapterEvidence,
+} from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 import { EVE_ADAPTER_ID } from '../constants/index.js';
@@ -66,7 +69,8 @@ const inspectMarkdown = async (
     return;
   }
 
-  const bytes = await session.reader.readFile(
+  const bytes = await readRuntimeAdapterFile(
+    session.reader,
     path,
     session.signal === undefined ? undefined : { signal: session.signal },
   );

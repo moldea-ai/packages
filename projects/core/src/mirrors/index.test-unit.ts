@@ -6,7 +6,6 @@ import {
   parseRepositoryPath,
   type IRepositoryEntry,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 
 import type { IInspectedAgentAssets } from '../agent-assets/index.js';
@@ -15,16 +14,27 @@ import type { IContentDigest, IIndexedTextAsset } from '../contracts/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
 import { countUnicodeScalars } from '../format-validation/index.js';
 import { normalizeCoreOptions } from '../options/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 
 import { inspectMirrors } from './index.js';
 
 const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
 const options = normalizeCoreOptions(undefined);
 
+const createEntry = (
+  path: IRepositoryPath,
+  type: IRepositoryEntry['type'] = 'file',
+): IRepositoryEntry => ({
+  byteLength: type === 'file' ? 0 : null,
+  contentIdentity: null,
+  path,
+  type,
+});
+
 interface IReaderFixture {
   readonly entryPaths: IRepositoryPath[];
   readonly readPaths: IRepositoryPath[];
-  readonly reader: IRepositoryReader;
+  readonly reader: IRepositoryInspectionReader;
 }
 
 const createEmptyEntryIterable = (): AsyncIterable<IRepositoryEntry> => ({
@@ -72,8 +82,8 @@ const createReaderFixture = (
         entryPaths.push(path);
         return Promise.resolve(entries.get(path) ?? null);
       },
-      listEntries: () => createEmptyEntryIterable(),
-      readFile: (path) => {
+      iterateEntries: () => createEmptyEntryIterable(),
+      readCompleteFile: (path) => {
         readPaths.push(path);
         const content = contents.get(path);
 
@@ -107,9 +117,9 @@ describe('Core mirror inspection', () => {
     const alphaContent = 'You are the `alpha` agent.\n';
     const zetaContent = 'You are the `zeta` agent.\n';
     const entries = new Map<IRepositoryPath, IRepositoryEntry>([
-      [alphaFirstPath, { path: alphaFirstPath, type: 'file' }],
-      [alphaSecondPath, { path: alphaSecondPath, type: 'file' }],
-      [zetaPath, { path: zetaPath, type: 'file' }],
+      [alphaFirstPath, createEntry(alphaFirstPath)],
+      [alphaSecondPath, createEntry(alphaSecondPath)],
+      [zetaPath, createEntry(zetaPath)],
     ]);
     const contents = new Map<IRepositoryPath, Uint8Array>([
       [alphaFirstPath, new TextEncoder().encode(`\ufeff${alphaContent.replaceAll('\n', '\r')}`)],
@@ -157,9 +167,9 @@ describe('Core mirror inspection', () => {
     const symlinkPath = parseRepositoryPath('/mirrors/c-link.md');
     const stalePath = parseRepositoryPath('/mirrors/d-stale.md');
     const entries = new Map<IRepositoryPath, IRepositoryEntry>([
-      [directoryPath, { path: directoryPath, type: 'directory' }],
-      [symlinkPath, { path: symlinkPath, type: 'symlink' }],
-      [stalePath, { path: stalePath, type: 'file' }],
+      [directoryPath, createEntry(directoryPath, 'directory')],
+      [symlinkPath, createEntry(symlinkPath, 'symlink')],
+      [stalePath, createEntry(stalePath)],
     ]);
     const fixture = createReaderFixture(
       entries,
@@ -219,7 +229,7 @@ describe('Core mirror inspection', () => {
   test('retains strict text diagnostics without adding a stale cascade', async () => {
     const invalidPath = parseRepositoryPath('/mirrors/invalid.md');
     const fixture = createReaderFixture(
-      new Map([[invalidPath, { path: invalidPath, type: 'file' }]]),
+      new Map([[invalidPath, createEntry(invalidPath)]]),
       new Map([[invalidPath, Uint8Array.from([0xff])]]),
     );
     const result = await inspectMirrors(
@@ -275,13 +285,13 @@ describe('Core mirror inspection', () => {
     });
     const controller = new AbortController();
     let receivedSignal: AbortSignal | undefined;
-    const repository: IRepositoryReader = {
+    const repository: IRepositoryInspectionReader = {
       getEntry: (_path, operationOptions) => {
         receivedSignal = operationOptions?.signal;
         return Promise.reject(sourceError);
       },
-      listEntries: () => createEmptyEntryIterable(),
-      readFile: () => Promise.resolve(new Uint8Array()),
+      iterateEntries: () => createEmptyEntryIterable(),
+      readCompleteFile: () => Promise.resolve(new Uint8Array()),
     };
     const inspection = inspectMirrors(
       repository,
@@ -312,7 +322,7 @@ describe('Core mirror inspection', () => {
     await expect(inspection).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxDiagnostics',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: false,
     });
   });

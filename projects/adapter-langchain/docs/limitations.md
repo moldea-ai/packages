@@ -11,3 +11,5 @@ The initial target intentionally excludes JavaScript and CommonJS, configuration
 Non-empty or unresolved middleware suppresses instruction, agent output-schema, and tool-registration conclusions. Developer-authored response-format arrays are not mapped to the Repository Format's single agent output-schema binding. `stateSchema` and `contextSchema` do not become agent input-schema evidence, and implementation return types do not become tool output-schema evidence.
 
 The adapter does not validate model availability, provider compatibility, schema semantics, tool safety, prompt quality, routing intent, or runtime execution. Direct LangGraph applications remain the responsibility of the separate `langgraph` runtime boundary.
+
+Each invocation sees one declared agent and bounded logical repository operations, not a complete agent collection or project body index.

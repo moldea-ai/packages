@@ -59,6 +59,7 @@ describe('CLI Core composition with the memory repository reader', () => {
     ]);
 
     const result = await executeMoldeaCliCoreInspection({
+      command: 'validate',
       repository: reader,
       resourceLimits: RESOURCE_LIMITS,
     });
@@ -67,9 +68,7 @@ describe('CLI Core composition with the memory repository reader', () => {
       diagnostics: [],
       evidence: [],
       formatVersion: 1,
-      project: {
-        agents: [{ id: 'alpha' }],
-      },
+      summary: { counts: { agents: 1 } },
       valid: true,
     });
     expect(Object.isFrozen(result)).toBe(true);
@@ -113,6 +112,7 @@ describe('CLI Core composition with the memory repository reader', () => {
     ]);
 
     const result = await executeMoldeaCliCoreInspection({
+      command: 'validate',
       repository: reader,
       resourceLimits: RESOURCE_LIMITS,
     });
@@ -124,7 +124,7 @@ describe('CLI Core composition with the memory repository reader', () => {
         { kind: 'runtime-package', runtimeName: 'openai', source: 'openai' },
         { agentId: 'alpha', kind: 'runtime-pattern', source: 'openai' },
       ],
-      project: { agents: [{ id: 'alpha' }] },
+      summary: { counts: { agents: 1 } },
       valid: true,
     });
   });
@@ -169,6 +169,7 @@ describe('CLI Core composition with the memory repository reader', () => {
     ]);
 
     const result = await executeMoldeaCliCoreInspection({
+      command: 'validate',
       repository: reader,
       resourceLimits: RESOURCE_LIMITS,
     });
@@ -180,7 +181,7 @@ describe('CLI Core composition with the memory repository reader', () => {
         { agentId: 'alpha', kind: 'language', source: 'eve' },
         { kind: 'runtime-package', source: 'eve' },
       ],
-      project: { agents: [{ id: 'alpha' }] },
+      summary: { counts: { agents: 1 } },
       valid: true,
     });
   });
@@ -223,6 +224,7 @@ describe('CLI Core composition with the memory repository reader', () => {
     ]);
 
     const result = await executeMoldeaCliCoreInspection({
+      command: 'validate',
       repository: reader,
       resourceLimits: RESOURCE_LIMITS,
     });
@@ -235,7 +237,7 @@ describe('CLI Core composition with the memory repository reader', () => {
         { kind: 'runtime-package', runtimeName: '@langchain/core', source: 'langchain' },
         { kind: 'runtime-package', runtimeName: 'langchain', source: 'langchain' },
       ],
-      project: { agents: [{ id: 'alpha' }] },
+      summary: { counts: { agents: 1 } },
       valid: true,
     });
   });
@@ -278,6 +280,7 @@ describe('CLI Core composition with the memory repository reader', () => {
     ]);
 
     const result = await executeMoldeaCliCoreInspection({
+      command: 'validate',
       repository: reader,
       resourceLimits: RESOURCE_LIMITS,
     });
@@ -289,7 +292,7 @@ describe('CLI Core composition with the memory repository reader', () => {
         { kind: 'runtime-package', runtimeName: '@google/genai', source: 'google-genai' },
         { agentId: 'alpha', kind: 'runtime-pattern', source: 'google-genai' },
       ],
-      project: { agents: [{ id: 'alpha' }] },
+      summary: { counts: { agents: 1 } },
       valid: true,
     });
   });
@@ -301,13 +304,7 @@ describe('CLI Core composition with the memory repository reader', () => {
       id,
       inspect: (context) => {
         calls.push(id);
-        const agent = context.agents[0];
-
-        if (agent === undefined) {
-          throw new Error('The adapter fixture requires one scoped agent.');
-        }
-
-        const agentId = agent.id;
+        const agentId = context.agent.id;
 
         return Promise.resolve({
           diagnostics:
@@ -370,6 +367,7 @@ describe('CLI Core composition with the memory repository reader', () => {
     ];
 
     const result = await executeInspection({
+      command: 'validate',
       repository: createMemoryRepositoryReader(entries),
       resourceLimits: RESOURCE_LIMITS,
     });
@@ -378,19 +376,20 @@ describe('CLI Core composition with the memory repository reader', () => {
     expect(result).toMatchObject({
       diagnostics: [{ code: 'OPENAI_TEST_DIAGNOSTIC', source: 'openai' }],
       evidence: [{ kind: 'agent-definition', source: 'anthropic' }],
-      project: null,
+      summary: { counts: { agents: 2 } },
       valid: false,
     });
 
     calls.length = 0;
     const universalFailure = await executeInspection({
+      command: 'validate',
       repository: createMemoryRepositoryReader(
         entries.filter(({ path }) => path !== '/moldea/project.md'),
       ),
       resourceLimits: RESOURCE_LIMITS,
     });
 
-    expect(universalFailure).toMatchObject({ evidence: [], project: null, valid: false });
+    expect(universalFailure).toMatchObject({ evidence: [], summary: null, valid: false });
     expect(calls).toStrictEqual([]);
   });
 });

@@ -1,13 +1,28 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
-import { parseRepositoryPath } from '@moldea.ai/repository';
+import type { IRuntimeAdapterRepository } from '@moldea.ai/core/adapter';
+import { parseRepositoryPath, type IRepositoryReader } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import {
   createCloudflareAgentsPackageManifestCandidatePaths,
   discoverCloudflareAgentsPackage,
 } from './index.js';
+
+const createAdapterRepository = (source: IRepositoryReader): IRuntimeAdapterRepository => ({
+  snapshot: source.snapshot,
+  getEntry: (path, options) => source.getEntry(path, options),
+  limits: {
+    maxEntries: 4_096,
+    maxFileBytes: 1_048_576,
+    maxPageBytes: 65_536,
+    maxPageEntries: 256,
+    maxTotalBytesRead: 16_777_216,
+  },
+  listEntriesPage: (options) => source.listEntriesPage(options),
+  readFilePage: (path, options) => source.readFilePage(path, options),
+});
 
 describe('Cloudflare Agents package discovery', () => {
   test('orders nearest package candidates before repository root', () => {
@@ -39,7 +54,7 @@ describe('Cloudflare Agents package discovery', () => {
     ]);
 
     const result = await discoverCloudflareAgentsPackage(
-      repository,
+      createAdapterRepository(repository),
       parseRepositoryPath('/src/agent.ts'),
     );
 
@@ -64,7 +79,10 @@ describe('Cloudflare Agents package discovery', () => {
     ]);
 
     await expect(
-      discoverCloudflareAgentsPackage(repository, parseRepositoryPath('/src/agent.ts')),
+      discoverCloudflareAgentsPackage(
+        createAdapterRepository(repository),
+        parseRepositoryPath('/src/agent.ts'),
+      ),
     ).resolves.toStrictEqual({ kind: 'invalid', path: '/package.json' });
   });
 });

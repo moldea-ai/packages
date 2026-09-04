@@ -1,7 +1,11 @@
 import ts from 'typescript';
 
 import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
-import type { IAdapterDiagnostic, IRuntimeAdapterContext } from '@moldea.ai/core/adapter';
+import type {
+  IAdapterDiagnostic,
+  IRuntimeAdapterContext,
+  IRuntimeAdapterResolvedAgent,
+} from '@moldea.ai/core/adapter';
 
 import { CLAUDE_AGENT_SDK_ADAPTER_ID } from '../constants/index.js';
 import type {
@@ -24,7 +28,10 @@ import {
   locateClaudeAgentSdkNode,
 } from './common.js';
 import { resolveClaudeAgentSdkAgentDefinition } from './resolution.js';
-import type { IClaudeAgentSdkInspectedQueryAgent } from './types.js';
+import type {
+  IClaudeAgentSdkInspectedDefinitionAgent,
+  IClaudeAgentSdkInspectedQueryAgent,
+} from './types.js';
 
 const resolveMapEntryName = async (
   session: IClaudeAgentSdkInspectionSession,
@@ -49,20 +56,17 @@ const resolveMapEntryName = async (
   return result.kind === 'supported' ? result.value : null;
 };
 
-const getMappedAgents = (
+const resolveMappedAgent = (
   context: IRuntimeAdapterContext,
   target: IClaudeAgentSdkResolvedAgentDefinition,
-) =>
-  context.project.agents.filter(({ declaration }) => {
-    const runtimeAgent = declaration.bindings?.runtimeAgent;
-    return runtimeAgent?.path === target.path && runtimeAgent.symbol === target.symbol;
-  });
+): ReturnType<IRuntimeAdapterContext['resolveAgent']> =>
+  context.resolveAgent({ path: target.path, symbol: target.symbol });
 
 const inspectRoutingDescription = async (
   session: IClaudeAgentSdkInspectionSession,
   sourceAgentId: string,
   target: IClaudeAgentSdkResolvedAgentDefinition,
-  targetAgent: ReturnType<typeof getMappedAgents>[number],
+  targetAgent: IRuntimeAdapterResolvedAgent,
   runtimeName: string,
   diagnostics: IAdapterDiagnostic[],
 ): Promise<void> => {
@@ -128,7 +132,8 @@ export const inspectClaudeAgentSdkHandoffs = async (
   inspected: IClaudeAgentSdkInspectedQueryAgent,
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],
-): Promise<void> => {
+): Promise<readonly IClaudeAgentSdkInspectedDefinitionAgent[]> => {
+  const resolvedAgents = new Map<string, IClaudeAgentSdkInspectedDefinitionAgent>();
   const collectionReferences = collectClaudeAgentSdkRelationshipIdentifiers(
     inspected.wrapper.contexts.flatMap((queryContext) => [
       queryContext.tools,
@@ -201,8 +206,8 @@ export const inspectClaudeAgentSdkHandoffs = async (
           collectClaudeAgentSdkAgentDefinitionReferences(unresolvedTarget.analysis),
         ),
       });
-      const mappedAgents = getMappedAgents(context, target);
-      const mappedAgent = mappedAgents.length === 1 ? mappedAgents[0] : undefined;
+      const resolution = resolveMappedAgent(context, target);
+      const mappedAgent = resolution.kind === 'matched' ? resolution.agent : undefined;
       const safeRuntimeName = isClaudeAgentSdkMachineString(runtimeName) ? runtimeName : null;
       const details = {
         delegationAvailabilitySource:
@@ -216,7 +221,7 @@ export const inspectClaudeAgentSdkHandoffs = async (
         ...(safeRuntimeName === null ? {} : { targetRuntimeName: safeRuntimeName }),
       };
 
-      if (mappedAgents.length > 1) {
+      if (resolution.kind === 'ambiguous') {
         addClaudeAgentSdkDiagnostic(
           diagnostics,
           'CLAUDE_AGENT_SDK_HANDOFF_TARGET_AMBIGUOUS',
@@ -234,6 +239,15 @@ export const inspectClaudeAgentSdkHandoffs = async (
           mappedAgent,
           runtimeName,
           diagnostics,
+        );
+        resolvedAgents.set(
+          mappedAgent.id,
+          Object.freeze({
+            agent: mappedAgent,
+            analysis: target.analysis,
+            definition: target.definition,
+            kind: 'programmatic-agent-definition',
+          }),
         );
       }
 
@@ -254,4 +268,6 @@ export const inspectClaudeAgentSdkHandoffs = async (
       );
     }
   }
+
+  return Object.freeze([...resolvedAgents.values()]);
 };

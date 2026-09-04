@@ -21,6 +21,6 @@ Unsupported Anthropic APIs are not rejected merely because direct Messages API c
 
 Package detection uses nearest manifests, not lockfiles or installed `node_modules`. Static dependency ranges are observations; the adapter does not prove which package build executes at runtime.
 
-The adapter sees only entries Core supplies through `IRepositoryReader`. It receives no host path, credential, environment value, network client, or runtime process. It does not execute TypeScript or resolve arbitrary imports.
+Each invocation sees one declared agent and only the bounded operations Core supplies through `IRuntimeAdapterRepository`. It receives no complete agent collection, project body index, host path, credential, environment value, network client, or runtime process. It does not execute TypeScript or resolve arbitrary imports.
 
 The [Runtime Compatibility Matrix](/compatibility/) remains authoritative.

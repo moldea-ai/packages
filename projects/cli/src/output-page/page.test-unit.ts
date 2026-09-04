@@ -83,6 +83,32 @@ describe('output pages', () => {
     ).toStrictEqual({ cursor: null, records: [] });
   });
 
+  test('continues from an upstream source cursor without requiring the prior record', () => {
+    const sourceCursor = 'core3:metadata:1:snapshot';
+    const cursor = encodeMoldeaCliCursor(
+      'inspect',
+      { view: 'metadata' },
+      SNAPSHOT_DIGEST,
+      'metadata:/moldea/moldea.yaml',
+      sourceCursor,
+    );
+
+    expect(
+      createMoldeaCliOutputPage({
+        command: 'inspect',
+        cursor,
+        filters: { view: 'metadata' },
+        maxOutputBytes: 4096,
+        measure: measurePage,
+        records: [{ key: 'metadata:/moldea/project.md' }],
+        snapshotDigest: SNAPSHOT_DIGEST,
+      }),
+    ).toStrictEqual({
+      cursor: null,
+      records: [{ key: 'metadata:/moldea/project.md' }],
+    });
+  });
+
   test('rejects malformed ordering and an insufficient envelope budget', () => {
     expect(() =>
       createMoldeaCliOutputPage({
@@ -151,7 +177,11 @@ describe('output cursors', () => {
         filters: { inputDigest: 'sha256:input' },
         snapshotDigest: SNAPSHOT_DIGEST,
       }),
-    ).toStrictEqual({ lastKey: 'last-key' });
+    ).toStrictEqual({
+      lastKey: 'last-key',
+      snapshotDigest: SNAPSHOT_DIGEST,
+      sourceCursor: null,
+    });
   });
 
   test.each([

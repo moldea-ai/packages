@@ -1,4 +1,8 @@
-import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
+import type {
+  IRepositoryPath,
+  IRepositoryReader,
+  IRepositorySnapshot,
+} from '@moldea.ai/repository';
 
 import type { IRuntimeAdapter, IRuntimeAdapterEvidence } from '../adapter/index.js';
 import type { ICoreDiagnostic, IDiagnostic } from '../diagnostics/index.js';
@@ -75,18 +79,120 @@ export interface IDecisionParseResult {
   readonly diagnostics: readonly ICoreDiagnostic[];
 }
 
-// repository-level inspection input and final structural result
-export interface IProjectInspectionInput {
+// repository-level validation input and content-free structural result
+export interface IProjectValidationInput {
   readonly repository: IRepositoryReader;
   readonly signal?: AbortSignal;
 }
 
-export interface IProjectInspectionResult {
+export type IProjectMetadataKind =
+  | 'agent-description'
+  | 'agent-handoff-description'
+  | 'agent-instruction'
+  | 'context'
+  | 'decision'
+  | 'manifest'
+  | 'mirror'
+  | 'project'
+  | 'runtime-guidance';
+
+export interface IProjectMetadataItem {
+  readonly agentId: string | null;
+  readonly byteLength: number;
+  readonly canonicalDigest: IContentDigest | null;
+  readonly decisionId: string | null;
+  readonly digest: IContentDigest;
+  readonly kind: IProjectMetadataKind;
+  readonly path: IRepositoryPath;
+  readonly scalarLength: number | null;
+}
+
+// closed content-free views supported by paged project inspection
+export type IProjectInspectionView = 'all' | 'diagnostics' | 'evidence' | 'metadata';
+
+export interface IProjectInspectionPageInput extends IProjectValidationInput {
+  readonly cursor?: string;
+  readonly maxItems: number;
+  readonly view: IProjectInspectionView;
+}
+
+export type IProjectInspectionItem =
+  | { readonly diagnostic: IDiagnostic; readonly kind: 'diagnostic' }
+  | { readonly evidence: IRuntimeAdapterEvidence; readonly kind: 'evidence' }
+  | { readonly kind: 'metadata'; readonly metadata: IProjectMetadataItem };
+
+export interface IProjectInspectionPageRecord {
+  readonly item: IProjectInspectionItem;
+  readonly nextCursor: string | null;
+}
+
+export interface IProjectInspectionPage {
+  readonly isComplete: boolean;
+  readonly records: readonly IProjectInspectionPageRecord[];
+  readonly nextCursor: string | null;
+  readonly totalItems: number;
+}
+
+export interface IProjectSummaryCounts {
+  readonly agents: number;
+  readonly context: number;
+  readonly decisions: number;
+  readonly mirrors: number;
+  readonly runtimes: number;
+  readonly unresolved: number;
+}
+
+export interface IProjectValidationSummary {
+  readonly counts: IProjectSummaryCounts;
+  readonly manifestDigest: IContentDigest;
+  readonly manifestPath: IRepositoryPath;
+  readonly projectDigest: IContentDigest;
+  readonly projectPath: IRepositoryPath;
+}
+
+export interface IProjectValidationResult {
   readonly valid: boolean;
   readonly formatVersion: IRepositoryFormatVersion | null;
-  readonly project: IMoldeaProjectIndex | null;
+  readonly summary: IProjectValidationSummary | null;
+  readonly source: IRepositorySnapshot;
   readonly evidence: readonly IRuntimeAdapterEvidence[];
   readonly diagnostics: readonly IDiagnostic[];
+}
+
+export interface IProjectInspectionCounts extends IProjectSummaryCounts {
+  readonly diagnostics: number;
+  readonly evidence: number;
+  readonly metadata: number;
+}
+
+export interface IProjectInspectionPageResult {
+  readonly counts: IProjectInspectionCounts;
+  readonly formatVersion: IRepositoryFormatVersion | null;
+  readonly inspectionDigest: string;
+  readonly page: IProjectInspectionPage;
+  readonly source: IRepositorySnapshot;
+  readonly summary: IProjectValidationSummary | null;
+  readonly valid: boolean;
+  readonly view: IProjectInspectionView;
+}
+
+// explicit Unicode-safe canonical content range contracts
+export interface ICanonicalContentPageInput extends IProjectValidationInput {
+  readonly maxBytes: number;
+  readonly offset: number;
+  readonly path: IRepositoryPath;
+}
+
+export interface ICanonicalContentPageResult {
+  readonly byteEnd: number;
+  readonly byteStart: number;
+  readonly content: string;
+  readonly contentIdentity: string | null;
+  readonly isComplete: boolean;
+  readonly nextOffset: number | null;
+  readonly path: IRepositoryPath;
+  readonly source: IRepositorySnapshot;
+  readonly totalBytes: number;
 }
 
 // normalized immutable assets that compose a valid project index
@@ -120,8 +226,10 @@ export interface IIndexedRuntimeGuidance {
 
 export interface IIndexedMirror {
   readonly path: IRepositoryPath;
+  readonly byteLength: number;
   readonly digest: IContentDigest;
   readonly canonicalDigest: IContentDigest;
+  readonly scalarLength: number;
 }
 
 export interface IIndexedAgent {
@@ -209,9 +317,9 @@ export interface ICore {
   parseDecision(input: ITextDocumentInput): Promise<IDecisionParseResult>;
 
   /**
-   * Inspects one coherent repository snapshot through universal and configured adapter validation.
-   * @param input The source-neutral reader and optional shared cancellation signal.
-   * @returns A promise resolving to the frozen all-or-nothing project inspection result.
+   * Returns one bounded content-free view over a validated project snapshot.
+   * @param input The reader, view, page size, optional cursor, and cancellation signal.
+   * @returns A promise resolving to one immutable metadata, diagnostic, or evidence page.
    * @throws
    * - INVALID_ARGUMENT: The Core operation received an invalid argument.
    * - INVALID_REPOSITORY_PATH: A repository path is invalid.
@@ -226,5 +334,44 @@ export interface ICore {
    * - ABORTED: Project inspection or a repository operation was aborted.
    * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed or returned an invalid result.
    */
-  inspectProject(input: IProjectInspectionInput): Promise<IProjectInspectionResult>;
+  inspectProjectPage(input: IProjectInspectionPageInput): Promise<IProjectInspectionPageResult>;
+
+  /**
+   * Reads one explicit canonical file range without materializing the complete file.
+   * @param input The reader, canonical path, byte range, and optional cancellation signal.
+   * @returns A promise resolving to one immutable Unicode-safe content page.
+   * @throws
+   * - INVALID_ARGUMENT: The Core operation received an invalid argument.
+   * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+   * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+   * - ENTRY_NOT_FILE: The requested repository entry is not a file.
+   * - ACCESS_DENIED: Access to the repository source was denied.
+   * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+   * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+   * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+   * - RESOURCE_LIMIT_EXCEEDED: A Core or repository resource limit was exceeded.
+   * - ABORTED: The Core or repository operation was aborted.
+   * - CONTENT_INVALID: The canonical content is not valid UTF-8 text.
+   */
+  readCanonicalContentPage(input: ICanonicalContentPageInput): Promise<ICanonicalContentPageResult>;
+
+  /**
+   * Inspects one coherent repository snapshot through universal and configured adapter validation.
+   * @param input The source-neutral reader and optional shared cancellation signal.
+   * @returns A promise resolving to the frozen content-free project validation result.
+   * @throws
+   * - INVALID_ARGUMENT: The Core operation received an invalid argument.
+   * - INVALID_REPOSITORY_PATH: A repository path is invalid.
+   * - ENTRY_NOT_FOUND: A discovered file disappeared from the reader snapshot.
+   * - ENTRY_NOT_FILE: A discovered file changed type during inspection.
+   * - ENTRY_NOT_DIRECTORY: A discovered directory changed type during inspection.
+   * - ACCESS_DENIED: Access to the repository source was denied.
+   * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+   * - SNAPSHOT_CHANGED: The repository snapshot changed during inspection.
+   * - INVALID_SOURCE_DATA: The repository reader returned invalid contract data.
+   * - RESOURCE_LIMIT_EXCEEDED: A Core or repository resource limit was exceeded.
+   * - ABORTED: Project inspection or a repository operation was aborted.
+   * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed or returned an invalid result.
+   */
+  validateProject(input: IProjectValidationInput): Promise<IProjectValidationResult>;
 }

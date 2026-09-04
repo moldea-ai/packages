@@ -1,9 +1,13 @@
 import type { IFilesystemRepositoryResourceLimits } from '../contracts/index.js';
 
-// default filesystem-reader limits for version 1 snapshots
+// provisional filesystem-reader limits pending the release calibration corpus
 export const DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS: IFilesystemRepositoryResourceLimits =
   Object.freeze({
-    maxEntries: 100_000,
-    maxFileBytes: 8_388_608,
-    maxCachedBytes: 134_217_728,
+    maxCachedBytes: 67_108_864,
+    maxConcurrentOperations: 16,
+    maxDirectoryEntries: 131_072,
+    maxEntries: 131_072,
+    maxPageEntries: 4_096,
+    maxQueuedOperations: 256,
+    maxReadBytes: 1_048_576,
   });

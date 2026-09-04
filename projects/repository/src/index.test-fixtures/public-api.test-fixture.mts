@@ -2,11 +2,14 @@ import {
   REPOSITORY_ROOT,
   RepositoryPathException,
   RepositorySourceException,
+  compareRepositoryPaths,
+  createRepositoryComparison,
+  createRepositoryIdentity,
   isRepositoryPath,
   parseRepositoryPath,
   type IRepositoryEntry,
+  type IRepositoryEntryPageOptions,
   type IRepositoryEntryType,
-  type IRepositoryListOptions,
   type IRepositoryOperation,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
@@ -27,12 +30,21 @@ import {
 const repositoryPath: IRepositoryPath = parseRepositoryPath('/file.txt');
 const root: IRepositoryPath = REPOSITORY_ROOT;
 const entryType: IRepositoryEntryType = 'file';
-const entry: IRepositoryEntry = { path: repositoryPath, type: entryType };
+const entry: IRepositoryEntry = {
+  byteLength: 1,
+  contentIdentity: 'fixture:1',
+  path: repositoryPath,
+  type: entryType,
+};
 const operationOptions: IRepositoryOperationOptions = {
   signal: new AbortController().signal,
 };
-const listOptions: IRepositoryListOptions = { prefix: root, ...operationOptions };
-const operation: IRepositoryOperation = 'read-file';
+const listOptions: IRepositoryEntryPageOptions = {
+  maxEntries: 16,
+  prefix: root,
+  ...operationOptions,
+};
+const operation: IRepositoryOperation = 'read-file-page';
 const sourceCode: IRepositorySourceErrorCode = 'ENTRY_NOT_FOUND';
 const pathExceptionOptions: IRepositoryPathExceptionOptions = { cause: new Error('cause') };
 const sourceExceptionOptions: IRepositorySourceExceptionOptions = {
@@ -50,6 +62,9 @@ const conformanceRunner: typeof describeRepositoryReaderConformance =
   describeRepositoryReaderConformance;
 const pathException = new RepositoryPathException(pathExceptionOptions);
 const sourceException = new RepositorySourceException(sourceExceptionOptions);
+const comparisonOrder: number = compareRepositoryPaths(root, repositoryPath);
+const comparison = createRepositoryComparison(reader, reader);
+const identity: string = createRepositoryIdentity([new Uint8Array([1, 2, 3])]);
 
 if (!isRepositoryPath(repositoryPath)) {
   throw new Error('The packaged repository path predicate rejected a valid path.');
@@ -63,6 +78,9 @@ void [
   conformanceRunner,
   pathException,
   sourceException,
+  comparison,
+  comparisonOrder,
+  identity,
 ];
 
 // @ts-expect-error A plain string has not passed runtime repository-path validation.

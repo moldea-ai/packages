@@ -2,7 +2,7 @@ import {
   getRuntimeExport,
   isSupportedTypeScriptSourcePath,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
@@ -15,7 +15,6 @@ import { analyzeOpenAiResponses } from '../source-analysis/index.js';
 import {
   addOpenAiDiagnostic,
   analyzeOpenAiBoundReference,
-  compareOpenAiStrings,
   createOpenAiEvidence,
 } from './common.js';
 import { inspectOpenAiPackage } from './package-inspection.js';
@@ -127,7 +126,7 @@ export const inspectOpenAi = async (
   const session = createOpenAiInspectionSession(context);
   const evidence: IRuntimeAdapterEvidence[] = [];
   const diagnostics: IAdapterDiagnostic[] = [];
-  const agents = [...context.agents].sort((left, right) => compareOpenAiStrings(left.id, right.id));
+  const agents = [context.agent];
 
   for (const agent of agents) {
     context.signal?.throwIfAborted();

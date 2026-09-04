@@ -116,7 +116,7 @@ export const validateManifestRelationships = (
   decisions: readonly Pick<IParsedDecision, 'id' | 'path' | 'status'>[],
   limits: ICoreResourceLimits,
 ): readonly ICoreDiagnostic[] => {
-  const collector = createCoreDiagnosticCollector(limits, 'inspect-project');
+  const collector = createCoreDiagnosticCollector(limits, 'validate-project');
   const validAgentContextPaths = new Set<IRepositoryPath>(discovery.inventory.context);
   const validTopLevelContextPaths = new Set(validAgentContextPaths);
   if (discovery.inventory.project !== null) {

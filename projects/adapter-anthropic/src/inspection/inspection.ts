@@ -2,7 +2,7 @@ import {
   getRuntimeExport,
   isSupportedTypeScriptSourcePath,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
@@ -15,7 +15,6 @@ import { analyzeAnthropicMessages } from '../source-analysis/index.js';
 import {
   addAnthropicDiagnostic,
   analyzeAnthropicBoundReference,
-  compareAnthropicStrings,
   createAnthropicEvidence,
 } from './common.js';
 import { inspectAnthropicPackage } from './package-inspection.js';
@@ -132,9 +131,7 @@ export const inspectAnthropic = async (
   const session = createAnthropicInspectionSession(context);
   const evidence: IRuntimeAdapterEvidence[] = [];
   const diagnostics: IAdapterDiagnostic[] = [];
-  const agents = [...context.agents].sort((left, right) =>
-    compareAnthropicStrings(left.id, right.id),
-  );
+  const agents = [context.agent];
 
   for (const agent of agents) {
     context.signal?.throwIfAborted();

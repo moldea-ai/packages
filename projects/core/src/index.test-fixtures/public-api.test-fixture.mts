@@ -8,6 +8,8 @@ import {
   SUPPORTED_REPOSITORY_FORMAT_VERSIONS,
   createCore,
   type IAdapterDiagnostic,
+  type ICanonicalContentPageInput,
+  type ICanonicalContentPageResult,
   type IContentDigest,
   type IContentDigestResult,
   type ICore,
@@ -28,14 +30,6 @@ import {
   type IGlobManifestScopeDeclaration,
   type IRuntimeAdapterEvidence,
   type IRuntimeAdapterEvidenceKind,
-  type IIndexedAgent,
-  type IIndexedContextAsset,
-  type IIndexedDecision,
-  type IIndexedDescriptionAsset,
-  type IIndexedManifest,
-  type IIndexedMirror,
-  type IIndexedRuntimeGuidance,
-  type IIndexedTextAsset,
   type IManifestParseResult,
   type IManifestScopeCounts,
   type IManifestScopeDeclaration,
@@ -45,10 +39,20 @@ import {
   type IManifestScopeOwnerKind,
   type IManifestScopeRelationshipField,
   type IManifestScopeResult,
-  type IMoldeaProjectIndex,
   type INormalizedText,
-  type IProjectInspectionInput,
-  type IProjectInspectionResult,
+  type IProjectMetadataItem,
+  type IProjectMetadataKind,
+  type IProjectInspectionCounts,
+  type IProjectInspectionItem,
+  type IProjectInspectionPage,
+  type IProjectInspectionPageInput,
+  type IProjectInspectionPageRecord,
+  type IProjectInspectionPageResult,
+  type IProjectInspectionView,
+  type IProjectSummaryCounts,
+  type IProjectValidationInput,
+  type IProjectValidationResult,
+  type IProjectValidationSummary,
   type ISourcePosition,
   type ISourceRange,
   type ITextDocumentContent,
@@ -61,6 +65,7 @@ import type { IRuntimeAdapter as IRootRuntimeAdapter } from '@moldea.ai/core';
 import type { IMoldeaManifestV1 as IRootManifest } from '@moldea.ai/core';
 // @ts-expect-error The adapter subpath has no default export.
 import adapterDefault from '@moldea.ai/core/adapter';
+import { iterateRuntimeAdapterEntries, readRuntimeAdapterFile } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic as IAdapterSubpathDiagnostic,
   IRuntimeAdapter,
@@ -68,6 +73,18 @@ import type {
   IRuntimeAdapterEvidence as IAdapterSubpathEvidence,
   IRuntimeAdapterEvidenceKind as IAdapterSubpathEvidenceKind,
   IRuntimeAdapterResult,
+  IRuntimeAdapterRepository,
+  IRuntimeAdapterRepositoryLimits,
+  IRuntimeAdapterAgentResolution,
+  IRuntimeAdapterResolvedAgent,
+  IIndexedAgent,
+  IIndexedContextAsset,
+  IIndexedDecision,
+  IIndexedDescriptionAsset,
+  IIndexedManifest,
+  IIndexedMirror,
+  IIndexedRuntimeGuidance,
+  IIndexedTextAsset,
 } from '@moldea.ai/core/adapter';
 // @ts-expect-error The format subpath has no default export.
 import formatDefault from '@moldea.ai/core/format';
@@ -92,6 +109,8 @@ import type { IHandoffManifestEntry } from '@moldea.ai/core/format';
 
 type IRootSurface = readonly [
   IAdapterDiagnostic,
+  ICanonicalContentPageInput,
+  ICanonicalContentPageResult,
   IContentDigest,
   IContentDigestResult,
   ICore,
@@ -112,14 +131,6 @@ type IRootSurface = readonly [
   IGlobManifestScopeDeclaration,
   IRuntimeAdapterEvidence,
   IRuntimeAdapterEvidenceKind,
-  IIndexedAgent,
-  IIndexedContextAsset,
-  IIndexedDecision,
-  IIndexedDescriptionAsset,
-  IIndexedManifest,
-  IIndexedMirror,
-  IIndexedRuntimeGuidance,
-  IIndexedTextAsset,
   IManifestParseResult,
   IManifestScopeCounts,
   IManifestScopeDeclaration,
@@ -129,10 +140,20 @@ type IRootSurface = readonly [
   IManifestScopeOwnerKind,
   IManifestScopeRelationshipField,
   IManifestScopeResult,
-  IMoldeaProjectIndex,
   INormalizedText,
-  IProjectInspectionInput,
-  IProjectInspectionResult,
+  IProjectMetadataItem,
+  IProjectMetadataKind,
+  IProjectInspectionCounts,
+  IProjectInspectionItem,
+  IProjectInspectionPage,
+  IProjectInspectionPageInput,
+  IProjectInspectionPageRecord,
+  IProjectInspectionPageResult,
+  IProjectInspectionView,
+  IProjectSummaryCounts,
+  IProjectValidationInput,
+  IProjectValidationResult,
+  IProjectValidationSummary,
   ISourcePosition,
   ISourceRange,
   ITextDocumentContent,
@@ -164,6 +185,18 @@ type IAdapterSurface = readonly [
   IAdapterSubpathEvidence,
   IAdapterSubpathEvidenceKind,
   IRuntimeAdapterResult,
+  IRuntimeAdapterRepository,
+  IRuntimeAdapterRepositoryLimits,
+  IRuntimeAdapterAgentResolution,
+  IRuntimeAdapterResolvedAgent,
+  IIndexedAgent,
+  IIndexedContextAsset,
+  IIndexedDecision,
+  IIndexedDescriptionAsset,
+  IIndexedManifest,
+  IIndexedMirror,
+  IIndexedRuntimeGuidance,
+  IIndexedTextAsset,
 ];
 
 type IRemovedHandoffSurface = IHandoffManifestEntry;
@@ -183,7 +216,7 @@ const path = parseRepositoryPath('/moldea/project.md');
 const adapter: IRuntimeAdapter = {
   id: 'openai',
   inspect: (context) => {
-    const adapterRepository: IRepositoryReader = context.repository;
+    const adapterRepository: IRuntimeAdapterRepository = context.repository;
     const adapterResult: IRuntimeAdapterResult = { diagnostics: [], evidence: [] };
 
     void adapterRepository;
@@ -210,7 +243,18 @@ const parsedDecision: Promise<IDecisionParseResult> = core.parseDecision({
   content: '---\nstatus: accepted\ncreatedAt: "2026-08-07T19:42:03.456Z"\n---\nBody.\n',
   path: parseRepositoryPath('/moldea/decisions/1786131723456-use-postgresql.md'),
 });
-const inspectedProject: Promise<IProjectInspectionResult> = core.inspectProject({ repository });
+const inspectedProject: Promise<IProjectValidationResult> = core.validateProject({ repository });
+const inspectionPage: Promise<IProjectInspectionPageResult> = core.inspectProjectPage({
+  maxItems: 16,
+  repository,
+  view: 'metadata',
+});
+const contentPage: Promise<ICanonicalContentPageResult> = core.readCanonicalContentPage({
+  maxBytes: 4096,
+  offset: 0,
+  path,
+  repository,
+});
 const matchedScope: Promise<IManifestScopeResult> = core.matchManifestScope({
   manifest: {
     content: 'version: 1\n',
@@ -235,7 +279,7 @@ const capabilityKind: ICapabilityKind = 'tool';
 const diagnosticCode: ICoreDiagnosticCode = 'MOLDEA_TEXT_EMPTY';
 const configurationErrorCode: ICoreConfigurationErrorCode = 'INVALID_RESOURCE_LIMIT';
 const operationErrorCode: ICoreOperationErrorCode = 'RESOURCE_LIMIT_EXCEEDED';
-const operation: ICoreOperation = 'inspect-project';
+const operation: ICoreOperation = 'validate-project';
 const scopeOperation: ICoreOperation = 'match-manifest-scope';
 
 // @ts-expect-error Repository format version 2 is not part of the version 1 contract.
@@ -280,6 +324,9 @@ void [
   evidenceKind,
   formatDefault,
   incompleteAdapter,
+  iterateRuntimeAdapterEntries,
+  contentPage,
+  inspectionPage,
   inspectedProject,
   matchedScope,
   normalized,
@@ -288,6 +335,7 @@ void [
   scopeOperation,
   parsedDecision,
   parsedManifest,
+  readRuntimeAdapterFile,
   configurationException,
   operationException,
   removedHandoffSurface,

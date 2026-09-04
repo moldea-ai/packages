@@ -23,8 +23,8 @@
     "typecheck": "node scripts/generate.ts && astro check"
   },
   "devDependencies": {
-    "@moldea.ai/core": "workspace:2.0.1",
-    "@moldea.ai/repository": "workspace:1.1.0",
+    "@moldea.ai/core": "workspace:3.0.0",
+    "@moldea.ai/repository": "workspace:2.0.0",
     "@astrojs/check": "0.9.10",
     "@astrojs/sitemap": "3.7.3",
     "@axe-core/playwright": "4.13.0",

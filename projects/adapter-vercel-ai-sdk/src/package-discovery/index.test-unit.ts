@@ -1,10 +1,25 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
-import { parseRepositoryPath } from '@moldea.ai/repository';
+import type { IRuntimeAdapterRepository } from '@moldea.ai/core/adapter';
+import { parseRepositoryPath, type IRepositoryReader } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import { createPackageManifestCandidatePaths, discoverVercelAiSdkPackage } from './index.js';
+
+const createAdapterRepository = (source: IRepositoryReader): IRuntimeAdapterRepository => ({
+  snapshot: source.snapshot,
+  getEntry: (path, options) => source.getEntry(path, options),
+  limits: {
+    maxEntries: 4_096,
+    maxFileBytes: 1_048_576,
+    maxPageBytes: 65_536,
+    maxPageEntries: 256,
+    maxTotalBytesRead: 16_777_216,
+  },
+  listEntriesPage: (options) => source.listEntriesPage(options),
+  readFilePage: (path, options) => source.readFilePage(path, options),
+});
 
 describe('Vercel AI SDK package discovery', () => {
   test('orders nearest package candidates before repository root', () => {
@@ -38,7 +53,10 @@ describe('Vercel AI SDK package discovery', () => {
     ]);
 
     await expect(
-      discoverVercelAiSdkPackage(repository, parseRepositoryPath('/src/agent.ts')),
+      discoverVercelAiSdkPackage(
+        createAdapterRepository(repository),
+        parseRepositoryPath('/src/agent.ts'),
+      ),
     ).resolves.toStrictEqual({
       kind: 'observed',
       observation: {
@@ -60,7 +78,10 @@ describe('Vercel AI SDK package discovery', () => {
     ]);
 
     await expect(
-      discoverVercelAiSdkPackage(repository, parseRepositoryPath('/src/agent.ts')),
+      discoverVercelAiSdkPackage(
+        createAdapterRepository(repository),
+        parseRepositoryPath('/src/agent.ts'),
+      ),
     ).resolves.toStrictEqual({ kind: 'invalid', path: '/package.json' });
   });
 });

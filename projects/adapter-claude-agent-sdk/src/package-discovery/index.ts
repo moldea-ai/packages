@@ -2,7 +2,8 @@ import {
   createPackageManifestCandidatePaths as createCandidatePaths,
   discoverPackage,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
+import { readRuntimeAdapterFile, type IRuntimeAdapterRepository } from '@moldea.ai/core/adapter';
+import type { IRepositoryPath } from '@moldea.ai/repository';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import {
@@ -39,7 +40,7 @@ export const createPackageManifestCandidatePaths = (
  * - ABORTED: The repository operation was aborted.
  */
 export const discoverClaudeAgentSdkPackage = async (
-  repository: IRepositoryReader,
+  repository: IRuntimeAdapterRepository,
   sourcePath: IRepositoryPath,
   signal?: AbortSignal,
 ): Promise<IClaudeAgentSdkPackageDiscoveryResult> => {
@@ -48,7 +49,8 @@ export const discoverClaudeAgentSdkPackage = async (
     packageName: CLAUDE_AGENT_SDK_PACKAGE_NAME,
     reader: {
       getEntry: (path) => repository.getEntry(parseRepositoryPath(path), repositoryOptions),
-      readFile: (path) => repository.readFile(parseRepositoryPath(path), repositoryOptions),
+      readFile: (path) =>
+        readRuntimeAdapterFile(repository, parseRepositoryPath(path), repositoryOptions),
     },
     ...(signal === undefined ? {} : { signal }),
     sourcePath,

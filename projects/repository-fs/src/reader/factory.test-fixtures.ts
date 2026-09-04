@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import {
+  compareRepositoryPaths,
   parseRepositoryPath,
   type IRepositoryEntry,
   type IRepositoryPath,
@@ -35,7 +36,7 @@ interface ICanonicalFixture {
 // one materialized filesystem snapshot and its host-dependent logical contract
 export interface IFilesystemRepositoryTestSnapshot {
   readonly casePaths: IRepositoryReaderCasePathFixture;
-  readonly expectedEntries: readonly IRepositoryEntry[];
+  readonly expectedEntries: readonly Pick<IRepositoryEntry, 'path' | 'type'>[];
   readonly fileBytes: Uint8Array;
   readonly rootDirectory: string;
   readonly unicodePath: string;
@@ -94,7 +95,7 @@ const readCanonicalFixture = async (): Promise<ICanonicalFixture> => {
 
 /** Adds every non-root directory parent required by one logical entry. */
 const addExpectedDirectoryParents = (
-  entriesByPath: Map<IRepositoryPath, IRepositoryEntry>,
+  entriesByPath: Map<IRepositoryPath, Pick<IRepositoryEntry, 'path' | 'type'>>,
   logicalPath: IRepositoryPath,
 ): void => {
   const segments = logicalPath.slice(1).split('/');
@@ -202,7 +203,7 @@ const materializeFilesystemRepositorySnapshot = async (
     process.platform === 'win32' ? 'junction' : 'dir',
   );
 
-  const entriesByPath = new Map<IRepositoryPath, IRepositoryEntry>();
+  const entriesByPath = new Map<IRepositoryPath, Pick<IRepositoryEntry, 'path' | 'type'>>();
 
   for (const entry of canonicalFixture.entries) {
     if (!isCaseDistinct && entry.path === lowerCaseEntry.path) {
@@ -230,7 +231,11 @@ const materializeFilesystemRepositorySnapshot = async (
 
   return Object.freeze({
     casePaths,
-    expectedEntries: Object.freeze([...entriesByPath.values()]),
+    expectedEntries: Object.freeze(
+      [...entriesByPath.values()].sort((left, right) =>
+        compareRepositoryPaths(left.path, right.path),
+      ),
+    ),
     fileBytes: new Uint8Array(fileEntry.bytes),
     rootDirectory,
     unicodePath: actualUnicodePath,

@@ -11,15 +11,19 @@ export interface IFilesystemRepositoryDirectorySelection {
   readonly kind: 'directory';
 }
 
-// explicit version 1 filesystem selection strategies
+// explicit filesystem selection strategies
 export type IFilesystemRepositorySelection =
   IFilesystemRepositoryPathSelection | IFilesystemRepositoryDirectorySelection;
 
 // independent resource limits enforced by the filesystem reader
 export interface IFilesystemRepositoryResourceLimits {
   readonly maxEntries: number;
-  readonly maxFileBytes: number;
   readonly maxCachedBytes: number;
+  readonly maxConcurrentOperations: number;
+  readonly maxDirectoryEntries: number;
+  readonly maxPageEntries: number;
+  readonly maxQueuedOperations: number;
+  readonly maxReadBytes: number;
 }
 
 // caller-owned configuration for one filesystem reader snapshot

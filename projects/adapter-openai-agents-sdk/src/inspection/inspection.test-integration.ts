@@ -64,7 +64,7 @@ const createEntries = (
 ];
 
 const inspect = async (replacements: Readonly<Record<string, IFixtureReplacement>> = {}) =>
-  createCore({ adapters: [openAiAgentsSdkAdapter] }).inspectProject({
+  createCore({ adapters: [openAiAgentsSdkAdapter] }).validateProject({
     repository: createMemoryRepositoryReader(createEntries(replacements)),
   });
 
@@ -93,11 +93,11 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
     expect(result.diagnostics).toStrictEqual([]);
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
-    expect(result.project).not.toBeNull();
+    expect(result.summary).not.toBeNull();
   });
 
   test('produces deterministic evidence for reversed entries and concurrent inspections', async () => {
-    const reversed = await createCore({ adapters: [openAiAgentsSdkAdapter] }).inspectProject({
+    const reversed = await createCore({ adapters: [openAiAgentsSdkAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),
     });
     const concurrent = await Promise.all([inspect(), inspect(), inspect(), inspect()]);
@@ -382,7 +382,7 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
       'agents:\n',
       'agents:\n  billing-clone:\n    runtime:\n      id: openai-agents-sdk\n    bindings:\n      runtimeAgent:\n        path: /src/agents.ts\n        symbol: billingAgent\n',
     );
-    const result = await createCore({ adapters: [openAiAgentsSdkAdapter] }).inspectProject({
+    const result = await createCore({ adapters: [openAiAgentsSdkAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([
         ...createEntries({ '/moldea/moldea.yaml': ambiguousManifest }),
         {
@@ -432,7 +432,7 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
         type: 'file',
       },
     ]);
-    const result = await createCore({ adapters: [openAiAgentsSdkAdapter] }).inspectProject({
+    const result = await createCore({ adapters: [openAiAgentsSdkAdapter] }).validateProject({
       repository,
     });
 
@@ -446,7 +446,7 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
     controller.abort(new Error('test cancellation'));
 
     await expect(
-      createCore({ adapters: [openAiAgentsSdkAdapter] }).inspectProject({
+      createCore({ adapters: [openAiAgentsSdkAdapter] }).validateProject({
         repository: createMemoryRepositoryReader(createEntries()),
         signal: controller.signal,
       }),

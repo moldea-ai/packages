@@ -5,6 +5,7 @@ import { expectToThrowCode } from 'web-utils-kit';
 import { RepositoryPathException } from './exceptions.js';
 import {
   REPOSITORY_ROOT,
+  compareRepositoryPaths,
   isRepositoryPath,
   parseRepositoryPath,
   type IRepositoryPath,
@@ -76,6 +77,12 @@ describe('repository logical paths', () => {
 
     expect(composed).not.toBe(decomposed);
     expect(composed.normalize('NFD')).toBe(decomposed);
+  });
+
+  test('keeps directory descendants contiguous in deterministic traversal order', () => {
+    const paths = ['/a-', '/a/z', '/a', '/b'].map(parseRepositoryPath);
+
+    expect(paths.sort(compareRepositoryPaths)).toStrictEqual(['/a', '/a/z', '/a-', '/b']);
   });
 
   test('uses a safe generic exception that does not expose rejected input', () => {

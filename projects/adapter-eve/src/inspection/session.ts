@@ -1,5 +1,9 @@
 import { createInspectionSession } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterContext } from '@moldea.ai/core/adapter';
+import {
+  iterateRuntimeAdapterEntries,
+  readRuntimeAdapterFile,
+  type IRuntimeAdapterContext,
+} from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 import type { IEveAgentRootIndex, IEveInspectionSession } from '../contracts/index.js';
@@ -17,7 +21,11 @@ export const createEveInspectionSession = (
     getEntry: (path, signal) =>
       context.repository.getEntry(path, signal === undefined ? undefined : { signal }),
     readFile: (path, signal) =>
-      context.repository.readFile(path, signal === undefined ? undefined : { signal }),
+      readRuntimeAdapterFile(
+        context.repository,
+        path,
+        signal === undefined ? undefined : { signal },
+      ),
     ...(context.signal === undefined ? {} : { signal: context.signal }),
   });
   const rootCache = new Map<IRepositoryPath, Promise<IEveAgentRootIndex>>();
@@ -33,7 +41,7 @@ export const createEveInspectionSession = (
     const indexed = (async (): Promise<IEveAgentRootIndex> => {
       const entries: IRepositoryEntry[] = [];
 
-      for await (const entry of context.repository.listEntries({
+      for await (const entry of iterateRuntimeAdapterEntries(context.repository, {
         prefix: path,
         ...(context.signal === undefined ? {} : { signal: context.signal }),
       })) {

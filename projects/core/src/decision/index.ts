@@ -33,7 +33,7 @@ import { parseStrictYaml } from '../yaml/index.js';
 export const parseDecisionDocument = async (
   input: ITextDocumentInput,
   options: ICoreOptionsSnapshot,
-  operation: Extract<ICoreOperation, 'parse-decision' | 'inspect-project'> = 'parse-decision',
+  operation: Extract<ICoreOperation, 'parse-decision' | 'validate-project'> = 'parse-decision',
 ): Promise<IDecisionParseResult> => {
   options = createCoreOperationOptionsSnapshot(options);
   const normalized = normalizeTextDocument(input, options.limits, operation);

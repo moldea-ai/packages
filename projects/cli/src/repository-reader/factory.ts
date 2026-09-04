@@ -48,8 +48,10 @@ export const createWorkingTreeRepositoryReaderFactory =
     const filesystemReader = await filesystemReaderFactory({
       limits: Object.freeze({
         maxCachedBytes: input.resourceLimits.maxTotalBytes,
+        maxDirectoryEntries: input.resourceLimits.maxEntries,
         maxEntries: input.resourceLimits.maxEntries,
-        maxFileBytes: input.resourceLimits.maxFileBytes,
+        maxPageEntries: Math.min(4096, input.resourceLimits.maxEntries),
+        maxReadBytes: input.resourceLimits.maxFileBytes,
       }),
       rootDirectory: input.repositoryRoot,
       selection: Object.freeze({ kind: 'paths', paths: selectedPaths }),

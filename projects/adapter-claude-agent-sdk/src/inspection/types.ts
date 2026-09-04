@@ -1,4 +1,4 @@
-import type { IIndexedAgent } from '@moldea.ai/core';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 
 import type {
   IClaudeAgentSdkAgentDefinition,
@@ -7,8 +7,10 @@ import type {
 } from '../contracts/index.js';
 
 // scoped query-wrapper agent selected during the first inspection pass
+export type IClaudeAgentSdkScopedAgent = Pick<IIndexedAgent, 'declaration' | 'id'>;
+
 export interface IClaudeAgentSdkInspectedQueryAgent {
-  readonly agent: IIndexedAgent;
+  readonly agent: IClaudeAgentSdkScopedAgent;
   readonly analysis: IClaudeAgentSdkSourceAnalysis;
   readonly kind: 'query-wrapper';
   readonly wrapper: IClaudeAgentSdkQueryWrapper;
@@ -16,7 +18,7 @@ export interface IClaudeAgentSdkInspectedQueryAgent {
 
 // scoped programmatic subagent selected during the first inspection pass
 export interface IClaudeAgentSdkInspectedDefinitionAgent {
-  readonly agent: IIndexedAgent;
+  readonly agent: IClaudeAgentSdkScopedAgent;
   readonly analysis: IClaudeAgentSdkSourceAnalysis;
   readonly definition: IClaudeAgentSdkAgentDefinition;
   readonly kind: 'programmatic-agent-definition';

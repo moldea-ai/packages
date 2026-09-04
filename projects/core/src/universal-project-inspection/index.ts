@@ -72,7 +72,7 @@ export const inspectUniversalProject = async (
 ): Promise<IUniversalProjectInspectionResult> => {
   options = createCoreOperationOptionsSnapshot(options);
   const { session, signal } = context;
-  const collector = createCoreDiagnosticCollector(options.limits, 'inspect-project');
+  const collector = createCoreDiagnosticCollector(options.limits, 'validate-project');
   const operationOptions = signal === undefined ? undefined : { signal };
   const moldeaRoot = await session.reader.getEntry(MOLDEA_ROOT, operationOptions);
   let manifestEntry: IRepositoryEntry | null = null;
@@ -86,11 +86,11 @@ export const inspectUniversalProject = async (
     manifestEntry = await session.reader.getEntry(MANIFEST_PATH, operationOptions);
 
     if (manifestEntry?.type === 'file') {
-      const content = await session.reader.readFile(MANIFEST_PATH, operationOptions);
+      const content = await session.reader.readCompleteFile(MANIFEST_PATH, operationOptions);
       const parsedManifest = await inspectManifestDocument(
         { content, path: MANIFEST_PATH },
         options,
-        'inspect-project',
+        'validate-project',
       );
       formatVersion = parsedManifest.formatVersion;
       runtimeLocations = parsedManifest.runtimeLocations;
