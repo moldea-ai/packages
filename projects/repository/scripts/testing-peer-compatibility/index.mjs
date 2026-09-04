@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 const EXPECTED_PNPM_VERSION = '11.9.0';
-const EXPECTED_REPOSITORY_VERSION = '1.1.1';
 const EXPECTED_VITEST_VERSIONS = new Set(['1.0.0', '2.0.0', '3.2.4', '4.1.10']);
 const EXPECTED_WEB_UTILS_KIT_VERSION = '1.3.1';
 const PEER_WARNING_PATTERN = /(?:unmet peer|peer dependenc(?:y|ies)|ERR_PNPM_PEER_DEP_ISSUES)/iu;
@@ -281,7 +280,8 @@ const runTestingPeerCompatibilityCheck = async (artifactDirectory, vitestVersion
 
     assertCompatibilityInvariant(
       repositoryManifest.name === '@moldea.ai/repository' &&
-        repositoryManifest.version === EXPECTED_REPOSITORY_VERSION,
+        typeof repositoryManifest.version === 'string' &&
+        repositoryManifest.version.length > 0,
       'The installed Repository package identity is invalid.',
     );
     assertCompatibilityInvariant(

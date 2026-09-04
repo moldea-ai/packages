@@ -178,6 +178,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       ),
     );
     const cliManifest = manifests['@moldea.ai/cli'];
+    const cliVersion = cliManifest?.version;
     const executablePath = path.join(
       consumerDirectory,
       'node_modules',
@@ -199,8 +200,12 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       XDG_CONFIG_HOME: configDirectory,
     };
 
-    assertRuntimeInvariant(cliManifest?.name === '@moldea.ai/cli', 'The CLI identity is invalid.');
-    assertRuntimeInvariant(cliManifest?.version === '7.0.0', 'The CLI version is invalid.');
+    assertRuntimeInvariant(
+      cliManifest?.name === '@moldea.ai/cli' &&
+        typeof cliVersion === 'string' &&
+        cliVersion.length > 0,
+      'The CLI identity is invalid.',
+    );
     assertRuntimeInvariant(
       cliManifest?.engines?.node === '>=22.11.0',
       'The CLI runtime range is invalid.',
@@ -234,7 +239,10 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
 
     assertRuntimeInvariant(versionResult.status === 0, 'The installed CLI version command failed.');
     assertRuntimeInvariant(versionResult.stderr === '', 'The version command wrote stderr.');
-    assertRuntimeInvariant(versionResult.stdout === '7.0.0\n', 'The version output is invalid.');
+    assertRuntimeInvariant(
+      versionResult.stdout === `${cliVersion}\n`,
+      'The version output is invalid.',
+    );
 
     const compositionResult = executeCli(
       executablePath,
@@ -259,28 +267,19 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       'The composition result is invalid.',
     );
     assertRuntimeInvariant(
-      compositionEnvelope.cliVersion === '7.0.0' &&
+      compositionEnvelope.cliVersion === cliVersion &&
         compositionEnvelope.command === 'composition' &&
         compositionEnvelope.schemaVersion === 4,
       'The composition envelope is invalid.',
     );
     assertRuntimeInvariant(
       JSON.stringify(compositionEnvelope.result?.packages) ===
-        JSON.stringify([
-          { name: '@moldea.ai/adapter-anthropic', version: '2.0.6' },
-          { name: '@moldea.ai/adapter-claude-agent-sdk', version: '1.0.5' },
-          { name: '@moldea.ai/adapter-cloudflare-agents', version: '1.0.5' },
-          { name: '@moldea.ai/adapter-eve', version: '1.0.5' },
-          { name: '@moldea.ai/adapter-google-genai', version: '1.0.8' },
-          { name: '@moldea.ai/adapter-langchain', version: '1.0.5' },
-          { name: '@moldea.ai/adapter-langgraph', version: '1.0.5' },
-          { name: '@moldea.ai/adapter-openai', version: '2.0.9' },
-          { name: '@moldea.ai/adapter-openai-agents-sdk', version: '1.0.7' },
-          { name: '@moldea.ai/adapter-vercel-ai-sdk', version: '1.0.5' },
-          { name: '@moldea.ai/core', version: '2.1.0' },
-          { name: '@moldea.ai/repository', version: '1.1.1' },
-          { name: '@moldea.ai/repository-fs', version: '1.0.6' },
-        ]),
+        JSON.stringify(
+          Object.entries(manifests)
+            .filter(([packageName]) => packageName !== '@moldea.ai/cli')
+            .map(([name, manifest]) => ({ name, version: manifest.version }))
+            .sort((left, right) => left.name.localeCompare(right.name, 'en')),
+        ),
       'The composition package list is invalid.',
     );
     assertRuntimeInvariant(

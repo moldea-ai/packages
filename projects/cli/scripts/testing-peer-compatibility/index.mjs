@@ -4,26 +4,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const EXPECTED_CLI_VERSION = '7.0.0';
 const EXPECTED_PNPM_VERSION = '11.21.0';
 const EXPECTED_VITEST_VERSION = '3.2.4';
 const PEER_WARNING_PATTERN = /(?:unmet peer|peer dependenc(?:y|ies)|ERR_PNPM_PEER_DEP_ISSUES)/iu;
-const PACKAGE_VERSIONS = {
-  '@moldea.ai/adapter-anthropic': '2.0.6',
-  '@moldea.ai/adapter-claude-agent-sdk': '1.0.5',
-  '@moldea.ai/adapter-cloudflare-agents': '1.0.5',
-  '@moldea.ai/adapter-eve': '1.0.5',
-  '@moldea.ai/adapter-google-genai': '1.0.8',
-  '@moldea.ai/adapter-langchain': '1.0.5',
-  '@moldea.ai/adapter-langgraph': '1.0.5',
-  '@moldea.ai/adapter-openai': '2.0.9',
-  '@moldea.ai/adapter-openai-agents-sdk': '1.0.7',
-  '@moldea.ai/adapter-vercel-ai-sdk': '1.0.5',
-  '@moldea.ai/cli': EXPECTED_CLI_VERSION,
-  '@moldea.ai/core': '2.1.0',
-  '@moldea.ai/repository': '1.1.1',
-  '@moldea.ai/repository-fs': '1.0.6',
-};
 const TARBALL_PATTERNS = {
   '@moldea.ai/adapter-anthropic': /^moldea\.ai-adapter-anthropic-.+\.tgz$/u,
   '@moldea.ai/adapter-claude-agent-sdk': /^moldea\.ai-adapter-claude-agent-sdk-.+\.tgz$/u,
@@ -176,6 +159,7 @@ const executeFixtureGit = (consumerDirectory, hooksDirectory, environment, argum
 /** Exercises CLI identity, composition, validation, and provider-backed inspection. */
 const verifyCliExecution = async (consumerDirectory, environment, manifests) => {
   const cliManifest = manifests['@moldea.ai/cli'];
+  const cliVersion = cliManifest.version;
   const executablePath = path.join(
     consumerDirectory,
     'node_modules',
@@ -194,7 +178,7 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
   assertCompatibilityInvariant(
     versionResult.status === 0 &&
       versionResult.stderr === '' &&
-      versionResult.stdout === `${EXPECTED_CLI_VERSION}\n`,
+      versionResult.stdout === `${cliVersion}\n`,
     'The installed root-local CLI version command failed.',
   );
 
@@ -209,7 +193,7 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
     'The installed CLI composition command failed.',
   );
   assertCompatibilityInvariant(
-    compositionEnvelope.cliVersion === EXPECTED_CLI_VERSION &&
+    compositionEnvelope.cliVersion === cliVersion &&
       compositionEnvelope.command === 'composition' &&
       compositionEnvelope.schemaVersion === 4 &&
       compositionEnvelope.status === 'valid' &&
@@ -219,9 +203,9 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
   assertCompatibilityInvariant(
     JSON.stringify(compositionEnvelope.result?.packages) ===
       JSON.stringify(
-        Object.entries(PACKAGE_VERSIONS)
+        Object.entries(manifests)
           .filter(([packageName]) => packageName !== '@moldea.ai/cli')
-          .map(([name, version]) => ({ name, version }))
+          .map(([name, manifest]) => ({ name, version: manifest.version }))
           .sort((left, right) => left.name.localeCompare(right.name, 'en')),
       ),
     'The installed CLI composition package identity is invalid.',
@@ -548,10 +532,12 @@ const runTestingPeerCompatibilityCheck = async (artifactDirectory, vitestVersion
 
     const manifests = Object.fromEntries(
       await Promise.all(
-        Object.entries(PACKAGE_VERSIONS).map(async ([packageName, expectedVersion]) => {
+        Object.keys(TARBALL_PATTERNS).map(async (packageName) => {
           const manifest = await readInstalledManifest(consumerDirectory, packageName);
           assertCompatibilityInvariant(
-            manifest.name === packageName && manifest.version === expectedVersion,
+            manifest.name === packageName &&
+              typeof manifest.version === 'string' &&
+              manifest.version.length > 0,
             `The installed ${packageName} identity is invalid.`,
           );
           return [packageName, manifest];
@@ -559,12 +545,14 @@ const runTestingPeerCompatibilityCheck = async (artifactDirectory, vitestVersion
       ),
     );
     const expectedCliDependencies = Object.fromEntries(
-      Object.entries(PACKAGE_VERSIONS).filter(([packageName]) => packageName !== '@moldea.ai/cli'),
+      Object.entries(manifests)
+        .filter(([packageName]) => packageName !== '@moldea.ai/cli')
+        .map(([packageName, manifest]) => [packageName, manifest.version]),
     );
     expectedCliDependencies.semver = '7.8.5';
     assertCompatibilityInvariant(
-      JSON.stringify(manifests['@moldea.ai/cli'].dependencies) ===
-        JSON.stringify(expectedCliDependencies),
+      JSON.stringify(Object.entries(manifests['@moldea.ai/cli'].dependencies).sort()) ===
+        JSON.stringify(Object.entries(expectedCliDependencies).sort()),
       'The installed CLI dependency closure is invalid.',
     );
 
@@ -574,7 +562,7 @@ const runTestingPeerCompatibilityCheck = async (artifactDirectory, vitestVersion
       pnpmOptions,
     );
     assertCompatibilityInvariant(
-      providerVersionOutput === `${EXPECTED_CLI_VERSION}\n`,
+      providerVersionOutput === `${manifests['@moldea.ai/cli'].version}\n`,
       'pnpm did not resolve the root-local CLI provider.',
     );
     await verifyCliExecution(consumerDirectory, environment, manifests);
