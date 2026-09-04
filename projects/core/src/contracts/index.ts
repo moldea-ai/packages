@@ -10,6 +10,7 @@ import type {
   IRepositoryFormatVersion,
   IUnresolvedRequirementManifestEntry,
 } from '../format/index.js';
+import type { IManifestScopeInput, IManifestScopeResult } from '../scope-matching/types.js';
 
 // immutable operation budgets and Core construction inputs
 export interface ICoreResourceLimits {
@@ -184,6 +185,17 @@ export interface ICore {
    * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
    */
   parseManifest(input: ITextDocumentInput): Promise<IManifestParseResult>;
+
+  /**
+   * Matches changed repository paths against one complete version 1 manifest document.
+   * @param input The canonical manifest document and repository-logical changed paths.
+   * @returns A promise resolving to frozen content-free relationship matches and stable metadata.
+   * @throws
+   * - INVALID_REPOSITORY_PATH: The manifest path or a changed repository path is invalid.
+   * - INVALID_ARGUMENT: The Core operation received an invalid argument.
+   * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+   */
+  matchManifestScope(input: IManifestScopeInput): Promise<IManifestScopeResult>;
 
   /**
    * Parses and validates one complete decision document.

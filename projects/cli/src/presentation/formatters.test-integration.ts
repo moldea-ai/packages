@@ -10,12 +10,7 @@ import {
 } from '@moldea.ai/repository/memory';
 
 import { executeMoldeaCliCoreInspection } from '../core-composition/index.js';
-
-import {
-  formatMoldeaCliHumanInspectResult,
-  formatMoldeaCliJsonInspectResult,
-} from './formatters.js';
-import { createMoldeaCliInspectResult } from './transformers.js';
+import { createMoldeaCliInspectExecutionResult } from '../cli-execution/results.js';
 
 // repository-wide Core fixture shape used by the CLI presentation boundary
 interface IProjectIndexFixture {
@@ -79,40 +74,29 @@ const inspectCompleteProject = async (): Promise<IProjectInspectionResult> => {
 };
 
 describe('CLI inspection presentation through Core and the memory repository reader', () => {
-  test('summarizes counts without content and serializes the complete Core result', async () => {
+  test('emits bounded metadata without canonical bodies or adapter detail payloads', async () => {
     const inspection = await inspectCompleteProject();
-    const result = createMoldeaCliInspectResult(inspection);
-    const humanOutput = formatMoldeaCliHumanInspectResult(result);
-    const jsonOutput = formatMoldeaCliJsonInspectResult(result, '1.0.0');
-    const envelope = JSON.parse(jsonOutput) as {
-      readonly command: string;
-      readonly result: { readonly inspection: unknown; readonly source: unknown };
-      readonly status: string;
+    const execution = createMoldeaCliInspectExecutionResult(
+      inspection,
+      '6.0.0',
+      true,
+      null,
+      65_536,
+    );
+    const envelope = JSON.parse(execution.stdout) as {
+      readonly result: {
+        readonly counts: Readonly<Record<string, number>>;
+        readonly page: { readonly records: readonly { readonly kind: string }[] };
+      };
+      readonly schemaVersion: number;
     };
 
-    expect(humanOutput).toBe(
-      `The moldea project is valid.
-Repository format: 1
-Context assets: 2
-Decision: 1
-Runtime-guidance asset: 1
-Agents: 2
-Mirror: 1
-Adapter evidence items: 0
-`,
-    );
-    expect(humanOutput).not.toContain('Universal project.');
-    expect(envelope).toStrictEqual({
-      cliVersion: '1.0.0',
-      command: 'inspect',
-      error: null,
-      result: {
-        inspection: JSON.parse(JSON.stringify(inspection)) as unknown,
-        source: { kind: 'git-working-tree' },
-      },
-      schemaVersion: 2,
-      status: 'valid',
-    });
-    expect(jsonOutput).toContain('Universal project.');
+    expect(execution.exitCode).toBe(0);
+    expect(Buffer.byteLength(execution.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
+    expect(envelope.schemaVersion).toBe(3);
+    expect(envelope.result.counts).toMatchObject({ agents: 2, context: 2, decisions: 1 });
+    expect(envelope.result.page.records.map(({ kind }) => kind)).toContain('agent');
+    expect(execution.stdout).not.toContain('Universal project.');
+    expect(execution.stdout).not.toContain('"content"');
   });
 });

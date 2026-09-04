@@ -79,6 +79,8 @@ Options:
   --max-manifest-bytes <integer>     Override the manifest byte limit.
   --max-diagnostics <integer>        Override the diagnostic count limit.
   --max-evidence <integer>           Override the adapter evidence count limit.
+  --max-output-bytes <integer>       Bound JSON output from 4096 to 1048576 bytes.
+  --cursor <opaque-cursor>           Continue a prior JSON result page.
   --help                             Show this help.
 `,
     ],
@@ -86,7 +88,7 @@ Options:
       'inspect',
       `Usage: moldea inspect [options]
 
-Inspect the current moldea project.
+Inspect content-free metadata for the current moldea project.
 
 Options:
   --repository <path>                Select a Git working-tree directory.
@@ -98,6 +100,8 @@ Options:
   --max-manifest-bytes <integer>     Override the manifest byte limit.
   --max-diagnostics <integer>        Override the diagnostic count limit.
   --max-evidence <integer>           Override the adapter evidence count limit.
+  --max-output-bytes <integer>       Bound JSON output from 4096 to 1048576 bytes.
+  --cursor <opaque-cursor>           Continue a prior JSON result page.
   --help                             Show this help.
 `,
     ],
@@ -166,7 +170,7 @@ Options:
       exitCode: 2,
       stderr: '',
       stdout:
-        '{"cliVersion":"3.3.7","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n',
+        '{"cliVersion":"3.3.7","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":3,"status":"error"}\n',
     });
   });
 
@@ -190,8 +194,12 @@ Options:
       invocation: {
         command: 'validate',
         options: {
+          cursor: null,
           isColorDisabled: false,
           isJson: true,
+          maxOutputBytes: 65_536,
+          path: null,
+          pathsInput: 'none',
           repositoryDirectory: null,
           resourceLimits: {
             maxDiagnostics: 10_000,
@@ -239,7 +247,7 @@ Options:
       exitCode: 3,
       stderr: '',
       stdout:
-        '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n',
+        '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":3,"status":"error"}\n',
     });
   });
 });

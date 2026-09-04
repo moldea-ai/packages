@@ -51,7 +51,7 @@ const executeFixtureGit = (consumerDirectory, hooksDirectory, environment, argum
       '-c',
       'init.defaultBranch=main',
       '-c',
-      'user.name=Moldea Runtime Test',
+      'user.name=moldea runtime test',
       '-c',
       'user.email=moldea-runtime@example.invalid',
       ...arguments_,
@@ -200,7 +200,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     };
 
     assertRuntimeInvariant(cliManifest?.name === '@moldea.ai/cli', 'The CLI identity is invalid.');
-    assertRuntimeInvariant(cliManifest?.version === '5.0.3', 'The CLI version is invalid.');
+    assertRuntimeInvariant(cliManifest?.version === '6.0.0', 'The CLI version is invalid.');
     assertRuntimeInvariant(
       cliManifest?.engines?.node === '>=22.11.0',
       'The CLI runtime range is invalid.',
@@ -234,7 +234,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
 
     assertRuntimeInvariant(versionResult.status === 0, 'The installed CLI version command failed.');
     assertRuntimeInvariant(versionResult.stderr === '', 'The version command wrote stderr.');
-    assertRuntimeInvariant(versionResult.stdout === '5.0.3\n', 'The version output is invalid.');
+    assertRuntimeInvariant(versionResult.stdout === '6.0.0\n', 'The version output is invalid.');
 
     const compositionResult = executeCli(
       executablePath,
@@ -259,9 +259,9 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       'The composition result is invalid.',
     );
     assertRuntimeInvariant(
-      compositionEnvelope.cliVersion === '5.0.3' &&
+      compositionEnvelope.cliVersion === '6.0.0' &&
         compositionEnvelope.command === 'composition' &&
-        compositionEnvelope.schemaVersion === 2,
+        compositionEnvelope.schemaVersion === 3,
       'The composition envelope is invalid.',
     );
     assertRuntimeInvariant(
@@ -277,7 +277,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
           { name: '@moldea.ai/adapter-openai', version: '2.0.9' },
           { name: '@moldea.ai/adapter-openai-agents-sdk', version: '1.0.7' },
           { name: '@moldea.ai/adapter-vercel-ai-sdk', version: '1.0.5' },
-          { name: '@moldea.ai/core', version: '2.0.2' },
+          { name: '@moldea.ai/core', version: '2.1.0' },
           { name: '@moldea.ai/repository', version: '1.1.1' },
           { name: '@moldea.ai/repository-fs', version: '1.0.6' },
         ]),
@@ -301,24 +301,6 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
           ].map((id) => ({ id, repositoryFormatVersions: [1] })),
         ),
       'The executable adapter list is invalid.',
-    );
-
-    const removedCompatibilityResult = executeCli(
-      executablePath,
-      ['compatibility', '--json'],
-      consumerDirectory,
-      environment,
-    );
-    const removedCompatibilityEnvelope = JSON.parse(removedCompatibilityResult.stdout);
-    assertRuntimeInvariant(
-      removedCompatibilityResult.status === 2 &&
-        removedCompatibilityResult.stderr === '' &&
-        removedCompatibilityEnvelope.command === null &&
-        removedCompatibilityEnvelope.error?.code === 'INVALID_ARGUMENT' &&
-        removedCompatibilityEnvelope.result === null &&
-        removedCompatibilityEnvelope.schemaVersion === 2 &&
-        removedCompatibilityEnvelope.status === 'error',
-      'The removed compatibility command was not rejected.',
     );
 
     executeFixtureGit(consumerDirectory, hooksDirectory, environment, ['init']);
@@ -400,6 +382,18 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       consumerDirectory,
       environment,
     );
+    const scopeResult = executeCli(
+      executablePath,
+      ['scope', '--path', '/src/agent.ts', '--json'],
+      consumerDirectory,
+      environment,
+    );
+    const contentResult = executeCli(
+      executablePath,
+      ['content', '--path', '/moldea/project.md', '--json'],
+      consumerDirectory,
+      environment,
+    );
     const statusAfter = execFileSync('git', ['status', '--porcelain=v2', '-z'], {
       cwd: consumerDirectory,
       encoding: 'buffer',
@@ -407,6 +401,8 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     });
     const validateEnvelope = JSON.parse(validateResult.stdout);
     const inspectEnvelope = JSON.parse(inspectResult.stdout);
+    const scopeEnvelope = JSON.parse(scopeResult.stdout);
+    const contentEnvelope = JSON.parse(contentResult.stdout);
 
     assertRuntimeInvariant(validateResult.status === 0, 'The installed CLI validation failed.');
     assertRuntimeInvariant(validateResult.stderr === '', 'The validation command wrote stderr.');
@@ -421,25 +417,42 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(inspectResult.status === 0, 'The installed CLI inspection failed.');
     assertRuntimeInvariant(inspectResult.stderr === '', 'The inspection command wrote stderr.');
     assertRuntimeInvariant(
-      inspectEnvelope.result?.inspection?.project?.project?.content === '# Project\n',
-      'Inspection omitted the complete Core result.',
+      inspectEnvelope.schemaVersion === 3 &&
+        inspectEnvelope.result?.project?.project?.path === '/moldea/project.md' &&
+        !inspectResult.stdout.includes('# Project') &&
+        !inspectResult.stdout.includes('"content"'),
+      'Inspection did not preserve the content-free schema 3 contract.',
     );
     assertRuntimeInvariant(
       JSON.stringify(
-        inspectEnvelope.result?.inspection?.evidence?.map(({ kind, source }) => ({
-          kind,
-          source,
-        })),
+        inspectEnvelope.result?.page?.records
+          ?.filter(({ kind }) => kind === 'evidence')
+          .map(({ evidenceKind, source }) => ({ evidenceKind, source })),
       ) ===
         JSON.stringify([
-          { kind: 'language', source: 'claude-agent-sdk' },
-          { kind: 'runtime-package', source: 'claude-agent-sdk' },
-          { kind: 'runtime-pattern', source: 'claude-agent-sdk' },
+          { evidenceKind: 'language', source: 'claude-agent-sdk' },
+          { evidenceKind: 'runtime-package', source: 'claude-agent-sdk' },
+          { evidenceKind: 'runtime-pattern', source: 'claude-agent-sdk' },
         ]),
-      'Inspection omitted the Claude Agent SDK adapter evidence.',
+      'Inspection omitted the Claude Agent SDK evidence summaries.',
     );
     assertRuntimeInvariant(
-      !`${compositionResult.stdout}${validateResult.stdout}${inspectResult.stdout}`.includes(
+      scopeResult.status === 0 &&
+        scopeResult.stderr === '' &&
+        scopeEnvelope.schemaVersion === 3 &&
+        scopeEnvelope.result?.relevant === true,
+      'The installed CLI scope command failed.',
+    );
+    assertRuntimeInvariant(
+      contentResult.status === 0 &&
+        contentResult.stderr === '' &&
+        contentEnvelope.schemaVersion === 3 &&
+        contentEnvelope.result?.asset?.path === '/moldea/project.md' &&
+        contentEnvelope.result?.chunk?.content === '# Project\n',
+      'The installed CLI content command failed.',
+    );
+    assertRuntimeInvariant(
+      !`${compositionResult.stdout}${validateResult.stdout}${inspectResult.stdout}${scopeResult.stdout}${contentResult.stdout}`.includes(
         '\u001b[',
       ),
       'JSON output contains ANSI control sequences.',

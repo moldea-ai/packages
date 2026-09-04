@@ -8,17 +8,29 @@ export {
 
 // types
 export type {
+  IMoldeaCliAgentRecord,
+  IMoldeaCliAssetMetadata,
+  IMoldeaCliContextRecord,
+  IMoldeaCliDecisionRecord,
+  IMoldeaCliDiagnosticRecord,
   IMoldeaCliError,
   IMoldeaCliErrorCode,
   IMoldeaCliErrorSource,
+  IMoldeaCliEvidenceRecord,
   IMoldeaCliGitErrorCode,
+  IMoldeaCliInspectCounts,
+  IMoldeaCliInspectProjection,
+  IMoldeaCliInspectProjectMetadata,
+  IMoldeaCliInspectRecord,
   IMoldeaCliInspectResult,
-  IMoldeaCliJsonCompositionEnvelope,
-  IMoldeaCliJsonErrorEnvelope,
-  IMoldeaCliJsonInspectEnvelope,
-  IMoldeaCliJsonValidateEnvelope,
+  IMoldeaCliMirrorRecord,
   IMoldeaCliOwnedErrorCode,
+  IMoldeaCliRelationshipRecord,
+  IMoldeaCliRequirementRecord,
+  IMoldeaCliRuntimeRecord,
   IMoldeaCliSource,
+  IMoldeaCliUnresolvedRecord,
+  IMoldeaCliValidateProjection,
   IMoldeaCliValidateResult,
 } from './types.js';
 
@@ -29,14 +41,23 @@ export { createMoldeaCliOwnedError } from './errors.js';
 export {
   formatMoldeaCliHelp,
   formatMoldeaCliHumanCompositionResult,
+  formatMoldeaCliHumanContentResult,
   formatMoldeaCliHumanError,
   formatMoldeaCliHumanInspectResult,
+  formatMoldeaCliHumanScopeResult,
   formatMoldeaCliHumanValidateResult,
-  formatMoldeaCliJsonError,
   formatMoldeaCliJsonCompositionResult,
+  formatMoldeaCliJsonContentResult,
+  formatMoldeaCliJsonError,
   formatMoldeaCliJsonInspectResult,
+  formatMoldeaCliJsonResult,
+  formatMoldeaCliJsonScopeResult,
   formatMoldeaCliJsonValidateResult,
 } from './formatters.js';
 
 // transformers
-export { createMoldeaCliInspectResult, createMoldeaCliValidateResult } from './transformers.js';
+export {
+  createMoldeaCliDiagnosticRecord,
+  createMoldeaCliInspectProjection,
+  createMoldeaCliValidateProjection,
+} from './transformers.js';

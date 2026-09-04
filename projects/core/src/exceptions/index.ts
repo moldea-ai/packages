@@ -15,6 +15,7 @@ export type ICoreOperation =
   | 'normalize-text'
   | 'calculate-content-digest'
   | 'parse-manifest'
+  | 'match-manifest-scope'
   | 'parse-decision'
   | 'inspect-project'
   | 'validate-adapter';

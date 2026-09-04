@@ -7,7 +7,7 @@ order: 0
 
 # Deterministic repository interpretation
 
-`@moldea.ai/core` is the source-neutral interpretation layer for the `moldea` repository format. It accepts caller-supplied text or an `IRepositoryReader`, validates the universal repository contract, creates an immutable project index, and invokes explicitly configured runtime adapters only after universal validation succeeds.
+`@moldea.ai/core` is the source-neutral interpretation layer for the `moldea` repository format. It accepts caller-supplied text or an `IRepositoryReader`, validates the universal repository contract, matches changed paths against declared relationships, creates an immutable project index, and invokes explicitly configured runtime adapters only after universal validation succeeds.
 
 Core never discovers or reads a filesystem, Git provider, or network on its own. This boundary keeps repository acquisition in reader packages and local composition in the CLI.
 
@@ -19,6 +19,7 @@ Core is the deterministic reference implementation of Repository Format version 
 
 - strict text normalization and normalized SHA-256 content digests
 - all-or-nothing Repository Format version 1 manifest and decision parsing
+- content-free changed-path matching for exact relationships and simple globs
 - canonical repository discovery and complete project inspection
 - immutable project indexes and deterministic diagnostic ordering
 - built-in `custom` runtime validation

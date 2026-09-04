@@ -6,6 +6,8 @@ export type {
   IMoldeaCliCommandExecutionInput,
   IMoldeaCliCommandExecutor,
   IMoldeaCliExecutionResult,
+  IMoldeaCliStdinReader,
+  IMoldeaCliStdinReadResult,
   IRunMoldeaCliOptions,
 } from './types.js';
 

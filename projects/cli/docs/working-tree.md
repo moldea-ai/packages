@@ -11,7 +11,7 @@ Git determines the absolute top-level working-tree root for the selected startin
 
 ## Inventory
 
-The CLI reads NUL-delimited tracked index records plus non-ignored untracked records using fixed, non-interactive Git commands. It validates modes, stages, object identifiers, UTF-8 paths, nested ownership, and exact logical-path grammar before constructing the reader.
+`validate` and `inspect` read NUL-delimited tracked index records plus non-ignored untracked records using fixed, non-interactive Git commands. `scope` applies an exact top-level literal pathspec for `/moldea/moldea.yaml`; `content` applies one for the already validated canonical path. Selected commands therefore avoid whole-repository inventory cost. Every mode validates modes, stages, object identifiers, UTF-8 paths, ownership, and exact logical-path grammar before constructing the reader.
 
 Submodule roots and their descendants are excluded. Untracked content owned by a nested repository is excluded. Missing candidates are omitted, while contradictory index stages, tracked/untracked collisions, unsupported types, unsafe paths, or ambiguous ownership fail atomically.
 
@@ -23,6 +23,6 @@ The CLI classifies effective `filter`, `working-tree-encoding`, and `ident` attr
 
 ## Stabilization
 
-The selected working-tree, worktree Git directory, and common Git directory are pinned by host identity. Each attempt compares complete normalized inventories around exact-path reader construction and runs Core only when they agree. Snapshot-related failures retry the whole provisional operation up to three total attempts; no provisional bytes or results are reused.
+The selected working tree, worktree Git directory, and common Git directory are pinned by host identity. Each attempt compares the applicable complete or path-selected normalized inventories around exact-path reader construction and runs its operation only when they agree. Snapshot-related failures retry the whole provisional operation up to three total attempts; no provisional bytes or results are reused.
 
-An unstable tree produces retryable `cli:WORKING_TREE_UNSTABLE`. The CLI never exposes selected host paths, raw process errors, Git stderr, or rejected values in its public errors.
+An unstable tree produces retryable `cli:WORKING_TREE_UNSTABLE`. Commands use observational Git operations only and preserve the worktree, real index, refs, `HEAD`, configuration, submodule state, and object-database state. The CLI never exposes selected host paths, raw process errors, Git stderr, or rejected values in its public errors.

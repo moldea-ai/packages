@@ -9,10 +9,40 @@ import {
 } from '@moldea.ai/repository';
 
 import { GitContentTransformUnsupportedException } from '../repository-content-transformation-guard/index.js';
+import { MoldeaCliOutputPageException } from '../output-page/index.js';
+import { MoldeaCliProjectContentException } from '../project-content/index.js';
+import { MoldeaCliProjectScopeException } from '../project-scope/index.js';
 
 import { mapMoldeaCliOperationalError } from './mapper.js';
 
 describe('mapMoldeaCliOperationalError', () => {
+  test.each([
+    [
+      new MoldeaCliOutputPageException('OUTPUT_BUDGET_TOO_SMALL'),
+      'OUTPUT_BUDGET_TOO_SMALL',
+      'The output byte budget cannot contain the next complete result.',
+    ],
+    [
+      new MoldeaCliProjectContentException('CONTENT_PATH_INVALID'),
+      'CONTENT_PATH_INVALID',
+      'The content path must identify one canonical moldea text asset.',
+    ],
+    [
+      new MoldeaCliProjectScopeException('PATH_INPUT_INVALID'),
+      'PATH_INPUT_INVALID',
+      'The NUL-delimited changed-path input is invalid.',
+    ],
+  ] as const)('maps CLI transport failure %s', (error, code, message) => {
+    expect(mapMoldeaCliOperationalError(error)).toStrictEqual({
+      code,
+      details: {},
+      message,
+      path: null,
+      retryable: false,
+      source: 'cli',
+    });
+  });
+
   test('maps the CLI-owned guarded-read marker to its Git error and logical path', () => {
     const path = parseRepositoryPath('/assets/model.bin');
     const mapped = mapMoldeaCliOperationalError(new GitContentTransformUnsupportedException(path));

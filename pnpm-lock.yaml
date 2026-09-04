@@ -483,7 +483,7 @@ importers:
         specifier: workspace:1.0.5
         version: link:../adapter-vercel-ai-sdk
       '@moldea.ai/core':
-        specifier: workspace:2.0.2
+        specifier: workspace:2.1.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:1.1.1

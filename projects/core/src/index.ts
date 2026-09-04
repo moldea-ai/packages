@@ -33,6 +33,20 @@ export type {
   ITextNormalizationResult,
 } from './contracts/index.js';
 
+// manifest scope contracts
+export type {
+  IExactManifestScopeDeclaration,
+  IGlobManifestScopeDeclaration,
+  IManifestScopeCounts,
+  IManifestScopeDeclaration,
+  IManifestScopeInput,
+  IManifestScopeMatch,
+  IManifestScopeOwner,
+  IManifestScopeOwnerKind,
+  IManifestScopeRelationshipField,
+  IManifestScopeResult,
+} from './scope-matching/index.js';
+
 // Core construction
 export { createCore } from './core/index.js';
 

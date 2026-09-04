@@ -37,6 +37,7 @@ const createCoreDouble = (): {
     core: {
       calculateContentDigest: vi.fn<ICore['calculateContentDigest']>(),
       inspectProject,
+      matchManifestScope: vi.fn<ICore['matchManifestScope']>(),
       normalizeText: vi.fn<ICore['normalizeText']>(),
       parseDecision: vi.fn<ICore['parseDecision']>(),
       parseManifest: vi.fn<ICore['parseManifest']>(),

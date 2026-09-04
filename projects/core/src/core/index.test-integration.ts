@@ -58,6 +58,91 @@ describe('Core with the immutable memory repository reader', () => {
     });
   });
 
+  test('matches manifest scope without repository reads, project bodies, or adapter execution', async () => {
+    let adapterExecutions = 0;
+    const manifestContent = [
+      'version: 1',
+      'context:',
+      '  /moldea/project.md:',
+      '    bindings:',
+      '      - path: /src/bound.ts',
+      '        symbol: boundSymbol',
+      '    affectedBy:',
+      '      - /src/feature/**',
+      'agents:',
+      '  reviewer:',
+      '    runtime: { id: openai }',
+      '    affectedBy:',
+      '      - /src/agent.ts',
+      '',
+    ].join('\n');
+    const core = createCore({
+      adapters: [
+        {
+          id: 'openai',
+          inspect: () => {
+            adapterExecutions += 1;
+            return Promise.resolve({ diagnostics: [], evidence: [] });
+          },
+          supportedRepositoryFormatVersions: [1],
+        },
+      ],
+    });
+    const result = await core.matchManifestScope({
+      manifest: {
+        content: manifestContent,
+        path: parseRepositoryPath('/moldea/moldea.yaml'),
+      },
+      paths: ['/unrelated.md', '/src/feature/index.ts', '/src/bound.ts'],
+    });
+
+    expect(result).toMatchObject({
+      counts: {
+        declarations: 3,
+        inputPaths: 3,
+        matchedOwners: 1,
+        matchedPaths: 2,
+        matches: 2,
+      },
+      diagnostics: [],
+      relevant: true,
+      valid: true,
+    });
+    expect(result.manifestDigest).toMatch(/^sha256:[0-9a-f]{64}$/u);
+    expect(result.inputDigest).toMatch(/^sha256:[0-9a-f]{64}$/u);
+    expect(result.matches.map(({ inputPath }) => inputPath)).toStrictEqual([
+      '/src/feature/index.ts',
+      '/src/bound.ts',
+    ]);
+    expect(JSON.stringify(result)).not.toContain(manifestContent);
+    expect(adapterExecutions).toBe(0);
+  });
+
+  test('returns structural manifest diagnostics without manufacturing relevance', async () => {
+    const result = await createCore().matchManifestScope({
+      manifest: {
+        content: 'version: 2\n',
+        path: parseRepositoryPath('/moldea/moldea.yaml'),
+      },
+      paths: ['/src/index.ts'],
+    });
+
+    expect(result).toMatchObject({
+      counts: {
+        declarations: 0,
+        inputPaths: 1,
+        matchedOwners: 0,
+        matchedPaths: 0,
+        matches: 0,
+      },
+      manifestDigest: null,
+      matches: [],
+      relevant: false,
+      valid: false,
+    });
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+  });
+
   test('parses exact decision fixture bytes supplied by the memory reader', async () => {
     const decisionPath = parseRepositoryPath('/moldea/decisions/1786131723456-use-postgresql.md');
     const fixtureBytes = readFileSync(

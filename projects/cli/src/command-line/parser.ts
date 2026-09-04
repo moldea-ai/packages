@@ -1,3 +1,5 @@
+import { MOLDEA_CLI_DEFAULT_OUTPUT_BYTES } from '../output-page/index.js';
+
 import {
   DEFAULT_MOLDEA_CLI_RESOURCE_LIMITS,
   MOLDEA_CLI_COMMANDS,
@@ -13,7 +15,9 @@ import type {
 } from './types.js';
 import {
   areMoldeaCliResourceLimitsConsistent,
+  isMoldeaCliCursorInputValid,
   isRepositoryDirectoryInputValid,
+  parseMoldeaCliOutputByteLimit,
   parsePositiveSafeInteger,
 } from './validations.js';
 
@@ -43,7 +47,7 @@ const isMoldeaCliCommand = (input: string | undefined): input is IMoldeaCliComma
 };
 
 /**
- * Parses the complete version 1 command grammar without mutating caller arguments.
+ * Parses the complete schema 3 command grammar without mutating caller arguments.
  * @param commandLineArguments The process arguments after the executable path.
  * @returns A normalized command, informational request, or safe invocation error.
  */
@@ -85,6 +89,10 @@ export const parseMoldeaCliArguments = (
     ...DEFAULT_MOLDEA_CLI_RESOURCE_LIMITS,
   };
   let isColorDisabled = false;
+  let cursor: string | null = null;
+  let maxOutputBytes = MOLDEA_CLI_DEFAULT_OUTPUT_BYTES;
+  let path: string | null = null;
+  let pathsInput: IMoldeaCliCommandOptions['pathsInput'] = 'none';
   let repositoryDirectory: string | null = null;
 
   for (let index = 1; index < commandLineArguments.length; index += 1) {
@@ -105,14 +113,28 @@ export const parseMoldeaCliArguments = (
       continue;
     }
 
+    if (option === MOLDEA_CLI_OPTIONS.PathsStdin) {
+      pathsInput = 'stdin';
+      continue;
+    }
+
     if (option === MOLDEA_CLI_OPTIONS.Help || option === MOLDEA_CLI_OPTIONS.Version) {
       return createArgumentError('INVALID_ARGUMENT', command, isJson);
     }
 
     const resourceField = RESOURCE_OPTION_FIELDS[option as keyof typeof RESOURCE_OPTION_FIELDS];
     const isRepositoryOption = option === MOLDEA_CLI_OPTIONS.Repository;
+    const isCursorOption = option === MOLDEA_CLI_OPTIONS.Cursor;
+    const isOutputLimitOption = option === MOLDEA_CLI_OPTIONS.MaxOutputBytes;
+    const isPathOption = option === MOLDEA_CLI_OPTIONS.Path;
 
-    if (resourceField === undefined && !isRepositoryOption) {
+    if (
+      resourceField === undefined &&
+      !isRepositoryOption &&
+      !isCursorOption &&
+      !isOutputLimitOption &&
+      !isPathOption
+    ) {
       return createArgumentError('INVALID_ARGUMENT', command, isJson);
     }
 
@@ -127,6 +149,36 @@ export const parseMoldeaCliArguments = (
     }
 
     index += 1;
+
+    if (isCursorOption) {
+      if (!isMoldeaCliCursorInputValid(optionValue)) {
+        return createArgumentError('INVALID_ARGUMENT', command, isJson);
+      }
+
+      cursor = optionValue;
+      continue;
+    }
+
+    if (isOutputLimitOption) {
+      const parsedOutputLimit = parseMoldeaCliOutputByteLimit(optionValue);
+
+      if (parsedOutputLimit === null) {
+        return createArgumentError('RESOURCE_LIMIT_CONFIGURATION_INVALID', command, isJson);
+      }
+
+      maxOutputBytes = parsedOutputLimit;
+      continue;
+    }
+
+    if (isPathOption) {
+      if (!isRepositoryDirectoryInputValid(optionValue)) {
+        return createArgumentError('INVALID_ARGUMENT', command, isJson);
+      }
+
+      path = optionValue;
+      pathsInput = 'path';
+      continue;
+    }
 
     if (isRepositoryOption) {
       if (!isRepositoryDirectoryInputValid(optionValue)) {
@@ -150,9 +202,49 @@ export const parseMoldeaCliArguments = (
     return createArgumentError('RESOURCE_LIMIT_CONFIGURATION_INVALID', command, isJson);
   }
 
+  const isScope = command === MOLDEA_CLI_COMMANDS.Scope;
+  const isContent = command === MOLDEA_CLI_COMMANDS.Content;
+  const hasPathInput = path !== null;
+  const hasStdinInput = seenOptions.has(MOLDEA_CLI_OPTIONS.PathsStdin);
+
+  if ((hasPathInput || hasStdinInput) && !isScope && !isContent) {
+    return createArgumentError('INVALID_ARGUMENT', command, isJson);
+  }
+
+  if (isScope && hasPathInput === hasStdinInput) {
+    return createArgumentError('INVALID_ARGUMENT', command, isJson);
+  }
+
+  if (isContent && (!hasPathInput || hasStdinInput)) {
+    return createArgumentError('INVALID_ARGUMENT', command, isJson);
+  }
+
+  if (isScope && seenOptions.has(MOLDEA_CLI_OPTIONS.MaxEvidence)) {
+    return createArgumentError('INVALID_ARGUMENT', command, isJson);
+  }
+
+  if (
+    isContent &&
+    [
+      MOLDEA_CLI_OPTIONS.MaxDiagnostics,
+      MOLDEA_CLI_OPTIONS.MaxEvidence,
+      MOLDEA_CLI_OPTIONS.MaxManifestBytes,
+    ].some((option) => seenOptions.has(option))
+  ) {
+    return createArgumentError('INVALID_ARGUMENT', command, isJson);
+  }
+
+  if (!isJson && (cursor !== null || seenOptions.has(MOLDEA_CLI_OPTIONS.MaxOutputBytes))) {
+    return createArgumentError('INVALID_ARGUMENT', command, isJson);
+  }
+
   const options: IMoldeaCliCommandOptions = {
+    cursor,
     isColorDisabled,
     isJson,
+    maxOutputBytes,
+    path,
+    pathsInput,
     repositoryDirectory,
     resourceLimits: Object.freeze({ ...resourceLimits }),
   };

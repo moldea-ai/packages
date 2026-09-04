@@ -141,7 +141,7 @@ describe('published Core package artifacts', () => {
     ) as { readonly dependencies?: Readonly<Record<string, string>> };
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '2.0.2' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '2.1.0' });
     for (const entryName of ['index', 'format', 'adapter']) {
       expect(packedPaths).toContain(`dist/${entryName}.js`);
     }
@@ -352,8 +352,9 @@ describe('published Core package artifacts', () => {
             "import { parseRepositoryPath } from '@moldea.ai/repository';",
             'const core = createCore();',
             "const manifest = await core.parseManifest({ content: 'version: 1\\n', path: parseRepositoryPath('/moldea/moldea.yaml') });",
+            "const scope = await core.matchManifestScope({ manifest: { content: 'version: 1\\n', path: parseRepositoryPath('/moldea/moldea.yaml') }, paths: ['/src/index.ts'] });",
             "const decision = await core.parseDecision({ content: '---\\nstatus: accepted\\ncreatedAt: \"2026-08-07T19:42:03.456Z\"\\n---\\nBody.\\n', path: parseRepositoryPath('/moldea/decisions/1786131723456-use-postgresql.md') });",
-            'console.log(JSON.stringify({ decision, manifest }));',
+            'console.log(JSON.stringify({ decision, manifest, scope }));',
           ].join(''),
         ],
         { cwd: consumerDirectory, encoding: 'utf8' },
@@ -371,6 +372,11 @@ describe('published Core package artifacts', () => {
           readonly asset: { readonly digest: string } | null;
           readonly diagnostics: readonly unknown[];
           readonly manifest: { readonly version: number } | null;
+          readonly valid: boolean;
+        };
+        readonly scope: {
+          readonly counts: { readonly matches: number };
+          readonly relevant: boolean;
           readonly valid: boolean;
         };
       };
@@ -392,6 +398,11 @@ describe('published Core package artifacts', () => {
           },
           diagnostics: [],
           manifest: { version: 1 },
+          valid: true,
+        },
+        scope: {
+          counts: { matches: 0 },
+          relevant: false,
           valid: true,
         },
       });

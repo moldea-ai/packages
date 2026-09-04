@@ -1,20 +1,20 @@
 ---
 title: Command-line interface
 navigationTitle: Overview
-description: The canonical read-only local composition for deterministic validation, inspection, and installed-state reporting.
+description: The canonical read-only local composition for bounded validation, metadata inspection, relationship scope, and explicit content retrieval.
 order: 0
 ---
 
 # The local package composition
 
-`@moldea.ai/cli` provides the `moldea` executable. It discovers a selected Git working tree, derives an exact portable inventory, constructs a guarded filesystem snapshot, runs Core with active official adapters, and emits deterministic human or JSON results.
+`@moldea.ai/cli` provides the `moldea` executable. It emits concise human results or deterministic schema 3 JSON pages. Full validation and metadata inspection use Core with active official adapters; changed-path scope and explicit canonical content use adapter-free, path-selected repository reads.
 
 ```bash
 pnpm add --global @moldea.ai/cli
 moldea validate
 ```
 
-The package exposes no supported JavaScript or TypeScript import API. Its public contract is the executable, command grammar, output envelopes, status and exit semantics, safe operational errors, and runtime requirements.
+The package exposes no supported JavaScript or TypeScript import API. Its public contract is the executable, command grammar, schema 3 envelope, bounded pagination and content chunks, status and exit semantics, safe operational errors, and runtime requirements.
 
 ## Composition
 
@@ -24,4 +24,4 @@ The Agent Skill consumes this local executable as its deterministic package laye
 
 ## Boundaries
 
-The executable performs no network requests, telemetry, repository writes, configured Git content transforms, runtime SDK calls, or model calls. It uses read-only Git operations and no-follow filesystem observations. Core and adapter results preserve their owning contracts rather than being reinterpreted by the CLI.
+The executable performs no network requests, telemetry, repository writes, configured Git content transforms, runtime SDK calls, or model calls. It uses read-only Git operations and no-follow filesystem observations. `inspect` deliberately projects the richer Core result through a content-free metadata allowlist; complete canonical text is available only through an explicit bounded `content` request.

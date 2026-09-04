@@ -4,7 +4,7 @@
 
 Source-neutral, deterministic interpretation of the `moldea` repository format.
 
-The version 2 package surface accepts caller-supplied text documents and source-neutral repository readers. It does not access a filesystem, Git provider, or network independently. Invalid repository content produces stable diagnostics, while invalid configuration and operational failures use typed exceptions. Strict repository format version 1 manifest and decision parsing, complete repository inspection, deterministic project indexing, built-in custom-runtime behavior, and all-or-nothing package-backed runtime-adapter execution are available now. Tarball and consumer-type checks remain the release boundary for every published version.
+The version 2 package surface accepts caller-supplied text documents and source-neutral repository readers. It does not access a filesystem, Git provider, or network independently. Invalid repository content produces stable diagnostics, while invalid configuration and operational failures use typed exceptions. Strict repository format version 1 manifest and decision parsing, content-free changed-path scope matching, complete repository inspection, deterministic project indexing, built-in custom-runtime behavior, and all-or-nothing package-backed runtime-adapter execution are available now. Tarball and consumer-type checks remain the release boundary for every published version.
 
 ## Public entry points
 
@@ -67,6 +67,25 @@ const result = await createCore().parseDecision({
 ```
 
 Decision parsing validates the canonical timestamp-slug path, exact frontmatter delimiters, strict YAML metadata, status, canonical UTC `createdAt`, filename timestamp equality, supersession IDs, and non-empty Markdown body. A valid result preserves the exact normalized body and complete normalized asset, sorts supersession IDs, and includes a SHA-256 digest. It does not read other decisions or validate reference existence, duplicate IDs across files, supersession graphs, status consistency, or manifest relationships.
+
+## Changed-path scope matching
+
+```typescript
+import { createCore } from '@moldea.ai/core';
+import { parseRepositoryPath } from '@moldea.ai/repository';
+
+const result = await createCore().matchManifestScope({
+  manifest: {
+    content: 'version: 1\n',
+    path: parseRepositoryPath('/moldea/moldea.yaml'),
+  },
+  paths: ['/src/orders/service.ts'],
+});
+```
+
+`matchManifestScope` parses the supplied manifest and compares sorted, deduplicated repository-logical paths with exact bindings, capability references, mirrors, unresolved-requirement references, exact impact paths, and version 1 simple globs. The result contains only stable owner, field, declaration-pointer, path, count, and digest metadata. It never reads canonical bodies, creates a repository reader, or executes runtime adapters.
+
+Changed-path input bytes use the existing `maxTotalBytesRead` limit. Supplied path entries, manifest relationship declarations, and returned matches each use the existing `maxEntries` limit, whose default is 100,000. This keeps the operation bounded while allowing large repositories to provide complete path sets. An invalid manifest returns structural diagnostics with no matches and cannot establish relevance.
 
 ## Repository inspection
 

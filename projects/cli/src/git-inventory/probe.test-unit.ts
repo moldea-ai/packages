@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, test, vi } from 'vitest';
 
+import { parseRepositoryPath } from '@moldea.ai/repository';
+
 import type {
   IGitStreamingProcessExecutor,
   IGitStreamingProcessFailureReason,
@@ -255,6 +257,50 @@ describe('createGitInventoryProbe', () => {
     await expect(
       probe({ maxEntries: 2, maxMetadataBytes: 1024, repositoryRoot: '/repository' }),
     ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
+  });
+
+  test('uses top-level literal pathspecs for an exact selected inventory', async () => {
+    const processExecutor = createProcessExecutor([
+      { stdout: new Uint8Array() },
+      { stdout: new Uint8Array() },
+    ]);
+    const ownershipFilter = vi
+      .fn<IGitInventoryOwnershipFilter>()
+      .mockResolvedValue(
+        Object.freeze({ candidates: Object.freeze([]), gitMetadataBytes: 0, kind: 'filtered' }),
+      );
+    const entryTypeNormalizer = vi
+      .fn<IGitInventoryEntryTypeNormalizer>()
+      .mockResolvedValue(
+        Object.freeze({ entries: Object.freeze([]), gitMetadataBytes: 0, kind: 'normalized' }),
+      );
+    const contentTransformationClassifier = createContentTransformationClassifier();
+    const probe = createGitInventoryProbe(
+      processExecutor,
+      ownershipFilter,
+      entryTypeNormalizer,
+      contentTransformationClassifier,
+    );
+
+    await probe({
+      maxEntries: 1,
+      maxMetadataBytes: 1024,
+      repositoryRoot: '/repository',
+      selectionPaths: [parseRepositoryPath('/moldea/moldea.yaml')],
+    });
+
+    expect(vi.mocked(processExecutor).mock.calls[0]?.[0].arguments).toStrictEqual([
+      '-C',
+      '/repository',
+      ...GIT_TRACKED_INVENTORY_ARGUMENTS,
+      ':(top,literal)moldea/moldea.yaml',
+    ]);
+    expect(vi.mocked(processExecutor).mock.calls[1]?.[0].arguments).toStrictEqual([
+      '-C',
+      '/repository',
+      ...GIT_UNTRACKED_INVENTORY_ARGUMENTS,
+      ':(top,literal)moldea/moldea.yaml',
+    ]);
   });
 
   test.each([

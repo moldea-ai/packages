@@ -39,7 +39,7 @@ describe('isMoldeaCliCompositionStateValid', () => {
       'an invalid JSON schema version',
       (state: IMoldeaCliCompositionStateInput): IMoldeaCliCompositionStateInput => ({
         ...state,
-        outputSchemaVersion: 1 as 2,
+        outputSchemaVersion: 1 as 3,
       }),
     ],
   ])('rejects %s', (_description, mutate) => {

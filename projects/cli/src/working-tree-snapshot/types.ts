@@ -1,4 +1,4 @@
-import type { IRepositoryReader } from '@moldea.ai/repository';
+import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
 
 import type { IMoldeaCliResourceLimits } from '../command-line/index.js';
 import type { IGitInventoryEntry } from '../git-inventory/index.js';
@@ -15,6 +15,7 @@ export interface IWorkingTreeSnapshotExecutionInput<TResult> {
   readonly operation: IWorkingTreeSnapshotOperation<TResult>;
   readonly repositoryRoot: string;
   readonly resourceLimits: IMoldeaCliResourceLimits;
+  readonly selectionPaths?: readonly IRepositoryPath[];
   readonly signal?: AbortSignal;
 }
 

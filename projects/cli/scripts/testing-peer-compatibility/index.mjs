@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const EXPECTED_CLI_VERSION = '5.0.3';
+const EXPECTED_CLI_VERSION = '6.0.0';
 const EXPECTED_PNPM_VERSION = '11.21.0';
 const EXPECTED_VITEST_VERSION = '3.2.4';
 const PEER_WARNING_PATTERN = /(?:unmet peer|peer dependenc(?:y|ies)|ERR_PNPM_PEER_DEP_ISSUES)/iu;
@@ -20,7 +20,7 @@ const PACKAGE_VERSIONS = {
   '@moldea.ai/adapter-openai-agents-sdk': '1.0.7',
   '@moldea.ai/adapter-vercel-ai-sdk': '1.0.5',
   '@moldea.ai/cli': EXPECTED_CLI_VERSION,
-  '@moldea.ai/core': '2.0.2',
+  '@moldea.ai/core': '2.1.0',
   '@moldea.ai/repository': '1.1.1',
   '@moldea.ai/repository-fs': '1.0.6',
 };
@@ -164,7 +164,7 @@ const executeFixtureGit = (consumerDirectory, hooksDirectory, environment, argum
       '-c',
       'init.defaultBranch=main',
       '-c',
-      'user.name=Moldea Peer Compatibility Test',
+      'user.name=moldea peer compatibility test',
       '-c',
       'user.email=moldea-peer-compatibility@example.invalid',
       ...arguments_,
@@ -211,7 +211,7 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
   assertCompatibilityInvariant(
     compositionEnvelope.cliVersion === EXPECTED_CLI_VERSION &&
       compositionEnvelope.command === 'composition' &&
-      compositionEnvelope.schemaVersion === 2 &&
+      compositionEnvelope.schemaVersion === 3 &&
       compositionEnvelope.status === 'valid' &&
       compositionEnvelope.result?.supportedNodeRange === '>=22.11.0',
     'The installed CLI composition envelope is invalid.',
@@ -310,6 +310,16 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
     cwd: consumerDirectory,
     env: environment,
   });
+  const scopeResult = executeCommand(
+    process.execPath,
+    [executablePath, 'scope', '--path', '/src/agent.ts', '--json'],
+    { cwd: consumerDirectory, env: environment },
+  );
+  const contentResult = executeCommand(
+    process.execPath,
+    [executablePath, 'content', '--path', '/moldea/project.md', '--json'],
+    { cwd: consumerDirectory, env: environment },
+  );
   const statusAfter = execFileSync('git', ['status', '--porcelain=v2', '-z'], {
     cwd: consumerDirectory,
     encoding: 'buffer',
@@ -317,6 +327,8 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
   });
   const validateEnvelope = JSON.parse(validateResult.stdout);
   const inspectEnvelope = JSON.parse(inspectResult.stdout);
+  const scopeEnvelope = JSON.parse(scopeResult.stdout);
+  const contentEnvelope = JSON.parse(contentResult.stdout);
 
   assertCompatibilityInvariant(
     validateResult.status === 0 &&
@@ -329,26 +341,46 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
     'The installed CLI inspection failed.',
   );
   assertCompatibilityInvariant(
-    inspectEnvelope.result?.inspection?.project?.project?.content === '# Project\n',
-    'The installed CLI inspection omitted the complete Core result.',
+    inspectEnvelope.schemaVersion === 3 &&
+      inspectEnvelope.result?.project?.project?.path === '/moldea/project.md' &&
+      !inspectResult.stdout.includes('# Project') &&
+      !inspectResult.stdout.includes('"content"'),
+    'The installed CLI inspection did not preserve the content-free schema 3 contract.',
   );
   assertCompatibilityInvariant(
     JSON.stringify(
-      inspectEnvelope.result?.inspection?.evidence?.map(({ kind, source }) => ({ kind, source })),
+      inspectEnvelope.result?.page?.records
+        ?.filter(({ kind }) => kind === 'evidence')
+        .map(({ evidenceKind, source }) => ({ evidenceKind, source })),
     ) ===
       JSON.stringify([
-        { kind: 'language', source: 'claude-agent-sdk' },
-        { kind: 'runtime-package', source: 'claude-agent-sdk' },
-        { kind: 'runtime-pattern', source: 'claude-agent-sdk' },
+        { evidenceKind: 'language', source: 'claude-agent-sdk' },
+        { evidenceKind: 'runtime-package', source: 'claude-agent-sdk' },
+        { evidenceKind: 'runtime-pattern', source: 'claude-agent-sdk' },
       ]),
-    'The installed CLI inspection did not preserve the provider identity.',
+    'The installed CLI inspection did not preserve provider evidence summaries.',
+  );
+  assertCompatibilityInvariant(
+    scopeResult.status === 0 &&
+      scopeResult.stderr === '' &&
+      scopeEnvelope.schemaVersion === 3 &&
+      scopeEnvelope.result?.relevant === true,
+    'The installed CLI scope command failed.',
+  );
+  assertCompatibilityInvariant(
+    contentResult.status === 0 &&
+      contentResult.stderr === '' &&
+      contentEnvelope.schemaVersion === 3 &&
+      contentEnvelope.result?.asset?.path === '/moldea/project.md' &&
+      contentEnvelope.result?.chunk?.content === '# Project\n',
+    'The installed CLI content command failed.',
   );
   assertCompatibilityInvariant(
     statusBefore.equals(statusAfter),
     'The CLI changed repository state.',
   );
   assertCompatibilityInvariant(
-    !`${compositionResult.stdout}${validateResult.stdout}${inspectResult.stdout}`.includes(
+    !`${compositionResult.stdout}${validateResult.stdout}${inspectResult.stdout}${scopeResult.stdout}${contentResult.stdout}`.includes(
       '\u001b[',
     ),
     'The installed CLI JSON output contains ANSI control sequences.',
