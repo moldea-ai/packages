@@ -4,7 +4,8 @@ import {
   createPackageManifestCandidatePaths,
   normalizeText,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
+import { readRuntimeAdapterFile, type IRuntimeAdapterRepository } from '@moldea.ai/core/adapter';
+import type { IRepositoryPath } from '@moldea.ai/repository';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import {
@@ -81,7 +82,7 @@ const extractDeclarations = (
 
 /** Discovers the nearest manifest containing a Cloudflare Agents target dependency. */
 export const discoverCloudflareAgentsPackage = async (
-  repository: IRepositoryReader,
+  repository: IRuntimeAdapterRepository,
   sourcePath: IRepositoryPath,
   signal?: AbortSignal,
 ): Promise<ICloudflareAgentsPackageDiscoveryResult> => {
@@ -99,7 +100,7 @@ export const discoverCloudflareAgentsPackage = async (
       return Object.freeze({ kind: 'invalid', path: candidatePath });
     }
 
-    const bytes = await repository.readFile(candidatePath, options);
+    const bytes = await readRuntimeAdapterFile(repository, candidatePath, options);
     const text = normalizeText(bytes);
 
     if (!text.valid) {

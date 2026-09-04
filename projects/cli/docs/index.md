@@ -7,14 +7,16 @@ order: 0
 
 # The local package composition
 
-`@moldea.ai/cli` provides the `moldea` executable. It emits concise human results or deterministic schema 3 JSON pages. Full validation and metadata inspection use Core with active official adapters; changed-path scope and explicit canonical content use adapter-free, path-selected repository reads.
+`@moldea.ai/cli` version 7 provides the `moldea` executable. It emits concise human results or deterministic schema 4 JSON pages. Full validation and metadata inspection use Core with active official adapters; changed-path scope and explicit canonical content use adapter-free, path-selected repository reads.
 
 ```bash
-pnpm add --global @moldea.ai/cli
-moldea validate
+pnpm add -D @moldea.ai/cli@7
+pnpm exec moldea validate
 ```
 
-The package exposes no supported JavaScript or TypeScript import API. Its public contract is the executable, command grammar, schema 3 envelope, bounded pagination and content chunks, status and exit semantics, safe operational errors, and runtime requirements.
+Install and invoke the CLI from each adopted repository. Global, user-home, and cross-repository installations are outside the supported trust boundary because they can expose unrelated repositories to ambient executable or skill behavior.
+
+The package exposes no supported JavaScript or TypeScript import API. Its public contract is the executable, command grammar, schema 4 envelope, bounded pagination and content chunks, status and exit semantics, safe operational errors, and runtime requirements.
 
 ## Composition
 

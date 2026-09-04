@@ -1,6 +1,6 @@
 import type { MOLDEA_CLI_COMMANDS } from './constants.js';
 
-// command names in the closed CLI 6 grammar
+// command names in the closed CLI 7 grammar
 export type IMoldeaCliCommand = (typeof MOLDEA_CLI_COMMANDS)[keyof typeof MOLDEA_CLI_COMMANDS];
 
 // effective resource configuration normalized from command-line overrides

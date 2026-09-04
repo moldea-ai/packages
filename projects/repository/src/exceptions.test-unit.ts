@@ -27,7 +27,7 @@ describe('repository exceptions', () => {
     const exception = new RepositorySourceException({
       cause,
       code: 'SOURCE_UNAVAILABLE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path,
       retryable: true,
     });
@@ -39,7 +39,7 @@ describe('repository exceptions', () => {
       code: 'SOURCE_UNAVAILABLE',
       message: 'The repository source is unavailable.',
       name: 'RepositorySourceException',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path,
       retryable: true,
     });

@@ -8,7 +8,7 @@ order: 30
 
 ## JSON envelope
 
-`--json` writes one deterministic schema 3 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`. No command mixes a partial success result with an operational error.
+`--json` writes one deterministic schema 4 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`. No command mixes a partial success result with an operational error.
 
 `validate`, `inspect`, `scope`, and `composition` are recursively content-free. `inspect` projects only allowlisted metadata and splits unbounded child collections into separately keyed records. `content` is the only command allowed to return a `content` property, and it does so only for one explicitly selected canonical asset.
 
@@ -30,7 +30,7 @@ Collection and content JSON use a default 65,536-byte page budget and accept exp
 
 Known repository and Core exceptions retain their source, code, retryability, safe logical path when applicable, and non-confidential metadata. Git and CLI errors use a closed stable registry. Unexpected failures become `cli:INTERNAL_ERROR` without raw causes, stack traces, host paths, or process diagnostics.
 
-Schema 3 adds these stable CLI-owned contracts:
+Schema 4 includes these stable CLI-owned contracts:
 
 | Code                      | Stable message                                                      |
 | ------------------------- | ------------------------------------------------------------------- |

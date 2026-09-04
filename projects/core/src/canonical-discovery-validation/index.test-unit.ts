@@ -6,7 +6,12 @@ import { parseRepositoryPath, type IRepositoryEntryType } from '@moldea.ai/repos
 import { classifyCanonicalEntry } from './index.js';
 
 const classify = (path: string, type: IRepositoryEntryType) => {
-  return classifyCanonicalEntry({ path: parseRepositoryPath(path), type });
+  return classifyCanonicalEntry({
+    byteLength: type === 'file' ? 0 : null,
+    contentIdentity: null,
+    path: parseRepositoryPath(path),
+    type,
+  });
 };
 
 describe('Core canonical entry classification', () => {

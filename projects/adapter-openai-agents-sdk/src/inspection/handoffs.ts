@@ -1,8 +1,12 @@
 import ts from 'typescript';
 
 import { resolveBindingReferences, unwrapExpression } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
-import type { IAdapterDiagnostic, IRuntimeAdapterContext } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type {
+  IAdapterDiagnostic,
+  IRuntimeAdapterContext,
+  IRuntimeAdapterResolvedAgent,
+} from '@moldea.ai/core/adapter';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import { OPENAI_AGENTS_SDK_ADAPTER_ID } from '../constants/index.js';
@@ -111,14 +115,11 @@ const resolveTarget = async (
     : null;
 };
 
-const getMappedAgents = (
+const resolveMappedAgent = (
   context: IRuntimeAdapterContext,
   target: IOpenAiAgentsSdkResolvedAgentTarget,
-): readonly IIndexedAgent[] =>
-  context.project.agents.filter(({ declaration }) => {
-    const runtimeAgent = declaration.bindings?.runtimeAgent;
-    return runtimeAgent?.path === target.path && runtimeAgent.symbol === target.symbol;
-  });
+): ReturnType<IRuntimeAdapterContext['resolveAgent']> =>
+  context.resolveAgent({ path: target.path, symbol: target.symbol });
 
 const getSafeDetails = (
   registration: IOpenAiAgentsSdkHandoffRegistration,
@@ -166,7 +167,7 @@ const inspectRoutingDescription = async (
   sourceAnalysis: IOpenAiAgentsSdkSourceAnalysis,
   registration: IOpenAiAgentsSdkHandoffRegistration,
   target: IOpenAiAgentsSdkResolvedAgentTarget,
-  targetAgent: IIndexedAgent,
+  targetAgent: IRuntimeAdapterResolvedAgent,
   diagnostics: IAdapterDiagnostic[],
 ): Promise<'override' | 'target' | 'unresolved'> => {
   const canonicalDescription =
@@ -305,11 +306,12 @@ export const inspectOpenAiAgentsSdkHandoffs = async (
       continue;
     }
 
-    const mappedAgents = getMappedAgents(context, target);
+    const resolution = resolveMappedAgent(context, target);
+    const mappedAgent = resolution.kind === 'matched' ? resolution.agent : undefined;
     const runtimeName = await getRuntimeName(session, analysis, registration);
     let routingDescriptionSource: 'override' | 'target' | 'unresolved' = 'unresolved';
 
-    if (mappedAgents.length > 1) {
+    if (resolution.kind === 'ambiguous') {
       addOpenAiAgentsSdkDiagnostic(
         diagnostics,
         'OPENAI_AGENTS_SDK_HANDOFF_TARGET_AMBIGUOUS',
@@ -319,26 +321,24 @@ export const inspectOpenAiAgentsSdkHandoffs = async (
         undefined,
         getAmbiguousTargetDetails(registration, target),
       );
-    } else if (mappedAgents.length === 1) {
+    } else if (mappedAgent !== undefined) {
       routingDescriptionSource = await inspectRoutingDescription(
         session,
         agent,
         analysis,
         registration,
         target,
-        mappedAgents[0] as IIndexedAgent,
+        mappedAgent,
         diagnostics,
       );
     }
-
-    const targetAgent = mappedAgents.length === 1 ? mappedAgents[0] : undefined;
 
     evidence.push(
       createOpenAiAgentsSdkEvidence({
         agentId: agent.id,
         capabilityId: null,
         capabilityKind: null,
-        details: getSafeDetails(registration, routingDescriptionSource, target, targetAgent?.id),
+        details: getSafeDetails(registration, routingDescriptionSource, target, mappedAgent?.id),
         kind: 'handoff-registration',
         references: [{ path: analysis.path }, { path: target.path, symbol: target.symbol }],
         runtimeName,

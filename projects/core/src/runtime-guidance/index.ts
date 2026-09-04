@@ -1,4 +1,4 @@
-import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
+import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICanonicalDiscoveryResult } from '../canonical-discovery/index.js';
 import type { IIndexedRuntimeGuidance } from '../contracts/index.js';
@@ -12,6 +12,7 @@ import { compareExactStrings, hasNonWhitespace } from '../format-validation/inde
 import type { IMoldeaManifestV1 } from '../format/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { readRepositoryTextAsset } from '../repository-text/index.js';
 
 // internal runtime-guidance result retained for final project indexing
@@ -69,7 +70,7 @@ const isBlockedPath = (path: IRepositoryPath, blockedPaths: ReadonlySet<string>)
  * - ABORTED: Guidance inspection or a repository operation was aborted.
  */
 export const readRuntimeGuidance = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   manifestPath: IRepositoryPath,
   manifest: IMoldeaManifestV1 | null,
   discovery: ICanonicalDiscoveryResult,
@@ -77,7 +78,7 @@ export const readRuntimeGuidance = async (
   signal?: AbortSignal,
 ): Promise<IRuntimeGuidanceResult> => {
   options = createCoreOperationOptionsSnapshot(options);
-  const collector = createCoreDiagnosticCollector(options.limits, 'inspect-project');
+  const collector = createCoreDiagnosticCollector(options.limits, 'validate-project');
   const runtimes: IIndexedRuntimeGuidance[] = [];
   const discoveredPaths = new Set(discovery.inventory.runtimeGuidance);
   const blockedPaths = new Set(

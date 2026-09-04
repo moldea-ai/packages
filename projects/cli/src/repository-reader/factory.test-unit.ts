@@ -79,8 +79,10 @@ describe('createWorkingTreeRepositoryReaderFactory', () => {
     expect(filesystemReaderFactory).toHaveBeenCalledWith({
       limits: {
         maxCachedBytes: 134_217_728,
+        maxDirectoryEntries: 100_000,
         maxEntries: 100_000,
-        maxFileBytes: 8_388_608,
+        maxPageEntries: 4096,
+        maxReadBytes: 8_388_608,
       },
       rootDirectory: '/workspace',
       selection: {

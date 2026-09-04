@@ -11,3 +11,5 @@ The initial target intentionally excludes dynamic agents and capabilities, confi
 Known alternate authored module extensions participate only in collision preflight. Their contents are not read. Flat and packaged Markdown skills may establish an implementation path but do not establish runtime registration. Schema contents, model identifiers, provider configuration, tool side effects, approval behavior, and semantic description quality are not validated.
 
 When an unsupported source could replace, rename, compose, or collide with a relationship, the adapter returns no optimistic evidence and suppresses contradiction diagnostics that would require guessing Eve's effective runtime state.
+
+Each invocation sees one declared agent and bounded logical repository operations, not a complete agent collection or project body index.

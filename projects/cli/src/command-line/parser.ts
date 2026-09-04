@@ -47,7 +47,7 @@ const isMoldeaCliCommand = (input: string | undefined): input is IMoldeaCliComma
 };
 
 /**
- * Parses the complete schema 3 command grammar without mutating caller arguments.
+ * Parses the complete schema 4 command grammar without mutating caller arguments.
  * @param commandLineArguments The process arguments after the executable path.
  * @returns A normalized command, informational request, or safe invocation error.
  */

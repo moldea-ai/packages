@@ -1,11 +1,7 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
-import {
-  parseRepositoryPath,
-  type IRepositoryEntry,
-  type IRepositoryReader,
-} from '@moldea.ai/repository';
+import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import type { IRuntimeAdapterResult } from '../adapter/index.js';
 import {
@@ -15,18 +11,13 @@ import {
 } from '../constants/index.js';
 import { CoreConfigurationException, CoreOperationException } from '../exceptions/index.js';
 import { normalizeCoreOptions } from '../options/index.js';
+import { createMemoryRepositoryReader } from '../repository.test-fixtures.js';
 
 import { createCore } from './index.js';
 
 const emptyAdapterResult = (): IRuntimeAdapterResult => ({
   diagnostics: [],
   evidence: [],
-});
-
-const createEmptyEntryIterable = (): AsyncIterable<IRepositoryEntry> => ({
-  [Symbol.asyncIterator]: () => ({
-    next: () => Promise.resolve({ done: true, value: undefined }),
-  }),
 });
 
 describe('Core constants and construction', () => {
@@ -64,14 +55,16 @@ describe('Core constants and construction', () => {
     expect(Object.isFrozen(core)).toBe(true);
     expect(Object.keys(core).sort()).toStrictEqual([
       'calculateContentDigest',
-      'inspectProject',
+      'inspectProjectPage',
       'matchManifestScope',
       'normalizeText',
       'parseDecision',
       'parseManifest',
+      'readCanonicalContentPage',
+      'validateProject',
     ]);
     expect(typeof core.calculateContentDigest).toBe('function');
-    expect(typeof core.inspectProject).toBe('function');
+    expect(typeof core.validateProject).toBe('function');
     expect(typeof core.matchManifestScope).toBe('function');
     expect(typeof core.normalizeText).toBe('function');
     expect(typeof core.parseDecision).toBe('function');
@@ -258,35 +251,27 @@ describe('Core constants and construction', () => {
       operation: 'match-manifest-scope',
       retryable: false,
     });
-    await expect(core.inspectProject(null as never)).rejects.toMatchObject({
+    await expect(core.validateProject(null as never)).rejects.toMatchObject({
       code: 'INVALID_ARGUMENT',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: false,
     });
     await expect(
-      core.inspectProject({ repository: { getEntry: null } } as never),
+      core.validateProject({ repository: { getEntry: null } } as never),
     ).rejects.toMatchObject({
       code: 'INVALID_ARGUMENT',
-      operation: 'inspect-project',
+      operation: 'validate-project',
     });
     await expect(
-      core.inspectProject({
-        repository: {
-          getEntry: () => Promise.resolve(null),
-          listEntries: createEmptyEntryIterable,
-          readFile: () => Promise.resolve(new Uint8Array()),
-        },
+      core.validateProject({
+        repository: createMemoryRepositoryReader([]),
         signal: null,
       } as never),
     ).rejects.toBeInstanceOf(CoreOperationException);
   });
 
   test('snapshots the repository input property before inspection', async () => {
-    const repository: IRepositoryReader = {
-      getEntry: () => Promise.resolve(null),
-      listEntries: createEmptyEntryIterable,
-      readFile: () => Promise.resolve(new Uint8Array()),
-    };
+    const repository = createMemoryRepositoryReader([]);
     let repositoryReads = 0;
     const input = Object.defineProperty({}, 'repository', {
       enumerable: true,
@@ -295,7 +280,7 @@ describe('Core constants and construction', () => {
         return repositoryReads === 1 ? repository : null;
       },
     });
-    const result = await createCore().inspectProject(input as never);
+    const result = await createCore().validateProject(input as never);
 
     expect(repositoryReads).toBe(1);
     expect(result.valid).toBe(false);

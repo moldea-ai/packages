@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const EXPECTED_CLI_VERSION = '6.0.0';
+const EXPECTED_CLI_VERSION = '7.0.0';
 const EXPECTED_PNPM_VERSION = '11.21.0';
 const EXPECTED_VITEST_VERSION = '3.2.4';
 const PEER_WARNING_PATTERN = /(?:unmet peer|peer dependenc(?:y|ies)|ERR_PNPM_PEER_DEP_ISSUES)/iu;
@@ -211,7 +211,7 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
   assertCompatibilityInvariant(
     compositionEnvelope.cliVersion === EXPECTED_CLI_VERSION &&
       compositionEnvelope.command === 'composition' &&
-      compositionEnvelope.schemaVersion === 3 &&
+      compositionEnvelope.schemaVersion === 4 &&
       compositionEnvelope.status === 'valid' &&
       compositionEnvelope.result?.supportedNodeRange === '>=22.11.0',
     'The installed CLI composition envelope is invalid.',
@@ -341,11 +341,11 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
     'The installed CLI inspection failed.',
   );
   assertCompatibilityInvariant(
-    inspectEnvelope.schemaVersion === 3 &&
+    inspectEnvelope.schemaVersion === 4 &&
       inspectEnvelope.result?.project?.project?.path === '/moldea/project.md' &&
       !inspectResult.stdout.includes('# Project') &&
       !inspectResult.stdout.includes('"content"'),
-    'The installed CLI inspection did not preserve the content-free schema 3 contract.',
+    'The installed CLI inspection did not preserve the content-free schema 4 contract.',
   );
   assertCompatibilityInvariant(
     JSON.stringify(
@@ -363,14 +363,14 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
   assertCompatibilityInvariant(
     scopeResult.status === 0 &&
       scopeResult.stderr === '' &&
-      scopeEnvelope.schemaVersion === 3 &&
+      scopeEnvelope.schemaVersion === 4 &&
       scopeEnvelope.result?.relevant === true,
     'The installed CLI scope command failed.',
   );
   assertCompatibilityInvariant(
     contentResult.status === 0 &&
       contentResult.stderr === '' &&
-      contentEnvelope.schemaVersion === 3 &&
+      contentEnvelope.schemaVersion === 4 &&
       contentEnvelope.result?.asset?.path === '/moldea/project.md' &&
       contentEnvelope.result?.chunk?.content === '# Project\n',
     'The installed CLI content command failed.',

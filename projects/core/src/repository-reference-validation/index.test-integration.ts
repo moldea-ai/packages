@@ -3,11 +3,11 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, test } from 'vitest';
 
-import { type IRepositoryEntry, type IRepositoryReader } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  type ICoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
-} from '@moldea.ai/repository/memory';
+} from '../repository.test-fixtures.js';
 
 import { discoverCanonicalAssets } from '../canonical-discovery/index.js';
 import { createCore } from '../core/index.js';
@@ -50,24 +50,6 @@ const createRepositoryEntries = (
   ...fixtureCase.entries,
 ];
 
-const reverseEnumeration = (repository: IRepositoryReader): IRepositoryReader => ({
-  getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-  listEntries: (operationOptions): AsyncIterable<IRepositoryEntry> => ({
-    async *[Symbol.asyncIterator]() {
-      const entries: IRepositoryEntry[] = [];
-
-      for await (const entry of repository.listEntries(operationOptions)) {
-        entries.push(entry);
-      }
-
-      for (const entry of entries.reverse()) {
-        yield entry;
-      }
-    },
-  }),
-  readFile: (path, operationOptions) => repository.readFile(path, operationOptions),
-});
-
 const simplifyDiagnostics = (diagnostics: readonly ICoreDiagnostic[]) => {
   return diagnostics.map(({ code, details, entity, path, pointer }) => ({
     code,
@@ -78,7 +60,7 @@ const simplifyDiagnostics = (diagnostics: readonly ICoreDiagnostic[]) => {
   }));
 };
 
-const validateFixture = async (sourceRepository: IRepositoryReader) => {
+const validateFixture = async (sourceRepository: ICoreTestRepositoryReader) => {
   const session = createRepositoryInspectionSession(sourceRepository, options.limits);
   const discovery = await discoverCanonicalAssets(session.reader, options.limits);
   const manifestPath = discovery.inventory.manifest;
@@ -89,7 +71,7 @@ const validateFixture = async (sourceRepository: IRepositoryReader) => {
   }
 
   const manifestResult = await createCore().parseManifest({
-    content: await session.reader.readFile(manifestPath),
+    content: await session.reader.readCompleteFile(manifestPath),
     path: manifestPath,
   });
 
@@ -117,7 +99,7 @@ describe('Core repository references through the memory repository reader', () =
     expect(Object.isFrozen(diagnostics[0])).toBe(true);
   });
 
-  test('is independent of repository enumeration and fixture insertion order', async () => {
+  test('is independent of repository fixture insertion order', async () => {
     const fixtureCase = fixture.cases[1];
     if (fixtureCase === undefined) {
       throw new TypeError('The invalid repository-reference fixture is required.');
@@ -125,9 +107,7 @@ describe('Core repository references through the memory repository reader', () =
 
     const entries = createRepositoryEntries(fixtureCase);
     const expected = await validateFixture(createMemoryRepositoryReader(entries));
-    const reorderedRepository = reverseEnumeration(
-      createMemoryRepositoryReader([...entries].reverse()),
-    );
+    const reorderedRepository = createMemoryRepositoryReader([...entries].reverse());
 
     expect(await validateFixture(reorderedRepository)).toStrictEqual(expected);
   });

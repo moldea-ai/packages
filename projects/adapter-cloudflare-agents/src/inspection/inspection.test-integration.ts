@@ -78,7 +78,7 @@ const createEntries = (
 };
 
 const inspect = async (replacements: Readonly<Record<string, IFixtureReplacement>> = {}) =>
-  createCore({ adapters: [cloudflareAgentsAdapter] }).inspectProject({
+  createCore({ adapters: [cloudflareAgentsAdapter] }).validateProject({
     repository: createMemoryRepositoryReader(createEntries(replacements)),
   });
 
@@ -121,11 +121,11 @@ describe('cloudflareAgentsAdapter Core integration', () => {
     expect(result.diagnostics).toStrictEqual([]);
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
-    expect(result.project).not.toBeNull();
+    expect(result.summary).not.toBeNull();
   });
 
   test('produces deterministic evidence for reversed entries and concurrent inspections', async () => {
-    const reversed = await createCore({ adapters: [cloudflareAgentsAdapter] }).inspectProject({
+    const reversed = await createCore({ adapters: [cloudflareAgentsAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),
     });
     const concurrent = await Promise.all([inspect(), inspect(), inspect(), inspect()]);

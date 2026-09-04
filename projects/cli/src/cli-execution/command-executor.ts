@@ -1,4 +1,4 @@
-import type { IProjectInspectionResult } from '@moldea.ai/core';
+import type { IProjectInspectionPageResult, IProjectValidationResult } from '@moldea.ai/core';
 
 import { MOLDEA_CLI_COMMANDS } from '../command-line/index.js';
 import type { IMoldeaCliCompositionResolver } from '../composition/index.js';
@@ -8,6 +8,7 @@ import {
   type IGitWorkingTreeDiscovery,
 } from '../git-working-tree/index.js';
 import { mapMoldeaCliOperationalError } from '../operational-error/index.js';
+import { decodeMoldeaCliCursor, MoldeaCliOutputPageException } from '../output-page/index.js';
 import {
   executeMoldeaCliProjectContent,
   parseMoldeaCliCanonicalContentPath,
@@ -74,7 +75,7 @@ const createOperationalErrorResult = (
  * @param compositionLoader The installed executable-integrity composition boundary.
  * @param projectScopeExecutor The adapter-free manifest scope operation.
  * @param projectContentExecutor The adapter-free canonical content operation.
- * @returns A command executor for the schema 3 CLI.
+ * @returns A command executor for the schema 4 CLI.
  */
 export const createMoldeaCliCommandExecutor = (
   workingTreeDiscovery: IGitWorkingTreeDiscovery = discoverGitWorkingTree,
@@ -113,6 +114,15 @@ export const createMoldeaCliCommandExecutor = (
 
       let scopePaths: readonly string[] | null = null;
       let contentPath: ReturnType<typeof parseMoldeaCliCanonicalContentPath> | null = null;
+      let contentOffset = 0;
+      const inspectionCursor =
+        command === MOLDEA_CLI_COMMANDS.Inspect && options.cursor !== null
+          ? decodeMoldeaCliCursor({
+              command: 'inspect',
+              cursor: options.cursor,
+              filters: {},
+            }).sourceCursor
+          : null;
 
       if (command === MOLDEA_CLI_COMMANDS.Scope) {
         if (options.pathsInput === 'path' && options.path !== null) {
@@ -134,6 +144,25 @@ export const createMoldeaCliCommandExecutor = (
         }
 
         contentPath = parseMoldeaCliCanonicalContentPath(options.path);
+
+        if (options.cursor !== null) {
+          const sourceCursor = decodeMoldeaCliCursor({
+            command: 'content',
+            cursor: options.cursor,
+            filters: { path: contentPath },
+          }).sourceCursor;
+          const match = sourceCursor === null ? null : /^byte:(0|[1-9][0-9]*)$/u.exec(sourceCursor);
+
+          if (match === null) {
+            throw new MoldeaCliOutputPageException('CURSOR_INVALID');
+          }
+
+          contentOffset = Number(match[1]);
+
+          if (!Number.isSafeInteger(contentOffset)) {
+            throw new MoldeaCliOutputPageException('CURSOR_INVALID');
+          }
+        }
       }
 
       const discoveryResult = await workingTreeDiscovery({
@@ -160,6 +189,12 @@ export const createMoldeaCliCommandExecutor = (
 
           if (command === MOLDEA_CLI_COMMANDS.Content && contentPath !== null) {
             return projectContentExecutor({
+              maxBytes: Math.min(
+                resourceLimits.maxFileBytes,
+                resourceLimits.maxTotalBytes,
+                Math.max(1, Math.floor(options.maxOutputBytes / 2)),
+              ),
+              offset: contentOffset,
               path: contentPath,
               repository,
               resourceLimits,
@@ -168,6 +203,8 @@ export const createMoldeaCliCommandExecutor = (
           }
 
           return coreInspectionExecutor({
+            command: command === MOLDEA_CLI_COMMANDS.Inspect ? 'inspect' : 'validate',
+            ...(inspectionCursor === null ? {} : { cursor: inspectionCursor }),
             repository,
             resourceLimits,
             ...(signal === undefined ? {} : { signal }),
@@ -189,7 +226,7 @@ export const createMoldeaCliCommandExecutor = (
 
       if (command === MOLDEA_CLI_COMMANDS.Validate) {
         return createMoldeaCliValidateExecutionResult(
-          snapshotResult.result as IProjectInspectionResult,
+          snapshotResult.result as IProjectValidationResult,
           input.packageMetadata.version,
           options.isJson,
           options.cursor,
@@ -199,7 +236,7 @@ export const createMoldeaCliCommandExecutor = (
 
       if (command === MOLDEA_CLI_COMMANDS.Inspect) {
         return createMoldeaCliInspectExecutionResult(
-          snapshotResult.result as IProjectInspectionResult,
+          snapshotResult.result as IProjectInspectionPageResult,
           input.packageMetadata.version,
           options.isJson,
           options.cursor,

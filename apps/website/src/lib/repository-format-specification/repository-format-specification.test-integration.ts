@@ -121,7 +121,7 @@ describe('Repository Format specification', () => {
     const specification = loadRepositoryFormatSpecification();
 
     for (const example of specification.completeExamples) {
-      const result = await createCore().inspectProject({
+      const result = await createCore().validateProject({
         repository: createMemoryRepositoryReader(
           example.files.map((file) => ({
             content: file.content,

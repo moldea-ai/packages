@@ -57,7 +57,7 @@ export const validateAgentDescription = (
   kind: 'description' | 'handoff-description',
   limits: ICoreResourceLimits,
 ): IAgentDescriptionValidationResult => {
-  const diagnostics = createCoreDiagnosticCollector(limits, 'inspect-project');
+  const diagnostics = createCoreDiagnosticCollector(limits, 'validate-project');
   const value = trimRepositoryFormatWhitespace(asset.content);
   const scalarLength = countUnicodeScalars(value);
   const code =
@@ -110,7 +110,7 @@ export const validateAgentInstruction = (
   agentId: string,
   limits: ICoreResourceLimits,
 ): IAgentInstructionValidationResult => {
-  const diagnostics = createCoreDiagnosticCollector(limits, 'inspect-project');
+  const diagnostics = createCoreDiagnosticCollector(limits, 'validate-project');
 
   if (!hasNonWhitespace(asset.content)) {
     diagnostics.add({

@@ -12,8 +12,8 @@ import {
   isRepositoryPath,
   parseRepositoryPath,
   type IRepositoryEntry,
+  type IRepositoryEntryPageOptions,
   type IRepositoryEntryType,
-  type IRepositoryListOptions,
   type IRepositoryOperation,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
@@ -78,12 +78,21 @@ describe('published package artifacts', () => {
     const repositoryPath: IRepositoryPath = parseRepositoryPath('/file.txt');
     const root: IRepositoryPath = REPOSITORY_ROOT;
     const entryType: IRepositoryEntryType = 'file';
-    const entry: IRepositoryEntry = { path: repositoryPath, type: entryType };
+    const entry: IRepositoryEntry = {
+      byteLength: 1,
+      contentIdentity: 'fixture:1',
+      path: repositoryPath,
+      type: entryType,
+    };
     const operationOptions: IRepositoryOperationOptions = {
       signal: new AbortController().signal,
     };
-    const listOptions: IRepositoryListOptions = { prefix: root, ...operationOptions };
-    const operation: IRepositoryOperation = 'read-file';
+    const listOptions: IRepositoryEntryPageOptions = {
+      maxEntries: 16,
+      prefix: root,
+      ...operationOptions,
+    };
+    const operation: IRepositoryOperation = 'read-file-page';
     const sourceCode: IRepositorySourceErrorCode = 'ENTRY_NOT_FOUND';
     const pathExceptionOptions: IRepositoryPathExceptionOptions = { cause: new Error('cause') };
     const sourceExceptionOptions: IRepositorySourceExceptionOptions = {
@@ -100,7 +109,12 @@ describe('published package artifacts', () => {
     const sourceException = new RepositorySourceException(sourceExceptionOptions);
 
     expect(isRepositoryPath(repositoryPath)).toBe(true);
-    expect(entry).toStrictEqual({ path: repositoryPath, type: 'file' });
+    expect(entry).toStrictEqual({
+      byteLength: 1,
+      contentIdentity: 'fixture:1',
+      path: repositoryPath,
+      type: 'file',
+    });
     expect(listOptions.prefix).toBe(REPOSITORY_ROOT);
     expect(reader).toHaveProperty('getEntry', expect.any(Function));
     expect(pathException).toBeInstanceOf(RepositoryPathException);
@@ -128,7 +142,7 @@ describe('published package artifacts', () => {
     ) as IRepositoryPackageManifest;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/repository', version: '1.1.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/repository', version: '2.0.0' });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/memory.js');
@@ -197,6 +211,9 @@ describe('published package artifacts', () => {
         'REPOSITORY_ROOT',
         'RepositoryPathException',
         'RepositorySourceException',
+        'compareRepositoryPaths',
+        'createRepositoryComparison',
+        'createRepositoryIdentity',
         'isRepositoryPath',
         'parseRepositoryPath',
       ],

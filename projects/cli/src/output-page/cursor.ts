@@ -14,6 +14,7 @@ interface IMoldeaCliCursorPayload {
   readonly command: IMoldeaCliPageCommand;
   readonly filtersDigest: string;
   readonly lastKey: string;
+  readonly sourceCursor: string | null;
   readonly snapshotDigest: string;
   readonly version: typeof MOLDEA_CLI_CURSOR_VERSION;
 }
@@ -30,6 +31,7 @@ const CURSOR_DOCUMENT_KEYS = Object.freeze([
   'filtersDigest',
   'lastKey',
   'snapshotDigest',
+  'sourceCursor',
   'version',
 ]);
 
@@ -72,6 +74,7 @@ const isCursorDocument = (value: unknown): value is IMoldeaCliCursorDocument => 
     SHA256_PATTERN.test(record['filtersDigest']) &&
     typeof record['lastKey'] === 'string' &&
     record['lastKey'].length > 0 &&
+    (record['sourceCursor'] === null || typeof record['sourceCursor'] === 'string') &&
     typeof record['snapshotDigest'] === 'string' &&
     SHA256_PATTERN.test(record['snapshotDigest']) &&
     typeof record['checksum'] === 'string' &&
@@ -85,11 +88,13 @@ export const encodeMoldeaCliCursor = (
   filters: IJsonValue,
   snapshotDigest: string,
   lastKey: string,
+  sourceCursor: string | null = null,
 ): string => {
   const payload: IMoldeaCliCursorPayload = {
     command,
     filtersDigest: calculateMoldeaCliJsonDigest(filters),
     lastKey,
+    sourceCursor,
     snapshotDigest,
     version: MOLDEA_CLI_CURSOR_VERSION,
   };
@@ -143,9 +148,13 @@ export const decodeMoldeaCliCursor = (input: IMoldeaCliCursorInput): IMoldeaCliC
     throw new MoldeaCliOutputPageException('CURSOR_INVALID');
   }
 
-  if (decoded.snapshotDigest !== input.snapshotDigest) {
+  if (input.snapshotDigest !== undefined && decoded.snapshotDigest !== input.snapshotDigest) {
     throw new MoldeaCliOutputPageException('CURSOR_SNAPSHOT_CHANGED');
   }
 
-  return Object.freeze({ lastKey: decoded.lastKey });
+  return Object.freeze({
+    lastKey: decoded.lastKey,
+    snapshotDigest: decoded.snapshotDigest,
+    sourceCursor: decoded.sourceCursor,
+  });
 };

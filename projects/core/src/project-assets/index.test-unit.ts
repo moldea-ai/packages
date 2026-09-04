@@ -6,7 +6,6 @@ import {
   parseRepositoryPath,
   type IRepositoryEntry,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 
 import type { ICanonicalDiscoveryResult } from '../canonical-discovery/index.js';
@@ -14,6 +13,7 @@ import { DEFAULT_CORE_RESOURCE_LIMITS } from '../constants/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
 import type { IMoldeaManifestV1 } from '../format/index.js';
 import { normalizeCoreOptions } from '../options/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 
 import { readProjectAssets } from './index.js';
 
@@ -22,7 +22,7 @@ const options = normalizeCoreOptions(undefined);
 
 interface IReaderFixture {
   readonly readPaths: IRepositoryPath[];
-  readonly reader: IRepositoryReader;
+  readonly reader: IRepositoryInspectionReader;
 }
 
 const createEmptyEntryIterable = (): AsyncIterable<IRepositoryEntry> => ({
@@ -56,8 +56,8 @@ const createReaderFixture = (
     readPaths,
     reader: {
       getEntry: () => Promise.resolve(null),
-      listEntries: () => createEmptyEntryIterable(),
-      readFile: (path) => {
+      iterateEntries: () => createEmptyEntryIterable(),
+      readCompleteFile: (path) => {
         readPaths.push(path);
         const content = contents.get(path);
 
@@ -200,15 +200,15 @@ describe('Core project and focused-context asset inspection', () => {
     const controller = new AbortController();
     const sourceFailure = new RepositorySourceException({
       code: 'SOURCE_UNAVAILABLE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: PROJECT_PATH,
       retryable: true,
     });
     let receivedSignal: AbortSignal | undefined;
-    const repository: IRepositoryReader = {
+    const repository: IRepositoryInspectionReader = {
       getEntry: () => Promise.resolve(null),
-      listEntries: () => createEmptyEntryIterable(),
-      readFile: (_path, operationOptions) => {
+      iterateEntries: () => createEmptyEntryIterable(),
+      readCompleteFile: (_path, operationOptions) => {
         receivedSignal = operationOptions?.signal;
         return Promise.reject(sourceFailure);
       },
@@ -248,7 +248,7 @@ describe('Core project and focused-context asset inspection', () => {
     ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxDiagnostics',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: false,
     });
   });

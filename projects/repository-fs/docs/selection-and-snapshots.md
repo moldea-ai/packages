@@ -1,12 +1,12 @@
 ---
 title: Selection and snapshots
-description: Exact-path and recursive inventory rules, host-to-logical mapping, symlinks, and coherent capture.
+description: Exact-path and directory selection, lazy observations, symlinks, and cursor-bound coherence.
 order: 10
 ---
 
 # Selection and snapshots
 
-Reader creation requires an absolute `rootDirectory` and one explicit selection strategy.
+Reader creation requires an absolute `rootDirectory` and an explicit selection strategy.
 
 ```typescript
 import { parseRepositoryPath } from '@moldea.ai/repository';
@@ -23,16 +23,14 @@ const reader = await createFilesystemRepositoryReader({
 
 ## Exact-path selection
 
-Exact selection includes the requested entries and the directory parents needed to represent them. Input order has no semantic meaning. `/`, duplicates, an exact `.git` segment, missing selected entries, and unsupported entry types fail creation rather than producing a partial reader.
+Exact selection validates the requested entries and directory parents needed to represent them. Input order has no meaning. `/`, duplicates, missing paths, invalid parent types, and unsupported entry types fail creation. Listing uses a keyset cursor based on the last returned logical path rather than a positional offset.
 
-Native directory names are matched against the exact UTF-8 bytes of each requested segment. The reader does not case-fold or normalize Unicode. Unrelated sibling activity does not invalidate an exact selection because membership outside the selected tree is not part of that snapshot.
+## Directory selection
 
-## Recursive-directory selection
+Directory selection defers traversal until `listEntriesPage`. Each visited directory is streamed with a hard `maxDirectoryEntries` ceiling, then its retained names are sorted for deterministic output. A name exactly equal to `.git` is omitted; `.GIT`, `.gitignore`, `.gitattributes`, and `.github` remain visible.
 
-Recursive selection includes every representable regular file, directory, and symlink under the root. Hidden and ignored-looking names are ordinary entries. A name exactly equal to `.git` is omitted at every depth before traversal; `.GIT`, `.gitignore`, `.gitattributes`, and `.github` remain visible.
-
-Directory identities and complete eligible child-name sets are verified. Physical aliases, cycles, unsupported types, undecodable names, entry-limit overflow, or membership changes fail the complete operation.
+The continuation cursor contains versioned traversal frames with the last consumed name and directory identities. Restoring a cursor reobserves those directories and rejects changed identity or membership with `SNAPSHOT_CHANGED`. Cursor state is HMAC-authenticated, snapshot-bound, prefix-bound, and capped at 64 KiB.
 
 ## Symlinks and redirection
 
-The caller-selected root may itself be a symlink or junction; its resolved target becomes the fixed boundary. Descendant symlinks and junctions remain logical symlink entries and are never traversed. Regular-file capture revalidates the complete root-to-file path and uses no-follow observations so replacement or redirection becomes `SNAPSHOT_CHANGED` rather than silently reading another file.
+The selected root may itself resolve through a symlink or junction; its resolved target becomes the fixed boundary. Descendant symlinks and junctions remain logical symlink entries and are never traversed. Regular-file range reads revalidate the private observed stat identity and use no-follow opening where the runtime supports it. Entry metadata leaves `contentIdentity` null because stat identity cannot prove portable byte equality; comparisons use bounded file ranges instead.

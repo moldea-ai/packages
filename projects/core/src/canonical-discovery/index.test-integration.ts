@@ -7,12 +7,13 @@ import {
   RepositorySourceException,
   parseRepositoryPath,
   type IRepositoryEntry,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  overrideCoreTestRepositoryReader,
+  type ICoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
-} from '@moldea.ai/repository/memory';
+} from '../repository.test-fixtures.js';
 
 import { DEFAULT_CORE_RESOURCE_LIMITS } from '../constants/index.js';
 import { createCore } from '../core/index.js';
@@ -75,23 +76,24 @@ const simplifyDiagnostics = (
   return diagnostics.map(({ code, details, path }) => ({ code, details: { ...details }, path }));
 };
 
-const reverseEnumeration = (repository: IRepositoryReader): IRepositoryReader => ({
-  getEntry: (path, options) => repository.getEntry(path, options),
-  listEntries: (options): AsyncIterable<IRepositoryEntry> => ({
-    async *[Symbol.asyncIterator]() {
-      const entries: IRepositoryEntry[] = [];
+const reverseEnumeration = (repository: ICoreTestRepositoryReader): ICoreTestRepositoryReader =>
+  overrideCoreTestRepositoryReader(repository, {
+    getEntry: (path, options) => repository.getEntry(path, options),
+    iterateEntries: (options): AsyncIterable<IRepositoryEntry> => ({
+      async *[Symbol.asyncIterator]() {
+        const entries: IRepositoryEntry[] = [];
 
-      for await (const entry of repository.listEntries(options)) {
-        entries.push(entry);
-      }
+        for await (const entry of repository.iterateEntries(options)) {
+          entries.push(entry);
+        }
 
-      for (const entry of entries.reverse()) {
-        yield entry;
-      }
-    },
-  }),
-  readFile: (path, options) => repository.readFile(path, options),
-});
+        for (const entry of entries.reverse()) {
+          yield entry;
+        }
+      },
+    }),
+    readCompleteFile: (path, options) => repository.readCompleteFile(path, options),
+  });
 
 describe('Core canonical discovery through the memory repository reader', () => {
   test('discovers one sorted deeply immutable canonical inventory', async () => {
@@ -152,12 +154,12 @@ describe('Core canonical discovery through the memory repository reader', () => 
 
     const core = createCore();
     const manifest = await core.parseManifest({
-      content: await repository.readFile(manifestPath),
+      content: await repository.readCompleteFile(manifestPath),
       path: manifestPath,
     });
     const decisions = await Promise.all(
       discovery.inventory.decisions.map(async (path) => {
-        return core.parseDecision({ content: await repository.readFile(path), path });
+        return core.parseDecision({ content: await repository.readCompleteFile(path), path });
       }),
     );
 
@@ -183,7 +185,7 @@ describe('Core canonical discovery through the memory repository reader', () => 
     expect(discovery.inventory.decisions).toStrictEqual([decisionPath]);
 
     const decision = await createCore().parseDecision({
-      content: await repository.readFile(decisionPath),
+      content: await repository.readCompleteFile(decisionPath),
       path: decisionPath,
     });
 
@@ -216,17 +218,17 @@ describe('Core canonical discovery through the memory repository reader', () => 
     const repository = createMemoryRepositoryReader(toMemoryEntries(validProject.entries));
     const sourceFailure = new RepositorySourceException({
       code: 'SOURCE_UNAVAILABLE',
-      operation: 'list-entries',
+      operation: 'list-entries-page',
       path: parseRepositoryPath('/moldea'),
       retryable: false,
     });
-    const failingRepository: IRepositoryReader = {
+    const failingRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, options) => repository.getEntry(path, options),
-      listEntries: () => {
+      iterateEntries: () => {
         throw sourceFailure;
       },
-      readFile: (path, options) => repository.readFile(path, options),
-    };
+      readCompleteFile: (path, options) => repository.readCompleteFile(path, options),
+    });
 
     await expect(
       discoverCanonicalAssets(failingRepository, DEFAULT_CORE_RESOURCE_LIMITS),
@@ -235,17 +237,20 @@ describe('Core canonical discovery through the memory repository reader', () => 
 
   test('rejects reader entries that violate the source-neutral contract', async () => {
     const repository = createMemoryRepositoryReader(toMemoryEntries(validProject.entries));
-    const invalidRepository: IRepositoryReader = {
+    const invalidRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: async (path, options) => {
         if (path === '/moldea/moldea.yaml') {
-          return { path: parseRepositoryPath('/moldea/project.md'), type: 'file' };
+          return {
+            path: parseRepositoryPath('/moldea/project.md'),
+            type: 'file',
+          } as never;
         }
 
         return repository.getEntry(path, options);
       },
-      listEntries: (options) => repository.listEntries(options),
-      readFile: (path, options) => repository.readFile(path, options),
-    };
+      iterateEntries: (options) => repository.iterateEntries(options),
+      readCompleteFile: (path, options) => repository.readCompleteFile(path, options),
+    });
 
     await expect(
       discoverCanonicalAssets(invalidRepository, DEFAULT_CORE_RESOURCE_LIMITS),

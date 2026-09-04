@@ -73,7 +73,10 @@ describe('working-tree snapshot integration', () => {
             renameSync(replacementHostPath, selectedHostPath);
           }
 
-          const bytes = await reader.readFile(parseRepositoryPath('/moldea/project.md'));
+          const { bytes } = await reader.readFilePage(parseRepositoryPath('/moldea/project.md'), {
+            maxBytes: 1024,
+            offset: 0,
+          });
 
           return new TextDecoder().decode(bytes);
         },
@@ -148,7 +151,10 @@ describe('working-tree snapshot integration', () => {
       const result = await executeSnapshot({
         operation: async (reader) => {
           operationCalls += 1;
-          const bytes = await reader.readFile(parseRepositoryPath('/moldea/project.md'));
+          const { bytes } = await reader.readFilePage(parseRepositoryPath('/moldea/project.md'), {
+            maxBytes: 1024,
+            offset: 0,
+          });
 
           return new TextDecoder().decode(bytes);
         },
@@ -259,7 +265,10 @@ describe('working-tree snapshot integration', () => {
             'moldea/project.md',
           ]);
 
-          return reader.readFile(parseRepositoryPath('/moldea/project.md'));
+          return reader.readFilePage(parseRepositoryPath('/moldea/project.md'), {
+            maxBytes: 1024,
+            offset: 0,
+          });
         },
         repositoryRoot,
         resourceLimits: {

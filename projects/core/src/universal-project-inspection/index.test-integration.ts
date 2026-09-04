@@ -6,16 +6,15 @@ import { describe, expect, test } from 'vitest';
 import {
   RepositorySourceException,
   parseRepositoryPath,
-  type IRepositoryEntry,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  overrideCoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
-} from '@moldea.ai/repository/memory';
+} from '../repository.test-fixtures.js';
 
-import type { IProjectInspectionInput } from '../contracts/index.js';
+import type { IProjectValidationInput } from '../contracts/index.js';
 import { normalizeCoreOptions, type ICoreOptionsSnapshot } from '../options/index.js';
 import { createRepositoryInspectionSession } from '../repository-inspection-session/index.js';
 
@@ -61,7 +60,7 @@ const manifestPath = parseRepositoryPath('/moldea/moldea.yaml');
 
 /** Executes the internal universal phase with the same session ownership as public inspection. */
 const inspectUniversalProject = async (
-  input: IProjectInspectionInput,
+  input: IProjectValidationInput,
   inspectionOptions: ICoreOptionsSnapshot,
 ) => {
   const session = createRepositoryInspectionSession(
@@ -96,24 +95,6 @@ const createEntries = (
     return { content: entry.text, path: entry.path, type: 'file' };
   }),
 ];
-
-const reverseEnumeration = (repository: IRepositoryReader): IRepositoryReader => ({
-  getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-  listEntries: (operationOptions): AsyncIterable<IRepositoryEntry> => ({
-    async *[Symbol.asyncIterator]() {
-      const entries: IRepositoryEntry[] = [];
-
-      for await (const entry of repository.listEntries(operationOptions)) {
-        entries.push(entry);
-      }
-
-      for (const entry of entries.reverse()) {
-        yield entry;
-      }
-    },
-  }),
-  readFile: (path, operationOptions) => repository.readFile(path, operationOptions),
-});
 
 const toJsonValue = (value: unknown): unknown => JSON.parse(JSON.stringify(value)) as unknown;
 
@@ -337,9 +318,11 @@ describe('Core universal project inspection through the memory repository reader
     ]);
     expect(project.agents[0]?.mirrors).toStrictEqual([
       {
+        byteLength: 50,
         canonicalDigest: 'sha256:08bd85d6e1246e203458e6c91225d17d375b5d5d9ed94aee42457a8d3dcbd2e5',
         digest: 'sha256:08bd85d6e1246e203458e6c91225d17d375b5d5d9ed94aee42457a8d3dcbd2e5',
         path: '/apps/alpha.md',
+        scalarLength: 50,
       },
     ]);
     expect(JSON.parse(JSON.stringify(project.unresolved))).toStrictEqual({
@@ -355,7 +338,7 @@ describe('Core universal project inspection through the memory repository reader
     expect(Object.isFrozen(project.context[0]?.relationships)).toBe(true);
   });
 
-  test('is independent of repository insertion and enumeration order', async () => {
+  test('is independent of repository fixture insertion order', async () => {
     const case_ = getFixtureCase('complete universal project');
     const entries = createEntries(case_);
     const expected = await inspectUniversalProject(
@@ -363,9 +346,7 @@ describe('Core universal project inspection through the memory repository reader
       options,
     );
     const reordered = await inspectUniversalProject(
-      {
-        repository: reverseEnumeration(createMemoryRepositoryReader([...entries].reverse())),
-      },
+      { repository: createMemoryRepositoryReader([...entries].reverse()) },
       options,
     );
 
@@ -376,14 +357,14 @@ describe('Core universal project inspection through the memory repository reader
     const case_ = getFixtureCase('complete universal project');
     const repository = createMemoryRepositoryReader(createEntries(case_));
     const readCounts = new Map<IRepositoryPath, number>();
-    const observedRepository: IRepositoryReader = {
+    const observedRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-      listEntries: (operationOptions) => repository.listEntries(operationOptions),
-      readFile: (path, operationOptions) => {
+      iterateEntries: (operationOptions) => repository.iterateEntries(operationOptions),
+      readCompleteFile: (path, operationOptions) => {
         readCounts.set(path, (readCounts.get(path) ?? 0) + 1);
-        return repository.readFile(path, operationOptions);
+        return repository.readCompleteFile(path, operationOptions);
       },
-    };
+    });
 
     await inspectUniversalProject({ repository: observedRepository }, options);
 
@@ -424,26 +405,26 @@ describe('Core universal project inspection through the memory repository reader
     const controller = new AbortController();
     controller.abort(new Error('test cancellation'));
     let hasAccessedRepository = false;
-    const repository: IRepositoryReader = {
+    const repository = overrideCoreTestRepositoryReader(createMemoryRepositoryReader([]), {
       getEntry: () => {
         hasAccessedRepository = true;
         return Promise.resolve(null);
       },
-      listEntries: () => {
+      iterateEntries: () => {
         hasAccessedRepository = true;
         throw new TypeError('The aborted repository must not be listed.');
       },
-      readFile: () => {
+      readCompleteFile: () => {
         hasAccessedRepository = true;
         return Promise.resolve(new Uint8Array());
       },
-    };
+    });
 
     await expect(
       inspectUniversalProject({ repository, signal: controller.signal }, options),
     ).rejects.toMatchObject({
       code: 'ABORTED',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: true,
     });
     expect(hasAccessedRepository).toBe(false);
@@ -456,13 +437,13 @@ describe('Core universal project inspection through the memory repository reader
       path: parseRepositoryPath('/moldea'),
       retryable: true,
     });
-    const repository: IRepositoryReader = {
+    const repository = overrideCoreTestRepositoryReader(createMemoryRepositoryReader([]), {
       getEntry: () => Promise.reject(sourceFailure),
-      listEntries: () => {
+      iterateEntries: () => {
         throw new TypeError('The failed repository must not be listed.');
       },
-      readFile: () => Promise.resolve(new Uint8Array()),
-    };
+      readCompleteFile: () => Promise.resolve(new Uint8Array()),
+    });
 
     await expect(inspectUniversalProject({ repository }, options)).rejects.toBe(sourceFailure);
   });
@@ -473,20 +454,20 @@ describe('Core universal project inspection through the memory repository reader
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
     ]);
     const operations: string[] = [];
-    const observedRepository: IRepositoryReader = {
+    const observedRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, operationOptions) => {
         operations.push(`get:${path}`);
         return repository.getEntry(path, operationOptions);
       },
-      listEntries: (operationOptions) => {
+      iterateEntries: (operationOptions) => {
         operations.push(`list:${operationOptions?.prefix ?? '/'}`);
-        return repository.listEntries(operationOptions);
+        return repository.iterateEntries(operationOptions);
       },
-      readFile: (path, operationOptions) => {
+      readCompleteFile: (path, operationOptions) => {
         operations.push(`read:${path}`);
-        return repository.readFile(path, operationOptions);
+        return repository.readCompleteFile(path, operationOptions);
       },
-    };
+    });
 
     await inspectUniversalProject({ repository: observedRepository }, options);
 
@@ -507,22 +488,22 @@ describe('Core universal project inspection through the memory repository reader
     ]);
     const manifestFailure = new RepositorySourceException({
       code: 'SOURCE_UNAVAILABLE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: manifestPath,
       retryable: true,
     });
     let hasStartedEnumeration = false;
-    const failingRepository: IRepositoryReader = {
+    const failingRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-      listEntries: () => {
+      iterateEntries: () => {
         hasStartedEnumeration = true;
         throw new TypeError('Canonical enumeration must not start after a manifest read failure.');
       },
-      readFile: (path, operationOptions) =>
+      readCompleteFile: (path, operationOptions) =>
         path === manifestPath
           ? Promise.reject(manifestFailure)
-          : repository.readFile(path, operationOptions),
-    };
+          : repository.readCompleteFile(path, operationOptions),
+    });
 
     await expect(inspectUniversalProject({ repository: failingRepository }, options)).rejects.toBe(
       manifestFailure,
@@ -551,7 +532,7 @@ describe('Core universal project inspection through the memory repository reader
     ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxDiagnostics',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: false,
     });
   });
@@ -566,7 +547,7 @@ describe('Core universal project inspection through the memory repository reader
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
     ]);
     let hasAccessedProject = false;
-    const repository: IRepositoryReader = {
+    const repository = overrideCoreTestRepositoryReader(sourceRepository, {
       getEntry: (path, operationOptions) => {
         if (path === '/moldea/project.md') {
           hasAccessedProject = true;
@@ -574,9 +555,10 @@ describe('Core universal project inspection through the memory repository reader
 
         return sourceRepository.getEntry(path, operationOptions);
       },
-      listEntries: (operationOptions) => sourceRepository.listEntries(operationOptions),
-      readFile: (path, operationOptions) => sourceRepository.readFile(path, operationOptions),
-    };
+      iterateEntries: (operationOptions) => sourceRepository.iterateEntries(operationOptions),
+      readCompleteFile: (path, operationOptions) =>
+        sourceRepository.readCompleteFile(path, operationOptions),
+    });
 
     await expect(
       inspectUniversalProject(
@@ -586,7 +568,7 @@ describe('Core universal project inspection through the memory repository reader
     ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxDiagnostics',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: false,
     });
     expect(hasAccessedProject).toBe(false);

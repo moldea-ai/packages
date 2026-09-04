@@ -1,28 +1,32 @@
 ---
 title: Security and operational limits
-description: Resource budgets, safe errors, sensitive directory mode, cancellation, and Node.js runtime support.
+description: Independent resource ceilings, safe errors, raw directory risk, and runtime support.
 order: 30
 ---
 
 # Security and operational limits
 
-Filesystem content and names are untrusted. The reader validates closed option contracts, retains no caller-mutable configuration, follows no descendant symlink, executes no file, and exposes no host path through `IRepositoryReader` or its exceptions.
+Filesystem names and content are untrusted. The reader validates closed option and cursor contracts, copies caller-owned configuration, follows no descendant symlink, executes no file, and exposes no host path through `IRepositoryReader` or its exceptions.
 
 ## Resource limits
 
-| Limit            |     Default | Meaning                                              |
-| ---------------- | ----------: | ---------------------------------------------------- |
-| `maxEntries`     |    `100000` | Selected and synthesized entries, excluding the root |
-| `maxFileBytes`   |   `8388608` | Maximum bytes for one captured regular file          |
-| `maxCachedBytes` | `134217728` | Maximum committed plus reserved file bytes           |
+| Limit                     |          Default | Meaning                                                       |
+| ------------------------- | ---------------: | ------------------------------------------------------------- |
+| `maxEntries`              |         `131072` | Distinct non-root entries observed during the reader lifetime |
+| `maxCachedBytes`          | `67108864` bytes | Complete verified file-page bytes retained in LRU storage     |
+| `maxConcurrentOperations` |             `16` | Active filesystem operations                                  |
+| `maxDirectoryEntries`     |         `131072` | Raw names accepted from one directory scan                    |
+| `maxPageEntries`          |           `4096` | Metadata entries returned in one page                         |
+| `maxQueuedOperations`     |            `256` | Operations waiting for the gate                               |
+| `maxReadBytes`            |  `1048576` bytes | File bytes returned by one range request                      |
 
-Configured values must be positive safe integers. A limit breach fails with `RESOURCE_LIMIT_EXCEEDED`; inventory and capture are never truncated into a partial success.
+Configured values must be positive safe integers. Limits are independent so large repositories remain usable through continuation while individual scans, pages, reads, queues, and retained memory stay bounded. A breach fails with `RESOURCE_LIMIT_EXCEEDED` and reports the named dimension, limit, and observed request or count.
 
 ## Error mapping
 
-Malformed logical paths remain `RepositoryPathException`. Configuration, root, inventory, filesystem, resource, snapshot, and cancellation failures use `RepositorySourceException`. Stable access denial maps to `ACCESS_DENIED`; stable I/O failure maps to `SOURCE_UNAVAILABLE`; any failure that prevents coherence from being proven maps to `SNAPSHOT_CHANGED`.
+Malformed logical paths use `RepositoryPathException`. Configuration, filesystem, resource, cursor, snapshot, and cancellation failures use `RepositorySourceException`. Stable access denial maps to `ACCESS_DENIED`; stable I/O failure maps to `SOURCE_UNAVAILABLE`; an already-observed path that changes maps to `SNAPSHOT_CHANGED`.
 
-Raw directory selection is a sensitive mode because it deliberately admits the whole eligible tree. It can expose credentials, caches, ignored files, dependencies, and build output to the consumer. The CLI therefore uses exact Git-derived paths instead of asking this package to infer repository policy.
+Raw directory selection is sensitive because it can expose ignored files, credentials, dependencies, caches, and generated output. The CLI uses Git-derived exact paths for repository-bound inspection rather than delegating trust policy to this package.
 
 ## Runtime
 

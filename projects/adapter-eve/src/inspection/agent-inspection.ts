@@ -1,10 +1,14 @@
 import ts from 'typescript';
 
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 
 import { EVE_ADAPTER_ID, EVE_TARGET_ID } from '../constants/index.js';
-import type { IEveAgentDefinition, IEveInspectionSession } from '../contracts/index.js';
+import type {
+  IEveAgentDefinition,
+  IEveInspectionSession,
+  IEveScopedAgent,
+} from '../contracts/index.js';
 import { resolveEveAgentRoot } from '../repository-discovery/index.js';
 import {
   getEveDefinition,
@@ -25,7 +29,7 @@ const POSITIVE_AGENT_KEYS = new Set(['description', 'model', 'outputSchema']);
 /** Inspects one exact manifest-bound Eve agent definition and its output schema. */
 export const inspectEveAgent = async (
   session: IEveInspectionSession,
-  agent: IIndexedAgent,
+  agent: IEveScopedAgent,
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],
 ): Promise<IEveAgentDefinition | null> => {

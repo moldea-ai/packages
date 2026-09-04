@@ -27,12 +27,14 @@ describe('project scope execution', () => {
     const result = await execute({
       paths: ['/unrelated.md', '/src/feature.ts'],
       repository: {
+        compare: (candidate, options) => reader.compare(candidate, options),
         getEntry: (path, options) => reader.getEntry(path, options),
-        listEntries: (options) => reader.listEntries(options),
-        readFile: (path, options) => {
+        listEntriesPage: (options) => reader.listEntriesPage(options),
+        readFilePage: (path, options) => {
           readPaths.push(path);
-          return reader.readFile(path, options);
+          return reader.readFilePage(path, options);
         },
+        snapshot: reader.snapshot,
       },
       resourceLimits: {
         maxDiagnostics: 16,

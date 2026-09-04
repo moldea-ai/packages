@@ -1,8 +1,13 @@
 import ts from 'typescript';
 
 import { resolveBindingReferences, unwrapExpression } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type {
+  IAdapterDiagnostic,
+  IRuntimeAdapterContext,
+  IRuntimeAdapterEvidence,
+  IRuntimeAdapterResolvedAgent,
+} from '@moldea.ai/core/adapter';
+import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import { CLOUDFLARE_AGENTS_ADAPTER_ID } from '../constants/index.js';
 import type {
@@ -12,39 +17,58 @@ import type {
 import { addCloudflareAgentsDiagnostic, createCloudflareAgentsEvidence } from './common.js';
 import { resolveCloudflareAgentsToolDefinition } from './resolution.js';
 import type { ICloudflareAgentsResolvedToolMap } from './resolution.js';
+import type { ICloudflareAgentsScopedAgent } from './types.js';
 
-const findTargetAgents = (
+type ICloudflareAgentsTargetResolution =
+  | { readonly kind: 'absent' }
+  | { readonly kind: 'ambiguous' }
+  | { readonly agent: IRuntimeAdapterResolvedAgent; readonly kind: 'matched' };
+
+const resolveTargetAgent = (
   target: ts.Expression,
   analysis: ICloudflareAgentsSourceAnalysis,
-  agents: readonly IIndexedAgent[],
-): readonly IIndexedAgent[] => {
+  context: IRuntimeAdapterContext,
+): ICloudflareAgentsTargetResolution => {
   const candidate = unwrapExpression(target);
 
   if (!ts.isIdentifier(candidate)) {
-    return Object.freeze([]);
+    return Object.freeze({ kind: 'absent' });
   }
 
   const references = resolveBindingReferences(candidate, analysis);
+  const matchedAgents = new Map<string, IRuntimeAdapterResolvedAgent>();
 
-  return Object.freeze(
-    agents.filter((agent) => {
-      const runtimeAgent = agent.declaration.bindings?.runtimeAgent;
-      return (
-        runtimeAgent?.symbol !== undefined &&
-        references.some(
-          (reference) =>
-            reference.path === runtimeAgent.path && reference.symbol === runtimeAgent.symbol,
-        )
-      );
-    }),
-  );
+  for (const reference of references) {
+    const resolution = context.resolveAgent({
+      path: parseRepositoryPath(reference.path),
+      symbol: reference.symbol,
+    });
+
+    if (resolution.kind === 'ambiguous') {
+      return Object.freeze({ kind: 'ambiguous' });
+    }
+
+    if (resolution.kind === 'matched') {
+      matchedAgents.set(resolution.agent.id, resolution.agent);
+    }
+  }
+
+  if (matchedAgents.size > 1) {
+    return Object.freeze({ kind: 'ambiguous' });
+  }
+
+  const agent = matchedAgents.values().next().value;
+  return agent === undefined
+    ? Object.freeze({ kind: 'absent' })
+    : Object.freeze({ agent, kind: 'matched' });
 };
 
 /** Inspects active Cloudflare `agentTool` helpers as runtime handoff registrations. */
 export const inspectCloudflareAgentsHandoffs = async (
   session: ICloudflareAgentsInspectionSession,
-  sourceAgent: IIndexedAgent,
-  agents: readonly IIndexedAgent[],
+  sourceAgent: ICloudflareAgentsScopedAgent,
+  context: IRuntimeAdapterContext,
+  isResolvedAgentSupported: (agent: IRuntimeAdapterResolvedAgent) => Promise<boolean>,
   resolvedMaps: readonly ICloudflareAgentsResolvedToolMap[],
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],
@@ -61,9 +85,13 @@ export const inspectCloudflareAgentsHandoffs = async (
         continue;
       }
 
-      const targets = findTargetAgents(resolved.definition.tool.target, resolved.analysis, agents);
+      const targetResolution = resolveTargetAgent(
+        resolved.definition.tool.target,
+        resolved.analysis,
+        context,
+      );
 
-      if (targets.length > 1) {
+      if (targetResolution.kind === 'ambiguous') {
         addCloudflareAgentsDiagnostic(
           diagnostics,
           'CLOUDFLARE_AGENTS_HANDOFF_TARGET_AMBIGUOUS',
@@ -76,9 +104,9 @@ export const inspectCloudflareAgentsHandoffs = async (
         continue;
       }
 
-      const target = targets[0];
+      const target = targetResolution.kind === 'matched' ? targetResolution.agent : undefined;
 
-      if (target === undefined) {
+      if (target === undefined || !(await isResolvedAgentSupported(target))) {
         continue;
       }
 

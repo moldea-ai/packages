@@ -1,13 +1,19 @@
 import {
   REPOSITORY_ROOT,
   RepositorySourceException,
+  createRepositoryComparison,
   parseRepositoryPath,
+  type IRepositoryComparison,
   type IRepositoryEntry,
-  type IRepositoryListOptions,
+  type IRepositoryEntryPage,
+  type IRepositoryEntryPageOptions,
+  type IRepositoryFilePage,
+  type IRepositoryFilePageOptions,
   type IRepositoryOperation,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
   type IRepositoryReader,
+  type IRepositorySnapshot,
 } from '@moldea.ai/repository';
 
 /** Throws the common cancellation contract for wrapper-owned operations. */
@@ -55,16 +61,18 @@ const validateOverlayEntry = (
 /** Maps one expected underlying regular file to an immutable logical symlink entry. */
 const overlayEntry = (
   entry: IRepositoryEntry | null,
-  operation: 'get-entry' | 'list-entries',
+  operation: 'get-entry' | 'list-entries-page',
   path: IRepositoryPath,
 ): IRepositoryEntry => {
   validateOverlayEntry(entry, operation, path);
 
-  return Object.freeze({ path, type: 'symlink' });
+  return Object.freeze({ byteLength: null, contentIdentity: null, path, type: 'symlink' });
 };
 
 // immutable logical symlink view over one coherent repository reader
 class GitSymlinkOverlayRepositoryReader implements IRepositoryReader {
+  public readonly snapshot: IRepositorySnapshot;
+
   readonly #overlayPaths: ReadonlySet<IRepositoryPath>;
 
   readonly #reader: IRepositoryReader;
@@ -72,6 +80,15 @@ class GitSymlinkOverlayRepositoryReader implements IRepositoryReader {
   public constructor(reader: IRepositoryReader, overlayPaths: ReadonlySet<IRepositoryPath>) {
     this.#reader = reader;
     this.#overlayPaths = overlayPaths;
+    this.snapshot = reader.snapshot;
+  }
+
+  /** Creates a bounded comparison from this logical overlay snapshot. */
+  public compare(
+    candidate: IRepositoryReader,
+    options?: IRepositoryOperationOptions,
+  ): Promise<IRepositoryComparison> {
+    return createRepositoryComparison(this, candidate, options);
   }
 
   /**
@@ -117,26 +134,26 @@ class GitSymlinkOverlayRepositoryReader implements IRepositoryReader {
    * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
    * - ABORTED: The repository operation was aborted.
    */
-  public async readFile(
+  public async readFilePage(
     path: IRepositoryPath,
-    options?: IRepositoryOperationOptions,
-  ): Promise<Uint8Array> {
+    options: IRepositoryFilePageOptions,
+  ): Promise<IRepositoryFilePage> {
     const parsedPath = parseRepositoryPath(path);
 
     if (!this.#overlayPaths.has(parsedPath)) {
-      return this.#reader.readFile(parsedPath, options);
+      return this.#reader.readFilePage(parsedPath, options);
     }
 
-    throwIfAborted(options?.signal, 'read-file', parsedPath);
+    throwIfAborted(options.signal, 'read-file-page', parsedPath);
 
     const entry = await this.#reader.getEntry(parsedPath, options);
 
-    validateOverlayEntry(entry, 'read-file', parsedPath);
-    throwIfAborted(options?.signal, 'read-file', parsedPath);
+    validateOverlayEntry(entry, 'read-file-page', parsedPath);
+    throwIfAborted(options.signal, 'read-file-page', parsedPath);
 
     throw new RepositorySourceException({
       code: 'ENTRY_NOT_FILE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: parsedPath,
       retryable: false,
     });
@@ -157,47 +174,42 @@ class GitSymlinkOverlayRepositoryReader implements IRepositoryReader {
    * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
    * - ABORTED: The repository operation was aborted.
    */
-  public async *listEntries(options?: IRepositoryListOptions): AsyncIterable<IRepositoryEntry> {
+  public async listEntriesPage(
+    options: IRepositoryEntryPageOptions,
+  ): Promise<IRepositoryEntryPage> {
     const prefix =
-      options?.prefix === undefined ? REPOSITORY_ROOT : parseRepositoryPath(options.prefix);
+      options.prefix === undefined ? REPOSITORY_ROOT : parseRepositoryPath(options.prefix);
 
     if (this.#overlayPaths.has(prefix)) {
-      throwIfAborted(options?.signal, 'list-entries', prefix);
+      throwIfAborted(options.signal, 'list-entries-page', prefix);
 
       const operationOptions =
-        options?.signal === undefined ? undefined : { signal: options.signal };
+        options.signal === undefined ? undefined : { signal: options.signal };
       const entry = await this.#reader.getEntry(prefix, operationOptions);
 
-      validateOverlayEntry(entry, 'list-entries', prefix);
-      throwIfAborted(options?.signal, 'list-entries', prefix);
+      validateOverlayEntry(entry, 'list-entries-page', prefix);
+      throwIfAborted(options.signal, 'list-entries-page', prefix);
       throw new RepositorySourceException({
         code: 'ENTRY_NOT_DIRECTORY',
-        operation: 'list-entries',
+        operation: 'list-entries-page',
         path: prefix,
         retryable: false,
       });
     }
 
-    const descendantPrefix = prefix === REPOSITORY_ROOT ? REPOSITORY_ROOT : `${prefix}/`;
-    const unmatchedOverlayPaths = new Set(
-      [...this.#overlayPaths].filter((path) => path.startsWith(descendantPrefix)),
+    const page = await this.#reader.listEntriesPage(options);
+    const entries = page.entries.map((entry) =>
+      this.#overlayPaths.has(entry.path)
+        ? overlayEntry(entry, 'list-entries-page', entry.path)
+        : entry,
     );
 
-    for await (const entry of this.#reader.listEntries(options)) {
-      if (!unmatchedOverlayPaths.has(entry.path)) {
-        yield entry;
-        continue;
-      }
-
-      unmatchedOverlayPaths.delete(entry.path);
-      yield overlayEntry(entry, 'list-entries', entry.path);
-    }
-
-    const missingOverlayPath = unmatchedOverlayPaths.values().next().value;
-
-    if (missingOverlayPath !== undefined) {
-      throw createInvalidOverlayException('list-entries', missingOverlayPath);
-    }
+    return Object.freeze({
+      entries: Object.freeze(entries),
+      isComplete: page.isComplete,
+      nextCursor: page.nextCursor,
+      snapshot: this.snapshot,
+    });
   }
 }
 

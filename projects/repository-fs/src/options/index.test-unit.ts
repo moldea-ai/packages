@@ -25,11 +25,15 @@ const expectInvalidSourceData = (candidate: unknown): void => {
 };
 
 describe('filesystem repository option normalization', () => {
-  test('publishes the frozen version 1 default limits', () => {
+  test('publishes the frozen default limits', () => {
     expect(DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS).toStrictEqual({
-      maxCachedBytes: 134_217_728,
-      maxEntries: 100_000,
-      maxFileBytes: 8_388_608,
+      maxCachedBytes: 67_108_864,
+      maxConcurrentOperations: 16,
+      maxDirectoryEntries: 131_072,
+      maxEntries: 131_072,
+      maxPageEntries: 4_096,
+      maxQueuedOperations: 256,
+      maxReadBytes: 1_048_576,
     });
     expect(Object.isFrozen(DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS)).toBe(true);
   });
@@ -79,9 +83,13 @@ describe('filesystem repository option normalization', () => {
     limits.maxEntries = 8;
 
     expect(normalizedOptions.limits).toStrictEqual({
-      maxCachedBytes: 134_217_728,
+      maxCachedBytes: 67_108_864,
+      maxConcurrentOperations: 16,
+      maxDirectoryEntries: 131_072,
       maxEntries: 4,
-      maxFileBytes: 8_388_608,
+      maxPageEntries: 4_096,
+      maxQueuedOperations: 256,
+      maxReadBytes: 1_048_576,
     });
     expect(Object.isFrozen(normalizedOptions.limits)).toBe(true);
     expect(Object.isFrozen(limits)).toBe(false);

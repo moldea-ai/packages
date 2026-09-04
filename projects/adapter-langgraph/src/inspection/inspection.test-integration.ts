@@ -65,7 +65,7 @@ const createEntries = (
 };
 
 const inspect = async (replacements: Readonly<Record<string, IFixtureReplacement>> = {}) =>
-  createCore({ adapters: [langGraphAdapter] }).inspectProject({
+  createCore({ adapters: [langGraphAdapter] }).validateProject({
     repository: createMemoryRepositoryReader(createEntries(replacements)),
   });
 
@@ -97,7 +97,7 @@ describe('langGraphAdapter Core integration', () => {
   });
 
   test('is deterministic for reversed entries and concurrent inspections', async () => {
-    const reversed = await createCore({ adapters: [langGraphAdapter] }).inspectProject({
+    const reversed = await createCore({ adapters: [langGraphAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),
     });
     const concurrent = await Promise.all([inspect(), inspect(), inspect(), inspect()]);

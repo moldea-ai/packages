@@ -1,12 +1,11 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
+import { parseRepositoryPath, RepositorySourceException } from '@moldea.ai/repository';
 import {
-  parseRepositoryPath,
-  RepositorySourceException,
-  type IRepositoryReader,
-} from '@moldea.ai/repository';
-import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+  createMemoryRepositoryReader,
+  overrideCoreTestRepositoryReader,
+} from '../repository.test-fixtures.js';
 
 import { DEFAULT_CORE_RESOURCE_LIMITS } from '../constants/index.js';
 
@@ -24,14 +23,14 @@ describe('Core repository text reads through the memory repository reader', () =
       },
     ]);
     let readCount = 0;
-    const observedRepository: IRepositoryReader = {
+    const observedRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, options) => repository.getEntry(path, options),
-      listEntries: (options) => repository.listEntries(options),
-      readFile: (path, options) => {
+      iterateEntries: (options) => repository.iterateEntries(options),
+      readCompleteFile: (path, options) => {
         readCount += 1;
-        return repository.readFile(path, options);
+        return repository.readCompleteFile(path, options);
       },
-    };
+    });
 
     const result = await readRepositoryTextAsset(
       observedRepository,
@@ -74,19 +73,19 @@ describe('Core repository text reads through the memory repository reader', () =
   });
 
   test('rejects reader values that violate the source-neutral byte contract', async () => {
-    const repository: IRepositoryReader = {
+    const repository = overrideCoreTestRepositoryReader(createMemoryRepositoryReader([]), {
       getEntry: () => Promise.resolve(null),
-      listEntries: () => {
+      iterateEntries: () => {
         throw new TypeError('The malformed reader fixture does not support listing.');
       },
-      readFile: () => Promise.resolve('not bytes' as never),
-    };
+      readCompleteFile: () => Promise.resolve('not bytes' as never),
+    });
 
     await expect(
       readRepositoryTextAsset(repository, TEXT_PATH, DEFAULT_CORE_RESOURCE_LIMITS),
     ).rejects.toMatchObject({
       code: 'INVALID_SOURCE_DATA',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: TEXT_PATH,
       retryable: false,
     });
@@ -106,19 +105,19 @@ describe('Core repository text reads through the memory repository reader', () =
         DEFAULT_CORE_RESOURCE_LIMITS,
         controller.signal,
       ),
-    ).rejects.toMatchObject({ code: 'ABORTED', operation: 'read-file', path: TEXT_PATH });
+    ).rejects.toMatchObject({ code: 'ABORTED', operation: 'validate-project' });
 
     const sourceFailure = new RepositorySourceException({
       code: 'SOURCE_UNAVAILABLE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: TEXT_PATH,
       retryable: false,
     });
-    const failingRepository: IRepositoryReader = {
+    const failingRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, options) => repository.getEntry(path, options),
-      listEntries: (options) => repository.listEntries(options),
-      readFile: () => Promise.reject(sourceFailure),
-    };
+      iterateEntries: (options) => repository.iterateEntries(options),
+      readCompleteFile: () => Promise.reject(sourceFailure),
+    });
 
     await expect(
       readRepositoryTextAsset(failingRepository, TEXT_PATH, DEFAULT_CORE_RESOURCE_LIMITS),
@@ -132,13 +131,13 @@ describe('Core repository text reads through the memory repository reader', () =
         throw new TypeError('Reader bytes were copied before enforcing the file-byte limit.');
       },
     });
-    const repository: IRepositoryReader = {
+    const repository = overrideCoreTestRepositoryReader(createMemoryRepositoryReader([]), {
       getEntry: () => Promise.resolve(null),
-      listEntries: () => {
+      iterateEntries: () => {
         throw new TypeError('The resource-limit fixture does not support listing.');
       },
-      readFile: () => Promise.resolve(content),
-    };
+      readCompleteFile: () => Promise.resolve(content),
+    });
 
     await expect(
       readRepositoryTextAsset(repository, TEXT_PATH, {
@@ -148,7 +147,7 @@ describe('Core repository text reads through the memory repository reader', () =
     ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxFileBytes',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: false,
     });
   });

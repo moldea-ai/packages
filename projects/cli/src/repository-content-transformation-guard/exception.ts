@@ -6,7 +6,7 @@ export class GitContentTransformUnsupportedException extends RepositorySourceExc
   public constructor(path: IRepositoryPath) {
     super({
       code: 'SOURCE_UNAVAILABLE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path,
       retryable: false,
     });

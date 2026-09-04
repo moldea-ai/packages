@@ -1,20 +1,15 @@
 import { createCore } from '@moldea.ai/core';
 
-import { MoldeaCliProjectContentException } from './exception.js';
 import type {
   IMoldeaCliProjectContentCoreFactory,
   IMoldeaCliProjectContentExecutor,
 } from './types.js';
 
-/** Creates an adapter-free executor for one explicit canonical content asset. */
+/** Creates an adapter-free executor for one bounded canonical content range. */
 export const createMoldeaCliProjectContentExecutor = (
   coreFactory: IMoldeaCliProjectContentCoreFactory = createCore,
 ): IMoldeaCliProjectContentExecutor => {
   return async (input) => {
-    const bytes = await input.repository.readFile(
-      input.path,
-      input.signal === undefined ? undefined : { signal: input.signal },
-    );
     const core = coreFactory({
       limits: Object.freeze({
         maxDiagnostics: input.resourceLimits.maxDiagnostics,
@@ -25,21 +20,16 @@ export const createMoldeaCliProjectContentExecutor = (
         maxTotalBytesRead: input.resourceLimits.maxTotalBytes,
       }),
     });
-    const result = await core.calculateContentDigest({ content: bytes, path: input.path });
 
-    if (!result.valid || result.digest === null || result.text === null) {
-      throw new MoldeaCliProjectContentException('CONTENT_INVALID');
-    }
-
-    return Object.freeze({
-      content: result.text.value,
-      digest: result.digest,
+    return core.readCanonicalContentPage({
+      maxBytes: input.maxBytes,
+      offset: input.offset,
       path: input.path,
-      scalarLength: result.text.scalarLength,
-      utf8ByteLength: result.text.utf8ByteLength,
+      repository: input.repository,
+      ...(input.signal === undefined ? {} : { signal: input.signal }),
     });
   };
 };
 
-/** Executes one adapter-free explicit canonical content read. */
+/** Executes one adapter-free explicit canonical content range read. */
 export const executeMoldeaCliProjectContent = createMoldeaCliProjectContentExecutor();

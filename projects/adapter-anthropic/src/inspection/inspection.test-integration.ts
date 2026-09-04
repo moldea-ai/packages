@@ -60,7 +60,7 @@ const createEntries = (
 ];
 
 const inspectEntries = async (entries: readonly IMemoryRepositoryEntry[]) =>
-  createCore({ adapters: [anthropicAdapter] }).inspectProject({
+  createCore({ adapters: [anthropicAdapter] }).validateProject({
     repository: createMemoryRepositoryReader(entries),
   });
 
@@ -106,7 +106,7 @@ describe('anthropicAdapter Core integration', () => {
     expect(result.valid).toBe(true);
     // JSON goldens cannot encode Core's null-prototype details records.
     expect(result.evidence).toEqual(expectedEvidence);
-    expect(result.project).not.toBeNull();
+    expect(result.summary).not.toBeNull();
   });
 
   test('produces identical evidence for reversed repository entry order', async () => {
@@ -914,7 +914,7 @@ describe('anthropicAdapter Core integration', () => {
     expect(result.evidence.some(({ kind }) => kind === 'runtime-package')).toBe(false);
   });
 
-  test('keeps shared-source evidence agent-scoped while reusing source and package reads', async () => {
+  test('keeps shared-source evidence and reads isolated to each agent invocation', async () => {
     const entries: readonly IMemoryRepositoryEntry[] = [
       {
         content: [
@@ -978,14 +978,16 @@ describe('anthropicAdapter Core integration', () => {
     const memoryRepository = createMemoryRepositoryReader(entries);
     const readCounts = new Map<string, number>();
     const repository: IRepositoryReader = {
+      snapshot: memoryRepository.snapshot,
+      compare: (candidate, options) => memoryRepository.compare(candidate, options),
       getEntry: (path, options) => memoryRepository.getEntry(path, options),
-      listEntries: (options) => memoryRepository.listEntries(options),
-      readFile: async (path, options) => {
+      listEntriesPage: (options) => memoryRepository.listEntriesPage(options),
+      readFilePage: async (path, options) => {
         readCounts.set(path, (readCounts.get(path) ?? 0) + 1);
-        return memoryRepository.readFile(path, options);
+        return memoryRepository.readFilePage(path, options);
       },
     };
-    const result = await createCore({ adapters: [anthropicAdapter] }).inspectProject({
+    const result = await createCore({ adapters: [anthropicAdapter] }).validateProject({
       repository,
     });
     const packageEvidence = result.evidence.filter(({ kind }) => kind === 'runtime-package');
@@ -993,8 +995,8 @@ describe('anthropicAdapter Core integration', () => {
     expect(result.diagnostics).toStrictEqual([]);
     expect(result.valid).toBe(true);
     expect(packageEvidence.map(({ agentId }) => agentId)).toStrictEqual(['alpha', 'beta']);
-    expect(readCounts.get('/package.json')).toBe(1);
-    expect(readCounts.get('/src/agent.ts')).toBe(1);
+    expect(readCounts.get('/package.json')).toBe(2);
+    expect(readCounts.get('/src/agent.ts')).toBe(2);
   });
 
   test('suppresses derived tool evidence for an unsupported registration shape', async () => {
@@ -1036,7 +1038,7 @@ describe('anthropicAdapter Core integration', () => {
     controller.abort(new Error('test cancellation'));
 
     await expect(
-      createCore({ adapters: [anthropicAdapter] }).inspectProject({
+      createCore({ adapters: [anthropicAdapter] }).validateProject({
         repository: createMemoryRepositoryReader(createEntries()),
         signal: controller.signal,
       }),

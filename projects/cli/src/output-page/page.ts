@@ -50,9 +50,11 @@ export const createMoldeaCliOutputPage = <TRecord extends IMoldeaCliOutputRecord
   const startIndex =
     cursorState === null
       ? 0
-      : input.records.findIndex(({ key }) => key === cursorState.lastKey) + 1;
+      : cursorState.sourceCursor !== null
+        ? 0
+        : input.records.findIndex(({ key }) => key === cursorState.lastKey) + 1;
 
-  if (cursorState !== null && startIndex === 0) {
+  if (cursorState !== null && cursorState.sourceCursor === null && startIndex === 0) {
     throw new MoldeaCliOutputPageException('CURSOR_INVALID');
   }
 
@@ -86,10 +88,20 @@ export const createMoldeaCliOutputPage = <TRecord extends IMoldeaCliOutputRecord
     serializedRecordsUtf8Bytes += serializedRecordUtf8Bytes + (endIndex > startIndex + 1 ? 1 : 0);
     selectedRecords.push(record);
 
-    const cursor =
-      endIndex < input.records.length
-        ? encodeMoldeaCliCursor(input.command, input.filters, input.snapshotDigest, record.key)
-        : null;
+    const sourceCursor = input.sourceCursorForRecord?.(record) ?? null;
+    const hasMore =
+      input.sourceCursorForRecord === undefined
+        ? endIndex < input.records.length
+        : sourceCursor !== null;
+    const cursor = hasMore
+      ? encodeMoldeaCliCursor(
+          input.command,
+          input.filters,
+          input.snapshotDigest,
+          record.key,
+          sourceCursor,
+        )
+      : null;
     const candidate = Object.freeze({ cursor, records: selectedRecords });
 
     if (input.measure(candidate, serializedRecordsUtf8Bytes) > input.maxOutputBytes) {

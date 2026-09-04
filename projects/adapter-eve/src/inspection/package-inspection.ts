@@ -1,17 +1,20 @@
 import { validRange } from 'semver';
 
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterDiagnostic, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import { EVE_ADAPTER_ID, EVE_TARGET_ID } from '../constants/index.js';
-import type { IEveInspectionSession, IEvePackageObservation } from '../contracts/index.js';
+import type {
+  IEveInspectionSession,
+  IEvePackageObservation,
+  IEveScopedAgent,
+} from '../contracts/index.js';
 import { addEveDiagnostic, createEveEvidence } from './common.js';
 
 /** Inspects one scoped agent's nearest Eve package declaration. */
 export const inspectEvePackage = async (
   session: IEveInspectionSession,
-  agent: IIndexedAgent,
+  agent: IEveScopedAgent,
   sourcePath: IRepositoryPath,
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],

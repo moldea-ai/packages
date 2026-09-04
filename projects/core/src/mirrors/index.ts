@@ -2,7 +2,6 @@ import type {
   IRepositoryEntry,
   IRepositoryOperationOptions,
   IRepositoryPath,
-  IRepositoryReader,
 } from '@moldea.ai/repository';
 
 import type { IInspectedAgentAssets } from '../agent-assets/index.js';
@@ -16,6 +15,7 @@ import type { ICoreDiagnostic, ICoreDiagnosticCode } from '../diagnostics/index.
 import { compareExactStrings } from '../format-validation/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { readRepositoryTextAsset } from '../repository-text/index.js';
 
 // internal mirror records retained for final agent indexing
@@ -63,7 +63,7 @@ const addMirrorDiagnostic = (
 
 /** Resolves, normalizes, and compares one declared mirror. */
 const inspectMirror = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   manifestPath: IRepositoryPath,
   canonicalInstruction: IIndexedTextAsset,
   mirrorPath: IRepositoryPath,
@@ -139,9 +139,11 @@ const inspectMirror = async (
   }
 
   return {
+    byteLength: mirrorResult.asset.utf8ByteLength,
     canonicalDigest: canonicalInstruction.digest,
     digest: mirrorResult.asset.digest,
     path: mirrorPath,
+    scalarLength: mirrorResult.asset.scalarLength,
   };
 };
 
@@ -165,14 +167,14 @@ const inspectMirror = async (
  * - ABORTED: Mirror inspection or a repository operation was aborted.
  */
 export const inspectMirrors = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   manifestPath: IRepositoryPath,
   agents: readonly IInspectedAgentAssets[],
   options: ICoreOptionsSnapshot,
   signal?: AbortSignal,
 ): Promise<IMirrorInspectionResult> => {
   options = createCoreOperationOptionsSnapshot(options);
-  const collector = createCoreDiagnosticCollector(options.limits, 'inspect-project');
+  const collector = createCoreDiagnosticCollector(options.limits, 'validate-project');
   const agentMirrors: IAgentMirrorInspection[] = [];
   const operationOptions: IRepositoryOperationOptions | undefined =
     signal === undefined ? undefined : { signal };

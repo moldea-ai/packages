@@ -107,7 +107,7 @@ export const validateRuntimePlaceholders = (
   declaredVariables: Readonly<Record<string, IRuntimeVariableManifestEntry>>,
   limits: ICoreResourceLimits,
 ): readonly ICoreDiagnostic[] => {
-  const collector = createCoreDiagnosticCollector(limits, 'inspect-project');
+  const collector = createCoreDiagnosticCollector(limits, 'validate-project');
   const locator = createSourceLocator(instruction.content);
   const occurrences = new Map<string, IPlaceholderOccurrence>();
   let cursor = 0;

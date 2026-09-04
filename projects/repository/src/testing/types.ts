@@ -1,35 +1,48 @@
 // host-sensitive behavior for logical paths that differ only by case
 export type IRepositoryReaderCasePathFixture =
-  | {
-      readonly kind: 'distinct';
-      readonly paths: readonly [string, string];
-    }
-  | {
-      readonly existingPath: string;
-      readonly kind: 'mismatch';
-      readonly missingPath: string;
-    };
+  | { readonly kind: 'distinct'; readonly paths: readonly [string, string] }
+  | { readonly existingPath: string; readonly kind: 'mismatch'; readonly missingPath: string };
 
-// structural reader contract that avoids coupling test consumers to one package build location
+// structural entry contract consumed by the installed conformance suite
 export interface IRepositoryReaderConformanceEntry<TPath extends string> {
+  readonly byteLength: number | null;
+  readonly contentIdentity: string | null;
   readonly path: TPath;
   readonly type: 'file' | 'directory' | 'symlink';
 }
 
-// source-neutral reader operations exercised by the shared conformance contract
+// structural page contract consumed by the installed conformance suite
+export interface IRepositoryReaderConformancePage<TPath extends string> {
+  readonly entries: readonly IRepositoryReaderConformanceEntry<TPath>[];
+  readonly isComplete: boolean;
+  readonly nextCursor: string | null;
+  readonly snapshot: { readonly id: string; readonly sourceKind: string };
+}
+
+// source-neutral reader operations exercised without package-location coupling
 export interface IRepositoryReaderConformanceReader<TPath extends string> {
+  readonly snapshot: { readonly id: string; readonly sourceKind: string };
   readonly getEntry: (
     path: TPath,
     options?: { readonly signal?: AbortSignal },
   ) => Promise<IRepositoryReaderConformanceEntry<TPath> | null>;
-  readonly listEntries: (options?: {
+  readonly listEntriesPage: (options: {
+    readonly cursor?: string;
+    readonly maxEntries: number;
     readonly prefix?: TPath;
     readonly signal?: AbortSignal;
-  }) => AsyncIterable<IRepositoryReaderConformanceEntry<TPath>>;
-  readonly readFile: (
+  }) => Promise<IRepositoryReaderConformancePage<TPath>>;
+  readonly readFilePage: (
     path: TPath,
-    options?: { readonly signal?: AbortSignal },
-  ) => Promise<Uint8Array>;
+    options: { readonly maxBytes: number; readonly offset: number; readonly signal?: AbortSignal },
+  ) => Promise<{
+    readonly bytes: Uint8Array;
+    readonly isComplete: boolean;
+    readonly nextOffset: number | null;
+    readonly offset: number;
+    readonly snapshot: { readonly id: string; readonly sourceKind: string };
+    readonly totalBytes: number;
+  }>;
 }
 
 // inputs required to run the source-neutral reader conformance contract
@@ -41,7 +54,10 @@ export interface IRepositoryReaderConformanceFixture<TPath extends string> {
     | IRepositoryReaderSnapshotMutationFixture<TPath>
     | Promise<IRepositoryReaderSnapshotMutationFixture<TPath>>;
   readonly emptyFilePath: string;
-  readonly expectedEntries: readonly IRepositoryReaderConformanceEntry<TPath>[];
+  readonly expectedEntries: readonly Pick<
+    IRepositoryReaderConformanceEntry<TPath>,
+    'path' | 'type'
+  >[];
   readonly fileBytes: Uint8Array;
   readonly filePath: string;
   readonly isRepositoryPathException: (cause: unknown) => boolean;
@@ -55,7 +71,7 @@ export interface IRepositoryReaderConformanceFixture<TPath extends string> {
   readonly unicodePath: string;
 }
 
-// source mutation scenario used to verify snapshot behavior after reader creation
+// source mutation scenario used to verify snapshot behavior
 export interface IRepositoryReaderSnapshotMutationFixture<TPath extends string> {
   readonly behavior: 'preserve-snapshot' | 'report-snapshot-changed';
   readonly mutateSource: () => Promise<void> | void;

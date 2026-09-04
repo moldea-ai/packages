@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/core",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "Source-neutral, deterministic interpretation and indexing of moldea repositories.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/core#readme",
   "bugs": {
@@ -47,7 +47,7 @@
     "typecheck": "tsc -p tsconfig.src.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@moldea.ai/repository": "workspace:>=1.1.1",
+    "@moldea.ai/repository": "workspace:2.0.0",
     "error-message-utils": "1.2.11",
     "yaml": "2.9.0"
   },

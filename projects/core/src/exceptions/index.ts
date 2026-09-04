@@ -8,7 +8,11 @@ export type ICoreConfigurationErrorCode =
   | 'INVALID_RESOURCE_LIMIT';
 
 export type ICoreOperationErrorCode =
-  'INVALID_ARGUMENT' | 'ABORTED' | 'RESOURCE_LIMIT_EXCEEDED' | 'ADAPTER_EXECUTION_FAILED';
+  | 'INVALID_ARGUMENT'
+  | 'ABORTED'
+  | 'RESOURCE_LIMIT_EXCEEDED'
+  | 'ADAPTER_EXECUTION_FAILED'
+  | 'CONTENT_INVALID';
 
 export type ICoreOperation =
   | 'create-core'
@@ -17,7 +21,9 @@ export type ICoreOperation =
   | 'parse-manifest'
   | 'match-manifest-scope'
   | 'parse-decision'
-  | 'inspect-project'
+  | 'inspect-project-page'
+  | 'read-canonical-content-page'
+  | 'validate-project'
   | 'validate-adapter';
 
 // safe construction options for exported Core exceptions
@@ -47,6 +53,7 @@ const CONFIGURATION_ERROR_MESSAGES = {
 const OPERATION_ERROR_MESSAGES = {
   ABORTED: 'The Core operation was aborted.',
   ADAPTER_EXECUTION_FAILED: 'A runtime adapter failed during inspection.',
+  CONTENT_INVALID: 'The canonical content is not valid UTF-8 text.',
   INVALID_ARGUMENT: 'The Core operation received an invalid argument.',
   RESOURCE_LIMIT_EXCEEDED: 'A Core resource limit was exceeded.',
 } as const satisfies Readonly<Record<ICoreOperationErrorCode, string>>;
@@ -54,6 +61,7 @@ const OPERATION_ERROR_MESSAGES = {
 const OPERATION_ERROR_RETRYABILITY = {
   ABORTED: true,
   ADAPTER_EXECUTION_FAILED: false,
+  CONTENT_INVALID: false,
   INVALID_ARGUMENT: false,
   RESOURCE_LIMIT_EXCEEDED: false,
 } as const satisfies Readonly<Record<ICoreOperationErrorCode, boolean>>;

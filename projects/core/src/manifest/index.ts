@@ -41,7 +41,7 @@ export const inspectManifestDocument = async (
   options: ICoreOptionsSnapshot,
   operation: Extract<
     ICoreOperation,
-    'parse-manifest' | 'match-manifest-scope' | 'inspect-project'
+    'parse-manifest' | 'match-manifest-scope' | 'validate-project'
   > = 'parse-manifest',
 ): Promise<IManifestDocumentInspectionResult> => {
   options = createCoreOperationOptionsSnapshot(options);

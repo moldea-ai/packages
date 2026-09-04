@@ -54,7 +54,7 @@ const repository = createMemoryRepositoryReader([
     type: 'file',
   },
 ]);
-const result = await createCore({ adapters: [openAiAgentsSdkAdapter] }).inspectProject({
+const result = await createCore({ adapters: [openAiAgentsSdkAdapter] }).validateProject({
   repository,
 });
 

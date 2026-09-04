@@ -3,7 +3,6 @@ import {
   type IRepositoryEntry,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 
 import type { ICanonicalDiscoveryResult } from '../canonical-discovery/index.js';
@@ -28,6 +27,7 @@ import type {
   IToolManifestEntry,
   IUnresolvedRequirementManifestEntry,
 } from '../format/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 
 // internal classification for one exact repository-backed declaration
 type IRepositoryCandidateKind =
@@ -419,14 +419,14 @@ const validateCandidate = (
  * - ABORTED: Repository inspection or a repository lookup was aborted.
  */
 export const validateRepositoryReferences = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   manifestPath: IRepositoryPath,
   manifest: IMoldeaManifestV1,
   discovery: ICanonicalDiscoveryResult,
   limits: ICoreResourceLimits,
   signal?: AbortSignal,
 ): Promise<readonly ICoreDiagnostic[]> => {
-  const collector = createCoreDiagnosticCollector(limits, 'inspect-project');
+  const collector = createCoreDiagnosticCollector(limits, 'validate-project');
   const blockedPaths = new Set(
     discovery.diagnostics.flatMap((diagnostic) =>
       diagnostic.path === null ? [] : [diagnostic.path],

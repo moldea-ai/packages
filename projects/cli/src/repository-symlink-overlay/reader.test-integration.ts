@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
-import { parseRepositoryPath, type IRepositoryEntry } from '@moldea.ai/repository';
+import { parseRepositoryPath } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import { createGitSymlinkOverlayRepositoryReader } from './reader.js';
@@ -17,32 +17,32 @@ describe('Git symlink overlay with the memory repository reader', () => {
     const reader = createGitSymlinkOverlayRepositoryReader(underlyingReader, [linkPath]);
 
     await expect(reader.getEntry(linkPath)).resolves.toStrictEqual({
+      byteLength: null,
+      contentIdentity: null,
       path: linkPath,
       type: 'symlink',
     });
-    await expect(reader.readFile(linkPath)).rejects.toMatchObject({
+    await expect(
+      reader.readFilePage(linkPath, { maxBytes: 1024, offset: 0 }),
+    ).rejects.toMatchObject({
       code: 'ENTRY_NOT_FILE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: linkPath,
       retryable: false,
     });
 
-    const entries: IRepositoryEntry[] = [];
+    const page = await reader.listEntriesPage({ maxEntries: 16 });
 
-    for await (const entry of reader.listEntries()) {
-      entries.push(entry);
-    }
-
-    expect(entries).toStrictEqual([
+    expect(page.entries.map(({ path, type }) => ({ path, type }))).toStrictEqual([
       { path: parseRepositoryPath('/moldea'), type: 'directory' },
       { path: linkPath, type: 'symlink' },
       { path: ordinaryPath, type: 'file' },
     ]);
-    await expect(reader.readFile(ordinaryPath)).resolves.toStrictEqual(
-      new TextEncoder().encode('ordinary'),
-    );
-    await expect(underlyingReader.readFile(linkPath)).resolves.toStrictEqual(
-      new TextEncoder().encode('../target'),
-    );
+    await expect(
+      reader.readFilePage(ordinaryPath, { maxBytes: 1024, offset: 0 }),
+    ).resolves.toMatchObject({ bytes: new TextEncoder().encode('ordinary'), isComplete: true });
+    await expect(
+      underlyingReader.readFilePage(linkPath, { maxBytes: 1024, offset: 0 }),
+    ).resolves.toMatchObject({ bytes: new TextEncoder().encode('../target'), isComplete: true });
   });
 });

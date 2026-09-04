@@ -51,7 +51,7 @@ const repository = createMemoryRepositoryReader([
     type: 'file',
   },
 ]);
-const result = await createCore({ adapters: [langChainAdapter] }).inspectProject({ repository });
+const result = await createCore({ adapters: [langChainAdapter] }).validateProject({ repository });
 
 assert.equal(result.valid, true);
 assert.deepStrictEqual(result.diagnostics, []);

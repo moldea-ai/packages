@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
-import type { IIndexedAgent, ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { ISourceRange } from '@moldea.ai/core';
+import type { IAdapterDiagnostic, IIndexedAgent } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 export type ILangChainAdapterDiagnosticCode =

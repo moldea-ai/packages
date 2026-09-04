@@ -3,6 +3,7 @@ export type {
   IRepositoryReaderCasePathFixture,
   IRepositoryReaderConformanceEntry,
   IRepositoryReaderConformanceFixture,
+  IRepositoryReaderConformancePage,
   IRepositoryReaderConformanceReader,
   IRepositoryReaderSnapshotMutationFixture,
 } from './types.js';

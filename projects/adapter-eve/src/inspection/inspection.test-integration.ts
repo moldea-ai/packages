@@ -71,7 +71,7 @@ const createEntries = (
 };
 
 const inspect = async (replacements: Readonly<Record<string, IFixtureReplacement | null>> = {}) =>
-  createCore({ adapters: [eveAdapter] }).inspectProject({
+  createCore({ adapters: [eveAdapter] }).validateProject({
     repository: createMemoryRepositoryReader(createEntries(replacements)),
   });
 
@@ -103,7 +103,7 @@ describe('eveAdapter Core integration', () => {
   });
 
   test('is deterministic for reversed entries and concurrent inspections', async () => {
-    const reversed = await createCore({ adapters: [eveAdapter] }).inspectProject({
+    const reversed = await createCore({ adapters: [eveAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),
     });
     const concurrent = await Promise.all([inspect(), inspect(), inspect(), inspect()]);
@@ -320,7 +320,7 @@ describe('eveAdapter Core integration', () => {
     controller.abort();
 
     await expect(
-      createCore({ adapters: [eveAdapter] }).inspectProject({
+      createCore({ adapters: [eveAdapter] }).validateProject({
         repository: createMemoryRepositoryReader(createEntries()),
         signal: controller.signal,
       }),

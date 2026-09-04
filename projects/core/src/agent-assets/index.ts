@@ -1,8 +1,4 @@
-import {
-  parseRepositoryPath,
-  type IRepositoryPath,
-  type IRepositoryReader,
-} from '@moldea.ai/repository';
+import { parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 
 import {
   validateAgentDescription,
@@ -19,6 +15,7 @@ import { compareExactStrings } from '../format-validation/index.js';
 import type { IAgentManifestEntry, IMoldeaManifestV1 } from '../format/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { readRepositoryTextAsset } from '../repository-text/index.js';
 import { validateRuntimePlaceholders } from '../runtime-placeholder-validation/index.js';
 
@@ -70,7 +67,7 @@ const isBlockedPath = (path: IRepositoryPath, blockedPaths: ReadonlySet<string>)
 
 /** Reads and validates a required or optional description asset. */
 const readDescription = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   path: IRepositoryPath,
   agentId: string,
   kind: 'description' | 'handoff-description',
@@ -93,7 +90,7 @@ const readDescription = async (
 
 /** Reads and validates a mandatory instruction asset. */
 const readInstruction = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   path: IRepositoryPath,
   agentId: string,
   declaration: IAgentManifestEntry,
@@ -146,14 +143,14 @@ const readInstruction = async (
  * - ABORTED: Agent inspection or a repository operation was aborted.
  */
 export const inspectAgentAssets = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   manifest: IMoldeaManifestV1,
   discovery: ICanonicalDiscoveryResult,
   options: ICoreOptionsSnapshot,
   signal?: AbortSignal,
 ): Promise<IAgentAssetInspectionResult> => {
   options = createCoreOperationOptionsSnapshot(options);
-  const collector = createCoreDiagnosticCollector(options.limits, 'inspect-project');
+  const collector = createCoreDiagnosticCollector(options.limits, 'validate-project');
   const agents: IInspectedAgentAssets[] = [];
   const registeredAgents = manifest.agents ?? {};
   const registeredIds = new Set(Object.keys(registeredAgents));

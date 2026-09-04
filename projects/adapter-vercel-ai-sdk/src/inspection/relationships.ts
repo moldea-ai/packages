@@ -7,7 +7,7 @@ import {
   resolveBindingReferences,
   unwrapExpression,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference, IToolManifestEntry } from '@moldea.ai/core/format';
 
@@ -26,6 +26,8 @@ import {
   classifyVercelAiSdkDirectBinding,
   classifyVercelAiSdkInstructionLoader,
   getVercelAiSdkFunctionTool,
+  getVercelAiSdkGenerationWrapper,
+  getVercelAiSdkToolLoopAgentDefinition,
 } from '../source-analysis/index.js';
 import {
   addVercelAiSdkDiagnostic,
@@ -67,14 +69,29 @@ const getRelationships = (
     ? [inspected.definition[name]]
     : inspected.wrapper.requests.map((request) => request[name]);
 
-const getRelatedRelationships = (
-  inspectedAgents: readonly IVercelAiSdkInspectedAgent[],
+const getModuleRelationships = (
   inspected: IVercelAiSdkInspectedAgent,
   name: 'output' | 'tools',
-): readonly IVercelAiSdkRelationship[] =>
-  inspectedAgents
-    .filter((candidate) => candidate.analysis === inspected.analysis)
-    .flatMap((candidate) => getRelationships(candidate, name));
+): readonly IVercelAiSdkRelationship[] => {
+  const relationships: IVercelAiSdkRelationship[] = [];
+
+  for (const symbol of inspected.analysis.exports.keys()) {
+    const definition = getVercelAiSdkToolLoopAgentDefinition(inspected.analysis, symbol);
+
+    if (definition.kind === 'present-supported') {
+      relationships.push(definition.definition[name]);
+      continue;
+    }
+
+    const wrapper = getVercelAiSdkGenerationWrapper(inspected.analysis, symbol);
+
+    if (wrapper.kind === 'present-supported') {
+      relationships.push(...wrapper.wrapper.requests.map((request) => request[name]));
+    }
+  }
+
+  return Object.freeze(relationships);
+};
 
 const getRelationshipRange = (
   analysis: IVercelAiSdkSourceAnalysis,
@@ -835,11 +852,7 @@ export const inspectVercelAiSdkRelationships = async (
     session.signal?.throwIfAborted();
     toolMaps.set(
       inspected,
-      await resolveToolsMaps(
-        session,
-        inspected,
-        getRelatedRelationships(inspectedAgents, inspected, 'tools'),
-      ),
+      await resolveToolsMaps(session, inspected, getModuleRelationships(inspected, 'tools')),
     );
   }
 
@@ -858,7 +871,7 @@ export const inspectVercelAiSdkRelationships = async (
     await inspectAgentOutputSchema(
       session,
       inspected,
-      getRelatedRelationships(inspectedAgents, inspected, 'output'),
+      getModuleRelationships(inspected, 'output'),
       evidence,
       diagnostics,
     );

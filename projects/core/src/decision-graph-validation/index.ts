@@ -317,7 +317,7 @@ export const validateDecisionGraph = (
   candidates: readonly IDecisionGraphCandidate[],
   limits: ICoreResourceLimits,
 ): readonly ICoreDiagnostic[] => {
-  const diagnostics = createCoreDiagnosticCollector(limits, 'inspect-project');
+  const diagnostics = createCoreDiagnosticCollector(limits, 'validate-project');
   const index = buildGraphIndex(candidates);
 
   collectDuplicateDiagnostics(index, diagnostics);

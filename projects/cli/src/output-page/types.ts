@@ -22,6 +22,7 @@ export interface IMoldeaCliOutputPageInput<TRecord extends IMoldeaCliOutputRecor
     serializedRecordsUtf8Bytes: number,
   ) => number;
   readonly records: readonly TRecord[];
+  readonly sourceCursorForRecord?: (record: TRecord) => string | null;
   readonly snapshotDigest: string;
 }
 
@@ -32,9 +33,11 @@ export interface IMoldeaCliCursorInput {
   readonly command: IMoldeaCliPageCommand;
   readonly cursor: string;
   readonly filters: IJsonValue;
-  readonly snapshotDigest: string;
+  readonly snapshotDigest?: string;
 }
 
 export interface IMoldeaCliCursorState {
   readonly lastKey: string;
+  readonly snapshotDigest: string;
+  readonly sourceCursor: string | null;
 }

@@ -1,4 +1,4 @@
-import type { IIndexedAgent } from '@moldea.ai/core';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 
 import type {
   IVercelAiSdkGenerationWrapper,

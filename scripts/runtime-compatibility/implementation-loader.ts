@@ -42,7 +42,10 @@ export const validateMoldeaCliImplementationSources = async (
   matrix: IRuntimeCompatibilityMatrix,
 ): Promise<void> => {
   const activeAdapters: readonly IRuntimeAdapterImplementationDefinition[] =
-    ACTIVE_RUNTIME_ADAPTERS;
+    ACTIVE_RUNTIME_ADAPTERS.map(({ id, supportedRepositoryFormatVersions }) => ({
+      id,
+      supportedRepositoryFormatVersions,
+    }));
   const activePackageNames = activeAdapters.map(({ id }) => {
     const packageName = matrix.adapters[id]?.implementation.package;
 

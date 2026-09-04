@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 
 import { parseRepositoryPath } from '@moldea.ai/repository';
-import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+import { createMemoryRepositoryReader } from '../repository.test-fixtures.js';
 
 import { createCore } from './index.js';
 
@@ -18,7 +18,7 @@ describe('Core with the immutable memory repository reader', () => {
         type: 'file',
       },
     ]);
-    const bytes = await reader.readFile(projectPath);
+    const bytes = await reader.readCompleteFile(projectPath);
     const core = createCore();
 
     expect(core.normalizeText({ content: bytes, path: projectPath })).toMatchObject({
@@ -44,7 +44,7 @@ describe('Core with the immutable memory repository reader', () => {
         type: 'file',
       },
     ]);
-    const bytes = await reader.readFile(manifestPath);
+    const bytes = await reader.readCompleteFile(manifestPath);
     const result = await createCore().parseManifest({ content: bytes, path: manifestPath });
 
     expect(result).toMatchObject({
@@ -161,7 +161,7 @@ describe('Core with the immutable memory repository reader', () => {
         type: 'file',
       },
     ]);
-    const bytes = await reader.readFile(decisionPath);
+    const bytes = await reader.readCompleteFile(decisionPath);
     const result = await createCore().parseDecision({ content: bytes, path: decisionPath });
 
     expect(result).toMatchObject({

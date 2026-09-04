@@ -3,16 +3,13 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, test } from 'vitest';
 
-import {
-  parseRepositoryPath,
-  type IRepositoryEntry,
-  type IRepositoryPath,
-  type IRepositoryReader,
-} from '@moldea.ai/repository';
+import { parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  overrideCoreTestRepositoryReader,
+  type ICoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
-} from '@moldea.ai/repository/memory';
+} from '../repository.test-fixtures.js';
 
 import { inspectAgentAssets } from '../agent-assets/index.js';
 import { discoverCanonicalAssets } from '../canonical-discovery/index.js';
@@ -86,24 +83,6 @@ const createEntries = (
   }),
 ];
 
-const reverseEnumeration = (repository: IRepositoryReader): IRepositoryReader => ({
-  getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-  listEntries: (operationOptions): AsyncIterable<IRepositoryEntry> => ({
-    async *[Symbol.asyncIterator]() {
-      const entries: IRepositoryEntry[] = [];
-
-      for await (const entry of repository.listEntries(operationOptions)) {
-        entries.push(entry);
-      }
-
-      for (const entry of entries.reverse()) {
-        yield entry;
-      }
-    },
-  }),
-  readFile: (path, operationOptions) => repository.readFile(path, operationOptions),
-});
-
 const simplifyAgentMirrors = (
   agentMirrors: readonly { readonly id: string; readonly mirrors: readonly IIndexedMirror[] }[],
 ) => {
@@ -129,7 +108,7 @@ const simplifyDiagnostics = (diagnostics: readonly ICoreDiagnostic[]) => {
   }));
 };
 
-const inspectRepository = async (sourceRepository: IRepositoryReader) => {
+const inspectRepository = async (sourceRepository: ICoreTestRepositoryReader) => {
   const session = createRepositoryInspectionSession(sourceRepository, options.limits);
   const discovery = await discoverCanonicalAssets(session.reader, options.limits);
 
@@ -140,7 +119,7 @@ const inspectRepository = async (sourceRepository: IRepositoryReader) => {
 
   const resolvedManifestPath = discovery.inventory.manifest;
   const manifestResult = await createCore().parseManifest({
-    content: await session.reader.readFile(resolvedManifestPath),
+    content: await session.reader.readCompleteFile(resolvedManifestPath),
     path: resolvedManifestPath,
   });
 
@@ -182,7 +161,7 @@ describe('Core mirror inspection through the memory repository reader', () => {
     expect(Object.isFrozen(mirrorResult.agentMirrors[0]?.mirrors)).toBe(true);
   });
 
-  test('is independent of repository insertion and enumeration order', async () => {
+  test('is independent of repository fixture insertion order', async () => {
     const case_ = fixture.cases.find(({ name }) => name === 'normalized matching mirrors');
 
     if (case_ === undefined) {
@@ -191,9 +170,7 @@ describe('Core mirror inspection through the memory repository reader', () => {
 
     const entries = createEntries(case_);
     const expected = await inspectRepository(createMemoryRepositoryReader(entries));
-    const reordered = await inspectRepository(
-      reverseEnumeration(createMemoryRepositoryReader([...entries].reverse())),
-    );
+    const reordered = await inspectRepository(createMemoryRepositoryReader([...entries].reverse()));
 
     expect(reordered).toStrictEqual(expected);
   });
@@ -214,7 +191,7 @@ describe('Core mirror inspection through the memory repository reader', () => {
     ]);
     const mirrorEntryPaths: IRepositoryPath[] = [];
     const mirrorReadPaths: IRepositoryPath[] = [];
-    const observedRepository: IRepositoryReader = {
+    const observedRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, operationOptions) => {
         if (path === mirrorPath) {
           mirrorEntryPaths.push(path);
@@ -222,15 +199,15 @@ describe('Core mirror inspection through the memory repository reader', () => {
 
         return repository.getEntry(path, operationOptions);
       },
-      listEntries: (operationOptions) => repository.listEntries(operationOptions),
-      readFile: (path, operationOptions) => {
+      iterateEntries: (operationOptions) => repository.iterateEntries(operationOptions),
+      readCompleteFile: (path, operationOptions) => {
         if (path === mirrorPath) {
           mirrorReadPaths.push(path);
         }
 
-        return repository.readFile(path, operationOptions);
+        return repository.readCompleteFile(path, operationOptions);
       },
-    };
+    });
     const { agentAssets, mirrorResult } = await inspectRepository(observedRepository);
 
     expect(agentAssets.agents[0]?.instruction).toBeNull();
@@ -297,14 +274,14 @@ describe('Core mirror inspection through the memory repository reader', () => {
 
     const repository = createMemoryRepositoryReader(createEntries(case_));
     const readCounts = new Map<IRepositoryPath, number>();
-    const observedRepository: IRepositoryReader = {
+    const observedRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
-      listEntries: (operationOptions) => repository.listEntries(operationOptions),
-      readFile: (path, operationOptions) => {
+      iterateEntries: (operationOptions) => repository.iterateEntries(operationOptions),
+      readCompleteFile: (path, operationOptions) => {
         readCounts.set(path, (readCounts.get(path) ?? 0) + 1);
-        return repository.readFile(path, operationOptions);
+        return repository.readCompleteFile(path, operationOptions);
       },
-    };
+    });
 
     await inspectRepository(observedRepository);
 

@@ -13,3 +13,5 @@ LangChain `createAgent(...)` remains owned by the `langchain` runtime boundary. 
 Functional API tasks are durable workflow units, not automatically model-visible tools. The adapter emits no tool, skill, instruction, handoff, provider-model, context-schema, checkpointer, store, or Functional API schema evidence.
 
 The adapter does not validate LangGraph runtime acceptance, schema semantics, reducer correctness, checkpoint serialization, task idempotency, interrupt safety, provider compatibility, routing intent, graph reachability, or runtime execution.
+
+Each invocation sees one declared agent and bounded logical repository operations, not a complete agent collection or project body index.

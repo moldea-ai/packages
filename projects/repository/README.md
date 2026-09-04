@@ -2,26 +2,19 @@
 
 # `@moldea.ai/repository`
 
-Source-neutral, read-only repository contracts for the `moldea` ecosystem.
+Source-neutral, read-only, resource-bounded repository contracts for the `moldea` ecosystem.
 
-The version 1 package surface provides the complete source-neutral reader contract and immutable in-memory reference implementation. Tarball, consumer-type, and conformance checks remain the release boundary for every published version.
+Version 2 represents one coherent repository snapshot without assuming a filesystem, Git host, archive, or network protocol. Every collection, comparison, and file read is paged or ranged. Continuation cursors are opaque, integrity-protected, and bound to the source snapshot and request scope.
 
-One reader represents one coherent repository snapshot through portable logical paths. The package
-does not access a filesystem or network, interpret the `moldea` format, follow symlinks, decode file
-content, or expose write operations.
-
-## Install after release
-
-The registry command below installs a released version. Source and release-candidate verification installs the packed artifact directly.
+## Install
 
 ```bash
-pnpm add @moldea.ai/repository
+pnpm add @moldea.ai/repository@2
 ```
 
 ## Logical paths
 
-Repository paths are root-absolute within a logical snapshot. They are not host-machine paths.
-Validate arbitrary strings before passing them to a reader:
+Repository paths are root-absolute inside a logical snapshot, not host paths or URLs:
 
 ```typescript
 import { REPOSITORY_ROOT, isRepositoryPath, parseRepositoryPath } from '@moldea.ai/repository';
@@ -32,66 +25,60 @@ isRepositoryPath(manifestPath); // true
 REPOSITORY_ROOT; // '/'
 ```
 
-Paths use `/`, preserve exact case and Unicode, and reject empty, dot, control-character, backslash,
-drive-letter, URL, trailing-separator, and unpaired-surrogate forms. No Unicode normalization or URL
-decoding is performed.
+Paths preserve exact case and Unicode. Parsing rejects relative paths, dot segments, control characters, backslashes, drive letters, URLs, trailing separators, and unpaired surrogates. The package performs no Unicode normalization or URL decoding.
 
 ## Reader contract
 
 ```typescript
-import type { IRepositoryReader } from '@moldea.ai/repository';
-import { parseRepositoryPath } from '@moldea.ai/repository';
+import { parseRepositoryPath, type IRepositoryReader } from '@moldea.ai/repository';
 
-const readManifest = async (reader: IRepositoryReader): Promise<Uint8Array> => {
-  return reader.readFile(parseRepositoryPath('/moldea/moldea.yaml'));
+export const readManifestPage = async (reader: IRepositoryReader): Promise<Uint8Array> => {
+  const result = await reader.readFilePage(parseRepositoryPath('/moldea/moldea.yaml'), {
+    maxBytes: 64 * 1024,
+    offset: 0,
+  });
+
+  return result.bytes;
 };
 ```
 
-`getEntry` performs exact lookup, `readFile` returns caller-owned exact bytes, and `listEntries`
-recursively enumerates directory descendants. All operations accept `AbortSignal`. Enumeration order
-has no contract meaning.
+An `IRepositoryReader` exposes:
 
-Operational failures use `RepositorySourceException`; malformed logical paths use
-`RepositoryPathException`. These exception classes extend `Exception` from `error-message-utils`,
-but consumers only need to catch the concrete repository exceptions.
+- `snapshot`: immutable source identity shared by every result.
+- `getEntry(path)`: exact metadata lookup without content or symlink traversal.
+- `listEntriesPage(options)`: deterministic bounded descendant pages.
+- `readFilePage(path, options)`: one bounded regular-file byte range.
+- `compare(candidate)`: bounded deterministic change pages between snapshots.
+
+Entries include `byteLength` and `contentIdentity` for regular files. Callers must treat cursors as opaque and continue with the same reader, prefix, and operation. Every operation supports cancellation.
+
+Malformed paths use `RepositoryPathException`. Invalid page requests and source, resource, cancellation, or snapshot failures use `RepositorySourceException`.
 
 ## Immutable memory reader
 
-The `memory` subpath provides the baseline implementation for fixtures and already-fetched content:
+The `memory` subpath is the reference implementation for fixtures and already-fetched content:
 
 ```typescript
 import { parseRepositoryPath } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 const reader = createMemoryRepositoryReader([
-  {
-    path: '/moldea/moldea.yaml',
-    type: 'file',
-    content: 'version: 1\n',
-  },
-  {
-    path: '/empty-directory',
-    type: 'directory',
-  },
-  {
-    path: '/link',
-    type: 'symlink',
-  },
+  { path: '/moldea/moldea.yaml', type: 'file', content: 'version: 1\n' },
+  { path: '/empty-directory', type: 'directory' },
+  { path: '/link', type: 'symlink' },
 ]);
 
-const bytes = await reader.readFile(parseRepositoryPath('/moldea/moldea.yaml'));
+const page = await reader.readFilePage(parseRepositoryPath('/moldea/moldea.yaml'), {
+  maxBytes: 4096,
+  offset: 0,
+});
 ```
 
-The reader copies input buffers, synthesizes missing parent directories, returns fresh output
-buffers, preserves symlinks without following them, and remains immutable for its complete lifetime.
+Construction validates the input, copies buffers, synthesizes missing parent directories, and derives the snapshot identity incrementally. Listing uses a keyset cursor, and comparison retains only bounded page state and unconsumed lookahead.
 
 ## Shared reader conformance
 
-Official source implementations use the `testing` subpath to register the same reader-contract checks in their Vitest suites. Install compatible testing peers in the implementing package. The testing subpath supports Vitest `>=1.0.0` and web-utils-kit `>=1.3.1`:
-
-```bash
-pnpm add -D vitest@4.1.10 web-utils-kit@1.3.1
-```
+Official source implementations use the `testing` subpath to register the same version 2 contract checks. Compatible Vitest and `web-utils-kit` peers are required only when importing this entry point.
 
 ```typescript
 import {
@@ -106,8 +93,6 @@ export const registerReaderConformance = <TPath extends string>(
 };
 ```
 
-The peers are optional for ordinary package installation and are required only when importing `@moldea.ai/repository/testing`. The testing entry point registers tests but does not access a repository source itself.
-
 ## Development
 
 From the monorepo root:
@@ -120,4 +105,4 @@ pnpm --filter @moldea.ai/repository test:integration
 pnpm --filter @moldea.ai/repository test
 ```
 
-Unit and integration tests are colocated with the source modules they exercise. The `test` command runs both suites. The shared reader conformance suite is published from this project for official reader implementations. Repository-format fixtures and diagnostics belong to `@moldea.ai/core`, not this package.
+Repository-format interpretation belongs to `@moldea.ai/core`. Source access belongs to concrete reader packages.

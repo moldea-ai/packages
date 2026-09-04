@@ -7,25 +7,18 @@ import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 import { createMoldeaCliProjectContentExecutor } from './executor.js';
 
 describe('project content execution', () => {
-  test('reads and digests exactly one explicit canonical asset', async () => {
+  test('reads only one bounded Unicode-safe canonical range', async () => {
     const projectPath = parseRepositoryPath('/moldea/project.md');
-    const otherPath = parseRepositoryPath('/moldea/context/private.md');
     const reader = createMemoryRepositoryReader([
-      { content: new TextEncoder().encode('# Project 😀\n'), path: projectPath, type: 'file' },
-      { content: new TextEncoder().encode('private body'), path: otherPath, type: 'file' },
+      { content: '# Project 😀\ncontinued\n', path: projectPath, type: 'file' },
+      { content: 'private body', path: '/moldea/context/private.md', type: 'file' },
     ]);
-    const readPaths: string[] = [];
     const execute = createMoldeaCliProjectContentExecutor();
     const result = await execute({
+      maxBytes: 14,
+      offset: 0,
       path: projectPath,
-      repository: {
-        getEntry: (path, options) => reader.getEntry(path, options),
-        listEntries: (options) => reader.listEntries(options),
-        readFile: (path, options) => {
-          readPaths.push(path);
-          return reader.readFile(path, options);
-        },
-      },
+      repository: reader,
       resourceLimits: {
         maxDiagnostics: 16,
         maxEntries: 16,
@@ -37,12 +30,13 @@ describe('project content execution', () => {
     });
 
     expect(result).toMatchObject({
-      content: '# Project 😀\n',
+      byteEnd: 14,
+      byteStart: 0,
+      content: '# Project 😀',
+      isComplete: false,
+      nextOffset: 14,
       path: projectPath,
-      scalarLength: 12,
-      utf8ByteLength: 15,
     });
-    expect(result.digest).toMatch(/^sha256:[0-9a-f]{64}$/u);
-    expect(readPaths).toStrictEqual([projectPath]);
+    expect(result.contentIdentity).toMatch(/^sha256:[0-9a-f]{64}$/u);
   });
 });

@@ -54,7 +54,7 @@ const repository = createMemoryRepositoryReader([
     type: 'file',
   },
 ]);
-const result = await createCore({ adapters: [claudeAgentSdkAdapter] }).inspectProject({
+const result = await createCore({ adapters: [claudeAgentSdkAdapter] }).validateProject({
   repository,
 });
 

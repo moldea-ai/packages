@@ -395,7 +395,7 @@ describe('Core manifest relationship validation', () => {
       expect(error).toMatchObject({
         code: 'RESOURCE_LIMIT_EXCEEDED',
         limit: 'maxDiagnostics',
-        operation: 'inspect-project',
+        operation: 'validate-project',
         retryable: false,
       });
     }

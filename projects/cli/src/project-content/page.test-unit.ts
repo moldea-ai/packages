@@ -4,97 +4,68 @@ import { describe, expect, test } from 'vitest';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import { serializeJsonDeterministically } from '../json-serialization/index.js';
-import { encodeMoldeaCliCursor, MoldeaCliOutputPageException } from '../output-page/index.js';
+import { MoldeaCliOutputPageException } from '../output-page/index.js';
 
 import { createMoldeaCliContentPage } from './page.js';
 
-const CONTENT_DIGEST = `sha256:${'3'.repeat(64)}`;
+const SOURCE = Object.freeze({ id: 'memory:content', sourceKind: 'memory' });
+const PATH = parseRepositoryPath('/moldea/project.md');
 
-const createAsset = (content: string) => ({
+const createPage = (content: string, isComplete = true) => ({
+  byteEnd: Buffer.byteLength(content, 'utf8'),
+  byteStart: 0,
   content,
-  digest: CONTENT_DIGEST,
-  path: parseRepositoryPath('/moldea/project.md'),
-  scalarLength: Array.from(content).length,
-  utf8ByteLength: Buffer.byteLength(content, 'utf8'),
+  contentIdentity: `sha256:${'3'.repeat(64)}`,
+  isComplete,
+  nextOffset: isComplete ? null : Buffer.byteLength(content, 'utf8'),
+  path: PATH,
+  source: SOURCE,
+  totalBytes: isComplete ? Buffer.byteLength(content, 'utf8') : 100,
 });
 
 const measureContentResult = (result: unknown): number =>
   Buffer.byteLength(serializeJsonDeterministically(result), 'utf8');
 
 describe('content pages', () => {
-  test('splits content on Unicode scalar boundaries and continues exactly', () => {
-    const asset = createAsset('A😀éZ');
-    const firstCursor = encodeMoldeaCliCursor(
-      'content',
-      { path: asset.path },
-      asset.digest,
-      'scalar:2',
-    );
-    const exactFirstResult = {
-      asset: {
-        digest: asset.digest,
-        path: asset.path,
-        scalarLength: asset.scalarLength,
-        utf8ByteLength: asset.utf8ByteLength,
-      },
-      chunk: { content: 'A😀', scalarEnd: 2, scalarStart: 0 },
-      cursor: firstCursor,
-      snapshotDigest: asset.digest,
-    };
-    const firstPage = createMoldeaCliContentPage({
-      asset,
+  test('splits a bounded source range on Unicode scalar boundaries', () => {
+    const page = createPage('A😀éZ', false);
+    const full = createMoldeaCliContentPage({
       cursor: null,
-      maxOutputBytes: measureContentResult(exactFirstResult),
-      measure: measureContentResult,
-    });
-    const secondPage = createMoldeaCliContentPage({
-      asset,
-      cursor: firstPage.cursor,
       maxOutputBytes: 4096,
       measure: measureContentResult,
+      page,
+    });
+    const prefix = createMoldeaCliContentPage({
+      cursor: null,
+      maxOutputBytes: measureContentResult(full) - 1,
+      measure: measureContentResult,
+      page,
     });
 
-    expect(firstPage).toStrictEqual(exactFirstResult);
-    expect(secondPage.chunk).toStrictEqual({ content: 'éZ', scalarEnd: 4, scalarStart: 2 });
-    expect(secondPage.cursor).toBeNull();
-    expect(`${firstPage.chunk.content}${secondPage.chunk.content}`).toBe(asset.content);
+    expect(prefix.chunk.byteEnd).toBeLessThan(page.byteEnd);
+    expect(Buffer.from(prefix.chunk.content, 'utf8').toString('utf8')).toBe(prefix.chunk.content);
+    expect(prefix.cursor).not.toBeNull();
   });
 
   test('returns one complete empty-content result', () => {
     const result = createMoldeaCliContentPage({
-      asset: createAsset(''),
       cursor: null,
       maxOutputBytes: 4096,
       measure: measureContentResult,
+      page: createPage(''),
     });
 
-    expect(result.chunk).toStrictEqual({ content: '', scalarEnd: 0, scalarStart: 0 });
+    expect(result.chunk).toStrictEqual({ byteEnd: 0, byteStart: 0, content: '' });
     expect(result.cursor).toBeNull();
   });
 
-  test('rejects a cursor at the final scalar and a budget below one scalar', () => {
-    const asset = createAsset('A');
-    const finalCursor = encodeMoldeaCliCursor(
-      'content',
-      { path: asset.path },
-      asset.digest,
-      'scalar:1',
-    );
-
+  test('rejects a budget below one complete scalar', () => {
     expect(() =>
       createMoldeaCliContentPage({
-        asset,
-        cursor: finalCursor,
-        maxOutputBytes: 4096,
-        measure: measureContentResult,
-      }),
-    ).toThrow(MoldeaCliOutputPageException);
-    expect(() =>
-      createMoldeaCliContentPage({
-        asset,
         cursor: null,
         maxOutputBytes: 1,
         measure: measureContentResult,
+        page: createPage('A'),
       }),
     ).toThrow(MoldeaCliOutputPageException);
   });

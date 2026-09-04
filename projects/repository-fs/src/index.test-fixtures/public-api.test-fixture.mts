@@ -14,22 +14,6 @@ import {
   type IFilesystemRepositoryResourceLimits,
   type IFilesystemRepositorySelection,
 } from '@moldea.ai/repository-fs';
-import {
-  // @ts-expect-error Verified file capture remains an internal reader-building detail.
-  createFilesystemRepositoryReaderState,
-  // @ts-expect-error Reader lifecycle mutation remains an internal reader-building detail.
-  markFilesystemRepositoryReaderInvalidated,
-  // @ts-expect-error Per-path capture coordination remains an internal reader-building detail.
-  coordinateFilesystemRepositoryFileCapture,
-  // @ts-expect-error Capture capacity reservations remain an internal reader-building detail.
-  reserveFilesystemFileCaptureCapacity,
-  // @ts-expect-error Frozen inventory operations remain internal reader-building details.
-  getFilesystemRepositoryEntry,
-  // @ts-expect-error Frozen inventory operations remain internal reader-building details.
-  listFilesystemRepositoryEntries,
-  // @ts-expect-error Verified file reads remain internal until the cohesive reader is exposed.
-  readFilesystemRepositoryFile,
-} from '@moldea.ai/repository-fs';
 
 const selectedPath: IRepositoryPath = parseRepositoryPath('/moldea/moldea.yaml');
 const pathSelection: IFilesystemRepositoryPathSelection = {
@@ -51,12 +35,5 @@ const reader: Promise<IRepositoryReader> = createFilesystemRepositoryReader(opti
 
 void repositoryFilesystemDefault;
 void reader;
-void getFilesystemRepositoryEntry;
-void listFilesystemRepositoryEntries;
-void createFilesystemRepositoryReaderState;
-void markFilesystemRepositoryReaderInvalidated;
-void coordinateFilesystemRepositoryFileCapture;
-void reserveFilesystemFileCaptureCapacity;
-void readFilesystemRepositoryFile;
 void selections;
 void options;

@@ -1,12 +1,9 @@
-import {
-  RepositorySourceException,
-  type IRepositoryPath,
-  type IRepositoryReader,
-} from '@moldea.ai/repository';
+import { RepositorySourceException, type IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICoreResourceLimits, IIndexedTextAsset } from '../contracts/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
 import { freezeRecursively } from '../immutable/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { calculateNormalizedTextDigest, normalizeTextDocument } from '../text/index.js';
 
 // internal result for one canonical text read during repository inspection
@@ -19,7 +16,7 @@ export interface IRepositoryTextResult {
 const invalidSourceData = (path: IRepositoryPath): never => {
   throw new RepositorySourceException({
     code: 'INVALID_SOURCE_DATA',
-    operation: 'read-file',
+    operation: 'read-file-page',
     path,
     retryable: false,
   });
@@ -43,18 +40,21 @@ const invalidSourceData = (path: IRepositoryPath): never => {
  * - ABORTED: Repository inspection or the repository read was aborted.
  */
 export const readRepositoryTextAsset = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   path: IRepositoryPath,
   limits: ICoreResourceLimits,
   signal?: AbortSignal,
 ): Promise<IRepositoryTextResult> => {
-  const content = await repository.readFile(path, signal === undefined ? undefined : { signal });
+  const content = await repository.readCompleteFile(
+    path,
+    signal === undefined ? undefined : { signal },
+  );
 
   if (!(content instanceof Uint8Array)) {
     return invalidSourceData(path);
   }
 
-  const normalized = normalizeTextDocument({ content, path }, limits, 'inspect-project');
+  const normalized = normalizeTextDocument({ content, path }, limits, 'validate-project');
 
   if (!normalized.valid || normalized.text === null) {
     return freezeRecursively({

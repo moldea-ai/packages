@@ -1,5 +1,6 @@
 import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import {
   EVE_ADAPTER_ID,
@@ -13,6 +14,7 @@ import { addEveDiagnostic, compareEveStrings, createEveEvidence } from './common
 export const inspectEveSubagents = (
   definitions: readonly IEveAgentDefinition[],
   preparedToolNames: ReadonlyMap<string, ReadonlySet<string>>,
+  ambiguousParentRoots: ReadonlyMap<IRepositoryPath, number>,
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],
 ): void => {
@@ -22,6 +24,22 @@ export const inspectEveSubagents = (
       target.root.parentRoot === null ||
       target.root.runtimeName === null
     ) {
+      continue;
+    }
+
+    const ambiguousParentCount = ambiguousParentRoots.get(target.root.parentRoot);
+
+    if (ambiguousParentCount !== undefined) {
+      addEveDiagnostic(
+        diagnostics,
+        'EVE_SUBAGENT_PARENT_AMBIGUOUS',
+        target.agent.declaration.bindings?.runtimeAgent?.path ?? null,
+        target.agent.id,
+        null,
+        undefined,
+        undefined,
+        { candidateCount: ambiguousParentCount },
+      );
       continue;
     }
 
@@ -38,7 +56,7 @@ export const inspectEveSubagents = (
         null,
         undefined,
         undefined,
-        { candidateAgentIds: parents.map(({ agent }) => agent.id).join(',') },
+        { candidateCount: parents.length },
       );
       continue;
     }

@@ -68,7 +68,7 @@ const createEntries = (
 };
 
 const inspect = async (replacements: Readonly<Record<string, IFixtureReplacement>> = {}) =>
-  createCore({ adapters: [vercelAiSdkAdapter] }).inspectProject({
+  createCore({ adapters: [vercelAiSdkAdapter] }).validateProject({
     repository: createMemoryRepositoryReader(createEntries(replacements)),
   });
 
@@ -97,11 +97,11 @@ describe('vercelAiSdkAdapter Core integration', () => {
     expect(result.diagnostics).toStrictEqual([]);
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
-    expect(result.project).not.toBeNull();
+    expect(result.summary).not.toBeNull();
   });
 
   test('produces deterministic evidence for reversed entries and concurrent inspections', async () => {
-    const reversed = await createCore({ adapters: [vercelAiSdkAdapter] }).inspectProject({
+    const reversed = await createCore({ adapters: [vercelAiSdkAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),
     });
     const concurrent = await Promise.all([inspect(), inspect(), inspect(), inspect()]);
@@ -462,7 +462,7 @@ describe('vercelAiSdkAdapter Core integration', () => {
         type: 'file',
       },
     ]);
-    const result = await createCore({ adapters: [vercelAiSdkAdapter] }).inspectProject({
+    const result = await createCore({ adapters: [vercelAiSdkAdapter] }).validateProject({
       repository,
     });
 
@@ -476,7 +476,7 @@ describe('vercelAiSdkAdapter Core integration', () => {
     controller.abort(new Error('test cancellation'));
 
     await expect(
-      createCore({ adapters: [vercelAiSdkAdapter] }).inspectProject({
+      createCore({ adapters: [vercelAiSdkAdapter] }).validateProject({
         repository: createMemoryRepositoryReader(createEntries()),
         signal: controller.signal,
       }),

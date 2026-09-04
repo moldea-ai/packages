@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
-import { parseRepositoryPath, type IRepositoryEntry } from '@moldea.ai/repository';
+import { parseRepositoryPath } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import { createGitSymlinkOverlayRepositoryReader } from '../repository-symlink-overlay/index.js';
@@ -29,31 +29,40 @@ describe('Git content-transformation guard with logical repository overlays', ()
       nativeLinkPath,
     ]);
 
-    const entries: IRepositoryEntry[] = [];
+    const entries = (await reader.listEntriesPage({ maxEntries: 16 })).entries;
 
-    for await (const entry of reader.listEntries()) {
-      entries.push(entry);
-    }
-
-    expect(entries).toContainEqual({ path: guardedPath, type: 'file' });
-    expect(entries).toContainEqual({ path: materializedLinkPath, type: 'symlink' });
-    expect(entries).toContainEqual({ path: nativeLinkPath, type: 'symlink' });
-    await expect(reader.readFile(guardedPath)).rejects.toMatchObject({
+    expect(entries.map(({ path, type }) => ({ path, type }))).toEqual(
+      expect.arrayContaining([
+        { path: guardedPath, type: 'file' },
+        { path: materializedLinkPath, type: 'symlink' },
+        { path: nativeLinkPath, type: 'symlink' },
+      ]),
+    );
+    await expect(
+      reader.readFilePage(guardedPath, { maxBytes: 1024, offset: 0 }),
+    ).rejects.toMatchObject({
       code: 'SOURCE_UNAVAILABLE',
-      operation: 'read-file',
+      operation: 'read-file-page',
       path: guardedPath,
       retryable: false,
     });
-    await expect(reader.readFile(materializedLinkPath)).rejects.toMatchObject({
+    await expect(
+      reader.readFilePage(materializedLinkPath, { maxBytes: 1024, offset: 0 }),
+    ).rejects.toMatchObject({
       code: 'ENTRY_NOT_FILE',
       path: materializedLinkPath,
     });
-    await expect(reader.readFile(nativeLinkPath)).rejects.toMatchObject({
+    await expect(
+      reader.readFilePage(nativeLinkPath, { maxBytes: 1024, offset: 0 }),
+    ).rejects.toMatchObject({
       code: 'ENTRY_NOT_FILE',
       path: nativeLinkPath,
     });
-    await expect(reader.readFile(ordinaryPath)).resolves.toStrictEqual(
-      new TextEncoder().encode('ordinary bytes'),
-    );
+    await expect(
+      reader.readFilePage(ordinaryPath, { maxBytes: 1024, offset: 0 }),
+    ).resolves.toMatchObject({
+      bytes: new TextEncoder().encode('ordinary bytes'),
+      isComplete: true,
+    });
   });
 });

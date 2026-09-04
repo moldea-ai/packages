@@ -1,12 +1,13 @@
 import { discoverPackage } from '@moldea.ai/adapter-static-analysis';
-import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
+import { readRuntimeAdapterFile, type IRuntimeAdapterRepository } from '@moldea.ai/core/adapter';
+import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import { EVE_PACKAGE_NAME, EVE_SUPPORTED_PACKAGE_RANGE } from '../constants/index.js';
 import type { IEvePackageDiscoveryResult } from '../contracts/index.js';
 
 /** Discovers the nearest owning Eve package and its safe root identity. */
 export const discoverEvePackage = async (
-  reader: IRepositoryReader,
+  reader: IRuntimeAdapterRepository,
   sourcePath: IRepositoryPath,
   signal?: AbortSignal,
 ): Promise<IEvePackageDiscoveryResult> => {
@@ -17,7 +18,11 @@ export const discoverEvePackage = async (
       getEntry: (path) =>
         reader.getEntry(path as IRepositoryPath, signal === undefined ? undefined : { signal }),
       readFile: (path) =>
-        reader.readFile(path as IRepositoryPath, signal === undefined ? undefined : { signal }),
+        readRuntimeAdapterFile(
+          reader,
+          path as IRepositoryPath,
+          signal === undefined ? undefined : { signal },
+        ),
     },
     ...(signal === undefined ? {} : { signal }),
     sourcePath,

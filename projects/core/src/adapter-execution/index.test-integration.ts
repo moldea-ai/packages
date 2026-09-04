@@ -8,18 +8,20 @@ import {
   parseRepositoryPath,
   type IRepositoryEntry,
   type IRepositoryPath,
-  type IRepositoryReader,
 } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  overrideCoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
-} from '@moldea.ai/repository/memory';
+} from '../repository.test-fixtures.js';
 
-import type {
-  IRuntimeAdapter,
-  IRuntimeAdapterContext,
-  IRuntimeAdapterEvidence,
-  IRuntimeAdapterResult,
+import {
+  iterateRuntimeAdapterEntries,
+  readRuntimeAdapterFile,
+  type IRuntimeAdapter,
+  type IRuntimeAdapterContext,
+  type IRuntimeAdapterEvidence,
+  type IRuntimeAdapterResult,
 } from '../adapter/index.js';
 import { createCore } from '../core/index.js';
 
@@ -41,7 +43,7 @@ interface IAdapterHarnessOptions {
 interface IAdapterHarness {
   readonly adapters: readonly IRuntimeAdapter[];
   readonly calls: string[];
-  readonly projectAgentIds: string[][];
+  readonly resolutionKinds: string[];
   readonly scopedAgentIds: string[][];
   readonly unusedCalls: string[];
 }
@@ -72,8 +74,8 @@ const projectPath = parseRepositoryPath('/moldea/project.md');
 const auditPath = parseRepositoryPath('/src/audit.ts');
 const evidencePath = parseRepositoryPath('/src/evidence.ts');
 
-const createEntries = (): readonly IMemoryRepositoryEntry[] => [
-  { content: fixture.manifest, path: manifestPath, type: 'file' },
+const createEntries = (manifest = fixture.manifest): readonly IMemoryRepositoryEntry[] => [
+  { content: manifest, path: manifestPath, type: 'file' },
   ...fixture.entries.map((entry): IMemoryRepositoryEntry => {
     if (entry.type === 'symlink') {
       return { path: entry.path, type: 'symlink' };
@@ -87,7 +89,7 @@ const createEntries = (): readonly IMemoryRepositoryEntry[] => [
   }),
 ];
 
-const createAlphaEvidence = (): readonly IRuntimeAdapterEvidence[] => {
+const createAlphaEvidence = (agentId: string): readonly IRuntimeAdapterEvidence[] => {
   const toolRegistration: IRuntimeAdapterEvidence = {
     agentId: 'alpha',
     capabilityId: 'audit',
@@ -99,20 +101,22 @@ const createAlphaEvidence = (): readonly IRuntimeAdapterEvidence[] => {
     source: 'anthropic',
   };
 
-  return [
-    toolRegistration,
-    {
-      agentId: 'beta',
-      capabilityId: null,
-      capabilityKind: null,
-      details: { language: 'typescript' },
-      kind: 'agent-definition',
-      references: [{ path: evidencePath }],
-      runtimeName: 'BetaRuntime',
-      source: 'anthropic',
-    },
-    toolRegistration,
-  ];
+  if (agentId === 'beta') {
+    return [
+      {
+        agentId: 'beta',
+        capabilityId: null,
+        capabilityKind: null,
+        details: { language: 'typescript' },
+        kind: 'agent-definition',
+        references: [{ path: evidencePath }],
+        runtimeName: 'BetaRuntime',
+        source: 'anthropic',
+      },
+    ];
+  }
+
+  return [toolRegistration, toolRegistration];
 };
 
 const createZetaEvidence = (): readonly IRuntimeAdapterEvidence[] => [
@@ -130,17 +134,16 @@ const createZetaEvidence = (): readonly IRuntimeAdapterEvidence[] => [
 
 const createAdapterHarness = (options: IAdapterHarnessOptions = {}): IAdapterHarness => {
   const calls: string[] = [];
-  const projectAgentIds: string[][] = [];
+  const resolutionKinds: string[] = [];
   const scopedAgentIds: string[][] = [];
   const unusedCalls: string[] = [];
 
   const observeContext = (adapterId: string, context: IRuntimeAdapterContext): void => {
     calls.push(adapterId);
-    scopedAgentIds.push(context.agents.map(({ id }) => id));
-    projectAgentIds.push(context.project.agents.map(({ id }) => id));
+    scopedAgentIds.push([context.agent.id]);
+    resolutionKinds.push(context.resolveAgent({ path: evidencePath }).kind);
     expect(Object.isFrozen(context)).toBe(true);
-    expect(Object.isFrozen(context.agents)).toBe(true);
-    expect(Object.isFrozen(context.project)).toBe(true);
+    expect(Object.isFrozen(context.agent)).toBe(true);
   };
 
   const alphaAdapter: IRuntimeAdapter = {
@@ -149,27 +152,29 @@ const createAdapterHarness = (options: IAdapterHarnessOptions = {}): IAdapterHar
     inspect: async (context): Promise<IRuntimeAdapterResult> => {
       observeContext('anthropic', context);
       await options.onAlpha?.(context);
+      const agentId = context.agent.id;
 
       return {
-        diagnostics: options.includeDiagnostics
-          ? [
-              {
-                code: 'ANTHROPIC_TOOL_REGISTRATION_MISSING',
-                details: { expected: true },
-                entity: {
-                  agentId: 'alpha',
-                  capabilityId: 'audit',
-                  capabilityKind: 'tool',
+        diagnostics:
+          options.includeDiagnostics && agentId === 'alpha'
+            ? [
+                {
+                  code: 'ANTHROPIC_TOOL_REGISTRATION_MISSING',
+                  details: { expected: true },
+                  entity: {
+                    agentId: 'alpha',
+                    capabilityId: 'audit',
+                    capabilityKind: 'tool',
+                  },
+                  message: 'The tool registration is missing.',
+                  path: auditPath,
+                  pointer: null,
+                  range: null,
+                  source: 'anthropic',
                 },
-                message: 'The tool registration is missing.',
-                path: auditPath,
-                pointer: null,
-                range: null,
-                source: 'anthropic',
-              },
-            ]
-          : [],
-        evidence: createAlphaEvidence(),
+              ]
+            : [],
+        evidence: createAlphaEvidence(agentId),
       };
     },
   };
@@ -211,7 +216,7 @@ const createAdapterHarness = (options: IAdapterHarnessOptions = {}): IAdapterHar
   return {
     adapters: [zetaAdapter, unusedAdapter, alphaAdapter],
     calls,
-    projectAgentIds,
+    resolutionKinds,
     scopedAgentIds,
     unusedCalls,
   };
@@ -224,57 +229,57 @@ describe('Core runtime-adapter execution', () => {
   test('invokes applicable adapters canonically through one mutation-isolated reader session', async () => {
     const source = createMemoryRepositoryReader(createEntries());
     const readCounts = new Map<IRepositoryPath, number>();
-    const repository: IRepositoryReader = {
+    const repository = overrideCoreTestRepositoryReader(source, {
       getEntry: (path, options) => source.getEntry(path, options),
-      listEntries: (options) => source.listEntries(options),
-      readFile: (path, options) => {
+      iterateEntries: (options) => source.iterateEntries(options),
+      readCompleteFile: (path, options) => {
         readCounts.set(path, (readCounts.get(path) ?? 0) + 1);
-        return source.readFile(path, options);
+        return source.readCompleteFile(path, options);
       },
-    };
+    });
     let zetaProjectText = '';
     const harness = createAdapterHarness({
       onAlpha: async (context) => {
         const operationOptions =
           context.signal === undefined ? undefined : { signal: context.signal };
-        const bytes = await context.repository.readFile(projectPath, operationOptions);
+        const bytes = await readRuntimeAdapterFile(
+          context.repository,
+          projectPath,
+          operationOptions,
+        );
         bytes[0] = 0;
       },
       onZeta: async (context) => {
         const operationOptions =
           context.signal === undefined ? undefined : { signal: context.signal };
-        const bytes = await context.repository.readFile(projectPath, operationOptions);
+        const bytes = await readRuntimeAdapterFile(
+          context.repository,
+          projectPath,
+          operationOptions,
+        );
         zetaProjectText = new TextDecoder().decode(bytes);
       },
     });
-    const result = await createCore({ adapters: harness.adapters }).inspectProject({ repository });
+    const result = await createCore({ adapters: harness.adapters }).validateProject({ repository });
 
     expect(result.valid).toBe(true);
-    expect(result.project?.agents.map(({ id }) => id)).toStrictEqual([
-      'alpha',
-      'beta',
-      'custom-agent',
-      'zeta',
-    ]);
+    expect(result.summary?.counts.agents).toBe(4);
     expect(toJsonValue(result.evidence)).toStrictEqual(expectedEvidence);
     expect(result.diagnostics).toStrictEqual([]);
-    expect(harness.calls).toStrictEqual(['anthropic', 'openai']);
-    expect(harness.scopedAgentIds).toStrictEqual([['alpha', 'beta'], ['zeta']]);
-    expect(harness.projectAgentIds).toStrictEqual([
-      ['alpha', 'beta', 'custom-agent', 'zeta'],
-      ['alpha', 'beta', 'custom-agent', 'zeta'],
-    ]);
+    expect(harness.calls).toStrictEqual(['anthropic', 'anthropic', 'openai']);
+    expect(harness.scopedAgentIds).toStrictEqual([['alpha'], ['beta'], ['zeta']]);
+    expect(harness.resolutionKinds).toStrictEqual(['absent', 'absent', 'absent']);
     expect(harness.unusedCalls).toStrictEqual([]);
     expect(zetaProjectText).toBe('# Adapter project\n');
-    expect(readCounts.get(projectPath)).toBe(1);
+    expect(readCounts.get(projectPath)).toBe(4);
     expect(Object.isFrozen(result)).toBe(true);
     expect(Object.isFrozen(result.evidence[0]?.details)).toBe(true);
     expect(Object.getPrototypeOf(result.evidence[0]?.details)).toBeNull();
   });
 
-  test('retains exact evidence while adapter diagnostics withhold the project', async () => {
+  test('retains exact evidence and content-free metadata with adapter diagnostics', async () => {
     const harness = createAdapterHarness({ includeDiagnostics: true });
-    const result = await createCore({ adapters: harness.adapters }).inspectProject({
+    const result = await createCore({ adapters: harness.adapters }).validateProject({
       repository: createMemoryRepositoryReader(createEntries()),
     });
 
@@ -282,23 +287,92 @@ describe('Core runtime-adapter execution', () => {
       diagnostics: expectedDiagnostics,
       evidence: expectedEvidence,
       formatVersion: 1,
-      project: null,
       valid: false,
     });
+    expect(result.summary).not.toBeNull();
     expect(toJsonValue(result.diagnostics)).toStrictEqual(expectedDiagnostics);
     expect(toJsonValue(result.evidence)).toStrictEqual(expectedEvidence);
-    expect(harness.calls).toStrictEqual(['anthropic', 'openai']);
+    expect(harness.calls).toStrictEqual(['anthropic', 'anthropic', 'openai']);
+  });
+
+  test('resolves only exact same-runtime agent bindings without exposing an agent collection', async () => {
+    const manifest = fixture.manifest
+      .replace(
+        '  zeta:\n    runtime:\n      id: openai\n',
+        '  zeta:\n    runtime:\n      id: openai\n    bindings:\n      runtimeAgent:\n        path: /src/evidence.ts\n        symbol: ZetaRuntime\n',
+      )
+      .replace(
+        '  beta:\n    runtime:\n      id: anthropic\n',
+        '  beta:\n    runtime:\n      id: anthropic\n    bindings:\n      runtimeAgent:\n        path: /src/evidence.ts\n        symbol: BetaRuntime\n',
+      )
+      .replace(
+        '  alpha:\n    runtime:\n      id: anthropic\n',
+        '  alpha:\n    runtime:\n      id: anthropic\n    bindings:\n      runtimeAgent:\n        path: /src/evidence.ts\n        symbol: AlphaRuntime\n',
+      );
+    const resolutions: unknown[] = [];
+    const harness = createAdapterHarness({
+      onAlpha: (context) => {
+        if (context.agent.id !== 'alpha') {
+          return;
+        }
+
+        resolutions.push(
+          context.resolveAgent({ path: evidencePath, symbol: 'BetaRuntime' }),
+          context.resolveAgent({ path: evidencePath, symbol: 'ZetaRuntime' }),
+        );
+        expect(Object.keys(context).sort()).toStrictEqual(['agent', 'repository', 'resolveAgent']);
+      },
+    });
+
+    await createCore({ adapters: harness.adapters }).validateProject({
+      repository: createMemoryRepositoryReader(createEntries(manifest)),
+    });
+
+    expect(resolutions).toMatchObject([
+      { agent: { id: 'beta' }, kind: 'matched' },
+      { kind: 'absent' },
+    ]);
+    expect(Object.isFrozen(resolutions[0])).toBe(true);
+    expect(Object.isFrozen((resolutions[0] as { agent: object }).agent)).toBe(true);
+    expect((resolutions[0] as { agent: object }).agent).not.toHaveProperty('instruction');
+  });
+
+  test('reports duplicate exact runtime bindings as a bounded ambiguous result', async () => {
+    const binding =
+      '    bindings:\n      runtimeAgent:\n        path: /src/evidence.ts\n        symbol: SharedRuntime\n';
+    const manifest = fixture.manifest
+      .replace(
+        '  beta:\n    runtime:\n      id: anthropic\n',
+        `  beta:\n    runtime:\n      id: anthropic\n${binding}`,
+      )
+      .replace(
+        '  alpha:\n    runtime:\n      id: anthropic\n',
+        `  alpha:\n    runtime:\n      id: anthropic\n${binding}`,
+      );
+    let resolution: unknown;
+    const harness = createAdapterHarness({
+      onAlpha: (context) => {
+        resolution = context.resolveAgent({ path: evidencePath, symbol: 'SharedRuntime' });
+      },
+    });
+
+    await createCore({ adapters: harness.adapters }).validateProject({
+      repository: createMemoryRepositoryReader(createEntries(manifest)),
+    });
+
+    expect(resolution).toStrictEqual({ candidateCount: 2, kind: 'ambiguous' });
+    expect(Object.isFrozen(resolution)).toBe(true);
   });
 
   test('does not invoke any adapter after universal validation fails', async () => {
     const harness = createAdapterHarness();
     const entries = createEntries().filter(({ path }) => path !== projectPath);
-    const result = await createCore({ adapters: harness.adapters }).inspectProject({
+    const result = await createCore({ adapters: harness.adapters }).validateProject({
       repository: createMemoryRepositoryReader(entries),
     });
 
     expect(result.valid).toBe(false);
-    expect(result.project).toBeNull();
+    expect(result.summary).toBeNull();
     expect(result.evidence).toStrictEqual([]);
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({ code: 'MOLDEA_PROJECT_FILE_MISSING' }),
@@ -311,7 +385,7 @@ describe('Core runtime-adapter execution', () => {
     const harness = createAdapterHarness();
     const result = await createCore({
       adapters: harness.adapters.filter(({ id }) => id === 'anthropic'),
-    }).inspectProject({ repository: createMemoryRepositoryReader(createEntries()) });
+    }).validateProject({ repository: createMemoryRepositoryReader(createEntries()) });
 
     expect(result).toMatchObject({
       diagnostics: [
@@ -322,7 +396,6 @@ describe('Core runtime-adapter execution', () => {
         },
       ],
       evidence: [],
-      project: null,
       valid: false,
     });
     expect(harness.calls).toStrictEqual([]);
@@ -337,7 +410,7 @@ describe('Core runtime-adapter execution', () => {
     });
 
     await expect(
-      createCore({ adapters: harness.adapters }).inspectProject({
+      createCore({ adapters: harness.adapters }).validateProject({
         repository: createMemoryRepositoryReader(createEntries()),
       }),
     ).rejects.toMatchObject({
@@ -345,7 +418,7 @@ describe('Core runtime-adapter execution', () => {
       cause: failure,
       code: 'ADAPTER_EXECUTION_FAILED',
       message: 'A runtime adapter failed during inspection.',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: false,
     });
     expect(harness.calls).toStrictEqual(['anthropic']);
@@ -359,12 +432,12 @@ describe('Core runtime-adapter execution', () => {
       retryable: true,
     });
     const source = createMemoryRepositoryReader(createEntries());
-    const repository: IRepositoryReader = {
+    const repository = overrideCoreTestRepositoryReader(source, {
       getEntry: (path, options) =>
         path === '/source-error' ? Promise.reject(sourceFailure) : source.getEntry(path, options),
-      listEntries: (options) => source.listEntries(options),
-      readFile: (path, options) => source.readFile(path, options),
-    };
+      iterateEntries: (options) => source.iterateEntries(options),
+      readCompleteFile: (path, options) => source.readCompleteFile(path, options),
+    });
     const harness = createAdapterHarness({
       onAlpha: async (context) => {
         const operationOptions =
@@ -374,7 +447,7 @@ describe('Core runtime-adapter execution', () => {
     });
 
     await expect(
-      createCore({ adapters: harness.adapters }).inspectProject({ repository }),
+      createCore({ adapters: harness.adapters }).validateProject({ repository }),
     ).rejects.toBe(sourceFailure);
   });
 
@@ -385,13 +458,13 @@ describe('Core runtime-adapter execution', () => {
     });
 
     await expect(
-      createCore({ adapters: harness.adapters }).inspectProject({
+      createCore({ adapters: harness.adapters }).validateProject({
         repository: createMemoryRepositoryReader(createEntries()),
         signal: controller.signal,
       }),
     ).rejects.toMatchObject({
       code: 'ABORTED',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: true,
     });
     expect(harness.calls).toStrictEqual(['anthropic']);
@@ -400,21 +473,21 @@ describe('Core runtime-adapter execution', () => {
   test('charges adapter enumeration to the shared entry budget', async () => {
     const source = createMemoryRepositoryReader(createEntries());
     let universalEntryCount = 0;
-    const observedRepository: IRepositoryReader = {
+    const observedRepository = overrideCoreTestRepositoryReader(source, {
       getEntry: (path, options) => source.getEntry(path, options),
-      listEntries: (options): AsyncIterable<IRepositoryEntry> => ({
+      iterateEntries: (options): AsyncIterable<IRepositoryEntry> => ({
         async *[Symbol.asyncIterator]() {
-          for await (const entry of source.listEntries(options)) {
+          for await (const entry of source.iterateEntries(options)) {
             universalEntryCount += 1;
             yield entry;
           }
         },
       }),
-      readFile: (path, options) => source.readFile(path, options),
-    };
+      readCompleteFile: (path, options) => source.readCompleteFile(path, options),
+    });
     const baselineHarness = createAdapterHarness();
 
-    await createCore({ adapters: baselineHarness.adapters }).inspectProject({
+    await createCore({ adapters: baselineHarness.adapters }).validateProject({
       repository: observedRepository,
     });
 
@@ -423,7 +496,10 @@ describe('Core runtime-adapter execution', () => {
         const operationOptions =
           context.signal === undefined ? undefined : { signal: context.signal };
 
-        for await (const entry of context.repository.listEntries(operationOptions)) {
+        for await (const entry of iterateRuntimeAdapterEntries(
+          context.repository,
+          operationOptions,
+        )) {
           void entry;
         }
       },
@@ -433,11 +509,11 @@ describe('Core runtime-adapter execution', () => {
       createCore({
         adapters: budgetHarness.adapters,
         limits: { maxEntries: universalEntryCount },
-      }).inspectProject({ repository: createMemoryRepositoryReader(createEntries()) }),
+      }).validateProject({ repository: createMemoryRepositoryReader(createEntries()) }),
     ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxEntries',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: false,
     });
   });
@@ -449,14 +525,14 @@ describe('Core runtime-adapter execution', () => {
       createCore({
         adapters: harness.adapters,
         limits: { maxDiagnostics: 1 },
-      }).inspectProject({ repository: createMemoryRepositoryReader(createEntries()) }),
+      }).validateProject({ repository: createMemoryRepositoryReader(createEntries()) }),
     ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxDiagnostics',
       operation: 'validate-adapter',
       retryable: false,
     });
-    expect(harness.calls).toStrictEqual(['anthropic', 'openai']);
+    expect(harness.calls).toStrictEqual(['anthropic', 'anthropic', 'openai']);
   });
 
   test('enforces the raw evidence budget before deduplication', async () => {
@@ -466,14 +542,14 @@ describe('Core runtime-adapter execution', () => {
       createCore({
         adapters: harness.adapters,
         limits: { maxEvidence: 2 },
-      }).inspectProject({ repository: createMemoryRepositoryReader(createEntries()) }),
+      }).validateProject({ repository: createMemoryRepositoryReader(createEntries()) }),
     ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxEvidence',
       operation: 'validate-adapter',
       retryable: false,
     });
-    expect(harness.calls).toStrictEqual(['anthropic']);
+    expect(harness.calls).toStrictEqual(['anthropic', 'anthropic']);
   });
 
   test('allows one immutable adapter instance to serve concurrent inspections', async () => {
@@ -500,8 +576,8 @@ describe('Core runtime-adapter execution', () => {
     });
     const core = createCore({ adapters: harness.adapters });
     const [first, second] = await Promise.all([
-      core.inspectProject({ repository: createMemoryRepositoryReader(createEntries()) }),
-      core.inspectProject({ repository: createMemoryRepositoryReader(createEntries()) }),
+      core.validateProject({ repository: createMemoryRepositoryReader(createEntries()) }),
+      core.validateProject({ repository: createMemoryRepositoryReader(createEntries()) }),
     ]);
 
     expect(first.valid).toBe(true);

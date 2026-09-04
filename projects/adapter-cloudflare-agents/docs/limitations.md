@@ -18,4 +18,4 @@ The current verified targets do not claim support for:
 - arbitrary compiler resolution, `tsconfig` path aliases, directory indexes, package exports, or general re-export graphs
 - runtime-generated strings, schema-content validation, provider compatibility, model behavior, or actual tool execution
 
-Package detection uses nearest manifests, not lockfiles or installed `node_modules`. The adapter sees only repository entries Core supplies through `IRepositoryReader`. It receives no host path, credential, environment variable, network client, or runtime process.
+Package detection uses nearest manifests, not lockfiles or installed `node_modules`. Each invocation sees one declared agent, exact same-runtime binding resolution, and only the bounded operations Core supplies through `IRuntimeAdapterRepository`. It receives no complete agent collection, project body index, host path, credential, environment variable, network client, or runtime process.

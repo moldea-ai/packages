@@ -26,7 +26,15 @@ export interface INormalizedFilesystemRepositoryReaderOptions {
 const OPTION_PROPERTY_NAMES = new Set(['limits', 'rootDirectory', 'selection', 'signal']);
 const DIRECTORY_SELECTION_PROPERTY_NAMES = new Set(['kind']);
 const PATH_SELECTION_PROPERTY_NAMES = new Set(['kind', 'paths']);
-const LIMIT_PROPERTY_NAMES = ['maxCachedBytes', 'maxEntries', 'maxFileBytes'] as const;
+const LIMIT_PROPERTY_NAMES = [
+  'maxCachedBytes',
+  'maxConcurrentOperations',
+  'maxDirectoryEntries',
+  'maxEntries',
+  'maxPageEntries',
+  'maxQueuedOperations',
+  'maxReadBytes',
+] as const;
 const LIMIT_PROPERTY_NAME_SET = new Set<string>(LIMIT_PROPERTY_NAMES);
 
 const throwInvalidSourceData = (path: IRepositoryPath | null = null): never => {
@@ -154,7 +162,7 @@ const normalizePathSelection = (
 };
 
 /**
- * Validates and snapshots one supported version 1 selection strategy.
+ * Validates and snapshots one supported selection strategy.
  * @param candidate The untrusted selection value.
  * @returns A frozen directory or exact-path selection.
  * @throws
@@ -205,8 +213,12 @@ const normalizeLimits = (candidate: unknown): IFilesystemRepositoryResourceLimit
 
   const limits = {
     maxCachedBytes: DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS.maxCachedBytes,
+    maxConcurrentOperations: DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS.maxConcurrentOperations,
+    maxDirectoryEntries: DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS.maxDirectoryEntries,
     maxEntries: DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS.maxEntries,
-    maxFileBytes: DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS.maxFileBytes,
+    maxPageEntries: DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS.maxPageEntries,
+    maxQueuedOperations: DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS.maxQueuedOperations,
+    maxReadBytes: DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS.maxReadBytes,
   };
 
   for (const propertyName of LIMIT_PROPERTY_NAMES) {

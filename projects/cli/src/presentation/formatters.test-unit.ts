@@ -31,7 +31,7 @@ const createDiagnostic = (): ICoreDiagnostic => ({
   source: 'core',
 });
 
-describe('schema 3 CLI presentation formatters', () => {
+describe('schema 4 CLI presentation formatters', () => {
   test('returns help for every command', () => {
     expect(formatMoldeaCliHelp(null)).toBe(MOLDEA_CLI_TOP_LEVEL_HELP);
 
@@ -40,23 +40,23 @@ describe('schema 3 CLI presentation formatters', () => {
     }
   });
 
-  test('formats safe human and strict schema 3 JSON errors', () => {
+  test('formats safe human and strict schema 4 JSON errors', () => {
     const error = createMoldeaCliOwnedError('CURSOR_INVALID');
 
     expect(formatMoldeaCliHumanError(error)).toBe(
       'cli:CURSOR_INVALID The continuation cursor is invalid for this request.\n',
     );
-    expect(JSON.parse(formatMoldeaCliJsonError(error, 'inspect', '6.0.0'))).toStrictEqual({
-      cliVersion: '6.0.0',
+    expect(JSON.parse(formatMoldeaCliJsonError(error, 'inspect', '7.0.0'))).toStrictEqual({
+      cliVersion: '7.0.0',
       command: 'inspect',
       error,
       result: null,
-      schemaVersion: 3,
+      schemaVersion: 4,
       status: 'error',
     });
   });
 
-  test('formats composition in human and schema 3 JSON forms', () => {
+  test('formats composition in human and schema 4 JSON forms', () => {
     const result: IMoldeaCliCompositionResult = {
       adapters: [{ id: 'custom', repositoryFormatVersions: [1] }],
       minimumGitVersion: '2.30.0',
@@ -65,13 +65,13 @@ describe('schema 3 CLI presentation formatters', () => {
       supportedNodeRange: '>=22.11.0',
     };
 
-    expect(formatMoldeaCliHumanCompositionResult(result, '6.0.0')).toContain(
-      'JSON output schema: 3',
+    expect(formatMoldeaCliHumanCompositionResult(result, '7.0.0')).toContain(
+      'JSON output schema: 4',
     );
-    expect(JSON.parse(formatMoldeaCliJsonCompositionResult(result, '6.0.0'))).toMatchObject({
+    expect(JSON.parse(formatMoldeaCliJsonCompositionResult(result, '7.0.0'))).toMatchObject({
       command: 'composition',
       result,
-      schemaVersion: 3,
+      schemaVersion: 4,
       status: 'valid',
     });
   });
@@ -84,15 +84,16 @@ describe('schema 3 CLI presentation formatters', () => {
       page: { cursor: 'opaque_cursor', records: [diagnostic] },
       snapshotDigest: `sha256:${'b'.repeat(64)}`,
       source: { kind: 'git-working-tree' },
+      valid: false,
     };
 
     expect(formatMoldeaCliHumanValidateResult(result)).toBe(
       'The moldea project is invalid.\ncore:MOLDEA_MANIFEST_MISSING /moldea/moldea.yaml The project manifest is missing.\nDiagnostic: 1\nAdditional diagnostics are available through JSON pagination.\n',
     );
-    expect(JSON.parse(formatMoldeaCliJsonValidateResult(result, '6.0.0'))).toMatchObject({
+    expect(JSON.parse(formatMoldeaCliJsonValidateResult(result, '7.0.0'))).toMatchObject({
       command: 'validate',
       result: { diagnosticCount: 1 },
-      schemaVersion: 3,
+      schemaVersion: 4,
       status: 'invalid',
     });
   });

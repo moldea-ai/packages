@@ -18,7 +18,7 @@ export const validateRuntimeAdapterAvailability = (
   formatVersion: IRepositoryFormatVersion,
   options: ICoreOptionsSnapshot,
 ): readonly ICoreDiagnostic[] => {
-  const diagnostics = createCoreDiagnosticCollector(options.limits, 'inspect-project');
+  const diagnostics = createCoreDiagnosticCollector(options.limits, 'validate-project');
   const adapters = new Map(options.adapters.map((adapter) => [adapter.id, adapter]));
 
   for (const location of locations) {

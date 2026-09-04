@@ -1,8 +1,4 @@
-import {
-  RepositorySourceException,
-  type IRepositoryPath,
-  type IRepositoryReader,
-} from '@moldea.ai/repository';
+import { RepositorySourceException, type IRepositoryPath } from '@moldea.ai/repository';
 
 import { parseDecisionDocument } from '../decision/index.js';
 import {
@@ -15,6 +11,7 @@ import { compareExactStrings, parseDecisionIdFromPath } from '../format-validati
 import type { IParsedDecision } from '../format/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
+import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 
 // internal repository-level decision result retained for later project indexing
 export interface IDecisionGraphResult {
@@ -26,7 +23,7 @@ export interface IDecisionGraphResult {
 const invalidSourceData = (path: IRepositoryPath): never => {
   throw new RepositorySourceException({
     code: 'INVALID_SOURCE_DATA',
-    operation: 'read-file',
+    operation: 'read-file-page',
     path,
     retryable: false,
   });
@@ -56,19 +53,19 @@ const sortDecisions = (decisions: readonly IParsedDecision[]): IParsedDecision[]
  * - ABORTED: Decision inspection or a repository operation was aborted.
  */
 export const readDecisionGraph = async (
-  repository: IRepositoryReader,
+  repository: IRepositoryInspectionReader,
   paths: readonly IRepositoryPath[],
   options: ICoreOptionsSnapshot,
   signal?: AbortSignal,
 ): Promise<IDecisionGraphResult> => {
   options = createCoreOperationOptionsSnapshot(options);
-  const diagnostics = createCoreDiagnosticCollector(options.limits, 'inspect-project');
+  const diagnostics = createCoreDiagnosticCollector(options.limits, 'validate-project');
   const candidates: IDecisionGraphCandidate[] = [];
   const decisions: IParsedDecision[] = [];
   const readOptions = signal === undefined ? undefined : { signal };
 
   for (const path of [...paths].sort(compareExactStrings)) {
-    const content = await repository.readFile(path, readOptions);
+    const content = await repository.readCompleteFile(path, readOptions);
 
     if (!(content instanceof Uint8Array)) {
       return invalidSourceData(path);
@@ -77,7 +74,7 @@ export const readDecisionGraph = async (
     const parsed = await parseDecisionDocument(
       { content: content.slice(), path },
       options,
-      'inspect-project',
+      'validate-project',
     );
 
     for (const diagnostic of parsed.diagnostics) {

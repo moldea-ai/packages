@@ -3,17 +3,18 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, test } from 'vitest';
 
-import {
-  RepositorySourceException,
-  parseRepositoryPath,
-  type IRepositoryReader,
-} from '@moldea.ai/repository';
+import { RepositorySourceException, parseRepositoryPath } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  overrideCoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
-} from '@moldea.ai/repository/memory';
+} from '../repository.test-fixtures.js';
 
-import type { IRuntimeAdapter, IRuntimeAdapterResult } from '../adapter/index.js';
+import type {
+  IRuntimeAdapter,
+  IRuntimeAdapterContext,
+  IRuntimeAdapterResult,
+} from '../adapter/index.js';
 import { createCore } from '../core/index.js';
 
 interface IAdapterFixture {
@@ -85,6 +86,16 @@ const createCyclicResult = (): Record<string, unknown> => {
     evidence: [{ ...createValidEvidence(), details }],
   };
 };
+
+const resolveAlphaResult = (
+  context: IRuntimeAdapterContext,
+  candidate: unknown,
+): Promise<IRuntimeAdapterResult> =>
+  Promise.resolve(
+    context.agent.id === 'alpha'
+      ? (candidate as IRuntimeAdapterResult)
+      : { diagnostics: [], evidence: [] },
+  );
 
 const malformedCases: readonly [string, () => unknown][] = [
   ['null result', () => null],
@@ -287,7 +298,7 @@ describe('Core runtime-adapter result validation', () => {
     async (_, createResult) => {
       const alphaAdapter: IRuntimeAdapter = {
         id: 'anthropic',
-        inspect: () => Promise.resolve(createResult() as IRuntimeAdapterResult),
+        inspect: (context) => resolveAlphaResult(context, createResult()),
         supportedRepositoryFormatVersions: [1],
       };
       const zetaAdapter: IRuntimeAdapter = {
@@ -297,7 +308,7 @@ describe('Core runtime-adapter result validation', () => {
       };
 
       await expect(
-        createCore({ adapters: [zetaAdapter, alphaAdapter] }).inspectProject({
+        createCore({ adapters: [zetaAdapter, alphaAdapter] }).validateProject({
           repository: createMemoryRepositoryReader(createEntries()),
         }),
       ).rejects.toMatchObject({
@@ -317,8 +328,8 @@ describe('Core runtime-adapter result validation', () => {
     };
     const alphaAdapter: IRuntimeAdapter = {
       id: 'anthropic',
-      inspect: () =>
-        Promise.resolve({ diagnostics: [diagnostic, diagnostic], evidence: [] } as never),
+      inspect: (context) =>
+        resolveAlphaResult(context, { diagnostics: [diagnostic, diagnostic], evidence: [] }),
       supportedRepositoryFormatVersions: [1],
     };
     const zetaAdapter: IRuntimeAdapter = {
@@ -326,7 +337,7 @@ describe('Core runtime-adapter result validation', () => {
       inspect: () => Promise.resolve({ diagnostics: [], evidence: [] }),
       supportedRepositoryFormatVersions: [1],
     };
-    const result = await createCore({ adapters: [zetaAdapter, alphaAdapter] }).inspectProject({
+    const result = await createCore({ adapters: [zetaAdapter, alphaAdapter] }).validateProject({
       repository: createMemoryRepositoryReader(createEntries()),
     });
 
@@ -339,8 +350,8 @@ describe('Core runtime-adapter result validation', () => {
     const diagnostic = createValidDiagnostic();
     const alphaAdapter: IRuntimeAdapter = {
       id: 'anthropic',
-      inspect: () =>
-        Promise.resolve({ diagnostics: [diagnostic, diagnostic], evidence: [] } as never),
+      inspect: (context) =>
+        resolveAlphaResult(context, { diagnostics: [diagnostic, diagnostic], evidence: [] }),
       supportedRepositoryFormatVersions: [1],
     };
     const zetaAdapter: IRuntimeAdapter = {
@@ -353,7 +364,7 @@ describe('Core runtime-adapter result validation', () => {
       createCore({
         adapters: [zetaAdapter, alphaAdapter],
         limits: { maxDiagnostics: 1 },
-      }).inspectProject({ repository: createMemoryRepositoryReader(createEntries()) }),
+      }).validateProject({ repository: createMemoryRepositoryReader(createEntries()) }),
     ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxDiagnostics',
@@ -365,7 +376,7 @@ describe('Core runtime-adapter result validation', () => {
     const candidate = createValidResult();
     const alphaAdapter: IRuntimeAdapter = {
       id: 'anthropic',
-      inspect: () => Promise.resolve(candidate as unknown as IRuntimeAdapterResult),
+      inspect: (context) => resolveAlphaResult(context, candidate),
       supportedRepositoryFormatVersions: [1],
     };
     const zetaAdapter: IRuntimeAdapter = {
@@ -373,7 +384,7 @@ describe('Core runtime-adapter result validation', () => {
       inspect: () => Promise.resolve({ diagnostics: [], evidence: [] }),
       supportedRepositoryFormatVersions: [1],
     };
-    const result = await createCore({ adapters: [zetaAdapter, alphaAdapter] }).inspectProject({
+    const result = await createCore({ adapters: [zetaAdapter, alphaAdapter] }).validateProject({
       repository: createMemoryRepositoryReader(createEntries()),
     });
 
@@ -393,7 +404,7 @@ describe('Core runtime-adapter result validation', () => {
     Object.defineProperty(candidate, 'diagnostics', { enumerable: true, value: [] });
     const alphaAdapter: IRuntimeAdapter = {
       id: 'anthropic',
-      inspect: () => Promise.resolve(candidate as unknown as IRuntimeAdapterResult),
+      inspect: (context) => resolveAlphaResult(context, candidate),
       supportedRepositoryFormatVersions: [1],
     };
     const zetaAdapter: IRuntimeAdapter = {
@@ -401,7 +412,7 @@ describe('Core runtime-adapter result validation', () => {
       inspect: () => Promise.resolve({ diagnostics: [], evidence: [] }),
       supportedRepositoryFormatVersions: [1],
     };
-    const resultPromise = createCore({ adapters: [alphaAdapter, zetaAdapter] }).inspectProject({
+    const resultPromise = createCore({ adapters: [alphaAdapter, zetaAdapter] }).validateProject({
       repository: createMemoryRepositoryReader(createEntries()),
     });
 
@@ -421,15 +432,15 @@ describe('Core runtime-adapter result validation', () => {
       retryable: true,
     });
     const source = createMemoryRepositoryReader(createEntries());
-    const repository: IRepositoryReader = {
+    const repository = overrideCoreTestRepositoryReader(source, {
       getEntry: (path, options) =>
         path === evidencePath ? Promise.reject(sourceFailure) : source.getEntry(path, options),
-      listEntries: (options) => source.listEntries(options),
-      readFile: (path, options) => source.readFile(path, options),
-    };
+      iterateEntries: (options) => source.iterateEntries(options),
+      readCompleteFile: (path, options) => source.readCompleteFile(path, options),
+    });
     const alphaAdapter: IRuntimeAdapter = {
       id: 'anthropic',
-      inspect: () => Promise.resolve(createValidResult() as unknown as IRuntimeAdapterResult),
+      inspect: (context) => resolveAlphaResult(context, createValidResult()),
       supportedRepositoryFormatVersions: [1],
     };
     const zetaAdapter: IRuntimeAdapter = {
@@ -439,7 +450,7 @@ describe('Core runtime-adapter result validation', () => {
     };
 
     await expect(
-      createCore({ adapters: [alphaAdapter, zetaAdapter] }).inspectProject({ repository }),
+      createCore({ adapters: [alphaAdapter, zetaAdapter] }).validateProject({ repository }),
     ).rejects.toBe(sourceFailure);
   });
 
@@ -448,7 +459,7 @@ describe('Core runtime-adapter result validation', () => {
     const controller = new AbortController();
     const source = createMemoryRepositoryReader(createEntries());
     let groundingSignal: AbortSignal | undefined;
-    const repository: IRepositoryReader = {
+    const repository = overrideCoreTestRepositoryReader(source, {
       getEntry: (path, options) => {
         if (path !== evidencePath) {
           return source.getEntry(path, options);
@@ -458,12 +469,12 @@ describe('Core runtime-adapter result validation', () => {
         controller.abort(cancellation);
         return source.getEntry(path);
       },
-      listEntries: (options) => source.listEntries(options),
-      readFile: (path, options) => source.readFile(path, options),
-    };
+      iterateEntries: (options) => source.iterateEntries(options),
+      readCompleteFile: (path, options) => source.readCompleteFile(path, options),
+    });
     const alphaAdapter: IRuntimeAdapter = {
       id: 'anthropic',
-      inspect: () => Promise.resolve(createValidResult() as unknown as IRuntimeAdapterResult),
+      inspect: (context) => resolveAlphaResult(context, createValidResult()),
       supportedRepositoryFormatVersions: [1],
     };
     const zetaAdapter: IRuntimeAdapter = {
@@ -473,14 +484,14 @@ describe('Core runtime-adapter result validation', () => {
     };
 
     await expect(
-      createCore({ adapters: [alphaAdapter, zetaAdapter] }).inspectProject({
+      createCore({ adapters: [alphaAdapter, zetaAdapter] }).validateProject({
         repository,
         signal: controller.signal,
       }),
     ).rejects.toMatchObject({
       cause: cancellation,
       code: 'ABORTED',
-      operation: 'inspect-project',
+      operation: 'validate-project',
       retryable: true,
     });
     expect(groundingSignal).toBe(controller.signal);

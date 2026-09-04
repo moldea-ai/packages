@@ -66,7 +66,7 @@ const createEntries = (
 };
 
 const inspect = async (replacements: Readonly<Record<string, IFixtureReplacement>> = {}) =>
-  createCore({ adapters: [langChainAdapter] }).inspectProject({
+  createCore({ adapters: [langChainAdapter] }).validateProject({
     repository: createMemoryRepositoryReader(createEntries(replacements)),
   });
 
@@ -113,7 +113,7 @@ describe('langChainAdapter Core integration', () => {
   );
 
   test('is deterministic for reversed entries and concurrent inspections', async () => {
-    const reversed = await createCore({ adapters: [langChainAdapter] }).inspectProject({
+    const reversed = await createCore({ adapters: [langChainAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),
     });
     const concurrent = await Promise.all([inspect(), inspect(), inspect(), inspect()]);
@@ -324,14 +324,16 @@ describe('langChainAdapter Core integration', () => {
     );
     const probedPaths: string[] = [];
     const repository: IRepositoryReader = {
+      snapshot: source.snapshot,
+      compare: (candidate, options) => source.compare(candidate, options),
       getEntry: (path, options) => {
         probedPaths.push(path);
         return source.getEntry(path, options);
       },
-      listEntries: (options) => source.listEntries(options),
-      readFile: (path, options) => source.readFile(path, options),
+      listEntriesPage: (options) => source.listEntriesPage(options),
+      readFilePage: (path, options) => source.readFilePage(path, options),
     };
-    const result = await createCore({ adapters: [langChainAdapter] }).inspectProject({
+    const result = await createCore({ adapters: [langChainAdapter] }).validateProject({
       repository,
     });
 
@@ -711,7 +713,7 @@ describe('langChainAdapter Core integration', () => {
   );
 
   test('returns no runtime diagnostics for a dedicated repository without bindings', async () => {
-    const result = await createCore({ adapters: [langChainAdapter] }).inspectProject({
+    const result = await createCore({ adapters: [langChainAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([
         {
           content: 'version: 1\nagents:\n  external:\n    runtime:\n      id: langchain\n',
@@ -742,7 +744,7 @@ describe('langChainAdapter Core integration', () => {
     controller.abort(new Error('test cancellation'));
 
     await expect(
-      createCore({ adapters: [langChainAdapter] }).inspectProject({
+      createCore({ adapters: [langChainAdapter] }).validateProject({
         repository: createMemoryRepositoryReader(createEntries()),
         signal: controller.signal,
       }),

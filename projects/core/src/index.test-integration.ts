@@ -141,7 +141,7 @@ describe('published Core package artifacts', () => {
     ) as { readonly dependencies?: Readonly<Record<string, string>> };
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '2.1.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '3.0.0' });
     for (const entryName of ['index', 'format', 'adapter']) {
       expect(packedPaths).toContain(`dist/${entryName}.js`);
     }
@@ -163,7 +163,7 @@ describe('published Core package artifacts', () => {
       ),
     ).toBe(true);
     expect(manifest.dependencies).toStrictEqual({
-      '@moldea.ai/repository': 'workspace:>=1.1.1',
+      '@moldea.ai/repository': 'workspace:2.0.0',
       'error-message-utils': '1.2.11',
       yaml: '2.9.0',
     });
@@ -186,7 +186,7 @@ describe('published Core package artifacts', () => {
     );
 
     expect(JSON.parse(output)).toStrictEqual({
-      adapter: [],
+      adapter: ['iterateRuntimeAdapterEntries', 'readRuntimeAdapterFile'],
       format: [],
       root: [
         'CoreConfigurationException',
@@ -226,7 +226,7 @@ describe('published Core package artifacts', () => {
       ) as { readonly dependencies?: Readonly<Record<string, string>> };
 
       expect(manifest.dependencies).toStrictEqual({
-        '@moldea.ai/repository': '>=1.1.1',
+        '@moldea.ai/repository': '2.0.0',
         'error-message-utils': '1.2.11',
         yaml: '2.9.0',
       });
@@ -253,7 +253,8 @@ describe('published Core package artifacts', () => {
 
     expect(indexDeclaration).toContain('IRuntimeAdapterEvidence');
     expect(indexDeclaration).toContain('createCore');
-    expect(contractsDeclaration).toContain('inspectProject');
+    expect(contractsDeclaration).toContain('validateProject');
+    expect(contractsDeclaration).not.toMatch(/\binspectProject\(/u);
     expect(indexDeclaration).not.toContain('IYaml');
     expect(formatDeclaration).toContain('IMoldeaManifestV1');
     expect(formatDeclaration).toContain('IParsedDecision');

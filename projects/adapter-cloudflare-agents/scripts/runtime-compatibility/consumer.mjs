@@ -50,7 +50,7 @@ const repository = createMemoryRepositoryReader([
     type: 'file',
   },
 ]);
-const result = await createCore({ adapters: [cloudflareAgentsAdapter] }).inspectProject({
+const result = await createCore({ adapters: [cloudflareAgentsAdapter] }).validateProject({
   repository,
 });
 

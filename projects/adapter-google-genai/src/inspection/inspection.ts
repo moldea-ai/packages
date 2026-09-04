@@ -2,7 +2,7 @@ import {
   getRuntimeExport,
   isSupportedTypeScriptSourcePath,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
@@ -18,7 +18,6 @@ import { analyzeGoogleGenAiGenerateContent } from '../source-analysis/index.js';
 import {
   addGoogleGenAiDiagnostic,
   analyzeGoogleGenAiBoundReference,
-  compareGoogleGenAiStrings,
   createGoogleGenAiEvidence,
 } from './common.js';
 import { inspectGoogleGenAiPackage } from './package-inspection.js';
@@ -146,9 +145,7 @@ export const inspectGoogleGenAi = async (
   const session = createGoogleGenAiInspectionSession(context);
   const evidence: IRuntimeAdapterEvidence[] = [];
   const diagnostics: IAdapterDiagnostic[] = [];
-  const agents = [...context.agents].sort((left, right) =>
-    compareGoogleGenAiStrings(left.id, right.id),
-  );
+  const agents = [context.agent];
 
   for (const agent of agents) {
     context.signal?.throwIfAborted();

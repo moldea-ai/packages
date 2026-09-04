@@ -59,7 +59,7 @@ const repository = createMemoryRepositoryReader([
 ]);
 const result = await createCore({
   adapters: [openAiAdapterPackage.openAiAdapter],
-}).inspectProject({ repository });
+}).validateProject({ repository });
 
 assert.equal(result.valid, true);
 assert.deepStrictEqual(result.diagnostics, []);

@@ -61,7 +61,14 @@ const createSession = (
     discoverPackage: () => Promise.resolve({ kind: 'absent' }),
     getEntry: (path) =>
       Promise.resolve(
-        sources[path] === undefined ? null : { path, size: sources[path].length, type: 'file' },
+        sources[path] === undefined
+          ? null
+          : {
+              byteLength: new TextEncoder().encode(sources[path]).byteLength,
+              contentIdentity: `fixture:${path}`,
+              path,
+              type: 'file',
+            },
       ),
   };
 };

@@ -1,14 +1,18 @@
 import type {
+  ICanonicalContentPageInput,
   ICore,
   ICoreOptions,
-  IProjectInspectionInput,
+  IProjectInspectionPageInput,
+  IProjectValidationInput,
   ITextDocumentInput,
 } from '../contracts/index.js';
+import { readCanonicalContentPage } from '../canonical-content-page/index.js';
 import { parseDecisionDocument } from '../decision/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import { parseManifestDocument } from '../manifest/index.js';
 import { createCoreOperationOptionsSnapshot, normalizeCoreOptions } from '../options/index.js';
-import { inspectProject } from '../project-inspection/index.js';
+import { inspectProjectPage } from '../project-inspection-page/index.js';
+import { validateProject } from '../project-validation/index.js';
 import { matchManifestScope } from '../scope-matching/index.js';
 import type { IManifestScopeInput } from '../scope-matching/types.js';
 import { calculateContentDigest, normalizeTextDocument } from '../text/index.js';
@@ -31,8 +35,10 @@ export const createCore = (options?: ICoreOptions): ICore => {
       const operation = createCoreOperationOptionsSnapshot(snapshot);
       return calculateContentDigest(input, operation.limits);
     },
-    inspectProject: (input: IProjectInspectionInput) =>
-      inspectProject(input, createCoreOperationOptionsSnapshot(snapshot)),
+    inspectProjectPage: (input: IProjectInspectionPageInput) =>
+      inspectProjectPage(input, createCoreOperationOptionsSnapshot(snapshot)),
+    validateProject: (input: IProjectValidationInput) =>
+      validateProject(input, createCoreOperationOptionsSnapshot(snapshot)),
     matchManifestScope: (input: IManifestScopeInput) =>
       matchManifestScope(input, createCoreOperationOptionsSnapshot(snapshot)),
     normalizeText: (input: ITextDocumentInput) => {
@@ -43,5 +49,7 @@ export const createCore = (options?: ICoreOptions): ICore => {
       parseDecisionDocument(input, createCoreOperationOptionsSnapshot(snapshot)),
     parseManifest: (input: ITextDocumentInput) =>
       parseManifestDocument(input, createCoreOperationOptionsSnapshot(snapshot)),
+    readCanonicalContentPage: (input: ICanonicalContentPageInput) =>
+      readCanonicalContentPage(input, createCoreOperationOptionsSnapshot(snapshot)),
   });
 };

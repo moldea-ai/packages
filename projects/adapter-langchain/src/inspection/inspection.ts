@@ -1,5 +1,5 @@
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
@@ -21,7 +21,6 @@ import {
   addLangChainDiagnostic,
   addLangChainSourceFailureDiagnostic,
   analyzeLangChainBoundReference,
-  compareLangChainStrings,
   createLangChainEvidence,
   isLangChainMachineString,
 } from './common.js';
@@ -158,9 +157,7 @@ export const inspectLangChain = async (
   const session = createLangChainInspectionSession(context);
   const evidence: IRuntimeAdapterEvidence[] = [];
   const diagnostics: IAdapterDiagnostic[] = [];
-  const agents = [...context.agents].sort((left, right) =>
-    compareLangChainStrings(left.id, right.id),
-  );
+  const agents = [context.agent];
   const candidates: ILangChainAgentCandidate[] = [];
 
   for (const agent of agents) {

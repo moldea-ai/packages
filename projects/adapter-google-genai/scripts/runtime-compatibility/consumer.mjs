@@ -55,7 +55,7 @@ const repository = createMemoryRepositoryReader([
     type: 'file',
   },
 ]);
-const result = await createCore({ adapters: [googleGenAiAdapter] }).inspectProject({ repository });
+const result = await createCore({ adapters: [googleGenAiAdapter] }).validateProject({ repository });
 
 assert.equal(result.valid, true);
 assert.deepStrictEqual(result.diagnostics, []);
