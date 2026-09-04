@@ -9,6 +9,8 @@ import { freezeRecursively } from '../immutable/index.js';
 import { parseManifestDocument } from '../manifest/index.js';
 import { createCoreOperationOptionsSnapshot, normalizeCoreOptions } from '../options/index.js';
 import { inspectProject } from '../project-inspection/index.js';
+import { matchManifestScope } from '../scope-matching/index.js';
+import type { IManifestScopeInput } from '../scope-matching/types.js';
 import { calculateContentDigest, normalizeTextDocument } from '../text/index.js';
 
 /**
@@ -31,6 +33,8 @@ export const createCore = (options?: ICoreOptions): ICore => {
     },
     inspectProject: (input: IProjectInspectionInput) =>
       inspectProject(input, createCoreOperationOptionsSnapshot(snapshot)),
+    matchManifestScope: (input: IManifestScopeInput) =>
+      matchManifestScope(input, createCoreOperationOptionsSnapshot(snapshot)),
     normalizeText: (input: ITextDocumentInput) => {
       const operation = createCoreOperationOptionsSnapshot(snapshot);
       return normalizeTextDocument(input, operation.limits, 'normalize-text');

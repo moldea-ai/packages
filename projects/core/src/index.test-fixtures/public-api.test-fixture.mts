@@ -24,6 +24,8 @@ import {
   type IDiagnostic,
   type IDiagnosticDetails,
   type IDiagnosticEntity,
+  type IExactManifestScopeDeclaration,
+  type IGlobManifestScopeDeclaration,
   type IRuntimeAdapterEvidence,
   type IRuntimeAdapterEvidenceKind,
   type IIndexedAgent,
@@ -35,6 +37,14 @@ import {
   type IIndexedRuntimeGuidance,
   type IIndexedTextAsset,
   type IManifestParseResult,
+  type IManifestScopeCounts,
+  type IManifestScopeDeclaration,
+  type IManifestScopeInput,
+  type IManifestScopeMatch,
+  type IManifestScopeOwner,
+  type IManifestScopeOwnerKind,
+  type IManifestScopeRelationshipField,
+  type IManifestScopeResult,
   type IMoldeaProjectIndex,
   type INormalizedText,
   type IProjectInspectionInput,
@@ -98,6 +108,8 @@ type IRootSurface = readonly [
   IDiagnostic,
   IDiagnosticDetails,
   IDiagnosticEntity,
+  IExactManifestScopeDeclaration,
+  IGlobManifestScopeDeclaration,
   IRuntimeAdapterEvidence,
   IRuntimeAdapterEvidenceKind,
   IIndexedAgent,
@@ -109,6 +121,14 @@ type IRootSurface = readonly [
   IIndexedRuntimeGuidance,
   IIndexedTextAsset,
   IManifestParseResult,
+  IManifestScopeCounts,
+  IManifestScopeDeclaration,
+  IManifestScopeInput,
+  IManifestScopeMatch,
+  IManifestScopeOwner,
+  IManifestScopeOwnerKind,
+  IManifestScopeRelationshipField,
+  IManifestScopeResult,
   IMoldeaProjectIndex,
   INormalizedText,
   IProjectInspectionInput,
@@ -191,6 +211,13 @@ const parsedDecision: Promise<IDecisionParseResult> = core.parseDecision({
   path: parseRepositoryPath('/moldea/decisions/1786131723456-use-postgresql.md'),
 });
 const inspectedProject: Promise<IProjectInspectionResult> = core.inspectProject({ repository });
+const matchedScope: Promise<IManifestScopeResult> = core.matchManifestScope({
+  manifest: {
+    content: 'version: 1\n',
+    path: parseRepositoryPath('/moldea/moldea.yaml'),
+  },
+  paths: ['/src/index.ts'],
+});
 const configurationException = new CoreConfigurationException({
   code: 'INVALID_RESOURCE_LIMIT',
   operation: 'create-core',
@@ -209,6 +236,7 @@ const diagnosticCode: ICoreDiagnosticCode = 'MOLDEA_TEXT_EMPTY';
 const configurationErrorCode: ICoreConfigurationErrorCode = 'INVALID_RESOURCE_LIMIT';
 const operationErrorCode: ICoreOperationErrorCode = 'RESOURCE_LIMIT_EXCEEDED';
 const operation: ICoreOperation = 'inspect-project';
+const scopeOperation: ICoreOperation = 'match-manifest-scope';
 
 // @ts-expect-error Repository format version 2 is not part of the version 1 contract.
 const unsupportedRepositoryFormatVersion: IRepositoryFormatVersion = 2;
@@ -252,10 +280,12 @@ void [
   evidenceKind,
   formatDefault,
   incompleteAdapter,
+  inspectedProject,
+  matchedScope,
   normalized,
   operation,
   operationErrorCode,
-  inspectedProject,
+  scopeOperation,
   parsedDecision,
   parsedManifest,
   configurationException,

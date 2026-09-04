@@ -39,7 +39,10 @@ export interface IManifestDocumentInspectionResult extends IManifestParseResult 
 export const inspectManifestDocument = async (
   input: ITextDocumentInput,
   options: ICoreOptionsSnapshot,
-  operation: Extract<ICoreOperation, 'parse-manifest' | 'inspect-project'> = 'parse-manifest',
+  operation: Extract<
+    ICoreOperation,
+    'parse-manifest' | 'match-manifest-scope' | 'inspect-project'
+  > = 'parse-manifest',
 ): Promise<IManifestDocumentInspectionResult> => {
   options = createCoreOperationOptionsSnapshot(options);
   const normalized = normalizeTextDocument(input, options.limits, operation, 'maxManifestBytes');
@@ -117,8 +120,9 @@ export const inspectManifestDocument = async (
 export const parseManifestDocument = async (
   input: ITextDocumentInput,
   options: ICoreOptionsSnapshot,
+  operation: Extract<ICoreOperation, 'parse-manifest' | 'match-manifest-scope'> = 'parse-manifest',
 ): Promise<IManifestParseResult> => {
-  const inspection = await inspectManifestDocument(input, options);
+  const inspection = await inspectManifestDocument(input, options, operation);
 
   return freezeRecursively({
     asset: inspection.asset,
