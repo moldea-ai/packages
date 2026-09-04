@@ -999,25 +999,94 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     }
   }
 
+  /** Finds one exact child spelling without retaining or sorting unrelated names. */
+  async #hasExactChildName(
+    logicalPath: IRepositoryPath,
+    targetName: string,
+    operation: IRepositoryOperation,
+  ): Promise<boolean> {
+    try {
+      const directory = await openBufferDirectory(this.#getHostPath(logicalPath));
+      let observedEntries = 0;
+
+      for await (const directoryEntry of directory) {
+        observedEntries += 1;
+
+        if (observedEntries > this.#limits.maxDirectoryEntries) {
+          throwSource('RESOURCE_LIMIT_EXCEEDED', operation, logicalPath, false, undefined, {
+            dimension: 'directoryEntries',
+            limit: this.#limits.maxDirectoryEntries,
+            observed: observedEntries,
+          });
+        }
+
+        const name = decodeName(directoryEntry.name, operation, logicalPath);
+
+        if (name !== '.git' && name === targetName) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (cause) {
+      if (cause instanceof RepositorySourceException) {
+        throw cause;
+      }
+
+      return throwMappedHostError(cause, operation, logicalPath);
+    }
+  }
+
+  /** Resolves an entry only when every host segment has the exact logical spelling. */
+  async #readExactEntryStatistics(
+    logicalPath: IRepositoryPath,
+    operation: IRepositoryOperation,
+  ): Promise<BigIntStats | null> {
+    if (logicalPath === REPOSITORY_ROOT) {
+      try {
+        return await lstat(this.#rootDirectory, { bigint: true });
+      } catch (cause) {
+        return throwMappedHostError(cause, operation, logicalPath);
+      }
+    }
+
+    const segments = logicalPath.slice(1).split('/');
+    let currentPath = REPOSITORY_ROOT;
+    let statistics: BigIntStats | null = null;
+
+    for (const [index, segment] of segments.entries()) {
+      if (!(await this.#hasExactChildName(currentPath, segment, operation))) {
+        return null;
+      }
+
+      currentPath = parseRepositoryPath(
+        currentPath === REPOSITORY_ROOT ? `/${segment}` : `${currentPath}/${segment}`,
+      );
+
+      try {
+        statistics = await lstat(this.#getHostPath(currentPath), { bigint: true });
+      } catch (cause) {
+        return throwMappedHostError(cause, operation, currentPath);
+      }
+
+      if (index < segments.length - 1 && !statistics.isDirectory()) {
+        return null;
+      }
+    }
+
+    return statistics;
+  }
+
   async #observeEntry(
     logicalPath: IRepositoryPath,
     operation: IRepositoryOperation,
   ): Promise<IRepositoryEntry | null> {
-    let statistics: BigIntStats;
+    const statistics = await this.#readExactEntryStatistics(logicalPath, operation);
 
-    try {
-      statistics = await lstat(this.#getHostPath(logicalPath), { bigint: true });
-    } catch (cause) {
-      const errorCode = getErrorCode(cause);
-
-      if (
-        !this.#observations.has(logicalPath) &&
-        (errorCode === 'ENOENT' || errorCode === 'ENOTDIR')
-      ) {
-        return null;
-      }
-
-      return throwMappedHostError(cause, operation, logicalPath);
+    if (statistics === null) {
+      return this.#observations.has(logicalPath)
+        ? throwSource('SNAPSHOT_CHANGED', operation, logicalPath, true)
+        : null;
     }
 
     const type = classifyStatistics(statistics, operation, logicalPath);

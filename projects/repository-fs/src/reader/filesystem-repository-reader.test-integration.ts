@@ -107,6 +107,20 @@ describe('filesystem repository reader', () => {
     });
   });
 
+  test('does not traverse a descendant symlink during exact lookup', async () => {
+    const redirectedPath = parseRepositoryPath('/link/deep/data.bin');
+    const reader = await createFilesystemRepositoryReader({
+      rootDirectory: fixtures.primary.rootDirectory,
+      selection: { kind: 'directory' },
+    });
+
+    await expect(reader.getEntry(redirectedPath)).resolves.toBeNull();
+    await expectToRejectCode(
+      reader.readFilePage(redirectedPath, { maxBytes: 1, offset: 0 }),
+      'ENTRY_NOT_FOUND',
+    );
+  });
+
   test('pages only selected paths and their directory parents', async () => {
     const reader = await createFilesystemRepositoryReader({
       rootDirectory: fixtures.primary.rootDirectory,
