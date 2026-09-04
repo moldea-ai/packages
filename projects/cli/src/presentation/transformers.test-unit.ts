@@ -1,119 +1,125 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
-import type { IProjectInspectionResult } from '@moldea.ai/core';
+import type { IContentDigest, IIndexedTextAsset, IProjectInspectionResult } from '@moldea.ai/core';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
-import { MOLDEA_CLI_GIT_WORKING_TREE_SOURCE } from './constants.js';
-import { createMoldeaCliInspectResult, createMoldeaCliValidateResult } from './transformers.js';
+import {
+  createMoldeaCliInspectProjection,
+  createMoldeaCliValidateProjection,
+} from './transformers.js';
 
-describe('createMoldeaCliValidateResult', () => {
-  test('retains only source, format version, and diagnostics', () => {
-    const diagnostics = Object.freeze([
-      Object.freeze({
-        code: 'MOLDEA_MANIFEST_MISSING' as const,
-        details: Object.freeze({}),
-        entity: null,
-        message: 'The project manifest is missing.',
-        path: parseRepositoryPath('/moldea/moldea.yaml'),
-        pointer: null,
-        range: null,
-        source: 'core' as const,
-      }),
-    ]);
-    const inspection = Object.freeze({
-      diagnostics,
-      evidence: Object.freeze([
-        Object.freeze({
-          agentId: null,
-          capabilityId: null,
-          capabilityKind: null,
-          details: Object.freeze({ package: '@example/runtime' }),
-          kind: 'runtime-package' as const,
-          references: Object.freeze([]),
-          runtimeName: 'example-runtime',
-          source: 'example',
-        }),
-      ]),
-      formatVersion: 1 as const,
-      project: null,
-      valid: false,
-    }) satisfies IProjectInspectionResult;
-
-    const result = createMoldeaCliValidateResult(inspection);
-
-    expect(result).toStrictEqual({
-      diagnostics,
-      formatVersion: 1,
-      source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
-    });
-    expect(Object.keys(result)).toStrictEqual(['diagnostics', 'formatVersion', 'source']);
-    expect(result.diagnostics).toBe(diagnostics);
-    expect(Object.isFrozen(result)).toBe(true);
-    expect(Object.isFrozen(result.source)).toBe(true);
-  });
+const createAsset = (path: string, content: string): IIndexedTextAsset => ({
+  content,
+  digest: `sha256:${'a'.repeat(64)}` as IContentDigest,
+  path: parseRepositoryPath(path),
+  scalarLength: Array.from(content).length,
+  utf8ByteLength: Buffer.byteLength(content, 'utf8'),
 });
 
-describe('createMoldeaCliInspectResult', () => {
-  test('retains the exact complete inspection and freezes its source wrapper', () => {
-    const inspection = Object.freeze({
-      diagnostics: Object.freeze([
-        Object.freeze({
-          code: 'MOLDEA_MANIFEST_MISSING' as const,
-          details: Object.freeze({}),
+const createValidInspection = (): IProjectInspectionResult => {
+  const manifest = createAsset('/moldea/moldea.yaml', 'version: 1\n');
+  const project = createAsset('/moldea/project.md', '# Distinct canonical project body\n');
+
+  return {
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: null,
+        capabilityId: null,
+        capabilityKind: null,
+        details: { content: 'must not escape', large: 'x'.repeat(10_000) },
+        kind: 'runtime-package',
+        references: [{ path: parseRepositoryPath('/package.json') }],
+        runtimeName: 'custom',
+        source: 'custom',
+      },
+    ],
+    formatVersion: 1,
+    project: {
+      agents: [],
+      context: [],
+      decisions: [],
+      formatVersion: 1,
+      manifest: { asset: manifest, value: { version: 1 } },
+      project,
+      runtimes: [],
+      unresolved: {},
+    },
+    valid: true,
+  };
+};
+
+describe('schema 3 presentation projections', () => {
+  test('projects valid inspection through a content-free metadata allowlist', () => {
+    const projection = createMoldeaCliInspectProjection(createValidInspection());
+    const serialized = JSON.stringify(projection.records);
+
+    expect(projection.counts).toStrictEqual({
+      agents: 0,
+      context: 0,
+      decisionSupersessions: 0,
+      decisions: 0,
+      diagnostics: 0,
+      evidence: 1,
+      evidenceReferences: 1,
+      mirrors: 0,
+      relationships: 0,
+      requirements: 0,
+      runtimes: 0,
+      unresolved: 0,
+    });
+    expect(projection.project?.project).toMatchObject({
+      path: '/moldea/project.md',
+      scalarLength: 34,
+    });
+    expect(serialized).not.toContain('Distinct canonical project body');
+    expect(serialized).not.toContain('must not escape');
+    expect(serialized).not.toContain('"details"');
+    expect(projection.records).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'evidence', referenceCount: 1 }),
+        expect.objectContaining({ kind: 'evidence-reference', path: '/package.json' }),
+      ]),
+    );
+    expect(projection.snapshotDigest).toMatch(/^sha256:[0-9a-f]{64}$/u);
+  });
+
+  test('projects invalid diagnostics without arbitrary detail fields', () => {
+    const inspection: IProjectInspectionResult = {
+      diagnostics: [
+        {
+          code: 'MOLDEA_MANIFEST_MISSING',
+          details: { content: 'private source detail' },
           entity: null,
           message: 'The project manifest is missing.',
           path: parseRepositoryPath('/moldea/moldea.yaml'),
           pointer: null,
           range: null,
-          source: 'core' as const,
-        }),
-      ]),
-      evidence: Object.freeze([]),
+          source: 'core',
+        },
+      ],
+      evidence: [],
       formatVersion: null,
       project: null,
       valid: false,
-    }) satisfies IProjectInspectionResult;
+    };
+    const projection = createMoldeaCliValidateProjection(inspection);
 
-    const result = createMoldeaCliInspectResult(inspection);
-
-    expect(result).toStrictEqual({
-      inspection,
-      source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
+    expect(projection.diagnostics).toHaveLength(1);
+    expect(projection.diagnostics[0]).not.toHaveProperty('details');
+    expect(projection.diagnostics[0]).toMatchObject({
+      code: 'MOLDEA_MANIFEST_MISSING',
+      kind: 'diagnostic',
     });
-    expect(Object.keys(result)).toStrictEqual(['inspection', 'source']);
-    expect(result.inspection).toBe(inspection);
-    expect(Object.isFrozen(result)).toBe(true);
-    expect(Object.isFrozen(result.source)).toBe(true);
   });
 
   test.each([
-    [
-      'a valid result without a project',
-      Object.freeze({
-        diagnostics: Object.freeze([]),
-        evidence: Object.freeze([]),
-        formatVersion: 1 as const,
-        project: null,
-        valid: true,
-      }),
-    ],
-    [
-      'an invalid result without diagnostics',
-      Object.freeze({
-        diagnostics: Object.freeze([]),
-        evidence: Object.freeze([]),
-        formatVersion: null,
-        project: null,
-        valid: false,
-      }),
-    ],
-  ] satisfies readonly (readonly [string, IProjectInspectionResult])[])(
-    'rejects %s',
-    (_description, inspection) => {
-      expect(() => createMoldeaCliInspectResult(inspection)).toThrow(
-        'The Core inspection result is internally inconsistent.',
-      );
-    },
-  );
+    { diagnostics: [], evidence: [], formatVersion: 1 as const, project: null, valid: true },
+    { diagnostics: [], evidence: [], formatVersion: null, project: null, valid: false },
+  ])('rejects contradictory Core result %#', (inspection) => {
+    expect(() => createMoldeaCliInspectProjection(inspection)).toThrow(
+      'The Core inspection result is internally inconsistent.',
+    );
+  });
 });

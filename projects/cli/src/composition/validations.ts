@@ -70,7 +70,7 @@ export const isMoldeaCliCompositionStateValid = (
     supportedNodeRange === null ||
     validRange(supportedNodeRange) === null ||
     isValidVersion(input.minimumGitVersion) === null ||
-    input.outputSchemaVersion !== 2 ||
+    input.outputSchemaVersion !== 3 ||
     dependencies === null ||
     installedPackageVersions === null ||
     !hasUniquePositiveIntegers(input.coreSupportedRepositoryFormatVersions)

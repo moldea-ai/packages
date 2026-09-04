@@ -216,53 +216,6 @@ jobs:
           "${{ runner.temp }}/public-package-tarballs"
           "${{ env.VITEST_VERSION }}"
 
-  compatibility-bridge-packages:
-    name: Verify 4.0.2 Package Compatibility Bridge
-    needs: verify
-    if: ${{ inputs.release_build == true }}
-    runs-on: ubuntu-latest
-    env:
-      PACKAGES_SOURCE_BASELINE_COMMIT: 9fa7a2ba4d3455b6310a62ece172571ab473f745
-      PACKAGES_SOURCE_BASELINE_TREE: 9eba53f4f54185432b04a4f9a4fac44543b5d24b
-    steps:
-      - name: Checkout Packages Candidate
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          path: packages
-          persist-credentials: false
-          ref: ${{ github.sha }}
-
-      - name: Checkout Frozen Skill Comparator
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          path: skill
-          persist-credentials: false
-          ref: 69702faa1fcfe4c36fb05ec9ea1ffa0a82bd00e7 # compatibility-bridge-4.0.2 comparator
-          repository: moldea-ai/skill
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install Frozen Comparator Dependencies
-        run: npm --prefix skill ci --ignore-scripts
-
-      - name: Download Public Package Artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: 'public-package-tarballs'
-          path: ${{ runner.temp }}/public-package-tarballs
-
-      - name: Compare 4.0.2 Package Artifacts
-        run: >-
-          npm --prefix skill run release:compatibility-bridge:check-packages --
-          --packages-repository "$GITHUB_WORKSPACE/packages"
-          --artifact-directory "${{ runner.temp }}/public-package-tarballs"
-          --packages-commit "${{ github.sha }}"
-
   repository-fs-runtime-compatibility:
     name: Repository FS Runtime (Node.js ${{ matrix.node-version }})
     needs: verify

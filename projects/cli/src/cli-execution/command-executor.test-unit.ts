@@ -15,6 +15,11 @@ import type { IMoldeaCliCompositionResolver } from '../composition/index.js';
 import type { IMoldeaCliCoreInspectionExecutor } from '../core-composition/index.js';
 import type { IGitWorkingTreeDiscovery } from '../git-working-tree/index.js';
 import type { IMoldeaCliOwnedErrorCode } from '../presentation/index.js';
+import type { IMoldeaCliProjectContentExecutor } from '../project-content/index.js';
+import {
+  MOLDEA_MANIFEST_PATH,
+  type IMoldeaCliProjectScopeExecutor,
+} from '../project-scope/index.js';
 import { GitContentTransformUnsupportedException } from '../repository-content-transformation-guard/index.js';
 import type {
   IWorkingTreeSnapshotExecutionInput,
@@ -70,8 +75,12 @@ const createCommandInput = (
   invocation: {
     command,
     options: {
+      cursor: null,
       isColorDisabled: false,
       isJson,
+      maxOutputBytes: 65_536,
+      path: null,
+      pathsInput: 'none',
       repositoryDirectory: null,
       resourceLimits: {
         maxDiagnostics: 10_000,
@@ -127,6 +136,7 @@ interface ITestSnapshotExecution {
   operationCalls: number;
   repositoryRoot: string | null;
   resourceLimits: IMoldeaCliCommandExecutionInput['invocation']['options']['resourceLimits'] | null;
+  selectionPaths: readonly string[] | null;
 }
 
 /** Creates a snapshot executor that records and completes its provisional operation. */
@@ -141,6 +151,7 @@ const createCompletedSnapshotExecutor = (): {
     operationCalls: 0,
     repositoryRoot: null,
     resourceLimits: null,
+    selectionPaths: null,
   };
   const executor = async <TResult>(
     input: IWorkingTreeSnapshotExecutionInput<TResult>,
@@ -148,6 +159,7 @@ const createCompletedSnapshotExecutor = (): {
     execution.calls += 1;
     execution.repositoryRoot = input.repositoryRoot;
     execution.resourceLimits = input.resourceLimits;
+    execution.selectionPaths = input.selectionPaths ?? null;
     const result =
       input.signal === undefined
         ? await input.operation(reader)
@@ -173,15 +185,9 @@ describe('createMoldeaCliCommandExecutor', () => {
       .fn<IGitWorkingTreeDiscovery>()
       .mockResolvedValue(Object.freeze({ kind: 'discovered', repositoryRoot: '/workspace' }));
     const snapshot = createCompletedSnapshotExecutor();
-    const coreInspection = vi.fn<IMoldeaCliCoreInspectionExecutor>().mockResolvedValue(
-      Object.freeze({
-        diagnostics: Object.freeze([]),
-        evidence: Object.freeze([]),
-        formatVersion: 1,
-        project: null,
-        valid: true,
-      }),
-    );
+    const coreInspection = vi
+      .fn<IMoldeaCliCoreInspectionExecutor>()
+      .mockResolvedValue(createValidInspection());
     const executeCommand = createMoldeaCliCommandExecutor(
       workingTreeDiscovery,
       snapshot.executor,
@@ -191,7 +197,7 @@ describe('createMoldeaCliCommandExecutor', () => {
     await expect(executeCommand(createCommandInput('validate'))).resolves.toStrictEqual({
       exitCode: 0,
       stderr: '',
-      stdout: 'The moldea project is valid.\nRepository format: 1\n',
+      stdout: 'The moldea project is valid.\nRepository format: 1\nDiagnostics: 0\n',
     });
     expect(workingTreeDiscovery).toHaveBeenCalledOnce();
     expect(workingTreeDiscovery).toHaveBeenCalledWith({
@@ -210,6 +216,7 @@ describe('createMoldeaCliCommandExecutor', () => {
         maxManifestBytes: 2_097_152,
         maxTotalBytes: 134_217_728,
       },
+      selectionPaths: null,
     });
     expect(coreInspection).toHaveBeenCalledOnce();
     expect(coreInspection).toHaveBeenCalledWith({
@@ -290,16 +297,16 @@ describe('createMoldeaCliCommandExecutor', () => {
 
     const result = await executeCommand(createCommandInput('validate', true));
 
-    expect(result).toStrictEqual({
-      exitCode: 1,
-      stderr: '',
-      stdout:
-        '{"cliVersion":"3.3.7","command":"validate","error":null,"result":{"diagnostics":[{"code":"MOLDEA_MANIFEST_MISSING","details":{},"entity":null,"message":"The project manifest is missing.","path":"/moldea/moldea.yaml","pointer":null,"range":null,"source":"core"}],"formatVersion":null,"source":{"kind":"git-working-tree"}},"schemaVersion":2,"status":"invalid"}\n',
-    });
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe('');
     const envelope = JSON.parse(result.stdout) as {
       readonly result: Readonly<Record<string, unknown>>;
+      readonly schemaVersion: number;
+      readonly status: string;
     };
 
+    expect(envelope).toMatchObject({ schemaVersion: 3, status: 'invalid' });
+    expect(envelope.result).toMatchObject({ diagnosticCount: 1, formatVersion: null });
     expect(envelope.result).not.toHaveProperty('evidence');
     expect(envelope.result).not.toHaveProperty('project');
   });
@@ -323,12 +330,18 @@ describe('createMoldeaCliCommandExecutor', () => {
       stderr: '',
       stdout: `The moldea project is valid.
 Repository format: 1
-Context assets: 0
-Decisions: 0
-Runtime-guidance assets: 0
-Agents: 0
-Mirrors: 0
-Adapter evidence items: 0
+agents: 0
+context: 0
+decisions: 0
+decisionSupersessions: 0
+diagnostics: 0
+evidence: 0
+evidenceReferences: 0
+mirrors: 0
+relationships: 0
+requirements: 0
+runtimes: 0
+unresolved: 0
 `,
     });
     expect(snapshot.execution.operationCalls).toBe(1);
@@ -366,12 +379,22 @@ Adapter evidence items: 0
       coreInspection,
     );
 
-    await expect(executeCommand(createCommandInput('inspect', true))).resolves.toStrictEqual({
-      exitCode: 1,
-      stderr: '',
-      stdout:
-        '{"cliVersion":"3.3.7","command":"inspect","error":null,"result":{"inspection":{"diagnostics":[{"code":"MOLDEA_MANIFEST_MISSING","details":{},"entity":null,"message":"The project manifest is missing.","path":"/moldea/moldea.yaml","pointer":null,"range":null,"source":"core"}],"evidence":[],"formatVersion":null,"project":null,"valid":false},"source":{"kind":"git-working-tree"}},"schemaVersion":2,"status":"invalid"}\n',
+    const result = await executeCommand(createCommandInput('inspect', true));
+    const envelope = JSON.parse(result.stdout) as {
+      readonly result: Readonly<Record<string, unknown>>;
+      readonly schemaVersion: number;
+      readonly status: string;
+    };
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe('');
+    expect(envelope).toMatchObject({ schemaVersion: 3, status: 'invalid' });
+    expect(envelope.result).toMatchObject({
+      counts: { diagnostics: 1 },
+      formatVersion: null,
+      project: null,
     });
+    expect(result.stdout).not.toContain('details');
   });
 
   test('maps a contradictory completed Core result to the safe internal error', async () => {
@@ -398,7 +421,55 @@ Adapter evidence items: 0
       exitCode: 3,
       stderr: '',
       stdout:
-        '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n',
+        '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":3,"status":"error"}\n',
+    });
+  });
+
+  test('returns a structured error when the next complete record cannot fit', async () => {
+    const workingTreeDiscovery = vi
+      .fn<IGitWorkingTreeDiscovery>()
+      .mockResolvedValue(Object.freeze({ kind: 'discovered', repositoryRoot: '/workspace' }));
+    const snapshot = createCompletedSnapshotExecutor();
+    const coreInspection = vi.fn<IMoldeaCliCoreInspectionExecutor>().mockResolvedValue({
+      diagnostics: [
+        {
+          code: 'MOLDEA_MANIFEST_INVALID',
+          details: {},
+          entity: null,
+          message: 'x'.repeat(5000),
+          path: parseRepositoryPath('/moldea/moldea.yaml'),
+          pointer: null,
+          range: null,
+          source: 'core',
+        },
+      ],
+      evidence: [],
+      formatVersion: null,
+      project: null,
+      valid: false,
+    });
+    const executeCommand = createMoldeaCliCommandExecutor(
+      workingTreeDiscovery,
+      snapshot.executor,
+      coreInspection,
+    );
+    const input = createCommandInput('inspect', true);
+    const result = await executeCommand({
+      ...input,
+      invocation: {
+        ...input.invocation,
+        options: { ...input.invocation.options, maxOutputBytes: 4096 },
+      },
+    });
+
+    expect(result.exitCode).toBe(3);
+    expect(Buffer.byteLength(result.stdout, 'utf8')).toBeLessThanOrEqual(4096);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      command: 'inspect',
+      error: { code: 'OUTPUT_BUDGET_TOO_SMALL' },
+      result: null,
+      schemaVersion: 3,
+      status: 'error',
     });
   });
 
@@ -441,6 +512,113 @@ Adapter evidence items: 0
     expect(snapshot.execution.calls).toBe(0);
   });
 
+  test('runs scope through the selected manifest without loading adapters', async () => {
+    const workingTreeDiscovery = vi
+      .fn<IGitWorkingTreeDiscovery>()
+      .mockResolvedValue(Object.freeze({ kind: 'discovered', repositoryRoot: '/workspace' }));
+    const snapshot = createCompletedSnapshotExecutor();
+    const coreInspection = vi.fn<IMoldeaCliCoreInspectionExecutor>();
+    const compositionResolver = vi.fn<IMoldeaCliCompositionResolver>();
+    const projectScopeExecutor = vi.fn<IMoldeaCliProjectScopeExecutor>().mockResolvedValue({
+      manifestContent: 'version: 1\n',
+      scope: {
+        counts: {
+          declarations: 0,
+          inputPaths: 1,
+          matchedOwners: 0,
+          matchedPaths: 0,
+          matches: 0,
+        },
+        diagnostics: [],
+        inputDigest: `sha256:${'1'.repeat(64)}` as IContentDigest,
+        manifestDigest: `sha256:${'2'.repeat(64)}` as IContentDigest,
+        matches: [],
+        relevant: false,
+        valid: true,
+      },
+    });
+    const executeCommand = createMoldeaCliCommandExecutor(
+      workingTreeDiscovery,
+      snapshot.executor,
+      coreInspection,
+      compositionResolver,
+      projectScopeExecutor,
+    );
+    const baseInput = createCommandInput('scope', true);
+    const result = await executeCommand({
+      ...baseInput,
+      invocation: {
+        ...baseInput.invocation,
+        options: {
+          ...baseInput.invocation.options,
+          path: '/unrelated.md',
+          pathsInput: 'path',
+        },
+      },
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      command: 'scope',
+      result: { relevant: false, valid: true },
+      schemaVersion: 3,
+    });
+    expect(snapshot.execution.selectionPaths).toStrictEqual([MOLDEA_MANIFEST_PATH]);
+    expect(projectScopeExecutor).toHaveBeenCalledOnce();
+    expect(coreInspection).not.toHaveBeenCalled();
+    expect(compositionResolver).not.toHaveBeenCalled();
+  });
+
+  test('runs explicit content through one selected path without loading adapters', async () => {
+    const workingTreeDiscovery = vi
+      .fn<IGitWorkingTreeDiscovery>()
+      .mockResolvedValue(Object.freeze({ kind: 'discovered', repositoryRoot: '/workspace' }));
+    const snapshot = createCompletedSnapshotExecutor();
+    const coreInspection = vi.fn<IMoldeaCliCoreInspectionExecutor>();
+    const compositionResolver = vi.fn<IMoldeaCliCompositionResolver>();
+    const projectScopeExecutor = vi.fn<IMoldeaCliProjectScopeExecutor>();
+    const projectContentExecutor = vi.fn<IMoldeaCliProjectContentExecutor>().mockResolvedValue({
+      content: '# Project\n',
+      digest: `sha256:${'3'.repeat(64)}`,
+      path: parseRepositoryPath('/moldea/project.md'),
+      scalarLength: 10,
+      utf8ByteLength: 10,
+    });
+    const executeCommand = createMoldeaCliCommandExecutor(
+      workingTreeDiscovery,
+      snapshot.executor,
+      coreInspection,
+      compositionResolver,
+      projectScopeExecutor,
+      projectContentExecutor,
+    );
+    const baseInput = createCommandInput('content', true);
+    const result = await executeCommand({
+      ...baseInput,
+      invocation: {
+        ...baseInput.invocation,
+        options: {
+          ...baseInput.invocation.options,
+          path: '/moldea/project.md',
+          pathsInput: 'path',
+        },
+      },
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      command: 'content',
+      result: { asset: { path: '/moldea/project.md' }, chunk: { content: '# Project\n' } },
+      schemaVersion: 3,
+    });
+    expect(snapshot.execution.selectionPaths).toStrictEqual([
+      parseRepositoryPath('/moldea/project.md'),
+    ]);
+    expect(projectContentExecutor).toHaveBeenCalledOnce();
+    expect(coreInspection).not.toHaveBeenCalled();
+    expect(compositionResolver).not.toHaveBeenCalled();
+  });
+
   test.each(['validate', 'inspect', 'composition'] as const)(
     'rejects invalid installed composition before %s side effects',
     async (command) => {
@@ -460,7 +638,7 @@ Adapter evidence items: 0
       await expect(executeCommand(createCommandInput(command, true))).resolves.toStrictEqual({
         exitCode: 3,
         stderr: '',
-        stdout: `{"cliVersion":"3.3.7","command":"${command}","error":{"code":"COMPOSITION_STATE_INVALID","details":{},"message":"The installed composition state is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n`,
+        stdout: `{"cliVersion":"3.3.7","command":"${command}","error":{"code":"COMPOSITION_STATE_INVALID","details":{},"message":"The installed composition state is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":3,"status":"error"}\n`,
       });
       expect(workingTreeDiscovery).not.toHaveBeenCalled();
       expect(snapshot.execution.calls).toBe(0);
@@ -496,22 +674,22 @@ Adapter evidence items: 0
       exitCode: 3,
       stderr: '',
       stdout:
-        '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"GIT_COMMAND_FAILED","details":{},"message":"The Git command failed.","path":null,"retryable":true,"source":"git"},"result":null,"schemaVersion":2,"status":"error"}\n',
+        '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"GIT_COMMAND_FAILED","details":{},"message":"The Git command failed.","path":null,"retryable":true,"source":"git"},"result":null,"schemaVersion":3,"status":"error"}\n',
     });
   });
 
   test.each([
     [
       'GIT_OPERATION_ABORTED',
-      '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"GIT_OPERATION_ABORTED","details":{},"message":"The Git operation was aborted.","path":null,"retryable":true,"source":"git"},"result":null,"schemaVersion":2,"status":"error"}\n',
+      '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"GIT_OPERATION_ABORTED","details":{},"message":"The Git operation was aborted.","path":null,"retryable":true,"source":"git"},"result":null,"schemaVersion":3,"status":"error"}\n',
     ],
     [
       'RESOURCE_LIMIT_EXCEEDED',
-      '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n',
+      '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":3,"status":"error"}\n',
     ],
     [
       'WORKING_TREE_UNSTABLE',
-      '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"WORKING_TREE_UNSTABLE","details":{},"message":"The working tree did not remain stable.","path":null,"retryable":true,"source":"cli"},"result":null,"schemaVersion":2,"status":"error"}\n',
+      '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"WORKING_TREE_UNSTABLE","details":{},"message":"The working tree did not remain stable.","path":null,"retryable":true,"source":"cli"},"result":null,"schemaVersion":3,"status":"error"}\n',
     ],
   ] as const)('returns safe snapshot failure %s', async (errorCode, expectedOutput) => {
     const workingTreeDiscovery = vi
@@ -549,7 +727,7 @@ Adapter evidence items: 0
       exitCode: 3,
       stderr: '',
       stdout:
-        '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"GIT_CONTENT_TRANSFORM_UNSUPPORTED","details":{},"message":"The requested file uses an unsupported Git content transformation.","path":"/assets/model.bin","retryable":false,"source":"git"},"result":null,"schemaVersion":2,"status":"error"}\n',
+        '{"cliVersion":"3.3.7","command":"inspect","error":{"code":"GIT_CONTENT_TRANSFORM_UNSUPPORTED","details":{},"message":"The requested file uses an unsupported Git content transformation.","path":"/assets/model.bin","retryable":false,"source":"git"},"result":null,"schemaVersion":3,"status":"error"}\n',
     });
   });
 
@@ -576,7 +754,7 @@ Adapter evidence items: 0
       exitCode: 3,
       stderr: '',
       stdout:
-        '{"cliVersion":"3.3.7","command":"validate","error":{"code":"ADAPTER_EXECUTION_FAILED","details":{"adapterId":"openai","operation":"validate-adapter"},"message":"A runtime adapter failed during inspection.","path":null,"retryable":false,"source":"core"},"result":null,"schemaVersion":2,"status":"error"}\n',
+        '{"cliVersion":"3.3.7","command":"validate","error":{"code":"ADAPTER_EXECUTION_FAILED","details":{"adapterId":"openai","operation":"validate-adapter"},"message":"A runtime adapter failed during inspection.","path":null,"retryable":false,"source":"core"},"result":null,"schemaVersion":3,"status":"error"}\n',
     });
   });
 });

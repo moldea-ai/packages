@@ -45,11 +45,43 @@ export const runMoldeaCli = async (
   const executeCommand = options.executeCommand ?? executeMoldeaCliCommand;
 
   try {
+    let stdin: Uint8Array | undefined;
+
+    if (parseResult.invocation.options.pathsInput === 'stdin') {
+      if (options.readStdin === undefined) {
+        return createMoldeaCliErrorResult(
+          createMoldeaCliOwnedError('PATH_INPUT_INVALID'),
+          parseResult.invocation.command,
+          options.packageMetadata.version,
+          parseResult.invocation.options.isJson,
+          MOLDEA_CLI_EXIT_CODES.UsageError,
+        );
+      }
+
+      const stdinResult = await options.readStdin(
+        parseResult.invocation.options.resourceLimits.maxTotalBytes,
+        options.signal,
+      );
+
+      if (stdinResult.kind === 'limit-exceeded') {
+        return createMoldeaCliErrorResult(
+          createMoldeaCliOwnedError('RESOURCE_LIMIT_EXCEEDED'),
+          parseResult.invocation.command,
+          options.packageMetadata.version,
+          parseResult.invocation.options.isJson,
+          MOLDEA_CLI_EXIT_CODES.OperationalError,
+        );
+      }
+
+      stdin = stdinResult.bytes;
+    }
+
     return await executeCommand({
       invocationDirectory: options.invocationDirectory,
       invocation: parseResult.invocation,
       packageMetadata: options.packageMetadata,
       ...(options.signal === undefined ? {} : { signal: options.signal }),
+      ...(stdin === undefined ? {} : { stdin }),
     });
   } catch {
     return createMoldeaCliErrorResult(

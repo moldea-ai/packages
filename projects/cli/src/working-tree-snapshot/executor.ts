@@ -95,6 +95,7 @@ export const createWorkingTreeSnapshotExecutor = (
         maxEntries: resourceLimits.maxEntries,
         maxMetadataBytes: resourceLimits.maxTotalBytes,
         repositoryRoot,
+        ...(input.selectionPaths === undefined ? {} : { selectionPaths: input.selectionPaths }),
         ...(input.signal === undefined ? {} : { signal: input.signal }),
       });
 

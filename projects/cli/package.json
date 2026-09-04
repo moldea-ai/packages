@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/cli",
-  "version": "5.0.3",
+  "version": "6.0.0",
   "description": "The canonical read-only local command-line composition for moldea repositories.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/cli#readme",
   "bugs": {
@@ -49,7 +49,7 @@
     "@moldea.ai/adapter-openai": "workspace:2.0.9",
     "@moldea.ai/adapter-openai-agents-sdk": "workspace:1.0.7",
     "@moldea.ai/adapter-vercel-ai-sdk": "workspace:1.0.5",
-    "@moldea.ai/core": "workspace:2.0.2",
+    "@moldea.ai/core": "workspace:2.1.0",
     "@moldea.ai/repository": "workspace:1.1.1",
     "@moldea.ai/repository-fs": "workspace:1.0.6",
     "semver": "7.8.5"

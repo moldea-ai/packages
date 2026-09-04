@@ -2,12 +2,12 @@ import type {
   ICoreConfigurationErrorCode,
   ICoreOperationErrorCode,
   IDiagnostic,
-  IProjectInspectionResult,
+  IDiagnosticEntity,
+  IRuntimeAdapterEvidenceKind,
 } from '@moldea.ai/core';
-import type { IRepositorySourceErrorCode } from '@moldea.ai/repository';
+import type { IRepositoryPath, IRepositorySourceErrorCode } from '@moldea.ai/repository';
 
-import type { IMoldeaCliCommand } from '../command-line/index.js';
-import type { IMoldeaCliCompositionResult } from '../composition/index.js';
+import type { IMoldeaCliOutputPage, IMoldeaCliOutputRecord } from '../output-page/index.js';
 
 import type { MOLDEA_CLI_ERROR_DEFINITIONS } from './constants.js';
 
@@ -42,55 +42,182 @@ export interface IMoldeaCliSource {
   readonly kind: 'git-working-tree';
 }
 
-// content-minimized validation result derived from one complete Core inspection
-export interface IMoldeaCliValidateResult {
-  readonly diagnostics: readonly IDiagnostic[];
-  readonly formatVersion: IProjectInspectionResult['formatVersion'];
+export interface IMoldeaCliAssetMetadata {
+  readonly digest: string;
+  readonly path: IRepositoryPath;
+  readonly scalarLength: number;
+  readonly utf8ByteLength: number;
+}
+
+export interface IMoldeaCliDiagnosticRecord extends IMoldeaCliOutputRecord {
+  readonly code: string;
+  readonly entity: IDiagnosticEntity | null;
+  readonly kind: 'diagnostic';
+  readonly message: string;
+  readonly path: IRepositoryPath | null;
+  readonly pointer: string | null;
+  readonly range: IDiagnostic['range'];
+  readonly source: string;
+}
+
+export interface IMoldeaCliAgentRecord extends IMoldeaCliOutputRecord {
+  readonly agentId: string;
+  readonly contextCount: number;
+  readonly decisionCount: number;
+  readonly description: IMoldeaCliAssetMetadata;
+  readonly handoffDescription: IMoldeaCliAssetMetadata | null;
+  readonly instruction: IMoldeaCliAssetMetadata;
+  readonly kind: 'agent';
+  readonly runtimeId: string;
+}
+
+export interface IMoldeaCliContextRecord extends IMoldeaCliOutputRecord {
+  readonly asset: IMoldeaCliAssetMetadata;
+  readonly kind: 'context';
+}
+
+export interface IMoldeaCliDecisionRecord extends IMoldeaCliOutputRecord {
+  readonly asset: IMoldeaCliAssetMetadata;
+  readonly createdAt: string;
+  readonly decisionId: string;
+  readonly kind: 'decision';
+  readonly status: string;
+  readonly supersedesCount: number;
+}
+
+export interface IMoldeaCliDecisionSupersessionRecord extends IMoldeaCliOutputRecord {
+  readonly decisionId: string;
+  readonly kind: 'decision-supersession';
+  readonly supersededDecisionId: string;
+}
+
+export interface IMoldeaCliRelationshipRecord extends IMoldeaCliOutputRecord {
+  readonly agentId: string | null;
+  readonly declarationKind: 'exact' | 'glob';
+  readonly field: string;
+  readonly kind: 'relationship';
+  readonly ownerId: string;
+  readonly ownerKind: 'agent' | 'context' | 'decision' | 'skill' | 'tool' | 'unresolved';
+  readonly path: string;
+  readonly symbol: string | null;
+}
+
+export interface IMoldeaCliRequirementRecord extends IMoldeaCliOutputRecord {
+  readonly agentId: string;
+  readonly capabilityId: string;
+  readonly capabilityKind: 'skill' | 'tool';
+  readonly implementationPath: IRepositoryPath;
+  readonly implementationSymbol: string | null;
+  readonly kind: 'requirement';
+  readonly name: string;
+  readonly registrationPath: IRepositoryPath | null;
+}
+
+export interface IMoldeaCliMirrorRecord extends IMoldeaCliOutputRecord {
+  readonly agentId: string;
+  readonly canonicalDigest: string;
+  readonly digest: string;
+  readonly kind: 'mirror';
+  readonly path: IRepositoryPath;
+}
+
+export interface IMoldeaCliRuntimeRecord extends IMoldeaCliOutputRecord {
+  readonly asset: IMoldeaCliAssetMetadata;
+  readonly kind: 'runtime';
+}
+
+export interface IMoldeaCliUnresolvedRecord extends IMoldeaCliOutputRecord {
+  readonly agentId: string | null;
+  readonly category: string;
+  readonly effect: string;
+  readonly kind: 'unresolved';
+  readonly relatedCount: number;
+  readonly requirementId: string;
+}
+
+export interface IMoldeaCliEvidenceRecord extends IMoldeaCliOutputRecord {
+  readonly agentId: string | null;
+  readonly capabilityId: string | null;
+  readonly capabilityKind: 'skill' | 'tool' | null;
+  readonly evidenceKind: IRuntimeAdapterEvidenceKind;
+  readonly kind: 'evidence';
+  readonly referenceCount: number;
+  readonly runtimeName: string | null;
+  readonly source: string;
+}
+
+export interface IMoldeaCliEvidenceReferenceRecord extends IMoldeaCliOutputRecord {
+  readonly evidenceKey: string;
+  readonly kind: 'evidence-reference';
+  readonly path: IRepositoryPath;
+  readonly symbol: string | null;
+}
+
+export type IMoldeaCliInspectRecord =
+  | IMoldeaCliAgentRecord
+  | IMoldeaCliContextRecord
+  | IMoldeaCliDecisionRecord
+  | IMoldeaCliDecisionSupersessionRecord
+  | IMoldeaCliDiagnosticRecord
+  | IMoldeaCliEvidenceRecord
+  | IMoldeaCliEvidenceReferenceRecord
+  | IMoldeaCliMirrorRecord
+  | IMoldeaCliRelationshipRecord
+  | IMoldeaCliRequirementRecord
+  | IMoldeaCliRuntimeRecord
+  | IMoldeaCliUnresolvedRecord;
+
+export interface IMoldeaCliInspectCounts {
+  readonly agents: number;
+  readonly context: number;
+  readonly decisions: number;
+  readonly decisionSupersessions: number;
+  readonly diagnostics: number;
+  readonly evidence: number;
+  readonly evidenceReferences: number;
+  readonly mirrors: number;
+  readonly relationships: number;
+  readonly requirements: number;
+  readonly runtimes: number;
+  readonly unresolved: number;
+}
+
+export interface IMoldeaCliInspectProjectMetadata {
+  readonly manifest: IMoldeaCliAssetMetadata;
+  readonly project: IMoldeaCliAssetMetadata;
+}
+
+export interface IMoldeaCliInspectProjection {
+  readonly canonicalBodies: readonly string[];
+  readonly counts: IMoldeaCliInspectCounts;
+  readonly formatVersion: number | null;
+  readonly project: IMoldeaCliInspectProjectMetadata | null;
+  readonly records: readonly IMoldeaCliInspectRecord[];
+  readonly snapshotDigest: string;
   readonly source: IMoldeaCliSource;
 }
 
-// complete inspection result paired with its non-confidential source descriptor
 export interface IMoldeaCliInspectResult {
-  readonly inspection: IProjectInspectionResult;
+  readonly counts: IMoldeaCliInspectCounts;
+  readonly formatVersion: number | null;
+  readonly page: IMoldeaCliOutputPage<IMoldeaCliInspectRecord>;
+  readonly project: IMoldeaCliInspectProjectMetadata | null;
+  readonly snapshotDigest: string;
   readonly source: IMoldeaCliSource;
 }
 
-// version 2 JSON envelope for a completed composition command
-export interface IMoldeaCliJsonCompositionEnvelope {
-  readonly cliVersion: string;
-  readonly command: 'composition';
-  readonly error: null;
-  readonly result: IMoldeaCliCompositionResult;
-  readonly schemaVersion: 2;
-  readonly status: 'valid';
+export interface IMoldeaCliValidateProjection {
+  readonly canonicalBodies: readonly string[];
+  readonly diagnostics: readonly IMoldeaCliDiagnosticRecord[];
+  readonly formatVersion: number | null;
+  readonly snapshotDigest: string;
+  readonly source: IMoldeaCliSource;
 }
 
-// error-only envelope implemented before command result composition
-export interface IMoldeaCliJsonErrorEnvelope {
-  readonly cliVersion: string;
-  readonly command: IMoldeaCliCommand | null;
-  readonly error: IMoldeaCliError;
-  readonly result: null;
-  readonly schemaVersion: 2;
-  readonly status: 'error';
-}
-
-// version 2 JSON envelope for a completed validate command
-export interface IMoldeaCliJsonValidateEnvelope {
-  readonly cliVersion: string;
-  readonly command: 'validate';
-  readonly error: null;
-  readonly result: IMoldeaCliValidateResult;
-  readonly schemaVersion: 2;
-  readonly status: 'valid' | 'invalid';
-}
-
-// version 2 JSON envelope for a completed inspect command
-export interface IMoldeaCliJsonInspectEnvelope {
-  readonly cliVersion: string;
-  readonly command: 'inspect';
-  readonly error: null;
-  readonly result: IMoldeaCliInspectResult;
-  readonly schemaVersion: 2;
-  readonly status: 'valid' | 'invalid';
+export interface IMoldeaCliValidateResult {
+  readonly diagnosticCount: number;
+  readonly formatVersion: number | null;
+  readonly page: IMoldeaCliOutputPage<IMoldeaCliDiagnosticRecord>;
+  readonly snapshotDigest: string;
+  readonly source: IMoldeaCliSource;
 }

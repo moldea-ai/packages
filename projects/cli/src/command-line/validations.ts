@@ -1,3 +1,5 @@
+import { MOLDEA_CLI_MAX_OUTPUT_BYTES, MOLDEA_CLI_MIN_OUTPUT_BYTES } from '../output-page/index.js';
+
 import type { IMoldeaCliResourceLimits } from './types.js';
 
 const POSITIVE_INTEGER_PATTERN = /^\d+$/u;
@@ -49,6 +51,17 @@ export const parsePositiveSafeInteger = (input: string): number | null => {
   return Number.isSafeInteger(parsedInteger) && parsedInteger > 0 ? parsedInteger : null;
 };
 
+/** Parses one output byte budget inside the schema 3 transport bounds. */
+export const parseMoldeaCliOutputByteLimit = (input: string): number | null => {
+  const parsed = parsePositiveSafeInteger(input);
+
+  return parsed !== null &&
+    parsed >= MOLDEA_CLI_MIN_OUTPUT_BYTES &&
+    parsed <= MOLDEA_CLI_MAX_OUTPUT_BYTES
+    ? parsed
+    : null;
+};
+
 /**
  * Validates the cross-limit ordering required by the CLI composition.
  * @param limits The effective resource limits.
@@ -67,4 +80,14 @@ export const areMoldeaCliResourceLimitsConsistent = (limits: IMoldeaCliResourceL
  */
 export const isRepositoryDirectoryInputValid = (input: string): boolean => {
   return input.length > 0 && !input.includes('\0') && hasOnlyUnicodeScalarValues(input);
+};
+
+/** Determines whether one opaque cursor token is bounded safe scalar text. */
+export const isMoldeaCliCursorInputValid = (input: string): boolean => {
+  return (
+    input.length > 0 &&
+    input.length <= 16_384 &&
+    !input.includes('\0') &&
+    hasOnlyUnicodeScalarValues(input)
+  );
 };

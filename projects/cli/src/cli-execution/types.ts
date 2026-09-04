@@ -14,6 +14,7 @@ export interface IMoldeaCliCommandExecutionInput {
   readonly invocation: IMoldeaCliCommandInvocation;
   readonly packageMetadata: IMoldeaCliPackageMetadata;
   readonly signal?: AbortSignal;
+  readonly stdin?: Uint8Array;
 }
 
 // private dispatch boundary extended as command implementations are introduced
@@ -27,5 +28,14 @@ export interface IRunMoldeaCliOptions {
   readonly executeCommand?: IMoldeaCliCommandExecutor;
   readonly invocationDirectory: string;
   readonly packageMetadata: IMoldeaCliPackageMetadata;
+  readonly readStdin?: IMoldeaCliStdinReader;
   readonly signal?: AbortSignal;
 }
+
+export type IMoldeaCliStdinReadResult =
+  { readonly bytes: Uint8Array; readonly kind: 'completed' } | { readonly kind: 'limit-exceeded' };
+
+export type IMoldeaCliStdinReader = (
+  maxBytes: number,
+  signal?: AbortSignal,
+) => Promise<IMoldeaCliStdinReadResult>;

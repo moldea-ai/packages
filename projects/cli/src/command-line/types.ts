@@ -1,6 +1,6 @@
 import type { MOLDEA_CLI_COMMANDS } from './constants.js';
 
-// command names in the closed version 1 grammar
+// command names in the closed CLI 6 grammar
 export type IMoldeaCliCommand = (typeof MOLDEA_CLI_COMMANDS)[keyof typeof MOLDEA_CLI_COMMANDS];
 
 // effective resource configuration normalized from command-line overrides
@@ -15,8 +15,12 @@ export interface IMoldeaCliResourceLimits {
 
 // normalized options shared by executable command handlers
 export interface IMoldeaCliCommandOptions {
+  readonly cursor: string | null;
   readonly isColorDisabled: boolean;
   readonly isJson: boolean;
+  readonly maxOutputBytes: number;
+  readonly path: string | null;
+  readonly pathsInput: 'none' | 'path' | 'stdin';
   readonly repositoryDirectory: string | null;
   readonly resourceLimits: IMoldeaCliResourceLimits;
 }

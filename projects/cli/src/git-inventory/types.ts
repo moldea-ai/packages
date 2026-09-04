@@ -1,3 +1,5 @@
+import type { IRepositoryPath } from '@moldea.ai/repository';
+
 import type { IMoldeaCliGitErrorCode } from '../presentation/index.js';
 
 import type { GIT_TRACKED_ENTRY_MODES } from './constants.js';
@@ -35,6 +37,7 @@ export interface IGitInventoryProbeInput {
   readonly maxEntries: number;
   readonly maxMetadataBytes: number;
   readonly repositoryRoot: string;
+  readonly selectionPaths?: readonly IRepositoryPath[];
   readonly signal?: AbortSignal;
 }
 

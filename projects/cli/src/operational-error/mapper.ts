@@ -1,6 +1,9 @@
 import { CoreConfigurationException, CoreOperationException } from '@moldea.ai/core';
 import { isRepositoryPath, RepositorySourceException } from '@moldea.ai/repository';
 
+import { MoldeaCliOutputPageException } from '../output-page/index.js';
+import { MoldeaCliProjectContentException } from '../project-content/index.js';
+import { MoldeaCliProjectScopeException } from '../project-scope/index.js';
 import { GitContentTransformUnsupportedException } from '../repository-content-transformation-guard/index.js';
 import { createMoldeaCliOwnedError, type IMoldeaCliError } from '../presentation/index.js';
 
@@ -41,6 +44,14 @@ const createCoreErrorDetails = (
  * @returns A complete immutable operational error without causes or private host data.
  */
 export const mapMoldeaCliOperationalError = (error: unknown): IMoldeaCliError => {
+  if (
+    error instanceof MoldeaCliOutputPageException ||
+    error instanceof MoldeaCliProjectContentException ||
+    error instanceof MoldeaCliProjectScopeException
+  ) {
+    return createMoldeaCliOwnedError(error.code);
+  }
+
   if (error instanceof GitContentTransformUnsupportedException) {
     return Object.freeze({
       ...createMoldeaCliOwnedError('GIT_CONTENT_TRANSFORM_UNSUPPORTED'),

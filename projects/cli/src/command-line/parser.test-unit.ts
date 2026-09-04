@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
+import { MOLDEA_CLI_DEFAULT_OUTPUT_BYTES } from '../output-page/index.js';
+
 import { DEFAULT_MOLDEA_CLI_RESOURCE_LIMITS } from './constants.js';
 import { parseMoldeaCliArguments } from './parser.js';
 
@@ -11,6 +13,8 @@ describe('parseMoldeaCliArguments', () => {
     [['validate', '--help'], 'validate'],
     [['inspect', '--help'], 'inspect'],
     [['composition', '--help'], 'composition'],
+    [['scope', '--help'], 'scope'],
+    [['content', '--help'], 'content'],
   ])('parses help arguments %o', (commandLineArguments, expectedCommand) => {
     expect(parseMoldeaCliArguments(commandLineArguments)).toStrictEqual({
       command: expectedCommand,
@@ -31,8 +35,12 @@ describe('parseMoldeaCliArguments', () => {
         invocation: {
           command,
           options: {
+            cursor: null,
             isColorDisabled: false,
             isJson: false,
+            maxOutputBytes: MOLDEA_CLI_DEFAULT_OUTPUT_BYTES,
+            path: null,
+            pathsInput: 'none',
             repositoryDirectory: null,
             resourceLimits: DEFAULT_MOLDEA_CLI_RESOURCE_LIMITS,
           },
@@ -76,8 +84,12 @@ describe('parseMoldeaCliArguments', () => {
       invocation: {
         command: 'inspect',
         options: {
+          cursor: null,
           isColorDisabled: true,
           isJson: true,
+          maxOutputBytes: MOLDEA_CLI_DEFAULT_OUTPUT_BYTES,
+          path: null,
+          pathsInput: 'none',
           repositoryDirectory: './fixture',
           resourceLimits: {
             maxDiagnostics: 64,
@@ -99,11 +111,47 @@ describe('parseMoldeaCliArguments', () => {
       invocation: {
         command: 'composition',
         options: {
+          cursor: null,
           isColorDisabled: true,
           isJson: true,
+          maxOutputBytes: MOLDEA_CLI_DEFAULT_OUTPUT_BYTES,
+          path: null,
+          pathsInput: 'none',
           repositoryDirectory: null,
           resourceLimits: DEFAULT_MOLDEA_CLI_RESOURCE_LIMITS,
         },
+      },
+      kind: 'command',
+    });
+  });
+
+  test.each([
+    [['scope', '--path', '/src/index.ts'], 'scope', '/src/index.ts', 'path'],
+    [['scope', '--paths-stdin'], 'scope', null, 'stdin'],
+    [['content', '--path', '/moldea/project.md'], 'content', '/moldea/project.md', 'path'],
+  ] as const)('normalizes path command %o', (arguments_, command, path, pathsInput) => {
+    expect(parseMoldeaCliArguments(arguments_)).toMatchObject({
+      invocation: {
+        command,
+        options: { path, pathsInput },
+      },
+      kind: 'command',
+    });
+  });
+
+  test('normalizes bounded JSON pagination options', () => {
+    expect(
+      parseMoldeaCliArguments([
+        'inspect',
+        '--json',
+        '--max-output-bytes',
+        '4096',
+        '--cursor',
+        'opaque_cursor',
+      ]),
+    ).toMatchObject({
+      invocation: {
+        options: { cursor: 'opaque_cursor', maxOutputBytes: 4096 },
       },
       kind: 'command',
     });
@@ -126,6 +174,18 @@ describe('parseMoldeaCliArguments', () => {
     [['validate', '--repository', 'before\0after'], 'validate', false],
     [['composition', '--repository', '.'], 'composition', false],
     [['composition', '--max-entries', '1'], 'composition', false],
+    [['scope'], 'scope', false],
+    [['scope', '--path', '/src/a.ts', '--paths-stdin'], 'scope', false],
+    [['content'], 'content', false],
+    [['content', '--paths-stdin'], 'content', false],
+    [['content', '--path', '/moldea/project.md', '--paths-stdin'], 'content', false],
+    [['scope', '--path', '/src/a.ts', '--max-evidence', '1'], 'scope', false],
+    [['content', '--path', '/moldea/project.md', '--max-manifest-bytes', '1'], 'content', false],
+    [['content', '--path', '/moldea/project.md', '--max-diagnostics', '1'], 'content', false],
+    [['content', '--path', '/moldea/project.md', '--max-evidence', '1'], 'content', false],
+    [['validate', '--path', '/src/a.ts'], 'validate', false],
+    [['inspect', '--cursor', 'opaque_cursor'], 'inspect', false],
+    [['inspect', '--max-output-bytes', '4096'], 'inspect', false],
   ])(
     'rejects invalid argument shape %o',
     (commandLineArguments, expectedCommand, expectedIsJson) => {
@@ -190,6 +250,17 @@ describe('parseMoldeaCliArguments', () => {
         },
       },
       kind: 'command',
+    });
+  });
+
+  test.each(['4095', '1048577'])('rejects out-of-range output budget %s', (outputBytes) => {
+    expect(
+      parseMoldeaCliArguments(['inspect', '--json', '--max-output-bytes', outputBytes]),
+    ).toStrictEqual({
+      code: 'RESOURCE_LIMIT_CONFIGURATION_INVALID',
+      command: 'inspect',
+      isJson: true,
+      kind: 'error',
     });
   });
 });

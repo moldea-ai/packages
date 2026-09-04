@@ -112,9 +112,17 @@ export const createGitInventoryProbe =
       return createProbeFailure('GIT_OPERATION_ABORTED');
     }
 
+    const selectionPathspecs = (input.selectionPaths ?? []).map(
+      (selectionPath) => `:(top,literal)${selectionPath.slice(1)}`,
+    );
     const trackedParser = createTrackedGitInventoryParser(input.maxEntries);
     const trackedProcessResult = await processExecutor({
-      arguments: ['-C', input.repositoryRoot, ...GIT_TRACKED_INVENTORY_ARGUMENTS],
+      arguments: [
+        '-C',
+        input.repositoryRoot,
+        ...GIT_TRACKED_INVENTORY_ARGUMENTS,
+        ...selectionPathspecs,
+      ],
       consumeStdout: (chunk) => trackedParser.consume(chunk),
       maxStderrBytes: MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
       maxStdoutBytes: input.maxMetadataBytes,
@@ -139,7 +147,12 @@ export const createGitInventoryProbe =
       input.maxEntries - trackedCandidates.length,
     );
     const untrackedProcessResult = await processExecutor({
-      arguments: ['-C', input.repositoryRoot, ...GIT_UNTRACKED_INVENTORY_ARGUMENTS],
+      arguments: [
+        '-C',
+        input.repositoryRoot,
+        ...GIT_UNTRACKED_INVENTORY_ARGUMENTS,
+        ...selectionPathspecs,
+      ],
       consumeStdout: (chunk) => untrackedParser.consume(chunk),
       maxStderrBytes: MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
       maxStdoutBytes: input.maxMetadataBytes - trackedProcessResult.stdoutBytes,

@@ -1,18 +1,20 @@
-import type { IDiagnostic, IDiagnosticEntity } from '@moldea.ai/core';
+import type { IDiagnosticEntity } from '@moldea.ai/core';
 
 import { MOLDEA_CLI_COMMANDS, type IMoldeaCliCommand } from '../command-line/index.js';
 import type { IMoldeaCliCompositionResult } from '../composition/index.js';
-import { MOLDEA_CLI_JSON_SCHEMA_VERSION } from '../json-output-contract/index.js';
-import { serializeJsonDeterministically } from '../json-serialization/index.js';
+import {
+  MOLDEA_CLI_JSON_SCHEMA_VERSION,
+  serializeMoldeaCliJsonEnvelope,
+  type IMoldeaCliJsonStatus,
+} from '../json-output-contract/index.js';
+import type { IMoldeaCliContentResult } from '../project-content/index.js';
+import type { IMoldeaCliScopeResult } from '../project-scope/index.js';
 
 import { MOLDEA_CLI_COMMAND_HELP, MOLDEA_CLI_TOP_LEVEL_HELP } from './constants.js';
 import type {
+  IMoldeaCliDiagnosticRecord,
   IMoldeaCliError,
   IMoldeaCliInspectResult,
-  IMoldeaCliJsonCompositionEnvelope,
-  IMoldeaCliJsonErrorEnvelope,
-  IMoldeaCliJsonInspectEnvelope,
-  IMoldeaCliJsonValidateEnvelope,
   IMoldeaCliValidateResult,
 } from './types.js';
 
@@ -33,8 +35,8 @@ const formatMoldeaCliHumanDiagnosticEntity = (entity: IDiagnosticEntity): string
     return identifier === undefined ? [] : [`${key}=${identifier}`];
   }).join(', ');
 
-/** Formats one Core or adapter diagnostic without changing its order or meaning. */
-const formatMoldeaCliHumanDiagnostic = (diagnostic: IDiagnostic): string => {
+/** Formats one projected diagnostic without exposing omitted arbitrary details. */
+const formatMoldeaCliHumanDiagnostic = (diagnostic: IMoldeaCliDiagnosticRecord): string => {
   const location =
     diagnostic.path === null
       ? ''
@@ -54,10 +56,10 @@ const formatMoldeaCliHumanDiagnostic = (diagnostic: IDiagnostic): string => {
   return lines.join('\n');
 };
 
-/** Creates the shared human summary lines for one completed inspection state. */
+/** Creates shared human status lines for one completed repository command. */
 const createMoldeaCliHumanStatusLines = (
   isValid: boolean,
-  formatVersion: IMoldeaCliValidateResult['formatVersion'],
+  formatVersion: number | null,
 ): string[] => {
   const lines = [`The moldea project is ${isValid ? 'valid' : 'invalid'}.`];
 
@@ -68,20 +70,6 @@ const createMoldeaCliHumanStatusLines = (
   return lines;
 };
 
-/** Appends Core diagnostics and their final count without changing supplied order. */
-const appendMoldeaCliHumanDiagnostics = (
-  lines: string[],
-  diagnostics: readonly IDiagnostic[],
-): void => {
-  for (const diagnostic of diagnostics) {
-    lines.push(formatMoldeaCliHumanDiagnostic(diagnostic));
-  }
-
-  const diagnosticLabel = diagnostics.length === 1 ? 'diagnostic' : 'diagnostics';
-
-  lines.push(`${diagnostics.length} ${diagnosticLabel}.`);
-};
-
 /** Formats one count label with correct singular or plural grammar. */
 const formatMoldeaCliHumanCount = (
   count: number,
@@ -89,57 +77,32 @@ const formatMoldeaCliHumanCount = (
   pluralLabel: string,
 ): string => `${count === 1 ? singularLabel : pluralLabel}: ${count}`;
 
-/**
- * Formats top-level or command-specific help with its required trailing line feed.
- * @param command The resolved command, or null for top-level help.
- * @returns Human-readable help text.
- */
+/** Formats top-level or command-specific help with its required trailing line feed. */
 export const formatMoldeaCliHelp = (command: IMoldeaCliCommand | null): string => {
-  if (command === null) {
-    return MOLDEA_CLI_TOP_LEVEL_HELP;
-  }
-
-  return MOLDEA_CLI_COMMAND_HELP[command];
+  return command === null ? MOLDEA_CLI_TOP_LEVEL_HELP : MOLDEA_CLI_COMMAND_HELP[command];
 };
 
-/**
- * Formats one safe CLI error for human stderr output.
- * @param error The complete safe operational error.
- * @returns One concise line ending with LF.
- */
+/** Formats one safe CLI error for human stderr output. */
 export const formatMoldeaCliHumanError = (error: IMoldeaCliError): string =>
   `${error.source}:${error.code} ${error.message}\n`;
 
-/**
- * Formats one safe version 2 JSON error envelope.
- * @param error The complete safe operational error.
- * @param command The resolved command, or null when resolution failed.
- * @param cliVersion The installed CLI package version.
- * @returns One compact deterministic JSON document ending with LF.
- */
+/** Formats any strict schema 3 JSON envelope. */
+export const formatMoldeaCliJsonResult = <TResult>(
+  command: IMoldeaCliCommand | null,
+  result: TResult | null,
+  error: IMoldeaCliError | null,
+  status: IMoldeaCliJsonStatus,
+  cliVersion: string,
+): string => serializeMoldeaCliJsonEnvelope({ cliVersion, command, error, result, status });
+
+/** Formats one safe schema 3 JSON error envelope. */
 export const formatMoldeaCliJsonError = (
   error: IMoldeaCliError,
   command: IMoldeaCliCommand | null,
   cliVersion: string,
-): string => {
-  const envelope: IMoldeaCliJsonErrorEnvelope = {
-    cliVersion,
-    command,
-    error,
-    result: null,
-    schemaVersion: MOLDEA_CLI_JSON_SCHEMA_VERSION,
-    status: 'error',
-  };
+): string => formatMoldeaCliJsonResult(command, null, error, 'error', cliVersion);
 
-  return `${serializeJsonDeterministically(envelope)}\n`;
-};
-
-/**
- * Formats one valid composition result for human stdout.
- * @param result The exact installed composition.
- * @param cliVersion The installed CLI package version.
- * @returns A deterministic complete human report ending with LF.
- */
+/** Formats one valid composition result for human stdout. */
 export const formatMoldeaCliHumanCompositionResult = (
   result: IMoldeaCliCompositionResult,
   cliVersion: string,
@@ -154,150 +117,121 @@ export const formatMoldeaCliHumanCompositionResult = (
     'Packages:',
     ...result.packages.map(({ name, version }) => `  ${name}: ${version}`),
     'Adapters:',
+    ...result.adapters.map(
+      ({ id, repositoryFormatVersions }) =>
+        `  ${id}: repository formats ${repositoryFormatVersions.join(', ')}`,
+    ),
   ];
-
-  for (const adapter of result.adapters) {
-    lines.push(
-      `  ${adapter.id}: repository formats ${adapter.repositoryFormatVersions.join(', ')}`,
-    );
-  }
 
   return `${lines.join('\n')}\n`;
 };
 
-/**
- * Formats one valid composition result as a version 2 JSON envelope.
- * @param result The exact installed composition.
- * @param cliVersion The installed CLI package version.
- * @returns One compact deterministic JSON document ending with LF.
- */
+/** Formats one composition result in the strict schema 3 envelope. */
 export const formatMoldeaCliJsonCompositionResult = (
   result: IMoldeaCliCompositionResult,
   cliVersion: string,
-): string => {
-  const envelope: IMoldeaCliJsonCompositionEnvelope = {
-    cliVersion,
-    command: MOLDEA_CLI_COMMANDS.Composition,
-    error: null,
-    result,
-    schemaVersion: MOLDEA_CLI_JSON_SCHEMA_VERSION,
-    status: 'valid',
-  };
+): string =>
+  formatMoldeaCliJsonResult(MOLDEA_CLI_COMMANDS.Composition, result, null, 'valid', cliVersion);
 
-  return `${serializeJsonDeterministically(envelope)}\n`;
-};
-
-/**
- * Formats one completed validation result for human stdout.
- * @param result The content-minimized validation result.
- * @returns A deterministic summary and diagnostics ending with LF.
- */
+/** Formats one completed validation result for human stdout. */
 export const formatMoldeaCliHumanValidateResult = (result: IMoldeaCliValidateResult): string => {
-  const isValid = result.diagnostics.length === 0;
-  const lines = createMoldeaCliHumanStatusLines(isValid, result.formatVersion);
+  const lines = createMoldeaCliHumanStatusLines(result.diagnosticCount === 0, result.formatVersion);
 
-  if (!isValid) {
-    appendMoldeaCliHumanDiagnostics(lines, result.diagnostics);
+  for (const diagnostic of result.page.records) {
+    lines.push(formatMoldeaCliHumanDiagnostic(diagnostic));
+  }
+
+  lines.push(formatMoldeaCliHumanCount(result.diagnosticCount, 'Diagnostic', 'Diagnostics'));
+
+  if (result.page.cursor !== null) {
+    lines.push('Additional diagnostics are available through JSON pagination.');
   }
 
   return `${lines.join('\n')}\n`;
 };
 
-/**
- * Formats one completed validation result as a version 2 JSON envelope.
- * @param result The content-minimized validation result.
- * @param cliVersion The installed CLI package version.
- * @returns One compact deterministic JSON document ending with LF.
- */
+/** Formats one validation result in the strict schema 3 envelope. */
 export const formatMoldeaCliJsonValidateResult = (
   result: IMoldeaCliValidateResult,
   cliVersion: string,
-): string => {
-  const envelope: IMoldeaCliJsonValidateEnvelope = {
-    cliVersion,
-    command: MOLDEA_CLI_COMMANDS.Validate,
-    error: null,
+): string =>
+  formatMoldeaCliJsonResult(
+    MOLDEA_CLI_COMMANDS.Validate,
     result,
-    schemaVersion: MOLDEA_CLI_JSON_SCHEMA_VERSION,
-    status: result.diagnostics.length === 0 ? 'valid' : 'invalid',
-  };
+    null,
+    result.diagnosticCount === 0 ? 'valid' : 'invalid',
+    cliVersion,
+  );
 
-  return `${serializeJsonDeterministically(envelope)}\n`;
-};
-
-/**
- * Formats one completed inspection result for human stdout.
- * @param result The complete inspection result and its source descriptor.
- * @returns A deterministic content-free summary or diagnostic report ending with LF.
- * @throws If a Core-valid result does not include its complete project index.
- */
+/** Formats one completed metadata inspection for human stdout. */
 export const formatMoldeaCliHumanInspectResult = (result: IMoldeaCliInspectResult): string => {
-  const { inspection } = result;
-  const lines = createMoldeaCliHumanStatusLines(inspection.valid, inspection.formatVersion);
+  const isValid = result.project !== null && result.counts.diagnostics === 0;
+  const lines = createMoldeaCliHumanStatusLines(isValid, result.formatVersion);
 
-  if (!inspection.valid) {
-    if (inspection.evidence.length > 0) {
-      lines.push(
-        formatMoldeaCliHumanCount(
-          inspection.evidence.length,
-          'Adapter evidence item',
-          'Adapter evidence items',
-        ),
-      );
-    }
-
-    appendMoldeaCliHumanDiagnostics(lines, inspection.diagnostics);
-
-    return `${lines.join('\n')}\n`;
+  for (const [label, count] of Object.entries(result.counts)) {
+    lines.push(`${label}: ${count}`);
   }
-
-  if (inspection.project === null) {
-    throw new TypeError('A valid Core inspection must include its project index.');
-  }
-
-  const mirrorCount = inspection.project.agents.reduce(
-    (count, agent) => count + agent.mirrors.length,
-    0,
-  );
-
-  lines.push(
-    formatMoldeaCliHumanCount(inspection.project.context.length, 'Context asset', 'Context assets'),
-    formatMoldeaCliHumanCount(inspection.project.decisions.length, 'Decision', 'Decisions'),
-    formatMoldeaCliHumanCount(
-      inspection.project.runtimes.length,
-      'Runtime-guidance asset',
-      'Runtime-guidance assets',
-    ),
-    formatMoldeaCliHumanCount(inspection.project.agents.length, 'Agent', 'Agents'),
-    formatMoldeaCliHumanCount(mirrorCount, 'Mirror', 'Mirrors'),
-    formatMoldeaCliHumanCount(
-      inspection.evidence.length,
-      'Adapter evidence item',
-      'Adapter evidence items',
-    ),
-  );
 
   return `${lines.join('\n')}\n`;
 };
 
-/**
- * Formats one completed inspection result as a version 2 JSON envelope.
- * @param result The complete inspection result and its source descriptor.
- * @param cliVersion The installed CLI package version.
- * @returns One compact deterministic JSON document ending with LF.
- */
+/** Formats one metadata inspection in the strict schema 3 envelope. */
 export const formatMoldeaCliJsonInspectResult = (
   result: IMoldeaCliInspectResult,
   cliVersion: string,
-): string => {
-  const envelope: IMoldeaCliJsonInspectEnvelope = {
-    cliVersion,
-    command: MOLDEA_CLI_COMMANDS.Inspect,
-    error: null,
+): string =>
+  formatMoldeaCliJsonResult(
+    MOLDEA_CLI_COMMANDS.Inspect,
     result,
-    schemaVersion: MOLDEA_CLI_JSON_SCHEMA_VERSION,
-    status: result.inspection.valid ? 'valid' : 'invalid',
-  };
+    null,
+    result.project !== null && result.counts.diagnostics === 0 ? 'valid' : 'invalid',
+    cliVersion,
+  );
 
-  return `${serializeJsonDeterministically(envelope)}\n`;
+/** Formats one changed-path scope result for human stdout. */
+export const formatMoldeaCliHumanScopeResult = (result: IMoldeaCliScopeResult): string => {
+  const lines = [
+    `The moldea scope result is ${result.valid ? 'valid' : 'invalid'}.`,
+    `Relevant: ${result.relevant ? 'yes' : 'no'}`,
+    ...Object.entries(result.counts).map(([label, count]) => `${label}: ${count}`),
+  ];
+
+  return `${lines.join('\n')}\n`;
 };
+
+/** Formats one changed-path scope result in the strict schema 3 envelope. */
+export const formatMoldeaCliJsonScopeResult = (
+  result: IMoldeaCliScopeResult,
+  cliVersion: string,
+): string =>
+  formatMoldeaCliJsonResult(
+    MOLDEA_CLI_COMMANDS.Scope,
+    result,
+    null,
+    result.valid ? 'valid' : 'invalid',
+    cliVersion,
+  );
+
+/** Formats one explicit canonical content chunk for human stdout. */
+export const formatMoldeaCliHumanContentResult = (result: IMoldeaCliContentResult): string => {
+  const lines = [
+    `Path: ${result.asset.path}`,
+    `Digest: ${result.asset.digest}`,
+    `Scalars: ${result.chunk.scalarStart}-${result.chunk.scalarEnd} of ${result.asset.scalarLength}`,
+    result.cursor === null ? 'Cursor: none' : `Cursor: ${result.cursor}`,
+    ...(result.cursor === null
+      ? []
+      : ['Continue this asset by passing the cursor to a JSON content request.']),
+    '',
+    result.chunk.content,
+  ];
+
+  return `${lines.join('\n')}\n`;
+};
+
+/** Formats one explicit canonical content chunk in the strict schema 3 envelope. */
+export const formatMoldeaCliJsonContentResult = (
+  result: IMoldeaCliContentResult,
+  cliVersion: string,
+): string =>
+  formatMoldeaCliJsonResult(MOLDEA_CLI_COMMANDS.Content, result, null, 'valid', cliVersion);

@@ -4,23 +4,26 @@
 
 The canonical read-only local command-line composition for deterministic inspection of `moldea` repositories.
 
-The package's version 5 surface provides the `moldea` executable with the version 1 command grammar and version 2 JSON envelope. It includes deterministic help and version output, resource-limit validation, safe human or JSON errors, Git-owned working-tree discovery, bounded strict tracked/untracked candidate probing, submodule and nested-repository ownership filtering, deterministic stage collapse, no-follow current entry-type normalization, bounded effective `core.symlinks` resolution, portable logical-path normalization with exact Unicode code-point ordering, bounded effective Git content-transformation classification, exact-path Repository FS construction, private immutable reader wrappers for materialized Git symlinks and guarded regular-file reads, bounded whole-operation snapshot stabilization, attempt-local Core execution, safe Repository/Core operational-error translation, operation-scoped process-signal cancellation, deterministic content-minimized `validate` human and JSON results, concise content-free `inspect` human summaries, complete Core-result `inspect` JSON output, command-wide installation-integrity verification, and compact deterministic `composition` human and JSON reporting.
+The version 6 executable exposes one schema-3-only JSON contract. `inspect` returns allowlisted metadata instead of canonical bodies, `scope` matches changed paths by reading only the project manifest, and `content` retrieves one explicitly selected canonical text asset in bounded Unicode-safe chunks. Collection and content responses use deterministic snapshot-bound cursors, exact final UTF-8 byte accounting, a 65,536-byte default page budget, and a 1,048,576-byte hard page ceiling.
 
-Version 5 bundles Anthropic adapter `2.0.6`, whose client-tool names must match `^[A-Za-z0-9_-]{1,64}$`.
+Version 6 bundles Anthropic adapter `2.0.6`, whose client-tool names must match `^[A-Za-z0-9_-]{1,64}$`.
 
-Tarball, installed-bin, and cross-repository skill checks remain the release boundary for every published version.
+Tarball, installed-bin, runtime, and testing-peer checks remain the package release boundary.
 
 ## Commands
 
-The version 1 command names are:
+The command names are:
 
 ```text
 moldea validate
 moldea inspect
+moldea scope --path /src/example.ts
+moldea scope --paths-stdin
+moldea content --path /moldea/project.md
 moldea composition
 ```
 
-The foundation fully supports top-level and command-specific help, `moldea --version`, strict option validation, and usage failures. It discovers a selected working tree, pins its filesystem and Git identity, probes its raw tracked and non-ignored untracked candidates, excludes submodule and nested-repository-only content, collapses index stages by exact path, omits absent paths, classifies every remaining current file or symlink without following the leaf, derives its effective Git content-transformation state, converts the surviving records into deterministically sorted repository logical paths, retries a complete provisional reader operation when the source changes, and runs Core through the accepted reader. `validate` and `inspect` return completed valid and structurally invalid results. `composition` reports the installed executable and exact package composition without discovering a repository.
+The executable supports top-level and command-specific help, `moldea --version`, strict option validation, and deterministic usage failures. Repository-backed commands discover and pin a Git working tree, use a no-follow exact-path reader, and retry complete provisional operations when the selected source changes. `validate` and `inspect` run the full Core and adapter composition. `scope` and `content` do not load or verify adapters and limit Git inventory to the manifest or requested canonical path. `composition` reports installed executable state without discovering a repository.
 
 ## Package boundary
 
@@ -46,17 +49,17 @@ The package declares `preferUnplugged: true` so Yarn Plug'n'Play materializes th
 
 The executable derives its composition state from its installed manifest, actually resolved first-class package versions, active adapter singletons, Core repository-format constants, minimum Git constant, and JSON output schema constant. It carries no Runtime Compatibility Matrix or target-maturity snapshot.
 
-The executable performs no network requests, telemetry, repository writes, or configured Git content transformations. `validate` and `inspect` use read-only Git operations and no-follow filesystem metadata inspection to discover a working tree, establish and verify its identity, normalize the selected inventory, construct an exact-path guarded filesystem reader, and run Core within at most three complete snapshot attempts. Help, version, and usage failures do not run the installation-integrity preflight. `composition` and that preflight do not invoke Git, a filesystem repository reader, a client manifest, or Core inspection; the preflight reads installed package manifests and compares them with the actual adapter and Core composition.
+The executable performs no network requests, telemetry, repository writes, configured Git content transformations, temporary-index operations, or object-writing Git commands. Repository-backed commands use read-only Git and no-follow filesystem observations within at most three complete snapshot attempts. Help, version, and usage failures do not run the installation-integrity preflight. `composition` and that preflight do not invoke Git, a filesystem repository reader, a client manifest, or Core inspection; the preflight reads installed package manifests and compares them with the actual adapter and Core composition.
 
 ## Runtime support
 
-The version 1 consumer runtime range is:
+The consumer runtime range is:
 
 ```text
 >=22.11.0
 ```
 
-The package is Node.js-specific. `validate` and `inspect` require Git `2.30.0` or later; commands compare the numeric Git version and accept standard platform or vendor suffixes.
+The package is Node.js-specific. `validate`, `inspect`, `scope`, and `content` require Git `2.30.0` or later; commands compare the numeric Git version and accept standard platform or vendor suffixes.
 
 ## Git working-tree discovery and normalized inventory
 
@@ -64,7 +67,7 @@ The starting directory is the invocation directory unless `--repository <path>` 
 
 Git runs directly without a platform shell, with fixed non-interactive arguments and a sanitized deterministic environment. Version output is limited to 4096 bytes per stream, and each discovery output stream is limited to 262144 bytes. Discovery requires Git `2.30.0` or later and rejects missing or inaccessible paths, nonrepositories, bare repositories, Git-directory paths without a usable work tree, malformed Git output, and sparse checkouts before inventory probing begins.
 
-After discovery, `validate` and `inspect` stream NUL-delimited tracked-index and non-ignored untracked records from fixed `git ls-files` commands. Tracked records accept only full SHA-1 or SHA-256 object IDs, index stages `0` through `3`, and Git modes `100644`, `100755`, `120000`, or `160000`. Paths are decoded as fatal UTF-8 and preserve exact Unicode scalars, case, tabs, newlines, and an initial BOM without normalization.
+After discovery, `validate` and `inspect` stream NUL-delimited tracked-index and non-ignored untracked records from fixed `git ls-files` commands. `scope` applies a top-level literal pathspec for `/moldea/moldea.yaml`; `content` applies one for its validated canonical path. These selected commands do not probe the rest of a large repository. Tracked records accept only full SHA-1 or SHA-256 object IDs, index stages `0` through `3`, and Git modes `100644`, `100755`, `120000`, or `160000`. Paths are decoded as fatal UTF-8 and preserve exact Unicode scalars, case, tabs, newlines, and an initial BOM without normalization.
 
 Raw tracked and untracked records share `maxEntries` before ownership filtering, stage collapse, or deduplication. Their combined stdout, nested-root validation stdout, any required effective `core.symlinks` stdout, and effective Git attribute stdout share `maxTotalBytes`, while stderr has a separate fixed 4096-byte diagnostic ceiling per Git command and is never emitted. Exceeding an inventory ceiling discards all candidates and returns the non-retryable `cli:RESOURCE_LIMIT_EXCEEDED` contract with message `A resource limit was exceeded.` Malformed output returns `git:GIT_OUTPUT_INVALID` without a partial inventory or partial attribute classification.
 
@@ -84,7 +87,7 @@ Git attribute inspection never invokes configured filters, Git LFS, clean or smu
 
 The CLI passes the complete normalized logical path set to `@moldea.ai/repository-fs` exact-path selection, so the filesystem reader synthesizes required parent directories without admitting unrelated files. `maxEntries` and `maxFileBytes` retain their filesystem meanings, while the CLI's `maxTotalBytes` becomes the reader's `maxCachedBytes` limit. The private immutable overlay then maps materialized Git symlink host files to `type: 'symlink'` in exact lookup and listing, rejects their reads with the common non-retryable `ENTRY_NOT_FILE` contract, and never calls the underlying `readFile` for those paths. The content-transformation guard wraps that logical view so symlink semantics take precedence. Missing or contradictory wrapper entries fail with `INVALID_SOURCE_DATA`.
 
-Before attempting a snapshot, the CLI pins the selected root directory, its worktree-specific Git directory, and its shared Git common directory by absolute host path plus nonzero device and inode identity. Linked worktrees therefore retain distinct worktree identity while sharing the expected common repository identity. Each attempt verifies the complete pin, derives normalized inventories before and after exact-path reader creation, and runs its provisional operation only when both inventories match exactly, including entry type, retained index stages, symlink-overlay state, and content-transformation classification.
+Before attempting a snapshot, the CLI pins the selected root directory, its worktree-specific Git directory, and its shared Git common directory by absolute host path plus nonzero device and inode identity. Linked worktrees therefore retain distinct worktree identity while sharing the expected common repository identity. Each attempt verifies the complete pin, derives normalized full or path-selected inventories before and after exact-path reader creation, and runs its provisional operation only when both inventories match exactly, including entry type, retained index stages, symlink-overlay state, and content-transformation classification.
 
 The CLI retries the complete provisional attempt for differing inventories, Repository FS `SNAPSHOT_CHANGED` failures, and reader-creation missing-entry or parent-type failures when a fresh inventory proves the source changed. It recreates the inventory, reader, wrappers, operation state, and filesystem resource budget for every retry and never reuses provisional bytes or results. Three total attempts are allowed. Exhaustion or a changed pinned identity returns `cli:WORKING_TREE_UNSTABLE` with message `The working tree did not remain stable.` and `retryable: true`.
 
@@ -94,13 +97,17 @@ Known `RepositorySourceException`, `CoreConfigurationException`, and `CoreOperat
 
 ## Cancellation and process signals
 
-The executable owns one operation-scoped `AbortController`. `validate` and `inspect` pass its signal through every Git child process, working-tree snapshot step, Repository FS creation, repository read, Core inspection, and adapter invocation. `SIGINT` and `SIGTERM` abort the active operation, prevent another snapshot retry, discard an unwritten result, and exit with code `130` and `143`, respectively. The first received signal determines the exit code. A signal received after output has been completely written does not alter the completed result.
+The executable owns one operation-scoped `AbortController`. Repository-backed commands pass its signal through every Git child process, working-tree snapshot step, Repository FS creation, repository read, Core operation, and any applicable adapter invocation. `SIGINT` and `SIGTERM` abort the active operation, prevent another snapshot retry, discard an unwritten result, and exit with code `130` and `143`, respectively. The first received signal determines the exit code. A signal received after output has been completely written does not alter the completed result.
 
 Git process cancellation uses the safe retryable `git:GIT_OPERATION_ABORTED` contract with message `The Git operation was aborted.` at internal command boundaries. When cancellation originates from a process signal before output completion, the executable may emit no human or JSON document rather than expose a successful or partial result. Active Git child processes are terminated through the same operation signal; no raw abort reason or process diagnostic is printed.
 
-A successfully completed Core inspection produces `validate` human or JSON output without exposing the project index, canonical content, or adapter evidence. Zero diagnostics return status `valid` and exit code `0`; one or more diagnostics preserve Core order, return status `invalid`, and exit with code `1`.
+A successfully completed Core inspection produces `validate` human or JSON output without exposing the project index, canonical content, or adapter evidence details. Zero diagnostics return status `valid` and exit code `0`; one or more diagnostics return status `invalid` and exit with code `1`. Diagnostics use bounded pages in JSON mode.
 
-`inspect` uses the same completion status and exit codes. Valid human output reports the repository format and counts for context assets, decisions, runtime-guidance assets, agents, mirrors, and adapter evidence items without printing canonical content. Invalid human output uses the same ordered diagnostic presentation as `validate` and reports non-empty adapter evidence counts without exposing evidence details. `inspect --json` preserves the complete Core `IProjectInspectionResult`, including the deeply immutable project index and its canonical normalized content when valid, and writes it only to stdout inside the deterministic version 2 envelope. This JSON output may contain confidential project context, decisions, runtime guidance, descriptions, and instructions; callers must protect captured output.
+`inspect` uses the same completion status and exit codes. Human output reports the repository format and complete collection counts. JSON output contains only allowlisted metadata records: identifiers, logical paths, digests, scalar and UTF-8 lengths, references, relationships, requirements, diagnostics without arbitrary details, and evidence summaries without adapter detail payloads. Unbounded child collections are emitted as independently keyed records, so no parent record grows with the repository. A recursive guard rejects any non-`content` result containing a `content` property or an exact canonical body.
+
+`scope` accepts either one repository-logical path through `--path` or NUL-delimited UTF-8 paths through `--paths-stdin`. It reads only `/moldea/moldea.yaml`, invokes Core's deterministic relationship matcher without adapters, and returns relevance, complete counts and digests, and paged match or diagnostic records. `content` accepts exactly one canonical moldea text path and returns metadata plus the largest complete Unicode-scalar chunk that fits its output page.
+
+For JSON collection and content output, `--max-output-bytes` accepts 4,096 through 1,048,576 bytes and defaults to 65,536. The measurement covers the final newline-terminated UTF-8 envelope after JSON escaping. `--cursor` continues a prior JSON page. Cursors are opaque canonical base64url documents bound to their format version, command, normalized filters, source snapshot, last key, and checksum. Invalid, tampered, cross-command, filter-mismatched, unsupported, or stale cursors fail with a safe structured error. An envelope or atomic record that cannot fit returns `OUTPUT_BUDGET_TOO_SMALL`; output is never truncated into invalid JSON.
 
 ## Installed composition and integrity
 
@@ -108,7 +115,7 @@ Before `validate`, `inspect`, or `composition` produces a result, the executable
 
 `composition` reports the installed CLI version and JSON schema version in the envelope, plus the supported Node.js range, minimum Git version, sorted exact package versions, Core repository-format versions, and every sorted executable adapter with its accepted repository formats. Core's built-in `custom` adapter is included using Core's format support. The CLI does not report matrix entries, maturity, implementation status, target profiles, evidence links, or compatibility claims owned by the packages website. Current published technical compatibility and target maturity are available from [`https://packages.moldea.ai/compatibility/runtimes.json`](https://packages.moldea.ai/compatibility/runtimes.json).
 
-Successful human and JSON reports use exit code `0`; JSON uses status `valid` and the version 2 deterministic envelope. The command never uses status `invalid`. A contradictory installation returns the non-retryable `cli:COMPOSITION_STATE_INVALID` error with message `The installed composition state is invalid.` and exit code `3`, without a partial result. The command accesses no Git executable, repository filesystem, client manifest, network, or Cloud service.
+Successful human and JSON reports use exit code `0`; JSON uses status `valid` and the schema 3 deterministic envelope. The command never uses status `invalid`. A contradictory installation returns the non-retryable `cli:COMPOSITION_STATE_INVALID` error with message `The installed composition state is invalid.` and exit code `3`, without a partial result. The command accesses no Git executable, repository filesystem, client manifest, network, or Cloud service.
 
 ## Development
 
@@ -125,6 +132,6 @@ pnpm --filter @moldea.ai/cli test
 
 Unit, integration, and end-to-end tests are colocated with their owning modules. The end-to-end suite installs real package tarballs and executes the resulting package bin without requiring any `@moldea.ai/*` package to be published. It verifies command, output, exit, security, package-content, process-signal, and repository-immutability behavior at the consumer boundary.
 
-CI separately packs Repository, Repository FS, Core, every active package-backed adapter, and CLI and installs them with npm scripts disabled and strict engine validation on Node.js `22.11.0`, latest Node.js 22, Node.js `24.11.0`, and latest Node.js 24, and Node.js `26.8.1`. Dedicated runtime harnesses verify each adapter's installed inspection boundary and the CLI's installed identities plus real `version`, `composition`, `validate`, and `inspect` execution. Linux owns this consumer-runtime matrix, while the complete repository tests continue to run on Linux, macOS, and Windows.
+CI separately packs Repository, Repository FS, Core, every active package-backed adapter, and CLI and installs them with npm scripts disabled and strict engine validation on Node.js `22.11.0`, latest Node.js 22, Node.js `24.11.0`, latest Node.js 24, and Node.js `26.8.1`. Dedicated runtime harnesses verify each adapter's installed inspection boundary and the CLI's installed identities plus real `version`, `composition`, `validate`, `inspect`, `scope`, and `content` execution. Linux owns this consumer-runtime matrix, while the complete repository tests continue to run on Linux, macOS, and Windows.
 
 Every active package-backed adapter has its own repository fixtures, package tests, packed-runtime consumer check, and verified compatibility claim. Qualification execution remains outside this repository; targets with a committed skill profile may publish its canonical evidence URL through the compatibility matrix.
