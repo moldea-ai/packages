@@ -96,6 +96,7 @@ const SUPPORT_LEVEL_RANK: Record<IBindingSupportLevel, number> = {
   none: 0,
   partial: 1,
 };
+const MINIMUM_ONLY_PACKAGE_RANGE_PATTERN = /^>=(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/u;
 
 const addIssue = (
   issues: IRuntimeCompatibilityValidationIssue[],
@@ -429,6 +430,17 @@ const validatePackageRequirements = (
 
     if (hasEcosystem) {
       requireSemverRange(versionRange, rangePath, issues);
+
+      if (
+        typeof versionRange === 'string' &&
+        !MINIMUM_ONLY_PACKAGE_RANGE_PATTERN.test(versionRange)
+      ) {
+        addIssue(
+          issues,
+          rangePath,
+          'Runtime package ranges must use one canonical minimum-only >=x.y.z declaration.',
+        );
+      }
     }
 
     if (hasRole && role === 'primary') {

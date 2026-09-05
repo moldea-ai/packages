@@ -59,7 +59,7 @@ describe('@moldea.ai/adapter-cloudflare-agents public API', () => {
     );
   });
 
-  test('packs only intended files and exact runtime dependency composition', () => {
+  test('packs only intended files and compatible runtime dependency composition', () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
 
     if (packageManagerEntrypoint === undefined) {
@@ -79,7 +79,7 @@ describe('@moldea.ai/adapter-cloudflare-agents public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-cloudflare-agents',
-      version: '2.0.0',
+      version: '2.0.1',
     });
     expect(packResult.files.map(({ path: filePath }) => filePath)).toEqual(
       expect.arrayContaining([
@@ -91,8 +91,8 @@ describe('@moldea.ai/adapter-cloudflare-agents public API', () => {
       ]),
     );
     expect(manifest.dependencies).toStrictEqual({
-      '@moldea.ai/core': 'workspace:3.0.0',
-      '@moldea.ai/repository': 'workspace:2.0.0',
+      '@moldea.ai/core': 'workspace:^3.0.0',
+      '@moldea.ai/repository': 'workspace:^2.0.0',
       semver: '7.8.5',
       typescript: '6.0.3',
     });

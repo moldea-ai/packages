@@ -79,7 +79,7 @@ describe('CLI inspection presentation through Core and the memory repository rea
     const inspection = await inspectCompleteProject();
     const execution = createMoldeaCliInspectExecutionResult(
       inspection,
-      '7.0.0',
+      '7.0.1',
       true,
       null,
       65_536,

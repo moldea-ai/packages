@@ -37,6 +37,7 @@ describe('createPackageManifestCandidatePaths', () => {
 describe('discoverOpenAiPackage', () => {
   test.each([
     ['^7.4.0', 'supported'],
+    ['8.0.0', 'supported'],
     ['7.3.0', 'unsupported'],
     ['>=7.0.0 <8.0.0', 'ambiguous'],
     ['latest', 'ambiguous'],

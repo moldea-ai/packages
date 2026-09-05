@@ -21,7 +21,7 @@ adapters:
           - ecosystem: npm
             name: '@anthropic-ai/sdk'
             role: primary
-            versionRange: '>=0.117.1 <0.118.0'
+            versionRange: '>=0.117.1'
         evidenceKinds:
           - instruction-loader
           - language
@@ -104,7 +104,7 @@ adapters:
           - ecosystem: npm
             name: '@anthropic-ai/claude-agent-sdk'
             role: primary
-            versionRange: '>=0.3.234 <0.4.0'
+            versionRange: '>=0.3.234'
         evidenceKinds:
           - agent-definition
           - handoff-registration
@@ -314,15 +314,15 @@ adapters:
           - ecosystem: npm
             name: '@cloudflare/think'
             role: primary
-            versionRange: '>=0.16.0 <0.17.0'
+            versionRange: '>=0.16.0'
           - ecosystem: npm
             name: agents
             role: companion
-            versionRange: '>=0.21.0 <0.22.0'
+            versionRange: '>=0.21.0'
           - ecosystem: npm
             name: ai
             role: companion
-            versionRange: '>=7.0.0 <8.0.0'
+            versionRange: '>=7.0.0'
         evidenceKinds:
           - agent-definition
           - handoff-registration
@@ -377,15 +377,15 @@ adapters:
           - ecosystem: npm
             name: '@cloudflare/ai-chat'
             role: primary
-            versionRange: '>=0.10.2 <0.11.0'
+            versionRange: '>=0.10.2'
           - ecosystem: npm
             name: agents
             role: companion
-            versionRange: '>=0.21.0 <0.22.0'
+            versionRange: '>=0.21.0'
           - ecosystem: npm
             name: ai
             role: companion
-            versionRange: '>=7.0.0 <8.0.0'
+            versionRange: '>=7.0.0'
         evidenceKinds:
           - agent-definition
           - handoff-registration
@@ -484,7 +484,7 @@ adapters:
           - ecosystem: npm
             name: eve
             role: primary
-            versionRange: '>=0.39.1 <0.40.0'
+            versionRange: '>=0.39.1'
         evidenceKinds:
           - agent-definition
           - handoff-registration
@@ -664,7 +664,7 @@ adapters:
           - ecosystem: npm
             name: '@google/genai'
             role: primary
-            versionRange: '>=2.17.1 <3.0.0'
+            versionRange: '>=2.17.1'
         evidenceKinds:
           - instruction-loader
           - language
@@ -773,11 +773,11 @@ adapters:
           - ecosystem: npm
             name: langchain
             role: primary
-            versionRange: '>=1.5.9 <1.6.0'
+            versionRange: '>=1.5.9'
           - ecosystem: npm
             name: '@langchain/core'
             role: companion
-            versionRange: '>=1.2.8 <1.3.0'
+            versionRange: '>=1.2.8'
         evidenceKinds:
           - agent-definition
           - instruction-loader
@@ -896,11 +896,11 @@ adapters:
           - ecosystem: npm
             name: '@langchain/langgraph'
             role: primary
-            versionRange: '>=1.4.12 <1.5.0'
+            versionRange: '>=1.4.12'
           - ecosystem: npm
             name: '@langchain/core'
             role: companion
-            versionRange: '>=1.2.9 <1.3.0'
+            versionRange: '>=1.2.9'
         evidenceKinds:
           - agent-definition
           - language
@@ -996,11 +996,11 @@ adapters:
           - ecosystem: npm
             name: '@langchain/langgraph'
             role: primary
-            versionRange: '>=1.4.12 <1.5.0'
+            versionRange: '>=1.4.12'
           - ecosystem: npm
             name: '@langchain/core'
             role: companion
-            versionRange: '>=1.2.9 <1.3.0'
+            versionRange: '>=1.2.9'
         evidenceKinds:
           - agent-definition
           - language
@@ -1086,7 +1086,7 @@ adapters:
           - ecosystem: npm
             name: openai
             role: primary
-            versionRange: '>=7.4.0 <8.0.0'
+            versionRange: '>=7.4.0'
         evidenceKinds:
           - runtime-package
           - language
@@ -1162,7 +1162,7 @@ adapters:
           - ecosystem: npm
             name: '@openai/agents'
             role: primary
-            versionRange: '>=0.16.1 <0.17.0'
+            versionRange: '>=0.16.1'
         evidenceKinds:
           - agent-definition
           - handoff-registration
@@ -1287,7 +1287,7 @@ adapters:
           - ecosystem: npm
             name: ai
             role: primary
-            versionRange: '>=7.0.66 <8.0.0'
+            versionRange: '>=7.0.66'
         evidenceKinds:
           - agent-definition
           - instruction-loader
@@ -1377,7 +1377,7 @@ adapters:
           - ecosystem: npm
             name: ai
             role: primary
-            versionRange: '>=7.0.66 <8.0.0'
+            versionRange: '>=7.0.66'
         evidenceKinds:
           - instruction-loader
           - language

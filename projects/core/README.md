@@ -79,6 +79,8 @@ Adapter evidence and diagnostics are validated, normalized, deduplicated, sorted
 
 Core uses independent limits for distinct entries, total bytes, file bytes, manifest bytes, diagnostics, and evidence. The adapter-facing repository adds per-page entry and byte limits. Core executes no repository code, follows no symlink, receives no host path or source credential, and returns logical paths only.
 
+The release-5 calibration corpus drives these limits through the real CLI and PR Assurance across ordinary, 1,024-path, broad-relationship, Unicode, binary, diagnostic-heavy, and incomplete-provider cases. Repeated measurements establish ordinary cumulative headroom, while adversarial tests prove explicit bounded failure without treating a page, file, or operation limit as total repository capacity.
+
 ## Development
 
 From the monorepo root:

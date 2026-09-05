@@ -12,7 +12,7 @@ The canonical Runtime Compatibility Matrix defines the technical target as `type
 
 - TypeScript ESM files using `.ts`, `.tsx`, or `.mts`
 - default or named `Anthropic` value imports from `@anthropic-ai/sdk`, including aliases
-- a nearest owning package manifest declaring `@anthropic-ai/sdk >=0.117.1 <0.118.0`
+- a nearest owning package manifest declaring `@anthropic-ai/sdk >=0.117.1`
 - a module-local Anthropic client created directly with a supported constructor binding
 - a directly exported runtime-agent function with direct `client.messages.create({ ... })` calls
 - one request argument or a second ignored request-options argument

@@ -46,7 +46,7 @@ The workflow uses npm OIDC and contains no npm publication token. The publicatio
 ## Preparing a release
 
 1. Update every changed existing public project's manifest to a stable version strictly greater than the version at the previous `main` commit. A newly introduced project whose manifest is absent from that commit may start at any canonical stable version.
-2. Update every directly affected first-class dependency range. The CLI requires exact versions for all first-class dependencies.
+2. Update every directly affected first-class dependency range. First-party packages use compatible-major ranges so a compatible patch or minor does not force an otherwise unchanged downstream release. A breaking major still requires the downstream package to select and verify the new major explicitly.
 3. Regenerate compatibility artifacts when the CLI composition or compatibility claims change.
 4. Update directly affected package and release documentation.
 5. Complete review and merge the release commit into `main`.
@@ -95,7 +95,7 @@ npm requires a package to exist before it can be connected to a trusted publishe
    14. `@moldea.ai/cli`
    15. `@moldea.ai/website-ui`
 
-Repository FS and Core require a compatible Repository version to exist on npm. Every package-backed runtime adapter requires compatible Repository and Core versions. The CLI requires the exact Repository, Repository FS, Core, and active adapter versions declared by its release.
+Repository FS and Core require a compatible Repository version to exist on npm. Every package-backed runtime adapter requires compatible Repository and Core versions. The CLI requires Repository, Repository FS, Core, and active adapter versions that satisfy its declared compatible-major ranges. Its composition command reports the exact versions actually resolved and rejects missing, additional, prerelease, or breaking-major substitutions.
 
 Website UI has no dependency on the runtime package chain, so its first publication may be bootstrapped independently after its own artifact passes the shared release verification boundary.
 

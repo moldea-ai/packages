@@ -37,7 +37,7 @@ describe('Vercel AI SDK package discovery', () => {
     ['7.0.66', 'supported'],
     ['^7.0.66', 'supported'],
     ['7.0.65', 'unsupported'],
-    ['8.0.0', 'unsupported'],
+    ['8.0.0', 'supported'],
     ['>=7.0.0 <8.0.0', 'ambiguous'],
     ['latest', 'ambiguous'],
     ['workspace:^7.0.66', 'ambiguous'],

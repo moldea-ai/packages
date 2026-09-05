@@ -106,6 +106,13 @@ describe('openAiAdapter Core integration', () => {
     expect(result.summary).not.toBeNull();
   });
 
+  test('accepts a later stable provider major through the minimum-only range', async () => {
+    const result = await inspect({ '/package.json': '{"dependencies":{"openai":"8.0.0"}}' });
+
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
   test('produces identical evidence for reversed repository entry order', async () => {
     const result = await inspectEntries([...createEntries()].reverse());
 

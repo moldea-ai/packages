@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { isCompatiblePackageDependency } from '../compatible-dependency/index.mjs';
+
 const EXPECTED_PNPM_VERSION = '11.21.0';
 const EXPECTED_VITEST_VERSION = '3.2.4';
 const PEER_WARNING_PATTERN = /(?:unmet peer|peer dependenc(?:y|ies)|ERR_PNPM_PEER_DEP_ISSUES)/iu;
@@ -544,15 +546,21 @@ const runTestingPeerCompatibilityCheck = async (artifactDirectory, vitestVersion
         }),
       ),
     );
-    const expectedCliDependencies = Object.fromEntries(
-      Object.entries(manifests)
-        .filter(([packageName]) => packageName !== '@moldea.ai/cli')
-        .map(([packageName, manifest]) => [packageName, manifest.version]),
+    const cliDependencies = manifests['@moldea.ai/cli'].dependencies;
+    const firstPartyEntries = Object.entries(manifests).filter(
+      ([packageName]) => packageName !== '@moldea.ai/cli',
     );
-    expectedCliDependencies.semver = '7.8.5';
     assertCompatibilityInvariant(
-      JSON.stringify(Object.entries(manifests['@moldea.ai/cli'].dependencies).sort()) ===
-        JSON.stringify(Object.entries(expectedCliDependencies).sort()),
+      cliDependencies !== null &&
+        typeof cliDependencies === 'object' &&
+        JSON.stringify(Object.keys(cliDependencies).sort()) ===
+          JSON.stringify(
+            [...firstPartyEntries.map(([packageName]) => packageName), 'semver'].sort(),
+          ) &&
+        cliDependencies.semver === '7.8.5' &&
+        firstPartyEntries.every(([packageName, manifest]) =>
+          isCompatiblePackageDependency(manifest.version, cliDependencies[packageName]),
+        ),
       'The installed CLI dependency closure is invalid.',
     );
 

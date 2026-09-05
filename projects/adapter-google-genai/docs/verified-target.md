@@ -12,7 +12,7 @@ The canonical Runtime Compatibility Matrix defines technical target `typescript-
 
 - TypeScript ESM `.ts`, `.tsx`, and `.mts` files
 - named runtime value imports of `GoogleGenAI` from `@google/genai`
-- the nearest owning manifest declaring `@google/genai >=2.17.1 <3.0.0`
+- the nearest owning manifest declaring `@google/genai >=2.17.1`
 - a module-local `const` client constructed directly with `new GoogleGenAI(...)`
 - a directly exported runtime-agent function containing exact non-computed `client.models.generateContent({ ... })` calls
 - one exact object-literal request argument

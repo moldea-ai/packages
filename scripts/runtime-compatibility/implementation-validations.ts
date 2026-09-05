@@ -1,4 +1,9 @@
-import { satisfies as doesVersionSatisfy, valid as isValidVersion, validRange } from 'semver';
+import {
+  major as getVersionMajor,
+  satisfies as doesVersionSatisfy,
+  valid as isValidVersion,
+  validRange,
+} from 'semver';
 
 import type {
   IMoldeaCliImplementationSources,
@@ -15,6 +20,10 @@ const FOUNDATIONAL_PACKAGE_NAMES = [
   '@moldea.ai/repository-fs',
 ] as const;
 const MOLDEA_ADAPTER_PACKAGE_PREFIX = '@moldea.ai/adapter-';
+
+/** Returns the source-workspace range for one stable first-party package major. */
+const createCompatibleMajorWorkspaceRange = (version: string): string =>
+  `workspace:^${getVersionMajor(version)}.0.0`;
 
 /** Validates the package identity and version fields used by release generation. */
 const requireManifest = (value: unknown, expectedName: string): IMoldeaPackageManifestSource => {
@@ -151,8 +160,11 @@ const validatePublishedAdapter = (
   const packageManifest = requireManifest(sources.packageManifests[packageName], packageName);
   const dependencyVersion = cliDependencies[packageName];
 
-  if (dependencyVersion !== `workspace:${packageManifest.version}`) {
-    throw new TypeError(`The ${packageName} CLI dependency is not pinned to its exact version.`);
+  if (
+    dependencyVersion !== createCompatibleMajorWorkspaceRange(packageManifest.version) ||
+    !doesVersionSatisfy(packageManifest.version, dependencyVersion.slice('workspace:'.length))
+  ) {
+    throw new TypeError(`The ${packageName} CLI dependency is not compatible with its major line.`);
   }
 
   if (
@@ -268,9 +280,14 @@ export const validateMoldeaCliImplementation = (sources: IMoldeaCliImplementatio
   );
 
   for (const packageManifest of packageManifests) {
-    if (cliDependencies[packageManifest.name] !== `workspace:${packageManifest.version}`) {
+    const dependencyRange = cliDependencies[packageManifest.name];
+
+    if (
+      dependencyRange !== createCompatibleMajorWorkspaceRange(packageManifest.version) ||
+      !doesVersionSatisfy(packageManifest.version, dependencyRange.slice('workspace:'.length))
+    ) {
       throw new TypeError(
-        `The ${packageManifest.name} CLI dependency is not pinned to its exact version.`,
+        `The ${packageManifest.name} CLI dependency is not compatible with its major line.`,
       );
     }
   }

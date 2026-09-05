@@ -12,7 +12,7 @@ The canonical Runtime Compatibility Matrix defines the technical target as `type
 
 - TypeScript ESM files
 - supported direct default and relative named imports
-- a nearest owning package manifest declaring npm `openai >=7.4.0 <8.0.0`
+- a nearest owning package manifest declaring npm `openai >=7.4.0`
 - a module-local OpenAI client
 - a bound exported runtime-agent function with direct `client.responses.create({ ... })` object-literal calls
 - direct instruction-loader wiring through `instructions`, optionally awaited

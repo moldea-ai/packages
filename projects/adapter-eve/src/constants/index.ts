@@ -1,7 +1,7 @@
 // immutable adapter and verified target identities
 export const EVE_ADAPTER_ID = 'eve';
 export const EVE_PACKAGE_NAME = 'eve';
-export const EVE_SUPPORTED_PACKAGE_RANGE = '>=0.39.1 <0.40.0';
+export const EVE_SUPPORTED_PACKAGE_RANGE = '>=0.39.1';
 export const EVE_TARGET_ID = 'typescript-filesystem-agent-0-39';
 export const EVE_SUPPORTED_REPOSITORY_FORMAT_VERSIONS = Object.freeze([1] as const);
 

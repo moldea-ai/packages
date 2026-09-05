@@ -30,7 +30,7 @@ const createPackageTarget = (): IRuntimeTarget => ({
       ecosystem: 'npm',
       name: 'openai',
       role: 'primary',
-      versionRange: '>=4.0.0 <5.0.0',
+      versionRange: '>=4.0.0',
     },
   ],
 });
@@ -432,6 +432,21 @@ describe('runtime compatibility matrix validation', () => {
     invalidNameTarget.packages[0]!.name = '@Invalid Scope/openai';
     expectIssue(stringify(invalidName), 'valid npm package name');
   });
+
+  test.each(['^4.0.0', '>=4.0.0 <5.0.0', '4.0.0', '>=4.0'])(
+    'rejects non-canonical runtime package range %s',
+    (versionRange) => {
+      const matrix = cloneCanonicalMatrix();
+      const target = publishOpenAi(matrix).targets?.[0];
+
+      if (target?.packages === undefined) {
+        throw new Error('Published test target is missing package requirements.');
+      }
+
+      target.packages[0]!.versionRange = versionRange;
+      expectIssue(stringify(matrix), 'minimum-only');
+    },
+  );
 
   test('validates binding levels, provider-limit values, and date ordering', () => {
     const matrix = cloneCanonicalMatrix();

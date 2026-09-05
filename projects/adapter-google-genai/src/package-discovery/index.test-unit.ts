@@ -37,7 +37,7 @@ describe('Google Gen AI package discovery', () => {
     ['2.17.1', 'supported'],
     ['^2.17.1', 'supported'],
     ['2.16.0', 'unsupported'],
-    ['3.0.0', 'unsupported'],
+    ['3.0.0', 'supported'],
     ['>=2.0.0 <3.0.0', 'ambiguous'],
     ['latest', 'ambiguous'],
     ['workspace:^2.17.1', 'ambiguous'],

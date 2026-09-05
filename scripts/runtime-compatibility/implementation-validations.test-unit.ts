@@ -11,9 +11,9 @@ import type {
 } from './types.ts';
 
 const FOUNDATIONAL_DEPENDENCIES = {
-  '@moldea.ai/core': 'workspace:1.0.0',
-  '@moldea.ai/repository': 'workspace:1.0.0',
-  '@moldea.ai/repository-fs': 'workspace:1.0.0',
+  '@moldea.ai/core': 'workspace:^1.0.0',
+  '@moldea.ai/repository': 'workspace:^1.0.0',
+  '@moldea.ai/repository-fs': 'workspace:^1.0.0',
 };
 
 const createPlannedMatrix = (): IRuntimeCompatibilityMatrix => ({
@@ -109,7 +109,7 @@ const activateOpenAi = (
   const cliManifest = sources.cliManifest as {
     dependencies: Record<string, string>;
   };
-  cliManifest.dependencies['@moldea.ai/adapter-openai'] = 'workspace:1.0.0';
+  cliManifest.dependencies['@moldea.ai/adapter-openai'] = 'workspace:^1.0.0';
   return {
     ...sources,
     activeAdapters: [{ id: 'openai', supportedRepositoryFormatVersions: [1] }],
@@ -166,12 +166,12 @@ describe('CLI implementation validation', () => {
 
   test.each([
     [
-      'non-exact Core dependency',
+      'exact Core dependency',
       (sources: IMoldeaCliImplementationSources): void => {
         const cliManifest = sources.cliManifest as { dependencies: Record<string, string> };
-        cliManifest.dependencies['@moldea.ai/core'] = 'workspace:^1.0.0';
+        cliManifest.dependencies['@moldea.ai/core'] = 'workspace:1.0.0';
       },
-      'The @moldea.ai/core CLI dependency is not pinned to its exact version.',
+      'The @moldea.ai/core CLI dependency is not compatible with its major line.',
     ],
     [
       'missing Repository dependency',
@@ -234,7 +234,7 @@ describe('CLI implementation validation', () => {
       activeAdapters: [{ id: 'openai', supportedRepositoryFormatVersions: [1] }],
     };
     const cliManifest = sources.cliManifest as { dependencies: Record<string, string> };
-    cliManifest.dependencies['@moldea.ai/adapter-openai'] = 'workspace:1.0.0';
+    cliManifest.dependencies['@moldea.ai/adapter-openai'] = 'workspace:^1.0.0';
 
     expect(() => validateMoldeaCliImplementation(sources)).toThrow(
       'The openai adapter cannot be active while unpublished.',
@@ -243,25 +243,25 @@ describe('CLI implementation validation', () => {
 
   test.each([
     [
-      'workspace:^1.0.0',
-      'The @moldea.ai/adapter-openai CLI dependency is not pinned to its exact version.',
-      undefined,
-      undefined,
-    ],
-    [
-      'workspace:0.0.2',
-      'The @moldea.ai/adapter-openai CLI dependency is not pinned to its exact version.',
-      undefined,
-      undefined,
-    ],
-    [
       'workspace:1.0.0',
+      'The @moldea.ai/adapter-openai CLI dependency is not compatible with its major line.',
+      undefined,
+      undefined,
+    ],
+    [
+      'workspace:^2.0.0',
+      'The @moldea.ai/adapter-openai CLI dependency is not compatible with its major line.',
+      undefined,
+      undefined,
+    ],
+    [
+      'workspace:^1.0.0',
       'The @moldea.ai/adapter-openai version is outside its matrix implementation range.',
       '^2.0.0',
       undefined,
     ],
     [
-      'workspace:1.0.0',
+      'workspace:^1.0.0',
       'The @moldea.ai/adapter-openai Core compatibility range is inconsistent.',
       undefined,
       '^2.0.0',

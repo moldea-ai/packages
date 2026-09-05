@@ -3,6 +3,8 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
+import { isCompatiblePackageDependency } from '../compatible-dependency/index.mjs';
+
 /** Selects one unambiguous package tarball from the prepared artifact directory. */
 const selectPackageTarball = (tarballNames, pattern, packageName) => {
   const matchingNames = tarballNames.filter((tarballName) => pattern.test(tarballName));
@@ -225,12 +227,15 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       '@moldea.ai/repository',
       '@moldea.ai/repository-fs',
     ]) {
+      const declaredRange = cliManifest.dependencies?.[packageName];
+      const installedVersion = manifests[packageName]?.version;
+
       assertRuntimeInvariant(
         manifests[packageName]?.name === packageName,
         `The installed ${packageName} identity is invalid.`,
       );
       assertRuntimeInvariant(
-        manifests[packageName]?.version === cliManifest.dependencies?.[packageName],
+        isCompatiblePackageDependency(installedVersion, declaredRange),
         `The installed ${packageName} version is inconsistent.`,
       );
     }

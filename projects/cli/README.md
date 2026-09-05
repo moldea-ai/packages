@@ -27,7 +27,7 @@ The executable supports top-level and command-specific help, `moldea --version`,
 
 ## Package boundary
 
-The package exposes the `moldea` executable and no supported JavaScript or TypeScript import API. Its exact first-class dependencies are:
+The package exposes the `moldea` executable and no supported JavaScript or TypeScript import API. Its compatible-major first-class dependencies are:
 
 - `@moldea.ai/repository`
 - `@moldea.ai/repository-fs`
@@ -109,9 +109,11 @@ A successfully completed Core inspection produces `validate` human or JSON outpu
 
 For JSON collection and content output, `--max-output-bytes` accepts 4,096 through 1,048,576 bytes and defaults to 65,536. The measurement covers the final newline-terminated UTF-8 envelope after JSON escaping. `--cursor` continues a prior JSON page. Cursors are opaque canonical base64url documents bound to their format version, command, normalized filters, source snapshot, last key, and checksum. Invalid, tampered, cross-command, filter-mismatched, unsupported, or stale cursors fail with a safe structured error. An envelope or atomic record that cannot fit returns `OUTPUT_BUDGET_TOO_SMALL`; output is never truncated into invalid JSON.
 
+The 65,536-byte default is retained by a reproducible three-sample resource corpus covering ordinary and 1,024-path repositories, large Unicode content, broad relationship output, dense diagnostics, and invalid binary content. Large traversals use additional bounded pages without raising the page peak. The 1 MiB hard maximum is a single-response safety boundary, not a total repository-size limit.
+
 ## Installed composition and integrity
 
-Before `validate`, `inspect`, or `composition` produces a result, the executable compares its installed package metadata, actually resolved first-class package identities and versions, exact first-class dependency declarations, active package-backed adapter registration, Core repository-format support, minimum Git constant, and JSON output schema constant. Source-workspace dependencies must use exact `workspace:<version>` declarations; packed dependencies must use the same exact published version. Loose ranges, package-manager overrides, missing or additional first-class dependencies, mismatched package identities or versions, duplicate or invalid adapter IDs, package-backed registration of `custom`, unsupported adapter formats, and invalid constants fail before Git discovery or repository inspection.
+Before `validate`, `inspect`, or `composition` produces a result, the executable compares its installed package metadata, actually resolved first-class package identities and versions, compatible-major first-class dependency declarations, active package-backed adapter registration, Core repository-format support, minimum Git constant, and JSON output schema constant. Source-workspace dependencies use `workspace:^<major>.0.0`; packed dependencies retain the equivalent `^<major>.0.0` range. Every resolved package must satisfy the CLI release's declared major line. Exact pins, unbounded ranges, package-manager overrides to a different major or prerelease, missing or additional first-class dependencies, duplicate or invalid adapter IDs, package-backed registration of `custom`, unsupported adapter formats, and invalid constants fail before Git discovery or repository inspection. Compatible patch and minor resolutions remain valid and are reported exactly by `composition`.
 
 `composition` reports the installed CLI version and JSON schema version in the envelope, plus the supported Node.js range, minimum Git version, sorted exact package versions, Core repository-format versions, and every sorted executable adapter with its accepted repository formats. Core's built-in `custom` adapter is included using Core's format support. The CLI does not report matrix entries, maturity, implementation status, target profiles, evidence links, or compatibility claims owned by the packages website. Current published technical compatibility and target maturity are available from [`https://packages.moldea.ai/compatibility/runtimes.json`](https://packages.moldea.ai/compatibility/runtimes.json).
 

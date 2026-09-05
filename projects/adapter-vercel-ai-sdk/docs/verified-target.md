@@ -11,7 +11,7 @@ The canonical Runtime Compatibility Matrix defines technical targets `typescript
 ## Shared boundary
 
 - TypeScript ESM `.ts`, `.tsx`, and `.mts` files
-- a nearest owning package manifest declaring npm `ai >=7.0.66 <8.0.0`
+- a nearest owning package manifest declaring npm `ai >=7.0.66`
 - named runtime value imports from the `ai` package root, including aliases
 - direct or awaited instruction-loader calls
 - structured output through `Output.object({ schema })`
