@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/cli",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "description": "The canonical read-only local command-line composition for moldea repositories.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/cli#readme",
   "bugs": {
@@ -39,19 +39,19 @@
     "typecheck": "tsc -p tsconfig.src.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@moldea.ai/adapter-anthropic": "workspace:3.0.0",
-    "@moldea.ai/adapter-claude-agent-sdk": "workspace:2.0.0",
-    "@moldea.ai/adapter-cloudflare-agents": "workspace:2.0.0",
-    "@moldea.ai/adapter-eve": "workspace:2.0.0",
-    "@moldea.ai/adapter-google-genai": "workspace:2.0.0",
-    "@moldea.ai/adapter-langchain": "workspace:2.0.0",
-    "@moldea.ai/adapter-langgraph": "workspace:2.0.0",
-    "@moldea.ai/adapter-openai": "workspace:3.0.0",
-    "@moldea.ai/adapter-openai-agents-sdk": "workspace:2.0.0",
-    "@moldea.ai/adapter-vercel-ai-sdk": "workspace:2.0.0",
-    "@moldea.ai/core": "workspace:3.0.0",
-    "@moldea.ai/repository": "workspace:2.0.0",
-    "@moldea.ai/repository-fs": "workspace:2.0.0",
+    "@moldea.ai/adapter-anthropic": "workspace:^3.0.0",
+    "@moldea.ai/adapter-claude-agent-sdk": "workspace:^2.0.0",
+    "@moldea.ai/adapter-cloudflare-agents": "workspace:^2.0.0",
+    "@moldea.ai/adapter-eve": "workspace:^2.0.0",
+    "@moldea.ai/adapter-google-genai": "workspace:^2.0.0",
+    "@moldea.ai/adapter-langchain": "workspace:^2.0.0",
+    "@moldea.ai/adapter-langgraph": "workspace:^2.0.0",
+    "@moldea.ai/adapter-openai": "workspace:^3.0.0",
+    "@moldea.ai/adapter-openai-agents-sdk": "workspace:^2.0.0",
+    "@moldea.ai/adapter-vercel-ai-sdk": "workspace:^2.0.0",
+    "@moldea.ai/core": "workspace:^3.0.0",
+    "@moldea.ai/repository": "workspace:^2.0.0",
+    "@moldea.ai/repository-fs": "workspace:^2.0.0",
     "semver": "7.8.5"
   },
   "devDependencies": {

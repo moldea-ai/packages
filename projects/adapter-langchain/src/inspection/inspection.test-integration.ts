@@ -97,6 +97,15 @@ describe('langChainAdapter Core integration', () => {
     expect(result.evidence).toEqual(expectedEvidence);
   });
 
+  test('accepts later stable provider majors through minimum-only ranges', async () => {
+    const result = await inspect({
+      '/package.json': '{"dependencies":{"@langchain/core":"2.0.0","langchain":"2.0.0"}}',
+    });
+
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
   test.each([
     ['absent', '{}'],
     ['supported', '{"dependencies":{"@langchain/core":"~1.2.8"}}'],

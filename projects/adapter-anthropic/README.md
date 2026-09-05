@@ -2,11 +2,11 @@
 
 Deterministic runtime evidence and diagnostics for direct Anthropic SDK integrations.
 
-Version `3.0.0` supports this verified technical boundary:
+Version `3.0.1` supports this verified technical boundary:
 
 - TypeScript ESM source in `.ts`, `.tsx`, and `.mts` files
-- `@anthropic-ai/sdk >=0.117.1 <0.118.0`
-- `@moldea.ai/core >=3.0.0 <4.0.0`
+- `@anthropic-ai/sdk >=0.117.1`
+- `@moldea.ai/core ^3.0.0`
 - Repository Format version `1`
 - direct `client.messages.create(...)` calls
 - instruction loaders wired through `system`

@@ -9,7 +9,7 @@ import {
 } from './composition.test-fixtures.js';
 
 describe('isMoldeaCliCompositionStateValid', () => {
-  test('accepts the exact installed and executable composition', () => {
+  test('accepts the compatible declared and exact installed composition', () => {
     expect(isMoldeaCliCompositionStateValid(createTestCompositionState())).toBe(true);
   });
 
@@ -59,7 +59,10 @@ describe('isMoldeaCliCompositionStateValid', () => {
     ).toBe(false);
   });
 
-  test('requires declared and resolved package versions to match exactly', () => {
+  test.each([
+    ['a future breaking major', '4.0.0'],
+    ['a prerelease', '3.1.0-rc.1'],
+  ])('rejects %s for a first-party package', (_description, version) => {
     const state = createTestCompositionState();
 
     expect(
@@ -69,7 +72,41 @@ describe('isMoldeaCliCompositionStateValid', () => {
           ...state.packageMetadata,
           installedPackageVersions: {
             ...(state.packageMetadata.installedPackageVersions ?? {}),
-            '@moldea.ai/core': '9.0.0',
+            '@moldea.ai/core': version,
+          },
+        },
+      }),
+    ).toBe(false);
+  });
+
+  test('accepts a later compatible first-party release without changing the CLI manifest', () => {
+    const state = createTestCompositionState();
+
+    expect(
+      isMoldeaCliCompositionStateValid({
+        ...state,
+        packageMetadata: {
+          ...state.packageMetadata,
+          installedPackageVersions: {
+            ...(state.packageMetadata.installedPackageVersions ?? {}),
+            '@moldea.ai/core': '3.9.9',
+          },
+        },
+      }),
+    ).toBe(true);
+  });
+
+  test.each(['3.0.1', '>=3.0.0'])('rejects an unsupported Core declaration %s', (range) => {
+    const state = createTestCompositionState();
+
+    expect(
+      isMoldeaCliCompositionStateValid({
+        ...state,
+        packageMetadata: {
+          ...state.packageMetadata,
+          dependencies: {
+            ...(state.packageMetadata.dependencies ?? {}),
+            '@moldea.ai/core': range,
           },
         },
       }),

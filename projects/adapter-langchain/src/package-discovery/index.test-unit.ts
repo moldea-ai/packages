@@ -38,6 +38,7 @@ const discover = (dependencies: Readonly<Record<string, string>>) =>
 describe('discoverLangChainPackages', () => {
   test.each([
     ['supported', '~1.5.9', '~1.2.8', 'supported'],
+    ['later provider majors', '^2.0.0', '^2.0.0', 'supported'],
     ['incomplete', '~1.5.9', undefined, 'incomplete'],
     ['unsupported primary', '1.4.0', '~1.2.8', 'unsupported'],
     ['unsupported companion', '~1.5.9', '1.1.1', 'unsupported'],

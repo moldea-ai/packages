@@ -72,6 +72,22 @@ describe('discoverPackage', () => {
     });
   });
 
+  test('accepts later stable majors when the supported range has no upper bound', async () => {
+    await expect(
+      discoverPackage({
+        packageName: 'provider-sdk',
+        reader: createReader({
+          '/package.json': JSON.stringify({ dependencies: { 'provider-sdk': '4.0.0' } }),
+        }),
+        sourcePath: '/src/agent.ts',
+        supportedRange: '>=2.0.0',
+      }),
+    ).resolves.toMatchObject({
+      kind: 'observed',
+      observation: { compatibility: 'supported' },
+    });
+  });
+
   test('classifies declarations collectively and preserves field provenance', async () => {
     await expect(
       discover({

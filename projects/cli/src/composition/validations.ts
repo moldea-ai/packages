@@ -1,10 +1,11 @@
-import { valid as isValidVersion, validRange } from 'semver';
+import { satisfies as doesVersionSatisfy, valid as isValidVersion, validRange } from 'semver';
 
 import type { IRuntimeAdapter } from '@moldea.ai/core/adapter';
 
 import {
   MOLDEA_CLI_ADAPTER_PACKAGE_PREFIX,
   MOLDEA_CLI_CUSTOM_ADAPTER_ID,
+  MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES,
   MOLDEA_CLI_FOUNDATIONAL_PACKAGE_NAMES,
 } from './constants.js';
 import type { IMoldeaCliCompositionStateInput } from './types.js';
@@ -107,12 +108,18 @@ export const isMoldeaCliCompositionStateValid = (
 
   return expectedPackageNames.every((packageName) => {
     const resolvedVersion = installedPackageVersions[packageName];
-    const declaredVersion = dependencies[packageName];
+    const declaredRange = dependencies[packageName];
+    const supportedRange =
+      MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES[
+        packageName as keyof typeof MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES
+      ];
 
     return (
       resolvedVersion !== undefined &&
       isValidVersion(resolvedVersion) !== null &&
-      (declaredVersion === resolvedVersion || declaredVersion === `workspace:${resolvedVersion}`)
+      supportedRange !== undefined &&
+      (declaredRange === supportedRange || declaredRange === `workspace:${supportedRange}`) &&
+      doesVersionSatisfy(resolvedVersion, supportedRange)
     );
   });
 };

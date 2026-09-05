@@ -124,6 +124,22 @@ describe('cloudflareAgentsAdapter Core integration', () => {
     expect(result.summary).not.toBeNull();
   });
 
+  test('accepts later stable provider majors through minimum-only ranges', async () => {
+    const result = await inspect({
+      '/package.json': JSON.stringify({
+        dependencies: {
+          '@cloudflare/ai-chat': '1.0.0',
+          '@cloudflare/think': '1.0.0',
+          agents: '1.0.0',
+          ai: '8.0.0',
+        },
+      }),
+    });
+
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
   test('produces deterministic evidence for reversed entries and concurrent inspections', async () => {
     const reversed = await createCore({ adapters: [cloudflareAgentsAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),

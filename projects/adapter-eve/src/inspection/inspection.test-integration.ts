@@ -102,6 +102,15 @@ describe('eveAdapter Core integration', () => {
     expect(result.evidence).toEqual(expectedEvidence);
   });
 
+  test('accepts a later stable provider major through the minimum-only range', async () => {
+    const result = await inspect({
+      '/package.json': '{"name":"@acme/support-app","dependencies":{"eve":"1.0.0"}}',
+    });
+
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
   test('is deterministic for reversed entries and concurrent inspections', async () => {
     const reversed = await createCore({ adapters: [eveAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),

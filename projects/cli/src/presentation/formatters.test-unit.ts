@@ -46,8 +46,8 @@ describe('schema 4 CLI presentation formatters', () => {
     expect(formatMoldeaCliHumanError(error)).toBe(
       'cli:CURSOR_INVALID The continuation cursor is invalid for this request.\n',
     );
-    expect(JSON.parse(formatMoldeaCliJsonError(error, 'inspect', '7.0.0'))).toStrictEqual({
-      cliVersion: '7.0.0',
+    expect(JSON.parse(formatMoldeaCliJsonError(error, 'inspect', '7.0.1'))).toStrictEqual({
+      cliVersion: '7.0.1',
       command: 'inspect',
       error,
       result: null,
@@ -65,10 +65,10 @@ describe('schema 4 CLI presentation formatters', () => {
       supportedNodeRange: '>=22.11.0',
     };
 
-    expect(formatMoldeaCliHumanCompositionResult(result, '7.0.0')).toContain(
+    expect(formatMoldeaCliHumanCompositionResult(result, '7.0.1')).toContain(
       'JSON output schema: 4',
     );
-    expect(JSON.parse(formatMoldeaCliJsonCompositionResult(result, '7.0.0'))).toMatchObject({
+    expect(JSON.parse(formatMoldeaCliJsonCompositionResult(result, '7.0.1'))).toMatchObject({
       command: 'composition',
       result,
       schemaVersion: 4,
@@ -90,7 +90,7 @@ describe('schema 4 CLI presentation formatters', () => {
     expect(formatMoldeaCliHumanValidateResult(result)).toBe(
       'The moldea project is invalid.\ncore:MOLDEA_MANIFEST_MISSING /moldea/moldea.yaml The project manifest is missing.\nDiagnostic: 1\nAdditional diagnostics are available through JSON pagination.\n',
     );
-    expect(JSON.parse(formatMoldeaCliJsonValidateResult(result, '7.0.0'))).toMatchObject({
+    expect(JSON.parse(formatMoldeaCliJsonValidateResult(result, '7.0.1'))).toMatchObject({
       command: 'validate',
       result: { diagnosticCount: 1 },
       schemaVersion: 4,

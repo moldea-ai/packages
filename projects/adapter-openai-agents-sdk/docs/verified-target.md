@@ -11,7 +11,7 @@ The canonical Runtime Compatibility Matrix defines the technical target `typescr
 ## Supported boundary
 
 - TypeScript ESM `.ts`, `.tsx`, and `.mts` files
-- a nearest owning package manifest declaring npm `@openai/agents >=0.16.1 <0.17.0`
+- a nearest owning package manifest declaring npm `@openai/agents >=0.16.1`
 - named value imports from the `@openai/agents` package root, including aliases
 - a directly exported module-local `const` initialized through `new Agent({ ... })` or `Agent.create({ ... })`
 - direct, awaited, referenced, or supported single-return-wrapper instruction-loader wiring

@@ -96,6 +96,16 @@ describe('langGraphAdapter Core integration', () => {
     expect(result.evidence).toEqual(expectedEvidence);
   });
 
+  test('accepts later stable provider majors through minimum-only ranges', async () => {
+    const result = await inspect({
+      '/package.json':
+        '{"dependencies":{"@langchain/core":"2.0.0","@langchain/langgraph":"2.0.0"}}',
+    });
+
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
   test('is deterministic for reversed entries and concurrent inspections', async () => {
     const reversed = await createCore({ adapters: [langGraphAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),

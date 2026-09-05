@@ -96,6 +96,15 @@ describe('claudeAgentSdkAdapter Core integration', () => {
     expect(result.summary).not.toBeNull();
   });
 
+  test('accepts a later stable provider major through the minimum-only range', async () => {
+    const result = await inspect({
+      '/package.json': '{"dependencies":{"@anthropic-ai/claude-agent-sdk":"1.0.0"}}',
+    });
+
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
   test('produces deterministic evidence for reversed entries and concurrent inspections', async () => {
     const reversed = await createCore({ adapters: [claudeAgentSdkAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),

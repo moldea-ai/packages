@@ -132,7 +132,7 @@ const createCommandInput = (
     dependencies: Object.freeze({}),
     installedPackageVersions: Object.freeze({}),
     supportedNodeRange: '>=22.11.0',
-    version: '7.0.0',
+    version: '7.0.1',
   },
 });
 

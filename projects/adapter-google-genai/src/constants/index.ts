@@ -4,7 +4,7 @@ import type { IRepositoryFormatVersion } from '@moldea.ai/core/format';
 export const GOOGLE_GENAI_ADAPTER_ID = 'google-genai';
 export const GOOGLE_GENAI_GENERATE_CONTENT_RUNTIME_NAME = 'models.generateContent';
 export const GOOGLE_GENAI_SDK_PACKAGE_NAME = '@google/genai';
-export const GOOGLE_GENAI_SDK_SUPPORTED_RANGE = '>=2.17.1 <3.0.0';
+export const GOOGLE_GENAI_SDK_SUPPORTED_RANGE = '>=2.17.1';
 export const GOOGLE_GENAI_SUPPORTED_REPOSITORY_FORMAT_VERSIONS = Object.freeze([
   1,
 ] satisfies readonly IRepositoryFormatVersion[]);

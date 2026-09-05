@@ -159,22 +159,22 @@ export const readTarEntry = (tarball: Buffer, entryPath: string): Buffer => {
   throw new Error(`The packed archive does not contain ${entryPath}.`);
 };
 
-/** Asserts exact source or packed CLI metadata and its deliberate closed import surface. */
+/** Asserts source or packed CLI metadata and its deliberate closed import surface. */
 export const expectPackageManifest = (
   manifest: IMoldeaCliPackageManifest,
-  coreVersion: string,
-  anthropicAdapterVersion: string,
-  claudeAgentSdkAdapterVersion: string,
-  googleGenAiAdapterVersion: string,
-  langChainAdapterVersion: string,
-  langGraphAdapterVersion: string,
-  openAiAdapterVersion: string,
-  openAiAgentsSdkAdapterVersion: string,
-  cloudflareAgentsAdapterVersion: string,
-  eveAdapterVersion: string,
-  vercelAiSdkAdapterVersion: string,
-  repositoryVersion: string,
-  repositoryFilesystemVersion: string,
+  coreRange: string,
+  anthropicAdapterRange: string,
+  claudeAgentSdkAdapterRange: string,
+  googleGenAiAdapterRange: string,
+  langChainAdapterRange: string,
+  langGraphAdapterRange: string,
+  openAiAdapterRange: string,
+  openAiAgentsSdkAdapterRange: string,
+  cloudflareAgentsAdapterRange: string,
+  eveAdapterRange: string,
+  vercelAiSdkAdapterRange: string,
+  repositoryRange: string,
+  repositoryFilesystemRange: string,
 ): void => {
   expect(manifest).toMatchObject({
     bin: { moldea: './dist/moldea.js' },
@@ -184,22 +184,22 @@ export const expectPackageManifest = (
     name: '@moldea.ai/cli',
     preferUnplugged: true,
     type: 'module',
-    version: '7.0.0',
+    version: '7.0.1',
   });
   expect(manifest.dependencies).toStrictEqual({
-    '@moldea.ai/adapter-anthropic': anthropicAdapterVersion,
-    '@moldea.ai/adapter-claude-agent-sdk': claudeAgentSdkAdapterVersion,
-    '@moldea.ai/adapter-google-genai': googleGenAiAdapterVersion,
-    '@moldea.ai/adapter-langchain': langChainAdapterVersion,
-    '@moldea.ai/adapter-langgraph': langGraphAdapterVersion,
-    '@moldea.ai/adapter-openai': openAiAdapterVersion,
-    '@moldea.ai/adapter-openai-agents-sdk': openAiAgentsSdkAdapterVersion,
-    '@moldea.ai/adapter-cloudflare-agents': cloudflareAgentsAdapterVersion,
-    '@moldea.ai/adapter-eve': eveAdapterVersion,
-    '@moldea.ai/adapter-vercel-ai-sdk': vercelAiSdkAdapterVersion,
-    '@moldea.ai/core': coreVersion,
-    '@moldea.ai/repository': repositoryVersion,
-    '@moldea.ai/repository-fs': repositoryFilesystemVersion,
+    '@moldea.ai/adapter-anthropic': anthropicAdapterRange,
+    '@moldea.ai/adapter-claude-agent-sdk': claudeAgentSdkAdapterRange,
+    '@moldea.ai/adapter-google-genai': googleGenAiAdapterRange,
+    '@moldea.ai/adapter-langchain': langChainAdapterRange,
+    '@moldea.ai/adapter-langgraph': langGraphAdapterRange,
+    '@moldea.ai/adapter-openai': openAiAdapterRange,
+    '@moldea.ai/adapter-openai-agents-sdk': openAiAgentsSdkAdapterRange,
+    '@moldea.ai/adapter-cloudflare-agents': cloudflareAgentsAdapterRange,
+    '@moldea.ai/adapter-eve': eveAdapterRange,
+    '@moldea.ai/adapter-vercel-ai-sdk': vercelAiSdkAdapterRange,
+    '@moldea.ai/core': coreRange,
+    '@moldea.ai/repository': repositoryRange,
+    '@moldea.ai/repository-fs': repositoryFilesystemRange,
     semver: '7.8.5',
   });
   expect(manifest).not.toHaveProperty('main');

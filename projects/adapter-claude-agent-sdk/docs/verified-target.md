@@ -11,7 +11,7 @@ The canonical Runtime Compatibility Matrix defines the technical target `typescr
 ## Supported boundary
 
 - TypeScript ESM `.ts`, `.tsx`, and `.mts` files
-- a nearest owning package manifest declaring npm `@anthropic-ai/claude-agent-sdk >=0.3.234 <0.4.0`
+- a nearest owning package manifest declaring npm `@anthropic-ai/claude-agent-sdk >=0.3.234`
 - named value imports from the package root, including aliases
 - directly exported function declarations, arrow functions, or function expressions containing direct `query(...)` calls in their own lexical body
 - directly exported immutable object-literal programmatic `AgentDefinition` values

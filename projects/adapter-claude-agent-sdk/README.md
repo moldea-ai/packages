@@ -8,12 +8,12 @@ The package implements the official `claude-agent-sdk` runtime adapter for `@mol
 
 ## Supported target
 
-Version `2.0.0` supports:
+Version `2.0.1` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core >=3.0.0 <4.0.0`
+- `@moldea.ai/core ^3.0.0`
 - TypeScript ESM source
-- npm `@anthropic-ai/claude-agent-sdk >=0.3.234 <0.4.0`
+- npm `@anthropic-ai/claude-agent-sdk >=0.3.234`
 - directly exported functions containing direct `query({ ... })` calls
 - directly exported immutable object-literal programmatic `AgentDefinition` values
 - query `systemPrompt`, `claude_code` preset `append`, and subagent `prompt` instruction loaders

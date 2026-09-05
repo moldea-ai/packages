@@ -8,13 +8,13 @@ The package implements the official `cloudflare-agents` runtime adapter for `@mo
 
 ## Supported targets
 
-Version `2.0.0` supports:
+Version `2.0.1` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core >=3.0.0 <4.0.0`
+- `@moldea.ai/core ^3.0.0`
 - TypeScript ESM `.ts`, `.tsx`, and `.mts` source
-- `@cloudflare/think >=0.16.0 <0.17.0`, `agents >=0.21.0 <0.22.0`, and `ai >=7.0.0 <8.0.0`
-- `@cloudflare/ai-chat >=0.10.2 <0.11.0`, `agents >=0.21.0 <0.22.0`, and `ai >=7.0.0 <8.0.0`
+- `@cloudflare/think >=0.16.0`, `agents >=0.21.0`, and `ai >=7.0.0`
+- `@cloudflare/ai-chat >=0.10.2`, `agents >=0.21.0`, and `ai >=7.0.0`
 - directly exported classes extending an exact named `Think` or `AIChatAgent` import
 - Think instructions through `getSystemPrompt` and supported `configureSession` chains
 - AIChatAgent instructions and structured output through direct `generateText` or `streamText` requests
