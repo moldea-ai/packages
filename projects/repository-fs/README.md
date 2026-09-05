@@ -62,6 +62,8 @@ Exact-path construction verifies only selected paths and required parents. Direc
 
 Configured limits are positive safe integers. Requests above a configured limit fail with `RESOURCE_LIMIT_EXCEEDED`; they are never silently truncated. These defaults support large repositories while bounding a single directory, operation, page, queue, and retained cache independently.
 
+The release-5 resource corpus exercises the reader through the real CLI against small, medium, 1,024-file, large-Unicode, binary, broad-relationship, and diagnostic-heavy repositories. The unchanged defaults preserve substantial cumulative headroom for ordinary workloads. Boundary tests independently prove explicit failure for every dimension, so the table describes machine-safety limits rather than a repository-size recommendation.
+
 ## Selection, cursors, and coherence
 
 Paths preserve exact UTF-8 spelling and case. `.git` is excluded during recursive traversal, while similarly named entries remain visible. Descendant symlinks and junctions are metadata entries and are never traversed.
