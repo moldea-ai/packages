@@ -1,7 +1,7 @@
 {
   "name": "@moldea.ai/adapter-static-analysis",
   "version": "0.0.0",
-  "description": "Private static-analysis primitives shared by Moldea runtime adapters.",
+  "description": "Private static-analysis primitives shared by moldea runtime adapters.",
   "license": "MIT",
   "private": true,
   "type": "module",
