@@ -3,6 +3,11 @@ import { access, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:f
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {
+  major as getVersionMajor,
+  satisfies as doesVersionSatisfy,
+  valid as isValidVersion,
+} from 'semver';
 
 const EXPECTED_PNPM_VERSION = '11.21.0';
 const EXPECTED_VITEST_VERSION = '3.2.4';
@@ -29,6 +34,17 @@ const assertCompatibilityInvariant = (condition, message) => {
   if (!condition) {
     throw new Error(message);
   }
+};
+
+/** Verifies one canonical compatible-major declaration against its installed release. */
+const isCompatiblePackageDependency = (installedVersion, declaredRange) => {
+  const validInstalledVersion = isValidVersion(installedVersion);
+
+  return (
+    validInstalledVersion !== null &&
+    declaredRange === `^${getVersionMajor(validInstalledVersion)}.0.0` &&
+    doesVersionSatisfy(validInstalledVersion, declaredRange)
+  );
 };
 
 /** Executes a child process and retains its complete handled result. */
@@ -544,15 +560,21 @@ const runTestingPeerCompatibilityCheck = async (artifactDirectory, vitestVersion
         }),
       ),
     );
-    const expectedCliDependencies = Object.fromEntries(
-      Object.entries(manifests)
-        .filter(([packageName]) => packageName !== '@moldea.ai/cli')
-        .map(([packageName, manifest]) => [packageName, manifest.version]),
+    const cliDependencies = manifests['@moldea.ai/cli'].dependencies;
+    const firstPartyEntries = Object.entries(manifests).filter(
+      ([packageName]) => packageName !== '@moldea.ai/cli',
     );
-    expectedCliDependencies.semver = '7.8.5';
     assertCompatibilityInvariant(
-      JSON.stringify(Object.entries(manifests['@moldea.ai/cli'].dependencies).sort()) ===
-        JSON.stringify(Object.entries(expectedCliDependencies).sort()),
+      cliDependencies !== null &&
+        typeof cliDependencies === 'object' &&
+        JSON.stringify(Object.keys(cliDependencies).sort()) ===
+          JSON.stringify(
+            [...firstPartyEntries.map(([packageName]) => packageName), 'semver'].sort(),
+          ) &&
+        cliDependencies.semver === '7.8.5' &&
+        firstPartyEntries.every(([packageName, manifest]) =>
+          isCompatiblePackageDependency(manifest.version, cliDependencies[packageName]),
+        ),
       'The installed CLI dependency closure is invalid.',
     );
 
