@@ -2,7 +2,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { satisfies as doesVersionSatisfy } from 'semver';
+
+import { isCompatiblePackageDependency } from '../compatible-dependency/index.mjs';
 
 /** Selects one unambiguous package tarball from the prepared artifact directory. */
 const selectPackageTarball = (tarballNames, pattern, packageName) => {
@@ -234,9 +235,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
         `The installed ${packageName} identity is invalid.`,
       );
       assertRuntimeInvariant(
-        typeof declaredRange === 'string' &&
-          typeof installedVersion === 'string' &&
-          doesVersionSatisfy(installedVersion, declaredRange),
+        isCompatiblePackageDependency(installedVersion, declaredRange),
         `The installed ${packageName} version is inconsistent.`,
       );
     }

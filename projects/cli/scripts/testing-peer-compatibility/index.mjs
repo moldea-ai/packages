@@ -3,11 +3,8 @@ import { access, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:f
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import {
-  major as getVersionMajor,
-  satisfies as doesVersionSatisfy,
-  valid as isValidVersion,
-} from 'semver';
+
+import { isCompatiblePackageDependency } from '../compatible-dependency/index.mjs';
 
 const EXPECTED_PNPM_VERSION = '11.21.0';
 const EXPECTED_VITEST_VERSION = '3.2.4';
@@ -34,17 +31,6 @@ const assertCompatibilityInvariant = (condition, message) => {
   if (!condition) {
     throw new Error(message);
   }
-};
-
-/** Verifies one canonical compatible-major declaration against its installed release. */
-const isCompatiblePackageDependency = (installedVersion, declaredRange) => {
-  const validInstalledVersion = isValidVersion(installedVersion);
-
-  return (
-    validInstalledVersion !== null &&
-    declaredRange === `^${getVersionMajor(validInstalledVersion)}.0.0` &&
-    doesVersionSatisfy(validInstalledVersion, declaredRange)
-  );
 };
 
 /** Executes a child process and retains its complete handled result. */
