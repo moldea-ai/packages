@@ -17,7 +17,15 @@ test('explains how Repository Format supports deterministic and semantic evaluat
   await expect(
     overview.getByRole('heading', { level: 3, name: 'Repository snapshot' }),
   ).toBeVisible();
-  await expect(overview.getByText('moldea/project.md', { exact: true })).toBeVisible();
+  const repositoryFiles = overview.getByRole('list', { name: 'Repository files', exact: true });
+  const moldeaDirectory = repositoryFiles.getByRole('list', { name: 'moldea directory' });
+
+  await expect(repositoryFiles.getByText('src/**', { exact: true })).toBeVisible();
+  await expect(moldeaDirectory.getByRole('listitem')).toHaveText([
+    'project.md',
+    'context/**',
+    'agents/**',
+  ]);
   await expect(overview.getByText('@moldea.ai/core', { exact: true })).toBeVisible();
   await expect(
     overview.getByRole('heading', { level: 3, name: 'Structured result' }),
