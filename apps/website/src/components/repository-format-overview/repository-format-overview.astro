@@ -5,8 +5,9 @@ import {
   BookOpenText,
   Braces,
   CodeXml,
-  FileCode,
   FileText,
+  Folder,
+  FolderOpen,
   GitBranch,
   Link2,
   ScanSearch,
@@ -75,51 +76,79 @@ const basePath = import.meta.env.BASE_URL;
               aria-hidden="true"
             />
           </div>
-          <div class="mt-8 space-y-3 font-mono text-sm">
-            <p class="flex items-center gap-3">
-              <span
-                class="flex size-7 items-center justify-center rounded-md border border-primary-foreground/15 bg-primary-foreground/5"
-              >
-                <FileCode
-                  class="size-3.5"
-                  aria-hidden="true"
-                />
-              </span>
-              source/**
+          <div class="mt-8 font-mono text-xs sm:text-sm">
+            <p class="flex items-center gap-2 py-2 font-semibold">
+              <FolderOpen
+                class="size-4 shrink-0 text-current/65"
+                aria-hidden="true"
+              />
+              ./
             </p>
-            <p class="flex items-center gap-3">
-              <span
-                class="flex size-7 items-center justify-center rounded-md border border-primary-foreground/15 bg-primary-foreground/5"
+            <ul
+              class="ms-2"
+              aria-label="Repository files"
+            >
+              <li
+                class="relative ps-5 before:absolute before:start-0 before:top-0 before:h-full before:border-s before:border-primary-foreground/25 after:absolute after:start-0 after:top-4 after:w-3 after:border-t after:border-primary-foreground/25"
               >
-                <FileText
-                  class="size-3.5"
-                  aria-hidden="true"
-                />
-              </span>
-              moldea/project.md
-            </p>
-            <p class="flex items-center gap-3">
-              <span
-                class="flex size-7 items-center justify-center rounded-md border border-primary-foreground/15 bg-primary-foreground/5"
+                <div class="flex items-center gap-2 py-2">
+                  <Folder
+                    class="size-4 shrink-0 text-current/65"
+                    aria-hidden="true"
+                  />
+                  <span>src/<span class="text-current/50">**</span></span>
+                </div>
+              </li>
+              <li
+                class="relative ps-5 before:absolute before:start-0 before:top-0 before:h-4 before:border-s before:border-primary-foreground/25 after:absolute after:start-0 after:top-4 after:w-3 after:border-t after:border-primary-foreground/25"
               >
-                <BookOpenText
-                  class="size-3.5"
-                  aria-hidden="true"
-                />
-              </span>
-              moldea/context/**
-            </p>
-            <p class="flex items-center gap-3">
-              <span
-                class="flex size-7 items-center justify-center rounded-md border border-primary-foreground/15 bg-primary-foreground/5"
-              >
-                <FileText
-                  class="size-3.5"
-                  aria-hidden="true"
-                />
-              </span>
-              moldea/agents/**
-            </p>
+                <div class="flex items-center gap-2 py-2 font-semibold">
+                  <FolderOpen
+                    class="size-4 shrink-0 text-current/65"
+                    aria-hidden="true"
+                  />
+                  moldea/
+                </div>
+                <ul
+                  class="ms-2"
+                  aria-label="moldea directory"
+                >
+                  <li
+                    class="relative ps-5 before:absolute before:start-0 before:top-0 before:h-full before:border-s before:border-primary-foreground/25 after:absolute after:start-0 after:top-4 after:w-3 after:border-t after:border-primary-foreground/25"
+                  >
+                    <div class="flex items-center gap-2 py-2">
+                      <FileText
+                        class="size-4 shrink-0 text-current/65"
+                        aria-hidden="true"
+                      />
+                      project.md
+                    </div>
+                  </li>
+                  <li
+                    class="relative ps-5 before:absolute before:start-0 before:top-0 before:h-full before:border-s before:border-primary-foreground/25 after:absolute after:start-0 after:top-4 after:w-3 after:border-t after:border-primary-foreground/25"
+                  >
+                    <div class="flex items-center gap-2 py-2">
+                      <Folder
+                        class="size-4 shrink-0 text-current/65"
+                        aria-hidden="true"
+                      />
+                      <span>context/<span class="text-current/50">**</span></span>
+                    </div>
+                  </li>
+                  <li
+                    class="relative ps-5 before:absolute before:start-0 before:top-0 before:h-4 before:border-s before:border-primary-foreground/25 after:absolute after:start-0 after:top-4 after:w-3 after:border-t after:border-primary-foreground/25"
+                  >
+                    <div class="flex items-center gap-2 py-2">
+                      <Folder
+                        class="size-4 shrink-0 text-current/65"
+                        aria-hidden="true"
+                      />
+                      <span>agents/<span class="text-current/50">**</span></span>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+            </ul>
           </div>
         </article>
 
