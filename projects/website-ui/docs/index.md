@@ -23,6 +23,10 @@ The package does not own site metadata, navigation data, domain status mappings,
 
 `Dialog` owns optional detail triggers, native modality, a fixed header and scrolling body, full-screen mobile presentation, focus restoration, Escape/close dismissal, and background scroll locking. Read-only consumers can enable backdrop dismissal with `isOverlayCloseEnabled`, matching the platform's opt-in behavior. Opening and closing follow the platform's fade, small slide, and desktop scale without animating content dimensions. Native modality lasts through exit; reduced motion and Astro navigation dismiss immediately. Consumers supply unique IDs, copy, optional custom heading summaries, and slotted content; required information must remain outside the dialog because triggers are hidden without JavaScript. The public usage contract is in the package README.
 
+Dialog presentation stays package-owned through typed `triggerVariant`, `triggerSize`, and `size` props. The default remains the compact outline trigger and medium panel; standard text-button variants and sizes and a large panel support other websites without private selectors or copied controls. Both panel sizes retain full-screen mobile behavior.
+
+`LocalSearch` shares an on-demand index request, permits only the latest submitted query to render, and invalidates pending display work when a query is cleared. Index failures are presented with consumer-owned copy and can be retried by submitting again.
+
 The Markdown renderer and shared stylesheet own the code-wrapping policy: code and unlabelled fences preserve lines with keyboard-accessible horizontal scrolling; explicitly labelled plain text wraps. The package README documents the policy for Markdown and hand-authored blocks.
 
 Use the generated API reference for the exact TypeScript utility surface and the package README for component entry points.

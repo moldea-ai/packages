@@ -116,6 +116,20 @@ const {
     return item;
   };
 
+  /**
+   * Loads and validates the shared index on the first submitted query.
+   * @returns The public search documents, or null when the index is unavailable.
+   */
+  const loadSearchDocuments = async (url: string): Promise<ISearchDocument[] | null> => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      return parseSearchDocuments(await response.json());
+    } catch {
+      return null;
+    }
+  };
+
   const initializeSearch = (root: HTMLElement): void => {
     const form = root.querySelector<HTMLFormElement>('[data-search-form]');
     const input = root.querySelector<HTMLInputElement>('[data-search-input]');
@@ -131,15 +145,12 @@ const {
     if (!searchIndexUrl) return;
 
     root.dataset.searchInitialized = 'true';
-    const documentsPromise = fetch(searchIndexUrl).then(async (response) => {
-      if (!response.ok) {
-        throw new Error('The documentation search index could not be loaded.');
-      }
-
-      return parseSearchDocuments(await response.json());
-    });
+    let documentsPromise: Promise<ISearchDocument[] | null> | undefined;
+    let latestRequest: symbol;
 
     const runSearch = async (query: string): Promise<void> => {
+      const request = Symbol();
+      latestRequest = request;
       results.replaceChildren();
 
       if (!query.trim()) {
@@ -149,19 +160,22 @@ const {
 
       status.textContent = root.dataset.loadingMessage ?? '';
 
-      try {
-        const matches = searchDocuments(query, await documentsPromise);
+      const pendingDocuments = (documentsPromise ??= loadSearchDocuments(searchIndexUrl));
+      const documents = await pendingDocuments;
+      if (documents === null && documentsPromise === pendingDocuments) documentsPromise = undefined;
+      // A replacement or cleared query owns the UI even while the index is still loading.
+      if (latestRequest !== request || !root.isConnected) return;
 
-        for (const match of matches) {
-          results.append(createSearchResult(match));
-        }
-
-        status.textContent = matches.length
-          ? `${matches.length} result${matches.length === 1 ? '' : 's'} for “${query}”.`
-          : (root.dataset.noResultsMessage ?? '');
-      } catch {
+      if (documents === null) {
         status.textContent = root.dataset.failureMessage ?? '';
+        return;
       }
+
+      const matches = searchDocuments(query, documents);
+      results.replaceChildren(...matches.map(createSearchResult));
+      status.textContent = matches.length
+        ? `${matches.length} result${matches.length === 1 ? '' : 's'} for “${query}”.`
+        : (root.dataset.noResultsMessage ?? '');
     };
 
     form.addEventListener('submit', (event) => {

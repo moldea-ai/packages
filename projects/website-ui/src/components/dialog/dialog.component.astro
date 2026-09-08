@@ -1,7 +1,9 @@
 ---
 import { ArrowLeft, X } from '@lucide/astro';
 
-import ActionButton from '../action-button/action-button.component.astro';
+import ActionButton, {
+  type Props as IActionButtonProps,
+} from '../action-button/action-button.component.astro';
 
 // consumers own the unique document ID, trigger copy, and slotted dialog content
 export interface Props {
@@ -10,6 +12,9 @@ export interface Props {
   description?: string;
   triggerLabel: string;
   triggerAriaLabel?: string;
+  triggerVariant?: IActionButtonProps['variant'];
+  triggerSize?: 'compact' | Exclude<IActionButtonProps['size'], 'icon'>;
+  size?: 'medium' | 'large';
   closeLabel?: string;
   // matches the platform's opt-in dismissal for read-only content
   isOverlayCloseEnabled?: boolean;
@@ -21,6 +26,9 @@ const {
   description,
   triggerLabel,
   triggerAriaLabel,
+  triggerVariant = 'outline',
+  triggerSize = 'compact',
+  size = 'medium',
   closeLabel = 'Close dialog',
   isOverlayCloseEnabled = false,
 } = Astro.props;
@@ -28,9 +36,9 @@ const {
 
 <div data-dialog-root>
   <ActionButton
-    variant="outline"
-    size="sm"
-    class="py-1 text-xs [hidden]:hidden"
+    variant={triggerVariant}
+    size={triggerSize === 'compact' ? 'sm' : triggerSize}
+    class={triggerSize === 'compact' ? 'py-1 text-xs [hidden]:hidden' : '[hidden]:hidden'}
     aria-label={triggerAriaLabel}
     aria-controls={id}
     aria-haspopup="dialog"
@@ -41,7 +49,10 @@ const {
   </ActionButton>
   <dialog
     id={id}
-    class="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden border-0 bg-background p-0 text-foreground outline-none [--dialog-exit-duration:300ms] [--dialog-motion-transform:translateY(0.25rem)] backdrop:bg-black/45 open:grid sm:m-auto sm:h-fit sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:max-w-2xl sm:rounded-xl sm:border sm:shadow-raised sm:[--dialog-exit-duration:200ms] sm:[--dialog-motion-transform:translateY(0.5rem)_scale(0.95)] sm:backdrop:backdrop-blur-xs dark:backdrop:bg-black/70"
+    class:list={[
+      'fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden border-0 bg-background p-0 text-foreground outline-none [--dialog-exit-duration:300ms] [--dialog-motion-transform:translateY(0.25rem)] backdrop:bg-black/45 open:grid sm:m-auto sm:h-fit sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:rounded-xl sm:border sm:shadow-raised sm:[--dialog-exit-duration:200ms] sm:[--dialog-motion-transform:translateY(0.5rem)_scale(0.95)] sm:backdrop:backdrop-blur-xs dark:backdrop:bg-black/70',
+      size === 'large' ? 'sm:max-w-5xl' : 'sm:max-w-2xl',
+    ]}
     aria-labelledby={`${id}-title`}
     aria-describedby={description ? `${id}-description` : undefined}
     data-website-ui-dialog

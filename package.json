@@ -28,7 +28,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "pnpm lint:root && turbo run lint",
-    "lint:root": "eslint eslint.config.js vitest.config.ts vitest-integration.config.ts configs scripts",
+    "lint:root": "eslint eslint.config.js vitest.config.ts vitest-integration.config.ts configs scripts .github/workflows",
     "release:check-changes": "node scripts/npm-release/check-changes.ts",
     "release:checksums": "node scripts/npm-release/checksums.ts",
     "release:plan": "node scripts/npm-release/plan.ts",

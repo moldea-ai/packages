@@ -80,7 +80,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.3.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.4.0' });
     expect(packedPaths).toContain('dist/evaluation-replay.js');
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/markdown.js');
@@ -178,6 +178,7 @@ describe('published website UI package', () => {
       path.join(pagesDirectory, 'index.astro'),
       [
         '---',
+        "import type { ComponentProps } from 'astro/types';",
         "import { ClientRouter } from 'astro:transitions';",
         "import ActionButton from '@moldea.ai/website-ui/action-button';",
         "import ActionLink from '@moldea.ai/website-ui/action-link';",
@@ -203,6 +204,7 @@ describe('published website UI package', () => {
         "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## Shared Markdown');",
         "const tree = buildEvaluationReplayPathTree([{ path: 'src/index.ts', type: 'file' }]);",
         "const navigationItems = [{ href: '/', isActive: true, label: 'Home' }];",
+        'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
         '---',
         '<html lang="en" data-theme="system">',
         '  <head>',
@@ -221,6 +223,7 @@ describe('published website UI package', () => {
         '    <ActionButton>Run</ActionButton>',
         '    <Dialog id="fixture-result" title="Fixture result" triggerLabel="View result"><div slot="heading"><h2 id="fixture-result-title">Fixture result</h2><StatusBadge label="Invalid" size="sm" tone="danger" /><p>Recorded check</p></div><p>Result content</p></Dialog>',
         '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
+        '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
         '    <TabbedPanels ariaLabel="Fixture views" id="fixture-tabs" items={[{ id: "first", label: "First", slotName: "first" }, { id: "second", label: "Second", slotName: "second" }]}><p slot="first">First panel</p><p slot="second">Second panel</p></TabbedPanels>',
@@ -271,5 +274,10 @@ describe('published website UI package', () => {
       /<h2[^>]*id="fixture-result-title"[^>]*>Fixture result<\/h2>\s*<span[^>]*>\s*Invalid\s*<\/span>/u,
     );
     expect(fixtureHtml).toContain('Details without a badge');
+    expect(fixtureHtml).toMatch(/<dialog\b[^>]*id="fixture-wide"[^>]*sm:max-w-5xl/u);
+    expect(fixtureHtml).toContain('aria-describedby="fixture-wide-description"');
+    expect(fixtureHtml).toMatch(
+      /<button\b[^>]*action-primary action-size-lg[^>]*aria-controls="fixture-wide"/u,
+    );
   }, 180_000);
 });

@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.3.0
+pnpm add @moldea.ai/website-ui@1.4.0
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -51,6 +51,8 @@ import { isDarkTheme } from '@moldea.ai/website-ui/theme';
 
 `parseSearchDocuments` accepts only complete search records with safe root-relative result URLs. Base-path failures and invalid generated search indexes throw `WebsiteUiConfigurationException` with stable error codes.
 
+`LocalSearch` loads its index on the first non-empty submitted query and shares that request across overlapping searches. Only the latest submission can update results or status, including when a query is cleared. Failed or malformed index responses produce the consumer's failure message; a later submission retries the load. Successful indexes remain cached for that component instance.
+
 ## Components
 
 Every component has a dedicated public subpath:
@@ -92,7 +94,7 @@ Both Markdown renderers apply this policy through `styles.css`. Rendered code bl
 
 ### Optional detail dialogs
 
-`Dialog` provides a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. Opening takes 300ms with a fade and small slide, plus a subtle desktop scale. Closing takes 200ms on desktop and 300ms on mobile; native modality and background scroll locking remain active through the exit. Reduced motion skips animations. Escape and the close control dismiss it and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
+`Dialog` defaults to a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. Opening takes 300ms with a fade and small slide, plus a subtle desktop scale. Closing takes 200ms on desktop and 300ms on mobile; native modality and background scroll locking remain active through the exit. Reduced motion skips animations. Escape and the close control dismiss it and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
 
 ```astro
 ---
@@ -114,6 +116,18 @@ import Dialog from '@moldea.ai/website-ui/dialog';
 Supply a unique document `id`, `title`, and `triggerLabel`. `description` and `triggerAriaLabel` are optional; `closeLabel` defaults to “Close dialog” and `isOverlayCloseEnabled` defaults to `false`, matching the platform. Consumers own content, status mapping, and any result transformation. The package does not depend on Core or execute checks. Triggers remain hidden without JavaScript, so keep essential information visible outside the dialog.
 
 The optional `heading` slot replaces the default heading with an application-owned summary, such as an icon, outcome, description, and status badge. Supply an `h2` whose ID is `${id}-title` and whose text matches `title`; that heading alone provides the dialog's accessible name. Keep supplemental copy and badges outside the `h2`, and preserve readable wrapping on narrow screens. The dialog continues to own the close control and header layout.
+
+Use these typed props to customize presentation without replacing the shared controls:
+
+- `triggerVariant`: `outline` (default), `primary`, `secondary`, `ghost`, or `link`, using the corresponding `ActionButton` variant.
+- `triggerSize`: `compact` (default) preserves the existing result-card button; `sm`, `md`, and `lg` use standard `ActionButton` text-button sizes. The trigger remains a labelled text button.
+- `size`: `medium` (default) caps desktop width at 42rem; `large` uses the platform's 64rem cap for wider evidence. Both retain the viewport gutter, full-screen mobile layout, fixed header, scrolling body, and the same focus and dismissal behavior.
+
+For example, add `size="large" triggerVariant="primary" triggerSize="lg"` to the example above. Import the component through `@moldea.ai/website-ui/dialog`; consumers can derive its props with Astro's `ComponentProps<typeof Dialog>`.
+
+### Upgrading an existing website
+
+Update the consumer's dependency and lockfile to the released package version before using new dialog props. Websites upgrading from 1.2.x, including the Skill website, must remove obsolete `prose-moldea-wrap-code` classes and adopt the explicit plain-text labels described above. Verify long code, replay content, keyboard scrolling, and both themes at mobile and desktop widths; do not restore page-wide code-wrapping overrides. Website UI does not change consumer source files or lockfiles automatically.
 
 ## Development
 
