@@ -51,6 +51,7 @@ const previewOrigin = `http://127.0.0.1:${previewPort}`;
 export default defineConfig({
   testDir: './src',
   testMatch: '**/*.test-e2e.ts',
+  testIgnore: ['**/{_archive,_archives,_backup,_backups}/**'],
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,

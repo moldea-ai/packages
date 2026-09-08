@@ -21,7 +21,7 @@
   }
 
   body {
-    @apply min-w-80 bg-background text-foreground;
+    @apply bg-background text-foreground;
     margin: 0;
     overflow-wrap: break-word;
   }

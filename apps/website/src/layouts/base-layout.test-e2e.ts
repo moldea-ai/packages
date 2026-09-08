@@ -21,6 +21,11 @@ const REPRESENTATIVE_PATHS = [
   '/search/',
 ] as const;
 
+// reserve visible scrollbar space only for the width regression's browser
+const scrollbarTest = test.extend({
+  launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
+});
+
 /** Converts an OKLCH token to clipped linear-sRGB relative luminance. */
 const calculateRelativeLuminance = (color: string): number => {
   const match = /^oklch\(\s*([\d.]+)(%)?\s+([\d.]+)\s+([\d.]+)(?:deg)?(?:\s*\/[^)]+)?\s*\)$/u.exec(
@@ -668,6 +673,36 @@ test('has no page-level horizontal overflow at 320px on representative routes', 
     expect(widths.scroll, `${path} overflows horizontally`).toBeLessThanOrEqual(widths.client);
   }
 });
+
+for (const viewportWidth of [320, 360, 768, 1024, 1440]) {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    scrollbarTest(`gutter ${viewportWidth} ${colorScheme}`, async ({ page }) => {
+      await page.setViewportSize({ height: 740, width: viewportWidth });
+      await page.emulateMedia({ colorScheme });
+
+      for (const path of REPRESENTATIVE_PATHS) {
+        await page.goto(toPublicPath(path));
+        // a sized Chromium scrollbar reserves space even on hosts with overlay scrollbars
+        await page.addStyleTag({
+          content: `
+          html { overflow-y: scroll; scrollbar-gutter: stable; }
+          html::-webkit-scrollbar { width: 16px; }
+        `,
+        });
+        const widths = await page.evaluate(() => ({
+          client: document.documentElement.clientWidth,
+          scroll: document.documentElement.scrollWidth,
+          viewport: window.innerWidth,
+        }));
+
+        expect(widths.client, `${path} did not reserve scrollbar space`).toBeLessThan(
+          widths.viewport,
+        );
+        expect(widths.scroll, `${path} overflows horizontally`).toBeLessThanOrEqual(widths.client);
+      }
+    });
+  }
+}
 
 test('keeps primary static routes free of serious automated accessibility violations', async ({
   page,
