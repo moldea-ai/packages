@@ -8,6 +8,160 @@ import { DEFAULT_SITE_URL, SITE_NAME, SOCIAL_IMAGE_ALT } from '../lib/site/const
 const siteUrl = process.env.SITE_URL ?? DEFAULT_SITE_URL;
 const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const toPublicPath = (route: string): string => withBase(route, basePath);
+
+for (const width of [320, 1440]) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`keeps brand links background-free at ${width}px in ${theme}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto(toPublicPath('/'));
+
+      const logos = page.getByRole('link', { name: 'moldea packages home', exact: true });
+      await expect(logos).toHaveCount(2);
+
+      for (const logo of await logos.all()) {
+        await expect(logo).toHaveAttribute('href', toPublicPath('/'));
+        await expect(logo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+        await logo.hover();
+        await expect(logo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+        await page.mouse.down();
+        await expect(logo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+        await page.mouse.move(0, 0);
+        await page.mouse.up();
+
+        await logo.focus();
+        await page.keyboard.press('Tab');
+        await page.keyboard.press('Shift+Tab');
+        await expect(logo).toBeFocused();
+        expect(await logo.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+        await expect(logo).not.toHaveCSS('box-shadow', 'none');
+        await expect(logo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+      }
+    });
+
+    test(`matches platform interaction roles at ${width}px in ${theme}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
+      await page.goto(toPublicPath('/adapters/'));
+      const target = page.getByRole('link', {
+        name: 'Create agent, typescript-create-agent-1-5, supported',
+        exact: true,
+      });
+      const textLink = page.getByRole('link', {
+        name: 'machine-readable compatibility JSON',
+        exact: true,
+      });
+      const footerLink = page
+        .getByRole('contentinfo')
+        .getByRole('link', { name: 'Get started', exact: true });
+      // resolve the platform's semantic state colors through the active Website UI theme
+      const platformColors = await page.evaluate((activeTheme) => {
+        const probe = document.createElement('span');
+        probe.style.transitionProperty = 'none';
+        document.body.append(probe);
+        const resolveColor = (color: string): string => {
+          probe.style.color = color;
+          return getComputedStyle(probe).color;
+        };
+        const colors = {
+          prose: resolveColor(
+            activeTheme === 'dark' ? 'var(--primary-foreground)' : 'var(--primary)',
+          ),
+          navigationHover: resolveColor('var(--secondary)'),
+          navigationPressed: resolveColor('color-mix(in oklab, var(--secondary) 80%, transparent)'),
+          navigationSelected: resolveColor(
+            `color-mix(in oklab, var(--secondary) ${activeTheme === 'dark' ? 50 : 70}%, transparent)`,
+          ),
+        };
+        probe.remove();
+        return colors;
+      }, theme);
+      await expect(textLink).toHaveCSS('text-decoration-line', 'underline');
+      await expect(textLink).toHaveCSS('color', platformColors.prose);
+      await expect(footerLink).toHaveCSS('text-decoration-line', 'none');
+      const foreground = await page
+        .locator('body')
+        .evaluate((body) => getComputedStyle(body).color);
+      for (const link of [target, textLink, footerLink]) {
+        await page.mouse.move(0, 0);
+        const restingBackground = await link.evaluate(
+          (element) => getComputedStyle(element).backgroundColor,
+        );
+        await link.hover();
+        await expect(link).toHaveCSS('opacity', link === textLink ? '0.7' : '1');
+        if (link === textLink) await expect(link).toHaveCSS('color', platformColors.prose);
+        if (link === target) {
+          await expect(link).not.toHaveCSS('background-color', restingBackground);
+        } else {
+          await expect(link).toHaveCSS('background-color', restingBackground);
+        }
+        if (link === footerLink) await expect(link).toHaveCSS('color', foreground);
+        const hoverBackground = await link.evaluate(
+          (element) => getComputedStyle(element).backgroundColor,
+        );
+        await page.mouse.down();
+        await expect(link).toHaveCSS('opacity', link === textLink ? '0.6' : '1');
+        if (link === target) {
+          await expect(link).not.toHaveCSS('background-color', hoverBackground);
+        } else {
+          await expect(link).toHaveCSS('background-color', restingBackground);
+        }
+        await expect(link).toHaveCSS('translate', 'none');
+        const accessibility = await new AxeBuilder({ page })
+          .include(link === footerLink ? 'footer' : 'main')
+          .analyze();
+        expect(
+          accessibility.violations.filter(
+            ({ impact }) => impact === 'critical' || impact === 'serious',
+          ),
+        ).toStrictEqual([]);
+        await page.mouse.move(0, 0);
+        await page.mouse.up();
+        await expect(link).toHaveCSS('opacity', '1');
+        expect(
+          await link.evaluate((element) =>
+            parseFloat(getComputedStyle(element).transitionDuration),
+          ),
+        ).toBeLessThanOrEqual(0.00001);
+        await link.focus();
+        await page.keyboard.press('Tab');
+        await page.keyboard.press('Shift+Tab');
+        await expect(link).toBeFocused();
+        expect(await link.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+        await expect(link).not.toHaveCSS('box-shadow', 'none');
+      }
+
+      if (width < 1024) await page.getByLabel('Open navigation', { exact: true }).click();
+      const navigation = page.getByRole('navigation', {
+        name: width < 1024 ? 'Mobile navigation' : 'Primary navigation',
+        exact: true,
+      });
+      const current = navigation.getByRole('link', { name: 'Adapters', exact: true });
+      const inactive = navigation.getByRole('link', { name: 'Packages', exact: true });
+      await expect(current).toHaveAttribute('aria-current', 'page');
+      await expect(current).toHaveCSS('background-color', platformColors.navigationSelected);
+      const selectedBackground = await current.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      );
+      await current.hover();
+      await expect(current).toHaveCSS('background-color', selectedBackground);
+      await expect(current).toHaveCSS('opacity', '1');
+      await inactive.hover();
+      await expect(inactive).toHaveCSS('color', foreground);
+      await expect(inactive).toHaveCSS('background-color', platformColors.navigationHover);
+      const hoverBackground = await inactive.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      );
+      await page.mouse.down();
+      await expect(inactive).not.toHaveCSS('background-color', hoverBackground);
+      await expect(inactive).toHaveCSS('background-color', platformColors.navigationPressed);
+      await expect(inactive).toHaveCSS('opacity', '1');
+      await page.mouse.move(0, 0);
+      await page.mouse.up();
+    });
+  }
+}
+
 const REPRESENTATIVE_PATHS = [
   '/',
   '/getting-started/',
@@ -18,7 +172,6 @@ const REPRESENTATIVE_PATHS = [
   '/adapters/',
   '/adapters/openai/',
   '/adapters/openai/api/',
-  '/compatibility/',
   '/repository-format/',
   '/search/',
 ] as const;
@@ -87,7 +240,7 @@ test('keeps multiline shared titles legible with Ubuntu Sans', async ({ page }) 
   const sectionTitleTypography = await page
     .getByRole('heading', {
       level: 2,
-      name: 'Find your runtime. Check its exact scope.',
+      name: 'A file moves. The connection breaks.',
     })
     .evaluate((element) => {
       const computedStyle = getComputedStyle(element);
@@ -185,13 +338,57 @@ test('renders standalone moldea references as inline code in visible prose', asy
   await expect(description).toContainText('composition for moldea repositories.');
 });
 
+test('formats the brand in homepage copy and the guide heading without changing its text', async ({
+  page,
+}) => {
+  for (const route of ['/', '/getting-started/']) {
+    await page.goto(toPublicPath(route));
+    const unformatted = await page.locator('main').evaluate((main) => {
+      const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+      const matches: string[] = [];
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        if (
+          /\bmoldea\b/iu.test(node.textContent ?? '') &&
+          !node.parentElement?.closest('code, pre, script, style')
+        ) {
+          matches.push(node.textContent ?? '');
+        }
+      }
+      return matches;
+    });
+    expect(unformatted).toStrictEqual([]);
+  }
+  await expect(page.getByRole('heading', { level: 1 }).locator('code')).toHaveText('moldea');
+});
+
+test('joins the homepage closing section directly to the footer at mobile and desktop widths', async ({
+  page,
+}) => {
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const theme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto(toPublicPath('/'));
+      const gap = await page
+        .locator('footer')
+        .evaluate(
+          (footer) =>
+            footer.getBoundingClientRect().top -
+            document.querySelector('main')!.getBoundingClientRect().bottom,
+        );
+      expect(gap).toBe(0);
+    }
+  }
+});
+
 test('connects the package architecture to the official Repository Format specification', async ({
   page,
 }) => {
   await page.goto(toPublicPath('/'));
 
   const architecture = page.getByRole('region', {
-    name: 'A small structure. A shared record.',
+    name: 'The structure behind every evaluation.',
   });
   const architectureLink = architecture.getByRole('link', {
     name: 'Read the format specification',
@@ -205,7 +402,34 @@ test('connects the package architecture to the official Repository Format specif
   });
 
   await expect(footerLink).toHaveAttribute('href', toPublicPath('/repository-format/'));
+  const cloudLink = page.getByRole('contentinfo').getByRole('link', { name: 'Cloud', exact: true });
+  await expect(cloudLink).toHaveAttribute('href', 'https://moldea.ai');
+  await expect(cloudLink).toHaveAttribute('target', '_blank');
+  await expect(cloudLink).toHaveAttribute('rel', 'noopener noreferrer');
 });
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`wraps only explicit plain text while keeping code scrollable in ${theme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await page.emulateMedia({ colorScheme: theme });
+    await page.goto(toPublicPath('/repository-format/'));
+    const plainText = page.locator('pre:has(> code.language-text)').first();
+    const yaml = page.locator('pre:has(> code.language-yaml)').first();
+    await expect(plainText).toHaveCSS('white-space', 'pre-wrap');
+    await expect(plainText).toHaveCSS('overflow-wrap', 'anywhere');
+    await expect(yaml).toHaveCSS('white-space', 'pre');
+    await expect(yaml).toHaveAccessibleName('Code block');
+    await yaml.focus();
+    await expect(yaml).not.toHaveCSS('box-shadow', 'none');
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+  });
+}
 
 test('persists an explicit theme and exposes mobile navigation from the keyboard', async ({
   page,
@@ -532,24 +756,30 @@ test('presents available runtime adapters without promoting planned inventory', 
   await expect(
     adapterSection.getByRole('heading', {
       level: 2,
-      name: 'Find your runtime. Check its exact scope.',
+      name: 'Find your runtime.',
     }),
   ).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /anthropic/ })).toBeVisible();
+  await expect(
+    adapterSection.getByRole('link', { name: /Anthropic company logo Anthropic/ }),
+  ).toBeVisible();
   await expect(adapterSection.getByText('Anthropic', { exact: true })).toBeVisible();
   await expect(adapterSection.getByText('Claude Agent SDK', { exact: true })).toBeVisible();
   await expect(adapterSection.getByText('Custom runtime', { exact: true })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /custom/ })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /openai/ })).toHaveCount(2);
+  await expect(adapterSection.getByRole('link', { name: /Custom runtime/ })).toBeVisible();
+  await expect(adapterSection.getByRole('link', { name: /OpenAI/ })).toHaveCount(2);
   await expect(adapterSection.getByAltText('Anthropic company logo')).toHaveCount(2);
   await expect(adapterSection.getByRole('img', { name: 'Custom adapter icon' })).toBeVisible();
   await expect(adapterSection.getByAltText('OpenAI company logo')).toHaveCount(2);
-  await expect(adapterSection.getByRole('link', { name: /claude-agent-sdk/ })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /cloudflare-agents/ })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /eve/ })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /langchain/ })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /langgraph/ })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /vercel-ai-sdk/ })).toBeVisible();
+  await expect(adapterSection.getByRole('link', { name: /Claude Agent SDK/ })).toBeVisible();
+  await expect(adapterSection.getByRole('link', { name: /Cloudflare Agents/ })).toBeVisible();
+  await expect(adapterSection.getByRole('link', { name: /Eve/ })).toBeVisible();
+  await expect(
+    adapterSection.getByRole('link', { name: /LangChain company logo LangChain/ }),
+  ).toBeVisible();
+  await expect(
+    adapterSection.getByRole('link', { name: /LangChain company logo LangGraph/ }),
+  ).toBeVisible();
+  await expect(adapterSection.getByRole('link', { name: /Vercel AI SDK/ })).toBeVisible();
   await expect(adapterSection.getByAltText('Vercel company logo')).toHaveCount(2);
   await expect(adapterSection.getByRole('link', { name: 'View all adapters' })).toHaveAttribute(
     'href',
@@ -609,48 +839,6 @@ test('shows company marks for provider adapters and keeps the custom adapter ico
       .first()
       .evaluate((element) => getComputedStyle(element).filter),
   ).not.toBe('none');
-});
-
-test('shows the same company marks in the compatibility summary and accordions', async ({
-  page,
-}) => {
-  await page.goto(toPublicPath('/compatibility/'));
-
-  const compatibilityTable = page.getByRole('table', {
-    name: 'Official moldea runtime adapter compatibility summary',
-  });
-  const compatibilityAccordions = page.locator('details');
-  await expect(
-    compatibilityTable.getByRole('link', {
-      name: /typescript-(?:generate-stream-text|tool-loop-agent)-7, supported/u,
-    }),
-  ).toHaveCount(2);
-
-  for (const [companyName, expectedCount] of [
-    ['Anthropic', 2],
-    ['Cloudflare', 1],
-    ['Google', 1],
-    ['LangChain', 2],
-    ['OpenAI', 2],
-    ['Vercel', 2],
-  ] as const) {
-    await expect(compatibilityTable.getByAltText(`${companyName} company logo`)).toHaveCount(
-      expectedCount,
-    );
-    await expect(compatibilityAccordions.getByAltText(`${companyName} company logo`)).toHaveCount(
-      expectedCount,
-    );
-  }
-
-  const customAdapterLink = compatibilityTable.getByRole('link', {
-    name: /Custom adapter icon/,
-  });
-
-  await expect(customAdapterLink.getByRole('img', { name: 'Custom adapter icon' })).toBeVisible();
-  await expect(customAdapterLink.locator('img')).toHaveCount(0);
-  await expect(
-    compatibilityAccordions.getByRole('img', { name: 'Custom adapter icon' }),
-  ).toBeVisible();
 });
 
 test('shows company marks for runtime adapters on the packages page', async ({ page }) => {
@@ -774,9 +962,24 @@ test('uses branded action states in both themes and respects reduced motion', as
   await page.mouse.up();
 
   await inlineAction.hover();
-  await expect
-    .poll(() => inlineAction.evaluate((element) => getComputedStyle(element).textDecorationLine))
-    .toContain('underline');
+  await expect(inlineAction).toHaveCSS('opacity', '0.7');
+  await expect(inlineAction).toHaveCSS('text-decoration-line', 'none');
+  await page.mouse.down();
+  await expect(inlineAction).toHaveCSS('opacity', '0.6');
+  await expect(inlineAction).toHaveCSS('translate', 'none');
+  await page.mouse.move(0, 0);
+  await page.mouse.up();
+
+  await inlineAction.evaluate((element) => element.setAttribute('aria-disabled', 'true'));
+  await inlineAction.hover({ force: true });
+  await expect(inlineAction).toHaveCSS('opacity', '0.5');
+  await expect(inlineAction).toHaveCSS('cursor', 'not-allowed');
+  await page.mouse.down();
+  await expect(inlineAction).toHaveCSS('opacity', '0.5');
+  await expect(inlineAction).toHaveCSS('translate', 'none');
+  await page.mouse.move(0, 0);
+  await page.mouse.up();
+  await inlineAction.evaluate((element) => element.removeAttribute('aria-disabled'));
 
   await inlineAction.focus();
   await page.keyboard.press('Shift+Tab');

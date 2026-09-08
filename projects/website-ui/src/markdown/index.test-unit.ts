@@ -49,6 +49,24 @@ describe('website Markdown rendering', () => {
     expect(rendered.html).toContain('projectName');
   });
 
+  test.each(['ts', 'json', 'yaml', 'text', 'txt', 'plaintext', ''])(
+    'retains the explicit %s language and exposes keyboard-accessible code regions',
+    async (language) => {
+      const source = `\`\`\`${language}\n  example\n\`\`\``;
+      for (const html of [
+        await renderMarkdownFragment(source),
+        (await renderMarkdownDocument(source, { hasDocumentTitle: false })).html,
+      ]) {
+        expect(html).toContain('tabindex="0"');
+        expect(html.match(/tabindex="0"/gu)).toHaveLength(1);
+        expect(html).toContain('role="region" aria-label="Code block"');
+        if (language) expect(html).toContain(`class="language-${language}"`);
+        else expect(html).not.toContain('language-');
+        expect(html).toContain('  example');
+      }
+    },
+  );
+
   test('renders allowlisted strong labels as semantic badges', async () => {
     const rendered = await renderMarkdownDocument('# Page\n\nUse **Supported** maturity.', {
       strongLabelBadges: [{ id: 'supported', label: 'Supported', tone: 'success' }],

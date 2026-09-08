@@ -1,8 +1,43 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const guidePath = withBase('/getting-started/', basePath);
+
+for (const width of [320, 1440]) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`keeps the title's brand token proportionate at ${width}px in ${theme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto(guidePath);
+      const heading = page.getByRole('heading', { level: 1, name: 'Get started with moldea' });
+      const brand = heading.locator('code');
+      await expect(brand).toHaveText('moldea');
+      await expect(brand).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+      await expect(brand).toHaveCSS('letter-spacing', 'normal');
+      const typography = await heading.evaluate((element) => ({
+        heading: parseFloat(getComputedStyle(element).fontSize),
+        brand: parseFloat(getComputedStyle(element.querySelector('code')!).fontSize),
+      }));
+      expect(typography.brand / typography.heading).toBeCloseTo(0.86, 2);
+      const bounds = await brand.boundingBox();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+      const accessibility = await new AxeBuilder({ page }).include('main').analyze();
+      expect(
+        accessibility.violations.filter(
+          ({ impact }) => impact === 'serious' || impact === 'critical',
+        ),
+      ).toStrictEqual([]);
+    });
+  }
+}
 
 // Astro's native underscore prefix keeps this colocated page test out of route discovery.
 test('connects homepage, desktop navigation, and footer to the guide', async ({ page }) => {
@@ -33,7 +68,7 @@ test('connects homepage, desktop navigation, and footer to the guide', async ({ 
     ['Core', '/packages/core/'],
     ['Repository', '/packages/repository/'],
     ['Repository FS', '/packages/repository-fs/'],
-    ['compatibility matrix', '/compatibility/'],
+    ['runtime adapters and compatibility', '/adapters/'],
   ] as const) {
     await expect(content.getByRole('link', { name, exact: true })).toHaveAttribute(
       'href',

@@ -1,5 +1,6 @@
 ---
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
+import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import { renderMarkdownDocument } from '@moldea.ai/website-ui/markdown';
 
 import BaseLayout from '../../layouts/base-layout.astro';
@@ -8,6 +9,7 @@ import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 const { gettingStarted: guide } = loadWebsiteModel();
 const rendered = await renderMarkdownDocument(guide.markdown, {
   basePath: import.meta.env.BASE_URL,
+  productNameTreatment: 'code',
 });
 const breadcrumbs = [{ href: '/', label: 'Home' }, { label: guide.navigationTitle }];
 ---
@@ -21,7 +23,9 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: guide.navigationTitl
     <Breadcrumbs items={breadcrumbs} />
     <header class="max-w-3xl pt-10 pb-8 sm:pt-16">
       <p class="eyebrow mb-4">Choose your starting point</p>
-      <h1 class="section-title font-semibold">{guide.title}</h1>
+      <h1 class="section-title font-semibold">
+        <InlineBrandText text={guide.title} />
+      </h1>
       <p class="mt-6 text-lg leading-8 text-muted-foreground">{guide.description}</p>
     </header>
     <div

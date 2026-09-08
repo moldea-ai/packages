@@ -443,6 +443,17 @@ describe('createLlmsText', () => {
 });
 
 describe('createSearchRecords', () => {
+  test('publishes one combined runtime directory and keeps the JSON handoff', () => {
+    const model = getCurrentWebsiteModel();
+    const directory = model.searchRecords.filter(({ route }) => route === '/adapters/');
+    expect(directory).toHaveLength(1);
+    expect(directory[0].title).toBe('Runtime adapters and compatibility');
+    expect(directory[0].searchText).toContain('compatibility');
+    expect(model.searchRecords.some(({ route }) => route === '/compatibility/')).toBe(false);
+    expect(model.llmsText).toContain('[Runtime adapters and compatibility](/adapters/)');
+    expect(model.llmsText).toContain('(/compatibility/runtimes.json)');
+    expect(model.llmsText).not.toContain('(/compatibility/)');
+  });
   test('represents every public package and canonical adapter', () => {
     const model = getCurrentWebsiteModel();
     const searchRecords = createSearchRecords(
@@ -541,6 +552,10 @@ test('keeps display metadata separate from canonical compatibility and model gen
     true,
     false,
     true,
+  ]);
+  expect(model.instructionExample.result.valid).toBe(false);
+  expect(model.instructionExample.result.diagnostics.map(({ code }) => code)).toStrictEqual([
+    'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
   ]);
   const canonical = structuredClone(model.runtimeCompatibilityPublication);
   model.discoveryCopy.adapters.openai.name = 'A display-only label';

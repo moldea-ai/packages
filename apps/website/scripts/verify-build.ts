@@ -248,12 +248,32 @@ export const verifyProductionBuild = (
   }
   const htmlPaths = files.filter((path) => path.endsWith('.html'));
 
+  // Astro's static redirect is a handoff artifact, not an indexable content page.
+  const compatibilityRedirectPath = join(distDirectory, 'compatibility', 'index.html');
+  const redirectHtml = readFileSync(compatibilityRedirectPath, 'utf8');
+  const adaptersPath = `${basePath}adapters/`;
+  const adaptersUrl = new URL(adaptersPath, siteUrl).href;
+  const refreshTags = [...redirectHtml.matchAll(/<meta\b[^>]*http-equiv="refresh"[^>]*>/giu)];
+  if (
+    refreshTags.length !== 1 ||
+    refreshTags[0][0] !== `<meta http-equiv="refresh" content="0;url=${adaptersPath}">` ||
+    !redirectHtml.includes('<meta name="robots" content="noindex">') ||
+    !redirectHtml.includes(`<link rel="canonical" href="${adaptersUrl}">`) ||
+    !redirectHtml.includes(`<a href="${adaptersPath}">`)
+  ) {
+    throw new Error(
+      'The compatibility redirect must immediately hand off to the canonical adapters directory.',
+    );
+  }
+
   verifySeoArtifacts({
     homePageUrl: new URL(basePath, siteUrl).href,
-    htmlArtifacts: htmlPaths.map((path) => ({
-      source: readFileSync(path, 'utf8'),
-      url: getDeployedPageUrl(distDirectory, path, basePath, siteUrl).href,
-    })),
+    htmlArtifacts: htmlPaths
+      .filter((path) => path !== compatibilityRedirectPath)
+      .map((path) => ({
+        source: readFileSync(path, 'utf8'),
+        url: getDeployedPageUrl(distDirectory, path, basePath, siteUrl).href,
+      })),
     sitemapSources: files
       .filter((path) => /^sitemap-(?!index).+\.xml$/u.test(relative(distDirectory, path)))
       .map((path) => readFileSync(path, 'utf8')),
@@ -311,13 +331,14 @@ export const verifyProductionBuild = (
   }
   const homepageHtml = readFileSync(join(distDirectory, 'index.html'), 'utf8');
   for (const state of model.inspectionExample) {
-    if (!homepageHtml.includes(`id="inspection-${state.id}-panel"`)) {
+    if (!homepageHtml.includes(`id="inspection-${state.id}"`)) {
       throw new Error(`The homepage omits the ${state.id} inspection example state.`);
     }
   }
   if (
     !homepageHtml.includes('MOLDEA_REFERENCE_MISSING') ||
-    !homepageHtml.includes('Core result excerpt') ||
+    !homepageHtml.includes('MOLDEA_TOOL_IMPLEMENTATION_MISSING') ||
+    !homepageHtml.includes('id="hero-check-result"') ||
     !homepageHtml.includes('Structure, not semantics.')
   ) {
     throw new Error(

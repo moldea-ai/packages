@@ -8,6 +8,11 @@ test('generates reproducible pass, fail, pass excerpts from real Core checks', a
   const states = await createInspectionExample();
 
   expect(states.map(({ result }) => result.valid)).toStrictEqual([true, false, true]);
+  expect(states.map(({ declaredPath, sourcePath }) => [declaredPath, sourcePath])).toStrictEqual([
+    ['/src/refund-policy.ts', '/src/refund-policy.ts'],
+    ['/src/refund-policy.ts', '/src/payments/refund-policy.ts'],
+    ['/src/payments/refund-policy.ts', '/src/payments/refund-policy.ts'],
+  ]);
   expect(states[1].result.diagnostics).toStrictEqual([
     {
       code: 'MOLDEA_REFERENCE_MISSING',
@@ -19,27 +24,21 @@ test('generates reproducible pass, fail, pass excerpts from real Core checks', a
   ]);
   expect(states).toStrictEqual(await createInspectionExample());
 
-  for (const [index, state] of states.entries()) {
-    const snapshot = INSPECTION_SNAPSHOTS[index];
-    expect(state.repositoryMarkdown).toContain(snapshot.manifest);
-    expect(state.repositoryMarkdown).toContain(snapshot.project);
-    expect(state.repositoryMarkdown).toContain(snapshot.sourcePath);
-    expect(state.repositoryMarkdown).toContain(snapshot.source);
-    expect(state.resultMarkdown).toContain(JSON.stringify(state.result, null, 2));
-    expect(state.resultMarkdown).not.toMatch(
-      /manager approval|requiresManagerApproval|digest|snapshotId/iu,
+  for (const state of states) {
+    expect(state.projectPath).toBe('/moldea/project.md');
+    expect(JSON.stringify(state.result)).not.toMatch(
+      /manager approval|reviewRefund|digest|snapshotId/iu,
     );
   }
 });
 
 test('does not mistake a resolved path for a semantic check of source behavior', async () => {
   const snapshots = structuredClone(INSPECTION_SNAPSHOTS);
-  snapshots[0].source = 'export const requiresManagerApproval = false;\n';
+  snapshots[0].source = "export const reviewRefund = () => 'approved';\n";
 
   const states = await createInspectionExample(snapshots);
 
   expect(states[0].result).toStrictEqual({ valid: true, diagnostics: [] });
-  expect(states[0].repositoryMarkdown).toContain(snapshots[0].source);
 });
 
 test.each(['connected', 'broken', 'repaired'])(

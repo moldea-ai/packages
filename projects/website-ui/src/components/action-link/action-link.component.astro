@@ -11,7 +11,12 @@ const { class: className, size = 'md', variant = 'primary', ...attributes } = As
 ---
 
 <a
-  class:list={['action-control', `action-${variant}`, `action-size-${size}`, className]}
+  class:list={[
+    'action-control',
+    variant === 'link' ? 'text-action-link' : `action-${variant}`,
+    `action-size-${size}`,
+    className,
+  ]}
   {...attributes}
 >
   <slot />

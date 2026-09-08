@@ -31,7 +31,7 @@ These are read-only building blocks. Your application owns content acquisition a
 
 ## Check your runtime's exact support
 
-Browse [runtime adapters](/adapters/), then check the [compatibility matrix](/compatibility/) for the exact target, package range, recognized patterns, limitations, and qualification evidence. A recognizable runtime name is not a claim that every version or coding pattern is supported.
+Browse [runtime adapters and compatibility](/adapters/), then open a target for its exact package range, recognized patterns, limitations, and qualification evidence. A recognizable runtime name is not a claim that every version or coding pattern is supported.
 
 Maturity belongs to each published target. Custom runtime declarations use the path built into Core, not a separate adapter package.
 

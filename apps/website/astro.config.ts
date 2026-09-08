@@ -1,7 +1,7 @@
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
-import { DEFAULT_BASE_PATH, normalizeBasePath } from '@moldea.ai/website-ui/site';
+import { DEFAULT_BASE_PATH, normalizeBasePath, withBase } from '@moldea.ai/website-ui/site';
 
 import { DEFAULT_SITE_URL } from './src/lib/site/constants.ts';
 
@@ -13,6 +13,7 @@ export default defineConfig({
   base,
   output: 'static',
   trailingSlash: 'always',
+  redirects: { '/compatibility/': withBase('/adapters/', base) },
   integrations: [sitemap()],
   markdown: {
     shikiConfig: {

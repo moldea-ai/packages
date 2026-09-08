@@ -98,7 +98,7 @@
   }
 
   .interactive-card {
-    @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:border-foreground/25 active:translate-y-px motion-reduce:transform-none motion-reduce:transition-none;
+    @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:border-foreground/25 focus-visible:ring-offset-0 active:translate-y-px motion-reduce:translate-none motion-reduce:transform-none motion-reduce:transition-none motion-reduce:hover:translate-none motion-reduce:active:translate-none;
   }
 
   .action-control {
@@ -123,6 +123,10 @@
 
   .action-link {
     @apply border-transparent bg-transparent px-0! text-primary underline-offset-4 not-disabled:not-aria-disabled:hover:underline dark:text-primary-foreground dark:not-disabled:not-aria-disabled:hover:text-primary-foreground/80;
+  }
+
+  .text-action-link {
+    @apply border-transparent bg-transparent px-0! font-semibold text-foreground link-feedback not-disabled:not-aria-disabled:active:not-aria-[haspopup]:translate-none;
   }
 
   .action-size-sm {
@@ -185,9 +189,8 @@
     list-style: decimal;
   }
 
-  .prose-moldea a,
-  .text-link {
-    @apply font-medium text-link underline decoration-link/40 underline-offset-4 hover:decoration-current;
+  .prose-moldea a {
+    @apply text-link;
   }
 
   .prose-moldea code:not(pre code) {
@@ -198,7 +201,18 @@
     @apply max-w-full overflow-x-auto rounded-xl border bg-code p-5 text-sm leading-6 text-code-foreground shadow-inset;
   }
 
-  .prose-moldea-wrap-code pre {
+  /* Preserve code, structured output, and file-tree alignment by default. */
+  .code-block,
+  .prose-moldea pre {
+    @apply max-w-full overflow-x-auto outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    white-space: pre;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  /* Only explicitly identified plain text wraps; unlabelled fences remain lossless. */
+  .code-block[data-code-language='text'],
+  .prose-moldea pre:has(> code:is(.language-text, .language-txt, .language-plaintext)) {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
@@ -293,6 +307,37 @@
   .dark .theme-surface-selection {
     --website-ui-selection-background: color-mix(in oklab, var(--foreground) 40%, transparent);
   }
+}
+
+/* platform TextLink feedback belongs to high-contrast text, not every linked surface */
+@utility link-feedback {
+  @apply not-disabled:not-aria-disabled:hover:opacity-70 focus-visible:ring-current focus-visible:ring-offset-0 not-disabled:not-aria-disabled:active:opacity-60;
+}
+
+@utility text-link {
+  /* keep the foreground opaque: a second dark-mode fade fails contrast when pressed */
+  color: var(--link);
+  @apply rounded-sm font-medium underline decoration-current underline-offset-4 link-feedback aria-[current=page]:font-semibold;
+}
+
+@utility plain-link {
+  @apply rounded-sm text-muted-foreground not-disabled:not-aria-disabled:hover:text-foreground focus-visible:ring-foreground focus-visible:ring-offset-0 not-disabled:not-aria-disabled:active:text-foreground;
+}
+
+@utility surface-link {
+  @apply not-disabled:not-aria-disabled:hover:bg-secondary not-disabled:not-aria-disabled:active:bg-secondary/80 aria-[current=page]:bg-secondary aria-[current=page]:font-semibold;
+}
+
+@utility surface-link-warning {
+  @apply border-warning/60 bg-warning/15 text-warning-foreground not-disabled:not-aria-disabled:hover:bg-warning/20 not-disabled:not-aria-disabled:active:bg-warning/25 dark:text-foreground;
+}
+
+@utility surface-link-danger {
+  @apply border-destructive/50 bg-destructive/10 not-disabled:not-aria-disabled:hover:bg-destructive/20 not-disabled:not-aria-disabled:active:bg-destructive/25 dark:bg-destructive/20 dark:not-disabled:not-aria-disabled:hover:bg-destructive/30 dark:not-disabled:not-aria-disabled:active:bg-destructive/25;
+}
+
+@utility navigation-link {
+  @apply font-semibold text-muted-foreground not-aria-[current=page]:hover:bg-secondary not-aria-[current=page]:hover:text-foreground not-aria-[current=page]:active:bg-secondary/80 aria-[current=page]:bg-secondary/70 aria-[current=page]:font-bold aria-[current=page]:text-foreground dark:aria-[current=page]:bg-secondary/50;
 }
 
 @media (prefers-color-scheme: dark) {

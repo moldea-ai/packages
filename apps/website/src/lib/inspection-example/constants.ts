@@ -1,11 +1,14 @@
 import type { IInspectionSnapshot } from './types.ts';
 
 const project = '# Refund policy\n\nRefunds require manager approval.\n';
-const source = 'export const requiresManagerApproval = true;\n';
+const source = `export const reviewRefund = (hasManagerApproval: boolean) => {
+  return hasManagerApproval ? 'approved' : 'pending-approval';
+};
+`;
 const originalManifest =
   'version: 1\ncontext:\n  /moldea/project.md:\n    bindings:\n      - path: /src/refund-policy.ts\n';
 
-// synthetic, bounded snapshots; displayed source and validated source have the same owner
+// synthetic, bounded snapshots shared by the preview and reference-check sequence
 export const INSPECTION_SNAPSHOTS: IInspectionSnapshot[] = [
   {
     id: 'connected',
@@ -19,7 +22,7 @@ export const INSPECTION_SNAPSHOTS: IInspectionSnapshot[] = [
   {
     id: 'broken',
     label: '2. File moved',
-    explanation: 'The file moves into payments, but the connection still points to its old path.',
+    explanation: 'The file moves. The reference still points to the old location.',
     manifest: originalManifest,
     project,
     sourcePath: '/src/payments/refund-policy.ts',
@@ -27,8 +30,8 @@ export const INSPECTION_SNAPSHOTS: IInspectionSnapshot[] = [
   },
   {
     id: 'repaired',
-    label: '3. Connection updated',
-    explanation: 'A developer updates the declared path. The structural check passes again.',
+    label: '3. Reference updated',
+    explanation: 'A developer updates the reference to the new location.',
     manifest: originalManifest.replace('/src/refund-policy.ts', '/src/payments/refund-policy.ts'),
     project,
     sourcePath: '/src/payments/refund-policy.ts',

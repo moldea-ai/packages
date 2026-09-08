@@ -130,7 +130,7 @@
   --info-foreground: oklch(99% 0.005 255);
   --sidebar: oklch(97.8% 0.005 198);
   --sidebar-foreground: var(--foreground);
-  --link: oklch(42% 0.12 255.341);
+  --link: var(--primary);
   --code-background: oklch(95.1% 0.007 226);
   --code-foreground: oklch(20% 0.026 232);
   --syntax-comment: oklch(51% 0.024 220);
@@ -174,7 +174,7 @@
   --info-foreground: oklch(20% 0.05 255);
   --sidebar: oklch(25.3% 0.031 258);
   --sidebar-foreground: var(--foreground);
-  --link: oklch(78% 0.1 244);
+  --link: var(--primary-foreground);
   --code-background: oklch(23.8% 0.027 258);
   --code-foreground: oklch(94% 0.01 215);
   --syntax-comment: oklch(72% 0.025 220);

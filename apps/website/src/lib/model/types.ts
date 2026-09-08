@@ -5,6 +5,7 @@ import type {
 import type { IRepositoryFormatSpecification } from '../repository-format-specification/index.ts';
 import type { IDiscoveryCopy } from '../discovery-copy/index.ts';
 import type { IInspectionExampleState } from '../inspection-example/index.ts';
+import type { IInstructionExample } from '../instruction-example/index.ts';
 
 // documentation source attached to one generated package route
 export interface IPackageDocument {
@@ -74,6 +75,7 @@ export interface IWebsiteModel {
   generatedNotice: string;
   gettingStarted: IPackageDocument;
   inspectionExample: IInspectionExampleState[];
+  instructionExample: IInstructionExample;
   llmsText: string;
   packages: IPublicPackage[];
   repositoryFormatSpecification: IRepositoryFormatSpecification;

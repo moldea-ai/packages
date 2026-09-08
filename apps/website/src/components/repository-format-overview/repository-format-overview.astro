@@ -1,85 +1,187 @@
 ---
-import { ArrowRight, FileText, Folder } from '@lucide/astro';
+import {
+  ArrowRight,
+  Braces,
+  FileText,
+  Folder,
+  FolderOpen,
+  GitBranch,
+  ScanSearch,
+} from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import { withBase } from '@moldea.ai/website-ui/site';
 
+import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
+
 interface Props {
   repositoryFormatRoute: string;
+  result: IInspectionExampleState['result'];
 }
-const { repositoryFormatRoute } = Astro.props;
+const { repositoryFormatRoute, result } = Astro.props;
+const output = JSON.stringify(
+  {
+    valid: result.valid,
+    diagnostics: result.diagnostics.map(({ code, path }) => ({ code, path })),
+  },
+  null,
+  2,
+);
+const canonicalFiles = [
+  { name: 'moldea.yaml', isRequired: true },
+  { name: 'project.md', isRequired: true },
+  { name: 'context/', isRequired: false },
+  { name: 'decisions/', isRequired: false },
+  { name: 'agents/', isRequired: false },
+];
 ---
 
 <section
-  class="page-shell py-12 sm:py-16"
+  class="dark-surface-selection border-y border-primary-foreground/15 bg-primary text-primary-foreground"
   aria-labelledby="repository-contents-title"
 >
-  <div class="grid gap-8 lg:grid-cols-2 lg:gap-16">
-    <div>
-      <p class="eyebrow mb-4">Knowledge that lives with the code</p>
-      <h2
-        id="repository-contents-title"
-        class="section-title font-semibold"
+  <div class="page-shell py-12 sm:py-16">
+    <header class="mb-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-end">
+      <div>
+        <p class="eyebrow mb-4 text-current/70">Repository Format</p>
+        <h2
+          id="repository-contents-title"
+          class="section-title text-3xl leading-tight font-semibold sm:text-4xl lg:text-5xl"
+        >
+          The structure behind every evaluation.
+        </h2>
+      </div>
+      <p class="text-lg leading-8 text-current/80">
+        Code, context, and instructions live together in Git. Core checks their structure and
+        declared connections, then returns evidence your tools can use.
+      </p>
+    </header>
+    <div class="grid gap-6 lg:grid-cols-3 lg:gap-4">
+      <article
+        class="min-w-0 border-y border-primary-foreground/20 py-5 sm:rounded-xl sm:border sm:bg-primary-foreground/5 sm:p-6"
       >
-        A small structure.<br />A shared record.
-      </h2>
-      <p class="mt-6 max-w-xl leading-8 text-muted-foreground">
-        Two required files establish the repository's project context and declared connections. Add
-        more context, decision records, or agent instructions as the project needs them. The files
-        stay in Git, where your team can read and review them.
+        <div class="mb-5 flex items-center justify-between gap-3">
+          <div>
+            <p class="eyebrow mb-2 text-current/70">01 · Repository</p>
+            <h3 class="text-xl font-semibold">Files you own</h3>
+          </div>
+          <GitBranch
+            class="size-5 text-current/70"
+            aria-hidden="true"
+          />
+        </div>
+        <div class="font-mono text-sm">
+          <p class="flex items-center gap-2 py-2">
+            <FolderOpen
+              class="size-4 shrink-0"
+              aria-hidden="true"
+            /><code>./</code>
+          </p>
+          <ul
+            class="ml-2 border-l border-primary-foreground/25 pl-4"
+            aria-label="Repository files"
+          >
+            <li>
+              <p class="flex items-center gap-2 py-2">
+                <Folder
+                  class="size-4 shrink-0 text-current/70"
+                  aria-hidden="true"
+                /><code>src/</code><span class="ml-auto text-xs text-current/70">Your code</span>
+              </p>
+            </li>
+            <li>
+              <p class="flex items-center gap-2 py-2">
+                <FolderOpen
+                  class="size-4 shrink-0 text-current/70"
+                  aria-hidden="true"
+                /><code>moldea/</code>
+              </p>
+              <ul
+                class="ml-2 border-l border-primary-foreground/25 pl-4"
+                aria-label="moldea directory"
+              >
+                {
+                  canonicalFiles.map((file) => {
+                    const Icon = file.isRequired ? FileText : Folder;
+                    return (
+                      <li class="relative flex flex-wrap items-center gap-2 py-2 before:absolute before:top-4 before:-left-4 before:w-2 before:border-t before:border-primary-foreground/25">
+                        <Icon
+                          class="size-4 shrink-0 text-current/70"
+                          aria-hidden="true"
+                        />
+                        <code>{file.name}</code>
+                        <span class="ml-auto font-sans text-xs text-current/70">
+                          {file.isRequired ? 'Required' : 'Optional'}
+                        </span>
+                      </li>
+                    );
+                  })
+                }
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </article>
+      <article
+        class="light-surface-selection flex min-w-0 flex-col rounded-xl bg-primary-foreground p-6 text-primary"
+      >
+        <div class="mb-6 flex items-center justify-between gap-3">
+          <div>
+            <p class="eyebrow mb-2 text-current/70">02 · Core</p>
+            <h3 class="text-xl font-semibold">Check the connections</h3>
+          </div>
+          <ScanSearch
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          />
+        </div>
+        <p class="text-sm leading-7 text-current/80">
+          One coherent snapshot. Repeatable structural checks. No model calls.
+        </p>
+        <ul class="mt-6 divide-y divide-primary/15 text-sm">
+          <li class="py-3">Validate the Repository Format</li>
+          <li class="py-3">Resolve declared references</li>
+          <li class="py-3">Inspect supported runtime patterns</li>
+        </ul>
+        <p class="mt-auto pt-6 text-xs"><code>@moldea.ai/core</code></p>
+      </article>
+      <article
+        class="min-w-0 border-y border-primary-foreground/20 py-5 sm:rounded-xl sm:border sm:bg-primary-foreground/5 sm:p-6"
+      >
+        <div class="mb-6 flex items-center justify-between gap-3">
+          <div>
+            <p class="eyebrow mb-2 text-current/70">03 · Output</p>
+            <h3 class="text-xl font-semibold">Structured result</h3>
+          </div>
+          <Braces
+            class="size-5 shrink-0 text-current/70"
+            aria-hidden="true"
+          />
+        </div>
+        <pre
+          class="code-block rounded-lg border border-primary-foreground/20 bg-primary/55 p-4 font-mono text-xs leading-6"
+          tabindex="0"
+          role="region"
+          aria-label="Core validation result excerpt"><code>{output}</code></pre>
+        <p class="mt-4 text-xs leading-6 text-current/80">
+          Validation excerpt from the moved-file example. Precise diagnostics for your tools to act
+          on.
+        </p>
+      </article>
+    </div>
+    <div class="mt-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <p class="max-w-2xl text-sm leading-7 text-current/80">
+        Structural checks establish facts. Judging whether code fulfills an instruction is a
+        separate, semantic evaluation.
       </p>
       <ActionLink
-        class="mt-6"
+        class="light-surface-selection w-fit shrink-0 border-primary-foreground/20 bg-primary-foreground text-primary hover:bg-primary-foreground/85 dark:bg-primary-foreground dark:text-primary dark:hover:bg-primary-foreground/85"
         href={withBase(repositoryFormatRoute, import.meta.env.BASE_URL)}
-        variant="link"
+        variant="outline"
         >Read the format specification <ArrowRight
           class="size-4"
           aria-hidden="true"
         /></ActionLink
       >
-    </div>
-    <div class="min-w-0 border-y py-5 sm:rounded-xl sm:border sm:bg-card sm:p-6">
-      <h3 class="mb-5 flex items-center gap-3 font-mono text-sm">
-        <Folder
-          class="size-5 text-muted-foreground"
-          aria-hidden="true"
-        />moldea/
-      </h3>
-      <ul
-        class="space-y-5"
-        aria-label="moldea directory"
-      >
-        <li>
-          <p class="flex flex-wrap items-center gap-2">
-            <FileText
-              class="size-4 text-muted-foreground"
-              aria-hidden="true"
-            /><code class="font-semibold">moldea.yaml</code><span
-              class="text-xs font-semibold text-muted-foreground">Required</span
-            >
-          </p><p class="mt-1 text-sm leading-6 text-muted-foreground">
-            Declares the format version and connections between project knowledge and code.
-          </p>
-        </li>
-        <li>
-          <p class="flex flex-wrap items-center gap-2">
-            <FileText
-              class="size-4 text-muted-foreground"
-              aria-hidden="true"
-            /><code class="font-semibold">project.md</code><span
-              class="text-xs font-semibold text-muted-foreground">Required</span
-            >
-          </p><p class="mt-1 text-sm leading-6 text-muted-foreground">
-            Explains the project's purpose and context in Markdown.
-          </p>
-        </li>
-        <li class="border-t pt-4">
-          <p class="font-mono text-sm">context/ · decisions/ · agents/</p><p
-            class="mt-1 text-sm leading-6 text-muted-foreground"
-          >
-            Optional context, decision records, and agent instructions.
-          </p>
-        </li>
-      </ul>
     </div>
   </div>
 </section>

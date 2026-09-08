@@ -59,10 +59,28 @@ describe('production discovery guards', () => {
     replaceArtifactText('llms.txt', 'https://skill.moldea.ai/', 'https://example.com/');
     expect(() => verifyProductionBuild(directory)).toThrow('llms.txt omits');
   });
-  test('rejects a homepage that loses the diagnostic', () => {
-    replaceArtifactText('index.html', 'MOLDEA_REFERENCE_MISSING', 'REMOVED_DIAGNOSTIC');
+  test.each([
+    'MOLDEA_REFERENCE_MISSING',
+    'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
+    'id="hero-check-result"',
+  ])('rejects a homepage that loses %s', (marker) => {
+    replaceArtifactText('index.html', marker, 'REMOVED_EXAMPLE');
     expect(() => verifyProductionBuild(directory)).toThrow(
       'homepage omits the real Core diagnostic',
+    );
+  });
+
+  test.each([
+    ['http-equiv="refresh"', 'http-equiv="invalid"'],
+    ['content="0;url=', 'content="2;url='],
+    ['adapters/', 'packages/'],
+    ['content="noindex"', 'content="index"'],
+    ['rel="canonical"', 'rel="alternate"'],
+    ['<a href=', '<a data-href='],
+  ])('rejects a compatibility redirect with altered %s', (original, replacement) => {
+    replaceArtifactText('compatibility/index.html', original, replacement);
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'compatibility redirect must immediately hand off',
     );
   });
   test('rejects test-file leakage in the static artifact', () => {

@@ -82,6 +82,13 @@ const wrapTables = (html: string): string => {
   );
 };
 
+/** Names code regions and makes their horizontal overflow keyboard-accessible. */
+const markCodeBlocks = (html: string): string =>
+  html.replaceAll(/<pre\b([^>]*)>/gu, (_match, attributes: string) => {
+    const focusAttribute = /\btabindex=/u.test(attributes) ? '' : ' tabindex="0"';
+    return `<pre${attributes}${focusAttribute} role="region" aria-label="Code block">`;
+  });
+
 /** Applies the public product-name treatment outside existing code elements. */
 const renderProductNamesAsCode = (html: string): string => {
   let codeDepth = 0;
@@ -127,6 +134,7 @@ const processMarkdown = async (source: string, shouldSlugHeadings: boolean): Pro
   const file = await processor
     .use(rehypeSanitize, { ...defaultSchema, clobberPrefix: '' })
     .use(rehypeShiki, {
+      addLanguageClass: true,
       defaultColor: false,
       langs: [],
       lazy: true,
@@ -151,7 +159,7 @@ const applyPresentation = (html: string, options: IMarkdownRenderOptions): strin
   const productHtml =
     options.productNameTreatment === 'code' ? renderProductNamesAsCode(badgedHtml) : badgedHtml;
 
-  return wrapTables(markExternalLinks(productHtml));
+  return markCodeBlocks(wrapTables(markExternalLinks(productHtml)));
 };
 
 /** Extracts stable second- and third-level headings from sanitized document HTML. */

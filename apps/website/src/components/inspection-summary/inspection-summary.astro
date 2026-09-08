@@ -1,0 +1,50 @@
+---
+import { Link2, Unlink } from '@lucide/astro';
+
+import type { IInspectionResultExcerpt } from '../../lib/inspection-example/index.ts';
+
+import type { IInspectionSummaryKind } from './types.ts';
+import { getInspectionSummaryCopy } from './utilities.ts';
+
+// one outcome treatment for the reference sequence and the missing-tool example
+interface Props {
+  result: IInspectionResultExcerpt;
+  summary: IInspectionSummaryKind;
+  headingId?: string;
+  hideIconOnMobile?: boolean;
+}
+const { result, summary, headingId, hideIconOnMobile = false } = Astro.props;
+const { title, description } = getInspectionSummaryCopy(result, summary);
+const Title = headingId ? 'h2' : 'p';
+const ResultIcon = result.valid ? Link2 : Unlink;
+---
+
+<div
+  class="flex min-w-0 items-center gap-3"
+  role="group"
+  aria-label="Check outcome"
+>
+  <span
+    class:list={[
+      'size-10 shrink-0 items-center justify-center rounded-lg border',
+      hideIconOnMobile ? 'hidden sm:flex' : 'flex',
+      result.valid ? 'bg-secondary' : 'border-destructive/40 bg-destructive/10',
+    ]}
+  >
+    <ResultIcon
+      class="size-5"
+      aria-hidden="true"
+    />
+  </span>
+  <div class="min-w-0 flex-1">
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <Title
+        id={headingId}
+        class="text-sm leading-5 font-semibold"
+        >{title}</Title
+      >
+      <slot name="status" />
+    </div>
+    <p class="text-xs leading-5 text-muted-foreground">{description}</p>
+  </div>
+</div>

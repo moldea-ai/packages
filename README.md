@@ -86,7 +86,7 @@ Every immediate child of [`projects/`](projects/) is an independently meaningful
 
 `/docs` is reserved for concise, durable project concepts and processes. API and HTTP endpoint documentation belongs outside `/docs`, in the owning project's established documentation location.
 
-The website owns its getting-started guide, display-only discovery copy, and a three-state reference-check example generated through real Core and in-memory reader exports. Package documentation and canonical compatibility data remain authoritative; see [`apps/website/README.md`](apps/website/README.md) for generation and verification ownership.
+The website owns its getting-started guide, display-only discovery copy, and independent moved-file and missing-tool-implementation examples generated through real Core and in-memory reader exports. Package documentation and canonical compatibility data remain authoritative; see [`apps/website/README.md`](apps/website/README.md) for generation and verification ownership.
 
 ## Dependency architecture
 

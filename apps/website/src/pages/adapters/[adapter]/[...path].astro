@@ -5,7 +5,6 @@ import { renderMarkdownDocument } from '@moldea.ai/website-ui/markdown';
 import AdapterDetails from '../../../components/adapter-details.astro';
 import DocumentationPage from '../../../components/documentation-page.astro';
 import StatusBadge from '../../../components/status-badge.astro';
-import TargetMaturityLegend from '../../../components/target-maturity-legend.astro';
 import BaseLayout from '../../../layouts/base-layout.astro';
 import {
   createApiEntrypointAnchorId,
@@ -109,7 +108,6 @@ const breadcrumbs = [
       >
         {document?.slug === '' && (
           <div class="mb-10">
-            <TargetMaturityLegend />
             <AdapterDetails
               {adapter}
               {copy}
@@ -188,14 +186,11 @@ const breadcrumbs = [
             </p>
           </div>
           <div class="min-w-0">
-            <>
-              <TargetMaturityLegend />
-              <AdapterDetails
-                {adapter}
-                {copy}
-                compact
-              />
-            </>
+            <AdapterDetails
+              {adapter}
+              {copy}
+              compact
+            />
           </div>
         </div>
       </section>

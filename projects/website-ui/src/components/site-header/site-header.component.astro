@@ -1,6 +1,7 @@
 ---
 import { GitFork, Menu, Search } from '@lucide/astro';
 
+import ActionLink from '../action-link/action-link.component.astro';
 import ThemeControl from '../theme-control/theme-control.component.astro';
 
 export interface ISiteHeaderNavigationItem {
@@ -51,7 +52,9 @@ const breakpointClasses = {
 const responsiveClasses = breakpointClasses[breakpoint];
 ---
 
-<header class="sticky top-0 z-50 border-b border-border bg-background/92 backdrop-blur-xl">
+<header
+  class="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
+>
   <div class="page-shell flex min-h-16 items-center justify-between gap-4">
     <slot name="brand" />
 
@@ -62,12 +65,7 @@ const responsiveClasses = breakpointClasses[breakpoint];
       {
         navigationItems.map(({ href, isActive, label }) => (
           <a
-            class:list={[
-              'rounded-lg px-3 py-2 text-sm transition-colors',
-              isActive
-                ? 'bg-secondary/70 font-bold text-foreground dark:bg-secondary/50'
-                : 'font-semibold text-muted-foreground hover:bg-muted hover:text-foreground',
-            ]}
+            class="rounded-lg navigation-link px-3 py-2 text-sm"
             href={href}
             aria-current={isActive ? 'page' : undefined}
           >
@@ -78,11 +76,10 @@ const responsiveClasses = breakpointClasses[breakpoint];
     </nav>
 
     <div class:list={['items-center gap-2', responsiveClasses.desktop]}>
-      <a
-        class:list={[
-          'inline-flex size-10 items-center justify-center rounded-lg transition-colors',
-          searchIsActive ? 'bg-secondary/70 dark:bg-secondary/50' : 'hover:bg-muted',
-        ]}
+      <ActionLink
+        size="icon"
+        variant="ghost"
+        class="aria-[current=page]:bg-secondary"
         href={searchHref}
         aria-label={searchAriaLabel}
         aria-current={searchIsActive ? 'page' : undefined}
@@ -91,9 +88,10 @@ const responsiveClasses = breakpointClasses[breakpoint];
           class="size-4"
           aria-hidden="true"
         />
-      </a>
-      <a
-        class="inline-flex size-10 items-center justify-center rounded-lg hover:bg-muted"
+      </ActionLink>
+      <ActionLink
+        size="icon"
+        variant="ghost"
         href={sourceHref}
         target="_blank"
         rel="noopener noreferrer"
@@ -103,14 +101,14 @@ const responsiveClasses = breakpointClasses[breakpoint];
           class="size-4"
           aria-hidden="true"
         />
-      </a>
+      </ActionLink>
       <ThemeControl storageKey={themeStorageKey} />
       <slot name="desktop-actions" />
     </div>
 
     <details class:list={['group relative', responsiveClasses.mobile]}>
       <summary
-        class="flex size-11 list-none items-center justify-center rounded-lg border border-input bg-background hover:bg-muted [&::-webkit-details-marker]:hidden"
+        class="flex size-11 list-none items-center justify-center rounded-lg border border-input surface-link bg-background [&::-webkit-details-marker]:hidden"
         aria-label={mobileMenuLabel}
       >
         <Menu
@@ -129,12 +127,7 @@ const responsiveClasses = breakpointClasses[breakpoint];
           {
             navigationItems.map(({ href, isActive, label }) => (
               <a
-                class:list={[
-                  'rounded-lg px-3 py-3 transition-colors',
-                  isActive
-                    ? 'bg-secondary/70 font-bold text-foreground dark:bg-secondary/50'
-                    : 'font-semibold text-muted-foreground hover:bg-muted hover:text-foreground',
-                ]}
+                class="rounded-lg navigation-link px-3 py-3"
                 href={href}
                 aria-current={isActive ? 'page' : undefined}
               >
@@ -143,19 +136,14 @@ const responsiveClasses = breakpointClasses[breakpoint];
             ))
           }
           <a
-            class:list={[
-              'rounded-lg px-3 py-3 transition-colors',
-              searchIsActive
-                ? 'bg-secondary/70 font-bold text-foreground dark:bg-secondary/50'
-                : 'font-semibold text-muted-foreground hover:bg-muted hover:text-foreground',
-            ]}
+            class="rounded-lg navigation-link px-3 py-3"
             href={searchHref}
             aria-current={searchIsActive ? 'page' : undefined}
           >
             Search
           </a>
           <a
-            class="rounded-lg px-3 py-3 font-semibold hover:bg-muted"
+            class="rounded-lg navigation-link px-3 py-3"
             href={sourceHref}
             target="_blank"
             rel="noopener noreferrer"

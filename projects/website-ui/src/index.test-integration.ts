@@ -80,7 +80,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.2.3' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.3.0' });
     expect(packedPaths).toContain('dist/evaluation-replay.js');
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/markdown.js');
@@ -95,6 +95,7 @@ describe('published website UI package', () => {
       'src/components/evaluation-replay/evaluation-replay.component.astro',
     );
     expect(packedPaths).toContain('src/components/tabbed-panels/tabbed-panels.component.astro');
+    expect(packedPaths).toContain('src/components/dialog/dialog.component.astro');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
     expect(packedPaths).toContain('cover.png');
@@ -183,6 +184,7 @@ describe('published website UI package', () => {
         "import BrandLogo from '@moldea.ai/website-ui/brand-logo';",
         "import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';",
         "import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';",
+        "import Dialog from '@moldea.ai/website-ui/dialog';",
         "import EvaluationReplay from '@moldea.ai/website-ui/evaluation-replay';",
         "import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';",
         "import LocalSearch from '@moldea.ai/website-ui/local-search';",
@@ -217,6 +219,8 @@ describe('published website UI package', () => {
         '    <InlineBrandText text="Use moldea here." />',
         '    <InlineBrandText text="Use MOLDEA compactly." variant="compact" />',
         '    <ActionButton>Run</ActionButton>',
+        '    <Dialog id="fixture-result" title="Fixture result" triggerLabel="View result"><div slot="heading"><h2 id="fixture-result-title">Fixture result</h2><StatusBadge label="Invalid" size="sm" tone="danger" /><p>Recorded check</p></div><p>Result content</p></Dialog>',
+        '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
         '    <TabbedPanels ariaLabel="Fixture views" id="fixture-tabs" items={[{ id: "first", label: "First", slotName: "first" }, { id: "second", label: "Second", slotName: "second" }]}><p slot="first">First panel</p><p slot="second">Second panel</p></TabbedPanels>',
@@ -258,5 +262,14 @@ describe('published website UI package', () => {
     expect(readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8')).toContain(
       'First panel',
     );
+    expect(readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8')).toContain(
+      'Result content',
+    );
+    const fixtureHtml = readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8');
+    expect(fixtureHtml).toContain('aria-labelledby="fixture-result-title"');
+    expect(fixtureHtml).toMatch(
+      /<h2[^>]*id="fixture-result-title"[^>]*>Fixture result<\/h2>\s*<span[^>]*>\s*Invalid\s*<\/span>/u,
+    );
+    expect(fixtureHtml).toContain('Details without a badge');
   }, 180_000);
 });

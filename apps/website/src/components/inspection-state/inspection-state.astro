@@ -1,0 +1,44 @@
+---
+import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
+import { InspectionDiagram } from '../inspection-diagram/index.ts';
+import { InspectionResult } from '../inspection-result/index.ts';
+import { InspectionSummary } from '../inspection-summary/index.ts';
+
+// one always-visible frame of the real reference-check sequence
+interface Props {
+  state: IInspectionExampleState;
+}
+const { state } = Astro.props;
+---
+
+<article
+  id={`inspection-${state.id}`}
+  class="flex min-w-0 flex-col border-t py-5 sm:rounded-2xl sm:border sm:bg-card sm:p-6 sm:shadow-surface"
+  aria-labelledby={`inspection-${state.id}-title`}
+>
+  <header class="mb-5 flex min-h-12 items-center gap-3">
+    <h3
+      id={`inspection-${state.id}-title`}
+      class="min-w-0 flex-1 text-base leading-snug font-bold sm:text-lg"
+    >
+      {state.label}
+    </h3>
+    <InspectionResult
+      id={`inspection-${state.id}-result`}
+      triggerAriaLabel={`View result: ${state.label}`}
+      result={state.result}
+      summary={state.id}
+      subjectLabel={state.result.valid ? 'Resolved reference' : 'Missing reference'}
+      subject={state.declaredPath}
+    />
+  </header>
+  <div class="flex-1">
+    <InspectionDiagram {state} />
+  </div>
+  <div class:list={['mt-5 border-t pt-4', !state.result.valid && 'border-destructive/30']}>
+    <InspectionSummary
+      result={state.result}
+      summary={state.id}
+    />
+  </div>
+</article>

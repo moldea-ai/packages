@@ -89,12 +89,7 @@ const contentGridClass = hasNavigation
               <div class="grid gap-1">
                 {group.items.map((item) => (
                   <a
-                    class:list={[
-                      'rounded-lg px-3 py-2.5 text-sm font-medium',
-                      item.href === currentRoute
-                        ? 'bg-accent text-accent-foreground'
-                        : 'hover:bg-muted',
-                    ]}
+                    class="rounded-lg navigation-link px-3 py-2.5 text-sm"
                     href={withBase(item.href, basePath)}
                     aria-current={item.href === currentRoute ? 'page' : undefined}
                   >
@@ -144,12 +139,7 @@ const contentGridClass = hasNavigation
                   <div class="grid gap-1">
                     {group.items.map((item) => (
                       <a
-                        class:list={[
-                          'rounded-lg px-3 py-2 text-sm font-medium',
-                          item.href === currentRoute
-                            ? 'bg-accent text-accent-foreground'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                        ]}
+                        class="rounded-lg navigation-link px-3 py-2 text-sm"
                         href={withBase(item.href, basePath)}
                         aria-current={item.href === currentRoute ? 'page' : undefined}
                       >

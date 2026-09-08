@@ -142,7 +142,7 @@ const navigationItems = [
                   const dependency = packageByName.get(name);
                   return dependency ? (
                     <a
-                      class="rounded-md bg-muted px-2.5 py-1.5 font-mono hover:underline"
+                      class="rounded-md surface-link bg-muted px-2.5 py-1.5 font-mono"
                       href={withBase(dependency.route, basePath)}
                     >
                       {name}
@@ -162,7 +162,7 @@ const navigationItems = [
                   const dependent = packageByName.get(name);
                   return dependent ? (
                     <a
-                      class="rounded-md bg-muted px-2.5 py-1.5 font-mono hover:underline"
+                      class="rounded-md surface-link bg-muted px-2.5 py-1.5 font-mono"
                       href={withBase(dependent.route, basePath)}
                     >
                       {name}

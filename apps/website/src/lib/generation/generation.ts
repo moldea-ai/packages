@@ -32,6 +32,7 @@ import {
   type IDiscoveryCopy,
 } from '../discovery-copy/index.ts';
 import { createInspectionExample } from '../inspection-example/index.ts';
+import { createInstructionExample } from '../instruction-example/index.ts';
 
 const REPOSITORY_URL = 'https://github.com/moldea-ai/packages';
 const EXCLUDED_DIRECTORY_NAMES = new Set(['_archive', '_archives', '_backup', '_backups']);
@@ -432,6 +433,24 @@ export const createSearchRecords = (
     title: gettingStarted.title,
   });
 
+  recordsByRoute.set('/adapters/', {
+    description:
+      'Find your runtime, compare target maturity, and open its exact compatibility scope.',
+    route: '/adapters/',
+    searchText: normalizeSearchText(
+      [
+        'Runtime adapters compatibility supported targets versions limitations qualification',
+        ...adapters
+          .flatMap(({ id }) => [
+            discoveryCopy.adapters[id].name,
+            ...Object.values(discoveryCopy.adapters[id].targets),
+          ])
+          .sort(),
+      ].join(' '),
+    ),
+    title: 'Runtime adapters and compatibility',
+  });
+
   return [...recordsByRoute.values()].sort(
     (left, right) => left.route.localeCompare(right.route) || left.title.localeCompare(right.title),
   );
@@ -518,7 +537,8 @@ export const createLlmsText = (
     '## Canonical references',
     '',
     `- [Repository Format specification](${specification.route}): Official version ${specification.formatVersion} repository contract.`,
-    '- [Complete runtime compatibility matrix](/compatibility/)',
+    '- [Runtime adapters and compatibility](/adapters/)',
+    '- [Machine-readable runtime compatibility](/compatibility/runtimes.json)',
     `- [Source repository](${REPOSITORY_URL})`,
     '',
   );
@@ -556,6 +576,7 @@ export const createWebsiteModel = async (): Promise<IWebsiteModel> => {
     repositoryRoot,
   );
   const inspectionExample = await createInspectionExample();
+  const instructionExample = await createInstructionExample();
   const routes = createRouteManifest(packages, adapters, gettingStarted);
   const searchRecords = createSearchRecords(
     packages,
@@ -571,6 +592,7 @@ export const createWebsiteModel = async (): Promise<IWebsiteModel> => {
     generatedNotice: GENERATED_NOTICE,
     gettingStarted,
     inspectionExample,
+    instructionExample,
     llmsText: createLlmsText(packages, adapters, repositoryFormatSpecification, gettingStarted),
     packages,
     repositoryFormatSpecification,

@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
+import { parseDocument } from 'yaml';
 
 import { createCore } from '@moldea.ai/core';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
@@ -9,7 +10,7 @@ import type { IInspectionExampleState, IInspectionSnapshot } from './types.ts';
 /**
  * Validates the three synthetic snapshots through public Core and reader exports.
  * Rejects changed results instead of publishing an inaccurate demonstration.
- * @returns The source snippets and content-free excerpts from actual Core results.
+ * @returns The file paths and content-free excerpts from actual Core results.
  * @throws
  * - If snapshots are malformed, out of order, or produce unexpected Core results.
  */
@@ -35,6 +36,13 @@ export const createInspectionExample = async (
       { path: snapshot.sourcePath, type: 'file', content: snapshot.source },
     ]);
     const validation = await core.validateProject({ repository });
+    const declaredPath: unknown = parseDocument(snapshot.manifest).getIn([
+      'context',
+      '/moldea/project.md',
+      'bindings',
+      0,
+      'path',
+    ]);
     const { valid } = validation;
     // compare diagnostic content, independent of Core's null-prototype detail records
     const diagnostics = structuredClone(validation.diagnostics);
@@ -55,6 +63,7 @@ export const createInspectionExample = async (
         : [];
 
     if (
+      typeof declaredPath !== 'string' ||
       valid !== (snapshot.id !== 'broken') ||
       !isDeepStrictEqual(diagnostics, expectedDiagnostics)
     ) {
@@ -77,16 +86,10 @@ export const createInspectionExample = async (
       id: snapshot.id,
       label: snapshot.label,
       explanation: snapshot.explanation,
-      repositoryMarkdown: [
-        '#### /moldea/project.md',
-        `\`\`\`markdown\n${snapshot.project}\`\`\``,
-        '#### /moldea/moldea.yaml',
-        `\`\`\`yaml\n${snapshot.manifest}\`\`\``,
-        `#### ${snapshot.sourcePath}`,
-        `\`\`\`typescript\n${snapshot.source}\`\`\``,
-      ].join('\n\n'),
+      projectPath: '/moldea/project.md',
+      declaredPath,
+      sourcePath: snapshot.sourcePath,
       result,
-      resultMarkdown: `\`\`\`json\n${JSON.stringify(result, null, 2)}\n\`\`\``,
     });
   }
 

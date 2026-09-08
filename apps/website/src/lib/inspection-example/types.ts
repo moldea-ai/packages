@@ -23,7 +23,8 @@ export interface IInspectionExampleState {
   id: IInspectionExampleId;
   label: string;
   explanation: string;
-  repositoryMarkdown: string;
+  projectPath: string;
+  declaredPath: string;
+  sourcePath: string;
   result: IInspectionResultExcerpt;
-  resultMarkdown: string;
 }
