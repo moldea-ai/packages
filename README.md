@@ -39,7 +39,7 @@ The specification documents remain the design authority. Implemented compatibili
   workflows/                   # Verification, npm publication, and GitHub Pages deployment
 apps/
   website/                     # Private Astro packages-documentation application
-    content/                   # Website-owned runtime target maturity
+    content/                   # Getting-started guide and runtime target maturity
 compatibility/
   runtimes.yaml                # Canonical technical runtime compatibility inventory
 configs/
@@ -84,6 +84,10 @@ vitest-integration.config.ts
 
 Every immediate child of [`projects/`](projects/) is an independently meaningful first-class package. Every immediate child of [`packages/`](packages/) is a private shared implementation package. Every immediate child of [`apps/`](apps/) is a private application built from or around the ecosystem. Applications do not appear in the package catalog, carry no independent public package compatibility promise, and may depend on projects or internal packages; projects and internal packages never depend on applications.
 
+`/docs` is reserved for concise, durable project concepts and processes. API and HTTP endpoint documentation belongs outside `/docs`, in the owning project's established documentation location.
+
+The website owns its getting-started guide, display-only discovery copy, and a three-state reference-check example generated through real Core and in-memory reader exports. Package documentation and canonical compatibility data remain authoritative; see [`apps/website/README.md`](apps/website/README.md) for generation and verification ownership.
+
 ## Dependency architecture
 
 An arrow means that the package on the left depends on the package on the right.
@@ -93,7 +97,7 @@ repository-fs       → repository
 core                → repository
 adapter-*           → core
 cli                 → repository + repository-fs + core + active adapter packages
-packages-website    → website-ui
+packages-website    → website-ui + core + repository (Core and Repository are build-time dependencies)
 ```
 
 Shared internal packages may support first-class projects but never depend on them. Published packages must bundle private internal implementation or otherwise ensure that private imports and declarations do not leak into the consumer artifact.
@@ -149,20 +153,23 @@ pnpm test
 
 Useful focused commands:
 
-| Command                       | Purpose                                                               |
-| ----------------------------- | --------------------------------------------------------------------- |
-| `pnpm test:root`              | Run root unit and integration tests.                                  |
-| `pnpm test:unit`              | Run root and package unit-test tasks.                                 |
-| `pnpm test:integration`       | Run root and package integration-test tasks.                          |
-| `pnpm test:e2e`               | Build and run installed-package end-to-end test tasks.                |
-| `pnpm format`                 | Format repository-maintained files.                                   |
-| `pnpm compatibility:generate` | Regenerate technical compatibility documentation.                     |
-| `pnpm compatibility:check`    | Verify matrix, package, and generated-artifact synchronization.       |
-| `pnpm docs:generate`          | Generate the ignored deterministic website content model.             |
-| `pnpm docs:check`             | Validate package discovery, docs, exports, routes, and compatibility. |
-| `pnpm website:dev`            | Generate content and run the local Astro development server.          |
-| `pnpm website:build`          | Build, index, and validate the complete static production website.    |
-| `pnpm website:check`          | Run website docs, tests, types, lint, build, and artifact checks.     |
+| Command                       | Purpose                                                                      |
+| ----------------------------- | ---------------------------------------------------------------------------- |
+| `pnpm test:root`              | Run root unit and integration tests.                                         |
+| `pnpm test:unit`              | Run root and package unit-test tasks.                                        |
+| `pnpm test:integration`       | Run root and package integration-test tasks.                                 |
+| `pnpm test:e2e`               | Build and run installed-package end-to-end test tasks.                       |
+| `pnpm format`                 | Format repository-maintained files.                                          |
+| `pnpm compatibility:generate` | Regenerate technical compatibility documentation.                            |
+| `pnpm compatibility:check`    | Verify matrix, package, and generated-artifact synchronization.              |
+| `pnpm docs:generate`          | Generate the ignored deterministic website content model.                    |
+| `pnpm website:prepare`        | Build Core, its dependency closure, and Website UI for direct website tasks. |
+| `pnpm docs:check`             | Validate package discovery, docs, exports, routes, and compatibility.        |
+| `pnpm website:dev`            | Generate content and run the local Astro development server.                 |
+| `pnpm website:build`          | Build, index, and validate the complete static production website.           |
+| `pnpm website:check`          | Run website docs, tests, types, lint, build, and artifact checks.            |
+
+Root `docs:check`, `docs:generate`, `website:dev`, and `website:check` run `website:prepare` first. Direct website-package commands are low-level tasks and require that preparation. Root `website:build` uses Turbo's dependency ordering. The website-specific tasks in `turbo.json` own source/environment cache inputs and restore the generated model together with its matching static artifact. An uncached website-only cleanup runs before building or restoring those outputs so removed pages cannot survive a cache hit.
 
 ## Build and test conventions
 
@@ -180,7 +187,7 @@ Turborepo derives build order from declared workspace dependencies. Package depe
 
 ## Package documentation and generated artifacts
 
-Every implemented public project owns its full documentation under `projects/<project>/docs/**`. The cross-package Repository Format contract is owned by [`specifications/repository-format.md`](specifications/repository-format.md). Package specifications, implementation, tests, public exports, manifests, technical compatibility source, and package-owned documentation are authoritative; the website discovers, validates, renders, searches, and presents them while owning target maturity. Concise package READMEs remain the GitHub and npm entry points.
+Every implemented public project owns its full documentation under `projects/<project>/docs/**`. The cross-package Repository Format contract is owned by [`specifications/repository-format.md`](specifications/repository-format.md). Package specifications, implementation, tests, public exports, manifests, technical compatibility source, and package-owned documentation are authoritative; the website discovers, validates, renders, searches, and presents visitor-facing package documentation while owning target maturity. Website UI remains a shared public package with repository-owned documentation, but its documentation pages are not published on the packages website. Concise package READMEs remain the GitHub and npm entry points.
 
 Generated files are not edited directly. Repository Format changes begin in [`specifications/repository-format.md`](specifications/repository-format.md), whose metadata, required sections, manifest property reference, internal anchors, and marked complete example are verified before publication. Technical runtime compatibility changes begin in [`compatibility/runtimes.yaml`](compatibility/runtimes.yaml), while website target maturity is edited only in [`apps/website/content/runtime-target-maturity.yaml`](apps/website/content/runtime-target-maturity.yaml). The website build requires an exact one-to-one match between those maturity entries and the matrix targets and publishes their deterministic combined view at [`https://packages.moldea.ai/compatibility/runtimes.json`](https://packages.moldea.ai/compatibility/runtimes.json). A target may link only to its canonical profile on `https://skill.moldea.ai`; qualification execution, fixtures, caches, and results remain owned by the skill repository. Run `pnpm compatibility:generate` to update [`docs/runtime-compatibility.md`](docs/runtime-compatibility.md). The website model, public Repository Format page, public compatibility JSON, API reference, route manifest, search input, and `llms.txt` are generated during documentation checks and builds from their canonical repository sources; none is maintained independently. CI reruns the applicable generators and fails when canonical inputs are invalid, routes contradict one another, public exports are omitted, links break, or the static artifact is incomplete.
 

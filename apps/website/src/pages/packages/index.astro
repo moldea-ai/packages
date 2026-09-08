@@ -1,5 +1,6 @@
 ---
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
+import { withBase } from '@moldea.ai/website-ui/site';
 
 import PackageCard from '../../components/package-card.astro';
 import BaseLayout from '../../layouts/base-layout.astro';
@@ -27,10 +28,14 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Packages' }];
       <p class="eyebrow mb-5">Public package ecosystem</p>
       <h1 class="section-title font-semibold">One foundation. Explicit responsibilities.</h1>
       <p class="mt-7 max-w-3xl text-xl leading-9 text-muted-foreground">
-        This catalog focuses on the packages developers use to inspect repositories and integrate
-        supported runtimes. Private workspaces and planned adapter entries remain outside the
-        inventory.
+        Start with the CLI to check an adopted repository. Choose Core and repository readers when
+        building your own tools, or an adapter for a specific runtime integration.
       </p>
+      <a
+        class="mt-5 inline-block font-semibold underline underline-offset-4"
+        href={withBase('/getting-started/', import.meta.env.BASE_URL)}
+        >Not sure where to start? Read the guide.</a
+      >
     </div>
 
     <section aria-labelledby="tooling-title">
@@ -45,12 +50,19 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Packages' }];
           </h2>
         </div>
         <p class="max-w-lg text-sm leading-6 text-muted-foreground">
-          Source access, filesystem snapshots, repository interpretation, and local composition
-          beneath the Agent Skill.
+          The CLI combines these building blocks for local checks. Most users do not need to
+          assemble them separately.
         </p>
       </div>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {toolingPackages.map((packageModel) => <PackageCard packageModel={packageModel} />)}
+        {
+          toolingPackages.map((packageModel) => (
+            <PackageCard
+              packageModel={packageModel}
+              copy={model.discoveryCopy.packages[packageModel.name]}
+            />
+          ))
+        }
       </div>
     </section>
 
@@ -80,6 +92,7 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Packages' }];
             <PackageCard
               adapterId={adapterIdByPackageSlug.get(packageModel.slug)}
               packageModel={packageModel}
+              copy={model.discoveryCopy.packages[packageModel.name]}
             />
           ))
         }

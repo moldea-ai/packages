@@ -185,15 +185,23 @@ const verifyLlmsLinks = (
   }
 };
 
-/** Verifies static routes, base-aware links, machine surfaces, and private-content isolation. */
-export const verifyProductionBuild = (): void => {
-  const websiteDirectory = getWebsiteDirectory();
-  const distDirectory = join(websiteDirectory, 'dist');
+/**
+ * Verifies static routes, base-aware links, machine surfaces, and private-content isolation.
+ * @throws
+ * - If required routes, navigation handoffs, metadata, or publications are missing or inconsistent.
+ * - If output contains tests, retired Website UI documentation, or private content.
+ */
+export const verifyProductionBuild = (
+  distDirectory = join(getWebsiteDirectory(), 'dist'),
+): void => {
   const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
   const siteUrl = process.env.SITE_URL ?? DEFAULT_SITE_URL;
   const model = loadWebsiteModel();
 
   if (!existsSync(distDirectory)) throw new Error('Production artifact is missing.');
+  if (existsSync(join(distDirectory, 'packages', 'website-ui'))) {
+    throw new Error('The static artifact contains retired Website UI documentation.');
+  }
 
   for (const route of model.routes) {
     const artifactPath = routeToArtifactPath(distDirectory, route);
@@ -231,6 +239,13 @@ export const verifyProductionBuild = (): void => {
   }
 
   const files = listFiles(distDirectory);
+  if (
+    files.some((path) =>
+      /\.test-(?:unit|integration|e2e|bench)(?:\.|\/|$)/u.test(path.replaceAll(sep, '/')),
+    )
+  ) {
+    throw new Error('The static artifact contains test output.');
+  }
   const htmlPaths = files.filter((path) => path.endsWith('.html'));
 
   verifySeoArtifacts({
@@ -274,6 +289,41 @@ export const verifyProductionBuild = (): void => {
   );
 
   verifyLlmsLinks(llmsText, distDirectory, basePath, siteUrl);
+
+  const guide = model.gettingStarted;
+  const guideHtml = readFileSync(routeToArtifactPath(distDirectory, guide.route), 'utf8');
+  const guideUrl = new URL(`${basePath}${guide.route.replace(/^\//, '')}`, siteUrl);
+  const guideSearchRecords = searchDocuments.filter(({ url }) => url === guideUrl.pathname);
+  if (
+    !guideHtml.includes('href="https://skill.moldea.ai/"') ||
+    !guideHtml.includes(`href="${basePath}packages/cli/"`)
+  ) {
+    throw new Error('The getting-started artifact omits its Skill or canonical CLI handoff.');
+  }
+  if (
+    !llmsText.includes(`[${guide.title}](${guideUrl.href})`) ||
+    !llmsText.includes('[moldea Agent Skill](https://skill.moldea.ai/)')
+  ) {
+    throw new Error('llms.txt omits the getting-started or Agent Skill handoff.');
+  }
+  if (guideSearchRecords.length !== 1 || guideSearchRecords[0].title !== guide.title) {
+    throw new Error('The production search index must contain exactly one getting-started record.');
+  }
+  const homepageHtml = readFileSync(join(distDirectory, 'index.html'), 'utf8');
+  for (const state of model.inspectionExample) {
+    if (!homepageHtml.includes(`id="inspection-${state.id}-panel"`)) {
+      throw new Error(`The homepage omits the ${state.id} inspection example state.`);
+    }
+  }
+  if (
+    !homepageHtml.includes('MOLDEA_REFERENCE_MISSING') ||
+    !homepageHtml.includes('Core result excerpt') ||
+    !homepageHtml.includes('Structure, not semantics.')
+  ) {
+    throw new Error(
+      'The homepage omits the real Core diagnostic or its structural-check boundary.',
+    );
+  }
 
   const specification = model.repositoryFormatSpecification;
   const specificationPath = routeToArtifactPath(distDirectory, specification.route);

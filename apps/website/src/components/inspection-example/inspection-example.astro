@@ -1,0 +1,128 @@
+---
+import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import TabbedPanels from '@moldea.ai/website-ui/tabbed-panels';
+
+import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
+
+// the fixed reference-check example is generated before Astro renders the page
+interface Props {
+  states: IInspectionExampleState[];
+}
+const { states } = Astro.props;
+const items = states.map(({ id, label }) => ({ id, label, slotName: id }));
+const rendered = await Promise.all(
+  states.map(async (state) => ({
+    ...state,
+    repositoryHtml: await renderMarkdownFragment(state.repositoryMarkdown),
+    resultHtml: await renderMarkdownFragment(state.resultMarkdown),
+  })),
+);
+---
+
+<section
+  id="how-it-works"
+  class="page-shell scroll-mt-24 py-12 sm:py-16"
+  aria-labelledby="inspection-title"
+>
+  <div class="mb-8 grid gap-5 lg:grid-cols-2 lg:items-end">
+    <div>
+      <p class="eyebrow mb-4">A real structural check</p>
+      <h2
+        id="inspection-title"
+        class="section-title font-semibold"
+      >
+        A file moves.<br />The connection breaks.
+      </h2>
+    </div>
+    <p class="max-w-xl text-lg leading-8 text-muted-foreground">
+      A project note points to the code it concerns. Follow what happens when that code moves, then
+      a developer updates the connection.
+    </p>
+  </div>
+  <TabbedPanels
+    id="inspection"
+    ariaLabel="Reference check example"
+    {items}
+  >
+    {/* Astro requires literal slot names; sources and results remain generator-owned. */}
+    <Fragment slot="connected">
+      <p class="mb-5 leading-7">{rendered[0].explanation}</p>
+      <div class="grid min-w-0 gap-6 lg:grid-cols-2 lg:gap-10">
+        <div class="min-w-0">
+          <h3 class="mb-4 text-sm font-bold text-muted-foreground">
+            Synthetic repository snapshot
+          </h3><div
+            class="prose-moldea prose-moldea-wrap-code text-sm"
+            set:html={rendered[0].repositoryHtml}
+          />
+        </div>
+        <div class="min-w-0 border-t pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-sm font-bold text-muted-foreground">Core result excerpt</h3><StatusBadge
+              label={rendered[0].result.valid ? 'Check passed' : 'Check failed'}
+              tone={rendered[0].result.valid ? 'success' : 'danger'}
+            />
+          </div><div
+            class="prose-moldea prose-moldea-wrap-code text-sm"
+            set:html={rendered[0].resultHtml}
+          />
+        </div>
+      </div>
+    </Fragment>
+    <Fragment slot="broken">
+      <p class="mb-5 leading-7">{rendered[1].explanation}</p>
+      <div class="grid min-w-0 gap-6 lg:grid-cols-2 lg:gap-10">
+        <div class="min-w-0">
+          <h3 class="mb-4 text-sm font-bold text-muted-foreground">
+            Synthetic repository snapshot
+          </h3><div
+            class="prose-moldea prose-moldea-wrap-code text-sm"
+            set:html={rendered[1].repositoryHtml}
+          />
+        </div>
+        <div class="min-w-0 border-t pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-sm font-bold text-muted-foreground">Core result excerpt</h3><StatusBadge
+              label={rendered[1].result.valid ? 'Check passed' : 'Check failed'}
+              tone={rendered[1].result.valid ? 'success' : 'danger'}
+            />
+          </div><div
+            class="prose-moldea prose-moldea-wrap-code text-sm"
+            set:html={rendered[1].resultHtml}
+          />
+        </div>
+      </div>
+    </Fragment>
+    <Fragment slot="repaired">
+      <p class="mb-5 leading-7">{rendered[2].explanation}</p>
+      <div class="grid min-w-0 gap-6 lg:grid-cols-2 lg:gap-10">
+        <div class="min-w-0">
+          <h3 class="mb-4 text-sm font-bold text-muted-foreground">
+            Synthetic repository snapshot
+          </h3><div
+            class="prose-moldea prose-moldea-wrap-code text-sm"
+            set:html={rendered[2].repositoryHtml}
+          />
+        </div>
+        <div class="min-w-0 border-t pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-sm font-bold text-muted-foreground">Core result excerpt</h3><StatusBadge
+              label={rendered[2].result.valid ? 'Check passed' : 'Check failed'}
+              tone={rendered[2].result.valid ? 'success' : 'danger'}
+            />
+          </div><div
+            class="prose-moldea prose-moldea-wrap-code text-sm"
+            set:html={rendered[2].resultHtml}
+          />
+        </div>
+      </div>
+    </Fragment>
+  </TabbedPanels>
+  <p class="mt-7 border-t pt-5 text-sm leading-7 text-muted-foreground">
+    <strong class="text-foreground">Structure, not semantics.</strong> This checks whether the declared
+    file path exists. It does not check that the code enforces manager approval, execute the source, or
+    repair a repository. These results are produced by Core at website build time, not by a live check
+    of your files.
+  </p>
+</section>

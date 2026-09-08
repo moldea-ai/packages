@@ -5,10 +5,12 @@ import { DEFAULT_BASE_PATH, normalizeBasePath, withBase } from '@moldea.ai/websi
 
 import { DEFAULT_SITE_URL, SITE_NAME, SOCIAL_IMAGE_ALT } from '../lib/site/constants.ts';
 
+const siteUrl = process.env.SITE_URL ?? DEFAULT_SITE_URL;
 const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const toPublicPath = (route: string): string => withBase(route, basePath);
 const REPRESENTATIVE_PATHS = [
   '/',
+  '/getting-started/',
   '/packages/',
   '/packages/core/',
   '/packages/core/api/',
@@ -71,19 +73,21 @@ test('keeps multiline shared titles legible with Ubuntu Sans', async ({ page }) 
   await page.setViewportSize({ height: 800, width: 1024 });
   await page.goto(toPublicPath('/'));
 
-  const displayTitleTypography = await page.locator('.display-title').evaluate((element) => {
-    const computedStyle = getComputedStyle(element);
+  const displayTitleTypography = await page
+    .getByRole('heading', { level: 1 })
+    .evaluate((element) => {
+      const computedStyle = getComputedStyle(element);
 
-    return {
-      blockHeight: element.getBoundingClientRect().height,
-      fontSize: Number.parseFloat(computedStyle.fontSize),
-      lineHeight: Number.parseFloat(computedStyle.lineHeight),
-    };
-  });
+      return {
+        blockHeight: element.getBoundingClientRect().height,
+        fontSize: Number.parseFloat(computedStyle.fontSize),
+        lineHeight: Number.parseFloat(computedStyle.lineHeight),
+      };
+    });
   const sectionTitleTypography = await page
     .getByRole('heading', {
       level: 2,
-      name: 'Runtime-specific evidence, built in.',
+      name: 'Find your runtime. Check its exact scope.',
     })
     .evaluate((element) => {
       const computedStyle = getComputedStyle(element);
@@ -102,10 +106,10 @@ test('keeps multiline shared titles legible with Ubuntu Sans', async ({ page }) 
 });
 
 test('publishes unique canonical, social, and structured search metadata', async ({ page }) => {
-  const homeUrl = new URL(toPublicPath('/'), DEFAULT_SITE_URL).href;
+  const homeUrl = new URL(toPublicPath('/'), siteUrl).href;
 
   await page.goto(toPublicPath('/'));
-  await expect(page).toHaveTitle(`Open-source behavioral integrity for AI agents · ${SITE_NAME}`);
+  await expect(page).toHaveTitle(`Keep agent instructions and code connected · ${SITE_NAME}`);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', homeUrl);
   await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', homeUrl);
   await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
@@ -135,7 +139,7 @@ test('publishes unique canonical, social, and structured search metadata', async
   }
 
   const limitationsRoute = '/adapters/openai/limitations/';
-  const limitationsUrl = new URL(toPublicPath(limitationsRoute), DEFAULT_SITE_URL).href;
+  const limitationsUrl = new URL(toPublicPath(limitationsRoute), siteUrl).href;
 
   await page.goto(toPublicPath(limitationsRoute));
   await expect(page).toHaveTitle(
@@ -167,13 +171,11 @@ test('renders standalone moldea references as inline code in visible prose', asy
 
   const heroCopy = page
     .locator('main p')
-    .filter({ hasText: 'moldea is the behavioral integrity layer for AI agents.' });
+    .filter({ hasText: 'Want help adopting moldea in your coding agent?' });
   const heroBrandName = heroCopy.locator('code');
 
   await expect(heroBrandName).toHaveText('moldea');
-  await expect(heroCopy).toContainText(
-    'moldea is the behavioral integrity layer for AI agents. This repository provides the deterministic readers',
-  );
+  await expect(heroCopy).toContainText('Want help adopting moldea in your coding agent?');
 
   await page.goto(toPublicPath('/packages/core/'));
 
@@ -189,10 +191,10 @@ test('connects the package architecture to the official Repository Format specif
   await page.goto(toPublicPath('/'));
 
   const architecture = page.getByRole('region', {
-    name: 'From source bytes to trusted structure.',
+    name: 'A small structure. A shared record.',
   });
   const architectureLink = architecture.getByRole('link', {
-    name: 'Explore the Repository Format',
+    name: 'Read the format specification',
   });
 
   await expect(architectureLink).toHaveAttribute('href', toPublicPath('/repository-format/'));
@@ -528,9 +530,15 @@ test('presents available runtime adapters without promoting planned inventory', 
   const adapterSection = page.locator('section[aria-labelledby="available-adapters-title"]');
 
   await expect(
-    adapterSection.getByRole('heading', { level: 2, name: 'Runtime-specific evidence, built in.' }),
+    adapterSection.getByRole('heading', {
+      level: 2,
+      name: 'Find your runtime. Check its exact scope.',
+    }),
   ).toBeVisible();
   await expect(adapterSection.getByRole('link', { name: /anthropic/ })).toBeVisible();
+  await expect(adapterSection.getByText('Anthropic', { exact: true })).toBeVisible();
+  await expect(adapterSection.getByText('Claude Agent SDK', { exact: true })).toBeVisible();
+  await expect(adapterSection.getByText('Custom runtime', { exact: true })).toBeVisible();
   await expect(adapterSection.getByRole('link', { name: /custom/ })).toBeVisible();
   await expect(adapterSection.getByRole('link', { name: /openai/ })).toHaveCount(2);
   await expect(adapterSection.getByAltText('Anthropic company logo')).toHaveCount(2);
@@ -721,8 +729,8 @@ test('keeps primary static routes free of serious automated accessibility violat
 test('uses branded action states in both themes and respects reduced motion', async ({ page }) => {
   await page.goto(toPublicPath('/'));
 
-  const primaryAction = page.getByRole('link', { name: 'Explore packages' });
-  const outlineAction = page.getByRole('link', { name: 'Source', exact: true });
+  const primaryAction = page.getByRole('link', { name: 'See how it works' });
+  const outlineAction = page.getByRole('link', { name: 'Start using the tools', exact: true });
   const inlineAction = page.getByRole('link', { name: 'View all packages' });
   const actionTransitionProperties = await primaryAction.evaluate((element) =>
     getComputedStyle(element)

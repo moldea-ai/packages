@@ -1,150 +1,100 @@
 // @vitest-environment node
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-
 import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const toPublicPath = (route: string): string => withBase(route, basePath);
 
-test('renders the maturity legend and one target per compatibility row', async ({ page }) => {
+test('shows maturity definitions without hover and preserves every exact target', async ({
+  page,
+}) => {
   await page.goto(toPublicPath('/compatibility/'));
-
-  const maturityLegend = page.getByRole('region', { name: 'Target maturity' });
-  const compatibilityTable = page.getByRole('table', {
+  const legend = page.getByRole('region', { name: 'Target maturity' });
+  for (const definition of [
+    'Production-ready within its exact published scope.',
+    'Verified and fixture-backed, but not production-ready.',
+    'Documented for existing users; new adoption is discouraged.',
+  ])
+    await expect(legend.getByText(definition, { exact: true })).toBeVisible();
+  const table = page.getByRole('table', {
     name: 'Official moldea runtime adapter compatibility summary',
   });
-  const targetCells = compatibilityTable.locator('[headers="target-maturity-heading"]');
-  const supportedTargets = compatibilityTable.getByRole('link', { name: /, supported$/u });
-  const customTarget = compatibilityTable.getByRole('link', { name: 'custom, supported' });
-  const langChainTarget = compatibilityTable.getByRole('link', {
-    name: 'typescript-create-agent-1-5, supported',
-  });
-  const langGraphStateGraphTarget = compatibilityTable.getByRole('link', {
-    name: 'typescript-state-graph-1-4, supported',
-  });
-  const langGraphFunctionalApiTarget = compatibilityTable.getByRole('link', {
-    name: 'typescript-functional-api-1-4, supported',
-  });
-
-  await expect(maturityLegend.getByRole('list', { name: 'Target maturity legend' })).toContainText(
-    'supportedexperimentaldeprecated',
-  );
-  await expect(
-    maturityLegend.getByTitle('Production-ready within its exact published scope.'),
-  ).toBeVisible();
-  await expect(
-    maturityLegend.getByTitle('Verified and fixture-backed, but not production-ready.'),
-  ).toBeVisible();
-  await expect(
-    maturityLegend.getByTitle('Documented for existing users; new adoption is discouraged.'),
-  ).toBeVisible();
-  await expect(supportedTargets).toHaveCount(14);
-  await expect(compatibilityTable.getByRole('link', { name: /, experimental$/u })).toHaveCount(0);
-  await expect(compatibilityTable.getByRole('link', { name: /, deprecated$/u })).toHaveCount(0);
-  expect(
-    await targetCells.evaluateAll((cells) =>
-      cells.every((cell) => cell.querySelectorAll('a').length <= 1),
+  await expect(table.getByRole('link', { name: /, supported$/u })).toHaveCount(14);
+  await expect(table.getByRole('link', { name: /, experimental$/u })).toHaveCount(0);
+  await expect(table.getByRole('link', { name: /, deprecated$/u })).toHaveCount(0);
+  for (const [name, id] of [
+    ['Custom runtime declarations', 'custom'],
+    ['Create agent', 'typescript-create-agent-1-5'],
+    ['Functional API', 'typescript-functional-api-1-4'],
+    ['StateGraph', 'typescript-state-graph-1-4'],
+    ['Think agents', 'typescript-think-0-16-ai-sdk-7'],
+    ['AIChatAgent', 'typescript-ai-chat-agent-0-10-ai-sdk-7'],
+  ]) {
+    const link = table.getByRole('link', { name: `${name}, ${id}, supported`, exact: true });
+    await expect(link.locator('code')).toHaveText(id);
+    await expect(link.getByText('supported', { exact: true })).toBeVisible();
+  }
+  const borders = await Promise.all(
+    ['supported', 'experimental', 'deprecated'].map((kind) =>
+      legend
+        .getByText(kind, { exact: true })
+        .evaluate((element) => getComputedStyle(element).borderStyle),
     ),
-  ).toBe(true);
-  await expect(customTarget).toHaveAttribute('title', 'custom');
-  await expect(langChainTarget).toHaveAttribute('title', 'typescript-create-agent-1-5');
-  await expect(langGraphStateGraphTarget).toHaveAttribute('title', 'typescript-state-graph-1-4');
-  await expect(langGraphFunctionalApiTarget).toHaveAttribute(
-    'title',
-    'typescript-functional-api-1-4',
   );
-  await expect(
-    compatibilityTable.getByRole('link', {
-      name: 'typescript-think-0-16-ai-sdk-7, supported',
-    }),
-  ).toBeVisible();
-  await expect(
-    compatibilityTable.getByRole('link', {
-      name: 'typescript-ai-chat-agent-0-10-ai-sdk-7, supported',
-    }),
-  ).toBeVisible();
-  await expect(langGraphStateGraphTarget).toBeVisible();
-  await expect(langGraphFunctionalApiTarget).toBeVisible();
-  expect(
-    await customTarget
-      .locator('span')
-      .evaluate((element) => getComputedStyle(element).backgroundColor),
-  ).toBe(
-    await langChainTarget
-      .locator('span')
-      .evaluate((element) => getComputedStyle(element).backgroundColor),
-  );
-  expect(
-    await Promise.all([
-      customTarget.locator('span').evaluate((element) => getComputedStyle(element).borderStyle),
-      langChainTarget.locator('span').evaluate((element) => getComputedStyle(element).borderStyle),
-      maturityLegend
-        .getByText('experimental', { exact: true })
-        .evaluate((element) => getComputedStyle(element).borderStyle),
-      maturityLegend
-        .getByText('deprecated', { exact: true })
-        .evaluate((element) => getComputedStyle(element).borderStyle),
-    ]),
-  ).toStrictEqual(['solid', 'solid', 'dashed', 'dotted']);
-
-  await page.getByRole('button', { name: 'Use dark theme' }).click();
-  await expect(page.locator('html')).toHaveClass(/dark/);
-
-  const accessibilityResults = await new AxeBuilder({ page }).analyze();
-  const materialViolations = accessibilityResults.violations.filter(
-    ({ impact }) => impact === 'critical' || impact === 'serious',
-  );
-
-  expect(materialViolations).toStrictEqual([]);
+  expect(borders).toStrictEqual(['solid', 'dashed', 'dotted']);
+  for (const theme of ['light', 'dark'] as const) {
+    await page.locator('html').evaluate((root, activeTheme) => {
+      root.classList.remove('light', 'dark');
+      root.classList.add(activeTheme);
+    }, theme);
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(
+      results.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious'),
+    ).toStrictEqual([]);
+  }
 });
 
-test('truncates long targets and keeps target navigation usable at 320px', async ({ page }) => {
+test('keeps full target identifiers and keyboard navigation usable at 320px', async ({ page }) => {
   await page.setViewportSize({ height: 740, width: 320 });
   await page.goto(toPublicPath('/compatibility/'));
-
+  const scrollRegion = page.getByRole('region', { name: 'Runtime compatibility table' });
+  await scrollRegion.focus();
+  await expect(scrollRegion).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect
+    .poll(() => scrollRegion.evaluate((element) => element.scrollLeft))
+    .toBeGreaterThan(0);
   const targetLink = page.getByRole('link', {
-    name: 'typescript-create-agent-1-5, supported',
+    name: 'Create agent, typescript-create-agent-1-5, supported',
+    exact: true,
   });
-  const targetBadge = targetLink.locator('span');
-  const expectedTargetPath = `${toPublicPath(
-    '/adapters/langchain/',
-  )}#langchain-typescript-create-agent-1-5`;
+  const targetPath =
+    toPublicPath('/adapters/langchain/') + '#langchain-typescript-create-agent-1-5';
+  await expect(targetLink).toHaveAttribute('href', targetPath);
+  await expect(targetLink.locator('code')).toHaveText('typescript-create-agent-1-5');
+  expect(
+    await targetLink.locator('code').evaluate((element) => getComputedStyle(element).textOverflow),
+  ).not.toBe('ellipsis');
   const widths = await page.evaluate(() => ({
     client: document.documentElement.clientWidth,
     scroll: document.documentElement.scrollWidth,
   }));
-
-  await expect(targetLink).toHaveAttribute('href', expectedTargetPath);
-  await expect(targetLink).toHaveAttribute('title', 'typescript-create-agent-1-5');
-  expect(
-    await targetBadge.evaluate((element) => {
-      const style = getComputedStyle(element);
-
-      return {
-        display: style.display,
-        hasOverflowingText: element.scrollWidth > element.clientWidth,
-        overflow: style.overflow,
-        textOverflow: style.textOverflow,
-        whiteSpace: style.whiteSpace,
-      };
-    }),
-  ).toStrictEqual({
-    display: 'block',
-    hasOverflowingText: true,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  });
-  expect((await targetLink.boundingBox())?.width).toBeLessThanOrEqual(192);
   expect(widths.scroll).toBeLessThanOrEqual(widths.client);
-
   await targetLink.focus();
   await expect(targetLink).toBeFocused();
   await page.keyboard.press('Enter');
-
-  await expect(page).toHaveURL(new RegExp(`${expectedTargetPath.replaceAll('/', '\\/')}$`, 'u'));
+  await expect(page).toHaveURL(new RegExp(targetPath + '$'));
   await expect(
-    page.getByRole('heading', { level: 2, name: 'typescript-create-agent-1-5' }),
+    page.getByRole('heading', { level: 2, name: 'Create agent', exact: true }),
   ).toBeVisible();
+});
+
+test('shows both target maturities on multi-target adapter cards', async ({ page }) => {
+  await page.goto(toPublicPath('/adapters/'));
+  const langGraphTargets = page.getByRole('list', { name: 'LangGraph target maturity' });
+  await expect(langGraphTargets.getByRole('listitem')).toHaveCount(2);
+  await expect(langGraphTargets.getByText('supported', { exact: true })).toHaveCount(2);
+  await expect(langGraphTargets).toContainText('typescript-functional-api-1-4');
+  await expect(langGraphTargets).toContainText('typescript-state-graph-1-4');
 });

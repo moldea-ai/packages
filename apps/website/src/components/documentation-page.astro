@@ -29,12 +29,7 @@ const {
 } = Astro.props;
 const basePath = import.meta.env.BASE_URL;
 const familyRoute = packageModel.family === 'runtime-adapters' ? '/adapters/' : '/packages/';
-const familyLabel =
-  packageModel.family === 'runtime-adapters'
-    ? 'Runtime Adapters'
-    : packageModel.family === 'website-foundations'
-      ? 'Website Foundations'
-      : 'Packages';
+const familyLabel = packageModel.family === 'runtime-adapters' ? 'Runtime Adapters' : 'Packages';
 const packageByName = new Map(allPackages.map((candidate) => [candidate.name, candidate]));
 const isApiReference = currentRoute.endsWith('/api/');
 const breadcrumbs = [

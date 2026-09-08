@@ -3,20 +3,21 @@ import { ArrowUpRight } from '@lucide/astro';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import type { IAdapterPage } from '../lib/model/types.ts';
+import type { IAdapterDiscoveryCopy } from '../lib/discovery-copy/index.ts';
 import AdapterCompanyLogo from './adapter-company-logo.astro';
 import StatusBadge from './status-badge.astro';
 
 interface Props {
   adapter: IAdapterPage;
+  copy: IAdapterDiscoveryCopy;
 }
 
-const { adapter } = Astro.props;
+const { adapter, copy } = Astro.props;
 const basePath = import.meta.env.BASE_URL;
-const target = adapter.entry.targets?.[0];
 ---
 
 <a
-  class="surface-card interactive-card group flex min-h-60 flex-col p-6"
+  class="group flex min-w-0 flex-col border-b py-5 hover:bg-muted sm:rounded-xl sm:border sm:bg-card sm:p-6 sm:shadow-surface sm:hover:bg-muted"
   href={withBase(adapter.route, basePath)}
 >
   <div class="mb-7 flex items-start justify-between gap-3">
@@ -28,17 +29,36 @@ const target = adapter.entry.targets?.[0];
   </div>
   <div class="mb-3 flex flex-wrap items-center gap-2">
     <StatusBadge kind={adapter.entry.implementationStatus} />
-    {target && <StatusBadge kind={target.maturity} />}
   </div>
-  <h3 class="mb-2 text-xl font-semibold tracking-tight">{adapter.id}</h3>
-  <p class="text-sm leading-6 text-muted-foreground">
+  <h3 class="mb-2 text-xl font-semibold tracking-tight">{copy.name}</h3>
+  <p class="mb-2 font-mono text-xs break-all text-muted-foreground">{adapter.id}</p>
+  <p class="mb-3 text-sm leading-6 text-muted-foreground">{copy.description}</p>
+  <p class="text-xs leading-6 break-all text-muted-foreground">
     {
       adapter.entry.implementation.kind === 'built-in'
         ? `Built into ${adapter.entry.implementation.package}`
         : adapter.entry.implementation.package
     }
   </p>
-  <span class="mt-auto pt-6 text-sm font-bold"
-    >View compatibility <span aria-hidden="true">→</span></span
+  <ul
+    class="mt-4 space-y-3"
+    aria-label={`${copy.name} target maturity`}
   >
+    {
+      adapter.entry.targets?.map((target) => (
+        <li class="text-sm">
+          <>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <>
+                <span>{copy.targets[target.id]}</span>
+                <StatusBadge kind={target.maturity} />
+              </>
+            </div>
+            <code class="mt-1 block text-xs break-all text-muted-foreground">{target.id}</code>
+          </>
+        </li>
+      ))
+    }
+  </ul>
+  <span class="mt-auto pt-6 text-sm font-bold">View compatibility</span>
 </a>

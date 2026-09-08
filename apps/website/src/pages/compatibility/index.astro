@@ -50,7 +50,8 @@ const compatibilityRows = model.adapters.flatMap<ICompatibilityRow>((adapter) =>
       <p class="eyebrow mb-5">Canonical compatibility</p>
       <h1 class="section-title font-semibold">Claims backed by verified repository data.</h1>
       <p class="mt-7 max-w-3xl text-xl leading-9 text-muted-foreground">
-        This page combines technical compatibility from <code
+        Check the exact target before adopting an integration. Each target links to its versions,
+        recognized patterns, limitations, and qualification evidence. Technical scope comes from <code
           class="rounded bg-code px-1.5 py-1 font-mono text-sm text-code-foreground"
           >compatibility/runtimes.yaml</code
         > with target maturity from <code
@@ -68,7 +69,12 @@ const compatibilityRows = model.adapters.flatMap<ICompatibilityRow>((adapter) =>
 
     <TargetMaturityLegend />
 
-    <div class="table-scroll">
+    <div
+      class="table-scroll outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      role="region"
+      aria-label="Runtime compatibility table"
+      tabindex="0"
+    >
       <table class="w-full min-w-[54rem] text-sm">
         <caption class="sr-only">Official moldea runtime adapter compatibility summary</caption>
         <thead class="bg-muted">
@@ -91,7 +97,7 @@ const compatibilityRows = model.adapters.flatMap<ICompatibilityRow>((adapter) =>
               <tr class:list={['align-top', isFirstTarget && 'border-t']}>
                 {isFirstTarget && (
                   <th
-                    class="px-4 py-3 text-start font-mono"
+                    class="px-4 py-3 text-start"
                     rowspan={rowSpan}
                   >
                     <a
@@ -102,7 +108,10 @@ const compatibilityRows = model.adapters.flatMap<ICompatibilityRow>((adapter) =>
                         adapterId={adapter.id}
                         compact
                       />
-                      <span>{adapter.id}</span>
+                      <span>
+                        {model.discoveryCopy.adapters[adapter.id].name}
+                        <code class="mt-1 block text-xs font-normal">{adapter.id}</code>
+                      </span>
                     </a>
                   </th>
                 )}
@@ -136,16 +145,16 @@ const compatibilityRows = model.adapters.flatMap<ICompatibilityRow>((adapter) =>
                     'Not available'
                   ) : (
                     <a
-                      class="inline-block max-w-48 rounded-full align-middle"
+                      class="inline-block max-w-64 space-y-2 align-middle"
                       href={`${withBase(adapter.route, basePath)}#${adapter.id}-${target.id}`}
-                      aria-label={`${target.id}, ${target.maturity}`}
+                      aria-label={`${model.discoveryCopy.adapters[adapter.id].targets[target.id]}, ${target.id}, ${target.maturity}`}
                       title={target.id}
                     >
-                      <StatusBadge
-                        kind={target.maturity}
-                        label={target.id}
-                        truncate
-                      />
+                      <span class="block font-semibold">
+                        {model.discoveryCopy.adapters[adapter.id].targets[target.id]}
+                      </span>
+                      <code class="block text-xs break-all text-muted-foreground">{target.id}</code>
+                      <StatusBadge kind={target.maturity} />
                     </a>
                   )}
                 </td>
@@ -178,7 +187,12 @@ const compatibilityRows = model.adapters.flatMap<ICompatibilityRow>((adapter) =>
                   adapterId={adapter.id}
                   compact
                 />
-                <span class="min-w-0 font-mono break-words">{adapter.id}</span>
+                <span class="min-w-0 break-words">
+                  {model.discoveryCopy.adapters[adapter.id].name}
+                  <code class="mt-1 block text-xs font-normal text-muted-foreground">
+                    {adapter.id}
+                  </code>
+                </span>
               </span>
               <span class="shrink-0 text-sm text-muted-foreground group-open:hidden">
                 Show details
@@ -190,6 +204,7 @@ const compatibilityRows = model.adapters.flatMap<ICompatibilityRow>((adapter) =>
             <div class="border-t border-border p-5 sm:p-7">
               <AdapterDetails
                 {adapter}
+                copy={model.discoveryCopy.adapters[adapter.id]}
                 compact
               />
             </div>

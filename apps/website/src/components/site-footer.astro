@@ -13,7 +13,7 @@ const basePath = import.meta.env.BASE_URL;
     <Logo />
     <p class="mt-4 text-sm leading-6 text-muted-foreground">
       <InlineBrandText
-        text="The open-source technical foundation that powers moldea, the behavioral integrity layer for AI agents."
+        text="Open-source tools for moldea project knowledge, declared connections, and structural checks."
       />
     </p>
   </div>
@@ -23,6 +23,11 @@ const basePath = import.meta.env.BASE_URL;
     aria-label="Documentation"
   >
     <p class="font-bold">Documentation</p>
+    <a
+      class="text-muted-foreground hover:text-foreground"
+      href={withBase('/getting-started/', basePath)}
+      >Get started</a
+    >
     <a
       class="text-muted-foreground hover:text-foreground"
       href={withBase('/packages/', basePath)}
@@ -57,6 +62,13 @@ const basePath = import.meta.env.BASE_URL;
     aria-label="Project links"
   >
     <p class="font-bold">Project</p>
+    <a
+      class="text-muted-foreground hover:text-foreground"
+      href="https://skill.moldea.ai/"
+      target="_blank"
+      rel="noopener noreferrer"
+      >Agent Skill</a
+    >
     <a
       class="text-muted-foreground hover:text-foreground"
       href="https://github.com/moldea-ai/packages"

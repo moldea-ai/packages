@@ -3,6 +3,7 @@ import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import AdapterCard from '../../components/adapter-card.astro';
+import TargetMaturityLegend from '../../components/target-maturity-legend.astro';
 import BaseLayout from '../../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 
@@ -24,17 +25,19 @@ const basePath = import.meta.env.BASE_URL;
       <p class="eyebrow mb-5">Official runtime inventory</p>
       <h1 class="section-title font-semibold">Runtime knowledge, without runtime execution.</h1>
       <p class="mt-7 max-w-3xl text-xl leading-9 text-muted-foreground">
-        Adapters extend Core with deterministic, source-grounded evidence. Status pages come
-        directly from the compatibility matrix, so planned work never masquerades as an installable
-        package.
+        Find your runtime, then check its supported versions and source patterns. Adapters inspect
+        code without executing it. Implementation availability and the maturity of each exact target
+        are separate facts.
       </p>
       <a
         class="mt-7 inline-flex items-center gap-2 font-bold"
         href={withBase('/compatibility/', basePath)}
       >
-        View the complete compatibility matrix <span aria-hidden="true">→</span>
+        View the complete compatibility matrix
       </a>
     </div>
+
+    <TargetMaturityLegend />
 
     <section aria-labelledby="available-adapters-title">
       <div class="mb-7">
@@ -47,7 +50,14 @@ const basePath = import.meta.env.BASE_URL;
         </h2>
       </div>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {available.map((adapter) => <AdapterCard {adapter} />)}
+        {
+          available.map((adapter) => (
+            <AdapterCard
+              {adapter}
+              copy={model.discoveryCopy.adapters[adapter.id]}
+            />
+          ))
+        }
       </div>
     </section>
 
@@ -68,7 +78,10 @@ const basePath = import.meta.env.BASE_URL;
           </div>
           <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {upcoming.map((adapter) => (
-              <AdapterCard {adapter} />
+              <AdapterCard
+                {adapter}
+                copy={model.discoveryCopy.adapters[adapter.id]}
+              />
             ))}
           </div>
         </section>

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "node scripts/generate.ts && astro build && node scripts/verify-build.ts",
+    "clean:build": "node scripts/clean-build/clean-build.ts",
     "check:links": "node scripts/verify-build.ts",
     "check": "pnpm docs:check && pnpm test:unit && pnpm typecheck && pnpm lint && pnpm build && pnpm test:integration",
     "dev": "node scripts/generate.ts && astro dev",

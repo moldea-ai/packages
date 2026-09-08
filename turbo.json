@@ -1,6 +1,39 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "tasks": {
+    "@moldea.ai/packages-website#clean:build": {
+      "cache": false,
+      "inputs": ["scripts/clean-build/**"],
+      "outputs": []
+    },
+    "@moldea.ai/packages-website#build": {
+      "dependsOn": ["^build", "clean:build"],
+      "outputs": ["dist/**", ".generated/model.json"],
+      "env": ["SITE_URL", "BASE_PATH"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/specifications/repository-format.md",
+        "$TURBO_ROOT$/compatibility/runtimes.yaml",
+        "$TURBO_ROOT$/scripts/runtime-compatibility/**",
+        "$TURBO_ROOT$/projects/*/package.json",
+        "$TURBO_ROOT$/projects/*/docs/**/*.md",
+        "$TURBO_ROOT$/projects/*/src/**",
+        "$TURBO_ROOT$/packages/*/package.json",
+        "$TURBO_ROOT$/packages/*/src/**",
+        "!$TURBO_ROOT$/**/_archive/**",
+        "!$TURBO_ROOT$/**/_archives/**",
+        "!$TURBO_ROOT$/**/_backup/**",
+        "!$TURBO_ROOT$/**/_backups/**"
+      ]
+    },
+    "@moldea.ai/packages-website#test:integration": {
+      "dependsOn": ["build", "^test:integration"],
+      "env": ["SITE_URL", "BASE_PATH"]
+    },
+    "@moldea.ai/packages-website#test:e2e": {
+      "dependsOn": ["build", "^build"],
+      "env": ["PLAYWRIGHT_BROWSERS_PATH", "SITE_URL", "BASE_PATH"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]

@@ -23,8 +23,8 @@
     "build": "turbo run build",
     "compatibility:check": "turbo run build --filter @moldea.ai/cli... && node scripts/runtime-compatibility/check.ts",
     "compatibility:generate": "node scripts/runtime-compatibility/generate.ts",
-    "docs:check": "pnpm --filter @moldea.ai/packages-website docs:check",
-    "docs:generate": "pnpm --filter @moldea.ai/packages-website docs:generate",
+    "docs:check": "pnpm website:prepare && pnpm --filter @moldea.ai/packages-website docs:check",
+    "docs:generate": "pnpm website:prepare && pnpm --filter @moldea.ai/packages-website docs:generate",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "pnpm lint:root && turbo run lint",
@@ -43,8 +43,9 @@
     "typecheck": "pnpm typecheck:root && turbo run typecheck",
     "typecheck:root": "tsc -p tsconfig.json --noEmit",
     "website:build": "turbo run build --filter @moldea.ai/packages-website",
-    "website:check": "pnpm --filter @moldea.ai/website-ui build && pnpm --filter @moldea.ai/packages-website check",
-    "website:dev": "pnpm --filter @moldea.ai/website-ui build && pnpm --filter @moldea.ai/packages-website dev"
+    "website:check": "pnpm website:prepare && pnpm --filter @moldea.ai/packages-website check",
+    "website:dev": "pnpm website:prepare && pnpm --filter @moldea.ai/packages-website dev",
+    "website:prepare": "turbo run build --filter @moldea.ai/core... --filter @moldea.ai/website-ui"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
