@@ -9,6 +9,60 @@ const siteUrl = process.env.SITE_URL ?? DEFAULT_SITE_URL;
 const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const toPublicPath = (route: string): string => withBase(route, basePath);
 
+for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`keeps navigation labels and actions usable at ${width}px in ${theme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto(toPublicPath('/repository-format/'));
+      const header = page.getByRole('banner');
+      if (width < 1024) await header.getByLabel('Open navigation', { exact: true }).click();
+      const navigation = header.getByRole('navigation', {
+        name: width < 1024 ? 'Mobile navigation' : 'Primary navigation',
+        exact: true,
+      });
+      const format = navigation.getByRole('link', { name: 'Repository Format', exact: true });
+      await expect(format).toHaveAttribute('aria-current', 'page');
+      await expect(format).toHaveAttribute('href', toPublicPath('/repository-format/'));
+      const visibleLabel = width >= 1024 && width < 1280 ? 'Repo. Format' : 'Repository Format';
+      expect(await format.innerText()).toBe(visibleLabel);
+      await format.focus();
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Shift+Tab');
+      await expect(format).toBeFocused();
+      await expect(format).not.toHaveCSS('box-shadow', 'none');
+      await expect(header.getByRole('button', { name: /Use (light|dark) theme/u })).toBeVisible();
+      const linkRects = await navigation.getByRole('link').evaluateAll((links) =>
+        links.map((link) => {
+          const rect = link.getBoundingClientRect();
+          return { x: rect.x, right: rect.right, y: rect.y, height: rect.height };
+        }),
+      );
+      for (const rect of linkRects) {
+        expect(rect.x).toBeGreaterThanOrEqual(0);
+        expect(rect.right).toBeLessThanOrEqual(width);
+      }
+      if (width >= 1024) {
+        expect(new Set(linkRects.map(({ y }) => y)).size).toBe(1);
+        expect(new Set(linkRects.map(({ height }) => height)).size).toBe(1);
+        const brand = await header
+          .getByRole('link', { name: 'moldea packages home' })
+          .boundingBox();
+        const search = await header
+          .getByRole('link', { name: 'Search documentation' })
+          .boundingBox();
+        expect(brand!.x + brand!.width).toBeLessThan(linkRects[0].x);
+        expect(linkRects.at(-1)!.right).toBeLessThan(search!.x);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+    });
+  }
+}
+
 for (const width of [320, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
     test(`keeps brand links background-free at ${width}px in ${theme}`, async ({ page }) => {

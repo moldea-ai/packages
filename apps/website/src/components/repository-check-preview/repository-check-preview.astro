@@ -2,6 +2,7 @@
 import { FileCodeCorner, FileText } from '@lucide/astro';
 import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
 
 import type { IInstructionExample } from '../../lib/instruction-example/index.ts';
 import { InspectionResult } from '../inspection-result/index.ts';
@@ -14,7 +15,6 @@ interface Props {
 const { example } = Astro.props;
 const instructionHtml = await renderMarkdownFragment(example.instruction);
 const instructionPath = example.instructionPath.slice(1);
-const instructionFilenameStart = instructionPath.lastIndexOf('/');
 ---
 
 <figure
@@ -34,30 +34,22 @@ const instructionFilenameStart = instructionPath.lastIndexOf('/');
       subject={example.implementationPath}
     />
   </figcaption>
-  <div class="overflow-hidden rounded-lg border">
-    <div class="flex items-center gap-3 border-b bg-muted/30 px-3 py-3">
-      <FileText
-        class="size-5 shrink-0 text-muted-foreground"
-        aria-hidden="true"
-      />
-      <div class="min-w-0 flex-1">
-        <p class="mb-1 text-xs text-muted-foreground">Agent instruction</p>
-        <code
-          class="flex text-xs whitespace-nowrap"
-          title={instructionPath}
-        >
-          <span class="min-w-0 truncate">{instructionPath.slice(0, instructionFilenameStart)}</span
-          ><span class="shrink-0">{instructionPath.slice(instructionFilenameStart)}</span>
-        </code>
-      </div>
-    </div>
+  <FilePreview
+    path={instructionPath}
+    label="Agent instruction"
+  >
+    <FileText
+      slot="icon"
+      class="size-5"
+      aria-hidden="true"
+    />
     <div
       class="prose-moldea p-4 text-sm leading-6 [&_p]:my-0 [&_p+p]:mt-2"
       role="group"
       aria-label="Instruction content"
       set:html={instructionHtml}
     />
-  </div>
+  </FilePreview>
   <div class="ml-5 flex items-center gap-3 py-2">
     <span
       class="h-7 shrink-0 border-l-2 border-dashed border-destructive/60"

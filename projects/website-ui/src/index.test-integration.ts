@@ -80,7 +80,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.4.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.5.0' });
     expect(packedPaths).toContain('dist/evaluation-replay.js');
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/markdown.js');
@@ -96,6 +96,8 @@ describe('published website UI package', () => {
     );
     expect(packedPaths).toContain('src/components/tabbed-panels/tabbed-panels.component.astro');
     expect(packedPaths).toContain('src/components/dialog/dialog.component.astro');
+    expect(packedPaths).toContain('src/components/file-preview/file-preview.component.astro');
+    expect(packedPaths).toContain('src/components/result-summary/result-summary.component.astro');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
     expect(packedPaths).toContain('cover.png');
@@ -187,9 +189,11 @@ describe('published website UI package', () => {
         "import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';",
         "import Dialog from '@moldea.ai/website-ui/dialog';",
         "import EvaluationReplay from '@moldea.ai/website-ui/evaluation-replay';",
+        "import FilePreview from '@moldea.ai/website-ui/file-preview';",
         "import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';",
         "import LocalSearch from '@moldea.ai/website-ui/local-search';",
         "import NavigationProgress from '@moldea.ai/website-ui/navigation-progress';",
+        "import ResultSummary from '@moldea.ai/website-ui/result-summary';",
         "import SiteFooter from '@moldea.ai/website-ui/site-footer';",
         "import SiteHeader from '@moldea.ai/website-ui/site-header';",
         "import StatusBadge from '@moldea.ai/website-ui/status-badge';",
@@ -203,7 +207,9 @@ describe('published website UI package', () => {
         '',
         "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## Shared Markdown');",
         "const tree = buildEvaluationReplayPathTree([{ path: 'src/index.ts', type: 'file' }]);",
-        "const navigationItems = [{ href: '/', isActive: true, label: 'Home' }];",
+        "const navigationItems = [{ href: '/', isActive: true, label: 'Home' }, { href: '/repository-format/', isActive: false, label: 'Repository Format', compactLabel: 'Repo. Format' }] satisfies ComponentProps<typeof SiteHeader>['navigationItems'];",
+        'const fileProps = { path: "src/returns/policy.ts", label: "Return policy", tone: "warning" } satisfies ComponentProps<typeof FilePreview>;',
+        'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", hideIconOnMobile: true, ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
         'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
         '---',
         '<html lang="en" data-theme="system">',
@@ -221,6 +227,9 @@ describe('published website UI package', () => {
         '    <InlineBrandText text="Use moldea here." />',
         '    <InlineBrandText text="Use MOLDEA compactly." variant="compact" />',
         '    <ActionButton>Run</ActionButton>',
+        '    <FilePreview {...fileProps}><span slot="icon">File</span><StatusBadge slot="status" label="Missing" size="sm" tone="danger" /><pre class="code-block" tabindex="0" role="region" aria-label="Return policy source"><code>export const returnWindowDays = 30;</code></pre></FilePreview>',
+        '    <Dialog id="composed-result" title="Reference not found" triggerLabel="Inspect composed result" isOverlayCloseEnabled><ResultSummary slot="heading" {...summaryProps}><span slot="icon">!</span><StatusBadge slot="status" label="Invalid" size="sm" tone="danger" /></ResultSummary><p>Composed result body</p></Dialog>',
+        '    <ResultSummary title="Metadata available" description="Logical paths only." as="h3" />',
         '    <Dialog id="fixture-result" title="Fixture result" triggerLabel="View result"><div slot="heading"><h2 id="fixture-result-title">Fixture result</h2><StatusBadge label="Invalid" size="sm" tone="danger" /><p>Recorded check</p></div><p>Result content</p></Dialog>',
         '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
         '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
@@ -274,6 +283,16 @@ describe('published website UI package', () => {
       /<h2[^>]*id="fixture-result-title"[^>]*>Fixture result<\/h2>\s*<span[^>]*>\s*Invalid\s*<\/span>/u,
     );
     expect(fixtureHtml).toContain('Details without a badge');
+    expect(fixtureHtml).toContain('src/returns/policy.ts');
+    expect(fixtureHtml).toContain('Return policy source');
+    expect(fixtureHtml).toContain('aria-labelledby="composed-result-title"');
+    expect(fixtureHtml).toMatch(
+      /<h2[^>]*id="composed-result-title"[^>]*>Reference not found<\/h2>/u,
+    );
+    expect(fixtureHtml).toContain('Composed result body');
+    expect(fixtureHtml).toContain('Repo. Format');
+    expect(fixtureHtml).toContain('aria-label="Repository Format"');
+    expect(fixtureHtml).toMatch(/<h3[^>]*>Metadata available<\/h3>/u);
     expect(fixtureHtml).toMatch(/<dialog\b[^>]*id="fixture-wide"[^>]*sm:max-w-5xl/u);
     expect(fixtureHtml).toContain('aria-describedby="fixture-wide-description"');
     expect(fixtureHtml).toMatch(

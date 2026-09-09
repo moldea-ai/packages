@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.4.0
+pnpm add @moldea.ai/website-ui@1.5.0
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -65,10 +65,12 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/dialog`
 - `@moldea.ai/website-ui/evaluation-replay`
 - `@moldea.ai/website-ui/evaluation-replay-model`
+- `@moldea.ai/website-ui/file-preview`
 - `@moldea.ai/website-ui/inline-brand-text`
 - `@moldea.ai/website-ui/local-search`
 - `@moldea.ai/website-ui/markdown`
 - `@moldea.ai/website-ui/navigation-progress`
+- `@moldea.ai/website-ui/result-summary`
 - `@moldea.ai/website-ui/site-footer`
 - `@moldea.ai/website-ui/site-header`
 - `@moldea.ai/website-ui/status-badge`
@@ -79,6 +81,16 @@ Every component has a dedicated public subpath:
 `ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
 
 `SiteHeader`, `SiteFooter`, and `DocumentationShell` own responsive structure while consumers retain navigation data, accessible labels, copy, branding, actions, and page content. `TabbedPanels` keeps every panel readable without JavaScript and adds WAI-ARIA tab behavior, including Arrow Left, Arrow Right, Home, and End, after enhancement. `StatusBadge` exposes semantic tones and border treatments without defining domain status mappings.
+
+Each `SiteHeader` navigation item accepts `href`, `isActive`, `label`, and optional `compactLabel`. The desktop navigation shows the compact label below `xl` (1280px) when supplied. Wider desktop navigation and the mobile menu show the full label. Accessible names always identify the full destination. The header's existing `md` or `lg` desktop breakpoint remains independent of label selection.
+
+### Files and result summaries
+
+`FilePreview` receives `path`, optional `label`, and optional `tone`. Its header preserves an identifiable filename while truncating the directory prefix; the complete path remains selectable and readable by assistive technology without hover. Long filenames can wrap within the header. The default slot owns the body, `icon` replaces the default file icon, and `status` accepts a consumer-owned badge. This component does not parse files, choose excerpts, or define result semantics.
+
+`ResultSummary` receives `title`, `description`, optional `tone`, `headingId`, `as` (`p`, `h2`, or `h3`), `hideIconOnMobile`, and `ariaLabel`. Defaults are a paragraph heading, neutral tone, visible icon, and “Result” group label. The optional `icon` slot renders inside a 40px badge; supply a 20px decorative icon. The `status` slot sits beside the heading, outside its accessible name. Titles use 14px type and descriptions 12px, both with 20px line height. Both components use the `danger`, `info`, `neutral`, `success`, and `warning` semantic tones.
+
+For a dialog heading, compose `ResultSummary` in Dialog's `heading` slot, set `as="h2"` and `headingId` to `${id}-title`, keep `title` equal to Dialog's title, and use `hideIconOnMobile`. Consumer-owned status badges can use `size="sm"`. Neither component depends on Core, runs checks, or maps domain statuses. Derive their props with Astro's `ComponentProps` through the documented public subpaths.
 
 `StatusBadge` defaults to `size="md"`. Use `size="sm"` for secondary status beside compact headings: a 20px minimum height, tighter padding, and lighter 10px lettering. Both sizes retain the same semantic colors and wrapping behavior.
 
@@ -125,9 +137,9 @@ Use these typed props to customize presentation without replacing the shared con
 
 For example, add `size="large" triggerVariant="primary" triggerSize="lg"` to the example above. Import the component through `@moldea.ai/website-ui/dialog`; consumers can derive its props with Astro's `ComponentProps<typeof Dialog>`.
 
-### Upgrading an existing website
+### Website composition
 
-Update the consumer's dependency and lockfile to the released package version before using new dialog props. Websites upgrading from 1.2.x, including the Skill website, must remove obsolete `prose-moldea-wrap-code` classes and adopt the explicit plain-text labels described above. Verify long code, replay content, keyboard scrolling, and both themes at mobile and desktop widths; do not restore page-wide code-wrapping overrides. Website UI does not change consumer source files or lockfiles automatically.
+Each website owns its dependency and lockfile. Use the documented public component subpaths, shared code-wrapping policy, semantic tones, and supported slots. Verify long code, replay content, keyboard scrolling, and both themes at mobile and desktop widths. Website UI does not modify consumer source files or lockfiles.
 
 ## Development
 

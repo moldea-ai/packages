@@ -5,6 +5,7 @@ import ActionLink from '../action-link/action-link.component.astro';
 import ThemeControl from '../theme-control/theme-control.component.astro';
 
 export interface ISiteHeaderNavigationItem {
+  compactLabel?: string;
   href: string;
   isActive: boolean;
   label: string;
@@ -63,13 +64,31 @@ const responsiveClasses = breakpointClasses[breakpoint];
       aria-label={navigationAriaLabel}
     >
       {
-        navigationItems.map(({ href, isActive, label }) => (
+        navigationItems.map(({ href, isActive, label, compactLabel }) => (
           <a
-            class="rounded-lg navigation-link px-3 py-2 text-sm"
+            class="rounded-lg navigation-link px-3 py-2 text-sm whitespace-nowrap"
             href={href}
+            aria-label={compactLabel ? label : undefined}
             aria-current={isActive ? 'page' : undefined}
           >
-            {label}
+            {compactLabel ? (
+              <>
+                <span
+                  class="xl:hidden"
+                  aria-hidden="true"
+                >
+                  {compactLabel}
+                </span>
+                <span
+                  class="hidden xl:inline"
+                  aria-hidden="true"
+                >
+                  {label}
+                </span>
+              </>
+            ) : (
+              label
+            )}
           </a>
         ))
       }

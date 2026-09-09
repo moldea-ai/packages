@@ -1,0 +1,64 @@
+---
+import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
+import type { IStatusBadgeTone } from '../status-badge/status-badge.component.astro';
+
+// balanced presentation shared by outcome cards and slotted dialog headings
+export interface Props {
+  title: string;
+  description: string;
+  tone?: IStatusBadgeTone;
+  headingId?: string;
+  as?: 'p' | 'h2' | 'h3';
+  hideIconOnMobile?: boolean;
+  ariaLabel?: string;
+}
+
+const {
+  title,
+  description,
+  tone = 'neutral',
+  headingId,
+  as: Title = 'p',
+  hideIconOnMobile = false,
+  ariaLabel = 'Result',
+} = Astro.props;
+const toneClasses = {
+  danger: 'border-destructive/40 bg-destructive/10',
+  info: 'border-info/40 bg-info/10',
+  neutral: 'border-border bg-muted',
+  success: 'border-border bg-secondary',
+  warning: 'border-warning/60 bg-warning/15',
+} as const;
+---
+
+<div
+  class="flex min-w-0 items-center gap-3"
+  role="group"
+  aria-label={ariaLabel}
+>
+  {
+    Astro.slots.has('icon') && (
+      <span
+        class:list={[
+          'size-10 shrink-0 items-center justify-center rounded-lg border',
+          hideIconOnMobile ? 'hidden sm:flex' : 'flex',
+          toneClasses[tone],
+        ]}
+        aria-hidden="true"
+      >
+        <slot name="icon" />
+      </span>
+    )
+  }
+  <div class="min-w-0 flex-1">
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <Title
+        id={headingId}
+        class="text-sm leading-5 font-semibold"
+        ><InlineBrandText text={title} /></Title
+      >
+      <slot name="status" />
+    </div>
+    <p class="text-xs leading-5 text-muted-foreground"><InlineBrandText text={description} /></p>
+  </div>
+</div>

@@ -32,6 +32,8 @@ The generators assert actual outcomes before selecting display fields. Reviewed 
 
 The catalog is a finite, release-owned collection, not an accumulating user dataset. Each distinct case executes once per model generation and the resulting model is reused. Repository FS, CLI, and all ten adapters are direct build-time workspace dependencies alongside Core and Repository. No deterministic package code is shipped to visitors for these examples.
 
+Website UI's `FilePreview` owns file-header presentation and filename-preserving paths. Its `ResultSummary` owns the shared icon/title/description proportions in cards and dialog headings. The application composes these exports in `repository-check-preview` and `inspection-summary`, retaining ownership of source content and Core outcome mapping. Repository Format supplies the header's compact “Repo. Format” label below 1280px in desktop navigation; the mobile menu and wider screens keep the full label.
+
 ## Commands
 
 Run these from the repository root:

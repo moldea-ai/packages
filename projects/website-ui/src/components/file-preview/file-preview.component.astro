@@ -1,0 +1,55 @@
+---
+import { FileText } from '@lucide/astro';
+
+import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
+import type { IStatusBadgeTone } from '../status-badge/status-badge.component.astro';
+
+// file presentation only; consumers own source selection, status, and body content
+export interface Props {
+  path: string;
+  label?: string;
+  tone?: IStatusBadgeTone;
+}
+
+const { path, label, tone = 'neutral' } = Astro.props;
+const filenameStart = path.lastIndexOf('/');
+const directory = filenameStart < 0 ? '' : path.slice(0, filenameStart);
+const filename = filenameStart < 0 ? path : path.slice(filenameStart);
+const toneClasses = {
+  danger: 'border-destructive/40 bg-destructive/10',
+  info: 'border-info/40 bg-info/10',
+  neutral: 'border-border bg-muted/30',
+  success: 'border-border bg-secondary',
+  warning: 'border-warning/60 bg-warning/15',
+} as const;
+---
+
+<div class="min-w-0 overflow-hidden rounded-lg border">
+  <div class:list={['flex items-center gap-3 border-b px-3 py-3', toneClasses[tone]]}>
+    <span
+      class="shrink-0 text-muted-foreground"
+      aria-hidden="true"
+    >
+      <slot name="icon"><FileText class="size-5" /></slot>
+    </span>
+    <div class="min-w-0 flex-1">
+      {
+        label && (
+          <p class="mb-1 text-xs text-muted-foreground">
+            <InlineBrandText text={label} />
+          </p>
+        )
+      }
+      <code
+        class="flex text-xs whitespace-nowrap"
+        title={path}
+      >
+        <span class="min-w-0 truncate">{directory}</span><span
+          class="max-w-full shrink-0 break-all whitespace-normal">{filename}</span
+        >
+      </code>
+    </div>
+    <slot name="status" />
+  </div>
+  <slot />
+</div>
