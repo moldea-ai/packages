@@ -4,7 +4,7 @@
 
 Source-neutral, deterministic, content-safe interpretation of the `moldea` repository format.
 
-Version 3 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. It performs no filesystem, Git, or network access independently. Project validation returns content-free summaries, diagnostics, evidence, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
+Version 3.1 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. It performs no filesystem, Git, or network access independently. Project validation returns content-free summaries, diagnostics, evidence, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
 
 ## Install
 
@@ -67,7 +67,7 @@ const result = await core.validateProject({ repository });
 
 `validateProject` returns validity, format version, source identity, summary counts and digests, diagnostics, and runtime evidence. It never returns manifest, project, context, decision, runtime-guidance, mirror, description, or instruction bodies.
 
-`inspectProjectPage` provides bounded content-free views named `metadata`, `diagnostics`, `evidence`, and `all`. Each page uses a semantic continuation cursor tied to the validation digest and view. `readCanonicalContentPage` is the only Core project operation that returns a body, and it requires an explicit canonical `/moldea/**` file path, byte offset, and byte bound. Returned chunks end at a complete UTF-8 scalar.
+`inspectProjectPage` provides bounded content-free views named `metadata`, `diagnostics`, `evidence`, and `all`. The `metadata` and `all` views include one independently keyed `agent` record per canonical agent with exactly its `agentId` and manifest-declared `runtimeId`, distinct from asset metadata and adapter evidence. Each page uses a semantic continuation cursor tied to the complete inspection digest and view. `readCanonicalContentPage` is the only Core project operation that returns a body, and it requires an explicit canonical `/moldea/**` file path, byte offset, and byte bound. Returned chunks end at a complete UTF-8 scalar.
 
 ## Per-agent runtime adapters
 

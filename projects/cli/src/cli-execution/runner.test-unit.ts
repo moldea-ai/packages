@@ -35,12 +35,12 @@ const INSTALLED_PACKAGE_METADATA = Object.freeze({
     '@moldea.ai/adapter-openai': '3.0.1',
     '@moldea.ai/adapter-openai-agents-sdk': '2.0.1',
     '@moldea.ai/adapter-vercel-ai-sdk': '2.0.1',
-    '@moldea.ai/core': '3.0.1',
+    '@moldea.ai/core': '3.1.0',
     '@moldea.ai/repository': '2.0.0',
     '@moldea.ai/repository-fs': '2.0.1',
   }),
   supportedNodeRange: '>=22.11.0',
-  version: '7.0.1',
+  version: '7.1.0',
 });
 
 describe('runMoldeaCli', () => {
@@ -141,7 +141,7 @@ Options:
         invocationDirectory: INVOCATION_DIRECTORY,
         packageMetadata: INSTALLED_PACKAGE_METADATA,
       }),
-    ).resolves.toStrictEqual({ exitCode: 0, stderr: '', stdout: '7.0.1\n' });
+    ).resolves.toStrictEqual({ exitCode: 0, stderr: '', stdout: '7.1.0\n' });
     expect(executeCommand).not.toHaveBeenCalled();
   });
 
@@ -170,7 +170,7 @@ Options:
       exitCode: 2,
       stderr: '',
       stdout:
-        '{"cliVersion":"7.0.1","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":4,"status":"error"}\n',
+        '{"cliVersion":"7.1.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":4,"status":"error"}\n',
     });
   });
 
@@ -226,7 +226,7 @@ Options:
     expect(compositionResult.exitCode).toBe(0);
     expect(compositionResult.stderr).toBe('');
     expect(JSON.parse(compositionResult.stdout)).toMatchObject({
-      cliVersion: '7.0.1',
+      cliVersion: '7.1.0',
       command: 'composition',
       result: { repositoryFormatVersions: [1] },
       status: 'valid',
@@ -247,7 +247,7 @@ Options:
       exitCode: 3,
       stderr: '',
       stdout:
-        '{"cliVersion":"7.0.1","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":4,"status":"error"}\n',
+        '{"cliVersion":"7.1.0","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":4,"status":"error"}\n',
     });
   });
 });

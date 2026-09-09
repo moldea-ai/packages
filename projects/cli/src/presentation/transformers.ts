@@ -10,6 +10,7 @@ import { calculateMoldeaCliJsonDigest } from '../output-page/index.js';
 
 import { MOLDEA_CLI_GIT_WORKING_TREE_SOURCE } from './constants.js';
 import type {
+  IMoldeaCliAgentRecord,
   IMoldeaCliDiagnosticRecord,
   IMoldeaCliEvidenceRecord,
   IMoldeaCliInspectProjection,
@@ -64,6 +65,17 @@ const createInspectRecord = (
   index: number,
 ): IMoldeaCliInspectRecord => {
   const order = index.toString().padStart(6, '0');
+
+  if (item.kind === 'agent') {
+    const record: IMoldeaCliAgentRecord = {
+      agentId: item.agent.agentId,
+      key: createRecordKey(order, 'agent', item.agent.agentId, item.agent.runtimeId),
+      kind: 'agent',
+      runtimeId: item.agent.runtimeId,
+    };
+
+    return Object.freeze(record);
+  }
 
   if (item.kind === 'diagnostic') {
     return Object.freeze({

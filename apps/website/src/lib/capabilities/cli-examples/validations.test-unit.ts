@@ -5,7 +5,7 @@ import { CliCollectionResult } from './types.ts';
 import { parseCliExecution } from './validations.ts';
 
 const envelope = {
-  cliVersion: '7.0.1',
+  cliVersion: '7.1.0',
   command: 'validate',
   schemaVersion: 4,
   status: 'valid',
@@ -34,7 +34,7 @@ test.each([
       : null,
   };
   expect(
-    parseCliExecution({ stdout: JSON.stringify(output), exitStatus }, 'validate', '7.0.1'),
+    parseCliExecution({ stdout: JSON.stringify(output), exitStatus }, 'validate', '7.1.0'),
   ).toStrictEqual(output);
 });
 
@@ -52,7 +52,7 @@ test.each([
     parseCliExecution(
       { stdout: JSON.stringify({ ...envelope, ...changes }), exitStatus },
       'validate',
-      '7.0.1',
+      '7.1.0',
     ),
   ).toThrow();
 });
@@ -75,7 +75,7 @@ test('refuses partial success alongside an operational error', () => {
         exitStatus: 3,
       },
       'validate',
-      '7.0.1',
+      '7.1.0',
     ),
   ).toThrow('unexpected facts');
 });

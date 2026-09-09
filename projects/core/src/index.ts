@@ -21,6 +21,7 @@ export type {
   INormalizedText,
   IProjectMetadataItem,
   IProjectMetadataKind,
+  IProjectAgentAssignmentItem,
   IProjectInspectionItem,
   IProjectInspectionCounts,
   IProjectInspectionPage,

@@ -35,7 +35,7 @@
     "@moldea.ai/adapter-openai-agents-sdk": "workspace:^2.0.0",
     "@moldea.ai/adapter-vercel-ai-sdk": "workspace:^2.0.0",
     "@moldea.ai/cli": "workspace:^7.0.0",
-    "@moldea.ai/core": "workspace:3.0.0",
+    "@moldea.ai/core": "workspace:^3.0.0",
     "@moldea.ai/repository": "workspace:2.0.0",
     "@moldea.ai/repository-fs": "workspace:^2.0.0",
     "@astrojs/check": "0.9.10",

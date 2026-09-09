@@ -107,6 +107,12 @@ export interface IProjectMetadataItem {
   readonly scalarLength: number | null;
 }
 
+// canonical agent-to-runtime assignment exposed without manifest or agent bodies
+export interface IProjectAgentAssignmentItem {
+  readonly agentId: string;
+  readonly runtimeId: string;
+}
+
 // closed content-free views supported by paged project inspection
 export type IProjectInspectionView = 'all' | 'diagnostics' | 'evidence' | 'metadata';
 
@@ -117,6 +123,7 @@ export interface IProjectInspectionPageInput extends IProjectValidationInput {
 }
 
 export type IProjectInspectionItem =
+  | { readonly agent: IProjectAgentAssignmentItem; readonly kind: 'agent' }
   | { readonly diagnostic: IDiagnostic; readonly kind: 'diagnostic' }
   | { readonly evidence: IRuntimeAdapterEvidence; readonly kind: 'evidence' }
   | { readonly kind: 'metadata'; readonly metadata: IProjectMetadataItem };

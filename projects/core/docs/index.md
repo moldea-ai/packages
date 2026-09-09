@@ -7,7 +7,7 @@ order: 0
 
 # Deterministic repository interpretation
 
-`@moldea.ai/core` version 3 is the source-neutral interpretation layer for the `moldea` repository format. It accepts caller-supplied text or an `IRepositoryReader`, validates universal repository structure, matches changed paths against declared relationships, exposes bounded content-free inspection, and invokes configured runtime adapters through per-agent contexts.
+`@moldea.ai/core` version 3.1 is the source-neutral interpretation layer for the `moldea` repository format. It accepts caller-supplied text or an `IRepositoryReader`, validates universal repository structure, matches changed paths against declared relationships, exposes bounded content-free inspection, and invokes configured runtime adapters through per-agent contexts.
 
 Core never discovers or reads a filesystem, Git provider, or network on its own. Repository acquisition belongs to reader packages and local composition belongs to the CLI.
 
@@ -21,7 +21,7 @@ Core implements Repository Format version `1`. The [Repository Format specificat
 - all-or-nothing manifest and decision parsing
 - cheap content-free changed-path relationship matching
 - content-free project validation summaries, diagnostics, and evidence
-- bounded content-free metadata, diagnostic, evidence, or combined pages
+- bounded content-free agent-assignment, asset-metadata, diagnostic, evidence, or combined pages
 - explicit canonical content pages by path and byte range
 - built-in `custom` runtime validation
 - per-agent package-backed runtime-adapter invocation

@@ -109,7 +109,7 @@ importers:
         specifier: workspace:^7.0.0
         version: link:../../projects/cli
       '@moldea.ai/core':
-        specifier: workspace:3.0.0
+        specifier: workspace:^3.0.0
         version: link:../../projects/core
       '@moldea.ai/repository':
         specifier: workspace:2.0.0

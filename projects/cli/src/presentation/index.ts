@@ -8,6 +8,7 @@ export {
 
 // types
 export type {
+  IMoldeaCliAgentRecord,
   IMoldeaCliAssetIdentity,
   IMoldeaCliDiagnosticRecord,
   IMoldeaCliError,

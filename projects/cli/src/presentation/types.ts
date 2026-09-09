@@ -50,6 +50,13 @@ export interface IMoldeaCliAssetIdentity {
   readonly path: IRepositoryPath;
 }
 
+// canonical assignment record kept distinct from runtime evidence and installed composition
+export interface IMoldeaCliAgentRecord extends IMoldeaCliOutputRecord {
+  readonly agentId: string;
+  readonly kind: 'agent';
+  readonly runtimeId: string;
+}
+
 export interface IMoldeaCliDiagnosticRecord extends IMoldeaCliOutputRecord {
   readonly code: string;
   readonly entity: IDiagnosticEntity | null;
@@ -90,7 +97,10 @@ export interface IMoldeaCliEvidenceRecord extends IMoldeaCliOutputRecord {
 }
 
 export type IMoldeaCliInspectRecord =
-  IMoldeaCliDiagnosticRecord | IMoldeaCliEvidenceRecord | IMoldeaCliMetadataRecord;
+  | IMoldeaCliAgentRecord
+  | IMoldeaCliDiagnosticRecord
+  | IMoldeaCliEvidenceRecord
+  | IMoldeaCliMetadataRecord;
 
 export interface IMoldeaCliInspectProjectMetadata {
   readonly manifest: IMoldeaCliAssetIdentity;
