@@ -86,7 +86,7 @@ Every immediate child of [`projects/`](projects/) is an independently meaningful
 
 `/docs` is reserved for concise, durable project concepts and processes. API and HTTP endpoint documentation belongs outside `/docs`, in the owning project's established documentation location.
 
-The website owns its getting-started guide, display-only discovery copy, and independent moved-file and missing-tool-implementation examples generated through real Core and in-memory reader exports. Package documentation and canonical compatibility data remain authoritative; see [`apps/website/README.md`](apps/website/README.md) for generation and verification ownership.
+The website owns its getting-started guide, display-only discovery copy, and synthetic examples generated through real public package exports and the declared CLI executable. Its internal capability catalog covers Core operations and diagnostics, runtime evidence, reader behavior, and CLI commands. Package documentation and canonical runtime support data remain authoritative; see [`apps/website/README.md`](apps/website/README.md) for generation and verification ownership.
 
 ## Dependency architecture
 
@@ -97,7 +97,8 @@ repository-fs       → repository
 core                → repository
 adapter-*           → core
 cli                 → repository + repository-fs + core + active adapter packages
-packages-website    → website-ui + core + repository (Core and Repository are build-time dependencies)
+packages-website    → website-ui + core + repository + repository-fs + cli + adapter-*
+                     (deterministic packages are build-time dependencies)
 ```
 
 Shared internal packages may support first-class projects but never depend on them. Published packages must bundle private internal implementation or otherwise ensure that private imports and declarations do not leak into the consumer artifact.
@@ -153,21 +154,21 @@ pnpm test
 
 Useful focused commands:
 
-| Command                       | Purpose                                                                      |
-| ----------------------------- | ---------------------------------------------------------------------------- |
-| `pnpm test:root`              | Run root unit and integration tests.                                         |
-| `pnpm test:unit`              | Run root and package unit-test tasks.                                        |
-| `pnpm test:integration`       | Run root and package integration-test tasks.                                 |
-| `pnpm test:e2e`               | Build and run installed-package end-to-end test tasks.                       |
-| `pnpm format`                 | Format repository-maintained files.                                          |
-| `pnpm compatibility:generate` | Regenerate technical compatibility documentation.                            |
-| `pnpm compatibility:check`    | Verify matrix, package, and generated-artifact synchronization.              |
-| `pnpm docs:generate`          | Generate the ignored deterministic website content model.                    |
-| `pnpm website:prepare`        | Build Core, its dependency closure, and Website UI for direct website tasks. |
-| `pnpm docs:check`             | Validate package discovery, docs, exports, routes, and compatibility.        |
-| `pnpm website:dev`            | Generate content and run the local Astro development server.                 |
-| `pnpm website:build`          | Build, index, and validate the complete static production website.           |
-| `pnpm website:check`          | Run website docs, tests, types, lint, build, and artifact checks.            |
+| Command                       | Purpose                                                                     |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `pnpm test:root`              | Run root unit and integration tests.                                        |
+| `pnpm test:unit`              | Run root and package unit-test tasks.                                       |
+| `pnpm test:integration`       | Run root and package integration-test tasks.                                |
+| `pnpm test:e2e`               | Build and run installed-package end-to-end test tasks.                      |
+| `pnpm format`                 | Format repository-maintained files.                                         |
+| `pnpm compatibility:generate` | Regenerate technical compatibility documentation.                           |
+| `pnpm compatibility:check`    | Verify matrix, package, and generated-artifact synchronization.             |
+| `pnpm docs:generate`          | Generate the ignored deterministic website content model.                   |
+| `pnpm website:prepare`        | Build CLI, its dependency closure, and Website UI for direct website tasks. |
+| `pnpm docs:check`             | Validate package discovery, docs, exports, routes, and compatibility.       |
+| `pnpm website:dev`            | Generate content and run the local Astro development server.                |
+| `pnpm website:build`          | Build, index, and validate the complete static production website.          |
+| `pnpm website:check`          | Run website docs, tests, types, lint, build, and artifact checks.           |
 
 Root `docs:check`, `docs:generate`, `website:dev`, and `website:check` run `website:prepare` first. Direct website-package commands are low-level tasks and require that preparation. Root `website:build` uses Turbo's dependency ordering. The website-specific tasks in `turbo.json` own source/environment cache inputs and restore the generated model together with its matching static artifact. An uncached website-only cleanup runs before building or restoring those outputs so removed pages cannot survive a cache hit.
 

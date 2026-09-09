@@ -45,7 +45,7 @@
     "website:build": "turbo run build --filter @moldea.ai/packages-website",
     "website:check": "pnpm website:prepare && pnpm --filter @moldea.ai/packages-website check",
     "website:dev": "pnpm website:prepare && pnpm --filter @moldea.ai/packages-website dev",
-    "website:prepare": "turbo run build --filter @moldea.ai/core... --filter @moldea.ai/website-ui"
+    "website:prepare": "turbo run build --filter @moldea.ai/cli... --filter @moldea.ai/website-ui"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -33,11 +33,12 @@ import {
 } from '../discovery-copy/index.ts';
 import { createInspectionExample } from '../inspection-example/index.ts';
 import { createInstructionExample } from '../instruction-example/index.ts';
+import { createCapabilities } from '../capabilities/index.ts';
 
 const REPOSITORY_URL = 'https://github.com/moldea-ai/packages';
 const EXCLUDED_DIRECTORY_NAMES = new Set(['_archive', '_archives', '_backup', '_backups']);
 const GENERATED_NOTICE =
-  'Generated from project manifests, package-owned documentation, public exports, specifications/repository-format.md, compatibility/runtimes.yaml, website-owned content and display metadata, and real Core checks of synthetic example snapshots. Do not edit generated output.';
+  'Generated from project manifests, package-owned documentation, public exports, specifications/repository-format.md, compatibility/runtimes.yaml, website-owned content and display metadata, and real Core, adapter, reader, and CLI operations on synthetic examples. Do not edit generated output.';
 
 const PackageManifestSchema = z.object({
   bin: z.record(z.string(), z.string()).optional(),
@@ -548,6 +549,7 @@ export const createLlmsText = (
 
 /**
  * Builds the complete deterministic website model without writing generated output.
+ * Capability examples use disposable filesystem and Git workspaces that are removed before completion.
  * @returns A promise resolving to the validated content, real inspection example, and discovery model.
  * @throws
  * - If source content, discovery metadata, route ownership, or the real inspection example is invalid.
@@ -577,6 +579,11 @@ export const createWebsiteModel = async (): Promise<IWebsiteModel> => {
   );
   const inspectionExample = await createInspectionExample();
   const instructionExample = await createInstructionExample();
+  const capabilities = await createCapabilities(
+    repositoryRoot,
+    packages,
+    runtimeCompatibilityPublication,
+  );
   const routes = createRouteManifest(packages, adapters, gettingStarted);
   const searchRecords = createSearchRecords(
     packages,
@@ -588,6 +595,7 @@ export const createWebsiteModel = async (): Promise<IWebsiteModel> => {
 
   return {
     adapters,
+    capabilities,
     discoveryCopy,
     generatedNotice: GENERATED_NOTICE,
     gettingStarted,
