@@ -1,0 +1,47 @@
+---
+import { ArrowDown } from '@lucide/astro';
+import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
+import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
+
+// one declared connection illustrates scope matching, not semantic impact
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+if (example.result.kind !== 'inspection')
+  throw new Error('Scope illustration requires inspection facts.');
+const match = getCapabilityFactRows(example.result.facts.matches).find(
+  ({ field }) => field === 'bindings',
+);
+const owner = match?.owner;
+if (
+  typeof match?.inputPath !== 'string' ||
+  !owner ||
+  typeof owner !== 'object' ||
+  Array.isArray(owner) ||
+  typeof owner.id !== 'string'
+)
+  throw new Error('Scope illustration requires a declared file connection.');
+---
+
+<div class="min-w-0">
+  <FilePreview
+    path={match.inputPath.slice(1)}
+    label="Changed code"
+  />
+  <ConnectionLabel>
+    <ArrowDown
+      slot="icon"
+      class="size-4"
+      aria-hidden="true"
+    />Declared connection
+  </ConnectionLabel>
+  <FilePreview
+    path={owner.id.slice(1)}
+    label="Related project brief"
+  />
+  <p class="mt-3 text-xs leading-5 text-muted-foreground">
+    A place to review, not an automatic rewrite.
+  </p>
+</div>

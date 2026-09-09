@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/website-ui",
-  "version": "1.2.2",
+  "version": "1.6.0",
   "description": "Shared Astro foundations for moldea public websites.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/website-ui#readme",
   "bugs": {
@@ -47,6 +47,9 @@
       "types": "./dist/theme/index.d.ts",
       "import": "./dist/theme.js"
     },
+    "./accordion": {
+      "import": "./src/components/accordion/accordion.component.astro"
+    },
     "./action-button": {
       "import": "./src/components/action-button/action-button.component.astro"
     },
@@ -59,8 +62,17 @@
     "./breadcrumbs": {
       "import": "./src/components/breadcrumbs/breadcrumbs.component.astro"
     },
+    "./code-block": {
+      "import": "./src/components/code-block/code-block.component.astro"
+    },
+    "./connection-label": {
+      "import": "./src/components/connection-label/connection-label.component.astro"
+    },
     "./documentation-shell": {
       "import": "./src/components/documentation-shell/documentation-shell.component.astro"
+    },
+    "./dialog": {
+      "import": "./src/components/dialog/dialog.component.astro"
     },
     "./evaluation-replay": {
       "import": "./src/components/evaluation-replay/evaluation-replay.component.astro"
@@ -68,6 +80,12 @@
     "./evaluation-replay-model": {
       "types": "./dist/evaluation-replay/index.d.ts",
       "import": "./dist/evaluation-replay.js"
+    },
+    "./file-preview": {
+      "import": "./src/components/file-preview/file-preview.component.astro"
+    },
+    "./hero-backdrop": {
+      "import": "./src/components/hero-backdrop/hero-backdrop.component.astro"
     },
     "./inline-brand-text": {
       "import": "./src/components/inline-brand-text/inline-brand-text.component.astro"
@@ -84,6 +102,9 @@
     },
     "./site-footer": {
       "import": "./src/components/site-footer/site-footer.component.astro"
+    },
+    "./result-summary": {
+      "import": "./src/components/result-summary/result-summary.component.astro"
     },
     "./site-header": {
       "import": "./src/components/site-header/site-header.component.astro"

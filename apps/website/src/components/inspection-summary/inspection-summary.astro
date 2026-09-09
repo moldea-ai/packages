@@ -1,0 +1,41 @@
+---
+import { Link2, Unlink } from '@lucide/astro';
+import ResultSummary from '@moldea.ai/website-ui/result-summary';
+
+import type { IInspectionResultExcerpt } from '../../lib/inspection-example/index.ts';
+
+import type { IInspectionSummaryKind } from './types.ts';
+import { getInspectionSummaryCopy } from './utilities.ts';
+
+// one outcome treatment for the reference sequence and the missing-tool example
+interface Props {
+  result: IInspectionResultExcerpt;
+  summary: IInspectionSummaryKind;
+  headingId?: string;
+  hideIconOnMobile?: boolean;
+}
+const { result, summary, headingId, hideIconOnMobile = false } = Astro.props;
+const { title, description } = getInspectionSummaryCopy(result, summary);
+const Title = headingId ? 'h2' : 'p';
+const ResultIcon = result.valid ? Link2 : Unlink;
+---
+
+<ResultSummary
+  title={title}
+  description={description}
+  tone={result.valid ? 'success' : 'danger'}
+  as={Title}
+  headingId={headingId}
+  hideIconOnMobile={hideIconOnMobile}
+  ariaLabel="Check outcome"
+>
+  <ResultIcon
+    slot="icon"
+    class="size-5"
+    aria-hidden="true"
+  />
+  <slot
+    name="status"
+    slot="status"
+  />
+</ResultSummary>

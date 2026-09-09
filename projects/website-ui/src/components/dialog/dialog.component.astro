@@ -1,0 +1,266 @@
+---
+import { ArrowLeft, X } from '@lucide/astro';
+
+import ActionButton, {
+  type Props as IActionButtonProps,
+} from '../action-button/action-button.component.astro';
+
+// consumers own the unique document ID, trigger copy, and slotted dialog content
+export interface Props {
+  id: string;
+  title: string;
+  description?: string;
+  triggerLabel: string;
+  triggerAriaLabel?: string;
+  triggerVariant?: IActionButtonProps['variant'];
+  triggerSize?: 'compact' | Exclude<IActionButtonProps['size'], 'icon'>;
+  size?: 'medium' | 'large';
+  closeLabel?: string;
+  // matches the platform's opt-in dismissal for read-only content
+  isOverlayCloseEnabled?: boolean;
+}
+
+const {
+  id,
+  title,
+  description,
+  triggerLabel,
+  triggerAriaLabel,
+  triggerVariant = 'outline',
+  triggerSize = 'compact',
+  size = 'medium',
+  closeLabel = 'Close dialog',
+  isOverlayCloseEnabled = false,
+} = Astro.props;
+---
+
+<div data-dialog-root>
+  <ActionButton
+    variant={triggerVariant}
+    size={triggerSize === 'compact' ? 'sm' : triggerSize}
+    class={triggerSize === 'compact' ? 'py-1 text-xs [hidden]:hidden' : '[hidden]:hidden'}
+    aria-label={triggerAriaLabel}
+    aria-controls={id}
+    aria-haspopup="dialog"
+    data-dialog-trigger
+    hidden
+  >
+    {triggerLabel}
+  </ActionButton>
+  <dialog
+    id={id}
+    class:list={[
+      'fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden border-0 bg-background p-0 text-foreground outline-none [--dialog-exit-duration:300ms] [--dialog-motion-transform:translateY(0.25rem)] backdrop:bg-black/45 open:grid sm:m-auto sm:h-fit sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:rounded-xl sm:border sm:shadow-raised sm:[--dialog-exit-duration:200ms] sm:[--dialog-motion-transform:translateY(0.5rem)_scale(0.95)] sm:backdrop:backdrop-blur-xs dark:backdrop:bg-black/70',
+      size === 'large' ? 'sm:max-w-5xl' : 'sm:max-w-2xl',
+    ]}
+    aria-labelledby={`${id}-title`}
+    aria-describedby={description ? `${id}-description` : undefined}
+    data-website-ui-dialog
+    data-overlay-close-enabled={isOverlayCloseEnabled ? '' : undefined}
+  >
+    <header
+      class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 border-b pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-4 pl-[max(0.5rem,env(safe-area-inset-left))] sm:grid-cols-[minmax(0,1fr)_auto] sm:px-6 sm:py-4"
+    >
+      <div class="col-start-2 row-start-1 flex min-h-9 min-w-0 items-center sm:col-start-1">
+        <slot name="heading">
+          <h2
+            id={`${id}-title`}
+            class="min-w-0 text-lg font-semibold"
+          >
+            {title}
+          </h2>
+        </slot>
+      </div>
+      <form
+        method="dialog"
+        class="col-start-1 row-start-1 sm:col-start-2"
+        data-dialog-close-form
+      >
+        <ActionButton
+          type="submit"
+          variant="ghost"
+          size="icon"
+          class="size-9 sm:size-7 sm:rounded-md"
+          aria-label={closeLabel}
+          autofocus
+        >
+          <ArrowLeft
+            class="size-4 sm:hidden"
+            aria-hidden="true"
+          />
+          <X
+            class="hidden size-4 sm:block"
+            aria-hidden="true"
+          />
+        </ActionButton>
+      </form>
+      {
+        description && (
+          <p
+            id={`${id}-description`}
+            class="col-span-2 mt-1 px-2 text-sm leading-6 text-muted-foreground sm:px-0"
+          >
+            {description}
+          </p>
+        )
+      }
+    </header>
+    <div
+      class="min-h-0 min-w-0 overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6"
+    >
+      <slot />
+    </div>
+  </dialog>
+</div>
+
+<script>
+  /** Enhances optional detail triggers while native dialogs own modality and keyboard focus. */
+  const initializeDialogs = (): void => {
+    for (const root of document.querySelectorAll<HTMLElement>('[data-dialog-root]')) {
+      if (root.dataset['enhanced'] === 'true') continue;
+      const trigger = root.querySelector<HTMLButtonElement>(':scope > [data-dialog-trigger]');
+      const dialog = root.querySelector<HTMLDialogElement>(':scope > dialog');
+      if (trigger === null || dialog === null || typeof dialog.showModal !== 'function') continue;
+
+      let closeRequest: symbol | undefined;
+      /**
+       * Keeps native modality until exit completes; navigation and reopening invalidate old exits.
+       * @returns A promise that resolves after dismissal or invalidation by a newer session.
+       */
+      const requestClose = async (): Promise<void> => {
+        if (!dialog.open || closeRequest !== undefined) return;
+        const request = Symbol();
+        closeRequest = request;
+        dialog.dataset['closing'] = '';
+        // cancellation (including reduced-motion changes) must still finish dismissal
+        await Promise.allSettled(dialog.getAnimations().map((animation) => animation.finished));
+        if (closeRequest === request && dialog.isConnected && dialog.open) dialog.close();
+      };
+      trigger.addEventListener('click', () => {
+        if (dialog.open) return;
+        closeRequest = undefined;
+        delete dialog.dataset['closing'];
+        dialog.showModal();
+      });
+      dialog.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        void requestClose();
+      });
+      dialog.querySelector('[data-dialog-close-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        void requestClose();
+      });
+      dialog.addEventListener('close', () => {
+        if (dialog.open) return;
+        closeRequest = undefined;
+        delete dialog.dataset['closing'];
+      });
+      if (dialog.hasAttribute('data-overlay-close-enabled')) {
+        let didPressOverlay = false;
+        /** Native backdrop events target the dialog, so exclude its panel bounds. */
+        const isOverlayEvent = (event: MouseEvent): boolean => {
+          if (event.target !== dialog) return false;
+          const bounds = dialog.getBoundingClientRect();
+          return (
+            event.clientX < bounds.left ||
+            event.clientX > bounds.right ||
+            event.clientY < bounds.top ||
+            event.clientY > bounds.bottom
+          );
+        };
+        dialog.addEventListener('pointerdown', (event) => {
+          didPressOverlay = event.isPrimary && event.button === 0 && isOverlayEvent(event);
+        });
+        dialog.addEventListener('pointercancel', () => {
+          didPressOverlay = false;
+        });
+        dialog.addEventListener('click', (event) => {
+          const shouldClose = didPressOverlay && event.button === 0 && isOverlayEvent(event);
+          didPressOverlay = false;
+          if (shouldClose) void requestClose();
+        });
+        dialog.addEventListener('close', () => {
+          didPressOverlay = false;
+        });
+      }
+      root.dataset['enhanced'] = 'true';
+      trigger.hidden = false;
+    }
+  };
+
+  initializeDialogs();
+  document.addEventListener('astro:page-load', initializeDialogs);
+  document.addEventListener('astro:before-swap', () => {
+    for (const dialog of document.querySelectorAll<HTMLDialogElement>(
+      '[data-website-ui-dialog]:modal',
+    )) {
+      dialog.close();
+    }
+  });
+</script>
+
+<style>
+  /* Native modality makes the page inert; also prevent background scrolling. */
+  :global(html:has([data-website-ui-dialog]:modal)) {
+    overflow: hidden;
+  }
+
+  /* Match platform dialog motion without animating content dimensions. */
+  @media (prefers-reduced-motion: no-preference) {
+    dialog:modal {
+      animation: dialog-enter 300ms ease-out both;
+    }
+
+    dialog:modal::backdrop {
+      animation: dialog-backdrop-enter 300ms ease-out both;
+    }
+
+    dialog[data-closing]:modal {
+      animation: dialog-exit var(--dialog-exit-duration) ease-in both;
+    }
+
+    dialog[data-closing]:modal::backdrop {
+      animation: dialog-backdrop-exit 200ms ease-in both;
+    }
+  }
+
+  @keyframes dialog-enter {
+    from {
+      opacity: 0;
+      transform: var(--dialog-motion-transform);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes dialog-exit {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: var(--dialog-motion-transform);
+    }
+  }
+
+  @keyframes dialog-backdrop-enter {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes dialog-backdrop-exit {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+</style>

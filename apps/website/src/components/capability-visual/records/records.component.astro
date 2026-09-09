@@ -1,0 +1,68 @@
+---
+import { FileDiff, FileMinus, FilePlus, Folder } from '@lucide/astro';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+
+import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
+
+// paths and change kinds come from the executed snapshot comparison
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+if (example.result.kind !== 'reader')
+  throw new Error('Snapshot illustration requires a reader result.');
+const changes = getCapabilityFactRows(example.result.facts.pages).flatMap((page) =>
+  getCapabilityFactRows(page.changes),
+);
+const changeLabels: Record<string, string> = {
+  added: 'Added',
+  deleted: 'Deleted',
+  modified: 'Edited',
+  'type-changed': 'Now a folder',
+};
+const changeIcons = {
+  added: FilePlus,
+  deleted: FileMinus,
+  modified: FileDiff,
+  'type-changed': Folder,
+};
+---
+
+<ul
+  class="divide-y rounded-lg border px-3"
+  aria-label="Changed repository paths"
+>
+  {
+    changes.map((change) => {
+      const kind = String(change.kind);
+      const Icon = changeIcons[kind as keyof typeof changeIcons];
+      if (!Icon || !changeLabels[kind])
+        throw new Error('Snapshot illustration requires a known change kind.');
+      if (kind === 'type-changed' && (change.fromType !== 'file' || change.toType !== 'directory'))
+        throw new Error('Snapshot illustration requires its file-to-folder change.');
+      return (
+        <li class="flex items-center gap-3 py-3">
+          <Icon
+            class:list={[
+              'size-4 shrink-0',
+              kind === 'deleted'
+                ? 'text-destructive'
+                : kind === 'type-changed'
+                  ? 'text-muted-foreground'
+                  : 'text-info',
+            ]}
+            aria-hidden="true"
+          />
+          <span class="min-w-0 flex-1">
+            <code class="inline-code text-xs break-all">{String(change.path)}</code>
+          </span>
+          <StatusBadge
+            size="sm"
+            label={changeLabels[kind]}
+            tone={kind === 'deleted' ? 'danger' : kind === 'type-changed' ? 'neutral' : 'info'}
+          />
+        </li>
+      );
+    })
+  }
+</ul>

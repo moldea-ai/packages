@@ -1,0 +1,53 @@
+---
+import { Equal, EqualNot } from '@lucide/astro';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+
+import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
+import { getDigestIllustration } from './utilities.ts';
+
+// compare actual input excerpts and complete digest equality, not abbreviated hash strings
+interface Props {
+  example: ICapabilityCase;
+}
+const rows = getDigestIllustration(Astro.props.example);
+---
+
+<ul
+  class="min-w-0 divide-y rounded-lg border px-4"
+  aria-label="Text fingerprint comparison"
+>
+  {
+    rows.map((row, index) => (
+      <li class="py-4">
+        <p class="mb-2 text-xs text-muted-foreground">{row.label}</p>
+        <p class="text-sm leading-7">
+          {row.before}
+          <strong class="rounded-md bg-code px-2 py-1 text-xl font-semibold tracking-tight text-code-foreground">
+            {row.days} days
+          </strong>
+          {row.after}
+        </p>
+        {index > 0 && (
+          <div class="mt-3 flex items-center gap-2">
+            {row.isSame ? (
+              <Equal
+                class="size-4 shrink-0 text-info"
+                aria-hidden="true"
+              />
+            ) : (
+              <EqualNot
+                class="size-4 shrink-0 text-warning"
+                aria-hidden="true"
+              />
+            )}
+            <StatusBadge
+              label={row.isSame ? 'Same fingerprint' : 'Different fingerprint'}
+              tone={row.isSame ? 'info' : 'warning'}
+              size="sm"
+            />
+          </div>
+        )}
+      </li>
+    ))
+  }
+</ul>

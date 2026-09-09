@@ -12,7 +12,7 @@ const searchIndexUrl = withBase('/search-index.json', basePath);
 
 <BaseLayout
   title="Search documentation"
-  description="Search public moldea package documentation and official runtime adapter status pages locally with no hosted service."
+  description="Search public moldea package documentation, deterministic capabilities, and runtime adapters locally with no hosted service."
   {breadcrumbs}
 >
   <section class="page-shell pt-8 pb-section-gap">
@@ -21,28 +21,33 @@ const searchIndexUrl = withBase('/search-index.json', basePath);
       <p class="eyebrow mb-5">Local static search</p>
       <h1 class="section-title font-semibold">Find the contract, not a copy.</h1>
       <p class="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-        Search package-owned documentation and matrix-derived adapter pages. The index is generated
-        from repository sources and sends no query to a hosted service.
+        Search package-owned documentation, executable capability examples, and runtime adapters.
+        The index is generated from repository sources and sends no query to a hosted service.
       </p>
 
       <LocalSearch
         action={withBase('/search/', basePath)}
         failureMessage="The local search index could not be loaded. Use package navigation instead."
-        initialPrompt="Enter a package, concept, API symbol, or adapter ID."
-        noResultsMessage="No matching package documentation or adapter status was found."
+        initialPrompt="Enter a package, capability, API symbol, or adapter ID."
+        noResultsMessage="No matching documentation, capability, or adapter was found."
         placeholder="e.g. repository snapshots"
         {searchIndexUrl}
+        shouldFocusOnLoad
       />
 
       <noscript>
         <div class="mt-8 rounded-xl border bg-accent p-5 leading-7 text-accent-foreground">
           Interactive search requires JavaScript. All documentation remains available through the <a
-            class="font-bold underline"
+            class="text-link"
             href={withBase('/packages/', basePath)}
             >package</a
-          >
-          and <a
-            class="font-bold underline"
+          >,
+          <a
+            class="text-link"
+            href={withBase('/capabilities/', basePath)}
+            >capability</a
+          >, and <a
+            class="text-link"
             href={withBase('/adapters/', basePath)}
             >adapter</a
           > navigation.
@@ -51,14 +56,3 @@ const searchIndexUrl = withBase('/search-index.json', basePath);
     </div>
   </section>
 </BaseLayout>
-
-<script>
-  const focusSearchInput = (): void => {
-    document
-      .querySelector<HTMLInputElement>('[data-local-search] [data-search-input]')
-      ?.focus({ preventScroll: true });
-  };
-
-  document.addEventListener('astro:page-load', focusSearchInput);
-  focusSearchInput();
-</script>

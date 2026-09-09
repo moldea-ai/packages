@@ -3,6 +3,10 @@ import type {
   IRuntimeCompatibilityPublicationV1,
 } from '../runtime-compatibility-publication/index.ts';
 import type { IRepositoryFormatSpecification } from '../repository-format-specification/index.ts';
+import type { IDiscoveryCopy } from '../discovery-copy/index.ts';
+import type { IInspectionExampleState } from '../inspection-example/index.ts';
+import type { IInstructionExample } from '../instruction-example/index.ts';
+import type { ICapabilities } from '../capabilities/index.ts';
 
 // documentation source attached to one generated package route
 export interface IPackageDocument {
@@ -39,7 +43,7 @@ export interface IPublicPackage {
   description: string;
   documents: IPackageDocument[];
   engines: Record<string, string>;
-  family: 'runtime-adapters' | 'skill-core-tooling' | 'website-foundations';
+  family: 'runtime-adapters' | 'skill-core-tooling';
   name: string;
   npmUrl: string;
   repositoryDirectory: string;
@@ -68,7 +72,12 @@ export interface ISearchRecord {
 // deterministic website model generated exclusively from repository-owned sources
 export interface IWebsiteModel {
   adapters: IAdapterPage[];
+  capabilities: ICapabilities;
+  discoveryCopy: IDiscoveryCopy;
   generatedNotice: string;
+  gettingStarted: IPackageDocument;
+  inspectionExample: IInspectionExampleState[];
+  instructionExample: IInstructionExample;
   llmsText: string;
   packages: IPublicPackage[];
   repositoryFormatSpecification: IRepositoryFormatSpecification;

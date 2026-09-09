@@ -1,0 +1,45 @@
+---
+import { withBase } from '@moldea.ai/website-ui/site';
+import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
+import { InspectionState } from '../inspection-state/index.ts';
+
+// the fixed reference-check example is generated before Astro renders the page
+interface Props {
+  states: IInspectionExampleState[];
+}
+const { states } = Astro.props;
+---
+
+<section
+  id="how-it-works"
+  class="page-shell scroll-mt-20 py-12 sm:py-16"
+  aria-labelledby="inspection-title"
+>
+  <header class="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-end">
+    <div>
+      <p class="eyebrow mb-4">A real structural check</p>
+      <h2
+        id="inspection-title"
+        class="section-title text-3xl leading-tight font-semibold sm:text-4xl lg:text-5xl"
+      >
+        A file moves.<br />The connection breaks.
+      </h2>
+    </div>
+    <p class="text-lg leading-8 text-muted-foreground">
+      A project note points to a code file. Core catches the connection left behind when that file
+      moves.
+    </p>
+  </header>
+  <div class="grid gap-0 sm:gap-4 lg:grid-cols-3">
+    {states.map((state) => <InspectionState {state} />)}
+  </div>
+  <p class="mt-5 max-w-4xl text-sm leading-6 text-muted-foreground">
+    <strong class="text-foreground">Structure, not semantics.</strong> Real Core results from an example
+    repository. These checks verify file references, not program behavior. A developer makes the repair.
+  </p>
+  <a
+    class="mt-4 inline-block text-link text-sm"
+    href={withBase('/capabilities/', import.meta.env.BASE_URL)}
+    >Explore capabilities</a
+  >
+</section>

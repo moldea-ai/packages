@@ -1,0 +1,103 @@
+---
+import { ChevronDown } from '@lucide/astro';
+import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
+
+// sibling items share a document-unique group name; at most one may be initially open
+export interface Props {
+  id: string;
+  group: string;
+  title: string;
+  description?: string;
+  isOpen?: boolean;
+}
+const { id, group, title, description, isOpen = false } = Astro.props;
+if (!id.trim() || !group.trim() || !title.trim())
+  throw new Error('Accordion requires an ID, group, and title.');
+---
+
+<details
+  id={id}
+  name={group}
+  open={isOpen}
+  class="group/accordion min-w-0 scroll-mt-24 border-y sm:rounded-xl sm:border sm:bg-card"
+  data-accordion-item
+>
+  <summary
+    class="flex min-h-12 list-none items-center gap-3 px-1 py-4 transition-colors outline-none hover:bg-secondary/60 focus-visible:ring-inset active:bg-secondary motion-reduce:transition-none sm:rounded-xl sm:px-5 [&::-webkit-details-marker]:hidden"
+    aria-labelledby={`${id}-title`}
+    aria-describedby={description ? `${id}-description` : undefined}
+  >
+    <span class="min-w-0 flex-1">
+      <span
+        id={`${id}-title`}
+        class="block text-sm leading-6 font-semibold sm:text-base"
+        ><InlineBrandText text={title} /></span
+      >
+      {
+        description && (
+          <span
+            id={`${id}-description`}
+            class="mt-1 block text-xs leading-5 text-muted-foreground"
+          >
+            <InlineBrandText text={description} />
+          </span>
+        )
+      }
+    </span>
+    <slot name="status" />
+    <ChevronDown
+      class="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open/accordion:rotate-180 motion-reduce:transition-none"
+      aria-hidden="true"
+    />
+  </summary>
+  <div
+    class="accordion-panel min-w-0 px-1 pt-1 pb-5 sm:px-5"
+    data-accordion-panel
+  >
+    <slot />
+  </div>
+</details>
+
+<style>
+  /* Variable-height content fades without a height transition or page-wide movement. */
+  details[open] > .accordion-panel {
+    animation: accordion-reveal 160ms ease-out;
+  }
+  @keyframes accordion-reveal {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    details[open] > .accordion-panel {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  /** Reveals hash-linked content after direct, history, and Astro client navigation. */
+  const revealAccordionAnchor = (): void => {
+    let anchorId: string;
+    try {
+      anchorId = decodeURIComponent(window.location.hash.slice(1));
+    } catch {
+      return;
+    }
+    if (!anchorId) return;
+    const target = document.getElementById(anchorId);
+    const item = target?.closest<HTMLDetailsElement>('details[data-accordion-item]');
+    if (!item) return;
+    item.open = true;
+    // opening an earlier item can change the anchor position after native hash scrolling
+    requestAnimationFrame(() => {
+      target?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    });
+  };
+  revealAccordionAnchor();
+  window.addEventListener('hashchange', revealAccordionAnchor);
+  document.addEventListener('astro:page-load', revealAccordionAnchor);
+</script>

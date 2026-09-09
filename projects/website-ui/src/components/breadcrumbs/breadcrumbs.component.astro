@@ -32,7 +32,7 @@ const { basePath = import.meta.env.BASE_URL, items } = Astro.props;
           )}
           {item.href ? (
             <a
-              class="rounded-sm underline-offset-4 hover:text-foreground hover:underline"
+              class="plain-link"
               href={withBase(item.href, basePath)}
             >
               {item.label}

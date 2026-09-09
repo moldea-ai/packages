@@ -5,17 +5,18 @@ import { isPublicRouteActive, withBase } from '@moldea.ai/website-ui/site';
 import Logo from './logo.astro';
 
 const navigation = [
+  { href: '/getting-started/', label: 'Get started' },
+  { href: '/capabilities/', label: 'Capabilities' },
   { href: '/packages/', label: 'Packages' },
   { href: '/adapters/', label: 'Adapters' },
-  { href: '/compatibility/', label: 'Compatibility' },
-  { href: '/repository-format/', label: 'Repository Format' },
+  { href: '/repository-format/', label: 'Repository Format', compactLabel: 'Repo. Format' },
 ] as const;
 const currentPathname = Astro.url.pathname;
 const basePath = import.meta.env.BASE_URL;
-const navigationItems = navigation.map(({ href, label }) => ({
-  href: withBase(href, basePath),
-  isActive: isPublicRouteActive(currentPathname, href, basePath),
-  label,
+const navigationItems = navigation.map((item) => ({
+  ...item,
+  href: withBase(item.href, basePath),
+  isActive: isPublicRouteActive(currentPathname, item.href, basePath),
 }));
 const searchHref = withBase('/search/', basePath);
 const isSearchActive = isPublicRouteActive(currentPathname, '/search/', basePath);

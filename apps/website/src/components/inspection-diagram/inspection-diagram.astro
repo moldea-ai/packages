@@ -1,0 +1,84 @@
+---
+import { ArrowDownRight, FileCodeCorner, FileText } from '@lucide/astro';
+
+import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
+
+// the same file-reference diagram is used in the hero and the three-state sequence
+interface Props {
+  state: IInspectionExampleState;
+}
+const { state } = Astro.props;
+---
+
+<div
+  class="min-w-0"
+  role="group"
+  aria-label={state.result.valid ? 'Resolved file reference' : 'Broken file reference'}
+>
+  <div class="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-3">
+    <FileText
+      class="size-5 shrink-0 text-muted-foreground"
+      aria-hidden="true"
+    />
+    <div class="min-w-0">
+      <p class="mb-1 text-xs text-muted-foreground">Project knowledge</p>
+      <code class="text-sm break-all">{state.projectPath.slice(1)}</code>
+    </div>
+  </div>
+  <div class="ml-5 flex items-center gap-3 py-2">
+    <span
+      class:list={[
+        'h-6 border-l-2',
+        state.result.valid ? 'border-foreground/30' : 'border-dashed border-destructive/60',
+      ]}
+      aria-hidden="true"
+    ></span>
+    <span class="text-xs font-medium">
+      {
+        state.result.valid
+          ? state.id === 'repaired'
+            ? 'Updated reference'
+            : 'Points to'
+          : 'Still points to'
+      }
+    </span>
+  </div>
+  <div
+    class:list={[
+      'flex items-center gap-3 rounded-lg border px-3 py-3',
+      state.result.valid ? 'bg-muted/30' : 'border-dashed border-destructive/50 bg-destructive/5',
+    ]}
+    role="group"
+    aria-label="Referenced location"
+  >
+    <FileCodeCorner
+      class="size-5 shrink-0 text-muted-foreground"
+      aria-hidden="true"
+    />
+    <code
+      class:list={[
+        'min-w-0 flex-1 text-sm break-all',
+        !state.result.valid && 'line-through decoration-destructive',
+      ]}>{state.declaredPath.slice(1)}</code
+    >
+    {!state.result.valid && <span class="shrink-0 text-xs font-semibold">Missing</span>}
+  </div>
+  {
+    !state.result.valid && (
+      <div
+        class="mt-3 flex items-start gap-3 px-3"
+        role="group"
+        aria-label="New file location"
+      >
+        <ArrowDownRight
+          class="mt-1 size-5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <div class="min-w-0">
+          <p class="mb-1 text-xs text-muted-foreground">File now lives here</p>
+          <code class="text-sm break-all">{state.sourcePath.slice(1)}</code>
+        </div>
+      </div>
+    )
+  }
+</div>

@@ -8,6 +8,7 @@ import { loadWebsiteModel } from '../src/lib/generation/generation.ts';
 import { serializeRuntimeCompatibilityPublication } from '../src/lib/runtime-compatibility-publication/index.ts';
 import { DEFAULT_SITE_URL, SITE_NAME } from '../src/lib/site/constants.ts';
 import { verifySeoArtifacts } from './seo-verification/index.ts';
+import { verifyCapabilityArtifacts } from './capability-verification/index.ts';
 
 const EXCLUDED_DIRECTORY_NAMES = new Set(['_archive', '_archives', '_backup', '_backups']);
 
@@ -185,15 +186,23 @@ const verifyLlmsLinks = (
   }
 };
 
-/** Verifies static routes, base-aware links, machine surfaces, and private-content isolation. */
-export const verifyProductionBuild = (): void => {
-  const websiteDirectory = getWebsiteDirectory();
-  const distDirectory = join(websiteDirectory, 'dist');
+/**
+ * Verifies static routes, base-aware links, machine surfaces, and private-content isolation.
+ * @throws
+ * - If required routes, navigation handoffs, metadata, or publications are missing or inconsistent.
+ * - If output contains tests, retired Website UI documentation, or private content.
+ */
+export const verifyProductionBuild = (
+  distDirectory = join(getWebsiteDirectory(), 'dist'),
+): void => {
   const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
   const siteUrl = process.env.SITE_URL ?? DEFAULT_SITE_URL;
   const model = loadWebsiteModel();
 
   if (!existsSync(distDirectory)) throw new Error('Production artifact is missing.');
+  if (existsSync(join(distDirectory, 'packages', 'website-ui'))) {
+    throw new Error('The static artifact contains retired Website UI documentation.');
+  }
 
   for (const route of model.routes) {
     const artifactPath = routeToArtifactPath(distDirectory, route);
@@ -231,14 +240,50 @@ export const verifyProductionBuild = (): void => {
   }
 
   const files = listFiles(distDirectory);
+  if (
+    files.some((path) =>
+      /\.test-(?:unit|integration|e2e|bench)(?:\.|\/|$)/u.test(path.replaceAll(sep, '/')),
+    )
+  ) {
+    throw new Error('The static artifact contains test output.');
+  }
   const htmlPaths = files.filter((path) => path.endsWith('.html'));
+  if (
+    files.some((path) =>
+      /(?:^|\/)(?:\.generated|fixtures?|expected-results)(?:[./]|$)/u.test(
+        relative(distDirectory, path).replaceAll(sep, '/'),
+      ),
+    )
+  ) {
+    throw new Error('The static artifact contains private generation output.');
+  }
+
+  // Astro's static redirect is a handoff artifact, not an indexable content page.
+  const compatibilityRedirectPath = join(distDirectory, 'compatibility', 'index.html');
+  const redirectHtml = readFileSync(compatibilityRedirectPath, 'utf8');
+  const adaptersPath = `${basePath}adapters/`;
+  const adaptersUrl = new URL(adaptersPath, siteUrl).href;
+  const refreshTags = [...redirectHtml.matchAll(/<meta\b[^>]*http-equiv="refresh"[^>]*>/giu)];
+  if (
+    refreshTags.length !== 1 ||
+    refreshTags[0][0] !== `<meta http-equiv="refresh" content="0;url=${adaptersPath}">` ||
+    !redirectHtml.includes('<meta name="robots" content="noindex">') ||
+    !redirectHtml.includes(`<link rel="canonical" href="${adaptersUrl}">`) ||
+    !redirectHtml.includes(`<a href="${adaptersPath}">`)
+  ) {
+    throw new Error(
+      'The compatibility redirect must immediately hand off to the canonical adapters directory.',
+    );
+  }
 
   verifySeoArtifacts({
     homePageUrl: new URL(basePath, siteUrl).href,
-    htmlArtifacts: htmlPaths.map((path) => ({
-      source: readFileSync(path, 'utf8'),
-      url: getDeployedPageUrl(distDirectory, path, basePath, siteUrl).href,
-    })),
+    htmlArtifacts: htmlPaths
+      .filter((path) => path !== compatibilityRedirectPath)
+      .map((path) => ({
+        source: readFileSync(path, 'utf8'),
+        url: getDeployedPageUrl(distDirectory, path, basePath, siteUrl).href,
+      })),
     sitemapSources: files
       .filter((path) => /^sitemap-(?!index).+\.xml$/u.test(relative(distDirectory, path)))
       .map((path) => readFileSync(path, 'utf8')),
@@ -275,6 +320,50 @@ export const verifyProductionBuild = (): void => {
 
   verifyLlmsLinks(llmsText, distDirectory, basePath, siteUrl);
 
+  const guide = model.gettingStarted;
+  const guideHtml = readFileSync(routeToArtifactPath(distDirectory, guide.route), 'utf8');
+  const guideUrl = new URL(`${basePath}${guide.route.replace(/^\//, '')}`, siteUrl);
+  const guideSearchRecords = searchDocuments.filter(({ url }) => url === guideUrl.pathname);
+  if (
+    !guideHtml.includes('href="https://skill.moldea.ai/"') ||
+    !guideHtml.includes(`href="${basePath}packages/cli/"`)
+  ) {
+    throw new Error('The getting-started artifact omits its Skill or canonical CLI handoff.');
+  }
+  if (
+    !llmsText.includes(`[${guide.title}](${guideUrl.href})`) ||
+    !llmsText.includes('[moldea Agent Skill](https://skill.moldea.ai/)')
+  ) {
+    throw new Error('llms.txt omits the getting-started or Agent Skill handoff.');
+  }
+  if (guideSearchRecords.length !== 1 || guideSearchRecords[0].title !== guide.title) {
+    throw new Error('The production search index must contain exactly one getting-started record.');
+  }
+  const homepageHtml = readFileSync(join(distDirectory, 'index.html'), 'utf8');
+  verifyCapabilityArtifacts(
+    readFileSync(join(distDirectory, 'capabilities/index.html'), 'utf8'),
+    homepageHtml,
+    llmsText,
+    searchDocuments,
+    model.capabilities,
+    new URL(`${basePath}capabilities/`, siteUrl),
+  );
+  for (const state of model.inspectionExample) {
+    if (!homepageHtml.includes(`id="inspection-${state.id}"`)) {
+      throw new Error(`The homepage omits the ${state.id} inspection example state.`);
+    }
+  }
+  if (
+    !homepageHtml.includes('MOLDEA_REFERENCE_MISSING') ||
+    !homepageHtml.includes('MOLDEA_TOOL_IMPLEMENTATION_MISSING') ||
+    !homepageHtml.includes('id="hero-check-result"') ||
+    !homepageHtml.includes('Structure, not semantics.')
+  ) {
+    throw new Error(
+      'The homepage omits the real Core diagnostic or its structural-check boundary.',
+    );
+  }
+
   const specification = model.repositoryFormatSpecification;
   const specificationPath = routeToArtifactPath(distDirectory, specification.route);
   const specificationHtml = readFileSync(specificationPath, 'utf8');
@@ -309,14 +398,21 @@ export const verifyProductionBuild = (): void => {
   }
 
   for (const searchDocument of searchDocuments) {
-    const artifactPath = getArtifactPathFromPublicUrl(
-      distDirectory,
-      new URL(searchDocument.url, siteUrl).pathname,
-      basePath,
-    );
+    const searchUrl = new URL(searchDocument.url, siteUrl);
+    const artifactPath = getArtifactPathFromPublicUrl(distDirectory, searchUrl.pathname, basePath);
 
     if (!artifactPath || !existsSync(artifactPath)) {
       throw new Error(`The production search index links to missing ${searchDocument.url}.`);
+    }
+    if (
+      searchUrl.hash &&
+      !getHtmlIds(readFileSync(artifactPath, 'utf8')).has(
+        decodeURIComponent(searchUrl.hash.slice(1)),
+      )
+    ) {
+      throw new Error(
+        `The production search index links to missing fragment ${searchDocument.url}.`,
+      );
     }
   }
 

@@ -3,28 +3,23 @@ import { ArrowUpRight } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 
 import type { IAdapterPage } from '../lib/model/types.ts';
+import type { IAdapterDiscoveryCopy } from '../lib/discovery-copy/index.ts';
 import StatusBadge from './status-badge.astro';
 
 interface Props {
   adapter: IAdapterPage;
   compact?: boolean;
+  copy: IAdapterDiscoveryCopy;
 }
 
-const { adapter, compact = false } = Astro.props;
+const { adapter, compact = false, copy } = Astro.props;
 const { entry } = adapter;
 ---
 
 <section class:list={['space-y-8', !compact && 'surface-card p-5 sm:p-7']}>
   <div class="flex flex-wrap items-center gap-2">
     <StatusBadge kind={entry.implementationStatus} />
-    {
-      entry.targets?.map((target) => (
-        <StatusBadge
-          kind={target.maturity}
-          label={`${target.id} · ${target.maturity}`}
-        />
-      ))
-    }
+    <code class="text-sm break-all text-muted-foreground">{adapter.id}</code>
   </div>
 
   <dl class="grid gap-4 text-sm sm:grid-cols-2">
@@ -102,12 +97,16 @@ const { entry } = adapter;
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div class="min-w-0">
             <p class="eyebrow mb-2">Compatibility target</p>
-            <h2
-              id={`${adapter.id}-${target.id}`}
-              class="scroll-mt-24 text-2xl font-semibold tracking-tight break-words"
-            >
-              {target.id}
-            </h2>
+            <div class="flex flex-wrap items-center gap-3">
+              <h2
+                id={`${adapter.id}-${target.id}`}
+                class="scroll-mt-24 text-2xl font-semibold tracking-tight break-words"
+              >
+                {copy.targets[target.id]}
+              </h2>
+              <StatusBadge kind={target.maturity} />
+            </div>
+            <code class="mt-2 block text-sm break-all text-muted-foreground">{target.id}</code>
             <p class="mt-2 text-muted-foreground">Language: {target.language}</p>
           </div>
           {target.qualificationEvidence && (
@@ -131,7 +130,12 @@ const { entry } = adapter;
         {target.packages && (
           <div>
             <h3 class="mb-3 font-semibold">Runtime packages</h3>
-            <div class="table-scroll">
+            <div
+              class="table-scroll"
+              role="region"
+              aria-label={`${copy.targets[target.id]} runtime packages`}
+              tabindex="0"
+            >
               <table class="w-full min-w-[34rem] text-sm">
                 <thead class="bg-muted text-start">
                   <tr>
@@ -170,7 +174,12 @@ const { entry } = adapter;
         {target.bindingSupport && (
           <div>
             <h3 class="mb-3 font-semibold">Binding support</h3>
-            <div class="table-scroll">
+            <div
+              class="table-scroll"
+              role="region"
+              aria-label={`${copy.targets[target.id]} binding support`}
+              tabindex="0"
+            >
               <table class="w-full min-w-[34rem] text-sm">
                 <thead class="bg-muted">
                   <tr>

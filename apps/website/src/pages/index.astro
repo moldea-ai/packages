@@ -1,133 +1,195 @@
 ---
-import { ArrowRight, GitFork, Layers, ShieldCheck, Workflow } from '@lucide/astro';
+import { ArrowRight, ExternalLink, FileCheckCorner, GitBranch, ScanSearch } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
+import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import AdapterCard from '../components/adapter-card.astro';
+import { InspectionExample } from '../components/inspection-example/index.ts';
 import PackageCard from '../components/package-card.astro';
+import { RepositoryCheckPreview } from '../components/repository-check-preview/index.ts';
 import { RepositoryFormatOverview } from '../components/repository-format-overview/index.ts';
 import BaseLayout from '../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../lib/generation/generation.ts';
 
 const model = loadWebsiteModel();
 const toolingPackages = model.packages.filter(({ family }) => family === 'skill-core-tooling');
-const adapterPackages = model.packages.filter(({ family }) => family === 'runtime-adapters');
 const availableAdapters = model.adapters.filter(
   ({ entry }) => entry.implementationStatus === 'available',
 );
-const cliPackage = model.packages.find(({ slug }) => slug === 'cli');
 const basePath = import.meta.env.BASE_URL;
 ---
 
 <BaseLayout
-  title="Open-source behavioral integrity for AI agents"
-  description="The open-source deterministic package foundation that powers moldea, the behavioral integrity layer for AI agents."
+  title="Keep agent instructions and code connected"
+  description="Open-source tools for Git-owned project knowledge, declared connections to code, and repeatable structural checks."
+  flushFooter
 >
-  <section class="relative overflow-hidden border-b border-border">
-    <div
-      class="pointer-events-none absolute inset-0 [background-image:radial-gradient(circle_at_70%_18%,color-mix(in_oklch,var(--accent)_60%,transparent),transparent_30%),linear-gradient(to_right,color-mix(in_oklch,var(--border)_35%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklch,var(--border)_35%,transparent)_1px,transparent_1px)] [mask-image:linear-gradient(to_bottom,black,transparent_92%)] [background-size:auto,3rem_3rem,3rem_3rem] opacity-60"
-      aria-hidden="true"
-    >
-    </div>
-    <div class="page-shell relative pt-16 pb-20 sm:pt-24 sm:pb-24 lg:pt-32 lg:pb-32">
-      <p class="eyebrow mb-8">Open-source technical foundation</p>
-      <h1 class="display-title max-w-6xl font-semibold">
-        Behavioral integrity,<br />built in the open.
-      </h1>
-      <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
-        <p class="max-w-3xl text-xl leading-9 text-muted-foreground sm:text-2xl">
-          <InlineBrandText
-            text="moldea is the behavioral integrity layer for AI agents. This repository provides the deterministic readers, repository interpretation, local CLI, and runtime adapters that make its behavior inspectable."
-          />
-        </p>
-        <div class="flex flex-wrap gap-3 lg:justify-end">
-          <ActionLink
-            href={withBase('/packages/', basePath)}
-            size="lg"
+  <section
+    class="relative overflow-hidden border-b border-border bg-background"
+    aria-label="Introduction"
+  >
+    <HeroBackdrop />
+    <div class="page-shell relative py-14 sm:py-18 lg:py-20">
+      <div class="grid items-center gap-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-12">
+        <div class="min-w-0">
+          <ul
+            class="mb-7 flex flex-wrap items-center gap-2"
+            aria-label="Package foundations"
           >
-            Explore packages <ArrowRight
-              class="size-4"
-              aria-hidden="true"
-            />
-          </ActionLink>
-          <ActionLink
-            href="https://github.com/moldea-ai/packages"
-            size="lg"
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="outline"
-          >
-            <GitFork
-              class="size-4"
-              aria-hidden="true"
-            /> Source
-          </ActionLink>
+            <li
+              class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium"
+            >
+              <GitBranch
+                class="size-3.5 text-muted-foreground"
+                aria-hidden="true"
+              />Git-owned knowledge
+            </li>
+            <li
+              class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium"
+            >
+              <FileCheckCorner
+                class="size-3.5 text-muted-foreground"
+                aria-hidden="true"
+              />Repeatable checks
+            </li>
+            <li
+              class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium"
+            >
+              <ScanSearch
+                class="size-3.5 text-muted-foreground"
+                aria-hidden="true"
+              />Precise diagnostics
+            </li>
+          </ul>
+          <p class="eyebrow mb-4">Open-source tools for AI agents</p>
+          <h1 class="text-4xl leading-tight font-semibold tracking-tight sm:text-5xl xl:text-6xl">
+            Keep agent instructions and code connected.
+          </h1>
+          <p class="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
+            Open-source tools that connect project knowledge to the code it describes. Keep both in
+            Git and catch broken connections as your repository changes.
+          </p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <ActionLink
+              href="#how-it-works"
+              size="lg"
+              >See how it works <ArrowRight
+                class="size-4"
+                aria-hidden="true"
+              /></ActionLink
+            >
+            <ActionLink
+              href={withBase('/getting-started/', basePath)}
+              size="lg"
+              variant="outline"
+              >Start using the tools</ActionLink
+            >
+          </div>
+          <p class="mt-5 text-sm leading-7 text-muted-foreground">
+            Want help adopting <InlineBrandText text="moldea" /> in your coding agent? <a
+              class="text-link"
+              href="https://skill.moldea.ai/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Explore the Agent Skill</a
+            >.
+          </p>
         </div>
+        <RepositoryCheckPreview example={model.instructionExample} />
       </div>
     </div>
   </section>
 
-  <RepositoryFormatOverview repositoryFormatRoute={model.repositoryFormatSpecification.route} />
+  <InspectionExample states={model.inspectionExample} />
+  <RepositoryFormatOverview
+    repositoryFormatRoute={model.repositoryFormatSpecification.route}
+    result={model.inspectionExample[1].result}
+  />
 
-  <section class="border-y bg-sidebar py-section-gap">
+  <section
+    class="border-y bg-sidebar py-12 sm:py-16"
+    aria-labelledby="tools-title"
+  >
     <div class="page-shell">
-      <div class="mb-10 flex flex-wrap items-end justify-between gap-6">
+      <div class="mb-8 flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p class="eyebrow mb-4">Skill & Core Tooling</p>
-          <h2 class="section-title font-semibold">Deterministic by design.</h2>
+          <p class="eyebrow mb-4">Tools by job</p><h2
+            id="tools-title"
+            class="section-title font-semibold"
+          >
+            Start with the task.
+          </h2>
         </div>
         <ActionLink
-          class="font-bold"
           href={withBase('/packages/', basePath)}
           variant="link"
-        >
-          View all packages <ArrowRight
+          >View all packages <ArrowRight
             class="size-4"
             aria-hidden="true"
-          />
-        </ActionLink>
+          /></ActionLink
+        >
       </div>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {toolingPackages.map((packageModel) => <PackageCard packageModel={packageModel} />)}
+        {
+          toolingPackages.map((packageModel) => (
+            <PackageCard
+              {packageModel}
+              copy={model.discoveryCopy.packages[packageModel.name]}
+            />
+          ))
+        }
       </div>
+      <p class="mt-7 max-w-4xl text-sm leading-7 text-muted-foreground">
+        For an adopted local repository, the CLI is the usual entry point. It already combines a
+        filesystem reader, Core, and runtime adapters. Use the libraries directly when you are
+        building your own integration.
+      </p>
     </div>
   </section>
 
   <section
-    class="page-shell py-section-gap"
+    class="page-shell py-12 sm:py-16"
     aria-labelledby="available-adapters-title"
   >
-    <div class="mb-10 grid gap-5 lg:grid-cols-2 lg:items-end">
+    <header class="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-end">
       <div>
-        <p class="eyebrow mb-4">Available runtime adapters</p>
-        <h2
+        <p class="eyebrow mb-4">Runtime-specific evidence</p><h2
           id="available-adapters-title"
-          class="section-title max-w-4xl font-semibold"
+          class="section-title text-3xl leading-tight font-semibold sm:text-4xl lg:text-5xl"
         >
-          Runtime-specific evidence, built in.
+          Find your runtime.
         </h2>
       </div>
-      <div class="max-w-xl lg:justify-self-end">
-        <p class="leading-7 text-muted-foreground">
-          Official adapters add source-grounded runtime interpretation to Core without executing
-          application code. Available package-backed adapters and Core's built-in custom runtime
-          come directly from the compatibility matrix.
-        </p>
-        <ActionLink
-          class="mt-5 font-bold"
-          href={withBase('/adapters/', basePath)}
-          variant="link"
-        >
-          View all adapters <ArrowRight
-            class="size-4"
-            aria-hidden="true"
-          />
-        </ActionLink>
-      </div>
-    </div>
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {availableAdapters.map((adapter) => <AdapterCard {adapter} />)}
+      <p class="text-lg leading-8 text-muted-foreground">
+        Choose your runtime. Check the exact versions and code patterns its adapter can inspect.
+      </p>
+    </header>
+    <ul
+      class="grid gap-x-4 sm:grid-cols-2 sm:gap-y-4 lg:grid-cols-3"
+      aria-label="Available runtimes"
+    >
+      {
+        availableAdapters.map((adapter) => (
+          <li class="min-w-0">
+            <AdapterCard
+              {adapter}
+              copy={model.discoveryCopy.adapters[adapter.id]}
+            />
+          </li>
+        ))
+      }
+    </ul>
+    <div class="mt-6 flex flex-wrap gap-5">
+      <ActionLink
+        href={withBase('/adapters/', basePath)}
+        variant="link"
+        >View all adapters <ArrowRight
+          class="size-4"
+          aria-hidden="true"
+        /></ActionLink
+      >
     </div>
     <p class="mt-5 text-xs leading-5 text-muted-foreground">
       Company names and marks belong to their respective owners. Compatibility does not imply
@@ -136,158 +198,66 @@ const basePath = import.meta.env.BASE_URL;
   </section>
 
   <section
-    class="page-shell py-section-gap"
-    aria-labelledby="architecture-title"
+    class="border-t bg-sidebar py-12 sm:py-16"
+    aria-labelledby="boundaries-title"
   >
-    <div class="mb-10 grid gap-5 lg:grid-cols-2 lg:items-end">
+    <div class="page-shell">
       <div>
-        <p class="eyebrow mb-4">One directional architecture</p>
-        <h2
-          id="architecture-title"
-          class="section-title max-w-3xl font-semibold"
+        <p class="eyebrow mb-4">Open source. Explicit boundaries.</p><h2
+          id="boundaries-title"
+          class="section-title font-semibold"
         >
-          From source bytes to trusted structure.
+          Know what a check tells you.
         </h2>
       </div>
-      <div class="max-w-xl lg:justify-self-end">
-        <p class="leading-7 text-muted-foreground">
-          Repository readers preserve exact source state, Core turns it into deterministic project
-          structure, and runtime adapters add source-grounded evidence. The Agent Skill consumes
-          that foundation as its semantic operating layer; package contracts never depend back on
-          the skill or this website.
+      <div class="mt-8 grid gap-8 md:grid-cols-2 md:gap-12">
+        <div class="border-t-2 border-foreground pt-5">
+          <h3 class="text-xl font-semibold">Facts the tools can establish</h3>
+          <ul class="mt-5 divide-y text-base leading-7">
+            <li class="py-3">Your repository follows the declared format.</li>
+            <li class="py-3">A referenced file exists at its declared path.</li>
+            <li class="py-3">An adapter recognizes a published code pattern.</li>
+          </ul>
+        </div>
+        <div class="border-t-2 border-border pt-5">
+          <h3 class="text-xl font-semibold">Questions a passing check cannot answer</h3>
+          <p class="mt-5 text-xl leading-8">Does the code actually enforce manager approval?</p>
+          <p class="mt-4 text-base leading-7 text-muted-foreground">
+            Does an agent follow its instructions in practice? Those questions need semantic
+            evaluation and behavior testing, beyond these structural checks.
+          </p>
+        </div>
+      </div>
+      <div class="mt-8 border-t pt-6 leading-7 text-muted-foreground">
+        <p class="max-w-3xl">
+          <strong class="text-foreground">Local and read-only.</strong> The CLI makes no model calls or
+          network requests and sends no telemetry. The source is MIT licensed. Hosted Cloud services and
+          semantic Assurance are separate products.
         </p>
-        <ActionLink
-          class="mt-5 font-bold"
-          href={withBase(model.repositoryFormatSpecification.route, basePath)}
-          variant="link"
+        <div class="mt-6 flex flex-wrap gap-3">
+          <ActionLink href={withBase('/getting-started/', basePath)}
+            >Get started <ArrowRight
+              class="size-4"
+              aria-hidden="true"
+            /></ActionLink
+          ><ActionLink
+            href="https://skill.moldea.ai/"
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="outline"
+            >Agent Skill <ExternalLink
+              class="size-4"
+              aria-hidden="true"
+            /></ActionLink
+          >
+        </div>
+        <a
+          class="mt-4 inline-block text-link text-sm"
+          href="https://github.com/moldea-ai/packages"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Inspect the source on GitHub</a
         >
-          Explore the Repository Format
-          <ArrowRight
-            class="size-4"
-            aria-hidden="true"
-          />
-        </ActionLink>
-      </div>
-    </div>
-
-    <div class="surface-card overflow-hidden p-4 sm:p-6 lg:p-8">
-      <div class="grid gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
-        <div class="dark-surface-selection rounded-xl bg-primary p-6 text-primary-foreground">
-          <Workflow
-            class="mb-8 size-6"
-            aria-hidden="true"
-          />
-          <p class="eyebrow mb-2 text-current/65">Semantic operating layer</p>
-          <h3 class="text-2xl font-semibold">Agent Skill</h3>
-          <p class="mt-2 text-sm leading-6 text-current/70">
-            Adoption, workflows, tutorials, and agent interaction live separately.
-          </p>
-        </div>
-        <ArrowRight
-          class="mx-auto hidden size-5 lg:block"
-          aria-hidden="true"
-        />
-        <div class="rounded-xl border bg-accent p-6 text-accent-foreground">
-          <Layers
-            class="mb-8 size-6"
-            aria-hidden="true"
-          />
-          <p class="eyebrow mb-2">Local composition</p>
-          <h3 class="text-2xl font-semibold">{cliPackage?.name}</h3>
-          <p class="mt-2 text-sm leading-6">
-            Git-aware inventory composes Repository FS, Core, and active runtime adapters.
-          </p>
-        </div>
-      </div>
-
-      <div
-        class="my-4 flex justify-center"
-        aria-hidden="true"
-      >
-        <span class="h-7 w-px bg-border"></span>
-      </div>
-
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {
-          toolingPackages
-            .filter(({ slug }) => slug !== 'cli')
-            .map((packageModel) => (
-              <a
-                class="interactive-card rounded-xl border bg-muted/60 p-5 hover:bg-muted"
-                href={withBase(packageModel.route, basePath)}
-              >
-                <p class="mb-5 font-mono text-xs text-muted-foreground">{packageModel.name}</p>
-                <p class="text-sm leading-6">
-                  <InlineBrandText text={packageModel.description} />
-                </p>
-              </a>
-            ))
-        }
-        {
-          adapterPackages.map((packageModel) => (
-            <a
-              class="interactive-card rounded-xl border bg-muted/60 p-5 hover:bg-muted"
-              href={withBase(packageModel.route, basePath)}
-            >
-              <p class="mb-5 font-mono text-xs text-muted-foreground">{packageModel.name}</p>
-              <p class="text-sm leading-6">Runtime-specific evidence flows into Core.</p>
-            </a>
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
-  <section class="border-t border-border">
-    <div class="page-shell py-section-gap">
-      <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-center">
-        <div>
-          <ShieldCheck
-            class="mb-7 size-9 text-foreground"
-            aria-hidden="true"
-          />
-          <p class="eyebrow mb-4">Compatibility without guesswork</p>
-          <h2 class="section-title max-w-4xl font-semibold">
-            Technical compatibility and maturity stay independent.
-          </h2>
-          <p class="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            The compatibility matrix defines implementation state and verified technical boundaries.
-            The packages website assigns target maturity separately, so changing maturity never
-            changes CLI or adapter behavior.
-          </p>
-        </div>
-        <div class="surface-card grid gap-3 p-5">
-          <a
-            class="interactive-card rounded-lg border p-4 font-semibold hover:bg-muted"
-            href={withBase('/adapters/', basePath)}
-          >
-            Runtime adapter inventory <span
-              class="float-end"
-              aria-hidden="true"
-              >→</span
-            >
-          </a>
-          <a
-            class="interactive-card rounded-lg border p-4 font-semibold hover:bg-muted"
-            href={withBase('/compatibility/', basePath)}
-          >
-            Complete compatibility matrix <span
-              class="float-end"
-              aria-hidden="true"
-              >→</span
-            >
-          </a>
-          <a
-            class="interactive-card rounded-lg border p-4 font-semibold hover:bg-muted"
-            href={withBase('/llms.txt', basePath)}
-          >
-            Machine-oriented ecosystem map <span
-              class="float-end"
-              aria-hidden="true"
-              >→</span
-            >
-          </a>
-        </div>
       </div>
     </div>
   </section>

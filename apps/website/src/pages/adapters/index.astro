@@ -2,7 +2,7 @@
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
 import { withBase } from '@moldea.ai/website-ui/site';
 
-import AdapterCard from '../../components/adapter-card.astro';
+import { AdapterRow } from '../../components/adapter-row/index.ts';
 import BaseLayout from '../../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 
@@ -10,72 +10,96 @@ const model = loadWebsiteModel();
 const available = model.adapters.filter(({ entry }) => entry.implementationStatus === 'available');
 const upcoming = model.adapters.filter(({ entry }) => entry.implementationStatus !== 'available');
 const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Runtime Adapters' }];
-const basePath = import.meta.env.BASE_URL;
 ---
 
 <BaseLayout
-  title="Runtime adapters"
-  description="Official moldea runtime adapters with technical implementation status, website-owned target maturity, evidence, patterns, and limitations."
+  title="Runtime adapters and compatibility"
+  description="Find your runtime, compare target maturity, and check exact versions, recognized source patterns, limitations, and qualification evidence."
   {breadcrumbs}
 >
   <section class="page-shell pt-8 pb-section-gap">
     <Breadcrumbs items={breadcrumbs} />
-    <div class="max-w-4xl pt-16 pb-12">
-      <p class="eyebrow mb-5">Official runtime inventory</p>
-      <h1 class="section-title font-semibold">Runtime knowledge, without runtime execution.</h1>
-      <p class="mt-7 max-w-3xl text-xl leading-9 text-muted-foreground">
-        Adapters extend Core with deterministic, source-grounded evidence. Status pages come
-        directly from the compatibility matrix, so planned work never masquerades as an installable
-        package.
+    <header class="max-w-4xl pt-8 pb-8 sm:pt-10">
+      <p class="eyebrow mb-5">Runtime adapters & compatibility</p>
+      <h1 class="section-title text-3xl leading-tight font-semibold sm:text-4xl lg:text-5xl">
+        Runtime knowledge, without runtime execution.
+      </h1>
+      <p class="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
+        Choose the runtime you use, then the code pattern you want to inspect. Adapters read source
+        code; they do not run your agent.
       </p>
-      <a
-        class="mt-7 inline-flex items-center gap-2 font-bold"
-        href={withBase('/compatibility/', basePath)}
-      >
-        View the complete compatibility matrix <span aria-hidden="true">→</span>
-      </a>
-    </div>
+    </header>
 
     <section aria-labelledby="available-adapters-title">
-      <div class="mb-7">
-        <p class="eyebrow mb-3">Implemented now</p>
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2
           id="available-adapters-title"
-          class="text-3xl font-semibold tracking-tight"
+          class="text-xl font-semibold"
         >
           Available adapters
         </h2>
       </div>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {available.map((adapter) => <AdapterCard {adapter} />)}
-      </div>
+      <p class="mb-5 text-sm leading-6 text-muted-foreground">
+        Targets are supported within their published scope unless marked otherwise. Open a target
+        for exact versions, limitations, and qualification evidence.
+      </p>
+      <ul
+        class="divide-y border-y"
+        aria-label="Available adapters"
+      >
+        {
+          available.map((adapter) => (
+            <li>
+              <AdapterRow
+                {adapter}
+                copy={model.discoveryCopy.adapters[adapter.id]}
+              />
+            </li>
+          ))
+        }
+      </ul>
     </section>
 
     {
       upcoming.length > 0 && (
         <section
-          class="mt-section-gap"
+          class="mt-10"
           aria-labelledby="planned-adapters-title"
         >
-          <div class="mb-7">
-            <p class="eyebrow mb-3">Matrix-approved inventory</p>
-            <h2
-              id="planned-adapters-title"
-              class="text-3xl font-semibold tracking-tight"
-            >
-              Planned and evolving
-            </h2>
-          </div>
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <h2
+            id="planned-adapters-title"
+            class="mb-4 text-xl font-semibold"
+          >
+            Planned and evolving
+          </h2>
+          <ul
+            class="divide-y border-y"
+            aria-label="Planned and evolving adapters"
+          >
             {upcoming.map((adapter) => (
-              <AdapterCard {adapter} />
+              <li>
+                <AdapterRow
+                  {adapter}
+                  copy={model.discoveryCopy.adapters[adapter.id]}
+                />
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
       )
     }
 
-    <p class="mt-6 text-xs leading-5 text-muted-foreground">
+    <p class="mt-8 max-w-3xl text-sm leading-7 text-muted-foreground">
+      The same compatibility data is available as the{' '}
+      <a
+        class="text-link"
+        href={withBase('/compatibility/runtimes.json', import.meta.env.BASE_URL)}
+        target="_blank"
+        rel="noopener noreferrer"
+        >machine-readable compatibility JSON</a
+      >.
+    </p>
+    <p class="mt-5 text-xs leading-5 text-muted-foreground">
       Company names and marks belong to their respective owners. Compatibility does not imply
       endorsement.
     </p>

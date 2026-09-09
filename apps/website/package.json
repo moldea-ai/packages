@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "node scripts/generate.ts && astro build && node scripts/verify-build.ts",
+    "clean:build": "node scripts/clean-build/clean-build.ts",
     "check:links": "node scripts/verify-build.ts",
     "check": "pnpm docs:check && pnpm test:unit && pnpm typecheck && pnpm lint && pnpm build && pnpm test:integration",
     "dev": "node scripts/generate.ts && astro dev",
@@ -23,8 +24,20 @@
     "typecheck": "node scripts/generate.ts && astro check"
   },
   "devDependencies": {
+    "@moldea.ai/adapter-anthropic": "workspace:^3.0.0",
+    "@moldea.ai/adapter-claude-agent-sdk": "workspace:^2.0.0",
+    "@moldea.ai/adapter-cloudflare-agents": "workspace:^2.0.0",
+    "@moldea.ai/adapter-eve": "workspace:^2.0.0",
+    "@moldea.ai/adapter-google-genai": "workspace:^2.0.0",
+    "@moldea.ai/adapter-langchain": "workspace:^2.0.0",
+    "@moldea.ai/adapter-langgraph": "workspace:^2.0.0",
+    "@moldea.ai/adapter-openai": "workspace:^3.0.0",
+    "@moldea.ai/adapter-openai-agents-sdk": "workspace:^2.0.0",
+    "@moldea.ai/adapter-vercel-ai-sdk": "workspace:^2.0.0",
+    "@moldea.ai/cli": "workspace:^7.0.0",
     "@moldea.ai/core": "workspace:3.0.0",
     "@moldea.ai/repository": "workspace:2.0.0",
+    "@moldea.ai/repository-fs": "workspace:^2.0.0",
     "@astrojs/check": "0.9.10",
     "@astrojs/sitemap": "3.7.3",
     "@axe-core/playwright": "4.13.0",

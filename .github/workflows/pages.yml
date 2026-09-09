@@ -10,9 +10,11 @@ on:
       - compatibility/**
       - configs/**
       - docs/**
+      - packages/**
       - projects/**
       - scripts/runtime-compatibility/**
       - scripts/website/**
+      - specifications/repository-format.md
       - .prettierignore
       - .prettierrc
       - eslint.config.js

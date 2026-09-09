@@ -80,7 +80,13 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.2.2' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.6.0' });
+    expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
+    expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
+    expect(packedPaths).toContain(
+      'src/components/connection-label/connection-label.component.astro',
+    );
+    expect(packedPaths).toContain('src/components/hero-backdrop/hero-backdrop.component.astro');
     expect(packedPaths).toContain('dist/evaluation-replay.js');
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/markdown.js');
@@ -95,6 +101,9 @@ describe('published website UI package', () => {
       'src/components/evaluation-replay/evaluation-replay.component.astro',
     );
     expect(packedPaths).toContain('src/components/tabbed-panels/tabbed-panels.component.astro');
+    expect(packedPaths).toContain('src/components/dialog/dialog.component.astro');
+    expect(packedPaths).toContain('src/components/file-preview/file-preview.component.astro');
+    expect(packedPaths).toContain('src/components/result-summary/result-summary.component.astro');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
     expect(packedPaths).toContain('cover.png');
@@ -177,16 +186,24 @@ describe('published website UI package', () => {
       path.join(pagesDirectory, 'index.astro'),
       [
         '---',
+        "import type { ComponentProps } from 'astro/types';",
         "import { ClientRouter } from 'astro:transitions';",
         "import ActionButton from '@moldea.ai/website-ui/action-button';",
+        "import Accordion from '@moldea.ai/website-ui/accordion';",
         "import ActionLink from '@moldea.ai/website-ui/action-link';",
         "import BrandLogo from '@moldea.ai/website-ui/brand-logo';",
         "import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';",
+        "import CodeBlock from '@moldea.ai/website-ui/code-block';",
+        "import ConnectionLabel from '@moldea.ai/website-ui/connection-label';",
         "import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';",
+        "import Dialog from '@moldea.ai/website-ui/dialog';",
         "import EvaluationReplay from '@moldea.ai/website-ui/evaluation-replay';",
+        "import FilePreview from '@moldea.ai/website-ui/file-preview';",
+        "import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';",
         "import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';",
         "import LocalSearch from '@moldea.ai/website-ui/local-search';",
         "import NavigationProgress from '@moldea.ai/website-ui/navigation-progress';",
+        "import ResultSummary from '@moldea.ai/website-ui/result-summary';",
         "import SiteFooter from '@moldea.ai/website-ui/site-footer';",
         "import SiteHeader from '@moldea.ai/website-ui/site-header';",
         "import StatusBadge from '@moldea.ai/website-ui/status-badge';",
@@ -200,7 +217,13 @@ describe('published website UI package', () => {
         '',
         "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## Shared Markdown');",
         "const tree = buildEvaluationReplayPathTree([{ path: 'src/index.ts', type: 'file' }]);",
-        "const navigationItems = [{ href: '/', isActive: true, label: 'Home' }];",
+        "const navigationItems = [{ href: '/', isActive: true, label: 'Home' }, { href: '/repository-format/', isActive: false, label: 'Repository Format', compactLabel: 'Repo. Format' }] satisfies ComponentProps<typeof SiteHeader>['navigationItems'];",
+        'const fileProps = { path: "src/returns/policy.ts", label: "Return policy", tone: "warning" } satisfies ComponentProps<typeof FilePreview>;',
+        'const codeProps = { source: "echo order-status", language: "sh", variant: "plain" } satisfies ComponentProps<typeof CodeBlock>;',
+        'const connectionProps = { tone: "danger" } satisfies ComponentProps<typeof ConnectionLabel>;',
+        'const accordionProps = { id: "check-two", group: "fixture-accordion", title: "Second check", isOpen: true } satisfies ComponentProps<typeof Accordion>;',
+        'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", hideIconOnMobile: true, ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
+        'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
         '---',
         '<html lang="en" data-theme="system">',
         '  <head>',
@@ -217,6 +240,20 @@ describe('published website UI package', () => {
         '    <InlineBrandText text="Use moldea here." />',
         '    <InlineBrandText text="Use MOLDEA compactly." variant="compact" />',
         '    <ActionButton>Run</ActionButton>',
+        '    <section class="relative overflow-hidden"><HeroBackdrop /><h1 class="relative">Consumer hero</h1></section>',
+        '    <CodeBlock source={JSON.stringify({ valid: false })} language="json" />',
+        '    <CodeBlock {...codeProps} />',
+        '    <CodeBlock source="Plain text wraps in narrow containers." language="text" />',
+        '    <ConnectionLabel {...connectionProps}><span slot="icon">!</span>Missing from <code class="inline-code">moldea.yaml</code></ConnectionLabel>',
+        '    <ConnectionLabel>Linked file</ConnectionLabel>',
+        '    <section><h2>Fixture checks</h2><Accordion id="check-one" group="fixture-accordion" title="First check" description="One concise outcome."><StatusBadge slot="status" label="Valid" tone="success" size="sm" /><p>First visual</p></Accordion><Accordion {...accordionProps}><FilePreview path="src/policy.ts" label="Policy"><p>Second visual</p></FilePreview></Accordion></section>',
+        '    <Accordion id="closed-check" group="closed-accordion" title="Closed check"><p>Optional detail</p></Accordion>',
+        '    <FilePreview {...fileProps}><span slot="icon">File</span><StatusBadge slot="status" label="Missing" size="sm" tone="danger" /><pre class="code-block" tabindex="0" role="region" aria-label="Return policy source"><code>export const returnWindowDays = 30;</code></pre></FilePreview>',
+        '    <Dialog id="composed-result" title="Reference not found" triggerLabel="Inspect composed result" isOverlayCloseEnabled><ResultSummary slot="heading" {...summaryProps}><span slot="icon">!</span><StatusBadge slot="status" label="Invalid" size="sm" tone="danger" /></ResultSummary><p>Composed result body</p></Dialog>',
+        '    <ResultSummary title="Metadata available" description="Logical paths only." as="h3" />',
+        '    <Dialog id="fixture-result" title="Fixture result" triggerLabel="View result"><div slot="heading"><h2 id="fixture-result-title">Fixture result</h2><StatusBadge label="Invalid" size="sm" tone="danger" /><p>Recorded check</p></div><p>Result content</p></Dialog>',
+        '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
+        '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
         '    <TabbedPanels ariaLabel="Fixture views" id="fixture-tabs" items={[{ id: "first", label: "First", slotName: "first" }, { id: "second", label: "Second", slotName: "second" }]}><p slot="first">First panel</p><p slot="second">Second panel</p></TabbedPanels>',
@@ -224,7 +261,7 @@ describe('published website UI package', () => {
         '    <DocumentationShell breadcrumbs={[{ href: "/", label: "Home" }, { label: "Docs" }]} currentRoute="/docs/" headings={rendered.headings}><div class="prose-moldea" set:html={rendered.html} /></DocumentationShell>',
         '    <p>{tree[0]?.name}</p>',
         '    <ThemeControl storageKey="fixture-theme" />',
-        '    <LocalSearch action="/search/" failureMessage="Search unavailable." initialPrompt="Enter a query." placeholder="e.g. repository snapshots" searchIndexUrl="/search-index.json" />',
+        '    <LocalSearch action="/search/" failureMessage="Search unavailable." initialPrompt="Enter a query." placeholder="e.g. repository snapshots" searchIndexUrl="/search-index.json" shouldFocusOnLoad />',
         '    <SiteFooter><p slot="brand">Fixture footer</p><nav slot="primary-navigation" aria-label="Fixture documentation">Docs</nav><nav slot="secondary-navigation" aria-label="Fixture project">Project</nav></SiteFooter>',
         '  </body>',
         '</html>',
@@ -257,6 +294,50 @@ describe('published website UI package', () => {
     );
     expect(readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8')).toContain(
       'First panel',
+    );
+    expect(readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8')).toContain(
+      'Result content',
+    );
+    const fixtureHtml = readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8');
+    expect(fixtureHtml).toContain('Consumer hero');
+    expect(fixtureHtml).toContain('language-json');
+    expect(fixtureHtml).toContain('language-sh');
+    expect(fixtureHtml).toContain('language-text');
+    expect(fixtureHtml).toContain('role="region" aria-label="Code block"');
+    expect(fixtureHtml).toContain('Linked file');
+    expect(fixtureHtml).toContain('Missing from <code class="inline-code">moldea.yaml</code>');
+    expect(fixtureHtml).toContain('data-search-focus-on-load="true"');
+    expect(fixtureHtml).toContain('aria-labelledby="fixture-result-title"');
+    expect(fixtureHtml).toMatch(
+      /<h2[^>]*id="fixture-result-title"[^>]*>Fixture result<\/h2>\s*<span[^>]*>\s*Invalid\s*<\/span>/u,
+    );
+    expect(fixtureHtml).toContain('Details without a badge');
+    expect(fixtureHtml).toContain('src/returns/policy.ts');
+    expect(fixtureHtml).toContain('Return policy source');
+    expect(fixtureHtml).toContain('aria-labelledby="composed-result-title"');
+    expect(fixtureHtml).toMatch(
+      /<h2[^>]*id="composed-result-title"[^>]*>Reference not found<\/h2>/u,
+    );
+    expect(fixtureHtml).toContain('Composed result body');
+    expect(fixtureHtml).toMatch(
+      /<details\b[^>]*id="check-one"[^>]*name="fixture-accordion"(?![^>]*\bopen\b)/u,
+    );
+    expect(fixtureHtml).toMatch(
+      /<details\b[^>]*id="check-two"[^>]*name="fixture-accordion"[^>]*\bopen\b/u,
+    );
+    expect(fixtureHtml).toMatch(
+      /<details\b[^>]*id="closed-check"[^>]*name="closed-accordion"(?![^>]*\bopen\b)/u,
+    );
+    expect(fixtureHtml).toContain('aria-describedby="check-one-description"');
+    expect(fixtureHtml).toContain('First visual');
+    expect(fixtureHtml).toContain('Second visual');
+    expect(fixtureHtml).toContain('Repo. Format');
+    expect(fixtureHtml).toContain('aria-label="Repository Format"');
+    expect(fixtureHtml).toMatch(/<h3[^>]*>Metadata available<\/h3>/u);
+    expect(fixtureHtml).toMatch(/<dialog\b[^>]*id="fixture-wide"[^>]*sm:max-w-5xl/u);
+    expect(fixtureHtml).toContain('aria-describedby="fixture-wide-description"');
+    expect(fixtureHtml).toMatch(
+      /<button\b[^>]*action-primary action-size-lg[^>]*aria-controls="fixture-wide"/u,
     );
   }, 180_000);
 });

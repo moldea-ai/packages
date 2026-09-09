@@ -1,339 +1,187 @@
 ---
 import {
-  ArrowDown,
   ArrowRight,
-  BookOpenText,
   Braces,
-  CodeXml,
   FileText,
   Folder,
   FolderOpen,
   GitBranch,
-  Link2,
   ScanSearch,
 } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
-import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import { withBase } from '@moldea.ai/website-ui/site';
+
+import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
 
 interface Props {
   repositoryFormatRoute: string;
+  result: IInspectionExampleState['result'];
 }
-
-const { repositoryFormatRoute } = Astro.props;
-const basePath = import.meta.env.BASE_URL;
+const { repositoryFormatRoute, result } = Astro.props;
+const output = JSON.stringify(
+  {
+    valid: result.valid,
+    diagnostics: result.diagnostics.map(({ code, path }) => ({ code, path })),
+  },
+  null,
+  2,
+);
+const canonicalFiles = [
+  { name: 'moldea.yaml', isRequired: true },
+  { name: 'project.md', isRequired: true },
+  { name: 'context/', isRequired: false },
+  { name: 'decisions/', isRequired: false },
+  { name: 'agents/', isRequired: false },
+];
 ---
 
 <section
   class="dark-surface-selection border-y border-primary-foreground/15 bg-primary text-primary-foreground"
-  aria-labelledby="repository-format-overview-title"
+  aria-labelledby="repository-contents-title"
 >
-  <div class="page-shell py-section-gap">
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.72fr)] lg:items-end">
+  <div class="page-shell py-12 sm:py-16">
+    <header class="mb-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-end">
       <div>
-        <p class="eyebrow mb-4 text-current/55">Repository Format</p>
+        <p class="eyebrow mb-4 text-current/70">Repository Format</p>
         <h2
-          id="repository-format-overview-title"
-          class="section-title max-w-4xl font-semibold"
+          id="repository-contents-title"
+          class="section-title text-3xl leading-tight font-semibold sm:text-4xl lg:text-5xl"
         >
           The structure behind every evaluation.
         </h2>
       </div>
-      <div class="max-w-2xl lg:justify-self-end">
-        <p class="text-lg leading-8 text-current/70">
-          Core consumes one coherent repository snapshot, validates Repository Format, and returns a
-          structured inspection result. When valid, it contains a deeply immutable project index
-          alongside deterministic evidence and diagnostics.
-        </p>
-        <ActionLink
-          class="light-surface-selection mt-5 w-fit border-primary-foreground/20 bg-primary-foreground text-primary hover:bg-primary-foreground/85 dark:bg-primary-foreground dark:text-primary dark:hover:bg-primary-foreground/85"
-          href={withBase(repositoryFormatRoute, basePath)}
-          variant="outline"
-        >
-          Read the format specification
-          <ArrowRight
-            class="size-4"
+      <p class="text-lg leading-8 text-current/80">
+        Code, context, and instructions live together in Git. Core checks their structure and
+        declared connections, then returns evidence your tools can use.
+      </p>
+    </header>
+    <div class="grid gap-6 lg:grid-cols-3 lg:gap-4">
+      <article
+        class="min-w-0 border-y border-primary-foreground/20 py-5 sm:rounded-xl sm:border sm:bg-primary-foreground/5 sm:p-6"
+      >
+        <div class="mb-5 flex items-center justify-between gap-3">
+          <div>
+            <p class="eyebrow mb-2 text-current/70">01 · Repository</p>
+            <h3 class="text-xl font-semibold">Files you own</h3>
+          </div>
+          <GitBranch
+            class="size-5 text-current/70"
             aria-hidden="true"
           />
-        </ActionLink>
-      </div>
-    </div>
-
-    <div
-      class="mt-10 rounded-2xl border border-primary-foreground/15 bg-primary-foreground/5 p-3 sm:p-5 lg:p-6"
-    >
-      <div
-        class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_3rem_minmax(14rem,0.72fr)_3rem_minmax(0,1fr)] lg:items-stretch"
-      >
-        <article class="rounded-xl border border-primary-foreground/15 bg-primary/45 p-5 sm:p-6">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="eyebrow mb-2 text-current/50">01 · Input</p>
-              <h3 class="text-xl font-semibold">Repository snapshot</h3>
-            </div>
-            <GitBranch
-              class="size-5 text-current/65"
-              aria-hidden="true"
-            />
-          </div>
-          <div class="mt-8 font-mono text-xs sm:text-sm">
-            <p class="flex items-center gap-2 py-2 font-semibold">
-              <FolderOpen
-                class="size-4 shrink-0 text-current/65"
-                aria-hidden="true"
-              />
-              ./
-            </p>
-            <ul
-              class="ms-2"
-              aria-label="Repository files"
-            >
-              <li
-                class="relative ps-5 before:absolute before:start-0 before:top-0 before:h-full before:border-s before:border-primary-foreground/25 after:absolute after:start-0 after:top-4 after:w-3 after:border-t after:border-primary-foreground/25"
-              >
-                <div class="flex items-center gap-2 py-2">
-                  <Folder
-                    class="size-4 shrink-0 text-current/65"
-                    aria-hidden="true"
-                  />
-                  <span>src/<span class="text-current/50">**</span></span>
-                </div>
-              </li>
-              <li
-                class="relative ps-5 before:absolute before:start-0 before:top-0 before:h-4 before:border-s before:border-primary-foreground/25 after:absolute after:start-0 after:top-4 after:w-3 after:border-t after:border-primary-foreground/25"
-              >
-                <div class="flex items-center gap-2 py-2 font-semibold">
-                  <FolderOpen
-                    class="size-4 shrink-0 text-current/65"
-                    aria-hidden="true"
-                  />
-                  moldea/
-                </div>
-                <ul
-                  class="ms-2"
-                  aria-label="moldea directory"
-                >
-                  <li
-                    class="relative ps-5 before:absolute before:start-0 before:top-0 before:h-full before:border-s before:border-primary-foreground/25 after:absolute after:start-0 after:top-4 after:w-3 after:border-t after:border-primary-foreground/25"
-                  >
-                    <div class="flex items-center gap-2 py-2">
-                      <FileText
-                        class="size-4 shrink-0 text-current/65"
-                        aria-hidden="true"
-                      />
-                      project.md
-                    </div>
-                  </li>
-                  <li
-                    class="relative ps-5 before:absolute before:start-0 before:top-0 before:h-full before:border-s before:border-primary-foreground/25 after:absolute after:start-0 after:top-4 after:w-3 after:border-t after:border-primary-foreground/25"
-                  >
-                    <div class="flex items-center gap-2 py-2">
-                      <Folder
-                        class="size-4 shrink-0 text-current/65"
-                        aria-hidden="true"
-                      />
-                      <span>context/<span class="text-current/50">**</span></span>
-                    </div>
-                  </li>
-                  <li
-                    class="relative ps-5 before:absolute before:start-0 before:top-0 before:h-4 before:border-s before:border-primary-foreground/25 after:absolute after:start-0 after:top-4 after:w-3 after:border-t after:border-primary-foreground/25"
-                  >
-                    <div class="flex items-center gap-2 py-2">
-                      <Folder
-                        class="size-4 shrink-0 text-current/65"
-                        aria-hidden="true"
-                      />
-                      <span>agents/<span class="text-current/50">**</span></span>
-                    </div>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </div>
-        </article>
-
-        <div
-          class="flex items-center justify-center text-current/35"
-          aria-hidden="true"
-        >
-          <ArrowDown class="size-5 lg:hidden" />
-          <ArrowRight class="hidden size-5 lg:block" />
         </div>
-
-        <article
-          class="light-surface-selection flex flex-col justify-between rounded-xl bg-primary-foreground p-5 text-primary sm:p-6"
-        >
-          <div>
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <p class="eyebrow mb-2 text-current/50">02 · Interpret</p>
-                <h3 class="font-mono text-base font-semibold">@moldea.ai/core</h3>
-              </div>
-              <span
-                class="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"
-              >
-                <Braces
-                  class="size-4"
-                  aria-hidden="true"
-                />
-              </span>
-            </div>
-            <p class="mt-8 text-2xl leading-tight font-semibold">One deterministic pass.</p>
-          </div>
-          <ol class="mt-8 space-y-2 text-sm font-semibold">
-            <li class="flex items-center gap-2">
-              <span class="size-1.5 rounded-full bg-current/40"></span>
-              Validate
-            </li>
-            <li class="flex items-center gap-2">
-              <span class="size-1.5 rounded-full bg-current/40"></span>
-              Normalize
-            </li>
-            <li class="flex items-center gap-2">
-              <span class="size-1.5 rounded-full bg-current/40"></span>
-              Index
-            </li>
-          </ol>
-        </article>
-
-        <div
-          class="flex items-center justify-center text-current/35"
-          aria-hidden="true"
-        >
-          <ArrowDown class="size-5 lg:hidden" />
-          <ArrowRight class="hidden size-5 lg:block" />
-        </div>
-
-        <article class="rounded-xl border border-primary-foreground/15 bg-primary/45 p-5 sm:p-6">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="eyebrow mb-2 text-current/50">03 · Output</p>
-              <h3 class="text-xl font-semibold">Structured result</h3>
-            </div>
-            <Braces
-              class="size-5 text-current/65"
+        <div class="font-mono text-sm">
+          <p class="flex items-center gap-2 py-2">
+            <FolderOpen
+              class="size-4 shrink-0"
               aria-hidden="true"
-            />
-          </div>
-          <div
-            class="mt-8 overflow-hidden rounded-lg border border-primary-foreground/15 bg-primary/55 p-4 font-mono text-xs leading-6 sm:text-sm"
-            aria-label="Project inspection result structure"
+            /><code>./</code>
+          </p>
+          <ul
+            class="ml-2 border-l border-primary-foreground/25 pl-4"
+            aria-label="Repository files"
           >
-            <p><span class="text-current/50">&#123;</span></p>
-            <p class="ps-4"><span class="text-current/55">valid:</span> true,</p>
-            <p class="ps-4"><span class="text-current/55">project:</span> &#123;</p>
-            <p class="ps-8"><span class="text-current/55">context:</span> [...],</p>
-            <p class="ps-8"><span class="text-current/55">decisions:</span> [...],</p>
-            <p class="ps-8"><span class="text-current/55">agents:</span> [...]</p>
-            <p class="ps-4">&#125;,</p>
-            <p class="ps-4"><span class="text-current/55">evidence:</span> [...],</p>
-            <p class="ps-4"><span class="text-current/55">diagnostics:</span> []</p>
-            <p><span class="text-current/50">&#125;</span></p>
-          </div>
-        </article>
-      </div>
-
-      <div class="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
-        <article class="rounded-xl border border-primary-foreground/15 bg-primary/45 p-5 sm:p-6">
-          <div class="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-            <div>
-              <p class="eyebrow mb-3 text-current/50">Shared evidence model</p>
-              <h3 class="max-w-xl text-2xl leading-tight font-semibold">
-                Code, context, and instructions stay connected.
-              </h3>
-              <p class="mt-4 max-w-2xl leading-7 text-current/65">
-                <InlineBrandText
-                  text="Repository Format names the durable project assets. Runtime adapters add source-grounded code evidence. moldea can then trace explicit relationships across the complete repository state."
-                />
+            <li>
+              <p class="flex items-center gap-2 py-2">
+                <Folder
+                  class="size-4 shrink-0 text-current/70"
+                  aria-hidden="true"
+                /><code>src/</code><span class="ml-auto text-xs text-current/70">Your code</span>
               </p>
-            </div>
-            <Link2
-              class="hidden size-7 text-current/50 sm:block"
-              aria-hidden="true"
-            />
-          </div>
-
-          <div class="mt-7 grid gap-2 sm:grid-cols-3 sm:gap-3">
-            <div
-              class="rounded-lg border border-primary-foreground/15 bg-primary-foreground/5 p-3 text-center sm:p-4"
-            >
-              <CodeXml
-                class="mx-auto mb-3 size-4 text-current/60"
-                aria-hidden="true"
-              />
-              <p class="text-xs font-semibold sm:text-sm">Code</p>
-            </div>
-            <div
-              class="rounded-lg border border-primary-foreground/15 bg-primary-foreground/5 p-3 text-center sm:p-4"
-            >
-              <BookOpenText
-                class="mx-auto mb-3 size-4 text-current/60"
-                aria-hidden="true"
-              />
-              <p class="text-xs font-semibold sm:text-sm">Context</p>
-            </div>
-            <div
-              class="rounded-lg border border-primary-foreground/15 bg-primary-foreground/5 p-3 text-center sm:p-4"
-            >
-              <FileText
-                class="mx-auto mb-3 size-4 text-current/60"
-                aria-hidden="true"
-              />
-              <p class="text-xs font-semibold sm:text-sm">Instructions</p>
-            </div>
-          </div>
-        </article>
-
-        <div
-          class="grid gap-3"
-          aria-label="Evaluation layers"
-        >
-          <article
-            class="rounded-xl border border-primary-foreground/15 bg-primary-foreground/5 p-5 sm:p-6"
-          >
-            <div class="flex items-center gap-3">
-              <span
-                class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary-foreground/15 bg-primary/40"
-              >
-                <ScanSearch
-                  class="size-4"
+            </li>
+            <li>
+              <p class="flex items-center gap-2 py-2">
+                <FolderOpen
+                  class="size-4 shrink-0 text-current/70"
                   aria-hidden="true"
-                />
-              </span>
-              <div>
-                <p class="eyebrow mb-1 text-current/50">Mechanically provable</p>
-                <h3 class="font-semibold">Deterministic evaluation</h3>
-              </div>
-            </div>
-            <p class="mt-4 text-sm leading-6 text-current/65">
-              Validates structure, references, identities, digests, and supported runtime links.
-            </p>
-          </article>
-
-          <article
-            class="rounded-xl border border-primary-foreground/15 bg-primary-foreground/5 p-5 sm:p-6"
-          >
-            <div class="flex items-center gap-3">
-              <span
-                class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary-foreground/15 bg-primary/40"
+                /><code>moldea/</code>
+              </p>
+              <ul
+                class="ml-2 border-l border-primary-foreground/25 pl-4"
+                aria-label="moldea directory"
               >
-                <Link2
-                  class="size-4"
-                  aria-hidden="true"
-                />
-              </span>
-              <div>
-                <p class="eyebrow mb-1 text-current/50">Meaning-aware</p>
-                <h3 class="font-semibold">Semantic evaluation</h3>
-              </div>
-            </div>
-            <p class="mt-4 text-sm leading-6 text-current/65">
-              Assesses whether implementation, project context, and agent instructions remain
-              aligned.
-            </p>
-          </article>
+                {
+                  canonicalFiles.map((file) => {
+                    const Icon = file.isRequired ? FileText : Folder;
+                    return (
+                      <li class="relative flex flex-wrap items-center gap-2 py-2 before:absolute before:top-4 before:-left-4 before:w-2 before:border-t before:border-primary-foreground/25">
+                        <Icon
+                          class="size-4 shrink-0 text-current/70"
+                          aria-hidden="true"
+                        />
+                        <code>{file.name}</code>
+                        <span class="ml-auto font-sans text-xs text-current/70">
+                          {file.isRequired ? 'Required' : 'Optional'}
+                        </span>
+                      </li>
+                    );
+                  })
+                }
+              </ul>
+            </li>
+          </ul>
         </div>
-      </div>
+      </article>
+      <article
+        class="light-surface-selection flex min-w-0 flex-col rounded-xl bg-primary-foreground p-6 text-primary"
+      >
+        <div class="mb-6 flex items-center justify-between gap-3">
+          <div>
+            <p class="eyebrow mb-2 text-current/70">02 · Core</p>
+            <h3 class="text-xl font-semibold">Check the connections</h3>
+          </div>
+          <ScanSearch
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          />
+        </div>
+        <p class="text-sm leading-7 text-current/80">
+          One coherent snapshot. Repeatable structural checks. No model calls.
+        </p>
+        <ul class="mt-6 divide-y divide-primary/15 text-sm">
+          <li class="py-3">Validate the Repository Format</li>
+          <li class="py-3">Resolve declared references</li>
+          <li class="py-3">Inspect supported runtime patterns</li>
+        </ul>
+        <p class="mt-auto pt-6 text-xs"><code>@moldea.ai/core</code></p>
+      </article>
+      <article
+        class="min-w-0 border-y border-primary-foreground/20 py-5 sm:rounded-xl sm:border sm:bg-primary-foreground/5 sm:p-6"
+      >
+        <div class="mb-6 flex items-center justify-between gap-3">
+          <div>
+            <p class="eyebrow mb-2 text-current/70">03 · Output</p>
+            <h3 class="text-xl font-semibold">Structured result</h3>
+          </div>
+          <Braces
+            class="size-5 shrink-0 text-current/70"
+            aria-hidden="true"
+          />
+        </div>
+        <pre
+          class="code-block rounded-lg border border-primary-foreground/20 bg-primary/55 p-4 font-mono text-xs leading-6"
+          tabindex="0"
+          role="region"
+          aria-label="Core validation result excerpt"><code>{output}</code></pre>
+        <p class="mt-4 text-xs leading-6 text-current/80">
+          Validation excerpt from the moved-file example. Precise diagnostics for your tools to act
+          on.
+        </p>
+      </article>
+    </div>
+    <div class="mt-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <p class="max-w-2xl text-sm leading-7 text-current/80">
+        Structural checks establish facts. Judging whether code fulfills an instruction is a
+        separate, semantic evaluation.
+      </p>
+      <ActionLink
+        class="light-surface-selection w-fit shrink-0 border-primary-foreground/20 bg-primary-foreground text-primary hover:bg-primary-foreground/85 dark:bg-primary-foreground dark:text-primary dark:hover:bg-primary-foreground/85"
+        href={withBase(repositoryFormatRoute, import.meta.env.BASE_URL)}
+        variant="outline"
+        >Read the format specification <ArrowRight
+          class="size-4"
+          aria-hidden="true"
+        /></ActionLink
+      >
     </div>
   </div>
 </section>

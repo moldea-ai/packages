@@ -1,0 +1,91 @@
+---
+import { ArrowUpRight } from '@lucide/astro';
+import Accordion from '@moldea.ai/website-ui/accordion';
+import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import { withBase } from '@moldea.ai/website-ui/site';
+
+import {
+  getCapabilityOutcome,
+  type ICapabilities,
+  type ICapabilityCase,
+  type ICapabilityGroup,
+} from '../../lib/capabilities/index.ts';
+import { CapabilityCard } from '../capability-card/index.ts';
+
+// every section keeps its explanation, illustrations, and secondary coverage in the same order
+interface Props {
+  catalog: ICapabilities;
+  group: ICapabilityGroup;
+  examples: ICapabilityCase[];
+  position: number;
+}
+const { catalog, group, examples, position } = Astro.props;
+---
+
+<section
+  id={group.id}
+  class="page-shell grid scroll-mt-24 gap-6 border-t py-8 sm:gap-8 sm:py-10 lg:grid-cols-2 lg:items-start lg:gap-x-12 xl:grid-cols-[minmax(0,1fr)_minmax(0,40rem)]"
+  aria-labelledby={`${group.id}-heading`}
+>
+  <header class="max-w-lg lg:pt-3">
+    <p class="eyebrow mb-3">{String(position).padStart(2, '0')} / {group.label}</p>
+    <h2
+      id={`${group.id}-heading`}
+      class="section-title text-3xl leading-tight font-semibold"
+    >
+      <InlineBrandText text={group.title} />
+    </h2>
+    <p class="mt-4 text-base leading-7 text-muted-foreground">
+      <InlineBrandText text={group.description} />
+    </p>
+    <a
+      class="mt-4 inline-flex items-center gap-2 text-link text-sm font-medium"
+      href={withBase(group.reference.route, import.meta.env.BASE_URL)}
+    >
+      {group.reference.label}<ArrowUpRight
+        class="size-4 shrink-0"
+        aria-hidden="true"
+      />
+    </a>
+  </header>
+  <div class="min-w-0">
+    <div class="grid min-w-0 gap-3">
+      {
+        examples.map((example, index) => {
+          const outcome = getCapabilityOutcome(example, catalog);
+          return (
+            <Accordion
+              id={example.id}
+              group={`${group.id}-examples`}
+              title={example.title}
+              isOpen={index === 0}
+            >
+              <span
+                slot="status"
+                data-capability-outcome={example.id}
+              >
+                <StatusBadge
+                  label={outcome.label}
+                  tone={outcome.tone}
+                  size="sm"
+                />
+              </span>
+              <CapabilityCard
+                {example}
+                {catalog}
+              />
+            </Accordion>
+          );
+        })
+      }
+    </div>
+    <p
+      class="mt-4 text-xs leading-6 text-muted-foreground"
+      data-capability-coverage={group.id}
+    >
+      <span class="font-medium text-foreground">Also covers: </span>
+      <InlineBrandText text={`${group.coverage.join('; ')}.`} />
+    </p>
+  </div>
+</section>

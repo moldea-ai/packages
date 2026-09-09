@@ -1,0 +1,43 @@
+---
+import { CircleAlert, ScanLine } from '@lucide/astro';
+import ResultSummary from '@moldea.ai/website-ui/result-summary';
+import {
+  getCapabilityOutcome,
+  type ICapabilities,
+  type ICapabilityCase,
+} from '../../lib/capabilities/index.ts';
+import { CapabilityVisual } from '../capability-visual/index.ts';
+import { CapabilityResult } from '../capability-result/index.ts';
+
+// feature-specific composition of the shared file, summary, status, and dialog primitives
+interface Props {
+  example: ICapabilityCase;
+  catalog: ICapabilities;
+}
+const { example, catalog } = Astro.props;
+const outcome = getCapabilityOutcome(example, catalog);
+const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAlert : ScanLine;
+---
+
+<article
+  class="flex min-w-0 flex-col gap-4"
+  aria-labelledby={`${example.id}-title`}
+>
+  <CapabilityVisual {example} />
+  <div class="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+    <ResultSummary
+      title={outcome.title}
+      description=""
+      tone={outcome.tone}
+    >
+      <Icon
+        slot="icon"
+        class="size-5"
+      />
+    </ResultSummary>
+    <CapabilityResult
+      {example}
+      {catalog}
+    />
+  </div>
+</article>

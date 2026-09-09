@@ -6,6 +6,18 @@ import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const toPublicPath = (route: string): string => withBase(route, basePath);
 
+test('labels exact targets without a separate maturity legend', async ({ page }) => {
+  for (const route of ['/adapters/custom/', '/adapters/openai/', '/adapters/vercel-ai-sdk/']) {
+    await page.goto(toPublicPath(route));
+    await expect(page.getByRole('region', { name: 'Target maturity', exact: true })).toHaveCount(0);
+    const labels = page.getByText('Compatibility target', { exact: true });
+    expect(await labels.count()).toBeGreaterThan(0);
+    for (const label of await labels.all()) {
+      await expect(label.locator('..').getByText('supported', { exact: true })).toBeVisible();
+    }
+  }
+});
+
 test('links qualified targets to canonical evidence', async ({ page }) => {
   await page.setViewportSize({ height: 740, width: 320 });
   await page.goto(toPublicPath('/adapters/custom/'));

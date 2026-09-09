@@ -13,7 +13,7 @@ const basePath = import.meta.env.BASE_URL;
     <Logo />
     <p class="mt-4 text-sm leading-6 text-muted-foreground">
       <InlineBrandText
-        text="The open-source technical foundation that powers moldea, the behavioral integrity layer for AI agents."
+        text="Open-source tools for moldea project knowledge, declared connections, and structural checks."
       />
     </p>
   </div>
@@ -24,29 +24,33 @@ const basePath = import.meta.env.BASE_URL;
   >
     <p class="font-bold">Documentation</p>
     <a
-      class="text-muted-foreground hover:text-foreground"
+      class="w-fit plain-link"
+      href={withBase('/getting-started/', basePath)}
+      >Get started</a
+    >
+    <a
+      class="w-fit plain-link"
+      href={withBase('/capabilities/', basePath)}
+      >Capabilities</a
+    >
+    <a
+      class="w-fit plain-link"
       href={withBase('/packages/', basePath)}
       >Packages</a
     >
     <a
-      class="text-muted-foreground hover:text-foreground"
+      class="w-fit plain-link"
       href={withBase('/adapters/', basePath)}
       >Adapters</a
     >
     <a
-      class="text-muted-foreground hover:text-foreground"
-      href={withBase('/compatibility/', basePath)}
-    >
-      Compatibility
-    </a>
-    <a
-      class="text-muted-foreground hover:text-foreground"
+      class="w-fit plain-link"
       href={withBase('/repository-format/', basePath)}
     >
       Repository Format
     </a>
     <a
-      class="text-muted-foreground hover:text-foreground"
+      class="w-fit plain-link"
       href={withBase('/llms.txt', basePath)}
       >llms.txt</a
     >
@@ -58,7 +62,21 @@ const basePath = import.meta.env.BASE_URL;
   >
     <p class="font-bold">Project</p>
     <a
-      class="text-muted-foreground hover:text-foreground"
+      class="w-fit plain-link"
+      href="https://moldea.ai"
+      target="_blank"
+      rel="noopener noreferrer"
+      >Cloud</a
+    >
+    <a
+      class="w-fit plain-link"
+      href="https://skill.moldea.ai/"
+      target="_blank"
+      rel="noopener noreferrer"
+      >Agent Skill</a
+    >
+    <a
+      class="w-fit plain-link"
       href="https://github.com/moldea-ai/packages"
       target="_blank"
       rel="noopener noreferrer"
@@ -66,7 +84,7 @@ const basePath = import.meta.env.BASE_URL;
       GitHub
     </a>
     <a
-      class="text-muted-foreground hover:text-foreground"
+      class="w-fit plain-link"
       href="https://github.com/moldea-ai/packages/issues"
       target="_blank"
       rel="noopener noreferrer"

@@ -26,11 +26,24 @@ import {
   type IRuntimeCompatibilityPublicationV1,
 } from '../runtime-compatibility-publication/index.ts';
 import { parseRuntimeTargetMaturity } from '../runtime-target-maturity/index.ts';
+import {
+  DISCOVERY_COPY,
+  validateDiscoveryCopy,
+  type IDiscoveryCopy,
+} from '../discovery-copy/index.ts';
+import { createInspectionExample } from '../inspection-example/index.ts';
+import { createInstructionExample } from '../instruction-example/index.ts';
+import {
+  createCapabilities,
+  getCapabilityOutcome,
+  getCapabilityShowcase,
+  type ICapabilities,
+} from '../capabilities/index.ts';
 
 const REPOSITORY_URL = 'https://github.com/moldea-ai/packages';
 const EXCLUDED_DIRECTORY_NAMES = new Set(['_archive', '_archives', '_backup', '_backups']);
 const GENERATED_NOTICE =
-  'Generated from project manifests, package-owned documentation, public exports, specifications/repository-format.md, compatibility/runtimes.yaml, and the website-owned runtime target maturity file. Do not edit generated output.';
+  'Generated from project manifests, package-owned documentation, public exports, specifications/repository-format.md, compatibility/runtimes.yaml, website-owned content and display metadata, and real Core, adapter, reader, and CLI operations on synthetic examples. Do not edit generated output.';
 
 const PackageManifestSchema = z.object({
   bin: z.record(z.string(), z.string()).optional(),
@@ -76,7 +89,7 @@ const parseJsonFile = (path: string): unknown => JSON.parse(readFileSync(path, '
 
 const parseDocument = (
   path: string,
-  projectSlug: string,
+  sourceDirectory: string,
   packageRoute: string,
   repositoryRoot: string,
 ): IPackageDocument => {
@@ -88,10 +101,7 @@ const parseDocument = (
   }
 
   const metadata = DocumentFrontmatterSchema.parse(parseYaml(match[1]));
-  const relativeDocumentPath = relative(
-    join(repositoryRoot, 'projects', projectSlug, 'docs'),
-    path,
-  );
+  const relativeDocumentPath = relative(sourceDirectory, path);
   const sourceSlug = relativeDocumentPath.replaceAll(sep, '/').replace(/\.md$/, '');
   const slug = sourceSlug === 'index' ? '' : sourceSlug.replace(/\/index$/, '');
   const route = slug ? `${packageRoute}${slug}/` : packageRoute;
@@ -123,7 +133,7 @@ const listMarkdownFiles = (directory: string): string[] => {
   });
 };
 
-/** Discovers implemented public projects and validates their package-owned documentation. */
+/** Discovers visitor-facing public projects and validates their package-owned documentation. */
 export const discoverPublicPackages = (repositoryRoot: string): IPublicPackage[] => {
   const projectsDirectory = join(repositoryRoot, 'projects');
   const discovered = readdirSync(projectsDirectory, { withFileTypes: true })
@@ -138,6 +148,8 @@ export const discoverPublicPackages = (repositoryRoot: string): IPublicPackage[]
       const manifest = PackageManifestSchema.parse(parseJsonFile(manifestPath));
 
       if (manifest.private === true || manifest.publishConfig?.access !== 'public') return [];
+      // shared website implementation remains documented in its repository, not on this site
+      if (manifest.name === '@moldea.ai/website-ui') return [];
       if (!existsSync(join(projectDirectory, 'src'))) return [];
       if (manifest.repository.directory !== `projects/${entry.name}`) {
         throw new Error(`${manifest.name} repository.directory contradicts its project directory.`);
@@ -151,9 +163,7 @@ export const discoverPublicPackages = (repositoryRoot: string): IPublicPackage[]
 
       const family = manifest.name.startsWith('@moldea.ai/adapter-')
         ? 'runtime-adapters'
-        : manifest.name === '@moldea.ai/website-ui'
-          ? 'website-foundations'
-          : 'skill-core-tooling';
+        : 'skill-core-tooling';
       const route =
         family === 'runtime-adapters'
           ? `/adapters/${entry.name.replace(/^adapter-/, '')}/`
@@ -166,7 +176,7 @@ export const discoverPublicPackages = (repositoryRoot: string): IPublicPackage[]
       }
 
       const documents = listMarkdownFiles(docsDirectory)
-        .map((path) => parseDocument(path, entry.name, route, repositoryRoot))
+        .map((path) => parseDocument(path, join(projectDirectory, 'docs'), route, repositoryRoot))
         .sort((left, right) => left.order - right.order || left.route.localeCompare(right.route));
 
       if (!documents.some((document) => document.slug === '')) {
@@ -277,6 +287,7 @@ export const buildAdapterPages = (
 export const createRouteManifest = (
   packages: IPublicPackage[],
   adapters: IAdapterPage[],
+  gettingStarted: IPackageDocument,
 ): string[] => {
   const routes = new Set<string>();
   const addRoute = (route: string): void => {
@@ -288,6 +299,7 @@ export const createRouteManifest = (
     '/',
     '/404.html',
     '/adapters/',
+    '/capabilities/',
     '/compatibility/',
     '/compatibility/runtimes.json',
     '/llms.txt',
@@ -299,6 +311,8 @@ export const createRouteManifest = (
   ]) {
     addRoute(route);
   }
+
+  addRoute(gettingStarted.route);
 
   for (const packageModel of packages) {
     for (const document of packageModel.documents) addRoute(document.route);
@@ -337,6 +351,9 @@ export const createSearchRecords = (
   packages: IPublicPackage[],
   adapters: IAdapterPage[],
   specification: IRepositoryFormatSpecification,
+  gettingStarted: IPackageDocument,
+  discoveryCopy: IDiscoveryCopy,
+  capabilities: ICapabilities,
 ): ISearchRecord[] => {
   const recordsByRoute = new Map<string, ISearchRecord>();
 
@@ -349,6 +366,8 @@ export const createSearchRecords = (
           [
             packageModel.name,
             packageModel.description,
+            discoveryCopy.packages[packageModel.name].name,
+            discoveryCopy.packages[packageModel.name].description,
             document.navigationTitle,
             document.markdown,
           ].join(' '),
@@ -390,6 +409,9 @@ export const createSearchRecords = (
       searchText: [
         existingRecord?.searchText,
         adapter.id,
+        discoveryCopy.adapters[adapter.id].name,
+        discoveryCopy.adapters[adapter.id].description,
+        ...Object.values(discoveryCopy.adapters[adapter.id].targets),
         adapter.entry.implementationStatus,
         compatibilityText,
       ]
@@ -412,6 +434,72 @@ export const createSearchRecords = (
     title: specification.title,
   });
 
+  recordsByRoute.set(gettingStarted.route, {
+    description: gettingStarted.description,
+    route: gettingStarted.route,
+    searchText: normalizeSearchText([gettingStarted.title, gettingStarted.markdown].join(' ')),
+    title: gettingStarted.title,
+  });
+
+  recordsByRoute.set('/adapters/', {
+    description:
+      'Find your runtime, compare target maturity, and open its exact compatibility scope.',
+    route: '/adapters/',
+    searchText: normalizeSearchText(
+      [
+        'Runtime adapters compatibility supported targets versions limitations qualification',
+        ...adapters
+          .flatMap(({ id }) => [
+            discoveryCopy.adapters[id].name,
+            ...Object.values(discoveryCopy.adapters[id].targets),
+          ])
+          .sort(),
+      ].join(' '),
+    ),
+    title: 'Runtime adapters and compatibility',
+  });
+
+  recordsByRoute.set('/capabilities/', {
+    route: '/capabilities/',
+    title: 'Capabilities',
+    description: 'Executable examples of deterministic package capabilities.',
+    searchText:
+      'Capabilities structure agents decisions runtime wiring repository access command line deterministic checks',
+  });
+  for (const group of capabilities.groups) {
+    const route = `/capabilities/#${group.id}`;
+    recordsByRoute.set(route, {
+      route,
+      title: group.title,
+      description: group.description,
+      searchText: normalizeSearchText(
+        [group.title, group.description, ...group.coverage].join(' '),
+      ),
+    });
+  }
+  for (const example of getCapabilityShowcase(capabilities).flatMap(({ examples }) => examples)) {
+    const route = `/capabilities/#${example.id}`;
+    const outcome = getCapabilityOutcome(example, capabilities);
+    recordsByRoute.set(route, {
+      route,
+      title: example.title,
+      description: example.description,
+      searchText: normalizeSearchText(
+        [
+          example.title,
+          example.description,
+          example.packageName,
+          example.operation,
+          outcome.title,
+          outcome.label,
+          ...('diagnostics' in example.result
+            ? example.result.diagnostics.map(({ code }) => code)
+            : []),
+        ].join(' '),
+      ),
+    });
+  }
+
   return [...recordsByRoute.values()].sort(
     (left, right) => left.route.localeCompare(right.route) || left.title.localeCompare(right.title),
   );
@@ -422,13 +510,18 @@ export const createLlmsText = (
   packages: IPublicPackage[],
   adapters: IAdapterPage[],
   specification: IRepositoryFormatSpecification,
+  gettingStarted: IPackageDocument,
 ): string => {
   const lines = [
     '# moldea packages',
     '',
     '> The open-source deterministic package foundation that powers moldea, the behavioral integrity layer for AI agents.',
     '',
-    'This site documents repository-owned packages and runtime compatibility. The separate Agent Skill experience owns installation, workflows, tutorials, and developer onboarding.',
+    'This site documents repository-owned packages and runtime compatibility. Checks validate structure and declared references, not code semantics or agent behavior.',
+    '',
+    `- [${gettingStarted.title}](${gettingStarted.route}): ${gettingStarted.description}`,
+    '- [Capabilities](/capabilities/): Executable examples of structure, agents, decisions, runtime wiring, repository inspection, and CLI operations.',
+    '- [moldea Agent Skill](https://skill.moldea.ai/): Repository adoption, installation, workflows, and tutorials.',
     '',
     '## Skill & Core Tooling',
     '',
@@ -447,19 +540,6 @@ export const createLlmsText = (
   }
 
   const adapterPackages = orderedPackages.filter(({ family }) => family === 'runtime-adapters');
-
-  const websitePackages = orderedPackages.filter(({ family }) => family === 'website-foundations');
-
-  if (websitePackages.length > 0) {
-    lines.push('', '## Website Foundations', '');
-
-    for (const packageModel of websitePackages) {
-      const overview = packageModel.documents.find(({ slug }) => slug === '');
-      lines.push(
-        `- [${packageModel.name}](${packageModel.route}): ${overview?.description ?? packageModel.description}`,
-      );
-    }
-  }
 
   if (adapterPackages.length > 0) {
     lines.push('', '## Runtime Adapter Packages', '');
@@ -507,7 +587,8 @@ export const createLlmsText = (
     '## Canonical references',
     '',
     `- [Repository Format specification](${specification.route}): Official version ${specification.formatVersion} repository contract.`,
-    '- [Complete runtime compatibility matrix](/compatibility/)',
+    '- [Runtime adapters and compatibility](/adapters/)',
+    '- [Machine-readable runtime compatibility](/compatibility/runtimes.json)',
     `- [Source repository](${REPOSITORY_URL})`,
     '',
   );
@@ -517,9 +598,12 @@ export const createLlmsText = (
 
 /**
  * Builds the complete deterministic website model without writing generated output.
- * @returns The validated package, documentation, API, adapter, route, and LLM model.
+ * Capability examples use disposable filesystem and Git workspaces that are removed before completion.
+ * @returns A promise resolving to the validated content, real inspection example, and discovery model.
+ * @throws
+ * - If source content, discovery metadata, route ownership, or the real inspection example is invalid.
  */
-export const createWebsiteModel = (): IWebsiteModel => {
+export const createWebsiteModel = async (): Promise<IWebsiteModel> => {
   const repositoryRoot = getRepositoryRoot();
   const packages = discoverPublicPackages(repositoryRoot);
   const repositoryFormatSpecification = loadRepositoryFormatSpecification();
@@ -533,13 +617,41 @@ export const createWebsiteModel = (): IWebsiteModel => {
     targetMaturities,
   );
   const adapters = buildAdapterPages(runtimeCompatibilityPublication, packages);
-  const routes = createRouteManifest(packages, adapters);
-  const searchRecords = createSearchRecords(packages, adapters, repositoryFormatSpecification);
+  const discoveryCopy = structuredClone(DISCOVERY_COPY);
+  validateDiscoveryCopy(discoveryCopy, packages, adapters);
+  const contentDirectory = join(repositoryRoot, 'apps/website/content');
+  const gettingStarted = parseDocument(
+    join(contentDirectory, 'getting-started.md'),
+    contentDirectory,
+    '/',
+    repositoryRoot,
+  );
+  const inspectionExample = await createInspectionExample();
+  const instructionExample = await createInstructionExample();
+  const capabilities = await createCapabilities(
+    repositoryRoot,
+    packages,
+    runtimeCompatibilityPublication,
+  );
+  const routes = createRouteManifest(packages, adapters, gettingStarted);
+  const searchRecords = createSearchRecords(
+    packages,
+    adapters,
+    repositoryFormatSpecification,
+    gettingStarted,
+    discoveryCopy,
+    capabilities,
+  );
 
   return {
     adapters,
+    capabilities,
+    discoveryCopy,
     generatedNotice: GENERATED_NOTICE,
-    llmsText: createLlmsText(packages, adapters, repositoryFormatSpecification),
+    gettingStarted,
+    inspectionExample,
+    instructionExample,
+    llmsText: createLlmsText(packages, adapters, repositoryFormatSpecification, gettingStarted),
     packages,
     repositoryFormatSpecification,
     routes,

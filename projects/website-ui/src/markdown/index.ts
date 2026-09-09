@@ -82,6 +82,13 @@ const wrapTables = (html: string): string => {
   );
 };
 
+/** Names code regions and makes their horizontal overflow keyboard-accessible. */
+const markCodeBlocks = (html: string): string =>
+  html.replaceAll(/<pre\b([^>]*)>/gu, (_match, attributes: string) => {
+    const focusAttribute = /\btabindex=/u.test(attributes) ? '' : ' tabindex="0"';
+    return `<pre${attributes}${focusAttribute} role="region" aria-label="Code block">`;
+  });
+
 /** Applies the public product-name treatment outside existing code elements. */
 const renderProductNamesAsCode = (html: string): string => {
   let codeDepth = 0;
@@ -119,14 +126,15 @@ const renderStrongLabelBadges = (
   }, html);
 };
 
-/** Processes Markdown with optional stable heading IDs. */
-const processMarkdown = async (source: string, shouldSlugHeadings: boolean): Promise<string> => {
+/** Shares sanitization and highlighting between authored Markdown and literal code. */
+const createMarkdownProcessor = (shouldSlugHeadings: boolean) => {
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkRehype);
   if (shouldSlugHeadings) processor.use(rehypeSlug);
 
-  const file = await processor
+  return processor
     .use(rehypeSanitize, { ...defaultSchema, clobberPrefix: '' })
     .use(rehypeShiki, {
+      addLanguageClass: true,
       defaultColor: false,
       langs: [],
       lazy: true,
@@ -135,8 +143,12 @@ const processMarkdown = async (source: string, shouldSlugHeadings: boolean): Pro
         light: 'github-light-default',
       },
     })
-    .use(rehypeStringify)
-    .process(source);
+    .use(rehypeStringify);
+};
+
+/** Processes Markdown with optional stable heading IDs. */
+const processMarkdown = async (source: string, shouldSlugHeadings: boolean): Promise<string> => {
+  const file = await createMarkdownProcessor(shouldSlugHeadings).process(source);
 
   return String(file);
 };
@@ -151,7 +163,7 @@ const applyPresentation = (html: string, options: IMarkdownRenderOptions): strin
   const productHtml =
     options.productNameTreatment === 'code' ? renderProductNamesAsCode(badgedHtml) : badgedHtml;
 
-  return wrapTables(markExternalLinks(productHtml));
+  return markCodeBlocks(wrapTables(markExternalLinks(productHtml)));
 };
 
 /** Extracts stable second- and third-level headings from sanitized document HTML. */
@@ -202,4 +214,20 @@ export const renderMarkdownFragment = async (
   const renderedHtml = await processMarkdown(markdown, false);
 
   return applyPresentation(renderedHtml, options);
+};
+
+/**
+ * Renders literal source without interpreting its contents as Markdown or HTML.
+ * @param source Code or plain text to display verbatim.
+ * @param language Syntax language; omitted languages remain unhighlighted and do not wrap.
+ * @returns Sanitized, highlighted HTML with a keyboard-accessible code region.
+ */
+export const renderCodeBlock = async (source: string, language = ''): Promise<string> => {
+  const processor = createMarkdownProcessor(false);
+  const rendered = await processor.run({
+    type: 'root',
+    children: [{ type: 'code', lang: language || null, value: source }],
+  });
+
+  return markCodeBlocks(processor.stringify(rendered));
 };

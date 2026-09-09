@@ -25,6 +25,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .env
 .env.*
 !.env.example
+/AGENTS.md
 
 # Editor and operating-system files
 .DS_Store

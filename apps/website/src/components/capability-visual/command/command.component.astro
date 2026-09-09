@@ -1,0 +1,132 @@
+---
+import { ArrowDown, FileX, Terminal } from '@lucide/astro';
+import { parse } from 'yaml';
+import { z } from 'zod';
+
+import CodeBlock from '@moldea.ai/website-ui/code-block';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
+
+import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
+
+// the command and returned document come from the executed CLI result
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+if (example.result.kind !== 'cli') throw new Error('Command illustration requires a CLI result.');
+const result = example.result;
+const { asset, chunk } = result.facts;
+const content =
+  chunk && typeof chunk === 'object' && !Array.isArray(chunk) ? chunk.content : undefined;
+const path = asset && typeof asset === 'object' && !Array.isArray(asset) ? asset.path : undefined;
+if (
+  example.id === 'cli-canonical-content' &&
+  (typeof path !== 'string' || typeof content !== 'string')
+)
+  throw new Error('Command illustration requires the returned document.');
+const html =
+  typeof content === 'string' ? await renderMarkdownFragment(content.replace(/^# /mu, '### ')) : '';
+const manifest = example.files.find(({ path }) => path === '/moldea/moldea.yaml');
+const ReferenceManifest = z.object({
+  context: z.object({
+    '/moldea/project.md': z.object({ bindings: z.tuple([z.object({ path: z.string() })]) }),
+  }),
+});
+const diagnostic =
+  result.status === 'invalid'
+    ? getCapabilityFactRows(result.facts.diagnostics).find(
+        ({ code }) => code === 'MOLDEA_REFERENCE_MISSING',
+      )
+    : undefined;
+if (
+  result.status === 'invalid' &&
+  (!manifest ||
+    diagnostic?.path !== manifest.path ||
+    diagnostic?.pointer !== '/context/~1moldea~1project.md/bindings/0')
+)
+  throw new Error('Command illustration requires the manifest binding reported by validation.');
+const missingPath =
+  diagnostic && manifest
+    ? ReferenceManifest.parse(parse(manifest.content) as unknown).context['/moldea/project.md']
+        .bindings[0].path
+    : undefined;
+---
+
+<div class="grid min-w-0 gap-3">
+  {
+    typeof missingPath === 'string' && manifest && (
+      <>
+        <p class="text-xs leading-6 text-muted-foreground">
+          Referenced in <code class="inline-code">moldea.yaml</code>
+        </p>
+        <FilePreview
+          path={missingPath.slice(1)}
+          label="Eligibility-check code"
+          tone="danger"
+        >
+          <FileX
+            slot="icon"
+            class="size-5"
+            aria-hidden="true"
+          />
+          <StatusBadge
+            slot="status"
+            label="Missing"
+            tone="danger"
+            size="sm"
+          />
+        </FilePreview>
+      </>
+    )
+  }
+  <div class="min-w-0 rounded-lg border bg-muted/30 p-4">
+    <p class="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+      <Terminal
+        class="size-4"
+        aria-hidden="true"
+      />Terminal / CI
+    </p>
+    <CodeBlock
+      source={result.command}
+      language="sh"
+      variant="plain"
+    />
+    <div class="mt-3 flex items-center gap-2 border-t pt-3 text-xs">
+      <ArrowDown
+        class="size-4 text-muted-foreground"
+        aria-hidden="true"
+      /><StatusBadge
+        label={`Exit ${result.exitStatus}`}
+        tone={result.status === 'invalid'
+          ? 'danger'
+          : result.status === 'error'
+            ? 'warning'
+            : 'info'}
+        size="sm"
+      /><span class="text-muted-foreground"
+        >{
+          result.status === 'invalid'
+            ? 'Validation failed'
+            : result.status === 'error'
+              ? 'Source code is not a knowledge document'
+              : 'Document returned as JSON'
+        }</span
+      >
+    </div>
+  </div>
+  {
+    typeof path === 'string' && (
+      <FilePreview
+        path={path.slice(1)}
+        label="Returned document"
+      >
+        <div
+          class="prose-moldea px-4 py-4 text-sm leading-7 [&_h3]:mt-0 [&_h3]:text-base [&_p]:my-1 [&_strong]:rounded [&_strong]:bg-secondary [&_strong]:px-1.5 [&_strong]:py-1 [&_strong]:text-base"
+          set:html={html}
+        />
+      </FilePreview>
+    )
+  }
+</div>

@@ -1,9 +1,34 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
 
-import { renderMarkdownDocument, renderMarkdownFragment } from './index.js';
+import { renderCodeBlock, renderMarkdownDocument, renderMarkdownFragment } from './index.js';
 
 describe('website Markdown rendering', () => {
+  test('renders literal code without allowing embedded fences or HTML to escape', async () => {
+    const html = await renderCodeBlock(
+      '```\n# Not a heading\n<script>alert("example")</script>\n[Not a link](https://example.com)\n```',
+    );
+
+    expect(html.match(/<pre\b/gu)).toHaveLength(1);
+    expect(html).toContain('tabindex="0" role="region" aria-label="Code block"');
+    expect(html).toContain('```\n# Not a heading\n&#x3C;script>');
+    expect(html).toContain('[Not a link](https://example.com)');
+    expect(html).not.toMatch(/<(?:h1|script|a)\b/u);
+  });
+
+  test.each(['json', 'sh', 'text', 'txt', 'plaintext', ''])(
+    'renders literal %s source through the shared language and accessibility policy',
+    async (language) => {
+      const html = await renderCodeBlock('  example\n\n', language);
+
+      expect(html).toContain('  example');
+      expect(html).toContain('role="region" aria-label="Code block"');
+      if (language) expect(html).toContain(`class="language-${language}"`);
+      else expect(html).not.toContain('language-');
+      if (language === 'json' || language === 'sh') expect(html).toContain('shiki');
+    },
+  );
+
   test('renders a sanitized base-aware document and stable heading outline', async () => {
     const rendered = await renderMarkdownDocument(
       '# Page\n\n## Use `moldea`\n\n[Local](/packages/) [External](https://example.com) <script>unsafe</script>',
@@ -48,6 +73,24 @@ describe('website Markdown rendering', () => {
     expect(rendered.html).toContain('class="line"');
     expect(rendered.html).toContain('projectName');
   });
+
+  test.each(['ts', 'json', 'yaml', 'text', 'txt', 'plaintext', ''])(
+    'retains the explicit %s language and exposes keyboard-accessible code regions',
+    async (language) => {
+      const source = `\`\`\`${language}\n  example\n\`\`\``;
+      for (const html of [
+        await renderMarkdownFragment(source),
+        (await renderMarkdownDocument(source, { hasDocumentTitle: false })).html,
+      ]) {
+        expect(html).toContain('tabindex="0"');
+        expect(html.match(/tabindex="0"/gu)).toHaveLength(1);
+        expect(html).toContain('role="region" aria-label="Code block"');
+        if (language) expect(html).toContain(`class="language-${language}"`);
+        else expect(html).not.toContain('language-');
+        expect(html).toContain('  example');
+      }
+    },
+  );
 
   test('renders allowlisted strong labels as semantic badges', async () => {
     const rendered = await renderMarkdownDocument('# Page\n\nUse **Supported** maturity.', {

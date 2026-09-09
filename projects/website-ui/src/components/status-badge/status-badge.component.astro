@@ -4,11 +4,16 @@ export type IStatusBadgeTone = 'danger' | 'info' | 'neutral' | 'success' | 'warn
 export interface Props {
   borderStyle?: 'dashed' | 'dotted' | 'solid';
   label: string;
+  size?: 'md' | 'sm';
   tone: IStatusBadgeTone;
   truncate?: boolean;
 }
 
-const { borderStyle = 'solid', label, tone, truncate = false } = Astro.props;
+const { borderStyle = 'solid', label, size = 'md', tone, truncate = false } = Astro.props;
+const sizeClasses = {
+  md: 'min-h-6 px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.08em]',
+  sm: 'min-h-5 px-1.5 py-0 text-[0.625rem] leading-4 font-semibold tracking-wide',
+} as const;
 const borderStyleClasses = {
   dashed: 'border-dashed',
   dotted: 'border-dotted',
@@ -25,9 +30,10 @@ const toneClasses = {
 
 <span
   class:list={[
-    'min-h-6 max-w-full rounded-full border px-2.5 py-1 text-start text-[0.68rem] font-bold tracking-[0.08em] uppercase',
+    'max-w-full rounded-full border text-start uppercase',
     truncate ? 'block min-w-0 truncate' : 'inline-flex items-center break-words whitespace-normal',
     borderStyleClasses[borderStyle],
+    sizeClasses[size],
     toneClasses[tone],
   ]}
   data-status-badge={tone}

@@ -1,0 +1,37 @@
+---
+import type { ICapabilityCase } from '../../lib/capabilities/index.ts';
+import { CapabilityAgents } from './agents/index.ts';
+import { CapabilityCommand } from './command/index.ts';
+import { CapabilityDecisions } from './decisions/index.ts';
+import { CapabilityFiles } from './files/index.ts';
+import { CapabilityDigests } from './digests/index.ts';
+import { CapabilityRecords } from './records/index.ts';
+import { CapabilityRuntime } from './runtime/index.ts';
+import { CapabilityScope } from './scope/index.ts';
+
+// each selected family has a source-backed illustration
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+---
+
+{
+  example.groupId === 'structure' || example.id === 'tool-implementation-missing' ? (
+    <CapabilityFiles {example} />
+  ) : example.groupId === 'agents' ? (
+    <CapabilityAgents {example} />
+  ) : example.groupId === 'decisions' ? (
+    <CapabilityDecisions {example} />
+  ) : example.result.kind === 'adapter' ? (
+    <CapabilityRuntime {example} />
+  ) : example.result.kind === 'reader' ? (
+    <CapabilityRecords {example} />
+  ) : example.result.kind === 'cli' ? (
+    <CapabilityCommand {example} />
+  ) : example.id === 'normalized-digests' ? (
+    <CapabilityDigests {example} />
+  ) : (
+    <CapabilityScope {example} />
+  )
+}

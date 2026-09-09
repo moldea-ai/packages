@@ -1,0 +1,86 @@
+---
+import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
+import ActionLink from '@moldea.ai/website-ui/action-link';
+import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';
+import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
+import { withBase } from '@moldea.ai/website-ui/site';
+
+import BaseLayout from '../../layouts/base-layout.astro';
+import { CapabilitySection } from '../../components/capability-section/index.ts';
+import { getCapabilityShowcase } from '../../lib/capabilities/index.ts';
+import { loadWebsiteModel } from '../../lib/generation/generation.ts';
+
+const catalog = loadWebsiteModel().capabilities;
+const showcase = getCapabilityShowcase(catalog);
+const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Capabilities' }];
+---
+
+<BaseLayout
+  title="Capabilities"
+  description="Explore deterministic file checks, agent declarations, decision history, runtime connections, and repository operations through real package results."
+  {breadcrumbs}
+  flushFooter
+>
+  <div class="relative overflow-hidden bg-background">
+    <HeroBackdrop />
+    <section
+      class="page-shell relative pt-8 pb-10 sm:pb-12"
+      aria-labelledby="capabilities-title"
+    >
+      <Breadcrumbs items={breadcrumbs} />
+      <header class="grid gap-6 pt-8 sm:pt-12 lg:grid-cols-2 lg:items-end lg:gap-16">
+        <div>
+          <p class="eyebrow mb-5">Capabilities</p>
+          <h1
+            id="capabilities-title"
+            class="section-title text-4xl leading-tight font-semibold sm:text-5xl lg:text-6xl"
+          >
+            Catch what's broken.<br />See what's connected.
+          </h1>
+        </div>
+        <p class="max-w-xl text-lg leading-8 text-muted-foreground">
+          <InlineBrandText
+            text="moldea checks the files and connections behind your agents. Explore what it can verify and inspect, with real results from example repositories."
+          />
+        </p>
+      </header>
+      <nav
+        class="mt-8 flex flex-wrap gap-2"
+        aria-label="Capability sections"
+      >
+        {
+          catalog.groups.map((group) => (
+            <a
+              class="rounded-lg border navigation-link px-3 py-2 text-sm"
+              href={`#${group.id}`}
+            >
+              {group.label}
+            </a>
+          ))
+        }
+      </nav>
+    </section>
+  </div>
+  {
+    showcase.map(({ group, examples }, index) => (
+      <CapabilitySection
+        {catalog}
+        {group}
+        {examples}
+        position={index + 1}
+      />
+    ))
+  }
+  <section
+    class="page-shell flex flex-col gap-5 border-t py-10 sm:flex-row sm:items-center sm:justify-between sm:gap-12 sm:py-12"
+    aria-label="Check boundaries and next step"
+  >
+    <p class="max-w-2xl text-sm leading-7 text-muted-foreground">
+      These checks verify structure and supported source connections. They do not run your agents,
+      judge their answers, or repair your files.
+    </p>
+    <ActionLink href={withBase('/getting-started/', import.meta.env.BASE_URL)}
+      >Get started</ActionLink
+    >
+  </section>
+</BaseLayout>

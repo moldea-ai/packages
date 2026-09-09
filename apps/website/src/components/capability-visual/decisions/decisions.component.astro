@@ -1,0 +1,132 @@
+---
+import { ArrowDown, FileX } from '@lucide/astro';
+import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+
+import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
+
+// the graph labels are exact fields from the executed decision documents
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+const isCycle = example.id === 'decision-cycle';
+const missingDecisionId =
+  example.result.kind === 'validation'
+    ? example.result.diagnostics.find(({ code }) => code === 'MOLDEA_DECISION_REFERENCE_MISSING')
+        ?.details.referencedDecisionId
+    : undefined;
+const files = example.files.filter(({ path }) => path.startsWith('/moldea/decisions/'));
+const nodes = files.map((file) => ({
+  ...file,
+  status: /^status: (.+)$/mu.exec(file.content)?.[1],
+  days: /\b(\d+) days\b/u.exec(file.content.split('---')[2] ?? '')?.[1],
+}));
+if (
+  nodes.length !== (typeof missingDecisionId === 'string' ? 1 : 2) ||
+  nodes.some(({ status, days }) => !status || !days)
+)
+  throw new Error(
+    `Decision illustration lacks its recorded status or return window: ${example.id}.`,
+  );
+
+// each claim follows the authored replacement ID, not the cards' display order
+const cycleTargets = isCycle
+  ? nodes.map((node) => {
+      const replacedId = /^supersedes: \["(\d+)"\]$/mu.exec(node.content)?.[1];
+      const target = nodes.find((candidate) =>
+        candidate.path.split('/').at(-1)?.startsWith(`${replacedId}-`),
+      );
+      if (!target?.days || target.path === node.path)
+        throw new Error('Decision cycle illustration requires two mutually replacing proposals.');
+      return target.days;
+    })
+  : [];
+---
+
+<div
+  class:list={['min-w-0', isCycle && 'space-y-3']}
+  role="group"
+  aria-label={isCycle
+    ? 'Circular decision replacement'
+    : missingDecisionId
+      ? 'Missing earlier decision'
+      : 'Consistent decision replacement'}
+>
+  {
+    typeof missingDecisionId === 'string' && (
+      <>
+        <div class="flex items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4">
+          <FileX
+            class="size-5 shrink-0 text-destructive"
+            aria-hidden="true"
+          />
+          <div class="min-w-0">
+            <p class="text-sm font-semibold">Earlier decision not found</p>
+            <p class="mt-1 text-xs leading-5 text-muted-foreground">
+              Referenced by the newer decision.
+            </p>
+          </div>
+        </div>
+        <ConnectionLabel>
+          <ArrowDown
+            slot="icon"
+            class="size-4"
+            aria-hidden="true"
+          />
+          Replaced by
+        </ConnectionLabel>
+      </>
+    )
+  }
+  {
+    nodes.map((node, index) => (
+      <>
+        {index > 0 && !isCycle && (
+          <ConnectionLabel>
+            <ArrowDown
+              slot="icon"
+              class="size-4"
+              aria-hidden="true"
+            />
+            <span class="font-medium">Replaced by</span>
+          </ConnectionLabel>
+        )}
+        <FilePreview
+          path={node.path.slice(1)}
+          label={
+            isCycle
+              ? index === 0
+                ? 'Earlier proposal'
+                : 'Newer proposal'
+              : index === 0 && !missingDecisionId
+                ? 'Earlier decision'
+                : 'Newer decision'
+          }
+          tone={isCycle ? 'danger' : 'neutral'}
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div>
+              <p class="text-3xl font-semibold tracking-tight">
+                {node.days} <span class="text-lg">days</span>
+              </p>
+              <p class="mt-1 text-xs text-muted-foreground">Return window</p>
+            </div>
+            <StatusBadge
+              size="sm"
+              label={node.status!}
+              tone="neutral"
+            />
+          </div>
+          {isCycle && (
+            <p class="mx-4 mb-4 flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm">
+              <span class="text-muted-foreground">Replaces: </span>
+              <strong class="font-semibold">{cycleTargets[index]}-day proposal</strong>
+            </p>
+          )}
+        </FilePreview>
+      </>
+    ))
+  }
+</div>
