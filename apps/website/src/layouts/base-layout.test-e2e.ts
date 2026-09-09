@@ -219,6 +219,7 @@ for (const width of [320, 1440]) {
 const REPRESENTATIVE_PATHS = [
   '/',
   '/getting-started/',
+  '/capabilities/',
   '/packages/',
   '/packages/core/',
   '/packages/core/api/',

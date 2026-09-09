@@ -17,9 +17,9 @@ const documents = [
 // Astro's underscore prefix keeps page-owned browser tests out of production routes.
 for (const [query, status, resultCount] of [
   ['adapter', '1 result for “adapter”.', 1],
-  ['no-match', 'No matching package documentation or adapter status was found.', 0],
-  ['', 'Enter a package, concept, API symbol, or adapter ID.', 0],
-  ['   ', 'Enter a package, concept, API symbol, or adapter ID.', 0],
+  ['no-match', 'No matching documentation, capability, or adapter was found.', 0],
+  ['', 'Enter a package, capability, API symbol, or adapter ID.', 0],
+  ['   ', 'Enter a package, capability, API symbol, or adapter ID.', 0],
 ] as const) {
   test(`only renders the latest submitted query ${JSON.stringify(query)} after a delayed index`, async ({
     page,
@@ -132,7 +132,7 @@ test('a cleared query stays empty when the pending index fails', async ({ page }
       () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
     );
     await expect(page.locator('[data-search-status]')).toHaveText(
-      'Enter a package, concept, API symbol, or adapter ID.',
+      'Enter a package, capability, API symbol, or adapter ID.',
     );
     await expect(page.locator('[data-search-results] li')).toHaveCount(0);
   } finally {

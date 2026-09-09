@@ -8,6 +8,7 @@ import { loadWebsiteModel } from '../src/lib/generation/generation.ts';
 import { serializeRuntimeCompatibilityPublication } from '../src/lib/runtime-compatibility-publication/index.ts';
 import { DEFAULT_SITE_URL, SITE_NAME } from '../src/lib/site/constants.ts';
 import { verifySeoArtifacts } from './seo-verification/index.ts';
+import { verifyCapabilityArtifacts } from './capability-verification/index.ts';
 
 const EXCLUDED_DIRECTORY_NAMES = new Set(['_archive', '_archives', '_backup', '_backups']);
 
@@ -247,6 +248,15 @@ export const verifyProductionBuild = (
     throw new Error('The static artifact contains test output.');
   }
   const htmlPaths = files.filter((path) => path.endsWith('.html'));
+  if (
+    files.some((path) =>
+      /(?:^|\/)(?:\.generated|fixtures?|expected-results)(?:[./]|$)/u.test(
+        relative(distDirectory, path).replaceAll(sep, '/'),
+      ),
+    )
+  ) {
+    throw new Error('The static artifact contains private generation output.');
+  }
 
   // Astro's static redirect is a handoff artifact, not an indexable content page.
   const compatibilityRedirectPath = join(distDirectory, 'compatibility', 'index.html');
@@ -330,6 +340,14 @@ export const verifyProductionBuild = (
     throw new Error('The production search index must contain exactly one getting-started record.');
   }
   const homepageHtml = readFileSync(join(distDirectory, 'index.html'), 'utf8');
+  verifyCapabilityArtifacts(
+    readFileSync(join(distDirectory, 'capabilities/index.html'), 'utf8'),
+    homepageHtml,
+    llmsText,
+    searchDocuments,
+    model.capabilities,
+    new URL(`${basePath}capabilities/`, siteUrl),
+  );
   for (const state of model.inspectionExample) {
     if (!homepageHtml.includes(`id="inspection-${state.id}"`)) {
       throw new Error(`The homepage omits the ${state.id} inspection example state.`);
@@ -380,14 +398,21 @@ export const verifyProductionBuild = (
   }
 
   for (const searchDocument of searchDocuments) {
-    const artifactPath = getArtifactPathFromPublicUrl(
-      distDirectory,
-      new URL(searchDocument.url, siteUrl).pathname,
-      basePath,
-    );
+    const searchUrl = new URL(searchDocument.url, siteUrl);
+    const artifactPath = getArtifactPathFromPublicUrl(distDirectory, searchUrl.pathname, basePath);
 
     if (!artifactPath || !existsSync(artifactPath)) {
       throw new Error(`The production search index links to missing ${searchDocument.url}.`);
+    }
+    if (
+      searchUrl.hash &&
+      !getHtmlIds(readFileSync(artifactPath, 'utf8')).has(
+        decodeURIComponent(searchUrl.hash.slice(1)),
+      )
+    ) {
+      throw new Error(
+        `The production search index links to missing fragment ${searchDocument.url}.`,
+      );
     }
   }
 

@@ -95,6 +95,48 @@ describe('production discovery guards', () => {
     }
   });
 
+  test.each([
+    ['id="structure"', 'data-removed="structure"', 'missing local anchor'],
+    [
+      'data-capability-outcome="mirror-stale"',
+      'data-removed="mirror-stale"',
+      'omits visible result mirror-stale',
+    ],
+    [
+      'data-capability-target="custom/custom"',
+      'data-removed="custom/custom"',
+      'omits target or source forms',
+    ],
+    [
+      'data-capability-pattern="explicit-repository-relationships"',
+      'data-removed="explicit-repository-relationships"',
+      'omits target or source forms',
+    ],
+  ])('rejects missing capability marker %s', (marker, replacement, error) => {
+    replaceArtifactText('capabilities/index.html', marker, replacement);
+    expect(() => verifyProductionBuild(directory)).toThrow(error);
+  });
+  test('rejects a capability machine-navigation omission', () => {
+    replaceArtifactText('llms.txt', '[Capabilities]', '[Removed]');
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'Capabilities machine discovery is missing',
+    );
+  });
+  test('rejects capability search fragments that no longer identify the rendered case', () => {
+    replaceArtifactText('search-index.json', '#mirror-stale', '#unknown-capability');
+    expect(() => verifyProductionBuild(directory)).toThrow('Capabilities search discovery');
+  });
+  test('rejects private capability-generation artifacts', () => {
+    const privateDirectory = join(directory, '.generated');
+    mkdirSync(privateDirectory);
+    try {
+      writeFileSync(join(privateDirectory, 'model.json'), '{}');
+      expect(() => verifyProductionBuild(directory)).toThrow('private generation output');
+    } finally {
+      rmSync(privateDirectory, { recursive: true });
+    }
+  });
+
   test('rejects leftover Website UI documentation after a cached build', () => {
     const retiredDirectory = join(directory, 'packages', 'website-ui');
     mkdirSync(retiredDirectory, { recursive: true });

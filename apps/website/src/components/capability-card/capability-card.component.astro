@@ -1,0 +1,68 @@
+---
+import { CircleAlert, ScanLine } from '@lucide/astro';
+import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
+import ResultSummary from '@moldea.ai/website-ui/result-summary';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import {
+  getCapabilityOutcome,
+  type ICapabilities,
+  type ICapabilityCase,
+} from '../../lib/capabilities/index.ts';
+import { CapabilityVisual } from '../capability-visual/index.ts';
+import { CapabilityResult } from '../capability-result/index.ts';
+
+// feature-specific composition of the shared file, summary, status, and dialog primitives
+interface Props {
+  example: ICapabilityCase;
+  catalog: ICapabilities;
+}
+const { example, catalog } = Astro.props;
+const outcome = getCapabilityOutcome(example, catalog);
+const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAlert : ScanLine;
+---
+
+<article
+  id={example.id}
+  class="flex min-w-0 scroll-mt-24 flex-col gap-5 border-t py-6 sm:rounded-2xl sm:border sm:bg-card sm:p-5"
+  aria-labelledby={`${example.id}-title`}
+>
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <h3
+      id={`${example.id}-title`}
+      class="min-w-0 flex-1 text-base leading-6 font-semibold"
+    >
+      <InlineBrandText text={example.title} />
+    </h3>
+    <CapabilityResult
+      {example}
+      {catalog}
+    />
+  </header>
+  <CapabilityVisual {example} />
+  <div
+    class="mt-auto border-t pt-4"
+    data-capability-outcome={example.id}
+  >
+    <ResultSummary
+      title={outcome.title}
+      description={outcome.description}
+      tone={outcome.tone}
+    >
+      <Icon
+        slot="icon"
+        class="size-5"
+      />
+      <StatusBadge
+        slot="status"
+        size="sm"
+        label={outcome.label}
+        tone={outcome.tone}
+      />
+    </ResultSummary>
+    <p class="mt-4 flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted-foreground">
+      <code class="break-all">{example.packageName}</code><code class="break-all"
+        >{example.operation}</code
+      >
+    </p>
+  </div>
+</article>

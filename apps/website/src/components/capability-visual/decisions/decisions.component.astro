@@ -1,0 +1,73 @@
+---
+import { ArrowDown, Repeat2 } from '@lucide/astro';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import { getCapabilityVisualFiles, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
+
+// the graph labels are exact fields from the executed decision documents
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+const files = getCapabilityVisualFiles(example);
+const isCycle = example.id === 'decision-cycle';
+const nodes = files.map((file) => ({
+  ...file,
+  status: /^status: (.+)$/mu.exec(file.content)?.[1],
+  replaces: /^supersedes: (.+)$/mu.exec(file.content)?.[1],
+}));
+if (nodes.some(({ status }) => !status))
+  throw new Error(`Decision illustration lacks a status: ${example.id}.`);
+---
+
+<div
+  class="min-w-0"
+  role="group"
+  aria-label={isCycle ? 'Cyclic decision replacement' : 'Consistent decision replacement'}
+>
+  {
+    nodes.map((node, index) => (
+      <>
+        {index > 0 && (
+          <p class="flex items-center justify-center gap-2 py-3 text-xs font-medium text-muted-foreground">
+            {isCycle ? (
+              <Repeat2
+                class="size-4"
+                aria-hidden="true"
+              />
+            ) : (
+              <ArrowDown
+                class="size-4"
+                aria-hidden="true"
+              />
+            )}
+            {isCycle
+              ? 'Each decision supersedes the other'
+              : 'The newer decision replaces the earlier one'}
+          </p>
+        )}
+        <FilePreview
+          path={node.path.slice(1)}
+          label={index === 0 ? 'Earlier decision' : 'Newer decision'}
+          tone={isCycle ? 'danger' : 'neutral'}
+        >
+          <div class="p-3 text-xs">
+            <div class="mb-2">
+              <StatusBadge
+                size="sm"
+                label={node.status!}
+                tone="neutral"
+              />
+            </div>
+            <p class="mb-2 leading-5">{node.content.split('---')[2]?.trim()}</p>
+            {node.replaces && (
+              <p class="text-muted-foreground">
+                Supersedes <code class="break-all">{node.replaces}</code>
+              </p>
+            )}
+          </div>
+        </FilePreview>
+      </>
+    ))
+  }
+</div>

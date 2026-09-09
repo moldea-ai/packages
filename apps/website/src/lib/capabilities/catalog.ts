@@ -33,3 +33,28 @@ export const CAPABILITY_GROUPS: { id: ICapabilityGroupId; title: string; descrip
     description: 'Run the same operations against a selected Git working tree.',
   },
 ];
+
+// editorial emphasis only; all remaining cases are rendered as concise example rows
+export const FEATURED_CAPABILITY_CASES = {
+  structure: ['manifest-unknown-property', 'policy-reference-directory'],
+  agents: ['variable-undeclared', 'mirror-stale'],
+  decisions: ['decision-replacement-chain', 'decision-cycle'],
+  'runtime-wiring': [],
+  'repository-access': [
+    'manifest-change-relevance',
+    'snapshot-comparison',
+    'canonical-content-pages',
+    'normalized-digests',
+  ],
+  'command-line': [
+    'cli-validate',
+    'cli-inspect-selection',
+    'cli-scope-path',
+    'cli-scope-stdin',
+    'cli-canonical-content',
+    'cli-content-continuation',
+    'cli-content-refusal',
+    'cli-composition',
+    'cli-invalid-project',
+  ],
+} satisfies Record<ICapabilityGroupId, string[]>;

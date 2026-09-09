@@ -1,0 +1,126 @@
+---
+import { ScanLine } from '@lucide/astro';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
+import ResultSummary from '@moldea.ai/website-ui/result-summary';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import { withBase } from '@moldea.ai/website-ui/site';
+import type { ICapabilities, ICapabilityRuntimeTarget } from '../../../lib/capabilities/index.ts';
+import type { IDiscoveryCopy } from '../../../lib/discovery-copy/index.ts';
+import { CapabilityResult } from '../../capability-result/index.ts';
+
+// target-specific proof snippets complement, rather than repeat, the compatibility directory
+interface Props {
+  catalog: ICapabilities;
+  runtime: ICapabilityRuntimeTarget;
+  copy: IDiscoveryCopy['adapters'][string];
+}
+const { catalog, runtime, copy } = Astro.props;
+const { target, adapterId } = runtime;
+const id = `target-${adapterId}-${target.id}`;
+const proofs = runtime.patterns.flatMap(({ proofs }) => proofs);
+const firstProof = proofs[0];
+const example = catalog.cases.find(({ id }) => id === firstProof.caseId);
+if (!example) throw new Error(`Missing runtime example for ${id}.`);
+const sourcePath = firstProof.source.path;
+const sourceLines = [
+  ...new Set(
+    proofs
+      .filter((proof) => proof.caseId === example.id && proof.source.path === sourcePath)
+      .map(({ source }) => source.contains),
+  ),
+].slice(0, 4);
+const patterns =
+  target.patterns?.filter(({ support }) => support === 'full' || support === 'partial') ?? [];
+const partialCount = patterns.filter(({ support }) => support === 'partial').length;
+---
+
+<article
+  id={id}
+  class="flex min-w-0 scroll-mt-24 flex-col gap-4 border-t py-6 sm:rounded-2xl sm:border sm:bg-card sm:p-5"
+  aria-labelledby={`${id}-title`}
+  data-capability-target={`${adapterId}/${target.id}`}
+>
+  <header>
+    <div class="mb-2 flex flex-wrap items-center gap-2">
+      <p class="text-xs font-medium text-muted-foreground">{copy.name}</p><StatusBadge
+        size="sm"
+        label={target.maturity}
+        tone={target.maturity === 'experimental'
+          ? 'warning'
+          : target.maturity === 'deprecated'
+            ? 'danger'
+            : 'neutral'}
+      />
+    </div>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <h3
+        id={`${id}-title`}
+        class="text-lg font-semibold"
+      >
+        {copy.targets[target.id]}
+      </h3><CapabilityResult
+        {example}
+        {catalog}
+        id={`result-${id}`}
+      />
+    </div>
+    <p class="mt-2 text-xs text-muted-foreground">
+      <code class="break-all">{example.packageName}</code>
+    </p>
+  </header>
+  <FilePreview
+    path={sourcePath.slice(1)}
+    label="Selected lines from the executed example"
+  >
+    <pre
+      class="code-block p-3 text-xs leading-6"
+      tabindex="0"
+      role="region"
+      aria-label={`${copy.name} ${copy.targets[target.id]}: selected source lines`}><code>{sourceLines.join('\n')}</code></pre>
+  </FilePreview>
+  <div>
+    <p class="mb-2 text-xs font-semibold">Recognized source forms</p>
+    <ul class="grid gap-2 text-xs leading-5">
+      {
+        patterns.map((pattern) => (
+          <li data-capability-pattern={pattern.id}>
+            <span class="font-medium">{pattern.id.replaceAll('-', ' ')}</span>
+            {pattern.support === 'partial' && (
+              <>
+                <span class="ml-2 inline-block align-middle">
+                  <StatusBadge
+                    size="sm"
+                    label="Partial"
+                    tone="warning"
+                  />
+                </span>
+                <p class="mt-1 text-muted-foreground">{pattern.description}</p>
+              </>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+  <div class="mt-auto border-t pt-4">
+    <ResultSummary
+      title={`${patterns.length} source forms demonstrated`}
+      description={adapterId === 'custom'
+        ? 'Core checks explicit declarations. It does not infer runtime wiring.'
+        : partialCount > 0
+          ? `${partialCount} have partial support. Only the documented relationships are established.`
+          : 'Static relationships are inspected. No runtime code or model is executed.'}
+      tone="info"
+      ><ScanLine
+        slot="icon"
+        class="size-5"
+      /></ResultSummary
+    >
+    <p class="mt-4 text-xs text-muted-foreground"><code class="break-all">{target.id}</code></p>
+    <a
+      class="mt-2 inline-block text-link text-xs"
+      href={withBase(runtime.scopeRoute, import.meta.env.BASE_URL)}
+      >Exact versions, limitations and qualification</a
+    >
+  </div>
+</article>

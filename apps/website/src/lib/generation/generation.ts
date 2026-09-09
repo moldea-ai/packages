@@ -33,7 +33,11 @@ import {
 } from '../discovery-copy/index.ts';
 import { createInspectionExample } from '../inspection-example/index.ts';
 import { createInstructionExample } from '../instruction-example/index.ts';
-import { createCapabilities } from '../capabilities/index.ts';
+import {
+  createCapabilities,
+  getCapabilityOutcome,
+  type ICapabilities,
+} from '../capabilities/index.ts';
 
 const REPOSITORY_URL = 'https://github.com/moldea-ai/packages';
 const EXCLUDED_DIRECTORY_NAMES = new Set(['_archive', '_archives', '_backup', '_backups']);
@@ -294,6 +298,7 @@ export const createRouteManifest = (
     '/',
     '/404.html',
     '/adapters/',
+    '/capabilities/',
     '/compatibility/',
     '/compatibility/runtimes.json',
     '/llms.txt',
@@ -347,6 +352,7 @@ export const createSearchRecords = (
   specification: IRepositoryFormatSpecification,
   gettingStarted: IPackageDocument,
   discoveryCopy: IDiscoveryCopy,
+  capabilities: ICapabilities,
 ): ISearchRecord[] => {
   const recordsByRoute = new Map<string, ISearchRecord>();
 
@@ -452,6 +458,45 @@ export const createSearchRecords = (
     title: 'Runtime adapters and compatibility',
   });
 
+  recordsByRoute.set('/capabilities/', {
+    route: '/capabilities/',
+    title: 'Capabilities',
+    description: 'Executable examples of deterministic package capabilities.',
+    searchText:
+      'Capabilities structure agents decisions runtime wiring repository access command line deterministic checks',
+  });
+  for (const group of capabilities.groups) {
+    const route = `/capabilities/#${group.id}`;
+    recordsByRoute.set(route, {
+      route,
+      title: group.title,
+      description: group.description,
+      searchText: normalizeSearchText(`${group.title} ${group.description}`),
+    });
+  }
+  for (const example of capabilities.cases) {
+    const route = `/capabilities/#${example.id}`;
+    const outcome = getCapabilityOutcome(example, capabilities);
+    recordsByRoute.set(route, {
+      route,
+      title: example.title,
+      description: example.description,
+      searchText: normalizeSearchText(
+        [
+          example.title,
+          example.description,
+          example.packageName,
+          example.operation,
+          outcome.title,
+          outcome.label,
+          ...('diagnostics' in example.result
+            ? example.result.diagnostics.map(({ code }) => code)
+            : []),
+        ].join(' '),
+      ),
+    });
+  }
+
   return [...recordsByRoute.values()].sort(
     (left, right) => left.route.localeCompare(right.route) || left.title.localeCompare(right.title),
   );
@@ -472,6 +517,7 @@ export const createLlmsText = (
     'This site documents repository-owned packages and runtime compatibility. Checks validate structure and declared references, not code semantics or agent behavior.',
     '',
     `- [${gettingStarted.title}](${gettingStarted.route}): ${gettingStarted.description}`,
+    '- [Capabilities](/capabilities/): Executable examples of structure, agents, decisions, runtime wiring, repository inspection, and CLI operations.',
     '- [moldea Agent Skill](https://skill.moldea.ai/): Repository adoption, installation, workflows, and tutorials.',
     '',
     '## Skill & Core Tooling',
@@ -591,6 +637,7 @@ export const createWebsiteModel = async (): Promise<IWebsiteModel> => {
     repositoryFormatSpecification,
     gettingStarted,
     discoveryCopy,
+    capabilities,
   );
 
   return {

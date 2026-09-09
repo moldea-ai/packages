@@ -1,0 +1,183 @@
+---
+import { FileSearch, GitBranch, ShieldCheck } from '@lucide/astro';
+import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
+import ActionLink from '@moldea.ai/website-ui/action-link';
+import { withBase } from '@moldea.ai/website-ui/site';
+
+import BaseLayout from '../../layouts/base-layout.astro';
+import { CapabilitySection } from '../../components/capability-section/index.ts';
+import { CapabilityRuntime } from '../../components/capability-card/runtime/index.ts';
+import { loadWebsiteModel } from '../../lib/generation/generation.ts';
+
+const model = loadWebsiteModel();
+const catalog = model.capabilities;
+const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Capabilities' }];
+const basePath = import.meta.env.BASE_URL;
+---
+
+<BaseLayout
+  title="Capabilities"
+  description="See what moldea packages can establish deterministically: repository structure, agent declarations, decision history, runtime connections, bounded inspection, and CLI results."
+  {breadcrumbs}
+  flushFooter
+>
+  <div class="relative overflow-hidden bg-background">
+    <div
+      class="pointer-events-none absolute inset-0 [background-image:radial-gradient(circle_at_70%_18%,color-mix(in_oklch,var(--accent)_60%,transparent),transparent_30%),linear-gradient(to_right,color-mix(in_oklch,var(--border)_35%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklch,var(--border)_35%,transparent)_1px,transparent_1px)] [mask-image:linear-gradient(to_bottom,black,transparent_92%)] [background-size:auto,3rem_3rem,3rem_3rem] opacity-60"
+      aria-hidden="true"
+    >
+    </div>
+    <section
+      class="page-shell relative pt-8 pb-10 sm:pb-12"
+      aria-labelledby="capabilities-title"
+    >
+      <Breadcrumbs items={breadcrumbs} />
+      <header class="grid gap-6 pt-8 sm:pt-12 lg:grid-cols-2 lg:items-end lg:gap-12">
+        <div>
+          <p class="eyebrow mb-5">Capabilities</p><h1
+            id="capabilities-title"
+            class="section-title text-4xl leading-tight font-semibold sm:text-5xl lg:text-6xl"
+          >
+            What can your<br />repository prove?
+          </h1>
+        </div>
+        <div class="max-w-xl">
+          <p class="text-lg leading-8 text-muted-foreground">
+            Find broken declarations, trace source connections, and inspect the facts behind a
+            check. These examples run against the real packages when this website is built.
+          </p><p class="mt-4 text-sm leading-7 text-muted-foreground">
+            Synthetic repositories. Actual results. No model calls, runtime execution, or automatic
+            repairs.
+          </p>
+        </div>
+      </header>
+      <ul
+        class="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs text-muted-foreground"
+        aria-label="Deterministic check boundaries"
+      >
+        <li class="flex items-center gap-2">
+          <FileSearch
+            class="size-4"
+            aria-hidden="true"
+          />Read files and declarations
+        </li>
+        <li class="flex items-center gap-2">
+          <GitBranch
+            class="size-4"
+            aria-hidden="true"
+          />Trace explicit connections
+        </li>
+        <li class="flex items-center gap-2">
+          <ShieldCheck
+            class="size-4"
+            aria-hidden="true"
+          />Report facts, not behavior guarantees
+        </li>
+      </ul>
+      <nav
+        class="mt-8 flex flex-wrap gap-2"
+        aria-label="Capability sections"
+      >
+        {
+          catalog.groups.map((group, index) => (
+            <a
+              class="rounded-lg border navigation-link px-3 py-2 text-sm"
+              href={`#${group.id}`}
+            >
+              <span
+                class="mr-2 text-muted-foreground"
+                aria-hidden="true"
+              >
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              {
+                {
+                  structure: 'Structure',
+                  agents: 'Agents',
+                  decisions: 'Decisions',
+                  'runtime-wiring': 'Runtime wiring',
+                  'repository-access': 'Repository access',
+                  'command-line': 'Command line',
+                }[group.id]
+              }
+            </a>
+          ))
+        }
+      </nav>
+    </section>
+  </div>
+
+  {
+    catalog.groups.map((group, index) => (
+      <CapabilitySection
+        {catalog}
+        {group}
+        position={index + 1}
+      >
+        {group.id === 'runtime-wiring' && (
+          <>
+            <p class="mb-6 max-w-4xl text-sm leading-7 text-muted-foreground">
+              A recognized source form is evidence of a specific connection, not proof of agent
+              behavior. Partial support establishes only the stated relationships. A check can pass
+              while a dynamic connection remains unestablished.
+            </p>
+            <div class="grid gap-x-5 sm:gap-y-5 lg:grid-cols-2">
+              {catalog.runtimeTargets.map((runtime) => (
+                <CapabilityRuntime
+                  {catalog}
+                  {runtime}
+                  copy={model.discoveryCopy.adapters[runtime.adapterId]}
+                />
+              ))}
+            </div>
+          </>
+        )}
+        {group.id === 'repository-access' && (
+          <p class="mb-6 max-w-4xl text-sm leading-7 text-muted-foreground">
+            Core owns knowledge and declared relevance. Repository supplies source-neutral
+            snapshots; Repository FS connects local files. Bounded pages make completion explicit.
+            An operational refusal is not an invalid knowledge document.
+          </p>
+        )}
+        {group.id === 'command-line' && (
+          <p class="mb-6 max-w-4xl text-sm leading-7 text-muted-foreground">
+            Use these operations locally or in CI. Exit 0 means the operation completed
+            successfully, exit 1 reports an invalid check, and exit 3 reports an operational error
+            in the examples below. Inspection returns metadata; content is requested explicitly.
+          </p>
+        )}
+      </CapabilitySection>
+    ))
+  }
+
+  <section
+    class="page-shell border-t py-12 sm:py-16"
+    aria-labelledby="capabilities-boundary-title"
+  >
+    <div class="grid gap-6 lg:grid-cols-2 lg:items-end lg:gap-12">
+      <h2
+        id="capabilities-boundary-title"
+        class="section-title text-3xl font-semibold sm:text-4xl"
+      >
+        A passing check is a fact.<br />Not a promise of behavior.
+      </h2>
+      <p class="max-w-xl text-lg leading-8 text-muted-foreground">
+        These packages establish structure and the connections their published scope can recognize.
+        Whether an agent follows a policy, or its code enforces it, still needs behavior testing and
+        semantic evaluation.
+      </p>
+    </div>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <ActionLink href={withBase('/getting-started/', basePath)}>Get started</ActionLink><ActionLink
+        variant="outline"
+        href={withBase('/packages/core/diagnostics/', basePath)}
+        >Explore Core diagnostics</ActionLink
+      >
+    </div>
+    <p class="mt-5 text-xs leading-6 text-muted-foreground">
+      The catalog accounts for all {Object.keys(catalog.diagnostics).length} Core diagnostic codes. Examples
+      demonstrate representative failures; the diagnostic reference describes additional variants and
+      boundaries.
+    </p>
+  </section>
+</BaseLayout>

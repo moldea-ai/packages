@@ -8,6 +8,7 @@ import { afterEach, beforeAll, describe, expect, test } from 'vitest';
 import type { IRuntimeCompatibilityMatrix } from '../../../../../scripts/runtime-compatibility/types.ts';
 import type { IWebsiteModel } from '../model/types.ts';
 import { createRuntimeCompatibilityPublication } from '../runtime-compatibility-publication/index.ts';
+import { FEATURED_CAPABILITY_CASES } from '../capabilities/index.ts';
 
 import {
   buildAdapterPages,
@@ -443,6 +444,38 @@ describe('createLlmsText', () => {
 });
 
 describe('createSearchRecords', () => {
+  test('exposes every capability through a stable visible fragment without indexing source bodies', () => {
+    const model = getCurrentWebsiteModel();
+    expect(model.routes.filter((route) => route === '/capabilities/')).toStrictEqual([
+      '/capabilities/',
+    ]);
+    expect(model.llmsText).toContain('[Capabilities](/capabilities/)');
+    for (const example of model.capabilities.cases) {
+      const records = model.searchRecords.filter(
+        ({ route }) => route === `/capabilities/#${example.id}`,
+      );
+      expect(records).toHaveLength(1);
+      expect(records[0]).toMatchObject({ title: example.title, description: example.description });
+      expect(records[0].searchText).toContain(example.operation);
+      expect(records[0].searchText).toContain(example.packageName);
+    }
+    for (const group of model.capabilities.groups) {
+      expect(
+        model.searchRecords.filter(({ route }) => route === `/capabilities/#${group.id}`),
+      ).toHaveLength(1);
+      const ids: string[] = FEATURED_CAPABILITY_CASES[group.id];
+      expect(new Set(ids).size).toBe(ids.length);
+      for (const id of ids)
+        expect(model.capabilities.cases.find((example) => example.id === id)?.groupId).toBe(
+          group.id,
+        );
+    }
+    const capabilityRecords = model.searchRecords.filter(({ route }) =>
+      route.startsWith('/capabilities/'),
+    );
+    expect(JSON.stringify(capabilityRecords)).not.toContain('export async function');
+    expect(JSON.stringify(capabilityRecords)).not.toContain('evidenceExcerpt');
+  });
   test('publishes one combined runtime directory and keeps the JSON handoff', () => {
     const model = getCurrentWebsiteModel();
     const directory = model.searchRecords.filter(({ route }) => route === '/adapters/');
@@ -462,6 +495,7 @@ describe('createSearchRecords', () => {
       model.repositoryFormatSpecification,
       model.gettingStarted,
       model.discoveryCopy,
+      model.capabilities,
     );
 
     for (const packageModel of model.packages) {
@@ -496,6 +530,7 @@ describe('createSearchRecords', () => {
         model.repositoryFormatSpecification,
         model.gettingStarted,
         model.discoveryCopy,
+        model.capabilities,
       ),
     ).toStrictEqual(
       createSearchRecords(
@@ -504,6 +539,7 @@ describe('createSearchRecords', () => {
         model.repositoryFormatSpecification,
         model.gettingStarted,
         model.discoveryCopy,
+        model.capabilities,
       ),
     );
   });
@@ -550,7 +586,7 @@ test('keeps display metadata separate from canonical compatibility and model gen
   expect(model).toStrictEqual(await createWebsiteModel());
   expect(model.capabilities.cases).toHaveLength(133);
   expect(model.capabilities.runtimeTargets).toHaveLength(14);
-  expect(model.routes).not.toContain('/capabilities/');
+  expect(model.routes).toContain('/capabilities/');
   expect(model.inspectionExample.map(({ result }) => result.valid)).toStrictEqual([
     true,
     false,

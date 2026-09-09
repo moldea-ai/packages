@@ -1,4 +1,5 @@
 ---
+import { withBase } from '@moldea.ai/website-ui/site';
 import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
 import { InspectionState } from '../inspection-state/index.ts';
 
@@ -36,4 +37,9 @@ const { states } = Astro.props;
     <strong class="text-foreground">Structure, not semantics.</strong> Real Core results from an example
     repository. These checks verify file references, not program behavior. A developer makes the repair.
   </p>
+  <a
+    class="mt-4 inline-block text-link text-sm"
+    href={withBase('/capabilities/', import.meta.env.BASE_URL)}
+    >Explore capabilities</a
+  >
 </section>

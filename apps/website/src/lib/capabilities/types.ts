@@ -65,6 +65,14 @@ export interface ICapabilityCase {
   result: ICapabilityResult;
 }
 
+// domain-owned outcomes map into the shared UI's semantic presentation props
+export interface ICapabilityOutcome {
+  title: string;
+  description: string;
+  label: string;
+  tone: 'danger' | 'info' | 'neutral' | 'success' | 'warning';
+}
+
 // a claimed source form and its independent, executed public-result witness
 export interface IRuntimePatternProof {
   caseId: string;

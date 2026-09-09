@@ -6,6 +6,8 @@ export type {
   ICapabilityFile,
   ICapabilityGroupId,
   ICapabilityResult,
+  ICapabilityOutcome,
+  ICapabilityRuntimeTarget,
   ICoreOperation,
   IDiagnosticCoverage,
   IRuntimePatternProof,
@@ -13,6 +15,15 @@ export type {
 
 // catalog generation
 export { createCapabilities } from './capabilities.ts';
+
+// shared page and discovery presentation
+export { FEATURED_CAPABILITY_CASES } from './catalog.ts';
+export {
+  getCapabilityOutcome,
+  getCapabilityResultExcerpt,
+  getCapabilityFactRows,
+  getCapabilityVisualFiles,
+} from './presentation.ts';
 
 // shared example projection and assertion boundaries
 export { projectDiagnostics, projectEntry, projectEvidence, projectFile } from './transformers.ts';
