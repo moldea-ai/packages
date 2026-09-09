@@ -7587,9 +7587,9 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         pointer: null,
         range: {
           end: {
-            column: 57,
+            column: 55,
             line: 12,
-            offset: 410,
+            offset: 408,
           },
           start: {
             column: 19,

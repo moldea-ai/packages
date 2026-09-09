@@ -177,18 +177,22 @@ export const createReaderExamples = async (): Promise<ICapabilityCase[]> => {
   );
 
   const base = createMemoryRepositoryReader([
-    { path: '/policy.md', type: 'file', content: '30 days\n' },
-    { path: '/retired.md', type: 'file', content: 'Retired return policy.\n' },
+    { path: '/return-policy.md', type: 'file', content: '30 days\n' },
+    {
+      path: '/holiday-returns.md',
+      type: 'file',
+      content: 'Holiday purchases have a 60-day return window.\n',
+    },
     { path: '/shared.md', type: 'file', content: 'Delivery confirmation is required.\n' },
     { path: '/terms', type: 'file', content: 'Terms\n' },
   ]);
   const candidate = createMemoryRepositoryReader([
     {
-      path: '/international.md',
+      path: '/international-returns.md',
       type: 'file',
       content: 'Contact support for international returns.\n',
     },
-    { path: '/policy.md', type: 'file', content: '60 days\n' },
+    { path: '/return-policy.md', type: 'file', content: '60 days\n' },
     { path: '/shared.md', type: 'file', content: 'Delivery confirmation is required.\n' },
     { path: '/terms', type: 'directory' },
   ]);
@@ -204,8 +208,14 @@ export const createReaderExamples = async (): Promise<ICapabilityCase[]> => {
       maxBytesRead: 32,
       ...(cursor === undefined ? {} : { cursor }),
     });
-    const selected = page.changes.map(({ path, kind }) => ({ path, kind }));
-    changes.push(...selected);
+    const selected = page.changes.map(({ path, kind, baseEntry, candidateEntry }) => ({
+      path,
+      kind,
+      ...(kind === 'type-changed'
+        ? { fromType: baseEntry?.type ?? null, toType: candidateEntry?.type ?? null }
+        : {}),
+    }));
+    changes.push(...selected.map(({ path, kind }) => ({ path, kind })));
     pages.push({
       changes: selected,
       entriesVisited: page.entriesVisited,
@@ -220,9 +230,9 @@ export const createReaderExamples = async (): Promise<ICapabilityCase[]> => {
     }
   } while (cursor !== undefined);
   assertCapabilityFacts(changes, [
-    { path: '/international.md', kind: 'added' },
-    { path: '/policy.md', kind: 'modified' },
-    { path: '/retired.md', kind: 'deleted' },
+    { path: '/holiday-returns.md', kind: 'deleted' },
+    { path: '/international-returns.md', kind: 'added' },
+    { path: '/return-policy.md', kind: 'modified' },
     { path: '/terms', kind: 'type-changed' },
   ]);
   examples.push(
@@ -230,7 +240,7 @@ export const createReaderExamples = async (): Promise<ICapabilityCase[]> => {
       'snapshot-comparison',
       'compare',
       'See what changed between snapshots',
-      'Added, deleted, modified, and type-changed paths are returned. Unchanged shared.md is omitted.',
+      'Only changed paths are returned. Unchanged files stay out of the result.',
       { pages },
     ),
   );

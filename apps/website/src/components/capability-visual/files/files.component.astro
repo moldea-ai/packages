@@ -1,0 +1,99 @@
+---
+import { FileX, Folder, Unlink } from '@lucide/astro';
+import { parse } from 'yaml';
+import { z } from 'zod';
+
+import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
+
+import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
+
+// connections use executed sources and the path and entry type reported by Core
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+const diagnostic = example.result.kind === 'validation' ? example.result.diagnostics[0] : undefined;
+const isReference = example.id.startsWith('policy-reference-');
+const isTool = example.id === 'tool-implementation-missing';
+const isDirectory = diagnostic?.details.actualType === 'directory';
+const source = example.files.find(
+  ({ path }) => path === (isReference ? '/moldea/project.md' : '/moldea/moldea.yaml'),
+);
+const missingPath = isReference || isTool ? diagnostic?.details.referencedPath : diagnostic?.path;
+if (!source || typeof missingPath !== 'string')
+  throw new Error('File illustration requires its source and missing path.');
+const html = isReference
+  ? await renderMarkdownFragment(source.content.replace(/^# .+\n+/u, ''))
+  : '';
+const ToolManifest = z.object({
+  agents: z.record(
+    z.string(),
+    z.object({ tools: z.record(z.string(), z.object({ name: z.string() })) }),
+  ),
+});
+const toolName = isTool
+  ? ToolManifest.parse(parse(source.content) as unknown).agents[diagnostic?.entity?.agentId ?? '']
+      ?.tools[diagnostic?.entity?.capabilityId ?? '']?.name
+  : undefined;
+if (isTool && !toolName) throw new Error('Tool illustration requires its declared name.');
+---
+
+<div class="min-w-0">
+  <FilePreview
+    path={source.path.slice(1)}
+    label={isReference ? 'Return policy' : isTool ? 'Declared tool' : 'Project map'}
+  >
+    {
+      isReference && (
+        <div
+          class="prose-moldea px-4 py-4 text-sm leading-7 [&_p]:my-1 [&_strong]:rounded [&_strong]:bg-secondary [&_strong]:px-1.5 [&_strong]:py-1 [&_strong]:text-base"
+          set:html={html}
+        />
+      )
+    }
+    {
+      isTool && (
+        <p class="px-4 py-4 text-sm leading-7">
+          <code class="inline-code break-all">{toolName}</code>
+        </p>
+      )
+    }
+  </FilePreview>
+  <ConnectionLabel>
+    <Unlink
+      slot="icon"
+      class="size-4"
+      aria-hidden="true"
+    /><span
+      >{
+        isReference
+          ? 'Linked in '
+          : isTool
+            ? 'Points to a missing file'
+            : 'Requires a project brief'
+      }{isReference && <code class="inline-code">moldea.yaml</code>}</span
+    >
+  </ConnectionLabel>
+  <FilePreview
+    path={missingPath.slice(1)}
+    label={isDirectory
+      ? 'Expected a file, found a folder'
+      : isReference
+        ? 'Referenced file: missing'
+        : isTool
+          ? 'Tool implementation: missing'
+          : 'Project brief: missing'}
+    tone="danger"
+  >
+    <span slot="icon">{isDirectory ? <Folder class="size-5" /> : <FileX class="size-5" />}</span>
+    <StatusBadge
+      slot="status"
+      label={isDirectory ? 'Folder' : 'Missing'}
+      tone="danger"
+      size="sm"
+    />
+  </FilePreview>
+</div>

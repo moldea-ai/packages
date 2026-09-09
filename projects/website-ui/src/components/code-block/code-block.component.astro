@@ -1,0 +1,22 @@
+---
+import { renderCodeBlock } from '@moldea.ai/website-ui/markdown';
+
+// highlighted source, with a panel by default or a flat surface for composition inside another panel
+export interface Props {
+  source: string;
+  language?: string;
+  variant?: 'panel' | 'plain';
+}
+const { source, language, variant = 'panel' } = Astro.props;
+const html = await renderCodeBlock(source, language);
+---
+
+<div
+  class:list={[
+    'prose-moldea min-w-0 text-sm [&_pre]:m-0 [&_pre]:text-xs [&_pre]:leading-6',
+    variant === 'panel'
+      ? '[&_pre]:p-4'
+      : '[&_pre]:rounded-none [&_pre]:border-0 [&_pre]:bg-transparent [&_pre]:p-0 [&_pre]:pb-1',
+  ]}
+  set:html={html}
+/>

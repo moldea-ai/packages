@@ -1,0 +1,119 @@
+---
+import { Unlink } from '@lucide/astro';
+import { parse } from 'yaml';
+import { z } from 'zod';
+
+import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
+
+import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
+
+// show actual evidence references instead of repeating the adapter support inventory
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+if (example.result.kind !== 'adapter')
+  throw new Error('Runtime illustration requires an adapter result.');
+const { evidence, diagnostics } = example.result;
+const disconnected = diagnostics.find(({ code }) => code === 'OPENAI_INSTRUCTION_LOADER_NOT_WIRED');
+const LoaderManifest = z.object({
+  agents: z.record(
+    z.string(),
+    z.object({
+      bindings: z.object({ instructionLoader: z.object({ path: z.string(), symbol: z.string() }) }),
+    }),
+  ),
+});
+const manifest = example.files.find(({ path }) => path === '/moldea/moldea.yaml');
+const loader =
+  disconnected && manifest
+    ? LoaderManifest.parse(parse(manifest.content) as unknown).agents[
+        disconnected.entity?.agentId ?? ''
+      ]?.bindings.instructionLoader
+    : undefined;
+if (disconnected && (!loader || !example.files.some(({ path }) => path === loader.path)))
+  throw new Error('Disconnected runtime illustration requires its declared loader file.');
+const source = disconnected
+  ? example.files.find(({ path }) => path === disconnected.path)
+  : undefined;
+const instructionLine = source?.content
+  .split('\n')
+  .find((line) => line.trim().startsWith('instructions:'))
+  ?.trim();
+if (disconnected && !instructionLine)
+  throw new Error('Disconnected runtime illustration requires the request instruction.');
+const request = evidence.find(({ kind }) => kind === 'runtime-pattern');
+if (!request?.runtimeName || !request.references[0])
+  throw new Error('Runtime illustration requires a request reference.');
+const connections = [
+  { kind: 'instruction-loader', label: 'Instruction loader' },
+  { kind: 'tool-registration', label: 'Order lookup tool' },
+]
+  .filter(() => !disconnected)
+  .map(({ kind, label }) => {
+    const record = evidence.find((entry) => entry.kind === kind);
+    const reference = record?.references.at(-1);
+    if (!record?.runtimeName || !reference)
+      throw new Error(`Runtime illustration requires ${kind} evidence.`);
+    return { label, name: record.runtimeName, path: reference.path };
+  });
+---
+
+<div
+  class="min-w-0"
+  role="group"
+  aria-label="Connections found in the OpenAI source"
+>
+  <FilePreview
+    path={request.references[0].path.slice(1)}
+    label={disconnected ? 'Request uses hard-coded text' : 'OpenAI request'}
+  >
+    <p class="p-4 text-sm leading-7">
+      <code class="inline-code break-words"
+        >{disconnected ? instructionLine : request.runtimeName}</code
+      >
+    </p>
+  </FilePreview>
+  {
+    !disconnected && (
+      <ul class="ml-3 space-y-3 border-l-2 border-info/40 pt-3 pl-4">
+        {connections.map((connection) => (
+          <li>
+            <FilePreview
+              path={connection.path.slice(1)}
+              label={connection.label}
+            >
+              <p class="p-3 text-xs">
+                <code class="inline-code">{connection.name}</code>
+              </p>
+            </FilePreview>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {
+    loader && (
+      <>
+        <ConnectionLabel tone="danger">
+          <Unlink
+            slot="icon"
+            class="size-4"
+            aria-hidden="true"
+          />
+          Not connected to this loader
+        </ConnectionLabel>
+        <FilePreview
+          path={loader.path.slice(1)}
+          label="Declared instruction loader"
+          tone="danger"
+        >
+          <p class="p-4 text-sm">
+            <code class="inline-code">{loader.symbol}</code>
+          </p>
+        </FilePreview>
+      </>
+    )
+  }
+</div>

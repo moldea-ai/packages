@@ -1,147 +1,68 @@
 ---
-import { FileDiff, FileText } from '@lucide/astro';
+import { FileDiff, FileMinus, FilePlus, Folder } from '@lucide/astro';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
+
 import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
 
-// result-derived comparisons and continuation diagrams, not simulated application execution
+// paths and change kinds come from the executed snapshot comparison
 interface Props {
   example: ICapabilityCase;
 }
 const { example } = Astro.props;
-const facts =
-  example.result.kind === 'reader' || example.result.kind === 'inspection'
-    ? example.result.facts
-    : {};
-const changes =
-  example.id === 'snapshot-comparison'
-    ? getCapabilityFactRows(facts.pages).flatMap((page) => getCapabilityFactRows(page.changes))
-    : [];
-const chunks = example.id === 'canonical-content-pages' ? getCapabilityFactRows(facts.chunks) : [];
-const matches =
-  example.id === 'manifest-change-relevance' ? getCapabilityFactRows(facts.matches) : [];
-const owners = matches.map((match) => {
-  const owner = match.owner;
-  if (owner === null || typeof owner !== 'object' || Array.isArray(owner))
-    throw new Error('Scope diagram requires an owner record.');
-  return { path: match.inputPath, owner: owner.id, field: match.field };
-});
+if (example.result.kind !== 'reader')
+  throw new Error('Snapshot illustration requires a reader result.');
+const changes = getCapabilityFactRows(example.result.facts.pages).flatMap((page) =>
+  getCapabilityFactRows(page.changes),
+);
+const changeLabels: Record<string, string> = {
+  added: 'Added',
+  deleted: 'Deleted',
+  modified: 'Edited',
+  'type-changed': 'Now a folder',
+};
+const changeIcons = {
+  added: FilePlus,
+  deleted: FileMinus,
+  modified: FileDiff,
+  'type-changed': Folder,
+};
 ---
 
-{
-  owners.length > 0 && (
-    <div class="min-w-0 rounded-lg border px-3">
-      <p class="border-b py-3 text-xs font-semibold">Changed path / Declared owner</p>
-      <ul
-        class="divide-y"
-        aria-label="Declared change connections"
-      >
-        {owners.map((match) => (
-          <li class="py-3">
-            <code class="block text-xs break-all">{String(match.path)}</code>
-            <p class="mt-2 border-l-2 border-info/40 pl-3 text-xs text-muted-foreground">
-              <span class="mb-1 block">{String(match.field)}</span>
-              <code class="break-all">{String(match.owner)}</code>
-            </p>
-          </li>
-        ))}
-      </ul>
-      <p class="border-t py-3 text-xs text-muted-foreground">
-        The unrelated logo produces no match. An unresolved policy remains unresolved.
-      </p>
-    </div>
-  )
-}
-{
-  changes.length > 0 && (
-    <ul
-      class="divide-y rounded-lg border px-3"
-      aria-label="Changed repository paths"
-    >
-      {changes.map((change) => (
+<ul
+  class="divide-y rounded-lg border px-3"
+  aria-label="Changed repository paths"
+>
+  {
+    changes.map((change) => {
+      const kind = String(change.kind);
+      const Icon = changeIcons[kind as keyof typeof changeIcons];
+      if (!Icon || !changeLabels[kind])
+        throw new Error('Snapshot illustration requires a known change kind.');
+      if (kind === 'type-changed' && (change.fromType !== 'file' || change.toType !== 'directory'))
+        throw new Error('Snapshot illustration requires its file-to-folder change.');
+      return (
         <li class="flex items-center gap-3 py-3">
-          <FileDiff
-            class="size-4 shrink-0 text-muted-foreground"
+          <Icon
+            class:list={[
+              'size-4 shrink-0',
+              kind === 'deleted'
+                ? 'text-destructive'
+                : kind === 'type-changed'
+                  ? 'text-muted-foreground'
+                  : 'text-info',
+            ]}
             aria-hidden="true"
           />
-          <code class="min-w-0 flex-1 text-xs break-all">{String(change.path)}</code>
+          <span class="min-w-0 flex-1">
+            <code class="inline-code text-xs break-all">{String(change.path)}</code>
+          </span>
           <StatusBadge
             size="sm"
-            label={String(change.kind)}
-            tone={change.kind === 'deleted' ? 'danger' : 'info'}
+            label={changeLabels[kind]}
+            tone={kind === 'deleted' ? 'danger' : kind === 'type-changed' ? 'neutral' : 'info'}
           />
         </li>
-      ))}
-    </ul>
-  )
-}
-{
-  chunks.length > 0 && (
-    <div class="rounded-lg border bg-muted/30 p-3">
-      <p class="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-        <FileText
-          class="size-4"
-          aria-hidden="true"
-        />
-        Canonical text, one page at a time
-      </p>
-      <ol
-        class="grid grid-cols-2 gap-2 sm:grid-cols-4"
-        aria-label="Unicode-safe content chunks"
-      >
-        {chunks.map((chunk) => (
-          <li class="min-w-0 rounded-md border bg-background p-3">
-            <code class="block text-base whitespace-pre">{String(chunk.content)}</code>
-            <p class="mt-2 text-xs text-muted-foreground">
-              Bytes {String(chunk.byteStart)}–{String(chunk.byteEnd)}
-            </p>
-          </li>
-        ))}
-      </ol>
-      <p class="mt-3 text-xs text-muted-foreground">
-        The accented character stays whole. The final page explicitly completes the read.
-      </p>
-    </div>
-  )
-}
-{
-  example.id === 'normalized-digests' && (
-    <dl class="divide-y rounded-lg border px-3 text-sm">
-      <div class="py-3">
-        <>
-          <dt class="font-semibold">Same policy, different line endings</dt>
-          <dd class="mt-1 text-xs text-muted-foreground">
-            {facts.originalDigest === facts.normalizedCopyDigest
-              ? 'Same content digest'
-              : 'Different content digests'}
-          </dd>
-          <dd class="mt-2">
-            <code
-              class="block truncate text-xs"
-              title={String(facts.originalDigest)}
-            >
-              {String(facts.originalDigest)}
-            </code>
-          </dd>
-        </>
-      </div>
-      <div class="py-3">
-        <>
-          <dt class="font-semibold">Change the return window</dt>
-          <dd class="mt-1 text-xs text-muted-foreground">
-            {facts.originalDigest !== facts.changedDigest
-              ? 'Different content digest'
-              : 'Same content digest'}
-          </dd>
-          <dd class="mt-2">
-            <code
-              class="block truncate text-xs"
-              title={String(facts.changedDigest)}
-            >
-              {String(facts.changedDigest)}
-            </code>
-          </dd>
-        </>
-      </div>
-    </dl>
-  )
-}
+      );
+    })
+  }
+</ul>

@@ -8,7 +8,7 @@ import { afterEach, beforeAll, describe, expect, test } from 'vitest';
 import type { IRuntimeCompatibilityMatrix } from '../../../../../scripts/runtime-compatibility/types.ts';
 import type { IWebsiteModel } from '../model/types.ts';
 import { createRuntimeCompatibilityPublication } from '../runtime-compatibility-publication/index.ts';
-import { FEATURED_CAPABILITY_CASES } from '../capabilities/index.ts';
+import { getCapabilityShowcase } from '../capabilities/index.ts';
 
 import {
   buildAdapterPages,
@@ -444,13 +444,25 @@ describe('createLlmsText', () => {
 });
 
 describe('createSearchRecords', () => {
-  test('exposes every capability through a stable visible fragment without indexing source bodies', () => {
+  test('indexes visible coverage and illustrations while retaining the complete internal catalog', () => {
     const model = getCurrentWebsiteModel();
     expect(model.routes.filter((route) => route === '/capabilities/')).toStrictEqual([
       '/capabilities/',
     ]);
     expect(model.llmsText).toContain('[Capabilities](/capabilities/)');
-    for (const example of model.capabilities.cases) {
+    const showcase = getCapabilityShowcase(model.capabilities);
+    expect(showcase).toHaveLength(6);
+    const examples = showcase.flatMap((section) => section.examples);
+    expect(examples).toHaveLength(18);
+    expect(
+      showcase.find(({ group }) => group.id === 'agents')?.examples.map(({ id }) => id),
+    ).toStrictEqual([
+      'variable-undeclared',
+      'mirror-stale',
+      'agent-identity',
+      'tool-implementation-missing',
+    ]);
+    for (const example of examples) {
       const records = model.searchRecords.filter(
         ({ route }) => route === `/capabilities/#${example.id}`,
       );
@@ -463,16 +475,22 @@ describe('createSearchRecords', () => {
       expect(
         model.searchRecords.filter(({ route }) => route === `/capabilities/#${group.id}`),
       ).toHaveLength(1);
-      const ids: string[] = FEATURED_CAPABILITY_CASES[group.id];
-      expect(new Set(ids).size).toBe(ids.length);
-      for (const id of ids)
-        expect(model.capabilities.cases.find((example) => example.id === id)?.groupId).toBe(
-          group.id,
-        );
+      const record = model.searchRecords.find(
+        ({ route }) => route === `/capabilities/#${group.id}`,
+      )!;
+      for (const capability of group.coverage)
+        expect(record.searchText).toContain(capability.replaceAll(',', ''));
     }
     const capabilityRecords = model.searchRecords.filter(({ route }) =>
       route.startsWith('/capabilities/'),
     );
+    expect(capabilityRecords).toHaveLength(25);
+    for (const example of model.capabilities.cases) {
+      if (examples.some((entry) => entry.id === example.id)) continue;
+      expect(capabilityRecords.some(({ route }) => route === `/capabilities/#${example.id}`)).toBe(
+        false,
+      );
+    }
     expect(JSON.stringify(capabilityRecords)).not.toContain('export async function');
     expect(JSON.stringify(capabilityRecords)).not.toContain('evidenceExcerpt');
   });
@@ -545,7 +563,7 @@ describe('createSearchRecords', () => {
   });
 });
 
-test('publishes one authored guide across routes, search, and llms with an external Skill handoff', () => {
+test('publishes one authored guide across routes, search, and llms with Skill and Cloud handoffs', () => {
   const model = getCurrentWebsiteModel();
   const guide = model.gettingStarted;
 
@@ -556,6 +574,8 @@ test('publishes one authored guide across routes, search, and llms with an exter
   expect(records).toHaveLength(1);
   expect(records[0]).toMatchObject({ title: guide.title, description: guide.description });
   expect(records[0].searchText).toContain('Check an adopted repository locally');
+  expect(records[0].searchText).toContain('Collaborate in Cloud');
+  expect(guide.markdown).toContain('[moldea Cloud](https://moldea.ai)');
   expect(model.llmsText).toContain(`[${guide.title}](${guide.route}): ${guide.description}`);
   expect(model.llmsText).toContain('[moldea Agent Skill](https://skill.moldea.ai/)');
   expect(model.searchRecords.every(({ route }) => route.startsWith('/'))).toBe(true);

@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.5.0
+pnpm add @moldea.ai/website-ui@1.6.0
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -17,6 +17,16 @@ The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. I
 ```
 
 Tailwind scans the shipped Astro components through the package stylesheet's explicit source declaration.
+
+## Composition guidelines
+
+- Keep reusable presentation, interaction behavior, tokens, and design guidance in this package. Websites own routes, content, fixtures, domain status mappings, result selection, and page composition. Compose public exports instead of copying their markup, querying their private DOM, or overriding their state styles.
+- Use `page-shell`, `section-title`, and `eyebrow` for the shared width and type hierarchy. For a two-column hero, keep badges inside the text column, followed by a `mb-7` gap, then the eyebrow with `mb-4` before the heading. Use `py-14 sm:py-18 lg:py-20` for hero insets, and align the example with the complete text column. Badge content and column proportions remain site-owned.
+- Use `HeroBackdrop` inside a `relative overflow-hidden` section, with foreground content positioned `relative`. It owns the static, theme-aware radial/grid background shared with the Skill website. Do not duplicate its gradients in page markup.
+- Section introductions may place the title on the left and a concise explanation on the right at `lg`, stacking on mobile. Alternate this with compact stacked introductions when the content warrants it; do not force every section into the same composition.
+- Demonstrations should show recognizable files, one visible connection or mismatch, and a concise outcome. Compose `FilePreview`, `ConnectionLabel`, `ResultSummary`, `StatusBadge`, `CodeBlock`, and `Dialog`. Keep the essential result visible without interaction; dialogs contain optional evidence. Use `Accordion` when several examples share a section.
+- Preserve semantic inline code for filenames, variables, operations, and package names using `inline-code`; use `InlineBrandText` for prose containing the product name. Keep code wrapping and interaction feedback in the shared policies below.
+- Verify compositions at 320px through desktop, in both themes, with keyboard focus and reduced motion. Flatten unnecessary mobile panels and preserve legible filenames, labels, and status text. Use icons and explicit text together rather than relying on color alone.
 
 ## Surface-aware selection
 
@@ -53,19 +63,25 @@ import { isDarkTheme } from '@moldea.ai/website-ui/theme';
 
 `LocalSearch` loads its index on the first non-empty submitted query and shares that request across overlapping searches. Only the latest submission can update results or status, including when a query is cleared. Failed or malformed index responses produce the consumer's failure message; a later submission retries the load. Successful indexes remain cached for that component instance.
 
+Set `shouldFocusOnLoad` on a dedicated search page to focus its input without scrolling on direct loads and Astro client navigation. It defaults to `false` for embedded searches. Opt in at most one search per page; consumers do not need a separate focus script.
+
 ## Components
 
 Every component has a dedicated public subpath:
 
+- `@moldea.ai/website-ui/accordion`
 - `@moldea.ai/website-ui/action-button`
 - `@moldea.ai/website-ui/action-link`
 - `@moldea.ai/website-ui/brand-logo`
 - `@moldea.ai/website-ui/breadcrumbs`
+- `@moldea.ai/website-ui/code-block`
+- `@moldea.ai/website-ui/connection-label`
 - `@moldea.ai/website-ui/documentation-shell`
 - `@moldea.ai/website-ui/dialog`
 - `@moldea.ai/website-ui/evaluation-replay`
 - `@moldea.ai/website-ui/evaluation-replay-model`
 - `@moldea.ai/website-ui/file-preview`
+- `@moldea.ai/website-ui/hero-backdrop`
 - `@moldea.ai/website-ui/inline-brand-text`
 - `@moldea.ai/website-ui/local-search`
 - `@moldea.ai/website-ui/markdown`
@@ -84,7 +100,52 @@ Every component has a dedicated public subpath:
 
 Each `SiteHeader` navigation item accepts `href`, `isActive`, `label`, and optional `compactLabel`. The desktop navigation shows the compact label below `xl` (1280px) when supplied. Wider desktop navigation and the mobile menu show the full label. Accessible names always identify the full destination. The header's existing `md` or `lg` desktop breakpoint remains independent of label selection.
 
+### Accordions
+
+`Accordion` is one native disclosure item. Keep related items together in a section, give each a document-unique `id`, and use the same document-unique `group` for mutually exclusive items. At most one item in a group can be open; users can also close every item. Pass `isOpen` to the first item to show an example immediately. Do not mark multiple items in one group initially open.
+
+```astro
+---
+import Accordion from '@moldea.ai/website-ui/accordion';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+---
+
+<section aria-labelledby="checks-heading">
+  <h2 id="checks-heading">Repository checks</h2>
+  <div class="grid gap-3">
+    <Accordion
+      id="file-check"
+      group="repository-checks"
+      title="Check file connections"
+      description="One referenced file is missing."
+      isOpen
+    >
+      <StatusBadge
+        slot="status"
+        label="Invalid"
+        tone="danger"
+        size="sm"
+      />
+      <p>A consumer-owned visual goes here.</p>
+    </Accordion>
+    <Accordion
+      id="variable-check"
+      group="repository-checks"
+      title="Check variable declarations"
+    >
+      <p>Another consumer-owned visual goes here.</p>
+    </Accordion>
+  </div>
+</section>
+```
+
+Required props are `id`, `group`, and `title`. Optional `description` stays visible when closed and supplies the control's accessible description; `isOpen` defaults to `false`. The default slot accepts arbitrary content, including files and dialogs. The optional `status` slot accepts a compact non-interactive status, not another button or link. Consumers can derive props using `ComponentProps<typeof Accordion>` through the public subpath.
+
+Native disclosure and group exclusivity work without JavaScript. JavaScript reveals hash-linked items on initial load, hash changes, and Astro client navigation without adding history entries or taking focus. Variable-height panels use a short fade; reduced motion removes it and the chevron transition. Mobile items use a flat surface, while desktop items retain the shared border, radius, colors, and interaction states. The package owns no example content or domain status mapping.
+
 ### Files and result summaries
+
+`ConnectionLabel` places a short relationship label between visual examples. Its default slot accepts text and inline markup; the optional `icon` slot takes a decorative 16px icon. `tone` is `neutral` by default or `danger` for a broken connection. It owns spacing, icon alignment, and narrow-screen wrapping, not the meaning of a connection.
 
 `FilePreview` receives `path`, optional `label`, and optional `tone`. Its header preserves an identifiable filename while truncating the directory prefix; the complete path remains selectable and readable by assistive technology without hover. Long filenames can wrap within the header. The default slot owns the body, `icon` replaces the default file icon, and `status` accepts a consumer-owned badge. This component does not parse files, choose excerpts, or define result semantics.
 
@@ -96,13 +157,33 @@ For a dialog heading, compose `ResultSummary` in Dialog's `heading` slot, set `a
 
 `InlineBrandText` renders standalone product names as semantic inline code. Its default `badge` variant includes the code background and padding; `compact` omits them. Both variants scale with surrounding text and use normal letter spacing so display headings do not compress the monospace token.
 
+For other hand-authored inline tokens, use `<code class="inline-code">`. This shared class matches rendered Markdown's code background, padding, monospace weight, and theme colors. `FilePreview` uses it for paths while retaining filename-preserving truncation. It does not parse text or add code semantics to plain strings; consumers must mark filenames and variable tokens explicitly.
+
 The compiled `markdown` entry renders sanitized documents and fragments with stable headings, syntax highlighting, safe external links, base-aware internal links, and keyboard-scrollable tables. Raw HTML is disabled. The replay component accepts only the normalized contracts from `evaluation-replay-model`; semantic and qualification evidence conversion remains application-owned.
 
 ### Code and text wrapping
 
+`CodeBlock` receives literal `source`, optional `language`, and `variant="panel"` (default) or `variant="plain"` for use inside another surface. It owns compact typography, syntax highlighting, keyboard scrolling, and light/dark presentation. Pass raw code rather than constructing a Markdown fence; embedded fences and HTML remain literal source. `renderCodeBlock` from the public `markdown` subpath exposes the same rendering for non-component consumers.
+
+```astro
+---
+import CodeBlock from '@moldea.ai/website-ui/code-block';
+---
+
+<CodeBlock
+  source={JSON.stringify({ valid: false }, null, 2)}
+  language="json"
+/>
+<CodeBlock
+  source="pnpm test"
+  language="sh"
+  variant="plain"
+/>
+```
+
 Code preserves its source line breaks and scrolls horizontally when needed. This includes JSON, YAML, shell commands, diffs, and Markdown source. Unlabelled fences also preserve lines, since they may contain code or aligned file trees. Only fences explicitly labelled `text`, `txt`, or `plaintext` wrap long lines while retaining their original line breaks. Use these labels for prose, not as a shortcut to force code to fit.
 
-Both Markdown renderers apply this policy through `styles.css`. Rendered code blocks are named, keyboard-focusable regions with visible focus indicators. Hand-authored `<pre>` elements use the shared `code-block` class, `tabindex="0"`, `role="region"`, and a descriptive `aria-label`; add `data-code-language="text"` only for plain text. Do not add page-wide wrapping overrides to code, diagnostics, or replay content.
+Markdown and literal code renderers apply this policy through `styles.css`. Rendered code blocks are named, keyboard-focusable regions with visible focus indicators. Hand-authored `<pre>` elements use the shared `code-block` class, `tabindex="0"`, `role="region"`, and a descriptive `aria-label`; add `data-code-language="text"` only for plain text. Do not add page-wide wrapping overrides to code, diagnostics, or replay content.
 
 ### Optional detail dialogs
 

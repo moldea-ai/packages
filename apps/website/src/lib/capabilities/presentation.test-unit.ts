@@ -6,9 +6,10 @@ import { parseRepositoryPath } from '@moldea.ai/repository';
 import {
   getCapabilityFactRows,
   getCapabilityOutcome,
+  getCapabilityShowcase,
   getCapabilityResultExcerpt,
-  getCapabilityVisualFiles,
 } from './presentation.ts';
+import { CAPABILITY_GROUPS } from './catalog.ts';
 import type { ICapabilities, ICapabilityCase, ICapabilityResult } from './types.ts';
 
 const example: ICapabilityCase = {
@@ -24,6 +25,44 @@ const example: ICapabilityCase = {
   result: { kind: 'validation', valid: true, diagnostics: [] },
 };
 const catalog: Pick<ICapabilities, 'runtimeTargets'> = { runtimeTargets: [] };
+
+test('resolves selected illustrations in section order independently of case order', () => {
+  const groups = CAPABILITY_GROUPS;
+  const cases = groups.flatMap((group) =>
+    group.exampleIds.map((id) => ({ ...example, id, groupId: group.id })),
+  );
+  const complete = { groups, cases };
+  expect(getCapabilityShowcase({ ...complete, cases: [...cases].reverse() })).toStrictEqual(
+    groups.map((group) => ({
+      group,
+      examples: group.exampleIds.map((id) => cases.find((entry) => entry.id === id)),
+    })),
+  );
+  expect(() => getCapabilityShowcase({ ...complete, cases: cases.slice(1) })).toThrow(
+    'Missing capability illustration',
+  );
+  expect(() =>
+    getCapabilityShowcase({
+      ...complete,
+      cases: cases.map((entry) => ({ ...entry, groupId: 'agents' })),
+    }),
+  ).toThrow('Missing capability illustration');
+  expect(() =>
+    getCapabilityShowcase({
+      ...complete,
+      cases: cases.filter(({ id }) => id !== 'mirror-stale'),
+    }),
+  ).toThrow('Missing capability illustration for agents: mirror-stale');
+  expect(() =>
+    getCapabilityShowcase({
+      ...complete,
+      groups: groups.map((group) => ({
+        ...group,
+        exampleIds: [...group.exampleIds, group.exampleIds[0]],
+      })),
+    }),
+  ).toThrow('Repeated capability illustration');
+});
 
 describe('getCapabilityOutcome', () => {
   test.each([
@@ -190,26 +229,3 @@ test.each([null, 'invalid', [null], [true], [[]]])(
     expect(() => getCapabilityFactRows(fact)).toThrow('Capability diagram requires');
   },
 );
-
-test('selects only real source files and rejects a missing visual source', () => {
-  const instruction = {
-    path: '/moldea/agents/support/instruction.md',
-    language: 'markdown',
-    content: 'Actual instruction',
-    isExcerpt: false,
-    representation: 'source' as const,
-  };
-  const mirror = { ...instruction, path: '/instructions/support.md', content: 'Actual mirror' };
-  const unrelated = { ...instruction, path: '/unrelated.md' };
-  expect(
-    getCapabilityVisualFiles({
-      ...example,
-      id: 'mirror-stale',
-      files: [instruction, unrelated, mirror],
-    }),
-  ).toStrictEqual([instruction, mirror]);
-  expect(() => getCapabilityVisualFiles({ ...example, files: [unrelated] })).toThrow(
-    'Capability illustration has no selected source',
-  );
-  expect(getCapabilityFactRows([{ path: '/policy.md' }])).toStrictEqual([{ path: '/policy.md' }]);
-});

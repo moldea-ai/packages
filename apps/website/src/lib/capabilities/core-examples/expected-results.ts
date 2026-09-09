@@ -478,7 +478,7 @@ export const CORE_EXPECTED_RESULTS: Record<
         code: 'MOLDEA_REFERENCE_NOT_FILE',
         details: {
           actualType: 'directory',
-          referencedPath: '/src/returns/policy.ts',
+          referencedPath: '/src/returns',
         },
         entity: null,
         message: 'The referenced repository path is not a regular file.',
@@ -753,14 +753,14 @@ export const CORE_EXPECTED_RESULTS: Record<
         pointer: null,
         range: {
           end: {
-            column: 21,
+            column: 45,
             line: 4,
-            offset: 92,
+            offset: 116,
           },
           start: {
-            column: 9,
+            column: 33,
             line: 4,
-            offset: 80,
+            offset: 104,
           },
         },
         source: 'core',

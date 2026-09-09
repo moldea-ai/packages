@@ -8,7 +8,9 @@ const homepage = withBase('/', process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 
 for (const width of [320, 768, 1024, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
-    test(`introduces the real repository check at ${width}px in ${theme}`, async ({ page }) => {
+    test(`introduces the real repository check at ${width}px in ${theme}`, async ({
+      page,
+    }, testInfo) => {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme });
       await page.goto(homepage);
@@ -25,7 +27,11 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(directory).toHaveCSS('text-overflow', 'ellipsis');
       const pathBounds = await instructionFile.boundingBox();
       const filenameBounds = await filename.boundingBox();
-      expect(filenameBounds!.height).toBe(pathBounds!.height);
+      expect(filenameBounds!.height).toBe(
+        await filename.evaluate((element) => parseFloat(getComputedStyle(element).lineHeight)),
+      );
+      await expect(instructionFile).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+      await expect(instructionFile).toHaveCSS('font-weight', '600');
       expect(filenameBounds!.x + filenameBounds!.width).toBeLessThanOrEqual(
         pathBounds!.x + pathBounds!.width,
       );
@@ -68,9 +74,15 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(badges.getByRole('listitem')).toHaveCount(3);
       const heading = hero.getByRole('heading', { level: 1 });
       const badgeBounds = await badges.boundingBox();
+      const eyebrow = hero.getByText('Open-source tools for AI agents', { exact: true });
+      const eyebrowBounds = await eyebrow.boundingBox();
       const headingBounds = await heading.boundingBox();
       const previewBounds = await preview.boundingBox();
       expect(badgeBounds!.y + badgeBounds!.height).toBeLessThan(headingBounds!.y);
+      // badges belong to the text column, with the same 28px gap used by the Skill hero
+      expect(eyebrowBounds!.y - badgeBounds!.y - badgeBounds!.height).toBeCloseTo(28, 0);
+      expect(badgeBounds!.x).toBe(headingBounds!.x);
+      expect(badgeBounds!.width).toBeLessThanOrEqual(headingBounds!.width);
       if (width >= 1024) {
         expect(previewBounds!.x).toBeGreaterThan(headingBounds!.x + headingBounds!.width);
         await expect(preview).toBeInViewport({ ratio: 1 });
@@ -95,6 +107,9 @@ for (const width of [320, 768, 1024, 1440]) {
             ({ impact }) => impact === 'serious' || impact === 'critical',
           ),
         ).toStrictEqual([]);
+        const screenshotPath = testInfo.outputPath(`hero-${width}-${theme}.png`);
+        await hero.screenshot({ path: screenshotPath });
+        await testInfo.attach('Hero layout', { path: screenshotPath, contentType: 'image/png' });
       }
 
       await trigger.focus();

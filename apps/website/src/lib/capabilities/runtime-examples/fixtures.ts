@@ -135,9 +135,9 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
   {
     id: 'openai-responses',
     adapter: openAiAdapter,
-    title: 'A Responses request connected to its tools',
+    title: 'Find the instructions and tools a request uses',
     description:
-      'Inspect the direct request, instruction loader, static function tools, and input schema.',
+      'The source connects this request to an instruction loader and an order-lookup tool.',
     files: OPENAI_FILES,
   },
   {
@@ -380,12 +380,12 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
   {
     id: 'openai-loader-disconnected',
     adapter: openAiAdapter,
-    title: 'The request no longer calls the declared loader',
-    description: 'The loader exists, but the direct request uses a different instruction source.',
+    title: 'The instruction file exists, but is not connected',
+    description: 'The request uses hard-coded text instead of its declared instruction loader.',
     files: overrideFiles(OPENAI_FILES, {
       '/src/agent.ts': source(OPENAI_FILES, '/src/agent.ts').replace(
         'instructions: readInstruction(),',
-        "instructions: 'Use the runtime default instruction.',",
+        "instructions: 'Help customers track their orders.',",
       ),
     }),
   },

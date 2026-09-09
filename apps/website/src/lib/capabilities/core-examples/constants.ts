@@ -4,7 +4,7 @@ import type { IMemoryRepositoryEntry } from '@moldea.ai/repository/memory';
 export const MANIFEST_PATH = '/moldea/moldea.yaml';
 export const PROJECT_PATH = '/moldea/project.md';
 export const PROJECT_TEXT =
-  '# Returns service\n\nExplain return eligibility using the published policy.\n';
+  '# Returns service\n\nCustomers can return an order within **30 days** of delivery.\n';
 export const INSTRUCTION_PATH = '/moldea/agents/support/instruction.md';
 export const INSTRUCTION_TEXT =
   'You are the `support` agent.\n\nExplain the return policy for {{REGION}}.\n';

@@ -1,110 +1,91 @@
 ---
+import { ArrowUpRight } from '@lucide/astro';
+import Accordion from '@moldea.ai/website-ui/accordion';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import { withBase } from '@moldea.ai/website-ui/site';
+
 import {
-  FEATURED_CAPABILITY_CASES,
   getCapabilityOutcome,
   type ICapabilities,
+  type ICapabilityCase,
+  type ICapabilityGroup,
 } from '../../lib/capabilities/index.ts';
 import { CapabilityCard } from '../capability-card/index.ts';
 
-// release-owned cases are finite; no browser fetching, filtering, or hidden example inventory
+// every section keeps its explanation, illustrations, and secondary coverage in the same order
 interface Props {
   catalog: ICapabilities;
-  group: ICapabilities['groups'][number];
+  group: ICapabilityGroup;
+  examples: ICapabilityCase[];
   position: number;
 }
-const { catalog, group, position } = Astro.props;
-const cases = catalog.cases.filter(({ groupId }) => groupId === group.id);
-const featuredIds: string[] = FEATURED_CAPABILITY_CASES[group.id];
-const featured = featuredIds.map((id) => {
-  const example = cases.find((candidate) => candidate.id === id);
-  if (!example) throw new Error(`Missing featured capability ${id}.`);
-  return example;
-});
-const related = cases.filter(({ id }) => !featuredIds.includes(id));
+const { catalog, group, examples, position } = Astro.props;
 ---
 
 <section
   id={group.id}
-  class="page-shell scroll-mt-24 border-t py-12 sm:py-16"
+  class="page-shell grid scroll-mt-24 gap-6 border-t py-8 sm:gap-8 sm:py-10 lg:grid-cols-2 lg:items-start lg:gap-x-12 xl:grid-cols-[minmax(0,1fr)_minmax(0,40rem)]"
   aria-labelledby={`${group.id}-heading`}
 >
-  <header class="mb-8 grid gap-5 lg:grid-cols-2 lg:items-end lg:gap-12">
-    <div>
-      <p class="eyebrow mb-4">{String(position).padStart(2, '0')} / Capabilities</p><h2
-        id={`${group.id}-heading`}
-        class="section-title text-3xl leading-tight font-semibold sm:text-4xl"
-      >
-        <InlineBrandText text={group.title} />
-      </h2>
-    </div>
-    <p class="max-w-xl text-lg leading-8 text-muted-foreground">
+  <header class="max-w-lg lg:pt-3">
+    <p class="eyebrow mb-3">{String(position).padStart(2, '0')} / {group.label}</p>
+    <h2
+      id={`${group.id}-heading`}
+      class="section-title text-3xl leading-tight font-semibold"
+    >
+      <InlineBrandText text={group.title} />
+    </h2>
+    <p class="mt-4 text-base leading-7 text-muted-foreground">
       <InlineBrandText text={group.description} />
     </p>
+    <a
+      class="mt-4 inline-flex items-center gap-2 text-link text-sm font-medium"
+      href={withBase(group.reference.route, import.meta.env.BASE_URL)}
+    >
+      {group.reference.label}<ArrowUpRight
+        class="size-4 shrink-0"
+        aria-hidden="true"
+      />
+    </a>
   </header>
-  <slot />
-  <div
-    class:list={[
-      'grid gap-x-5 sm:gap-y-5',
-      group.id === 'command-line' ? 'lg:grid-cols-3' : 'lg:grid-cols-2',
-    ]}
-  >
-    {
-      featured.map((example) => (
-        <CapabilityCard
-          {example}
-          {catalog}
-        />
-      ))
-    }
-  </div>
-  {
-    related.length > 0 && (
-      <div class="mt-8">
-        <h3 class="mb-4 text-sm font-semibold">
-          {group.id === 'runtime-wiring'
-            ? 'More source forms and analysis boundaries'
-            : 'Also checked in executable examples'}
-        </h3>
-        <ul class="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-          {related.map((example) => {
-            const outcome = getCapabilityOutcome(example, catalog);
-            return (
-              <li
-                id={example.id}
-                class="min-w-0 scroll-mt-24 border-t py-4"
+  <div class="min-w-0">
+    <div class="grid min-w-0 gap-3">
+      {
+        examples.map((example, index) => {
+          const outcome = getCapabilityOutcome(example, catalog);
+          return (
+            <Accordion
+              id={example.id}
+              group={`${group.id}-examples`}
+              title={example.title}
+              isOpen={index === 0}
+            >
+              <span
+                slot="status"
                 data-capability-outcome={example.id}
               >
-                <div class="mb-2 flex flex-wrap items-center gap-2">
-                  <StatusBadge
-                    size="sm"
-                    label={outcome.label}
-                    tone={outcome.tone}
-                  />
-                  <code class="text-xs break-all text-muted-foreground">{example.operation}</code>
-                </div>
-                <p class="text-sm font-semibold">
-                  <InlineBrandText text={example.title} />
-                </p>
-                <p class="mt-1 text-xs leading-5 text-muted-foreground">
-                  <InlineBrandText text={example.description} />
-                </p>
-                {'diagnostics' in example.result && example.result.diagnostics.length > 0 && (
-                  <p class="mt-2 text-xs">
-                    <code class="break-all text-muted-foreground">
-                      {example.result.diagnostics[0].code}
-                    </code>
-                  </p>
-                )}
-                <p class="mt-2 text-xs text-muted-foreground">
-                  <code class="break-all">{example.packageName}</code>
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    )
-  }
+                <StatusBadge
+                  label={outcome.label}
+                  tone={outcome.tone}
+                  size="sm"
+                />
+              </span>
+              <CapabilityCard
+                {example}
+                {catalog}
+              />
+            </Accordion>
+          );
+        })
+      }
+    </div>
+    <p
+      class="mt-4 text-xs leading-6 text-muted-foreground"
+      data-capability-coverage={group.id}
+    >
+      <span class="font-medium text-foreground">Also covers: </span>
+      <InlineBrandText text={`${group.coverage.join('; ')}.`} />
+    </p>
+  </div>
 </section>

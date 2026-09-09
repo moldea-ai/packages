@@ -1,6 +1,7 @@
 ---
 import { ArrowRight, ExternalLink, FileCheckCorner, GitBranch, ScanSearch } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
+import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import { withBase } from '@moldea.ai/website-ui/site';
 
@@ -29,43 +30,40 @@ const basePath = import.meta.env.BASE_URL;
     class="relative overflow-hidden border-b border-border bg-background"
     aria-label="Introduction"
   >
-    <div
-      class="pointer-events-none absolute inset-0 [background-image:radial-gradient(circle_at_70%_18%,color-mix(in_oklch,var(--accent)_60%,transparent),transparent_30%),linear-gradient(to_right,color-mix(in_oklch,var(--border)_35%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklch,var(--border)_35%,transparent)_1px,transparent_1px)] [mask-image:linear-gradient(to_bottom,black,transparent_92%)] [background-size:auto,3rem_3rem,3rem_3rem] opacity-60"
-      aria-hidden="true"
-    >
-    </div>
-    <div class="page-shell relative py-12 sm:py-16 lg:py-20">
-      <ul
-        class="mb-8 flex flex-wrap gap-2"
-        aria-label="Package foundations"
-      >
-        <li
-          class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium"
-        >
-          <GitBranch
-            class="size-3.5 text-muted-foreground"
-            aria-hidden="true"
-          />Git-owned knowledge
-        </li>
-        <li
-          class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium"
-        >
-          <FileCheckCorner
-            class="size-3.5 text-muted-foreground"
-            aria-hidden="true"
-          />Repeatable checks
-        </li>
-        <li
-          class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium"
-        >
-          <ScanSearch
-            class="size-3.5 text-muted-foreground"
-            aria-hidden="true"
-          />Precise diagnostics
-        </li>
-      </ul>
+    <HeroBackdrop />
+    <div class="page-shell relative py-14 sm:py-18 lg:py-20">
       <div class="grid items-center gap-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-12">
         <div class="min-w-0">
+          <ul
+            class="mb-7 flex flex-wrap items-center gap-2"
+            aria-label="Package foundations"
+          >
+            <li
+              class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium"
+            >
+              <GitBranch
+                class="size-3.5 text-muted-foreground"
+                aria-hidden="true"
+              />Git-owned knowledge
+            </li>
+            <li
+              class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium"
+            >
+              <FileCheckCorner
+                class="size-3.5 text-muted-foreground"
+                aria-hidden="true"
+              />Repeatable checks
+            </li>
+            <li
+              class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium"
+            >
+              <ScanSearch
+                class="size-3.5 text-muted-foreground"
+                aria-hidden="true"
+              />Precise diagnostics
+            </li>
+          </ul>
+          <p class="eyebrow mb-4">Open-source tools for AI agents</p>
           <h1 class="text-4xl leading-tight font-semibold tracking-tight sm:text-5xl xl:text-6xl">
             Keep agent instructions and code connected.
           </h1>

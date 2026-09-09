@@ -14,6 +14,7 @@ export interface Props {
   noResultsMessage?: string;
   placeholder: string;
   searchIndexUrl: string;
+  shouldFocusOnLoad?: boolean;
 }
 
 const {
@@ -27,6 +28,7 @@ const {
   noResultsMessage = 'No matching documentation was found.',
   placeholder,
   searchIndexUrl,
+  shouldFocusOnLoad = false,
 } = Astro.props;
 ---
 
@@ -36,6 +38,7 @@ const {
   data-initial-prompt={initialPrompt}
   data-loading-message={loadingMessage}
   data-no-results-message={noResultsMessage}
+  data-search-focus-on-load={shouldFocusOnLoad ? 'true' : undefined}
 >
   <form
     class="mt-10"
@@ -194,6 +197,9 @@ const {
   const initializeLocalSearch = (): void => {
     for (const root of document.querySelectorAll<HTMLElement>('[data-local-search]')) {
       initializeSearch(root);
+      if (root.dataset.searchFocusOnLoad === 'true') {
+        root.querySelector<HTMLInputElement>('[data-search-input]')?.focus({ preventScroll: true });
+      }
     }
   };
 

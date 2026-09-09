@@ -1,6 +1,6 @@
 ---
 title: Get started with moldea
-description: Choose the Agent Skill for adoption, the CLI for local checks, or Core and repository readers for a custom integration.
+description: Choose the Agent Skill for adoption, Cloud for collaboration, the CLI for local checks, or the packages for custom tooling.
 navigationTitle: Get started
 order: 0
 ---
@@ -14,6 +14,12 @@ moldea gives project knowledge a structure that tools can check. Keep context an
 Start with the [moldea Agent Skill](https://skill.moldea.ai/). It guides repository adoption and ongoing workflows in your coding agent. Its website owns installation instructions, tutorials, and the adoption process.
 
 The packages documented here are the underlying tools. Installing a package alone does not adopt the repository or write its project knowledge for you.
+
+## Collaborate in Cloud
+
+Explore [moldea Cloud](https://moldea.ai) for a shared view of project context, agent instructions, and their Git-backed history. Discuss changes with your team while your repository remains the source of truth.
+
+Cloud is optional. The Agent Skill, CLI, and packages can be used locally without it.
 
 ## Check an adopted repository locally
 

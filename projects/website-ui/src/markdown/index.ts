@@ -126,12 +126,12 @@ const renderStrongLabelBadges = (
   }, html);
 };
 
-/** Processes Markdown with optional stable heading IDs. */
-const processMarkdown = async (source: string, shouldSlugHeadings: boolean): Promise<string> => {
+/** Shares sanitization and highlighting between authored Markdown and literal code. */
+const createMarkdownProcessor = (shouldSlugHeadings: boolean) => {
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkRehype);
   if (shouldSlugHeadings) processor.use(rehypeSlug);
 
-  const file = await processor
+  return processor
     .use(rehypeSanitize, { ...defaultSchema, clobberPrefix: '' })
     .use(rehypeShiki, {
       addLanguageClass: true,
@@ -143,8 +143,12 @@ const processMarkdown = async (source: string, shouldSlugHeadings: boolean): Pro
         light: 'github-light-default',
       },
     })
-    .use(rehypeStringify)
-    .process(source);
+    .use(rehypeStringify);
+};
+
+/** Processes Markdown with optional stable heading IDs. */
+const processMarkdown = async (source: string, shouldSlugHeadings: boolean): Promise<string> => {
+  const file = await createMarkdownProcessor(shouldSlugHeadings).process(source);
 
   return String(file);
 };
@@ -210,4 +214,20 @@ export const renderMarkdownFragment = async (
   const renderedHtml = await processMarkdown(markdown, false);
 
   return applyPresentation(renderedHtml, options);
+};
+
+/**
+ * Renders literal source without interpreting its contents as Markdown or HTML.
+ * @param source Code or plain text to display verbatim.
+ * @param language Syntax language; omitted languages remain unhighlighted and do not wrap.
+ * @returns Sanitized, highlighted HTML with a keyboard-accessible code region.
+ */
+export const renderCodeBlock = async (source: string, language = ''): Promise<string> => {
+  const processor = createMarkdownProcessor(false);
+  const rendered = await processor.run({
+    type: 'root',
+    children: [{ type: 'code', lang: language || null, value: source }],
+  });
+
+  return markCodeBlocks(processor.stringify(rendered));
 };

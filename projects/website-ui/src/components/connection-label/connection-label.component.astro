@@ -1,0 +1,26 @@
+---
+// visual relationship between examples; consumers supply its meaning and optional decorative icon
+export interface Props {
+  tone?: 'danger' | 'neutral';
+}
+const { tone = 'neutral' } = Astro.props;
+---
+
+<p
+  class:list={[
+    'flex items-center justify-center gap-2 py-3 text-xs',
+    tone === 'danger' ? 'text-destructive' : 'text-muted-foreground',
+  ]}
+>
+  {
+    Astro.slots.has('icon') && (
+      <span
+        class="shrink-0"
+        aria-hidden="true"
+      >
+        <slot name="icon" />
+      </span>
+    )
+  }
+  <span class="min-w-0"><slot /></span>
+</p>

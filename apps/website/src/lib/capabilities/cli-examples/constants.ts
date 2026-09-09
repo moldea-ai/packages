@@ -8,7 +8,7 @@ export const CLI_FIXTURE_FILES: IFixtureFile[] = [
   },
   {
     path: '/moldea/project.md',
-    content: '# Return policy\n\nExplain return eligibility using the current policy.\n',
+    content: '# Return policy\n\nCustomers can return an order within **30 days** of delivery.\n',
   },
   {
     path: '/moldea/context/tracked.md',

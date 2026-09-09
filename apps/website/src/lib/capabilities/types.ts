@@ -65,6 +65,17 @@ export interface ICapabilityCase {
   result: ICapabilityResult;
 }
 
+// concise coverage and selected illustrations, with the full contract linked separately
+export interface ICapabilityGroup {
+  id: ICapabilityGroupId;
+  label: string;
+  title: string;
+  description: string;
+  coverage: string[];
+  exampleIds: [string, ...string[]];
+  reference: { route: string; label: string };
+}
+
 // domain-owned outcomes map into the shared UI's semantic presentation props
 export interface ICapabilityOutcome {
   title: string;
@@ -107,7 +118,7 @@ export interface ICapabilityRuntimeTarget {
 
 // internal generated content model, not a separately published capability API
 export interface ICapabilities {
-  groups: { id: ICapabilityGroupId; title: string; description: string }[];
+  groups: ICapabilityGroup[];
   cases: ICapabilityCase[];
   coreOperations: Record<ICoreOperation, string[]>;
   diagnostics: Record<ICoreDiagnosticCode, IDiagnosticCoverage>;

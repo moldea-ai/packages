@@ -98,23 +98,36 @@ describe('production discovery guards', () => {
   test.each([
     ['id="structure"', 'data-removed="structure"', 'missing local anchor'],
     [
+      'data-capability-outcome="variable-undeclared"',
+      'data-removed="variable-undeclared"',
+      'omits visible result variable-undeclared',
+    ],
+    [
       'data-capability-outcome="mirror-stale"',
       'data-removed="mirror-stale"',
       'omits visible result mirror-stale',
     ],
     [
-      'data-capability-target="custom/custom"',
-      'data-removed="custom/custom"',
-      'omits target or source forms',
+      'id="result-mirror-stale"',
+      'data-removed="result-mirror-stale"',
+      'omits result dialog mirror-stale',
     ],
     [
-      'data-capability-pattern="explicit-repository-relationships"',
-      'data-removed="explicit-repository-relationships"',
-      'omits target or source forms',
+      'data-capability-outcome="openai-responses"',
+      'data-removed="openai-responses"',
+      'omits visible result openai-responses',
     ],
   ])('rejects missing capability marker %s', (marker, replacement, error) => {
     replaceArtifactText('capabilities/index.html', marker, replacement);
     expect(() => verifyProductionBuild(directory)).toThrow(error);
+  });
+  test('rejects an unselected example leaking into the curated page', () => {
+    replaceArtifactText(
+      'capabilities/index.html',
+      '</main>',
+      '<div data-capability-outcome="extra-example"></div></main>',
+    );
+    expect(() => verifyProductionBuild(directory)).toThrow('contains an unselected example');
   });
   test('rejects a capability machine-navigation omission', () => {
     replaceArtifactText('llms.txt', '[Capabilities]', '[Removed]');

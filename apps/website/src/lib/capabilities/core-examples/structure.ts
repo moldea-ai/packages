@@ -168,8 +168,8 @@ export const STRUCTURE_EXAMPLES: ICoreExampleDefinition[] = [
   ),
   projectCase(
     'foundation-missing',
-    'The project foundation is absent',
-    'The canonical project document is required.',
+    'The project brief is missing',
+    'The project map is present, but the document explaining the project is missing.',
     createCoreEntries().filter(({ path }) => path !== PROJECT_PATH),
     ['MOLDEA_PROJECT_FILE_MISSING'],
   ),
@@ -207,14 +207,18 @@ export const STRUCTURE_EXAMPLES: ICoreExampleDefinition[] = [
         : state === 'missing'
           ? 'The referenced policy is missing'
           : 'The reference points to a directory',
-      'A declared source connection must resolve to a regular repository file.',
+      state === 'missing'
+        ? 'The project points to a policy file that is no longer there.'
+        : state === 'directory'
+          ? 'The path exists, but it is a folder instead of a file.'
+          : 'A declared source connection must resolve to a regular repository file.',
       createCoreEntries(
-        'version: 1\ncontext:\n  /moldea/project.md:\n    bindings: [{ path: /src/returns/policy.ts }]\n',
+        `version: 1\ncontext:\n  /moldea/project.md:\n    bindings: [{ path: ${state === 'directory' ? '/src/returns' : '/src/returns/policy.ts'} }]\n`,
         state === 'missing'
           ? []
           : [
               state === 'directory'
-                ? { path: '/src/returns/policy.ts', type: 'directory' }
+                ? { path: '/src/returns', type: 'directory' }
                 : {
                     path: '/src/returns/policy.ts',
                     type: 'file',

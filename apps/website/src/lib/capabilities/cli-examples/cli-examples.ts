@@ -284,8 +284,8 @@ export const createCliExamples = async (
     examples.push(
       commandCase(
         'cli-canonical-content',
-        'Request one canonical document explicitly',
-        'Only the content command returns the selected document body.',
+        'Read just the document you need',
+        'The command returns one selected document as JSON.',
         'moldea content --path /moldea/project.md --json',
         content.envelope,
         content.exitStatus,
@@ -348,8 +348,8 @@ export const createCliExamples = async (
     examples.push(
       commandCase(
         'cli-content-refusal',
-        'A source file is not canonical content',
-        'The executable reports an operational refusal without a partial result.',
+        'The content command refuses source code',
+        'This command reads project knowledge documents, not application source files.',
         'moldea content --path /src/returns/policy.ts --json',
         refused.envelope,
         refused.exitStatus,
@@ -389,7 +389,8 @@ export const createCliExamples = async (
       ),
     );
     assertCapabilityFacts(await captureFixtureState(workspace.directory), before);
-    const invalidManifest = 'version: 2\n';
+    const invalidManifest =
+      'version: 1\ncontext:\n  /moldea/project.md:\n    bindings: [{ path: /src/returns/check-eligibility.ts }]\n';
     await workspace.write({ path: '/moldea/moldea.yaml', content: invalidManifest });
     const beforeInvalid = await captureFixtureState(workspace.directory);
     const invalid = await run(['validate']);
@@ -399,22 +400,29 @@ export const createCliExamples = async (
       [1, false, 1],
     );
     assertCapabilityFacts(
-      invalidResult.page.records.map(({ code, path }) => ({ code, path })),
-      [{ code: 'MOLDEA_MANIFEST_VERSION_UNSUPPORTED', path: '/moldea/moldea.yaml' }],
+      invalidResult.page.records.map(({ code, path, pointer }) => ({ code, path, pointer })),
+      [
+        {
+          code: 'MOLDEA_REFERENCE_MISSING',
+          path: '/moldea/moldea.yaml',
+          pointer: '/context/~1moldea~1project.md/bindings/0',
+        },
+      ],
     );
     const invalidCase = commandCase(
       'cli-invalid-project',
-      'A failed check has a different exit status',
-      'An unsupported manifest version produces an invalid result, not an operational error.',
+      'A failed check your CI can detect',
+      'A missing eligibility-check file makes validation fail with exit code 1.',
       'moldea validate --json',
       invalid.envelope,
       invalid.exitStatus,
       {
         valid: invalidResult.valid,
         diagnosticCount: invalidResult.diagnosticCount ?? 0,
-        diagnostics: invalidResult.page.records.map(({ code, path }) => ({
+        diagnostics: invalidResult.page.records.map(({ code, path, pointer }) => ({
           code: code ?? null,
           path: path ?? null,
+          pointer: pointer ?? null,
         })),
       },
     );

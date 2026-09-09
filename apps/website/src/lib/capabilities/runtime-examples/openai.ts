@@ -21,7 +21,7 @@ export const OPENAI_FILES: IMemoryRepositoryEntry[] = [
   {
     path: '/moldea/agents/support/instruction.md',
     type: 'file',
-    content: 'You are the `support` agent.\n',
+    content: 'You are the `support` agent.\n\nUse find_order to check delivery status.\n',
   },
   {
     path: '/package.json',
@@ -49,6 +49,7 @@ export const OPENAI_FILES: IMemoryRepositoryEntry[] = [
   {
     path: '/src/instructions.ts',
     type: 'file',
-    content: "export const loadInstruction = (): string => 'Follow the canonical instruction.';\n",
+    content:
+      "import { readFileSync } from 'node:fs';\n\nexport const loadInstruction = (): string =>\n  readFileSync(new URL('../moldea/agents/support/instruction.md', import.meta.url), 'utf8');\n",
   },
 ];

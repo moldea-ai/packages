@@ -74,8 +74,9 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
       },
     ),
   );
+  const digestInputs = [text, `\uFEFF${text.replaceAll('\n', '\r\n')}`, text.replace('30', '60')];
   const digests = await Promise.all(
-    [text, `\uFEFF${text.replaceAll('\n', '\r\n')}`, text.replace('30', '60')].map((content) =>
+    digestInputs.map((content) =>
       core.calculateContentDigest({ path: parseRepositoryPath(PROJECT_PATH), content }),
     ),
   );
@@ -92,12 +93,13 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
     operationCase(
       'normalized-digests',
       'calculateContentDigest',
-      'A policy change has a different identity',
-      'Line endings preserve the digest. Changing the return window changes it.',
+      'Different line endings. Same fingerprint.',
+      'An editor’s line-ending change preserves the fingerprint. Changing 30 days to 60 does not.',
       {
         originalDigest: original.digest,
         normalizedCopyDigest: normalizedCopy.digest,
         changedDigest: changed.digest,
+        inputs: digestInputs,
       },
     ),
   );
@@ -271,7 +273,7 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
     'manifest-change-relevance',
     'matchManifestScope',
     'Find the knowledge connected to a change',
-    'Exact paths and globs identify declared owners. The logo is unrelated; the international policy remains unresolved.',
+    'A changed code file leads back to the knowledge linked to it.',
     {
       valid: scope.valid,
       relevant: scope.relevant,

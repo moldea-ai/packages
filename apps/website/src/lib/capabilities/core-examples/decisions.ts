@@ -110,7 +110,7 @@ export const DECISION_EXAMPLES: ICoreExampleDefinition[] = [
   graphCase(
     'decision-replacement-chain',
     'The new decision replaces the old one',
-    'An accepted replacement and superseded predecessor form a consistent active chain.',
+    'The 60-day decision correctly replaces the earlier 30-day decision.',
     [
       {
         path: originalPath,
@@ -123,8 +123,8 @@ export const DECISION_EXAMPLES: ICoreExampleDefinition[] = [
   ),
   graphCase(
     'decision-reference-missing',
-    'A predecessor cannot be found',
-    'A supersession reference must identify an existing decision.',
+    'The earlier decision is missing',
+    'The new decision replaces a record that cannot be found.',
     [replacement(originalId)],
     ['MOLDEA_DECISION_REFERENCE_MISSING'],
   ),
@@ -157,8 +157,8 @@ export const DECISION_EXAMPLES: ICoreExampleDefinition[] = [
   ),
   graphCase(
     'decision-cycle',
-    'The replacement history loops back',
-    'A cycle is reported even when the decisions are still proposals.',
+    'Two decisions claim to replace each other',
+    'Each proposal names the other as the decision it replaces.',
     [
       {
         path: originalPath,

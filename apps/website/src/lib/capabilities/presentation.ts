@@ -7,12 +7,39 @@ import type {
 } from './types.ts';
 
 const DIAGNOSTIC_TITLES: Record<string, string> = {
-  'manifest-unknown-property': 'Unknown field: agent',
-  'policy-reference-directory': 'A directory is not a source file',
-  'variable-undeclared': '1 undeclared variable',
+  'policy-reference-missing': '1 missing file',
+  'policy-reference-directory': 'A folder where a file is required',
+  'agent-identity': '1 mismatched agent identity',
+  'tool-implementation-missing': '1 missing tool implementation',
   'mirror-stale': '1 stale instruction copy',
-  'decision-cycle': '2 decisions form a cycle',
+  'variable-undeclared': '1 undeclared variable',
+  'foundation-missing': 'Project brief not found',
+  'decision-cycle': 'Circular replacement links',
+  'decision-reference-missing': '1 missing decision',
+  'openai-loader-disconnected': 'Instruction loader not connected',
 };
+const COMMAND_TITLES: Record<string, string> = {
+  'cli-invalid-project': 'Broken reference caught by validation',
+  'cli-canonical-content': 'One document, ready for your tools',
+  'cli-content-refusal': 'Source file outside this command’s scope',
+};
+
+/**
+ * Resolves the page's selected illustrations in display order for rendering and discovery.
+ * @throws If a section selects a missing, repeated, or incorrectly grouped case.
+ */
+export const getCapabilityShowcase = (catalog: Pick<ICapabilities, 'groups' | 'cases'>) =>
+  catalog.groups.map((group) => {
+    const examples = group.exampleIds.map((exampleId, index) => {
+      const example = catalog.cases.find(({ id }) => id === exampleId);
+      if (!example || example.groupId !== group.id)
+        throw new Error(`Missing capability illustration for ${group.id}: ${exampleId}.`);
+      if (group.exampleIds.indexOf(exampleId) !== index)
+        throw new Error(`Repeated capability illustration for ${group.id}: ${exampleId}.`);
+      return example;
+    });
+    return { group, examples };
+  });
 
 /** Distinguishes a failed check, absent evidence, and an operation that could not complete. */
 export const getCapabilityOutcome = (
@@ -52,16 +79,29 @@ export const getCapabilityOutcome = (
       };
     return result.kind === 'adapter'
       ? {
-          title: `${result.evidence.length} evidence records`,
+          title:
+            example.id === 'openai-responses'
+              ? 'Instruction and tool connections found'
+              : `${result.evidence.length} source facts found`,
           description,
           label: 'Inspected',
           tone: 'info',
         }
-      : { title: 'Structure checks pass', description, label: 'Valid', tone: 'success' };
+      : {
+          title:
+            example.id === 'decision-replacement-chain'
+              ? 'Decision chain checks pass'
+              : 'Structure checks pass',
+          description,
+          label: 'Valid',
+          tone: 'success',
+        };
   }
   if (result.kind === 'cli') {
     return {
-      title: `Exit ${result.exitStatus}: ${result.status === 'error' ? 'operation refused' : result.status === 'invalid' ? 'invalid project' : 'completed'}`,
+      title:
+        COMMAND_TITLES[example.id] ??
+        `Exit ${result.exitStatus}: ${result.status === 'error' ? 'operation refused' : result.status === 'invalid' ? 'invalid project' : 'completed'}`,
       description,
       label:
         result.status === 'error'
@@ -79,7 +119,19 @@ export const getCapabilityOutcome = (
       label: 'Refused',
       tone: 'warning',
     };
-  return { title: 'Recorded facts returned', description, label: 'Returned', tone: 'info' };
+  return {
+    title:
+      example.id === 'snapshot-comparison'
+        ? 'Changes identified'
+        : example.id === 'manifest-change-relevance'
+          ? 'Related knowledge identified'
+          : example.id === 'normalized-digests'
+            ? 'Text changes produce a different fingerprint'
+            : 'Recorded facts returned',
+    description,
+    label: 'Returned',
+    tone: 'info',
+  };
 };
 
 /** Selects a bounded result excerpt without inventing or changing public-result facts. */
@@ -121,24 +173,4 @@ export const getCapabilityFactRows = (fact: ICapabilityFact): Record<string, ICa
       throw new Error('Capability diagram requires an object for each fact row.');
     return row;
   });
-};
-
-/**
- * Finds the exact executed source files used by a featured illustration.
- * @throws If a source-backed example lacks its selected illustration files.
- */
-export const getCapabilityVisualFiles = (example: ICapabilityCase): ICapabilityCase['files'] => {
-  const selected =
-    example.id === 'mirror-stale'
-      ? example.files.filter(
-          ({ path }) => path.endsWith('/instruction.md') || path === '/instructions/support.md',
-        )
-      : example.id === 'variable-undeclared'
-        ? example.files.filter(({ path }) => path.endsWith('/instruction.md'))
-        : example.groupId === 'decisions'
-          ? example.files.filter(({ path }) => path.startsWith('/moldea/decisions/'))
-          : example.files.filter(({ path }) => path === '/moldea/moldea.yaml');
-  if (selected.length === 0 && example.files.length > 0)
-    throw new Error(`Capability illustration has no selected source for ${example.id}.`);
-  return selected;
 };

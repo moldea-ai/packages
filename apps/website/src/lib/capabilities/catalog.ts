@@ -1,60 +1,93 @@
-import type { ICapabilityGroupId } from './types.ts';
+import type { ICapabilityGroup } from './types.ts';
 
-// finite, release-owned sections; explanatory copy is not a second capability authority
-export const CAPABILITY_GROUPS: { id: ICapabilityGroupId; title: string; description: string }[] = [
+// the public page is a curated introduction; the complete executable catalog stays internal
+export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
   {
     id: 'structure',
-    title: 'Repository structure and connections',
-    description: 'Check the project map, its documents, and the files they reference.',
+    label: 'Files',
+    title: 'Catch broken file connections.',
+    description: 'See when a file your project points to is missing.',
+    coverage: [
+      'formats, names and paths',
+      'required files and valid text',
+      'context and code references',
+    ],
+    exampleIds: ['policy-reference-missing', 'foundation-missing', 'policy-reference-directory'],
+    reference: { route: '/packages/core/diagnostics/', label: 'Explore structural checks' },
   },
   {
     id: 'agents',
-    title: 'Agent instructions and declared assets',
-    description: 'Connect instructions, variables, tools, skills, and mirrors.',
+    label: 'Agents',
+    title: 'Keep agent files in sync.',
+    description: 'Catch undeclared variables and instruction copies that no longer match.',
+    coverage: [
+      'agent identity and descriptions',
+      'variables and their sources',
+      'tools, skills and runtimes',
+      'instruction copies and ownership',
+    ],
+    exampleIds: [
+      'variable-undeclared',
+      'mirror-stale',
+      'agent-identity',
+      'tool-implementation-missing',
+    ],
+    reference: { route: '/repository-format/', label: 'Explore agent declarations' },
   },
   {
     id: 'decisions',
-    title: 'Decision history and relationships',
-    description: 'Keep decision identities, statuses, and replacement chains consistent.',
+    label: 'Decisions',
+    title: 'Keep a consistent decision history.',
+    description: 'Check that each decision correctly replaces the one before it.',
+    coverage: [
+      'record format, dates and unique IDs',
+      'replacement links and status',
+      'missing links and cycles',
+    ],
+    exampleIds: ['decision-replacement-chain', 'decision-cycle', 'decision-reference-missing'],
+    reference: { route: '/repository-format/', label: 'Explore decision records' },
   },
   {
     id: 'runtime-wiring',
-    title: 'Runtime wiring',
-    description: 'Inspect supported source patterns without running the application.',
+    label: 'Runtime',
+    title: 'See how the code is connected.',
+    description: 'See how supported code connects instructions and tools, without running it.',
+    coverage: [
+      'instruction and tool connections',
+      'schemas, handoffs and workflows',
+      'runtime-specific limits',
+    ],
+    exampleIds: ['openai-responses', 'openai-loader-disconnected'],
+    reference: { route: '/adapters/', label: 'Find your runtime and its scope' },
   },
   {
     id: 'repository-access',
-    title: 'Reading, comparing, and finding affected knowledge',
-    description: 'Read bounded results and trace changed paths to their declared owners.',
+    label: 'Repository',
+    title: 'Read the files. Track the changes.',
+    description: 'Read project files and see exactly what changed between snapshots.',
+    coverage: [
+      'file metadata and content',
+      'changed paths and their declared owners',
+      'normalized text and content hashes',
+      'read limits, cancellation and snapshot consistency',
+    ],
+    exampleIds: ['snapshot-comparison', 'manifest-change-relevance', 'normalized-digests'],
+    reference: {
+      route: '/packages/repository/reader-contract/',
+      label: 'Explore repository access',
+    },
   },
   {
     id: 'command-line',
-    title: 'Using the checks from the command line',
-    description: 'Run the same operations against a selected Git working tree.',
+    label: 'Automation',
+    title: 'Make checks part of your workflow.',
+    description: 'Run the same checks locally or in CI, with results your tools can use.',
+    coverage: [
+      'validation, inspection, content and scope',
+      'JSON output and exit codes',
+      'installed packages and adapters',
+    ],
+    exampleIds: ['cli-invalid-project', 'cli-canonical-content', 'cli-content-refusal'],
+    reference: { route: '/packages/cli/commands/', label: 'Explore CLI commands' },
   },
 ];
-
-// editorial emphasis only; all remaining cases are rendered as concise example rows
-export const FEATURED_CAPABILITY_CASES = {
-  structure: ['manifest-unknown-property', 'policy-reference-directory'],
-  agents: ['variable-undeclared', 'mirror-stale'],
-  decisions: ['decision-replacement-chain', 'decision-cycle'],
-  'runtime-wiring': [],
-  'repository-access': [
-    'manifest-change-relevance',
-    'snapshot-comparison',
-    'canonical-content-pages',
-    'normalized-digests',
-  ],
-  'command-line': [
-    'cli-validate',
-    'cli-inspect-selection',
-    'cli-scope-path',
-    'cli-scope-stdin',
-    'cli-canonical-content',
-    'cli-content-continuation',
-    'cli-content-refusal',
-    'cli-composition',
-    'cli-invalid-project',
-  ],
-} satisfies Record<ICapabilityGroupId, string[]>;

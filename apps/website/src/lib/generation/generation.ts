@@ -36,6 +36,7 @@ import { createInstructionExample } from '../instruction-example/index.ts';
 import {
   createCapabilities,
   getCapabilityOutcome,
+  getCapabilityShowcase,
   type ICapabilities,
 } from '../capabilities/index.ts';
 
@@ -471,10 +472,12 @@ export const createSearchRecords = (
       route,
       title: group.title,
       description: group.description,
-      searchText: normalizeSearchText(`${group.title} ${group.description}`),
+      searchText: normalizeSearchText(
+        [group.title, group.description, ...group.coverage].join(' '),
+      ),
     });
   }
-  for (const example of capabilities.cases) {
+  for (const example of getCapabilityShowcase(capabilities).flatMap(({ examples }) => examples)) {
     const route = `/capabilities/#${example.id}`;
     const outcome = getCapabilityOutcome(example, capabilities);
     recordsByRoute.set(route, {

@@ -5,6 +5,7 @@ export type {
   ICapabilityFact,
   ICapabilityFile,
   ICapabilityGroupId,
+  ICapabilityGroup,
   ICapabilityResult,
   ICapabilityOutcome,
   ICapabilityRuntimeTarget,
@@ -17,12 +18,11 @@ export type {
 export { createCapabilities } from './capabilities.ts';
 
 // shared page and discovery presentation
-export { FEATURED_CAPABILITY_CASES } from './catalog.ts';
 export {
+  getCapabilityShowcase,
   getCapabilityOutcome,
   getCapabilityResultExcerpt,
   getCapabilityFactRows,
-  getCapabilityVisualFiles,
 } from './presentation.ts';
 
 // shared example projection and assertion boundaries

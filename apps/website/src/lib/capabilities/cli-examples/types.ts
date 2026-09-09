@@ -54,6 +54,7 @@ export const CliCollectionResult = z.object({
         kind: z.string(),
         path: z.string().optional(),
         code: z.string().optional(),
+        pointer: z.string().nullable().optional(),
         metadataKind: z.string().optional(),
         match: z
           .object({

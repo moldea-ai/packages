@@ -61,6 +61,11 @@ test('connects homepage, desktop navigation, and footer to the guide', async ({ 
   await expect(
     content.getByRole('link', { name: 'moldea Agent Skill', exact: true }),
   ).toHaveAttribute('href', 'https://skill.moldea.ai/');
+  const cloud = content.getByRole('link', { name: 'moldea Cloud', exact: true });
+  await expect(cloud).toHaveAttribute('href', 'https://moldea.ai');
+  await expect(cloud).toHaveAttribute('target', '_blank');
+  await expect(cloud).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(content).toContainText('Cloud is optional.');
   await expect(
     content.getByRole('link', { name: 'CLI overview and installation guide' }),
   ).toHaveAttribute('href', withBase('/packages/cli/', basePath));
@@ -87,6 +92,9 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
   const page = await context.newPage();
   try {
     await page.goto(guidePath);
+    await expect(
+      page.getByRole('main').getByRole('link', { name: 'moldea Cloud', exact: true }),
+    ).toHaveAttribute('href', 'https://moldea.ai');
     await expect(
       page.getByRole('heading', { name: 'Check an adopted repository locally' }),
     ).toBeVisible();

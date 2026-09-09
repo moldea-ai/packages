@@ -1,10 +1,10 @@
 ---
 import { CircleAlert, ScanLine } from '@lucide/astro';
+import CodeBlock from '@moldea.ai/website-ui/code-block';
 import Dialog from '@moldea.ai/website-ui/dialog';
 import ResultSummary from '@moldea.ai/website-ui/result-summary';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
-import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
 
 import {
   getCapabilityOutcome,
@@ -17,14 +17,11 @@ import {
 interface Props {
   example: ICapabilityCase;
   catalog: ICapabilities;
-  id?: string;
 }
-const { example, catalog, id = `result-${example.id}` } = Astro.props;
+const { example, catalog } = Astro.props;
+const id = `result-${example.id}`;
 const outcome = getCapabilityOutcome(example, catalog);
 const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAlert : ScanLine;
-const html = await renderMarkdownFragment(
-  `\`\`\`json\n${JSON.stringify(getCapabilityResultExcerpt(example.result), null, 2)}\n\`\`\``,
-);
 ---
 
 <Dialog
@@ -64,15 +61,15 @@ const html = await renderMarkdownFragment(
       </div>
       <div class="min-w-0">
         <dt class="mb-1 text-muted-foreground">Operation</dt><dd>
-          <code class="break-all">{example.operation}</code>
+          <code class="inline-code break-all">{example.operation}</code>
         </dd>
       </div>
     </dl>
     <div class="min-w-0">
       <p class="mb-3 text-xs font-semibold text-muted-foreground">Executed result excerpt</p>
-      <div
-        class="prose-moldea text-sm [&_pre]:m-0 [&_pre]:p-4 [&_pre]:text-xs [&_pre]:leading-6"
-        set:html={html}
+      <CodeBlock
+        source={JSON.stringify(getCapabilityResultExcerpt(example.result), null, 2)}
+        language="json"
       />
     </div>
     <p class="text-xs leading-6 text-muted-foreground">

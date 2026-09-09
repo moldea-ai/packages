@@ -193,6 +193,7 @@
     @apply text-link;
   }
 
+  .inline-code,
   .prose-moldea code:not(pre code) {
     @apply rounded-md bg-code px-1.5 py-1 font-mono text-[0.86em] font-semibold text-code-foreground;
   }

@@ -7,6 +7,8 @@ import {
   createCoreEntries,
   INSTRUCTION_PATH,
   INSTRUCTION_TEXT,
+  PROJECT_PATH,
+  PROJECT_TEXT,
 } from './constants.ts';
 import type { ICoreExampleDefinition } from './types.ts';
 
@@ -96,8 +98,8 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
   ),
   agentCase(
     'agent-identity',
-    'The instruction names a different agent',
-    'The canonical identity must match the owning agent ID.',
+    'A copied instruction names the wrong agent',
+    'The support agent still introduces itself as sales.',
     replaceFile(INSTRUCTION_PATH, INSTRUCTION_TEXT.replace('`support`', '`sales`')),
     ['MOLDEA_AGENT_IDENTITY_INVALID'],
   ),
@@ -144,9 +146,12 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
   ),
   agentCase(
     'variable-undeclared',
-    'The instruction requests an undeclared variable',
-    'ORDER_ID is used but has no declaration. No substitution is executed.',
-    replaceFile(INSTRUCTION_PATH, `${INSTRUCTION_TEXT}Look up {{ORDER_ID}}.\n`),
+    'An instruction uses an undeclared variable',
+    'The instruction uses a variable the agent has not declared.',
+    replaceFile(
+      INSTRUCTION_PATH,
+      `${INSTRUCTION_TEXT}Check delivery status for order {{ORDER_ID}}.\n`,
+    ),
     ['MOLDEA_VARIABLE_UNDECLARED'],
   ),
   agentCase(
@@ -197,8 +202,12 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
       agentCase(
         `${kind}-implementation-missing`,
         `The ${kind} has no implementation file`,
-        'A registered capability must point to a regular repository file.',
-        createAgentEntries(manifest),
+        `The ${kind} is declared, but the code file it points to is missing.`,
+        createAgentEntries(
+          kind === 'tool'
+            ? manifest.replace('name: explain_returns', 'name: check_return_eligibility')
+            : manifest,
+        ),
         [
           kind === 'tool'
             ? 'MOLDEA_TOOL_IMPLEMENTATION_MISSING'
@@ -241,9 +250,26 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
           : state === 'missing'
             ? 'A declared mirror is missing'
             : 'A mirror points to a directory',
-      'Mirrors are compared against the canonical instruction after text normalization.',
+      state === 'stale'
+        ? 'The original says 60 days. The stale copy still says 30.'
+        : 'Mirrors are compared against the canonical instruction after text normalization.',
       [
-        ...createAgentEntries(mirrorManifest),
+        ...createAgentEntries(mirrorManifest).map((entry) => {
+          if (state !== 'stale') return entry;
+          if (entry.path === INSTRUCTION_PATH)
+            return {
+              ...entry,
+              type: 'file' as const,
+              content: `${INSTRUCTION_TEXT}Accept returns within 60 days of delivery.\n`,
+            };
+          if (entry.path === PROJECT_PATH)
+            return {
+              ...entry,
+              type: 'file' as const,
+              content: PROJECT_TEXT.replace('30 days', '60 days'),
+            };
+          return entry;
+        }),
         ...(state === 'missing'
           ? []
           : [
@@ -255,7 +281,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
                     content:
                       state === 'equal'
                         ? `\uFEFF${INSTRUCTION_TEXT.replaceAll('\n', '\r\n')}`
-                        : `${INSTRUCTION_TEXT}Use the retired policy.\n`,
+                        : `${INSTRUCTION_TEXT}Accept returns within 30 days of delivery.\n`,
                   },
             ]),
       ],
