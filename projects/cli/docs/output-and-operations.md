@@ -10,7 +10,7 @@ order: 30
 
 `--json` writes one deterministic schema 4 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`. No command mixes a partial success result with an operational error.
 
-`validate`, `inspect`, `scope`, and `composition` are recursively content-free. `inspect` projects only allowlisted metadata and splits unbounded child collections into separately keyed records. `content` is the only command allowed to return a `content` property, and it does so only for one explicitly selected canonical asset.
+`validate`, `inspect`, `scope`, and `composition` are recursively content-free. `inspect` projects only allowlisted records and splits unbounded collections into independent keys. Its `agent` record contains exactly one canonical `agentId` and manifest-declared `runtimeId`; it remains distinct from installed composition and runtime evidence. `content` is the only command allowed to return a `content` property, and it does so only for one explicitly selected canonical asset.
 
 Collection and content JSON use a default 65,536-byte page budget and accept explicit budgets from 4,096 through 1,048,576 bytes. Byte accounting measures the final newline-terminated UTF-8 serialization after escaping. Opaque keyset cursors bind their format version, command, filters, source snapshot, last key, and checksum. Pages can traverse a large repository without gaps or duplicate records; a changed snapshot fails instead of mixing states.
 

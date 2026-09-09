@@ -17,7 +17,7 @@ test('keeps normalization, digests, three inspection views, content, and scope r
 });
 
 test.each([
-  ['metadata', 4],
+  ['metadata', 5],
   ['diagnostics', 1],
   ['evidence', 5],
 ])('inspection(%s) -> %d complete records', (view, total) => {

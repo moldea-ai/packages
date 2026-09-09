@@ -10,6 +10,7 @@ import type {
 import { CoreOperationException } from '../exceptions/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import type { ICoreOptionsSnapshot } from '../options/index.js';
+import { collectProjectAgentAssignments } from '../project-agent-assignments/index.js';
 import { collectProjectMetadata } from '../project-metadata/index.js';
 import { validateProjectState } from '../project-validation/index.js';
 
@@ -53,6 +54,10 @@ const createIdentity = (parts: readonly string[]): string =>
   createRepositoryIdentity(parts.map((part) => encoder.encode(part)));
 
 const createItemBaseKey = (item: IProjectInspectionItem): string => {
+  if (item.kind === 'agent') {
+    return ['3', item.agent.agentId, item.agent.runtimeId].join('\0');
+  }
+
   if (item.kind === 'metadata') {
     return [
       '0',
@@ -165,7 +170,9 @@ const selectViewItems = (
           return item.kind === 'diagnostic';
         }
 
-        return item.kind === view;
+        return view === 'metadata'
+          ? item.kind === 'metadata' || item.kind === 'agent'
+          : item.kind === view;
       });
 
 /** Returns one bounded content-free view over a completely validated project snapshot. */
@@ -204,10 +211,13 @@ export const inspectProjectPage = async (
     options,
   );
   const metadata = state.project === null ? [] : collectProjectMetadata(state.project);
+  const agentAssignments =
+    state.project === null ? [] : collectProjectAgentAssignments(state.project);
   const allItems = createKeyedItems([
     ...metadata.map((metadataItem) => ({ kind: 'metadata' as const, metadata: metadataItem })),
     ...state.result.diagnostics.map((diagnostic) => ({ diagnostic, kind: 'diagnostic' as const })),
     ...state.result.evidence.map((evidence) => ({ evidence, kind: 'evidence' as const })),
+    ...agentAssignments.map((agent) => ({ agent, kind: 'agent' as const })),
   ]);
   const counts = {
     agents: state.result.summary?.counts.agents ?? 0,

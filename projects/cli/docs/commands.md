@@ -23,7 +23,7 @@ Validates the complete selected repository through Core and active runtime adapt
 
 ## `inspect`
 
-Runs the same full snapshot and inspection path. Human output reports format and complete counts. JSON output contains a deterministic page of allowlisted metadata records and never includes canonical bodies or arbitrary adapter evidence details.
+Runs the same full snapshot and inspection path. Human output reports format and complete counts. JSON output contains a deterministic page of allowlisted records, including one independent `agentId` and `runtimeId` assignment per canonical agent. It never includes canonical bodies or arbitrary adapter evidence details.
 
 ## `scope`
 

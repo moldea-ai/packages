@@ -51,11 +51,13 @@ export const CliCollectionResult = z.object({
     cursor: z.string().nullable(),
     records: z.array(
       z.object({
+        agentId: z.string().nullable().optional(),
         kind: z.string(),
         path: z.string().optional(),
         code: z.string().optional(),
         pointer: z.string().nullable().optional(),
         metadataKind: z.string().optional(),
+        runtimeId: z.string().optional(),
         match: z
           .object({
             inputPath: z.string(),

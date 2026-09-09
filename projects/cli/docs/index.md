@@ -7,7 +7,7 @@ order: 0
 
 # The local package composition
 
-`@moldea.ai/cli` version 7 provides the `moldea` executable. It emits concise human results or deterministic schema 4 JSON pages. Full validation and metadata inspection use Core with active official adapters; changed-path scope and explicit canonical content use adapter-free, path-selected repository reads.
+`@moldea.ai/cli` version 7.1 provides the `moldea` executable. It emits concise human results or deterministic schema 4 JSON pages. Full validation and metadata inspection use Core with active official adapters; changed-path scope and explicit canonical content use adapter-free, path-selected repository reads.
 
 ```bash
 pnpm add -D @moldea.ai/cli@7
@@ -26,4 +26,4 @@ The Agent Skill consumes this local executable as its deterministic package laye
 
 ## Boundaries
 
-The executable performs no network requests, telemetry, repository writes, configured Git content transforms, runtime SDK calls, or model calls. It uses read-only Git operations and no-follow filesystem observations. `inspect` deliberately projects the richer Core result through a content-free metadata allowlist; complete canonical text is available only through an explicit bounded `content` request.
+The executable performs no network requests, telemetry, repository writes, configured Git content transforms, runtime SDK calls, or model calls. It uses read-only Git operations and no-follow filesystem observations. `inspect` deliberately projects the richer Core result through a content-free allowlist, including one independent agent-to-runtime assignment record per canonical agent. Complete canonical text is available only through an explicit bounded `content` request.

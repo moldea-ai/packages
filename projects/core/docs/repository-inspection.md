@@ -48,12 +48,14 @@ Structural repository errors return diagnostics. Reader access failures, snapsho
 
 `inspectProjectPage` reruns deterministic validation for the supplied snapshot and projects one bounded content-free view:
 
-- `metadata`: canonical paths, kinds, sizes, digests, and agent or decision identity
+- `metadata`: one canonical agent-to-runtime assignment per agent plus canonical asset paths, kinds, sizes, digests, and agent or decision identity
 - `diagnostics`: structural diagnostics
 - `evidence`: validated runtime evidence
-- `all`: all three item kinds in deterministic order
+- `all`: every assignment, metadata, diagnostic, and evidence item in deterministic order
 
-The caller supplies `maxItems` and an optional opaque semantic cursor. Cursors bind progress to the inspection digest and selected view, so a cursor cannot resume another project state or output shape.
+Each `agent` item contains exactly the canonical `agentId` and manifest-declared `runtimeId`. It does not contain a path, body, digest, relationship, adapter result, or runtime-publication claim. The aggregate `agents` count describes the complete canonical agent collection, while `metadata` continues to count asset-metadata items only. Page totals include every record in the selected view.
+
+The caller supplies `maxItems` and an optional opaque semantic cursor. Cursors bind progress to the inspection digest and selected view, so a cursor cannot resume another project state or output shape. Agent assignments participate in that digest, which invalidates continuation when a declared runtime changes.
 
 ## Explicit canonical content
 

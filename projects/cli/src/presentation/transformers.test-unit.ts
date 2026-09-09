@@ -19,7 +19,7 @@ describe('schema 4 presentation projections', () => {
   test('projects a bounded Core page without canonical bodies or arbitrary details', () => {
     const inspection: IProjectInspectionPageResult = {
       counts: {
-        agents: 0,
+        agents: 1,
         context: 0,
         decisions: 0,
         diagnostics: 0,
@@ -37,6 +37,13 @@ describe('schema 4 presentation projections', () => {
         records: [
           {
             item: {
+              agent: { agentId: 'assistant', runtimeId: 'openai' },
+              kind: 'agent',
+            },
+            nextCursor: 'agent-cursor',
+          },
+          {
+            item: {
               evidence: {
                 agentId: null,
                 capabilityId: null,
@@ -52,7 +59,7 @@ describe('schema 4 presentation projections', () => {
             nextCursor: null,
           },
         ],
-        totalItems: 1,
+        totalItems: 2,
       },
       source: SOURCE,
       summary: {
@@ -77,12 +84,19 @@ describe('schema 4 presentation projections', () => {
 
     expect(projection.counts).toStrictEqual(inspection.counts);
     expect(projection.records).toStrictEqual([
+      expect.objectContaining({ agentId: 'assistant', kind: 'agent', runtimeId: 'openai' }),
       expect.objectContaining({
         evidenceKind: 'runtime-package',
         kind: 'evidence',
         references: [{ path: '/package.json', symbol: null }],
       }),
     ]);
+    expect(projection.records[0]).toStrictEqual({
+      agentId: 'assistant',
+      key: '["000000","agent","assistant","openai"]',
+      kind: 'agent',
+      runtimeId: 'openai',
+    });
     expect(serialized).not.toContain('must not escape');
     expect(serialized).not.toContain('"details"');
     expect(projection.snapshotDigest).toBe(inspection.inspectionDigest);

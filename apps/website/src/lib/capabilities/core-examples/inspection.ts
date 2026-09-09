@@ -122,25 +122,31 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
         ...(cursor === undefined ? {} : { cursor }),
       });
       const records = result.page.records.map(({ item }): ICapabilityFact =>
-        item.kind === 'metadata'
+        item.kind === 'agent'
           ? {
               kind: item.kind,
-              path: item.metadata.path,
-              assetKind: item.metadata.kind,
-              digest: item.metadata.digest,
-              byteLength: item.metadata.byteLength,
+              agentId: item.agent.agentId,
+              runtimeId: item.agent.runtimeId,
             }
-          : item.kind === 'diagnostic'
-            ? { kind: item.kind, code: item.diagnostic.code, path: item.diagnostic.path }
-            : {
+          : item.kind === 'metadata'
+            ? {
                 kind: item.kind,
-                evidenceKind: item.evidence.kind,
-                agentId: item.evidence.agentId,
-                references: item.evidence.references.map(({ path, symbol }) => ({
-                  path,
-                  symbol: symbol ?? null,
-                })),
-              },
+                path: item.metadata.path,
+                assetKind: item.metadata.kind,
+                digest: item.metadata.digest,
+                byteLength: item.metadata.byteLength,
+              }
+            : item.kind === 'diagnostic'
+              ? { kind: item.kind, code: item.diagnostic.code, path: item.diagnostic.path }
+              : {
+                  kind: item.kind,
+                  evidenceKind: item.evidence.kind,
+                  agentId: item.evidence.agentId,
+                  references: item.evidence.references.map(({ path, symbol }) => ({
+                    path,
+                    symbol: symbol ?? null,
+                  })),
+                },
       );
       if (digest !== null) assertCapabilityFacts(result.inspectionDigest, digest);
       digest = result.inspectionDigest;
@@ -156,12 +162,12 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
       cursor = result.page.nextCursor ?? undefined;
     } while (cursor !== undefined);
     assertCapabilityFacts(recordCount, totalItems);
-    assertCapabilityFacts(totalItems, view === 'metadata' ? 4 : view === 'diagnostics' ? 1 : 5);
+    assertCapabilityFacts(totalItems, view === 'metadata' ? 5 : view === 'diagnostics' ? 1 : 5);
     examples.push(
       operationCase(
         `inspection-${view}`,
         'inspectProjectPage',
-        `${view === 'metadata' ? 'Asset metadata' : view === 'diagnostics' ? 'Diagnostics' : 'Runtime evidence'} in bounded pages`,
+        `${view === 'metadata' ? 'Assignments and asset metadata' : view === 'diagnostics' ? 'Diagnostics' : 'Runtime evidence'} in bounded pages`,
         'The requested view returns records and a stable inspection digest, without canonical document bodies.',
         { view, totalItems, inspectionDigest: digest, pages },
       ),

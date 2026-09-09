@@ -16,7 +16,7 @@ const PACKAGE_VERSIONS = {
   '@moldea.ai/adapter-openai': '3.0.1',
   '@moldea.ai/adapter-openai-agents-sdk': '2.0.1',
   '@moldea.ai/adapter-vercel-ai-sdk': '2.0.1',
-  '@moldea.ai/core': '3.0.1',
+  '@moldea.ai/core': '3.1.0',
   '@moldea.ai/repository': '2.0.0',
   '@moldea.ai/repository-fs': '2.0.1',
 } as const;
@@ -33,7 +33,7 @@ export const INSTALLED_PACKAGE_METADATA: IMoldeaCliPackageMetadata = Object.free
   ),
   installedPackageVersions: Object.freeze({ ...PACKAGE_VERSIONS }),
   supportedNodeRange: '>=22.11.0',
-  version: '7.0.1',
+  version: '7.1.0',
 });
 
 /** Creates one minimal runtime adapter for composition tests. */
