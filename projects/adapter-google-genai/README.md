@@ -8,10 +8,10 @@ The package implements the official `google-genai` runtime adapter for `@moldea.
 
 ## Supported target
 
-Version `2.0.1` supports:
+Version `3.0.0` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^3.0.0`
+- `@moldea.ai/core ^4.0.0`
 - TypeScript ESM source
 - npm `@google/genai >=2.17.1`
 - a named runtime value import of `GoogleGenAI` and a module-local `const` client

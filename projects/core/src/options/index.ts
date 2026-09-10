@@ -41,6 +41,7 @@ const RESOURCE_LIMIT_KEYS = [
   'maxTotalBytesRead',
   'maxFileBytes',
   'maxManifestBytes',
+  'maxRetainedBytes',
   'maxDiagnostics',
   'maxEvidence',
 ] as const satisfies readonly (keyof ICoreResourceLimits)[];

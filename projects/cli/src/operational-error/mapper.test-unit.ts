@@ -106,8 +106,11 @@ describe('mapMoldeaCliOperationalError', () => {
     const operationError = new CoreOperationException({
       adapterId: 'openai',
       agentId: 'reviewer',
-      code: 'ABORTED',
+      code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxEvidence',
+      limitMaximum: 8,
+      nextAction: 'reduce-input-or-increase-limit',
+      observedUsage: 9,
       operation: 'validate-adapter',
     });
 
@@ -115,16 +118,19 @@ describe('mapMoldeaCliOperationalError', () => {
     const mapped = mapMoldeaCliOperationalError(operationError);
 
     expect(mapped).toStrictEqual({
-      code: 'ABORTED',
+      code: 'RESOURCE_LIMIT_EXCEEDED',
       details: {
         adapterId: 'openai',
         agentId: 'reviewer',
         limit: 'maxEvidence',
+        limitMaximum: 8,
+        nextAction: 'reduce-input-or-increase-limit',
+        observedUsage: 9,
         operation: 'validate-adapter',
       },
-      message: 'The Core operation was aborted.',
+      message: 'A Core resource limit was exceeded.',
       path: null,
-      retryable: true,
+      retryable: false,
       source: 'core',
     });
   });

@@ -111,11 +111,8 @@ describe('public Core project validation', () => {
       const repository = createMemoryRepositoryReader(createEntries(case_));
       const firstResult = await core.validateProject({ repository });
       const secondResult = await core.validateProject({ repository });
-      const inspection = await core.inspectProjectPage({
-        maxItems: 256,
-        repository,
-        view: 'metadata',
-      });
+      const inspection = await core.createProjectInspection({ repository });
+      const metadataPage = inspection.readPage({ maxItems: 256, view: 'metadata' });
       expect(toJsonValue(secondResult)).toStrictEqual(toJsonValue(firstResult));
       expect(firstResult.valid).toBe(true);
       expect(firstResult.diagnostics).toStrictEqual([]);
@@ -123,7 +120,7 @@ describe('public Core project validation', () => {
       expect(firstResult.formatVersion).toBe(1);
       expect(firstResult.summary?.counts.agents).toBe(1);
       expect(
-        inspection.page.records
+        metadataPage.page.records
           .map(({ item }) => item)
           .filter((item) => item.kind === 'metadata')
           .map(({ metadata }) => metadata)

@@ -132,7 +132,7 @@ const createCommandInput = (
     dependencies: Object.freeze({}),
     installedPackageVersions: Object.freeze({}),
     supportedNodeRange: '>=22.11.0',
-    version: '7.1.0',
+    version: '8.0.0',
   },
 });
 
@@ -197,7 +197,7 @@ describe('createMoldeaCliCommandExecutor', () => {
 
   test('continues inspect from the Core cursor carried by the CLI cursor', async () => {
     const snapshot = createCompletedSnapshotExecutor();
-    const coreCursor = 'core3:all:1:memory%3Acommand';
+    const coreCursor = 'core4:all:1:memory%3Acommand';
     const coreInspection = vi
       .fn<IMoldeaCliCoreInspectionExecutor>()
       .mockResolvedValueOnce(createInspectionResult(coreCursor))

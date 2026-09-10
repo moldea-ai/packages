@@ -27,5 +27,6 @@ export const DEFAULT_CORE_RESOURCE_LIMITS: ICoreResourceLimits = Object.freeze({
   maxEvidence: 10_000,
   maxFileBytes: 8_388_608,
   maxManifestBytes: 2_097_152,
+  maxRetainedBytes: 536_870_912,
   maxTotalBytesRead: 134_217_728,
 });

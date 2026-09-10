@@ -352,7 +352,7 @@ describe('repository inspection session', () => {
     expect(readCount).toBe(3);
   });
 
-  test('applies the manifest and ordinary file limits before caching source bytes', async () => {
+  test('applies the manifest and ordinary file limits before retaining source bytes', async () => {
     const sourceBytes = new Uint8Array(3);
     Object.defineProperty(sourceBytes, 'slice', {
       value: () => {
@@ -423,6 +423,43 @@ describe('repository inspection session', () => {
         [CONTEXT_PATH, 1],
       ]),
     );
+  });
+
+  test('accounts for retained canonical content and rejects the next allocation at the limit', async () => {
+    const repository = createReader({
+      readCompleteFile: () => Promise.resolve(new Uint8Array(2)),
+    });
+    const baseline = createRepositoryInspectionSession(repository, DEFAULT_CORE_RESOURCE_LIMITS);
+
+    await baseline.reader.readCompleteFile(PROJECT_PATH);
+    const usage = baseline.getResourceUsage();
+    const pathBytes = usage.retainedBytes - 8;
+
+    expect(usage).toStrictEqual({
+      canonicalBytes: 2,
+      peakRetainedBytes: 65_636,
+      retainedBytes: usage.retainedBytes,
+      totalBytesRead: 2,
+    });
+
+    const exact = createRepositoryInspectionSession(repository, {
+      ...DEFAULT_CORE_RESOURCE_LIMITS,
+      maxRetainedBytes: usage.peakRetainedBytes,
+    });
+    await expect(exact.reader.readCompleteFile(PROJECT_PATH)).resolves.toHaveLength(2);
+    expect(exact.getResourceUsage().retainedBytes).toBe(usage.retainedBytes);
+
+    const below = createRepositoryInspectionSession(repository, {
+      ...DEFAULT_CORE_RESOURCE_LIMITS,
+      maxRetainedBytes: pathBytes + 7,
+    });
+    await expect(below.reader.readCompleteFile(PROJECT_PATH)).rejects.toMatchObject({
+      code: 'RESOURCE_LIMIT_EXCEEDED',
+      limit: 'maxRetainedBytes',
+      limitMaximum: pathBytes + 7,
+      nextAction: 'reduce-input-or-increase-limit',
+      observedUsage: pathBytes + 10,
+    });
   });
 
   test('preserves repository source exceptions across independent reads', async () => {

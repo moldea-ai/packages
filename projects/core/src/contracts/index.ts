@@ -22,6 +22,7 @@ export interface ICoreResourceLimits {
   readonly maxTotalBytesRead: number;
   readonly maxFileBytes: number;
   readonly maxManifestBytes: number;
+  readonly maxRetainedBytes: number;
   readonly maxDiagnostics: number;
   readonly maxEvidence: number;
 }
@@ -113,10 +114,12 @@ export interface IProjectAgentAssignmentItem {
   readonly runtimeId: string;
 }
 
-// closed content-free views supported by paged project inspection
+// closed content-free views supported by prepared project inspection
 export type IProjectInspectionView = 'all' | 'diagnostics' | 'evidence' | 'metadata';
 
-export interface IProjectInspectionPageInput extends IProjectValidationInput {
+export type IProjectInspectionInput = IProjectValidationInput;
+
+export interface IProjectInspectionPageInput {
   readonly cursor?: string;
   readonly maxItems: number;
   readonly view: IProjectInspectionView;
@@ -170,6 +173,34 @@ export interface IProjectInspectionCounts extends IProjectSummaryCounts {
   readonly diagnostics: number;
   readonly evidence: number;
   readonly metadata: number;
+}
+
+// deterministic logical byte accounting for one prepared inspection
+export interface IProjectInspectionResourceUsage {
+  readonly canonicalBytes: number;
+  readonly peakRetainedBytes: number;
+  readonly preparedBytes: number;
+  readonly retainedBytes: number;
+  readonly totalBytesRead: number;
+}
+
+export interface IProjectInspection {
+  readonly counts: IProjectInspectionCounts;
+  readonly formatVersion: IRepositoryFormatVersion | null;
+  readonly inspectionDigest: string;
+  readonly resourceUsage: IProjectInspectionResourceUsage;
+  readonly source: IRepositorySnapshot;
+  readonly summary: IProjectValidationSummary | null;
+  readonly valid: boolean;
+
+  /**
+   * Reads one bounded page from the already prepared content-free record set.
+   * @param input The view, page size, and optional cursor.
+   * @returns One immutable page without repository reads or project revalidation.
+   * @throws
+   * - INVALID_ARGUMENT: The Core operation received an invalid argument.
+   */
+  readPage(input: IProjectInspectionPageInput): IProjectInspectionPageResult;
 }
 
 export interface IProjectInspectionPageResult {
@@ -324,9 +355,9 @@ export interface ICore {
   parseDecision(input: ITextDocumentInput): Promise<IDecisionParseResult>;
 
   /**
-   * Returns one bounded content-free view over a validated project snapshot.
-   * @param input The reader, view, page size, optional cursor, and cancellation signal.
-   * @returns A promise resolving to one immutable metadata, diagnostic, or evidence page.
+   * Prepares one bounded content-free inspection over a validated project snapshot.
+   * @param input The reader and optional shared cancellation signal.
+   * @returns A promise resolving to an immutable inspection with synchronous page reads.
    * @throws
    * - INVALID_ARGUMENT: The Core operation received an invalid argument.
    * - INVALID_REPOSITORY_PATH: A repository path is invalid.
@@ -341,7 +372,7 @@ export interface ICore {
    * - ABORTED: Project inspection or a repository operation was aborted.
    * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed or returned an invalid result.
    */
-  inspectProjectPage(input: IProjectInspectionPageInput): Promise<IProjectInspectionPageResult>;
+  createProjectInspection(input: IProjectInspectionInput): Promise<IProjectInspection>;
 
   /**
    * Reads one explicit canonical file range without materializing the complete file.

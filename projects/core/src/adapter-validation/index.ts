@@ -153,6 +153,9 @@ const registerRawOutput = (
       adapterId: context.adapterId,
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit,
+      limitMaximum: context.limits[limit],
+      nextAction: 'reduce-input-or-increase-limit',
+      observedUsage: outputCounts[key] + amount,
       operation: 'validate-adapter',
     });
   }

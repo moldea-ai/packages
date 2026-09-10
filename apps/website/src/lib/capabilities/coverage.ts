@@ -146,7 +146,7 @@ export const CORE_OPERATION_COVERAGE: Record<ICoreOperation, string[]> = {
   parseManifest: ['manifest-valid', 'manifest-malformed', 'manifest-duplicate-key'],
   parseDecision: ['decision-valid', 'decision-filename', 'decision-frontmatter-invalid'],
   validateProject: ['agent-valid', 'policy-reference-missing', 'decision-replacement-chain'],
-  inspectProjectPage: ['inspection-metadata', 'inspection-diagnostics', 'inspection-evidence'],
+  createProjectInspection: ['inspection-metadata', 'inspection-diagnostics', 'inspection-evidence'],
   readCanonicalContentPage: [
     'canonical-content-pages',
     'canonical-content-refusal',

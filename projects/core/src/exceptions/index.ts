@@ -21,7 +21,7 @@ export type ICoreOperation =
   | 'parse-manifest'
   | 'match-manifest-scope'
   | 'parse-decision'
-  | 'inspect-project-page'
+  | 'create-project-inspection'
   | 'read-canonical-content-page'
   | 'validate-project'
   | 'validate-adapter';
@@ -34,14 +34,33 @@ export interface ICoreConfigurationExceptionOptions {
   readonly cause?: unknown;
 }
 
-export interface ICoreOperationExceptionOptions {
-  readonly code: ICoreOperationErrorCode;
+interface ICoreOperationExceptionOptionsBase {
   readonly operation: ICoreOperation;
   readonly adapterId?: string;
   readonly agentId?: string;
-  readonly limit?: string;
   readonly cause?: unknown;
 }
+
+// complete resource-refusal metadata required by Core 4
+export type ICoreResourceLimitNextAction = 'reduce-input-or-increase-limit';
+
+export type ICoreOperationExceptionOptions = ICoreOperationExceptionOptionsBase &
+  (
+    | {
+        readonly code: 'RESOURCE_LIMIT_EXCEEDED';
+        readonly limit: string;
+        readonly limitMaximum: number;
+        readonly nextAction: ICoreResourceLimitNextAction;
+        readonly observedUsage: number;
+      }
+    | {
+        readonly code: Exclude<ICoreOperationErrorCode, 'RESOURCE_LIMIT_EXCEEDED'>;
+        readonly limit?: never;
+        readonly limitMaximum?: never;
+        readonly nextAction?: never;
+        readonly observedUsage?: never;
+      }
+  );
 
 const CONFIGURATION_ERROR_MESSAGES = {
   DUPLICATE_ADAPTER_ID: 'A runtime adapter ID is registered more than once.',
@@ -112,6 +131,12 @@ export class CoreOperationException extends Exception {
 
   public readonly limit: string | null;
 
+  public readonly limitMaximum: number | null;
+
+  public readonly nextAction: ICoreResourceLimitNextAction | null;
+
+  public readonly observedUsage: number | null;
+
   /** Creates an operation exception with derived retry and safe scope metadata. */
   public constructor(options: ICoreOperationExceptionOptions) {
     super(OPERATION_ERROR_MESSAGES[options.code], options.code);
@@ -122,6 +147,9 @@ export class CoreOperationException extends Exception {
     this.adapterId = options.adapterId ?? null;
     this.agentId = options.agentId ?? null;
     this.limit = options.limit ?? null;
+    this.limitMaximum = options.limitMaximum ?? null;
+    this.nextAction = options.nextAction ?? null;
+    this.observedUsage = options.observedUsage ?? null;
     attachCause(this, options.cause);
   }
 }

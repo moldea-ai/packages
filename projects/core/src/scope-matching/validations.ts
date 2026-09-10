@@ -20,10 +20,17 @@ const invalidArgument = (): never => {
 };
 
 /** Throws the stable resource failure for an exhausted scope-input budget. */
-const resourceLimitExceeded = (limit: 'maxEntries' | 'maxTotalBytesRead'): never => {
+const resourceLimitExceeded = (
+  limit: 'maxEntries' | 'maxTotalBytesRead',
+  limitMaximum: number,
+  observedUsage: number,
+): never => {
   throw new CoreOperationException({
     code: 'RESOURCE_LIMIT_EXCEEDED',
     limit,
+    limitMaximum,
+    nextAction: 'reduce-input-or-increase-limit',
+    observedUsage,
     operation: 'match-manifest-scope',
   });
 };
@@ -71,7 +78,7 @@ export const normalizeManifestScopeInput = (
   }
 
   if (pathCandidates.length > limits.maxEntries) {
-    return resourceLimitExceeded('maxEntries');
+    return resourceLimitExceeded('maxEntries', limits.maxEntries, pathCandidates.length);
   }
 
   const uniquePaths = new Set<IRepositoryPath>();
@@ -86,7 +93,7 @@ export const normalizeManifestScopeInput = (
     totalBytes += measureUtf8ByteLength(path) + (index === 0 ? 0 : 1);
 
     if (totalBytes > limits.maxTotalBytesRead) {
-      return resourceLimitExceeded('maxTotalBytesRead');
+      return resourceLimitExceeded('maxTotalBytesRead', limits.maxTotalBytesRead, totalBytes);
     }
 
     uniquePaths.add(path);

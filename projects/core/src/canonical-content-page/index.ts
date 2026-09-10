@@ -185,6 +185,9 @@ export const readCanonicalContentPage = async (
     throw new CoreOperationException({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxFileBytes',
+      limitMaximum: options.limits.maxFileBytes,
+      nextAction: 'reduce-input-or-increase-limit',
+      observedUsage: entry.byteLength,
       operation: 'read-canonical-content-page',
     });
   }

@@ -18,6 +18,10 @@ import { CoreOperationException } from '../exceptions/index.js';
 const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
 const SOURCE_PAGE_ENTRIES = 256;
 const SOURCE_PAGE_BYTES = 65_536;
+const CANONICAL_BYTE_RETENTION_MULTIPLIER = 4;
+const RETAINED_PATH_FIXED_BYTES = 64;
+const RETAINED_PATH_BYTE_MULTIPLIER = 2;
+const encoder = new TextEncoder();
 
 type IInspectionFileByteLimit = 'maxFileBytes' | 'maxManifestBytes';
 
@@ -43,12 +47,23 @@ export interface IRepositoryInspectionSession {
   readonly adapterRepository: IRuntimeAdapterRepository;
   readonly reader: IRepositoryInspectionReader;
 
+  /** Returns deterministic logical resource usage for the current validation state. */
+  getResourceUsage(): IRepositoryInspectionResourceUsage;
+
   /**
    * Stops work at an inspection boundary when cancellation was requested.
    * @throws
    * - ABORTED: Repository inspection was aborted.
    */
   throwIfAborted(): void;
+}
+
+// private logical usage carried into prepared project inspection
+export interface IRepositoryInspectionResourceUsage {
+  readonly canonicalBytes: number;
+  readonly peakRetainedBytes: number;
+  readonly retainedBytes: number;
+  readonly totalBytesRead: number;
 }
 
 const invalidSourceData = (
@@ -120,10 +135,17 @@ const isStrictDescendant = (path: IRepositoryPath, prefix: IRepositoryPath): boo
   return path.startsWith(descendantPrefix);
 };
 
-const throwResourceLimitExceeded = (limit: keyof ICoreResourceLimits): never => {
+const throwResourceLimitExceeded = (
+  limit: keyof ICoreResourceLimits,
+  limitMaximum: number,
+  observedUsage: number,
+): never => {
   throw new CoreOperationException({
     code: 'RESOURCE_LIMIT_EXCEEDED',
     limit,
+    limitMaximum,
+    nextAction: 'reduce-input-or-increase-limit',
+    observedUsage,
     operation: 'validate-project',
   });
 };
@@ -156,6 +178,9 @@ export const createRepositoryInspectionSession = (
   signal?: AbortSignal,
 ): IRepositoryInspectionSession => {
   const seenPaths = new Set<IRepositoryPath>();
+  let canonicalBytes = 0;
+  let peakRetainedBytes = 0;
+  let retainedBytes = 0;
   let totalBytesRead = 0;
   const adapterLimits = Object.freeze({
     maxEntries: limits.maxEntries,
@@ -173,15 +198,51 @@ export const createRepositoryInspectionSession = (
     });
   };
 
+  const reserveRetainedBytes = (byteLength: number): void => {
+    if (
+      !Number.isSafeInteger(byteLength) ||
+      byteLength < 0 ||
+      byteLength > limits.maxRetainedBytes - retainedBytes
+    ) {
+      return throwResourceLimitExceeded(
+        'maxRetainedBytes',
+        limits.maxRetainedBytes,
+        retainedBytes + byteLength,
+      );
+    }
+
+    retainedBytes += byteLength;
+    peakRetainedBytes = Math.max(peakRetainedBytes, retainedBytes);
+  };
+
+  const observeTransientBytes = (byteLength: number): void => {
+    if (
+      !Number.isSafeInteger(byteLength) ||
+      byteLength < 0 ||
+      byteLength > limits.maxRetainedBytes - retainedBytes
+    ) {
+      return throwResourceLimitExceeded(
+        'maxRetainedBytes',
+        limits.maxRetainedBytes,
+        retainedBytes + byteLength,
+      );
+    }
+
+    peakRetainedBytes = Math.max(peakRetainedBytes, retainedBytes + byteLength);
+  };
+
   const registerPath = (path: IRepositoryPath): void => {
     if (path === REPOSITORY_ROOT || seenPaths.has(path)) {
       return;
     }
 
     if (seenPaths.size >= limits.maxEntries) {
-      return throwResourceLimitExceeded('maxEntries');
+      return throwResourceLimitExceeded('maxEntries', limits.maxEntries, seenPaths.size + 1);
     }
 
+    reserveRetainedBytes(
+      RETAINED_PATH_FIXED_BYTES + encoder.encode(path).byteLength * RETAINED_PATH_BYTE_MULTIPLIER,
+    );
     seenPaths.add(path);
   };
 
@@ -201,7 +262,11 @@ export const createRepositoryInspectionSession = (
 
   const reserveReadBytes = (byteLength: number): void => {
     if (byteLength > limits.maxTotalBytesRead - totalBytesRead) {
-      return throwResourceLimitExceeded('maxTotalBytesRead');
+      return throwResourceLimitExceeded(
+        'maxTotalBytesRead',
+        limits.maxTotalBytesRead,
+        totalBytesRead + byteLength,
+      );
     }
 
     totalBytesRead += byteLength;
@@ -296,8 +361,24 @@ export const createRepositoryInspectionSession = (
   ): Promise<Uint8Array> => {
     const fileLimit: IInspectionFileByteLimit =
       path === MANIFEST_PATH ? 'maxManifestBytes' : 'maxFileBytes';
+    const availableRetainedBytes = limits.maxRetainedBytes - retainedBytes;
+
+    if (availableRetainedBytes < 1) {
+      return throwResourceLimitExceeded(
+        'maxRetainedBytes',
+        limits.maxRetainedBytes,
+        retainedBytes + 1,
+      );
+    }
+
+    const firstPageMaximumBytes = Math.min(
+      SOURCE_PAGE_BYTES,
+      Math.max(1, limits[fileLimit]),
+      availableRetainedBytes,
+    );
+    observeTransientBytes(firstPageMaximumBytes);
     const firstPage = await repository.readFilePage(path, {
-      maxBytes: Math.min(SOURCE_PAGE_BYTES, Math.max(1, limits[fileLimit])),
+      maxBytes: firstPageMaximumBytes,
       offset: 0,
       ...(createSourceOptions(signal, operationSignal) ?? {}),
     });
@@ -317,10 +398,33 @@ export const createRepositoryInspectionSession = (
     }
 
     if (firstPage.totalBytes > limits[fileLimit]) {
-      return throwResourceLimitExceeded(fileLimit);
+      return throwResourceLimitExceeded(fileLimit, limits[fileLimit], firstPage.totalBytes);
+    }
+
+    const firstPageBytes = firstPage.bytes.byteLength;
+    const retainedBytesAvailableForCanonicalContent =
+      limits.maxRetainedBytes - retainedBytes - firstPageBytes;
+
+    if (
+      retainedBytesAvailableForCanonicalContent < 0 ||
+      firstPage.totalBytes >
+        Math.floor(retainedBytesAvailableForCanonicalContent / CANONICAL_BYTE_RETENTION_MULTIPLIER)
+    ) {
+      const projectedUsage =
+        retainedBytes + firstPageBytes + firstPage.totalBytes * CANONICAL_BYTE_RETENTION_MULTIPLIER;
+
+      return throwResourceLimitExceeded(
+        'maxRetainedBytes',
+        limits.maxRetainedBytes,
+        Number.isSafeInteger(projectedUsage) ? projectedUsage : Number.MAX_SAFE_INTEGER,
+      );
     }
 
     reserveReadBytes(firstPage.totalBytes);
+    const canonicalRetainedBytes = firstPage.totalBytes * CANONICAL_BYTE_RETENTION_MULTIPLIER;
+    observeTransientBytes(canonicalRetainedBytes + firstPageBytes);
+    reserveRetainedBytes(canonicalRetainedBytes);
+    canonicalBytes += firstPage.totalBytes;
 
     const content = new Uint8Array(firstPage.totalBytes);
     let offset = 0;
@@ -438,7 +542,11 @@ export const createRepositoryInspectionSession = (
       options.maxEntries < 1 ||
       options.maxEntries > adapterLimits.maxPageEntries
     ) {
-      return throwResourceLimitExceeded('maxEntries');
+      return throwResourceLimitExceeded(
+        'maxEntries',
+        adapterLimits.maxPageEntries,
+        options.maxEntries,
+      );
     }
 
     throwIfSignalAborted(options.signal);
@@ -501,9 +609,14 @@ export const createRepositoryInspectionSession = (
     const reservedBytes = Math.min(options.maxBytes, limits.maxTotalBytesRead - totalBytesRead);
 
     if (reservedBytes < 1) {
-      return throwResourceLimitExceeded('maxTotalBytesRead');
+      return throwResourceLimitExceeded(
+        'maxTotalBytesRead',
+        limits.maxTotalBytesRead,
+        totalBytesRead + 1,
+      );
     }
 
+    observeTransientBytes(reservedBytes);
     reserveReadBytes(reservedBytes);
     let page;
 
@@ -560,6 +673,8 @@ export const createRepositoryInspectionSession = (
 
   return Object.freeze({
     adapterRepository,
+    getResourceUsage: () =>
+      Object.freeze({ canonicalBytes, peakRetainedBytes, retainedBytes, totalBytesRead }),
     reader: Object.freeze({ getEntry, iterateEntries, readCompleteFile }),
     throwIfAborted: throwIfSignalAborted,
   });

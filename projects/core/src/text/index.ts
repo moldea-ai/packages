@@ -146,6 +146,9 @@ const enforceFileLimit = (
   throw new CoreOperationException({
     code: 'RESOURCE_LIMIT_EXCEEDED',
     limit,
+    limitMaximum: limits[limit],
+    nextAction: 'reduce-input-or-increase-limit',
+    observedUsage: byteLength,
     operation,
   });
 };

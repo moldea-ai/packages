@@ -22,12 +22,15 @@ export type {
   IProjectMetadataItem,
   IProjectMetadataKind,
   IProjectAgentAssignmentItem,
+  IProjectInspection,
   IProjectInspectionItem,
   IProjectInspectionCounts,
+  IProjectInspectionInput,
   IProjectInspectionPage,
   IProjectInspectionPageInput,
   IProjectInspectionPageRecord,
   IProjectInspectionPageResult,
+  IProjectInspectionResourceUsage,
   IProjectInspectionView,
   IProjectSummaryCounts,
   IProjectValidationInput,
@@ -74,6 +77,7 @@ export type {
   ICoreOperation,
   ICoreOperationErrorCode,
   ICoreOperationExceptionOptions,
+  ICoreResourceLimitNextAction,
 } from './exceptions/index.js';
 
 // exceptions

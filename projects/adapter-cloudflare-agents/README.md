@@ -8,10 +8,10 @@ The package implements the official `cloudflare-agents` runtime adapter for `@mo
 
 ## Supported targets
 
-Version `2.0.1` supports:
+Version `3.0.0` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^3.0.0`
+- `@moldea.ai/core ^4.0.0`
 - TypeScript ESM `.ts`, `.tsx`, and `.mts` source
 - `@cloudflare/think >=0.16.0`, `agents >=0.21.0`, and `ai >=7.0.0`
 - `@cloudflare/ai-chat >=0.10.2`, `agents >=0.21.0`, and `ai >=7.0.0`

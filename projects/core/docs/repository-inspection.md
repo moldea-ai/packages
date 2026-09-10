@@ -46,7 +46,7 @@ Structural repository errors return diagnostics. Reader access failures, snapsho
 
 ## Bounded inspection views
 
-`inspectProjectPage` reruns deterministic validation for the supplied snapshot and projects one bounded content-free view:
+`createProjectInspection` validates the supplied snapshot once and prepares one immutable content-free record set with these views:
 
 - `metadata`: one canonical agent-to-runtime assignment per agent plus canonical asset paths, kinds, sizes, digests, and agent or decision identity
 - `diagnostics`: structural diagnostics
@@ -55,7 +55,11 @@ Structural repository errors return diagnostics. Reader access failures, snapsho
 
 Each `agent` item contains exactly the canonical `agentId` and manifest-declared `runtimeId`. It does not contain a path, body, digest, relationship, adapter result, or runtime-publication claim. The aggregate `agents` count describes the complete canonical agent collection, while `metadata` continues to count asset-metadata items only. Page totals include every record in the selected view.
 
-The caller supplies `maxItems` and an optional opaque semantic cursor. Cursors bind progress to the inspection digest and selected view, so a cursor cannot resume another project state or output shape. Agent assignments participate in that digest, which invalidates continuation when a declared runtime changes.
+The returned inspection exposes synchronous `readPage({ view, maxItems, cursor? })` calls. Those page reads perform no repository access, validation, adapter execution, sorting, or digesting. Cursors bind progress to the inspection digest and selected view, so a cursor cannot resume another project state or output shape. Agent assignments participate in that digest, which invalidates continuation when a declared runtime changes.
+
+Canonical bodies exist only while the initial validation is being prepared. The returned inspection retains content-free records and indexes only. Its deterministic resource report distinguishes source bytes read, canonical bytes processed, prepared bytes retained after validation, and peak logical retained bytes. Construction fails before exceeding `maxRetainedBytes`; paging remains bounded by `maxItems` and the Core entry limit.
+
+Resource refusals expose the exceeded limit name, configured maximum, observed or projected usage, and the stable `reduce-input-or-increase-limit` next action. Callers can therefore explain a refusal without receiving canonical content or implementation diagnostics.
 
 ## Explicit canonical content
 

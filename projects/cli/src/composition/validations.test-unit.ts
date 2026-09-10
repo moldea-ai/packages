@@ -60,8 +60,8 @@ describe('isMoldeaCliCompositionStateValid', () => {
   });
 
   test.each([
-    ['a future breaking major', '4.0.0'],
-    ['a prerelease', '3.1.0-rc.1'],
+    ['a future breaking major', '5.0.0'],
+    ['a prerelease', '4.0.0-rc.1'],
   ])('rejects %s for a first-party package', (_description, version) => {
     const state = createTestCompositionState();
 
@@ -89,14 +89,14 @@ describe('isMoldeaCliCompositionStateValid', () => {
           ...state.packageMetadata,
           installedPackageVersions: {
             ...(state.packageMetadata.installedPackageVersions ?? {}),
-            '@moldea.ai/core': '3.9.9',
+            '@moldea.ai/core': '4.9.9',
           },
         },
       }),
     ).toBe(true);
   });
 
-  test.each(['3.0.1', '>=3.0.0'])('rejects an unsupported Core declaration %s', (range) => {
+  test.each(['4.0.1', '>=4.0.0'])('rejects an unsupported Core declaration %s', (range) => {
     const state = createTestCompositionState();
 
     expect(

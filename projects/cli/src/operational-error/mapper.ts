@@ -18,8 +18,8 @@ const EMPTY_ERROR_DETAILS = Object.freeze({});
 /** Creates frozen safe Core metadata without retaining null fields. */
 const createCoreErrorDetails = (
   error: CoreConfigurationException | CoreOperationException,
-): Readonly<Record<string, string>> => {
-  const details: Record<string, string> = { operation: error.operation };
+): Readonly<Record<string, string | number>> => {
+  const details: Record<string, string | number> = { operation: error.operation };
 
   if (error.adapterId !== null) {
     details['adapterId'] = error.adapterId;
@@ -32,6 +32,18 @@ const createCoreErrorDetails = (
 
     if (error.limit !== null) {
       details['limit'] = error.limit;
+    }
+
+    if (error.limitMaximum !== null) {
+      details['limitMaximum'] = error.limitMaximum;
+    }
+
+    if (error.nextAction !== null) {
+      details['nextAction'] = error.nextAction;
+    }
+
+    if (error.observedUsage !== null) {
+      details['observedUsage'] = error.observedUsage;
     }
   }
 

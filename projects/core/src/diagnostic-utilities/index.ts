@@ -173,6 +173,9 @@ export const registerCoreDiagnosticCandidates = (
       ...(adapterId === undefined ? {} : { adapterId }),
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxDiagnostics',
+      limitMaximum: limits.maxDiagnostics,
+      nextAction: 'reduce-input-or-increase-limit',
+      observedUsage: currentCount + amount,
       operation,
     });
   }

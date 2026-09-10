@@ -25,10 +25,15 @@ const invalidSourceData = (
 
 const throwResourceLimitExceeded = (
   limit: 'maxEntries' | 'maxFileBytes' | 'maxTotalBytesRead',
+  limitMaximum: number,
+  observedUsage: number,
 ): never => {
   throw new CoreOperationException({
     code: 'RESOURCE_LIMIT_EXCEEDED',
     limit,
+    limitMaximum,
+    nextAction: 'reduce-input-or-increase-limit',
+    observedUsage,
     operation: 'validate-project',
   });
 };
@@ -61,7 +66,11 @@ export const readRuntimeAdapterFile = async (
   }
 
   if (entry.byteLength > repository.limits.maxFileBytes) {
-    return throwResourceLimitExceeded('maxFileBytes');
+    return throwResourceLimitExceeded(
+      'maxFileBytes',
+      repository.limits.maxFileBytes,
+      entry.byteLength,
+    );
   }
 
   const content = new Uint8Array(entry.byteLength);
@@ -146,7 +155,11 @@ export const iterateRuntimeAdapterEntries = (
 
           entryCount += 1;
           if (entryCount > repository.limits.maxEntries) {
-            return throwResourceLimitExceeded('maxEntries');
+            return throwResourceLimitExceeded(
+              'maxEntries',
+              repository.limits.maxEntries,
+              entryCount,
+            );
           }
 
           previousPath = entry.path;

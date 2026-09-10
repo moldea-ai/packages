@@ -434,6 +434,9 @@ const compileManifestScope = (
     throw new CoreOperationException({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxEntries',
+      limitMaximum: limits.maxEntries,
+      nextAction: 'reduce-input-or-increase-limit',
+      observedUsage: declarations.length,
       operation: 'match-manifest-scope',
     });
   }
@@ -501,6 +504,9 @@ const addMatch = (
     throw new CoreOperationException({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxEntries',
+      limitMaximum: limits.maxEntries,
+      nextAction: 'reduce-input-or-increase-limit',
+      observedUsage: matches.length + 1,
       operation: 'match-manifest-scope',
     });
   }

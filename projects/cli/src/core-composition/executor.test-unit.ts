@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from 'vitest';
 
 import type {
   ICore,
+  IProjectInspection,
   IProjectInspectionPageResult,
   IProjectValidationResult,
 } from '@moldea.ai/core';
@@ -56,16 +57,32 @@ const INSPECTION_RESULT = Object.freeze({
   valid: false,
   view: 'all',
 }) satisfies IProjectInspectionPageResult;
+const PROJECT_INSPECTION = Object.freeze({
+  counts: INSPECTION_RESULT.counts,
+  formatVersion: INSPECTION_RESULT.formatVersion,
+  inspectionDigest: INSPECTION_RESULT.inspectionDigest,
+  readPage: vi.fn<IProjectInspection['readPage']>().mockReturnValue(INSPECTION_RESULT),
+  resourceUsage: Object.freeze({
+    canonicalBytes: 0,
+    peakRetainedBytes: 512,
+    preparedBytes: 512,
+    retainedBytes: 512,
+    totalBytesRead: 0,
+  }),
+  source: SOURCE,
+  summary: null,
+  valid: false,
+}) satisfies IProjectInspection;
 
 /** Creates a complete Core double around the two CLI project operations. */
 const createCoreDouble = () => {
-  const inspectProjectPage = vi
-    .fn<ICore['inspectProjectPage']>()
-    .mockResolvedValue(INSPECTION_RESULT);
+  const createProjectInspection = vi
+    .fn<ICore['createProjectInspection']>()
+    .mockResolvedValue(PROJECT_INSPECTION);
   const validateProject = vi.fn<ICore['validateProject']>().mockResolvedValue(VALIDATION_RESULT);
   const core: ICore = {
     calculateContentDigest: vi.fn<ICore['calculateContentDigest']>(),
-    inspectProjectPage,
+    createProjectInspection,
     matchManifestScope: vi.fn<ICore['matchManifestScope']>(),
     normalizeText: vi.fn<ICore['normalizeText']>(),
     parseDecision: vi.fn<ICore['parseDecision']>(),
@@ -74,7 +91,7 @@ const createCoreDouble = () => {
     validateProject,
   };
 
-  return { core, inspectProjectPage, validateProject };
+  return { core, createProjectInspection, validateProject };
 };
 
 /** Creates a minimal adapter definition for deterministic registry-order tests. */
@@ -106,6 +123,7 @@ describe('createMoldeaCliCoreInspectionExecutor', () => {
       maxEvidence: 16,
       maxFileBytes: 4096,
       maxManifestBytes: 2048,
+      maxRetainedBytes: 32_768,
       maxTotalBytesRead: 8192,
     });
     expect(coreDouble.validateProject).toHaveBeenCalledWith({
@@ -142,15 +160,17 @@ describe('createMoldeaCliCoreInspectionExecutor', () => {
     await expect(
       executeInspection({
         command: 'inspect',
-        cursor: 'core3:all:1:memory%3Atest',
+        cursor: 'core4:all:1:memory%3Atest',
         repository: reader,
         resourceLimits: RESOURCE_LIMITS,
       }),
     ).resolves.toBe(INSPECTION_RESULT);
-    expect(coreDouble.inspectProjectPage).toHaveBeenCalledWith({
-      cursor: 'core3:all:1:memory%3Atest',
-      maxItems: 128,
+    expect(coreDouble.createProjectInspection).toHaveBeenCalledWith({
       repository: reader,
+    });
+    expect(PROJECT_INSPECTION.readPage).toHaveBeenCalledWith({
+      cursor: 'core4:all:1:memory%3Atest',
+      maxItems: 128,
       view: 'all',
     });
     expect(coreDouble.validateProject).not.toHaveBeenCalled();

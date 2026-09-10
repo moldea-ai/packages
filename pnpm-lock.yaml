@@ -76,40 +76,40 @@ importers:
         specifier: 1.31.0
         version: 1.31.0(astro@7.2.2(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
       '@moldea.ai/adapter-anthropic':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../../projects/adapter-anthropic
       '@moldea.ai/adapter-claude-agent-sdk':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../../projects/adapter-claude-agent-sdk
       '@moldea.ai/adapter-cloudflare-agents':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../../projects/adapter-cloudflare-agents
       '@moldea.ai/adapter-eve':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../../projects/adapter-eve
       '@moldea.ai/adapter-google-genai':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../../projects/adapter-google-genai
       '@moldea.ai/adapter-langchain':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../../projects/adapter-langchain
       '@moldea.ai/adapter-langgraph':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../../projects/adapter-langgraph
       '@moldea.ai/adapter-openai':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../../projects/adapter-openai
       '@moldea.ai/adapter-openai-agents-sdk':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../../projects/adapter-openai-agents-sdk
       '@moldea.ai/adapter-vercel-ai-sdk':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../../projects/adapter-vercel-ai-sdk
       '@moldea.ai/cli':
-        specifier: workspace:^7.0.0
+        specifier: workspace:^8.0.0
         version: link:../../projects/cli
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../../projects/core
       '@moldea.ai/repository':
         specifier: workspace:2.0.0
@@ -179,7 +179,7 @@ importers:
   projects/adapter-anthropic:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0
@@ -210,7 +210,7 @@ importers:
   projects/adapter-claude-agent-sdk:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0
@@ -241,7 +241,7 @@ importers:
   projects/adapter-cloudflare-agents:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0
@@ -272,7 +272,7 @@ importers:
   projects/adapter-eve:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0
@@ -303,7 +303,7 @@ importers:
   projects/adapter-google-genai:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0
@@ -334,7 +334,7 @@ importers:
   projects/adapter-langchain:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0
@@ -365,7 +365,7 @@ importers:
   projects/adapter-langgraph:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0
@@ -396,7 +396,7 @@ importers:
   projects/adapter-openai:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0
@@ -427,7 +427,7 @@ importers:
   projects/adapter-openai-agents-sdk:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0
@@ -458,7 +458,7 @@ importers:
   projects/adapter-vercel-ai-sdk:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0
@@ -489,37 +489,37 @@ importers:
   projects/cli:
     dependencies:
       '@moldea.ai/adapter-anthropic':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../adapter-anthropic
       '@moldea.ai/adapter-claude-agent-sdk':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../adapter-claude-agent-sdk
       '@moldea.ai/adapter-cloudflare-agents':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../adapter-cloudflare-agents
       '@moldea.ai/adapter-eve':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../adapter-eve
       '@moldea.ai/adapter-google-genai':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../adapter-google-genai
       '@moldea.ai/adapter-langchain':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../adapter-langchain
       '@moldea.ai/adapter-langgraph':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../adapter-langgraph
       '@moldea.ai/adapter-openai':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../adapter-openai
       '@moldea.ai/adapter-openai-agents-sdk':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../adapter-openai-agents-sdk
       '@moldea.ai/adapter-vercel-ai-sdk':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^3.0.0
         version: link:../adapter-vercel-ai-sdk
       '@moldea.ai/core':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0

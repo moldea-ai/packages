@@ -22,6 +22,7 @@ import {
   type ICoreOperationExceptionOptions,
   type ICoreOptions,
   type ICoreResourceLimits,
+  type ICoreResourceLimitNextAction,
   type IDecisionParseResult,
   type IDiagnostic,
   type IDiagnosticDetails,
@@ -42,12 +43,15 @@ import {
   type INormalizedText,
   type IProjectMetadataItem,
   type IProjectMetadataKind,
+  type IProjectInspection,
   type IProjectInspectionCounts,
+  type IProjectInspectionInput,
   type IProjectInspectionItem,
   type IProjectInspectionPage,
   type IProjectInspectionPageInput,
   type IProjectInspectionPageRecord,
   type IProjectInspectionPageResult,
+  type IProjectInspectionResourceUsage,
   type IProjectInspectionView,
   type IProjectSummaryCounts,
   type IProjectValidationInput,
@@ -123,6 +127,7 @@ type IRootSurface = readonly [
   ICoreOperationExceptionOptions,
   ICoreOptions,
   ICoreResourceLimits,
+  ICoreResourceLimitNextAction,
   IDecisionParseResult,
   IDiagnostic,
   IDiagnosticDetails,
@@ -143,12 +148,15 @@ type IRootSurface = readonly [
   INormalizedText,
   IProjectMetadataItem,
   IProjectMetadataKind,
+  IProjectInspection,
   IProjectInspectionCounts,
+  IProjectInspectionInput,
   IProjectInspectionItem,
   IProjectInspectionPage,
   IProjectInspectionPageInput,
   IProjectInspectionPageRecord,
   IProjectInspectionPageResult,
+  IProjectInspectionResourceUsage,
   IProjectInspectionView,
   IProjectSummaryCounts,
   IProjectValidationInput,
@@ -244,11 +252,10 @@ const parsedDecision: Promise<IDecisionParseResult> = core.parseDecision({
   path: parseRepositoryPath('/moldea/decisions/1786131723456-use-postgresql.md'),
 });
 const inspectedProject: Promise<IProjectValidationResult> = core.validateProject({ repository });
-const inspectionPage: Promise<IProjectInspectionPageResult> = core.inspectProjectPage({
-  maxItems: 16,
-  repository,
-  view: 'metadata',
-});
+const inspection: Promise<IProjectInspection> = core.createProjectInspection({ repository });
+const inspectionPage: IProjectInspectionPageResult = (
+  await core.createProjectInspection({ repository })
+).readPage({ maxItems: 16, view: 'metadata' });
 const contentPage: Promise<ICanonicalContentPageResult> = core.readCanonicalContentPage({
   maxBytes: 4096,
   offset: 0,
@@ -269,6 +276,9 @@ const configurationException = new CoreConfigurationException({
 const operationException = new CoreOperationException({
   code: 'RESOURCE_LIMIT_EXCEEDED',
   limit: 'maxFileBytes',
+  limitMaximum: 1024,
+  nextAction: 'reduce-input-or-increase-limit',
+  observedUsage: 1025,
   operation: 'normalize-text',
 });
 const repositoryFormatVersion: IRepositoryFormatVersion = 1;
@@ -279,6 +289,7 @@ const capabilityKind: ICapabilityKind = 'tool';
 const diagnosticCode: ICoreDiagnosticCode = 'MOLDEA_TEXT_EMPTY';
 const configurationErrorCode: ICoreConfigurationErrorCode = 'INVALID_RESOURCE_LIMIT';
 const operationErrorCode: ICoreOperationErrorCode = 'RESOURCE_LIMIT_EXCEEDED';
+const resourceLimitNextAction: ICoreResourceLimitNextAction = 'reduce-input-or-increase-limit';
 const operation: ICoreOperation = 'validate-project';
 const scopeOperation: ICoreOperation = 'match-manifest-scope';
 
@@ -324,6 +335,7 @@ void [
   evidenceKind,
   formatDefault,
   incompleteAdapter,
+  inspection,
   iterateRuntimeAdapterEntries,
   contentPage,
   inspectionPage,
@@ -332,6 +344,7 @@ void [
   normalized,
   operation,
   operationErrorCode,
+  resourceLimitNextAction,
   scopeOperation,
   parsedDecision,
   parsedManifest,

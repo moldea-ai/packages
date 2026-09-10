@@ -2,7 +2,7 @@ import type {
   ICanonicalContentPageInput,
   ICore,
   ICoreOptions,
-  IProjectInspectionPageInput,
+  IProjectInspectionInput,
   IProjectValidationInput,
   ITextDocumentInput,
 } from '../contracts/index.js';
@@ -11,7 +11,7 @@ import { parseDecisionDocument } from '../decision/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import { parseManifestDocument } from '../manifest/index.js';
 import { createCoreOperationOptionsSnapshot, normalizeCoreOptions } from '../options/index.js';
-import { inspectProjectPage } from '../project-inspection-page/index.js';
+import { createProjectInspection } from '../project-inspection/index.js';
 import { validateProject } from '../project-validation/index.js';
 import { matchManifestScope } from '../scope-matching/index.js';
 import type { IManifestScopeInput } from '../scope-matching/types.js';
@@ -35,8 +35,8 @@ export const createCore = (options?: ICoreOptions): ICore => {
       const operation = createCoreOperationOptionsSnapshot(snapshot);
       return calculateContentDigest(input, operation.limits);
     },
-    inspectProjectPage: (input: IProjectInspectionPageInput) =>
-      inspectProjectPage(input, createCoreOperationOptionsSnapshot(snapshot)),
+    createProjectInspection: (input: IProjectInspectionInput) =>
+      createProjectInspection(input, createCoreOperationOptionsSnapshot(snapshot)),
     validateProject: (input: IProjectValidationInput) =>
       validateProject(input, createCoreOperationOptionsSnapshot(snapshot)),
     matchManifestScope: (input: IManifestScopeInput) =>

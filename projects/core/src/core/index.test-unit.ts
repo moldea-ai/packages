@@ -42,6 +42,7 @@ describe('Core constants and construction', () => {
       maxEvidence: 10_000,
       maxFileBytes: 8_388_608,
       maxManifestBytes: 2_097_152,
+      maxRetainedBytes: 536_870_912,
       maxTotalBytesRead: 134_217_728,
     });
     expect(Object.isFrozen(RECOGNIZED_RUNTIME_ADAPTER_IDS)).toBe(true);
@@ -55,7 +56,7 @@ describe('Core constants and construction', () => {
     expect(Object.isFrozen(core)).toBe(true);
     expect(Object.keys(core).sort()).toStrictEqual([
       'calculateContentDigest',
-      'inspectProjectPage',
+      'createProjectInspection',
       'matchManifestScope',
       'normalizeText',
       'parseDecision',

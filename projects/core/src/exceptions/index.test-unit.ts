@@ -32,6 +32,9 @@ describe('Core exceptions', () => {
     const exception = new CoreOperationException({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxFileBytes',
+      limitMaximum: 8,
+      nextAction: 'reduce-input-or-increase-limit',
+      observedUsage: 9,
       operation: 'normalize-text',
     });
 
@@ -41,8 +44,11 @@ describe('Core exceptions', () => {
       agentId: null,
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxFileBytes',
+      limitMaximum: 8,
       message: 'A Core resource limit was exceeded.',
       name: 'CoreOperationException',
+      nextAction: 'reduce-input-or-increase-limit',
+      observedUsage: 9,
       operation: 'normalize-text',
       retryable: false,
     });

@@ -4,12 +4,12 @@
 
 Source-neutral, deterministic, content-safe interpretation of the `moldea` repository format.
 
-Version 3.1 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. It performs no filesystem, Git, or network access independently. Project validation returns content-free summaries, diagnostics, evidence, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
+Version 4 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. It performs no filesystem, Git, or network access independently. Project validation returns content-free summaries, diagnostics, evidence, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
 
 ## Install
 
 ```bash
-pnpm add @moldea.ai/core@3 @moldea.ai/repository@2
+pnpm add @moldea.ai/core@4 @moldea.ai/repository@2
 ```
 
 ## Public entry points
@@ -67,7 +67,9 @@ const result = await core.validateProject({ repository });
 
 `validateProject` returns validity, format version, source identity, summary counts and digests, diagnostics, and runtime evidence. It never returns manifest, project, context, decision, runtime-guidance, mirror, description, or instruction bodies.
 
-`inspectProjectPage` provides bounded content-free views named `metadata`, `diagnostics`, `evidence`, and `all`. The `metadata` and `all` views include one independently keyed `agent` record per canonical agent with exactly its `agentId` and manifest-declared `runtimeId`, distinct from asset metadata and adapter evidence. Each page uses a semantic continuation cursor tied to the complete inspection digest and view. `readCanonicalContentPage` is the only Core project operation that returns a body, and it requires an explicit canonical `/moldea/**` file path, byte offset, and byte bound. Returned chunks end at a complete UTF-8 scalar.
+`createProjectInspection` validates the snapshot once, prepares one immutable content-free record set, and returns synchronous bounded page reads for the `metadata`, `diagnostics`, `evidence`, and `all` views. The `metadata` and `all` views include one independently keyed `agent` record per canonical agent with exactly its `agentId` and manifest-declared `runtimeId`, distinct from asset metadata and adapter evidence. Each page uses a semantic continuation cursor tied to the complete inspection digest and view. Page reads perform no repository access, revalidation, sorting, digesting, or adapter execution.
+
+The prepared inspection retains only its content-free records, summary, source identity, deterministic resource accounting, and page indexes. It does not retain canonical document bodies. `readCanonicalContentPage` is the only Core project operation that returns a body, and it requires an explicit canonical `/moldea/**` file path, byte offset, and byte bound. Returned chunks end at a complete UTF-8 scalar.
 
 ## Per-agent runtime adapters
 
@@ -77,7 +79,9 @@ Adapter evidence and diagnostics are validated, normalized, deduplicated, sorted
 
 ## Resource and trust boundaries
 
-Core uses independent limits for distinct entries, total bytes, file bytes, manifest bytes, diagnostics, and evidence. The adapter-facing repository adds per-page entry and byte limits. Core executes no repository code, follows no symlink, receives no host path or source credential, and returns logical paths only.
+Core uses independent limits for distinct entries, total bytes read, per-file bytes, manifest bytes, logical retained bytes, diagnostics, and evidence. The default logical retained-memory ceiling is 512 MiB. Project inspection accounts for canonical validation state, transient read pages, and prepared content-free records before completing, and reports deterministic logical usage without exposing document bodies. The adapter-facing repository adds per-page entry and byte limits. Core executes no repository code, follows no symlink, receives no host path or source credential, and returns logical paths only.
+
+Every `RESOURCE_LIMIT_EXCEEDED` exception identifies the exceeded limit, its configured maximum, the observed or projected usage, and the stable `reduce-input-or-increase-limit` next action. Core refuses the operation before allocating retained state beyond the applicable ceiling.
 
 The release-5 calibration corpus drives these limits through the real CLI and PR Assurance across ordinary, 1,024-path, broad-relationship, Unicode, binary, diagnostic-heavy, and incomplete-provider cases. Repeated measurements establish ordinary cumulative headroom, while adversarial tests prove explicit bounded failure without treating a page, file, or operation limit as total repository capacity.
 

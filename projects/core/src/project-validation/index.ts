@@ -12,6 +12,7 @@ import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
 import { createProjectSummary } from '../project-metadata/index.js';
 import { createRepositoryInspectionSession } from '../repository-inspection-session/index.js';
+import type { IRepositoryInspectionResourceUsage } from '../repository-inspection-session/index.js';
 import { inspectUniversalProject } from '../universal-project-inspection/index.js';
 
 interface IValidatedProjectValidationInput {
@@ -85,6 +86,7 @@ const validateInput = (candidate: unknown): IValidatedProjectValidationInput => 
 // private body-bearing state shared only by Core validation and page projection
 export interface IProjectValidationState {
   readonly project: IMoldeaProjectIndex | null;
+  readonly resourceUsage: IRepositoryInspectionResourceUsage;
   readonly result: IProjectValidationResult;
 }
 
@@ -129,6 +131,7 @@ export const validateProjectState = async (
   if (universal.project === null) {
     return freezeRecursively({
       project: null,
+      resourceUsage: session.getResourceUsage(),
       result: {
         diagnostics: universal.diagnostics,
         evidence: [],
@@ -151,6 +154,7 @@ export const validateProjectState = async (
   if (availabilityDiagnostics.length > 0) {
     return freezeRecursively({
       project: universal.project,
+      resourceUsage: session.getResourceUsage(),
       result: {
         diagnostics: availabilityDiagnostics,
         evidence: [],
@@ -172,6 +176,7 @@ export const validateProjectState = async (
 
   return freezeRecursively({
     project: universal.project,
+    resourceUsage: session.getResourceUsage(),
     result: {
       diagnostics: adapterInspection.diagnostics,
       evidence: adapterInspection.evidence,

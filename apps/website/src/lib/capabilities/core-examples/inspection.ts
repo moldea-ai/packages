@@ -108,6 +108,9 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
   if (runtime === undefined) throw new Error('The Core inspection runtime fixture is missing.');
   const inspectedRepository = createMemoryRepositoryReader(runtime.files);
   const inspectionCore = createCore({ adapters: [runtime.adapter] });
+  const preparedInspection = await inspectionCore.createProjectInspection({
+    repository: inspectedRepository,
+  });
   for (const view of ['metadata', 'diagnostics', 'evidence'] as const) {
     const pages: ICapabilityFact[] = [];
     let cursor: string | undefined;
@@ -115,8 +118,7 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
     let totalItems: number;
     let digest: string | null = null;
     do {
-      const result = await inspectionCore.inspectProjectPage({
-        repository: inspectedRepository,
+      const result = preparedInspection.readPage({
         view,
         maxItems: 2,
         ...(cursor === undefined ? {} : { cursor }),
@@ -166,7 +168,7 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
     examples.push(
       operationCase(
         `inspection-${view}`,
-        'inspectProjectPage',
+        'createProjectInspection',
         `${view === 'metadata' ? 'Assignments and asset metadata' : view === 'diagnostics' ? 'Diagnostics' : 'Runtime evidence'} in bounded pages`,
         'The requested view returns records and a stable inspection digest, without canonical document bodies.',
         { view, totalItems, inspectionDigest: digest, pages },

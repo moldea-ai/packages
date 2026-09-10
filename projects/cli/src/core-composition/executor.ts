@@ -16,6 +16,11 @@ const compareAdapterIds = (left: IRuntimeAdapter, right: IRuntimeAdapter): numbe
   return 0;
 };
 
+const calculateRetainedByteLimit = (maxTotalBytes: number): number =>
+  maxTotalBytes > Math.floor(Number.MAX_SAFE_INTEGER / 4)
+    ? Number.MAX_SAFE_INTEGER
+    : maxTotalBytes * 4;
+
 /**
  * Creates the private attempt-local Core composition boundary.
  * @param coreFactory The immutable Core construction boundary.
@@ -37,6 +42,7 @@ export const createMoldeaCliCoreInspectionExecutor = (
         maxEvidence: input.resourceLimits.maxEvidence,
         maxFileBytes: input.resourceLimits.maxFileBytes,
         maxManifestBytes: input.resourceLimits.maxManifestBytes,
+        maxRetainedBytes: calculateRetainedByteLimit(input.resourceLimits.maxTotalBytes),
         maxTotalBytesRead: input.resourceLimits.maxTotalBytes,
       }),
     });
@@ -46,14 +52,17 @@ export const createMoldeaCliCoreInspectionExecutor = (
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     };
 
-    return input.command === 'inspect'
-      ? core.inspectProjectPage({
-          ...projectInput,
-          ...(input.cursor === undefined ? {} : { cursor: input.cursor }),
-          maxItems: Math.min(256, input.resourceLimits.maxEntries),
-          view: 'all',
-        })
-      : core.validateProject(projectInput);
+    if (input.command === 'validate') {
+      return core.validateProject(projectInput);
+    }
+
+    const inspection = await core.createProjectInspection(projectInput);
+
+    return inspection.readPage({
+      ...(input.cursor === undefined ? {} : { cursor: input.cursor }),
+      maxItems: Math.min(256, input.resourceLimits.maxEntries),
+      view: 'all',
+    });
   };
 };
 

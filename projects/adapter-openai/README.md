@@ -10,10 +10,10 @@ Its behavior is intentionally uneventful: the same repository snapshot and resou
 
 ## Supported target
 
-Version `3.0.1` supports:
+Version `4.0.0` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^3.0.0`
+- `@moldea.ai/core ^4.0.0`
 - TypeScript ESM source
 - npm `openai >=7.4.0`
 - a default `openai` import and module-local client
