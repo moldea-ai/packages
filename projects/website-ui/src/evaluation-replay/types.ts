@@ -68,7 +68,7 @@ export interface IEvaluationReplayVerdictStep {
 
 // one ordered initial or confirmation trial
 export interface IEvaluationReplayTrial {
-  readonly confirmationIndex: 1 | 2 | null;
+  readonly confirmationIndex: 1 | 2 | 3 | null;
   readonly evaluatedAt: string;
   readonly id: string;
   readonly kind: 'confirmation' | 'initial';

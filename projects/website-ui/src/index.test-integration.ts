@@ -80,7 +80,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.6.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.6.1' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -210,13 +210,14 @@ describe('published website UI package', () => {
         "import TabbedPanels from '@moldea.ai/website-ui/tabbed-panels';",
         "import ThemeBootstrap from '@moldea.ai/website-ui/theme-bootstrap';",
         "import ThemeControl from '@moldea.ai/website-ui/theme-control';",
-        "import { buildEvaluationReplayPathTree } from '@moldea.ai/website-ui/evaluation-replay-model';",
+        "import { buildEvaluationReplayPathTree, type IEvaluationReplayModel } from '@moldea.ai/website-ui/evaluation-replay-model';",
         "import { renderMarkdownDocument } from '@moldea.ai/website-ui/markdown';",
         "import { withBase } from '@moldea.ai/website-ui/site';",
         "import '../styles.css';",
         '',
         "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## Shared Markdown');",
         "const tree = buildEvaluationReplayPathTree([{ path: 'src/index.ts', type: 'file' }]);",
+        "const replay = { trials: [{ confirmationIndex: 3, evaluatedAt: '2026-09-10T00:00:00.000Z', id: 'confirmation-3', kind: 'confirmation', steps: [], title: 'Confirmation 3' }] } satisfies IEvaluationReplayModel;",
         "const navigationItems = [{ href: '/', isActive: true, label: 'Home' }, { href: '/repository-format/', isActive: false, label: 'Repository Format', compactLabel: 'Repo. Format' }] satisfies ComponentProps<typeof SiteHeader>['navigationItems'];",
         'const fileProps = { path: "src/returns/policy.ts", label: "Return policy", tone: "warning" } satisfies ComponentProps<typeof FilePreview>;',
         'const codeProps = { source: "echo order-status", language: "sh", variant: "plain" } satisfies ComponentProps<typeof CodeBlock>;',
@@ -257,7 +258,7 @@ describe('published website UI package', () => {
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
         '    <TabbedPanels ariaLabel="Fixture views" id="fixture-tabs" items={[{ id: "first", label: "First", slotName: "first" }, { id: "second", label: "Second", slotName: "second" }]}><p slot="first">First panel</p><p slot="second">Second panel</p></TabbedPanels>',
-        '    <EvaluationReplay id="fixture-replay" replay={null} />',
+        '    <EvaluationReplay id="fixture-replay" replay={replay} />',
         '    <DocumentationShell breadcrumbs={[{ href: "/", label: "Home" }, { label: "Docs" }]} currentRoute="/docs/" headings={rendered.headings}><div class="prose-moldea" set:html={rendered.html} /></DocumentationShell>',
         '    <p>{tree[0]?.name}</p>',
         '    <ThemeControl storageKey="fixture-theme" />',
