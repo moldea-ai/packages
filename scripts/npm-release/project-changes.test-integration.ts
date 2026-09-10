@@ -268,7 +268,7 @@ describe('npm release project changes', () => {
   );
 
   test.each(NPM_RELEASE_PROJECT_ORDER)(
-    'ignores standardized package test files for %s',
+    'ignores standardized package test and fixture files for %s',
     async (project) => {
       const baseCommit = runGit(['rev-parse', 'HEAD']);
       const projectDirectory = NPM_RELEASE_PROJECTS[project].projectDirectory;
@@ -278,6 +278,7 @@ describe('npm release project changes', () => {
         writeRepositoryFile(`${projectDirectory}/src/change.test-integration.ts`, 'export {};\n'),
         writeRepositoryFile(`${projectDirectory}/src/change.test-e2e.ts`, 'export {};\n'),
         writeRepositoryFile(`${projectDirectory}/src/change.test-bench.ts`, 'export {};\n'),
+        writeRepositoryFile(`${projectDirectory}/src/change.test-fixtures.ts`, 'export {};\n'),
       ]);
 
       const currentCommit = commitWorktree(`test: change ${project} package tests`);
