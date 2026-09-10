@@ -16,7 +16,7 @@ const PACKAGE_VERSIONS = {
   '@moldea.ai/adapter-openai': '4.0.0',
   '@moldea.ai/adapter-openai-agents-sdk': '3.0.0',
   '@moldea.ai/adapter-vercel-ai-sdk': '3.0.0',
-  '@moldea.ai/core': '4.0.0',
+  '@moldea.ai/core': '4.0.1',
   '@moldea.ai/repository': '2.0.0',
   '@moldea.ai/repository-fs': '2.0.1',
 } as const;

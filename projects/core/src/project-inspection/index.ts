@@ -13,9 +13,9 @@ import type {
 import { CoreOperationException } from '../exceptions/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import type { ICoreOptionsSnapshot } from '../options/index.js';
-import { collectProjectAgentAssignments } from '../project-agent-assignments/index.js';
-import { collectProjectMetadata } from '../project-metadata/index.js';
-import { validateProjectState } from '../project-validation/index.js';
+import { iterateProjectAgentAssignments } from '../project-agent-assignments/index.js';
+import { iterateProjectMetadata } from '../project-metadata/index.js';
+import { validateProjectState, type IProjectValidationState } from '../project-validation/index.js';
 
 interface IKeyedInspectionItem {
   readonly item: IProjectInspectionItem;
@@ -29,7 +29,7 @@ interface IPreparedProjectInspectionInput {
   readonly formatVersion: IProjectInspection['formatVersion'];
   readonly items: readonly IKeyedInspectionItem[];
   readonly maxEntries: number;
-  readonly maxRetainedBytes: number;
+  readonly preparedBytes: number;
   readonly resourceUsage: {
     readonly canonicalBytes: number;
     readonly peakRetainedBytes: number;
@@ -87,8 +87,14 @@ const serializeDeterministically = (candidate: unknown): string => {
     .join(',')}}`;
 };
 
-const createIdentity = (parts: readonly string[]): string =>
-  createRepositoryIdentity(parts.map((part) => encoder.encode(part)));
+const createIdentity = (parts: Iterable<string>): string =>
+  createRepositoryIdentity(
+    (function* (): IterableIterator<Uint8Array> {
+      for (const part of parts) {
+        yield encoder.encode(part);
+      }
+    })(),
+  );
 
 const createItemBaseKey = (item: IProjectInspectionItem): string => {
   if (item.kind === 'agent') {
@@ -127,21 +133,22 @@ const createItemBaseKey = (item: IProjectInspectionItem): string => {
 
 /** Assigns stable unique keys once without relying on collection offsets. */
 const createKeyedItems = (
-  items: readonly IProjectInspectionItem[],
+  items: Iterable<IProjectInspectionItem>,
 ): readonly IKeyedInspectionItem[] => {
-  const sorted = items
-    .map((item) => ({ baseKey: createItemBaseKey(item), item }))
-    .sort((left, right) =>
-      left.baseKey < right.baseKey ? -1 : left.baseKey > right.baseKey ? 1 : 0,
-    );
-  const occurrences = new Map<string, number>();
+  const sorted = Array.from(items, (item) => ({ item, key: createItemBaseKey(item) })).sort(
+    (left, right) => (left.key < right.key ? -1 : left.key > right.key ? 1 : 0),
+  );
+  let previousBaseKey: string | null = null;
+  let occurrence = 0;
 
-  return sorted.map(({ baseKey, item }) => {
-    const occurrence = occurrences.get(baseKey) ?? 0;
-    occurrences.set(baseKey, occurrence + 1);
+  for (const item of sorted) {
+    const baseKey = item.key;
+    occurrence = baseKey === previousBaseKey ? occurrence + 1 : 0;
+    previousBaseKey = baseKey;
+    item.key = `${baseKey}:${String(occurrence).padStart(10, '0')}`;
+  }
 
-    return { item, key: `${baseKey}:${String(occurrence).padStart(10, '0')}` };
-  });
+  return sorted;
 };
 
 const createCursorChecksum = (
@@ -227,43 +234,112 @@ const addRetainedBytes = (
   return current + additional;
 };
 
-/** Calculates deterministic logical bytes retained by prepared records and view indexes. */
-const calculatePreparedBytes = (
-  items: readonly IKeyedInspectionItem[],
-  views: IInspectionViews,
-  header: unknown,
-  retainedBeforePreparation: number,
-  maximum: number,
-): number => {
-  let bytes = addRetainedBytes(0, PREPARED_FIXED_BYTES, retainedBeforePreparation, maximum);
+/** Iterates every content-free inspection item without retaining preparation state. */
+const iterateProjectInspectionItems = function* (
+  state: IProjectValidationState,
+): IterableIterator<IProjectInspectionItem> {
+  if (state.project !== null) {
+    for (const metadata of iterateProjectMetadata(state.project)) {
+      yield { kind: 'metadata', metadata };
+    }
+  }
 
-  for (const { item, key } of items) {
+  for (const diagnostic of state.result.diagnostics) {
+    yield { diagnostic, kind: 'diagnostic' };
+  }
+
+  for (const evidence of state.result.evidence) {
+    yield { evidence, kind: 'evidence' };
+  }
+
+  if (state.project !== null) {
+    for (const agent of iterateProjectAgentAssignments(state.project)) {
+      yield { agent, kind: 'agent' };
+    }
+  }
+};
+
+interface IPreparedProjectInspectionEstimate {
+  readonly counts: IProjectInspection['counts'];
+  readonly preparedBytes: number;
+}
+
+/** Preflights the complete logical prepared-state cost before retaining its collections. */
+const estimatePreparedProjectInspection = (
+  state: IProjectValidationState,
+  baseCounts: Omit<IProjectInspection['counts'], 'metadata'>,
+  maximum: number,
+): IPreparedProjectInspectionEstimate => {
+  const retainedBeforePreparation = state.resourceUsage.retainedBytes;
+  let bytes = addRetainedBytes(0, PREPARED_FIXED_BYTES, retainedBeforePreparation, maximum);
+  let metadataCount = 0;
+
+  for (const item of iterateProjectInspectionItems(state)) {
+    const key = `${createItemBaseKey(item)}:0000000000`;
     const encodedBytes =
       encoder.encode(key).byteLength + encoder.encode(serializeDeterministically(item)).byteLength;
     bytes = addRetainedBytes(
       bytes,
-      PREPARED_ITEM_FIXED_BYTES + encodedBytes * PREPARED_TEXT_BYTE_MULTIPLIER,
+      PREPARED_ITEM_FIXED_BYTES +
+        encodedBytes * PREPARED_TEXT_BYTE_MULTIPLIER +
+        PREPARED_VIEW_REFERENCE_BYTES,
       retainedBeforePreparation,
       maximum,
     );
+
+    if (item.kind === 'metadata') {
+      metadataCount += 1;
+    }
   }
 
+  const counts = {
+    agents: baseCounts.agents,
+    context: baseCounts.context,
+    decisions: baseCounts.decisions,
+    diagnostics: baseCounts.diagnostics,
+    evidence: baseCounts.evidence,
+    metadata: metadataCount,
+    mirrors: baseCounts.mirrors,
+    runtimes: baseCounts.runtimes,
+    unresolved: baseCounts.unresolved,
+  };
   bytes = addRetainedBytes(
     bytes,
-    encoder.encode(serializeDeterministically(header)).byteLength * PREPARED_TEXT_BYTE_MULTIPLIER,
-    retainedBeforePreparation,
-    maximum,
-  );
-  bytes = addRetainedBytes(
-    bytes,
-    (views.diagnostics.length + views.evidence.length + views.metadata.length) *
-      PREPARED_VIEW_REFERENCE_BYTES,
+    encoder.encode(
+      serializeDeterministically({
+        counts,
+        formatVersion: state.result.formatVersion,
+        inspectionDigest: 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+        source: state.result.source,
+        summary: state.result.summary,
+        valid: state.result.valid,
+      }),
+    ).byteLength * PREPARED_TEXT_BYTE_MULTIPLIER,
     retainedBeforePreparation,
     maximum,
   );
 
-  return bytes;
+  return { counts, preparedBytes: bytes };
 };
+
+/** Creates the inspection digest without materializing a project-sized key projection. */
+const createInspectionDigest = (
+  counts: IProjectInspection['counts'],
+  formatVersion: IProjectInspection['formatVersion'],
+  items: readonly IKeyedInspectionItem[],
+  summary: IProjectInspection['summary'],
+  valid: boolean,
+): string =>
+  createIdentity(
+    (function* (): IterableIterator<string> {
+      yield 'core4-prepared-inspection';
+      yield serializeDeterministically({ counts, formatVersion, summary, valid });
+
+      for (const { key } of items) {
+        yield key;
+      }
+    })(),
+  );
 
 const findStartIndex = (items: readonly IKeyedInspectionItem[], lastKey: string | null): number => {
   if (lastKey === null) {
@@ -304,36 +380,14 @@ const createPreparedProjectInspection = (
     formatVersion,
     items,
     maxEntries,
-    maxRetainedBytes,
+    preparedBytes,
     resourceUsage: validationUsage,
     source,
     summary,
     valid,
   } = input;
   const views = createViews(items);
-  const inspectionDigest = createIdentity([
-    serializeDeterministically({
-      counts,
-      formatVersion,
-      itemKeys: items.map(({ key }) => key),
-      summary,
-      valid,
-    }),
-  ]);
-  const preparedBytes = calculatePreparedBytes(
-    items,
-    views,
-    {
-      counts,
-      formatVersion,
-      inspectionDigest,
-      source,
-      summary,
-      valid,
-    },
-    validationUsage.retainedBytes,
-    maxRetainedBytes,
-  );
+  const inspectionDigest = createInspectionDigest(counts, formatVersion, items, summary, valid);
   const resourceUsage: IProjectInspectionResourceUsage = freezeRecursively({
     canonicalBytes: validationUsage.canonicalBytes,
     peakRetainedBytes: Math.max(
@@ -413,38 +467,30 @@ export const createProjectInspection = async (
   options: ICoreOptionsSnapshot,
 ): Promise<IProjectInspection> => {
   const state = await validateProjectState(input, options);
-  const metadata = state.project === null ? [] : collectProjectMetadata(state.project);
-  const agentAssignments =
-    state.project === null ? [] : collectProjectAgentAssignments(state.project);
-  const items = freezeRecursively(
-    createKeyedItems([
-      ...metadata.map((metadataItem) => ({ kind: 'metadata' as const, metadata: metadataItem })),
-      ...state.result.diagnostics.map((diagnostic) => ({
-        diagnostic,
-        kind: 'diagnostic' as const,
-      })),
-      ...state.result.evidence.map((evidence) => ({ evidence, kind: 'evidence' as const })),
-      ...agentAssignments.map((agent) => ({ agent, kind: 'agent' as const })),
-    ]),
-  );
-  const counts = freezeRecursively({
+  const baseCounts = {
     agents: state.result.summary?.counts.agents ?? 0,
     context: state.result.summary?.counts.context ?? 0,
     decisions: state.result.summary?.counts.decisions ?? 0,
     diagnostics: state.result.diagnostics.length,
     evidence: state.result.evidence.length,
-    metadata: metadata.length,
     mirrors: state.result.summary?.counts.mirrors ?? 0,
     runtimes: state.result.summary?.counts.runtimes ?? 0,
     unresolved: state.result.summary?.counts.unresolved ?? 0,
-  });
+  };
+  const estimate = estimatePreparedProjectInspection(
+    state,
+    baseCounts,
+    options.limits.maxRetainedBytes,
+  );
+  const counts = freezeRecursively(estimate.counts);
+  const items = freezeRecursively(createKeyedItems(iterateProjectInspectionItems(state)));
 
   return createPreparedProjectInspection({
     counts,
     formatVersion: state.result.formatVersion,
     items,
     maxEntries: options.limits.maxEntries,
-    maxRetainedBytes: options.limits.maxRetainedBytes,
+    preparedBytes: estimate.preparedBytes,
     resourceUsage: state.resourceUsage,
     source: state.result.source,
     summary: state.result.summary,

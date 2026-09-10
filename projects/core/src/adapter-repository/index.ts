@@ -9,6 +9,7 @@ import {
 } from '@moldea.ai/repository';
 
 import type { IRuntimeAdapterRepository } from '../adapter/index.js';
+import { reserveRuntimeAdapterRetainedBytesIfTracked } from '../adapter-retained-memory/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 
 const invalidSourceData = (
@@ -38,7 +39,25 @@ const throwResourceLimitExceeded = (
   });
 };
 
-/** Reads one complete adapter source file through bounded repository pages. */
+/**
+ * Reads one complete adapter source file through bounded repository pages.
+ * @param repository The Core-created repository for the current adapter invocation.
+ * @param path The exact source file path.
+ * @param options Optional cancellation controls.
+ * @returns A promise resolving to one detached complete source buffer.
+ * @throws
+ * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+ * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+ * - ENTRY_NOT_FILE: The requested repository entry is not a file.
+ * - INVALID_PAGE_REQUEST: The repository page request is invalid.
+ * - ACCESS_DENIED: Access to the repository source was denied.
+ * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+ * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ */
 export const readRuntimeAdapterFile = async (
   repository: IRuntimeAdapterRepository,
   path: IRepositoryPath,
@@ -73,6 +92,7 @@ export const readRuntimeAdapterFile = async (
     );
   }
 
+  reserveRuntimeAdapterRetainedBytesIfTracked(repository, entry.byteLength);
   const content = new Uint8Array(entry.byteLength);
   let offset = 0;
   let isFirstPage = true;

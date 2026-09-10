@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
 import {
   RepositorySourceException,
@@ -73,6 +73,7 @@ const manifestPath = parseRepositoryPath('/moldea/moldea.yaml');
 const projectPath = parseRepositoryPath('/moldea/project.md');
 const auditPath = parseRepositoryPath('/src/audit.ts');
 const evidencePath = parseRepositoryPath('/src/evidence.ts');
+const largeSourcePath = parseRepositoryPath('/src/large-source.ts');
 
 const createEntries = (manifest = fixture.manifest): readonly IMemoryRepositoryEntry[] => [
   { content: manifest, path: manifestPath, type: 'file' },
@@ -275,6 +276,73 @@ describe('Core runtime-adapter execution', () => {
     expect(Object.isFrozen(result)).toBe(true);
     expect(Object.isFrozen(result.evidence[0]?.details)).toBe(true);
     expect(Object.getPrototypeOf(result.evidence[0]?.details)).toBeNull();
+  });
+
+  test('reserves complete adapter file buffers before allocation', async () => {
+    const baseline = await createCore({
+      adapters: createAdapterHarness().adapters,
+      limits: { maxRetainedBytes: 131_072 },
+    }).createProjectInspection({
+      repository: createMemoryRepositoryReader(createEntries()),
+    });
+    const source = createMemoryRepositoryReader([
+      ...createEntries(),
+      { content: new Uint8Array(1_048_576), path: largeSourcePath, type: 'file' },
+    ]);
+    const readFilePage = vi.fn(source.readFilePage.bind(source));
+    const repository = overrideCoreTestRepositoryReader(source, { readFilePage });
+    const harness = createAdapterHarness({
+      onZeta: async (context) => {
+        await readRuntimeAdapterFile(context.repository, largeSourcePath);
+      },
+    });
+
+    await expect(
+      createCore({
+        adapters: harness.adapters,
+        limits: { maxRetainedBytes: 131_072 },
+      }).createProjectInspection({ repository }),
+    ).rejects.toMatchObject({
+      code: 'RESOURCE_LIMIT_EXCEEDED',
+      limit: 'maxRetainedBytes',
+      limitMaximum: 131_072,
+      nextAction: 'reduce-input-or-increase-limit',
+    });
+    expect(baseline.resourceUsage.peakRetainedBytes).toBeLessThan(131_072);
+    expect(readFilePage.mock.calls.some(([path]) => path === largeSourcePath)).toBe(false);
+
+    const inspection = await createCore({
+      adapters: harness.adapters,
+      limits: { maxRetainedBytes: 2_097_152 },
+    }).createProjectInspection({ repository: source });
+
+    expect(inspection.resourceUsage.peakRetainedBytes).toBeGreaterThan(1_048_576);
+    expect(inspection.valid).toBe(true);
+
+    const repeatedReadFilePage = vi.fn(source.readFilePage.bind(source));
+    const repeatedReadRepository = overrideCoreTestRepositoryReader(source, {
+      readFilePage: repeatedReadFilePage,
+    });
+    const repeatedReadHarness = createAdapterHarness({
+      onZeta: async (context) => {
+        await readRuntimeAdapterFile(context.repository, largeSourcePath);
+        await readRuntimeAdapterFile(context.repository, largeSourcePath);
+      },
+    });
+
+    await expect(
+      createCore({
+        adapters: repeatedReadHarness.adapters,
+        limits: { maxRetainedBytes: 1_572_864 },
+      }).createProjectInspection({ repository: repeatedReadRepository }),
+    ).rejects.toMatchObject({
+      code: 'RESOURCE_LIMIT_EXCEEDED',
+      limit: 'maxRetainedBytes',
+      limitMaximum: 1_572_864,
+    });
+    expect(
+      repeatedReadFilePage.mock.calls.filter(([path]) => path === largeSourcePath),
+    ).toHaveLength(16);
   });
 
   test('retains exact evidence and content-free metadata with adapter diagnostics', async () => {

@@ -225,7 +225,7 @@ describe('prepared project inspection', () => {
     );
   });
 
-  test('enforces exact retained-byte boundaries before returning an inspection', async () => {
+  test('preflights exact retained-byte boundaries before building prepared state', async () => {
     const repository = createValidRepository('# Project\n');
     const baseline = await createCore().createProjectInspection({ repository });
     let lower = 1;

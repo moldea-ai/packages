@@ -13,6 +13,7 @@ import {
 
 import type { ICoreResourceLimits } from '../contracts/index.js';
 import type { IRuntimeAdapterRepository } from '../adapter/index.js';
+import { registerRuntimeAdapterRetainedByteReservation } from '../adapter-retained-memory/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 
 const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
@@ -670,6 +671,7 @@ export const createRepositoryInspectionSession = (
     readFilePage: readAdapterFilePage,
     snapshot: repository.snapshot,
   });
+  registerRuntimeAdapterRetainedByteReservation(adapterRepository, reserveRetainedBytes);
 
   return Object.freeze({
     adapterRepository,

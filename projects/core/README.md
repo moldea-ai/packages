@@ -69,7 +69,7 @@ const result = await core.validateProject({ repository });
 
 `createProjectInspection` validates the snapshot once, prepares one immutable content-free record set, and returns synchronous bounded page reads for the `metadata`, `diagnostics`, `evidence`, and `all` views. The `metadata` and `all` views include one independently keyed `agent` record per canonical agent with exactly its `agentId` and manifest-declared `runtimeId`, distinct from asset metadata and adapter evidence. Each page uses a semantic continuation cursor tied to the complete inspection digest and view. Page reads perform no repository access, revalidation, sorting, digesting, or adapter execution.
 
-The prepared inspection retains only its content-free records, summary, source identity, deterministic resource accounting, and page indexes. It does not retain canonical document bodies. `readCanonicalContentPage` is the only Core project operation that returns a body, and it requires an explicit canonical `/moldea/**` file path, byte offset, and byte bound. Returned chunks end at a complete UTF-8 scalar.
+The prepared inspection retains only its content-free records, summary, source identity, deterministic resource accounting, and page indexes. Core preflights the complete logical cost before it constructs the prepared collections, indexes, or digest. It does not retain canonical document bodies. `readCanonicalContentPage` is the only Core project operation that returns a body, and it requires an explicit canonical `/moldea/**` file path, byte offset, and byte bound. Returned chunks end at a complete UTF-8 scalar.
 
 ## Per-agent runtime adapters
 
@@ -79,7 +79,7 @@ Adapter evidence and diagnostics are validated, normalized, deduplicated, sorted
 
 ## Resource and trust boundaries
 
-Core uses independent limits for distinct entries, total bytes read, per-file bytes, manifest bytes, logical retained bytes, diagnostics, and evidence. The default logical retained-memory ceiling is 512 MiB. Project inspection accounts for canonical validation state, transient read pages, and prepared content-free records before completing, and reports deterministic logical usage without exposing document bodies. The adapter-facing repository adds per-page entry and byte limits. Core executes no repository code, follows no symlink, receives no host path or source credential, and returns logical paths only.
+Core uses independent limits for distinct entries, total bytes read, per-file bytes, manifest bytes, logical retained bytes, diagnostics, and evidence. The default logical retained-memory ceiling is 512 MiB. Project inspection accounts for canonical validation state, complete adapter file buffers, transient read pages, and prepared content-free records before completing, and reports deterministic logical usage without exposing document bodies. A complete adapter buffer is reserved before allocation and remains charged for the inspection lifetime. The adapter-facing repository adds per-page entry and byte limits. Core executes no repository code, follows no symlink, receives no host path or source credential, and returns logical paths only.
 
 Every `RESOURCE_LIMIT_EXCEEDED` exception identifies the exceeded limit, its configured maximum, the observed or projected usage, and the stable `reduce-input-or-increase-limit` next action. Core refuses the operation before allocating retained state beyond the applicable ceiling.
 

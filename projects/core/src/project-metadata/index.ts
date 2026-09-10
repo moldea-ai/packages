@@ -4,7 +4,6 @@ import type {
   IProjectMetadataItem,
   IProjectValidationSummary,
 } from '../contracts/index.js';
-import { compareExactStrings } from '../format-validation/index.js';
 
 const createAssetItem = (
   asset: IIndexedTextAsset,
@@ -22,44 +21,35 @@ const createAssetItem = (
   scalarLength: asset.scalarLength,
 });
 
-const compareMetadataItems = (left: IProjectMetadataItem, right: IProjectMetadataItem): number =>
-  compareExactStrings(left.path, right.path) ||
-  compareExactStrings(left.kind, right.kind) ||
-  compareExactStrings(left.agentId ?? '', right.agentId ?? '');
-
-/** Collects deterministic content-free asset metadata from one validated project. */
-export const collectProjectMetadata = (
+/** Iterates content-free asset metadata without retaining a second project-sized collection. */
+export const iterateProjectMetadata = function* (
   project: IMoldeaProjectIndex,
-): readonly IProjectMetadataItem[] => {
-  const items: IProjectMetadataItem[] = [
-    createAssetItem(project.manifest.asset, 'manifest'),
-    createAssetItem(project.project, 'project'),
-  ];
+): IterableIterator<IProjectMetadataItem> {
+  yield createAssetItem(project.manifest.asset, 'manifest');
+  yield createAssetItem(project.project, 'project');
 
   for (const context of project.context) {
-    items.push(createAssetItem(context.asset, 'context'));
+    yield createAssetItem(context.asset, 'context');
   }
 
   for (const { decision } of project.decisions) {
-    items.push(createAssetItem(decision.asset, 'decision', null, decision.id));
+    yield createAssetItem(decision.asset, 'decision', null, decision.id);
   }
 
   for (const runtime of project.runtimes) {
-    items.push(createAssetItem(runtime.asset, 'runtime-guidance'));
+    yield createAssetItem(runtime.asset, 'runtime-guidance');
   }
 
   for (const agent of project.agents) {
-    items.push(createAssetItem(agent.description.asset, 'agent-description', agent.id));
-    items.push(createAssetItem(agent.instruction, 'agent-instruction', agent.id));
+    yield createAssetItem(agent.description.asset, 'agent-description', agent.id);
+    yield createAssetItem(agent.instruction, 'agent-instruction', agent.id);
 
     if (agent.handoffDescription !== null) {
-      items.push(
-        createAssetItem(agent.handoffDescription.asset, 'agent-handoff-description', agent.id),
-      );
+      yield createAssetItem(agent.handoffDescription.asset, 'agent-handoff-description', agent.id);
     }
 
     for (const mirror of agent.mirrors) {
-      items.push({
+      yield {
         agentId: agent.id,
         byteLength: mirror.byteLength,
         canonicalDigest: mirror.canonicalDigest,
@@ -68,11 +58,9 @@ export const collectProjectMetadata = (
         kind: 'mirror',
         path: mirror.path,
         scalarLength: mirror.scalarLength,
-      });
+      };
     }
   }
-
-  return items.sort(compareMetadataItems);
 };
 
 /** Creates the content-free summary for one validated project snapshot. */
