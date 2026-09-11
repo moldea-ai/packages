@@ -77,7 +77,7 @@ describe('@moldea.ai/adapter-eve public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-eve',
-      version: '3.0.0',
+      version: '3.0.1',
     });
     expect(packResult.files.map(({ path: filePath }) => filePath)).toEqual(
       expect.arrayContaining([

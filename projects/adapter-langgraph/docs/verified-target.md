@@ -1,12 +1,12 @@
 ---
 title: Verified targets
-description: Exact static forms covered by the LangGraph 1.4.x targets.
+description: Static forms covered by the LangGraph targets from their verified minimums.
 order: 10
 ---
 
 # Verified targets
 
-Technical targets `typescript-state-graph-1-4` and `typescript-functional-api-1-4` cover `@langchain/langgraph >=1.4.12` with companion `@langchain/core >=1.2.9`.
+Technical targets `typescript-state-graph-1-4` and `typescript-functional-api-1-4` admit declared ranges that intersect `@langchain/langgraph >=1.4.12` with companion `@langchain/core >=1.2.9`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the source patterns below. Qualification evidence records the exact package versions and date used for each execution.
 
 Graph API agent evidence requires a directly exported immutable `const` initialized by a supported `.compile(...)` call over a package-root `StateGraph`. The builder may be an inline fluent chain or one module-local `const` whose exact top-level operations precede a single compile call. Closed modern object initialization can establish input and output schema relationships. The overloaded direct-schema constructor family can establish graph identity but not schema wiring.
 

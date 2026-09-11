@@ -98,9 +98,14 @@ describe('runtime compatibility Markdown generation', () => {
     expect(markdown).toContain('#### Patterns');
     expect(markdown).toContain('#### Provider limits');
     expect(markdown).toContain('#### Known limitations');
+    expect(markdown).toMatch(/\| Ecosystem\s+\| Package\s+\| Role\s+\| Eligible versions\s+\|/u);
+    expect(markdown).toContain(
+      'eligible versions begin at the verified minimum. Later stable releases are admitted for deterministic inspection on a best-effort basis',
+    );
     expect(markdown).toContain(
       '[View profile and results](https://skill.moldea.ai/evidence/qualification/openai/typescript/)',
     );
+    expect(markdown).not.toContain('Verified range');
     expect(markdown).toContain('`>=1.0.0 <2.0.0 \\|\\| >=3.0.0 <4.0.0`');
     expect(markdown).toContain('`>=4.0.0 <5.0.0 \\|\\| >=6.0.0 <7.0.0`');
     expect(markdown).toContain('`^(safe\\|stable)$`');

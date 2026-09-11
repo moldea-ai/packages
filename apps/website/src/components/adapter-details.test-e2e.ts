@@ -60,6 +60,12 @@ test('links qualified targets to canonical evidence', async ({ page }) => {
   }
 
   await page.goto(toPublicPath('/adapters/openai/'));
+  await expect(page.getByRole('columnheader', { name: 'Eligible versions' })).toBeVisible();
+  await expect(
+    page.getByText(
+      'Eligible versions begin at the verified minimum. Later stable releases are inspected on a best-effort basis and must match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution.',
+    ),
+  ).toBeVisible();
   await expect(
     page.getByRole('link', {
       name: 'View qualification evidence for openai target typescript-responses-api-7',

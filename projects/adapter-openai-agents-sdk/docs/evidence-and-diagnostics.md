@@ -21,7 +21,7 @@ Evidence contains no repository content, instructions, descriptions, credentials
 | Code                                                      | Meaning                                                                                  |
 | --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `OPENAI_AGENTS_SDK_PACKAGE_MANIFEST_INVALID`              | The owning manifest cannot establish valid dependency data.                              |
-| `OPENAI_AGENTS_SDK_VERSION_UNSUPPORTED`                   | The observed SDK range is disjoint from the verified range.                              |
+| `OPENAI_AGENTS_SDK_VERSION_UNSUPPORTED`                   | The observed SDK range is disjoint from the eligible versions.                           |
 | `OPENAI_AGENTS_SDK_SOURCE_TEXT_INVALID`                   | Referenced source is not valid normalized text.                                          |
 | `OPENAI_AGENTS_SDK_SOURCE_SYNTAX_INVALID`                 | Referenced source contains invalid TypeScript syntax.                                    |
 | `OPENAI_AGENTS_SDK_RUNTIME_AGENT_SYMBOL_NOT_FOUND`        | The bound runtime-agent symbol is absent.                                                |
