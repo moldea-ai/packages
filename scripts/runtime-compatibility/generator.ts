@@ -13,6 +13,8 @@ import type {
 const GENERATED_WARNING =
   '> **Generated file. Do not edit directly. Canonical source: `/compatibility/runtimes.yaml`.**';
 const MISSING_VALUE = 'Not available';
+const RUNTIME_PACKAGE_ELIGIBILITY =
+  'For target runtime packages, eligible versions begin at the verified minimum. Later stable releases are admitted for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution.';
 
 const formatInlineCode = (value: string): string => {
   const delimiter = value.includes('`') ? '``' : '`';
@@ -61,7 +63,7 @@ const generatePackageRequirements = (target: IRuntimeTarget): string[] => {
   }
 
   return [
-    '| Ecosystem | Package | Role | Verified range |',
+    '| Ecosystem | Package | Role | Eligible versions |',
     '| --- | --- | --- | --- |',
     ...target.packages.map((requirement) => {
       return `| ${formatTableInlineCode(requirement.ecosystem)} | ${formatTableInlineCode(requirement.name)} | ${formatTableInlineCode(requirement.role)} | ${formatTableInlineCode(requirement.versionRange)} |`;
@@ -200,6 +202,7 @@ export const generateRuntimeCompatibilityMarkdown = async (
     hasPublishedAdapter
       ? 'The matrix publishes only the verified targets and support boundaries shown below.'
       : 'The initial matrix records the approved adapter inventory only. Every adapter is currently `planned`, so this document makes no runtime package, language, version, runtime-guidance, evidence, validation, pattern, or provider-limit compatibility claim.',
+    ...(hasPublishedAdapter ? ['', RUNTIME_PACKAGE_ELIGIBILITY] : []),
     '',
     '| Adapter ID | Owning package | Implementation | Distribution | Implementation range | Status | Runtime guidance | Verified targets |',
     '| --- | --- | --- | --- | --- | --- | --- | ---: |',

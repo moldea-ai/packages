@@ -1,12 +1,12 @@
 ---
 title: Verified target
-description: Exact static forms covered by the LangChain 1.5.x createAgent target.
+description: Static forms covered by the LangChain createAgent target from its verified minimums.
 order: 10
 ---
 
 # Verified target
 
-Technical target `typescript-create-agent-1-5` covers `langchain >=1.5.9` with companion `@langchain/core >=1.2.8`.
+Technical target `typescript-create-agent-1-5` admits declared ranges that intersect `langchain >=1.5.9` with companion `@langchain/core >=1.2.8`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the source patterns below. Qualification evidence records the exact package versions and date used for each execution.
 
 Positive agent evidence requires a directly exported TypeScript `const` initialized by the named package-root `createAgent(...)` helper with one closed object-literal configuration and a `model` property. Named import aliases and `.ts`, `.tsx`, and `.mts` source are supported.
 

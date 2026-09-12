@@ -1,6 +1,6 @@
 # `@moldea.ai/adapter-eve`
 
-Deterministic runtime evidence and diagnostics for Eve `0.39.x` TypeScript filesystem agents declared by `moldea` agents.
+Deterministic runtime evidence and diagnostics for Eve TypeScript filesystem agents declared by `moldea` agents.
 
 ## Installation
 
@@ -19,7 +19,7 @@ const core = createCore({ adapters: [eveAdapter] });
 
 ## Verified target
 
-Version `3.0.0` supports Repository Format `1`, `@moldea.ai/core ^4.0.0`, and direct TypeScript Eve filesystem agents using `eve >=0.39.1`. The verified target recognizes:
+Version `3.0.1` supports Repository Format `1`, `@moldea.ai/core ^4.0.0`, and direct TypeScript Eve filesystem agents whose declared Eve range intersects `eve >=0.39.1`. Eve `0.39.1` is the verified minimum. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution. The target recognizes:
 
 - flat and nested root `agent.ts` definitions
 - recursive directory-backed local subagents

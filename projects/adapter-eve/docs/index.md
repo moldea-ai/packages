@@ -6,7 +6,7 @@ order: 1
 
 # Eve adapter
 
-`@moldea.ai/adapter-eve` connects Repository Format `1` declarations to the static filesystem conventions verified for Eve `0.39.x`.
+`@moldea.ai/adapter-eve` connects Repository Format `1` declarations to static Eve filesystem conventions. Eve `0.39.1` is the verified minimum. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns.
 
 The adapter begins at each declared runtime-agent path, finds its nearest owning package, validates the exact Eve layout, and returns immutable evidence and stable diagnostics through Core. It neither executes the application nor treats package presence as proof of an agent definition.
 

@@ -1,6 +1,6 @@
 # `@moldea.ai/adapter-langgraph`
 
-Deterministic runtime evidence and diagnostics for LangGraph `1.4.x` TypeScript Graph API and Functional API workflows declared by `moldea` agents.
+Deterministic runtime evidence and diagnostics for LangGraph TypeScript Graph API and Functional API workflows declared by `moldea` agents.
 
 ## Installation
 
@@ -19,7 +19,7 @@ const core = createCore({ adapters: [langGraphAdapter] });
 
 ## Verified targets
 
-Version `3.0.0` supports Repository Format `1`, `@moldea.ai/core ^4.0.0`, `@langchain/langgraph >=1.4.12`, and companion `@langchain/core >=1.2.9`. The verified targets recognize:
+Version `3.0.1` supports Repository Format `1`, `@moldea.ai/core ^4.0.0`, and declared ranges that intersect `@langchain/langgraph >=1.4.12` with companion `@langchain/core >=1.2.9`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution. The targets recognize:
 
 - directly exported compiled `StateGraph` definitions using supported inline fluent or single-owner module-local builders
 - closed modern Graph API schema initialization and direct input/output schema wiring

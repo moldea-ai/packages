@@ -17,7 +17,7 @@ Evidence contains no repository content, agent instructions, credentials, API ke
 | Code                                         | Meaning                                                                  |
 | -------------------------------------------- | ------------------------------------------------------------------------ |
 | `OPENAI_PACKAGE_MANIFEST_INVALID`            | The owning package manifest cannot establish valid dependency data.      |
-| `OPENAI_SDK_VERSION_UNSUPPORTED`             | The observed OpenAI range is disjoint from the verified range.           |
+| `OPENAI_SDK_VERSION_UNSUPPORTED`             | The observed OpenAI range is disjoint from the eligible versions.        |
 | `OPENAI_SOURCE_TEXT_INVALID`                 | The source is not valid normalized text.                                 |
 | `OPENAI_SOURCE_SYNTAX_INVALID`               | The source contains invalid TypeScript syntax.                           |
 | `OPENAI_RUNTIME_AGENT_SYMBOL_NOT_FOUND`      | The bound runtime-agent symbol is absent.                                |

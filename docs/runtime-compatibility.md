@@ -4,6 +4,8 @@ Matrix format version: `2`
 
 The matrix publishes only the verified targets and support boundaries shown below.
 
+For target runtime packages, eligible versions begin at the verified minimum. Later stable releases are admitted for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution.
+
 | Adapter ID          | Owning package                         | Implementation | Distribution | Implementation range | Status      | Runtime guidance | Verified targets |
 | ------------------- | -------------------------------------- | -------------- | ------------ | -------------------- | ----------- | ---------------- | ---------------: |
 | `anthropic`         | `@moldea.ai/adapter-anthropic`         | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
@@ -37,9 +39,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/anthropic/typescript-messages-api-0-117/)
 
-| Ecosystem | Package             | Role      | Verified range |
-| --------- | ------------------- | --------- | -------------- |
-| `npm`     | `@anthropic-ai/sdk` | `primary` | `>=0.117.1`    |
+| Ecosystem | Package             | Role      | Eligible versions |
+| --------- | ------------------- | --------- | ----------------- |
+| `npm`     | `@anthropic-ai/sdk` | `primary` | `>=0.117.1`       |
 
 #### Binding support
 
@@ -93,9 +95,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/claude-agent-sdk/typescript-query-subagents-0-3/)
 
-| Ecosystem | Package                          | Role      | Verified range |
-| --------- | -------------------------------- | --------- | -------------- |
-| `npm`     | `@anthropic-ai/claude-agent-sdk` | `primary` | `>=0.3.234`    |
+| Ecosystem | Package                          | Role      | Eligible versions |
+| --------- | -------------------------------- | --------- | ----------------- |
+| `npm`     | `@anthropic-ai/claude-agent-sdk` | `primary` | `>=0.3.234`       |
 
 #### Binding support
 
@@ -182,11 +184,11 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-ai-chat-agent-0-10-ai-sdk-7/)
 
-| Ecosystem | Package               | Role        | Verified range |
-| --------- | --------------------- | ----------- | -------------- |
-| `npm`     | `agents`              | `companion` | `>=0.21.0`     |
-| `npm`     | `ai`                  | `companion` | `>=7.0.0`      |
-| `npm`     | `@cloudflare/ai-chat` | `primary`   | `>=0.10.2`     |
+| Ecosystem | Package               | Role        | Eligible versions |
+| --------- | --------------------- | ----------- | ----------------- |
+| `npm`     | `agents`              | `companion` | `>=0.21.0`        |
+| `npm`     | `ai`                  | `companion` | `>=7.0.0`         |
+| `npm`     | `@cloudflare/ai-chat` | `primary`   | `>=0.10.2`        |
 
 #### Binding support
 
@@ -222,11 +224,11 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-think-0-16-ai-sdk-7/)
 
-| Ecosystem | Package             | Role        | Verified range |
-| --------- | ------------------- | ----------- | -------------- |
-| `npm`     | `agents`            | `companion` | `>=0.21.0`     |
-| `npm`     | `ai`                | `companion` | `>=7.0.0`      |
-| `npm`     | `@cloudflare/think` | `primary`   | `>=0.16.0`     |
+| Ecosystem | Package             | Role        | Eligible versions |
+| --------- | ------------------- | ----------- | ----------------- |
+| `npm`     | `agents`            | `companion` | `>=0.21.0`        |
+| `npm`     | `ai`                | `companion` | `>=7.0.0`         |
+| `npm`     | `@cloudflare/think` | `primary`   | `>=0.16.0`        |
 
 #### Binding support
 
@@ -297,9 +299,9 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/eve/typescript-filesystem-agent-0-39/)
 
-| Ecosystem | Package | Role      | Verified range |
-| --------- | ------- | --------- | -------------- |
-| `npm`     | `eve`   | `primary` | `>=0.39.1`     |
+| Ecosystem | Package | Role      | Eligible versions |
+| --------- | ------- | --------- | ----------------- |
+| `npm`     | `eve`   | `primary` | `>=0.39.1`        |
 
 #### Binding support
 
@@ -385,9 +387,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/google-genai/typescript-models-generate-content-2/)
 
-| Ecosystem | Package         | Role      | Verified range |
-| --------- | --------------- | --------- | -------------- |
-| `npm`     | `@google/genai` | `primary` | `>=2.17.1`     |
+| Ecosystem | Package         | Role      | Eligible versions |
+| --------- | --------------- | --------- | ----------------- |
+| `npm`     | `@google/genai` | `primary` | `>=2.17.1`        |
 
 #### Binding support
 
@@ -448,10 +450,10 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/langchain/typescript-create-agent-1-5/)
 
-| Ecosystem | Package           | Role        | Verified range |
-| --------- | ----------------- | ----------- | -------------- |
-| `npm`     | `@langchain/core` | `companion` | `>=1.2.8`      |
-| `npm`     | `langchain`       | `primary`   | `>=1.5.9`      |
+| Ecosystem | Package           | Role        | Eligible versions |
+| --------- | ----------------- | ----------- | ----------------- |
+| `npm`     | `@langchain/core` | `companion` | `>=1.2.8`         |
+| `npm`     | `langchain`       | `primary`   | `>=1.5.9`         |
 
 #### Binding support
 
@@ -514,10 +516,10 @@ Runtime guidance notes: Project-local guidance is recommended for prompt ownersh
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/langgraph/typescript-functional-api-1-4/)
 
-| Ecosystem | Package                | Role        | Verified range |
-| --------- | ---------------------- | ----------- | -------------- |
-| `npm`     | `@langchain/core`      | `companion` | `>=1.2.9`      |
-| `npm`     | `@langchain/langgraph` | `primary`   | `>=1.4.12`     |
+| Ecosystem | Package                | Role        | Eligible versions |
+| --------- | ---------------------- | ----------- | ----------------- |
+| `npm`     | `@langchain/core`      | `companion` | `>=1.2.9`         |
+| `npm`     | `@langchain/langgraph` | `primary`   | `>=1.4.12`        |
 
 #### Binding support
 
@@ -563,10 +565,10 @@ Runtime guidance notes: Project-local guidance is recommended for prompt ownersh
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/langgraph/typescript-state-graph-1-4/)
 
-| Ecosystem | Package                | Role        | Verified range |
-| --------- | ---------------------- | ----------- | -------------- |
-| `npm`     | `@langchain/core`      | `companion` | `>=1.2.9`      |
-| `npm`     | `@langchain/langgraph` | `primary`   | `>=1.4.12`     |
+| Ecosystem | Package                | Role        | Eligible versions |
+| --------- | ---------------------- | ----------- | ----------------- |
+| `npm`     | `@langchain/core`      | `companion` | `>=1.2.9`         |
+| `npm`     | `@langchain/langgraph` | `primary`   | `>=1.4.12`        |
 
 #### Binding support
 
@@ -634,9 +636,9 @@ Runtime guidance notes: Document project-specific model selection, tool executio
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/openai/typescript-responses-api-7/)
 
-| Ecosystem | Package  | Role      | Verified range |
-| --------- | -------- | --------- | -------------- |
-| `npm`     | `openai` | `primary` | `>=7.4.0`      |
+| Ecosystem | Package  | Role      | Eligible versions |
+| --------- | -------- | --------- | ----------------- |
+| `npm`     | `openai` | `primary` | `>=7.4.0`         |
 
 #### Binding support
 
@@ -684,9 +686,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/openai-agents-sdk/typescript-agent-handoffs-0-16/)
 
-| Ecosystem | Package          | Role      | Verified range |
-| --------- | ---------------- | --------- | -------------- |
-| `npm`     | `@openai/agents` | `primary` | `>=0.16.1`     |
+| Ecosystem | Package          | Role      | Eligible versions |
+| --------- | ---------------- | --------- | ----------------- |
+| `npm`     | `@openai/agents` | `primary` | `>=0.16.1`        |
 
 #### Binding support
 
@@ -749,9 +751,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-generate-stream-text-7/)
 
-| Ecosystem | Package | Role      | Verified range |
-| --------- | ------- | --------- | -------------- |
-| `npm`     | `ai`    | `primary` | `>=7.0.66`     |
+| Ecosystem | Package | Role      | Eligible versions |
+| --------- | ------- | --------- | ----------------- |
+| `npm`     | `ai`    | `primary` | `>=7.0.66`        |
 
 #### Binding support
 
@@ -797,9 +799,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Last verified: `2026-09-01`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-tool-loop-agent-7/)
 
-| Ecosystem | Package | Role      | Verified range |
-| --------- | ------- | --------- | -------------- |
-| `npm`     | `ai`    | `primary` | `>=7.0.66`     |
+| Ecosystem | Package | Role      | Eligible versions |
+| --------- | ------- | --------- | ----------------- |
+| `npm`     | `ai`    | `primary` | `>=7.0.66`        |
 
 #### Binding support
 
