@@ -8,7 +8,7 @@ The package implements the official `google-genai` runtime adapter for `@moldea.
 
 ## Supported target
 
-Version `3.0.1` supports:
+Version `3.0.2` supports:
 
 - Repository Format version `1`
 - `@moldea.ai/core ^4.0.0`
@@ -62,6 +62,8 @@ pnpm --filter @moldea.ai/adapter-google-genai build
 Tests are colocated with their owning modules. Canonical conformance fixtures live under `/fixtures/adapter-google-genai`.
 
 ## Documentation
+
+- [Complete binding example](docs/binding-example.md): manifest, canonical instructions, runtime source, and supported schema or routing relationships.
 
 These guides are included in the installed package. Open only the page relevant to your task.
 

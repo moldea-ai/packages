@@ -8,7 +8,7 @@ The package implements the official `claude-agent-sdk` runtime adapter for `@mol
 
 ## Supported target
 
-Version `3.0.1` supports:
+Version `3.0.2` supports:
 
 - Repository Format version `1`
 - `@moldea.ai/core ^4.0.0`
@@ -90,6 +90,8 @@ pnpm --filter @moldea.ai/adapter-claude-agent-sdk build
 Unit and integration tests are colocated with their implementation modules. Adapter-specific conformance fixtures live under `/fixtures/adapter-claude-agent-sdk`.
 
 ## Documentation
+
+- [Complete binding example](docs/binding-example.md): manifest, canonical instructions, runtime source, and supported schema or routing relationships.
 
 These guides are included in the installed package. Open only the page relevant to your task.
 
