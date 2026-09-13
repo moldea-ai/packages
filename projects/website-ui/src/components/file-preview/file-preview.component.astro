@@ -24,8 +24,14 @@ const toneClasses = {
 } as const;
 ---
 
-<div class="min-w-0 overflow-hidden rounded-lg border">
-  <div class:list={['flex items-center gap-3 border-b px-3 py-3', toneClasses[tone]]}>
+<div
+  class="min-w-0 overflow-hidden rounded-lg border"
+  data-file-preview
+>
+  <div
+    class:list={['flex items-center gap-3 border-b px-3 py-3', toneClasses[tone]]}
+    data-file-preview-header
+  >
     <span
       class="shrink-0 text-muted-foreground"
       aria-hidden="true"

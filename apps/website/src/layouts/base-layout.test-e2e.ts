@@ -495,9 +495,10 @@ test('copies exact highlighted and literal code across direct and client navigat
   await page.goto(toPublicPath('/repository-format/'));
 
   const highlightedCode = page.locator('pre.shiki:has(> code)').first();
-  const highlightedToolbar = highlightedCode.locator(
-    'xpath=preceding-sibling::*[1][@data-code-copy-toolbar]',
+  const highlightedHeader = highlightedCode.locator(
+    'xpath=preceding-sibling::*[1][@data-code-copy-header]',
   );
+  const highlightedToolbar = highlightedHeader.locator('[data-code-copy-toolbar]');
   const highlightedButton = highlightedToolbar.getByRole('button', {
     name: 'Copy code',
     exact: true,
@@ -505,9 +506,13 @@ test('copies exact highlighted and literal code across direct and client navigat
   const highlightedSource = await highlightedCode.locator(':scope > code').textContent();
 
   if (highlightedSource === null) throw new Error('Highlighted source text is unavailable.');
+  await expect(highlightedHeader.locator('[data-code-copy-language]')).toHaveText('Plain text');
+  await expect(highlightedButton).toHaveText('');
+  await expect(highlightedButton).toHaveAttribute('title', 'Copy code');
   await highlightedButton.click();
   await expect(highlightedButton).toBeFocused();
   await expect(highlightedToolbar.locator('[data-code-copy-feedback]')).toHaveText('Copied.');
+  await expect(highlightedButton).toHaveAttribute('data-code-copy-state', 'copied');
   expect(
     normalizeClipboardLineEndings(await page.evaluate(() => navigator.clipboard.readText())),
   ).toBe(normalizeClipboardLineEndings(highlightedSource));
@@ -542,6 +547,29 @@ ${'long-line-'.repeat(32)}
   expect(
     normalizeClipboardLineEndings(await page.evaluate(() => navigator.clipboard.readText())),
   ).toBe(normalizeClipboardLineEndings(literalSource));
+
+  await page.evaluate(() => {
+    const filePreview = document.createElement('section');
+    const filePreviewHeader = document.createElement('header');
+    const pre = document.createElement('pre');
+    const code = document.createElement('code');
+
+    filePreview.dataset.copyTestFixture = 'file-preview';
+    filePreview.dataset.filePreview = '';
+    filePreviewHeader.dataset.filePreviewHeader = '';
+    code.textContent = 'const filePreview = true;';
+    pre.append(code);
+    filePreview.append(filePreviewHeader, pre);
+    document.querySelector('main')?.append(filePreview);
+    document.dispatchEvent(new Event('astro:page-load'));
+  });
+
+  const filePreviewFixture = page.locator('[data-copy-test-fixture="file-preview"]');
+
+  await expect(
+    filePreviewFixture.locator(':scope > [data-file-preview-header] [data-code-copy-button]'),
+  ).toHaveCount(1);
+  await expect(filePreviewFixture.locator('[data-code-copy-frame]')).toHaveCount(0);
 
   await page.getByRole('link', { name: 'Packages', exact: true }).first().click();
   await expect(page).toHaveURL(toPublicPath('/packages/'));
@@ -578,9 +606,6 @@ test('honors code-copy opt-outs without affecting neighboring blocks', async ({ 
 
   await expect(optedOutExcerpt).toHaveCount(1);
   await expect(optedOutExcerpt).not.toHaveAttribute('data-code-copy-enhanced');
-  await expect(
-    optedOutExcerpt.locator('xpath=preceding-sibling::*[1][@data-code-copy-toolbar]'),
-  ).toHaveCount(0);
 
   await page.goto(toPublicPath('/capabilities/'));
   const optedOutComponents = page.locator('[data-code-block][data-code-copy="false"]');
@@ -654,7 +679,8 @@ for (const [clipboardMode, expectedFeedback] of [
 
     const button = page.getByRole('button', { name: 'Copy code', exact: true }).first();
     const toolbar = button.locator('xpath=ancestor::*[@data-code-copy-toolbar]');
-    const code = toolbar.locator('xpath=following-sibling::pre[1]/code');
+    const header = toolbar.locator('xpath=ancestor::*[@data-code-copy-header]');
+    const code = header.locator('xpath=following-sibling::pre[1]/code');
 
     await button.click();
     await expect(button).toBeFocused();
@@ -696,6 +722,8 @@ test('keeps code-copy controls usable across supported widths, themes, and reduc
       const bounds = await button.boundingBox();
 
       expect(bounds).not.toBeNull();
+      expect(bounds!.width).toBe(24);
+      expect(bounds!.height).toBe(24);
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
       expect(
