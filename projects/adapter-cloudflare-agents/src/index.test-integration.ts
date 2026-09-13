@@ -5,6 +5,8 @@ import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
+import { verifyPackedDocumentation } from '../../../configs/package-documentation/index.js';
+
 import * as publicApi from './index.js';
 
 const projectDirectory = path.resolve(import.meta.dirname, '..');
@@ -71,6 +73,10 @@ describe('@moldea.ai/adapter-cloudflare-agents public API', () => {
       encoding: 'utf8',
     });
     const packResult = JSON.parse(output) as IPackDryRunResult;
+    verifyPackedDocumentation(
+      projectDirectory,
+      packResult.files.map((file) => file.path),
+    );
     const manifest = JSON.parse(
       readFileSync(path.join(projectDirectory, 'package.json'), 'utf8'),
     ) as {
@@ -79,7 +85,7 @@ describe('@moldea.ai/adapter-cloudflare-agents public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-cloudflare-agents',
-      version: '3.0.0',
+      version: '3.0.1',
     });
     expect(packResult.files.map(({ path: filePath }) => filePath)).toEqual(
       expect.arrayContaining([

@@ -74,6 +74,7 @@ export const readOptionalGitFile = (
  * @param baseCommit The commit before the push.
  * @param currentCommit The pushed commit.
  * @param projectDirectory The repository-relative public project directory.
+ * @param publishesDocumentation Whether either compared manifest includes documentation in npm artifacts.
  * @returns Whether the project contains a package-artifact or implementation change.
  * @throws
  * - If either commit is invalid or Git cannot compare the project safely
@@ -83,6 +84,7 @@ export const hasGitProjectChanges = (
   baseCommit: string,
   currentCommit: string,
   projectDirectory: string,
+  publishesDocumentation: boolean,
 ): boolean => {
   requireCommit(baseCommit);
   requireCommit(currentCommit);
@@ -104,8 +106,9 @@ export const hasGitProjectChanges = (
       `:(exclude)${projectDirectory}/**/_archives/**`,
       `:(exclude)${projectDirectory}/**/_backup/**`,
       `:(exclude)${projectDirectory}/**/_backups/**`,
-      `:(exclude)${projectDirectory}/docs`,
-      `:(exclude)${projectDirectory}/docs/**`,
+      ...(publishesDocumentation
+        ? []
+        : [`:(exclude)${projectDirectory}/docs`, `:(exclude)${projectDirectory}/docs/**`]),
       `:(exclude)${projectDirectory}/**/*.test-unit.*`,
       `:(exclude)${projectDirectory}/**/*.test-integration.*`,
       `:(exclude)${projectDirectory}/**/*.test-e2e.*`,

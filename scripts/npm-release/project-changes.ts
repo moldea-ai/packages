@@ -1,10 +1,18 @@
 import { readFile } from 'node:fs/promises';
+import { posix } from 'node:path';
 
 import { NPM_RELEASE_PROJECT_ORDER, NPM_RELEASE_PROJECTS } from './constants.ts';
 import { hasGitProjectChanges, readGitFile, readOptionalGitFile } from './git.ts';
 import type { INpmReleaseProjectChange, INpmReleaseWorkflowPlanSources } from './types.ts';
 
-const readManifestVersion = (manifestSource: string, packageName: string): string => {
+/** Reads the committed version and whether the npm file selection can include docs. */
+const readManifestReleaseState = (
+  manifestSource: string,
+  packageName: string,
+): {
+  version: string;
+  publishesDocumentation: boolean;
+} => {
   const manifest = JSON.parse(manifestSource) as unknown;
 
   if (
@@ -19,7 +27,24 @@ const readManifestVersion = (manifestSource: string, packageName: string): strin
     throw new TypeError(`The ${packageName} package manifest is invalid.`);
   }
 
-  return manifest.version;
+  const files: unknown = 'files' in manifest ? manifest.files : undefined;
+
+  if (
+    files !== undefined &&
+    (!Array.isArray(files) || !files.every((entry: unknown) => typeof entry === 'string'))
+  ) {
+    throw new TypeError(`The ${packageName} package file selection is invalid.`);
+  }
+
+  // without an allowlist npm includes docs by default; broad root globs may include them too
+  const publishesDocumentation =
+    files === undefined ||
+    files.some((entry: string) => {
+      const rootPattern = entry.replace(/^\.\//u, '').split('/')[0] ?? '';
+      return !rootPattern.startsWith('!') && posix.matchesGlob('docs', rootPattern);
+    });
+
+  return { version: manifest.version, publishesDocumentation };
 };
 
 /**
@@ -49,7 +74,7 @@ export const loadNpmReleaseProjectChanges = async (
           currentCommit === null
             ? await readFile(new URL(manifestPath, repositoryRoot), 'utf8')
             : readGitFile(repositoryRoot, currentCommit, manifestPath);
-        const currentVersion = readManifestVersion(
+        const currentManifest = readManifestReleaseState(
           currentManifestSource,
           configuration.packageName,
         );
@@ -57,12 +82,12 @@ export const loadNpmReleaseProjectChanges = async (
           baseCommit === null
             ? currentManifestSource
             : readOptionalGitFile(repositoryRoot, baseCommit, manifestPath);
-        const previousVersion =
+        const previousManifest =
           previousManifestSource === null
             ? null
-            : readManifestVersion(previousManifestSource, configuration.packageName);
+            : readManifestReleaseState(previousManifestSource, configuration.packageName);
         const change: INpmReleaseProjectChange = {
-          currentVersion,
+          currentVersion: currentManifest.version,
           isChanged:
             baseCommit !== null && currentCommit !== null
               ? hasGitProjectChanges(
@@ -70,9 +95,11 @@ export const loadNpmReleaseProjectChanges = async (
                   baseCommit,
                   currentCommit,
                   configuration.projectDirectory,
+                  currentManifest.publishesDocumentation ||
+                    previousManifest?.publishesDocumentation === true,
                 )
               : false,
-          previousVersion,
+          previousVersion: previousManifest?.version ?? null,
         };
 
         return [project, change] as const;

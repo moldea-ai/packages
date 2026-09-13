@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/adapter-claude-agent-sdk",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Deterministic runtime evidence and diagnostics for Claude Agent SDK query and subagent integrations.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/adapter-claude-agent-sdk#readme",
   "bugs": {
@@ -18,6 +18,7 @@
   "files": [
     "cover.png",
     "dist",
+    "docs",
     "LICENSE",
     "README.md"
   ],

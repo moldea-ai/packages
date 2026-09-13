@@ -50,23 +50,27 @@
       "outputs": [".generated/**"]
     },
     "lint": {
-      "dependsOn": ["^build", "^lint"]
+      "dependsOn": ["^build", "^lint"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/configs/package-documentation/*.ts"]
     },
     "test": {
-      "dependsOn": ["^test"]
+      "dependsOn": ["^test"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/configs/package-documentation/*.ts"]
     },
     "test:e2e": {
       "dependsOn": ["build", "^build"],
       "env": ["PLAYWRIGHT_BROWSERS_PATH"]
     },
     "test:integration": {
-      "dependsOn": ["build", "^test:integration"]
+      "dependsOn": ["build", "^test:integration"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/configs/package-documentation/*.ts"]
     },
     "test:unit": {
       "dependsOn": ["^build"]
     },
     "typecheck": {
-      "dependsOn": ["^build", "^typecheck"]
+      "dependsOn": ["^build", "^typecheck"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/configs/package-documentation/*.ts"]
     }
   }
 }

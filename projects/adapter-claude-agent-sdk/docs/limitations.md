@@ -24,4 +24,4 @@ Package detection uses nearest manifests, not lockfiles or installed `node_modul
 
 Each invocation sees one declared agent, exact same-runtime binding resolution, and only the bounded operations Core supplies through `IRuntimeAdapterRepository`. It receives no complete agent collection, project body index, host path, Anthropic credential, environment variable, network client, or runtime process. It does not execute TypeScript, dynamically import source, load the inspected SDK, or follow source symlinks.
 
-The [Runtime Compatibility Matrix](/compatibility/) remains authoritative. A focused specification or future design does not broaden this page until the canonical matrix and released implementation do.
+The [Runtime Compatibility Matrix](https://packages.moldea.ai/compatibility/) remains authoritative. A focused specification or future design does not broaden this page until the canonical matrix and released implementation do.

@@ -26,4 +26,10 @@ The adapter never imports or calls the OpenAI SDK, requires no API key, executes
 
 ## Public surface
 
-The package exports only `openAiAdapter`. It has no default export, configuration factory, OpenAI client wrapper, parser export, public diagnostic registry, or mutable runtime state. The generated [API reference](./api/) derives that surface from the package export.
+The package exports only `openAiAdapter`. It has no default export, configuration factory, OpenAI client wrapper, parser export, public diagnostic registry, or mutable runtime state. The generated [API reference](https://packages.moldea.ai/adapters/openai/api/) derives that surface from the package export.
+
+## Local guides
+
+- [Verified target](verified-target.md)
+- [Evidence and diagnostics](evidence-and-diagnostics.md)
+- [Limitations](limitations.md)

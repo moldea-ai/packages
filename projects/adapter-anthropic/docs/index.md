@@ -26,4 +26,10 @@ The adapter never imports or calls the Anthropic SDK, requires no API key, execu
 
 ## Public surface
 
-The package exports only `anthropicAdapter`. It has no default export, configuration factory, Anthropic client wrapper, parser export, public diagnostic registry, or mutable runtime state. The generated [API reference](./api/) derives that surface from the package export.
+The package exports only `anthropicAdapter`. It has no default export, configuration factory, Anthropic client wrapper, parser export, public diagnostic registry, or mutable runtime state. The generated [API reference](https://packages.moldea.ai/adapters/anthropic/api/) derives that surface from the package export.
+
+## Local guides
+
+- [Verified target](verified-target.md)
+- [Evidence and diagnostics](evidence-and-diagnostics.md)
+- [Limitations](limitations.md)

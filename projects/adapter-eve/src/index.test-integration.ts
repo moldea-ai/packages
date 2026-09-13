@@ -5,6 +5,8 @@ import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
+import { verifyPackedDocumentation } from '../../../configs/package-documentation/index.js';
+
 import * as publicApi from './index.js';
 
 const projectDirectory = path.resolve(import.meta.dirname, '..');
@@ -71,13 +73,17 @@ describe('@moldea.ai/adapter-eve public API', () => {
       encoding: 'utf8',
     });
     const packResult = JSON.parse(output) as IPackDryRunResult;
+    verifyPackedDocumentation(
+      projectDirectory,
+      packResult.files.map((file) => file.path),
+    );
     const manifest = JSON.parse(
       readFileSync(path.join(projectDirectory, 'package.json'), 'utf8'),
     ) as { readonly dependencies?: Readonly<Record<string, string>> };
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-eve',
-      version: '3.0.1',
+      version: '3.0.2',
     });
     expect(packResult.files.map(({ path: filePath }) => filePath)).toEqual(
       expect.arrayContaining([

@@ -36,7 +36,7 @@ const writeProjectManifest = async (
 
   await writeRepositoryFile(
     `${configuration.projectDirectory}/package.json`,
-    `${JSON.stringify({ name: configuration.packageName, version }, null, 2)}\n`,
+    `${JSON.stringify({ name: configuration.packageName, version, files: ['dist', 'README.md', 'LICENSE'] }, null, 2)}\n`,
   );
 };
 
@@ -266,6 +266,77 @@ describe('npm release project changes', () => {
       expect(changes[project].isChanged).toBe(false);
     },
   );
+
+  test.each([
+    ['explicit docs directory', ['dist', 'docs'], true],
+    ['relative docs directory', ['./docs'], true],
+    ['nested docs pattern', ['docs/**/*.md'], true],
+    ['individual document', ['docs/index.md'], true],
+    ['root wildcard', ['**/*.md'], true],
+    ['default npm inventory', undefined, true],
+    ['runtime-only inventory', ['dist/**', 'README.md'], false],
+  ] as const)('classifies documentation using %s', async (_description, files, isChanged) => {
+    await writeRepositoryFile(
+      'projects/core/package.json',
+      JSON.stringify({
+        name: '@moldea.ai/core',
+        version: '1.0.0',
+        files,
+      }),
+    );
+    const baseCommit = commitWorktree('test: configure package file selection');
+    await writeRepositoryFile('projects/core/docs/index.md', '# Local guide\n');
+    const currentCommit = commitWorktree('docs(core): add a guide');
+    const changes = await loadChanges(baseCommit, currentCommit);
+    expect(changes.core.isChanged).toBe(isChanged);
+    if (isChanged) {
+      expect(() =>
+        createNpmReleaseWorkflowPlan({
+          eventName: 'push',
+          mode: '',
+          project: '',
+          projectChanges: changes,
+          publishedVersions: createPublishedVersions(),
+        }),
+      ).toThrow('must declare a greater stable package version');
+    }
+  });
+
+  test.each(['modify', 'delete'] as const)('selects a shipped-document %s', async (operation) => {
+    await writeRepositoryFile(
+      'projects/adapter-eve/package.json',
+      JSON.stringify({
+        name: '@moldea.ai/adapter-eve',
+        version: '1.0.0',
+        files: ['dist', 'docs'],
+      }),
+    );
+    await writeRepositoryFile('projects/adapter-eve/docs/index.md', '# Original guide\n');
+    const baseCommit = commitWorktree('test: establish shipped documentation');
+    if (operation === 'delete') {
+      await rm(join(repositoryDirectory, 'projects/adapter-eve/docs/index.md'));
+    } else {
+      await writeRepositoryFile('projects/adapter-eve/docs/index.md', '# Corrected guide\n');
+    }
+    const currentCommit = commitWorktree(`docs(adapter-eve): ${operation} guide`);
+    expect((await loadChanges(baseCommit, currentCommit))['adapter-eve'].isChanged).toBe(true);
+  });
+
+  test('rejects malformed npm file selection instead of silently excluding docs', async () => {
+    const baseCommit = runGit(['rev-parse', 'HEAD']);
+    await writeRepositoryFile(
+      'projects/core/package.json',
+      JSON.stringify({
+        name: '@moldea.ai/core',
+        version: '1.0.1',
+        files: [42],
+      }),
+    );
+    const currentCommit = commitWorktree('test: invalidate file selection');
+    await expect(loadChanges(baseCommit, currentCommit)).rejects.toThrow(
+      'package file selection is invalid',
+    );
+  });
 
   test.each(NPM_RELEASE_PROJECT_ORDER)(
     'ignores standardized package test and fixture files for %s',

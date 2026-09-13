@@ -10,7 +10,7 @@ Its behavior is intentionally uneventful: the same repository snapshot and resou
 
 ## Supported target
 
-Version `4.0.0` supports:
+Version `4.0.1` supports:
 
 - Repository Format version `1`
 - `@moldea.ai/core ^4.0.0`
@@ -82,3 +82,12 @@ pnpm --filter @moldea.ai/adapter-openai build
 ```
 
 Unit and integration tests are colocated with their implementation modules. Adapter-specific conformance fixtures live under `/fixtures/adapter-openai`.
+
+## Documentation
+
+These guides are included in the installed package. Open only the page relevant to your task.
+
+- [Package overview](docs/index.md)
+- [Verified target](docs/verified-target.md)
+- [Evidence and diagnostics](docs/evidence-and-diagnostics.md)
+- [Limitations](docs/limitations.md)

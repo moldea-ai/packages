@@ -8,7 +8,7 @@ The package implements the official `cloudflare-agents` runtime adapter for `@mo
 
 ## Supported targets
 
-Version `3.0.0` supports:
+Version `3.0.1` supports:
 
 - Repository Format version `1`
 - `@moldea.ai/core ^4.0.0`
@@ -70,6 +70,8 @@ Evidence is source-grounded, references existing repository files, and contains 
 | `CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED` | The detected Cloudflare agent-tool routing description is not wired to the target agent's effective routing description. |
 
 ## Documentation
+
+These guides are included in the installed package. Open only the page relevant to your task.
 
 - [Adapter contract](docs/index.md)
 - [Verified targets](docs/verified-targets.md)

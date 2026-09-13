@@ -8,7 +8,7 @@ The package implements the official `vercel-ai-sdk` runtime adapter for `@moldea
 
 ## Supported targets
 
-Version `3.0.0` supports:
+Version `3.0.1` supports:
 
 - Repository Format version `1`
 - `@moldea.ai/core ^4.0.0`
@@ -87,3 +87,12 @@ pnpm --filter @moldea.ai/adapter-vercel-ai-sdk build
 ```
 
 Unit and integration tests are colocated with their implementation modules. Adapter conformance fixtures live under `/fixtures/adapter-vercel-ai-sdk`.
+
+## Documentation
+
+These guides are included in the installed package. Open only the page relevant to your task.
+
+- [Package overview](docs/index.md)
+- [Verified target](docs/verified-target.md)
+- [Evidence and diagnostics](docs/evidence-and-diagnostics.md)
+- [Limitations](docs/limitations.md)

@@ -2,7 +2,7 @@
 
 Deterministic runtime evidence and diagnostics for direct Anthropic SDK integrations.
 
-Version `4.0.0` supports this verified technical boundary:
+Version `4.0.1` supports this verified technical boundary:
 
 - TypeScript ESM source in `.ts`, `.tsx`, and `.mts` files
 - `@anthropic-ai/sdk >=0.117.1`
@@ -24,4 +24,11 @@ import { anthropicAdapter } from '@moldea.ai/adapter-anthropic';
 const core = createCore({ adapters: [anthropicAdapter] });
 ```
 
-See [`docs/`](./docs/index.md) for the verified target, evidence, diagnostics, and limitations.
+## Documentation
+
+These guides are included in the installed package. Open only the page relevant to your task.
+
+- [Package overview](docs/index.md)
+- [Verified target](docs/verified-target.md)
+- [Evidence and diagnostics](docs/evidence-and-diagnostics.md)
+- [Limitations](docs/limitations.md)
