@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'astro/types';
 
 export interface Props extends Omit<HTMLAttributes<'button'>, 'class'> {
   class?: string;
-  size?: 'icon' | 'lg' | 'md' | 'sm';
+  size?: 'icon' | 'icon-xs' | 'lg' | 'md' | 'sm';
   variant?: 'ghost' | 'link' | 'outline' | 'primary' | 'secondary';
 }
 

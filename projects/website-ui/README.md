@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.7.0
+pnpm add @moldea.ai/website-ui@1.7.1
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -95,7 +95,7 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/theme-bootstrap`
 - `@moldea.ai/website-ui/theme-control`
 
-`ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. Mount `CodeCopyControls` once in the body to add copy actions to eligible code blocks on direct loads and client navigation. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
+`ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. Mount `CodeCopyControls` once in the body to add compact header copy actions to eligible code blocks on direct loads and client navigation. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
 
 `SiteHeader`, `SiteFooter`, and `DocumentationShell` own responsive structure while consumers retain navigation data, accessible labels, copy, branding, actions, and page content. `TabbedPanels` keeps every panel readable without JavaScript and adds WAI-ARIA tab behavior, including Arrow Left, Arrow Right, Home, and End, after enhancement. `StatusBadge` exposes semantic tones and border treatments without defining domain status mappings.
 
@@ -189,9 +189,9 @@ import CodeBlock from '@moldea.ai/website-ui/code-block';
 
 Code preserves its source line breaks and scrolls horizontally when needed. This includes JSON, YAML, shell commands, diffs, and Markdown source. Unlabelled fences also preserve lines, since they may contain code or aligned file trees. Only fences explicitly labelled `text`, `txt`, or `plaintext` wrap long lines while retaining their original line breaks. Use these labels for prose, not as a shortcut to force code to fit.
 
-With `CodeCopyControls` mounted, `CodeBlock` is copyable by default. Set `copyable={false}` for an illustrative or incomplete block that does not need a copy action. For rendered Markdown and hand-authored code, place `data-code-copy="false"` on the `pre` element or an owning container. An opted-out ancestor disables every code block inside it, while neighboring blocks remain eligible. Opted-out blocks have no toolbar or extra focus stop and remain selectable.
+With `CodeCopyControls` mounted, `CodeBlock` is copyable by default. Set `copyable={false}` for an illustrative or incomplete block that does not need a copy action. For rendered Markdown and hand-authored code, place `data-code-copy="false"` on the `pre` element or an owning container. An opted-out ancestor disables every code block inside it, while neighboring blocks remain eligible. Opted-out blocks have no copy action or extra focus stop and remain selectable.
 
-The control copies the complete displayed code text, including indentation and blank lines, only after a visitor activates its button. Success is announced after the browser accepts the write. When clipboard access is unavailable or denied, the code stays selectable and the control explains how to copy it manually. The button keeps the stable accessible name “Copy code.”
+The icon-only action follows the compact code header used by the platform UI instead of adding a separate toolbar row. Existing `FilePreview` headers receive the action directly; other eligible blocks receive a language header. The control copies the complete displayed code text, including indentation and blank lines, only after a visitor activates its button. Success is announced after the browser accepts the write and shown by a temporary check icon. When clipboard access is unavailable or denied, the code stays selectable and the button exposes the failure through its title and live status. The button keeps the stable accessible name “Copy code.”
 
 Markdown and literal code renderers apply this policy through `styles.css`. Rendered code blocks are named, keyboard-focusable regions with visible focus indicators. Hand-authored `<pre>` elements use the shared `code-block` class, `tabindex="0"`, `role="region"`, and a descriptive `aria-label`; add `data-code-language="text"` only for plain text. Do not add page-wide wrapping overrides to code, diagnostics, or replay content.
 

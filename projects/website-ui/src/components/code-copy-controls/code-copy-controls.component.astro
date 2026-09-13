@@ -1,40 +1,92 @@
 ---
-import { Copy } from '@lucide/astro';
+import { Check, Clipboard } from '@lucide/astro';
 
 import ActionButton from '../action-button/action-button.component.astro';
 ---
 
 <template data-code-copy-controls-template>
   <div
-    class="code-copy-toolbar flex min-h-8 min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
-    data-code-copy-toolbar
+    class="code-copy-header flex min-w-0 items-center justify-between gap-2 border-b border-border bg-muted/40 px-2 py-1.5"
+    data-code-copy-header
   >
     <span
-      class="min-w-0 text-xs text-muted-foreground empty:hidden"
-      aria-live="polite"
-      aria-atomic="true"
-      data-code-copy-feedback
-    ></span>
-    <ActionButton
-      class="ms-auto"
-      size="sm"
-      variant="ghost"
-      aria-label="Copy code"
-      data-code-copy-button
+      class="max-w-24 min-w-0 flex-1 truncate font-mono text-xs font-medium text-muted-foreground"
+      data-code-copy-language
+      >Code</span
     >
-      <Copy
-        class="size-3.5"
-        aria-hidden="true"
-      />
-      <span aria-hidden="true">Copy</span>
-    </ActionButton>
+    <div
+      class="code-copy-toolbar flex shrink-0 items-center"
+      data-code-copy-toolbar
+    >
+      <span
+        class="sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+        data-code-copy-feedback
+      ></span>
+      <ActionButton
+        class="relative"
+        size="icon-xs"
+        variant="ghost"
+        aria-label="Copy code"
+        title="Copy code"
+        data-code-copy-button
+        data-code-copy-state="idle"
+      >
+        <span class="relative size-4">
+          <Clipboard
+            class="absolute inset-0 size-4 transition-[opacity,transform] duration-200 motion-reduce:transition-none"
+            aria-hidden="true"
+            data-code-copy-icon
+          />
+          <Check
+            class="absolute inset-0 size-4 scale-75 opacity-0 transition-[opacity,transform] duration-200 motion-reduce:transition-none"
+            aria-hidden="true"
+            data-code-copy-success-icon
+          />
+        </span>
+      </ActionButton>
+    </div>
   </div>
 </template>
 
 <script>
   const OPT_OUT_SELECTOR = '[data-code-copy="false"]';
+  const COPIED_FEEDBACK_DURATION_MS = 1400;
 
-  /** Reports clipboard results beside the control without changing its accessible name. */
+  const LANGUAGE_LABELS: Readonly<Record<string, string>> = {
+    bash: 'Bash',
+    css: 'CSS',
+    diff: 'Diff',
+    html: 'HTML',
+    javascript: 'JavaScript',
+    js: 'JavaScript',
+    json: 'JSON',
+    jsx: 'JSX',
+    markdown: 'Markdown',
+    md: 'Markdown',
+    python: 'Python',
+    sh: 'Shell',
+    text: 'Plain text',
+    ts: 'TypeScript',
+    tsx: 'TSX',
+    typescript: 'TypeScript',
+    yaml: 'YAML',
+    yml: 'YAML',
+  };
+
+  /** Resolves the compact source label shown in a generated code-block header. */
+  const resolveLanguageLabel = (code: HTMLElement): string => {
+    const languageClass = [...code.classList].find((className) =>
+      className.startsWith('language-'),
+    );
+    const language = languageClass?.slice('language-'.length).trim().toLowerCase();
+
+    if (language === undefined || language.length === 0) return 'Code';
+    return LANGUAGE_LABELS[language] ?? language;
+  };
+
+  /** Announces clipboard results without changing the control's stable accessible name. */
   const setCopyFeedback = (feedback: HTMLElement, message: string): void => {
     feedback.textContent = message;
   };
@@ -46,16 +98,36 @@ import ActionButton from '../action-button/action-button.component.astro';
     code: HTMLElement,
   ): void => {
     let latestRequest: symbol | undefined;
+    let feedbackTimeout: number | undefined;
+
+    const resetFeedback = (): void => {
+      if (feedbackTimeout !== undefined) {
+        window.clearTimeout(feedbackTimeout);
+        feedbackTimeout = undefined;
+      }
+      button.dataset.codeCopyState = 'idle';
+      button.title = 'Copy code';
+      setCopyFeedback(feedback, '');
+    };
+
+    const showFeedback = (state: 'copied' | 'error', message: string): void => {
+      if (feedbackTimeout !== undefined) window.clearTimeout(feedbackTimeout);
+
+      button.dataset.codeCopyState = state;
+      button.title = message;
+      setCopyFeedback(feedback, message);
+      feedbackTimeout = window.setTimeout(resetFeedback, COPIED_FEEDBACK_DURATION_MS);
+    };
 
     button.addEventListener('click', async () => {
       const request = Symbol();
       latestRequest = request;
-      setCopyFeedback(feedback, '');
+      resetFeedback();
 
       const writeText = navigator.clipboard?.writeText;
 
       if (writeText === undefined) {
-        setCopyFeedback(feedback, 'Copy is unavailable. Select the code, then copy it manually.');
+        showFeedback('error', 'Copy is unavailable. Select the code, then copy it manually.');
         return;
       }
 
@@ -63,17 +135,55 @@ import ActionButton from '../action-button/action-button.component.astro';
         await writeText.call(navigator.clipboard, code.textContent ?? '');
 
         if (latestRequest === request && button.isConnected) {
-          setCopyFeedback(feedback, 'Copied.');
+          showFeedback('copied', 'Copied.');
         }
       } catch {
         if (latestRequest === request && button.isConnected) {
-          setCopyFeedback(feedback, 'Copy failed. Select the code, then copy it manually.');
+          showFeedback('error', 'Copy failed. Select the code, then copy it manually.');
         }
       }
     });
   };
 
-  /** Adds one copy toolbar to every eligible code block in the current document. */
+  /** Places one compact copy action in an existing file header or a generated code header. */
+  const placeCopyControls = (
+    pre: HTMLPreElement,
+    code: HTMLElement,
+    header: HTMLElement,
+    toolbar: HTMLElement,
+  ): void => {
+    const filePreview = pre.closest<HTMLElement>('[data-file-preview]');
+    const filePreviewHeader = filePreview?.querySelector<HTMLElement>(
+      ':scope > [data-file-preview-header]',
+    );
+    const filePreviewCodeBlockCount = filePreview?.querySelectorAll('pre > code').length ?? 0;
+
+    if (
+      filePreviewHeader !== undefined &&
+      filePreviewHeader !== null &&
+      filePreviewCodeBlockCount === 1
+    ) {
+      filePreviewHeader.append(toolbar);
+      return;
+    }
+
+    const languageLabel = header.querySelector<HTMLElement>('[data-code-copy-language]');
+    if (languageLabel !== null) languageLabel.textContent = resolveLanguageLabel(code);
+
+    const componentContainer = pre.closest<HTMLElement>('[data-code-block]');
+    if (componentContainer !== null && componentContainer.firstElementChild === pre) {
+      componentContainer.dataset.codeCopyFrame = '';
+      componentContainer.prepend(header);
+      return;
+    }
+
+    const frame = document.createElement('div');
+    frame.dataset.codeCopyFrame = '';
+    pre.before(frame);
+    frame.append(header, pre);
+  };
+
+  /** Adds one compact copy action to every eligible code block in the current document. */
   const initializeCodeCopyControls = (): void => {
     const template = document.querySelector<HTMLTemplateElement>(
       '[data-code-copy-controls-template]',
@@ -94,15 +204,16 @@ import ActionButton from '../action-button/action-button.component.astro';
       }
 
       const fragment = template.content.cloneNode(true) as DocumentFragment;
+      const header = fragment.querySelector<HTMLElement>('[data-code-copy-header]');
       const toolbar = fragment.querySelector<HTMLElement>('[data-code-copy-toolbar]');
       const button = fragment.querySelector<HTMLButtonElement>('[data-code-copy-button]');
       const feedback = fragment.querySelector<HTMLElement>('[data-code-copy-feedback]');
 
-      if (toolbar === null || button === null || feedback === null) continue;
+      if (header === null || toolbar === null || button === null || feedback === null) continue;
 
       initializeCopyButton(button, feedback, code);
       pre.dataset.codeCopyEnhanced = 'true';
-      pre.before(toolbar);
+      placeCopyControls(pre, code, header, toolbar);
     }
   };
 

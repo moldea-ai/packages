@@ -145,6 +145,10 @@
     @apply size-10;
   }
 
+  .action-size-icon-xs {
+    @apply size-6 rounded-md;
+  }
+
   .prose-moldea {
     @apply min-w-0 text-[1.05rem] leading-8 text-foreground;
   }
@@ -202,20 +206,32 @@
     @apply max-w-full overflow-x-auto rounded-xl border bg-code p-5 text-sm leading-6 text-code-foreground shadow-inset;
   }
 
-  .code-copy-toolbar {
-    @apply mb-2;
+  [data-code-copy-frame] {
+    @apply min-w-0 overflow-hidden rounded-xl border border-border shadow-inset;
   }
 
-  .prose-moldea .code-copy-toolbar {
-    @apply mt-5;
+  .prose-moldea [data-code-copy-frame] {
+    @apply my-5;
   }
 
-  .prose-moldea[data-code-block] .code-copy-toolbar {
-    @apply mt-0;
+  .prose-moldea[data-code-block][data-code-copy-frame] {
+    @apply my-0;
   }
 
-  .code-copy-toolbar + pre {
-    margin-top: 0;
+  [data-code-copy-frame] > pre {
+    @apply m-0 rounded-none border-0 shadow-none;
+  }
+
+  [data-code-copy-button][data-code-copy-state='copied'] [data-code-copy-icon] {
+    @apply scale-75 opacity-0;
+  }
+
+  [data-code-copy-button][data-code-copy-state='copied'] [data-code-copy-success-icon] {
+    @apply scale-100 opacity-100;
+  }
+
+  [data-code-copy-button][data-code-copy-state='error'] {
+    @apply text-destructive;
   }
 
   /* Preserve code, structured output, and file-tree alignment by default. */
