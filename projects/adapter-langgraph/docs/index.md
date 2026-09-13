@@ -11,9 +11,3 @@ order: 1
 The adapter begins at each declared runtime-agent path, finds its nearest owning package, checks the primary and companion declarations together, and returns immutable evidence and stable diagnostics through Core. It does not execute the application or treat package presence as proof of a LangGraph workflow.
 
 The package exports only `langGraphAdapter`. The generated API reference derives that surface from the package export.
-
-## Local guides
-
-- [Verified target](verified-target.md)
-- [Evidence and diagnostics](evidence-and-diagnostics.md)
-- [Limitations](limitations.md)

@@ -19,9 +19,3 @@ const core = createCore({ adapters: [googleGenAiAdapter] });
 The package is available with one technical target covering TypeScript ESM using direct `models.generateContent` calls with npm `@google/genai >=2.17.1`, Repository Format version `1`, and Core `^4.0.0`.
 
 The adapter never imports or calls the Google Gen AI SDK, executes no repository code, requires no credentials, and makes no network request. Its only public export is the immutable `googleGenAiAdapter` singleton.
-
-## Local guides
-
-- [Verified target](verified-target.md)
-- [Evidence and diagnostics](evidence-and-diagnostics.md)
-- [Limitations](limitations.md)

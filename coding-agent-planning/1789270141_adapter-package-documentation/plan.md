@@ -1,38 +1,38 @@
 # Publish adapter documentation with installed packages
 
-## Objective and cause
+## Objective and original issues
 
-Make all ten official adapter packages locally self-documenting without changing adapter behavior or running paid evaluations. The Eve test session successfully used moldea, but explored compiled package source after encountering missing documentation. All ten adapters have repository-owned docs but omit them from npm artifacts; six installed READMEs contain broken documentation links. Existing package tests check runtime artifacts but do not require these documents. The release selector unconditionally excludes docs, which would silently omit future published-documentation fixes.
+Make all ten official adapters locally self-documenting without changing runtime behavior or running paid evaluations. Their repository-owned documentation was omitted from npm packages; six installed READMEs linked to missing guides. This encouraged unnecessary source exploration. Existing artifact tests did not require documentation, and release selection unconditionally excluded docs, preventing later shipped-document fixes from reaching users.
 
-## Evidence and scope
+## Completed implementation
 
-Base: packages origin/main f1d1054e77bf50400e46e24ede77dbc07af3e7b8. Work on branch adapter_package_docs in an isolated worktree; preserve the user's development branch and unrelated agents' changes. Relevant owners are projects/adapter-_/package.json, README.md, docs/_.md and src/index.test-integration.ts; scripts/npm-release/git.ts and project-changes.ts; their tests; README.md and docs/npm-releases.md. Each adapter currently has four small Markdown documents, totaling about 84 KB across all ten. Some documents link to website-only API and compatibility routes.
+Signed commit bd51c27aeb3e5913e89f861f629135b2a3fb4557 on packages main adds docs to all ten adapters, README navigation, shared packed-document verification, committed-manifest-based documentation release selection, corresponding tests, cache inputs, and packaging/release guidance. Exports, dependency ranges, engines, adapter implementations, the skill, and qualification evidence are unchanged. Root tests, all adapter suites, lint, typechecking, compatibility checks, documentation-source checks, and ten real tarball inspections passed. The platform specification already permits publishing package docs and needs no correction.
 
-## Final contract
+## Review finding and revised final contract
 
-- Ship each adapter's existing four documentation pages under docs and provide direct README navigation to overview, verified target, diagnostics and limitations.
-- Preserve existing technical claims. Replace website-relative links with the corresponding canonical HTTPS URLs; keep package-local document links local and resolvable.
-- Include a compact local navigation section in each documentation index. No requirement to read every page or inspect compiled source before ordinary use.
-- Require documentation completeness and local-link resolution against actual package packing output. Reject missing targets and links escaping the package boundary. Reuse existing packing checks rather than adding another installation per case.
-- Treat documentation as release-relevant when either compared manifest publishes it; preserve website-only exclusions for other packages. Cover additions, modifications, deletions, and the version-bump gate with real Git integration tests.
-- Patch-bump only the ten changed adapters from current main versions. Preserve compatible-major consumer dependency ranges and runtime compatibility claims. Refresh affected lockfile resolutions and version assertions.
+The full website build found that the additional local-guide links in docs/index.md render as nonexistent website .md routes. Publication and deployment stopped before releasing the candidate. Documentation-source validation alone was insufficient; full website build validation must precede the recovery push.
 
-## Implementation and ownership
+Remove the redundant Local guides section from each adapter documentation index. Keep direct package-local navigation to all four guides in every README. Preserve the website's existing navigation and the explicit, verified HTTPS links for generated API references and compatibility pages. Do not modify the website renderer, duplicate documents, add redirects, or introduce compatibility/fallback behavior.
 
-First strengthen the existing adapter artifact checks, using shared test-only verification under configs/package-documentation if needed, with colocated negative integration coverage. Then publish docs in each manifest, correct navigation and website-only links, and synchronize adapter README version declarations. Update release selection using committed manifest information rather than an adapter-name allowlist. Keep validation and errors in the existing release-tooling conventions and avoid a new dependency or a general Markdown rendering system. Update root packaging/release guidance and the directly affected platform package specification if it contradicts the final distribution contract; do not touch unrelated platform work or protected instructions.
+## Remaining implementation scope
 
-## Verification and resource controls
+- projects/adapter-*/docs/index.md: remove only the added Local guides section; retain website-link corrections and all technical claims.
+- README.md: state that README links provide local navigation, without claiming additional index navigation.
+- Existing configs/package-documentation verification, adapter artifact tests, scripts/npm-release selection and tests, package manifests and docs/npm-releases.md remain the authoritative implementation.
+- Preserve candidate versions if the registry confirms they remain unpublished: Anthropic and OpenAI 4.0.1; Eve, LangChain and LangGraph 3.0.2; the other five adapters 3.0.1. Use the existing documented unpublished-candidate recovery workflow, not new release logic.
 
-Use existing Node 24.15.0 and pnpm 11.9.0 tooling. Run focused regression tests first, then pnpm test:root and the complete existing correctness suites for all ten adapters, serializing artifact-heavy work. Run root and adapter typechecking/linting, targeted Prettier, compatibility:check, and docs:check. Inspect real tarballs and their Markdown/link closure; verify published npm artifacts after release. Assert no test files, source-only helpers, private imports, or unintended assets enter artifacts. Retain existing build exclusions. Do not add caches or arbitrary output limits: documents are small static assets and tests reuse existing pack results. CI owns the full supported-runtime and operating-system matrix; report its actual result separately from local checks.
+## Verification and review
 
-## Review and publication
+Run targeted Prettier and git diff --check; regenerate and fully build the packages website with pnpm website:build --output-logs=errors-only, including its existing complete internal-link/artifact validation. Repack all ten adapters and verify all four guides and README contents against actual tarballs, using the shared documentation check for local links. Reuse passed runtime, unit, integration, lint and typechecking evidence whose executable inputs remain unchanged. Confirm package versions are still unpublished and no unrelated paths, runtime code, tests, lockfiles or compatibility ranges changed in recovery. Review the complete correction and the cumulative task result before publication.
 
-Keep packaging, release selection, tests, and documentation synchronization together as one complete implementation checkpoint. Challenge this plan before implementation, revise material gaps, and evaluate breakdown. Review the complete scoped diff, fix confirmed defects, and review again. Create a signed and signed-off cohesive commit, push the isolated branch, merge only reviewed work into main using the available authorized publication mechanism, and monitor the existing trusted npm workflow. Verify all ten new versions contain usable local docs. Do not claim publication until registry artifacts are confirmed. Failed publication preserves commits and existing released versions; recovery follows docs/npm-releases.md, never retags or overwrites releases.
+## Publication and completion
 
-## Exclusions and risks
+Work remains isolated on adapter_package_docs at /tmp/moldea-adapter-docs.K6MW2x; preserve other worktrees and unrelated agents' work. Challenge this revision, evaluate breakdown, complete the cohesive recovery scope, review, fix findings and review again, then repo push with a signed and signed-off commit. Fast-forward only the reviewed work into main under existing autonomous authorization. Monitor the existing trusted npm and website workflows; verify all ten registry tarballs before claiming completion. Do not overwrite tags, released artifacts or history. Report any genuine capability or unrelated CI blocker without bypassing checks.
 
-Clean slate within the affected path: no legacy documentation fallback, compatibility switch, parallel release-selection path, or migration shim. Remove superseded assumptions rather than preserving them. No skill release, SKILL.md changes, runtime logic changes, SDK-range changes, new adapter capabilities, paid semantic evaluations or adapter qualifications, changes in skill-mock, evidence replacement, broad documentation rewrites, or unrelated cleanup. Missing GitHub publication capability or a material unrelated CI failure must be reported honestly rather than bypassed. Shipping docs means future edits to those shipped files properly need adapter patches; it does not force unchanged CLI or skill releases.
+## Exclusions and resource controls
+
+No paid semantic evaluations or adapter qualifications, skill release, SKILL.md changes, runtime changes, new dependency, SDK-range change, website/UI redesign, migration shim, legacy path, skill-mock edit, or unrelated cleanup. The guides add approximately 86 KB across all ten adapters. Verification reuses existing package checks and bounded static artifacts; no new caching system or arbitrary resource ceiling is needed. Keep the original defect and the website-build oversight recorded in this plan.
 
 ## Approval required
 
-The complete scope is the ten adapters' documentation packaging and navigation, artifact regression coverage, shipped-document release selection, directly affected documentation/version synchronization, review and publication. The user has explicitly authorized autonomous completion of this task and its workflow; no additional approval checkpoint is requested.
+The user has authorized autonomous completion of this task and its workflow. This revision removes redundant navigation and strengthens required verification without changing the requested outcome; no additional approval checkpoint is requested.

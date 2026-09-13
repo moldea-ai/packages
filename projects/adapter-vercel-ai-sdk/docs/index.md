@@ -27,9 +27,3 @@ The adapter never imports or calls the SDK, requires no API key, executes no rep
 ## Public surface
 
 The package exports only `vercelAiSdkAdapter`. It has no default export, configuration factory, SDK facade, parser export, public diagnostic registry, or mutable runtime state. The generated [API reference](https://packages.moldea.ai/adapters/vercel-ai-sdk/api/) derives that surface from the package export.
-
-## Local guides
-
-- [Verified target](verified-target.md)
-- [Evidence and diagnostics](evidence-and-diagnostics.md)
-- [Limitations](limitations.md)
