@@ -5,6 +5,10 @@ import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
+import { createCore } from '@moldea.ai/core';
+import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+
+import { parseDocumentationExample } from '../../../configs/package-documentation/example/index.js';
 import { verifyPackedDocumentation } from '../../../configs/package-documentation/index.js';
 
 import * as publicApi from './index.js';
@@ -88,7 +92,7 @@ describe('@moldea.ai/adapter-anthropic public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-anthropic',
-      version: '4.0.1',
+      version: '4.0.2',
     });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
@@ -123,5 +127,86 @@ describe('@moldea.ai/adapter-anthropic public API', () => {
       semver: '7.8.5',
       typescript: '6.0.3',
     });
+  });
+});
+
+describe('published binding example', () => {
+  const files = parseDocumentationExample(
+    readFileSync(new URL('../docs/binding-example.md', import.meta.url), 'utf8'),
+  );
+
+  test('establishes every documented relationship through the real adapter', async () => {
+    const result = await createCore({ adapters: [publicApi.anthropicAdapter] }).validateProject({
+      repository: createMemoryRepositoryReader(files),
+    });
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(true);
+    for (const { path: sourcePath, symbol, ...identity } of [
+      {
+        agentId: 'support',
+        kind: 'runtime-pattern',
+        path: '/src/agent.ts',
+        symbol: 'supportAgent',
+      },
+      {
+        agentId: 'support',
+        kind: 'instruction-loader',
+        path: '/src/instructions.ts',
+        symbol: 'loadInstruction',
+      },
+      {
+        agentId: 'support',
+        kind: 'tool-registration',
+        capabilityId: 'find-order',
+        path: '/src/find-order.ts',
+        symbol: 'findOrderTool',
+      },
+      {
+        agentId: 'support',
+        kind: 'schema',
+        capabilityId: 'find-order',
+        path: '/src/contracts.ts',
+        symbol: 'FindOrderInput',
+      },
+    ]) {
+      const match = result.evidence.find(
+        (entry) =>
+          entry.source === 'anthropic' &&
+          entry.agentId === identity.agentId &&
+          entry.kind === identity.kind &&
+          (!('capabilityId' in identity) || entry.capabilityId === identity.capabilityId) &&
+          entry.references.some(
+            (reference) =>
+              reference.path === sourcePath &&
+              (symbol === undefined || reference.symbol === symbol),
+          ),
+      );
+      expect(match, JSON.stringify({ ...identity, sourcePath, symbol })).toBeDefined();
+    }
+  });
+
+  test('does not establish runtime evidence for a misspelled binding', async () => {
+    const changed = files.map((file) =>
+      file.path === '/moldea/moldea.yaml'
+        ? {
+            ...file,
+            content: file.content.replace(
+              /symbol: ['"]?[A-Za-z0-9_-]+['"]?/u,
+              'symbol: missingExampleAgent',
+            ),
+          }
+        : file,
+    );
+    const result = await createCore({ adapters: [publicApi.anthropicAdapter] }).validateProject({
+      repository: createMemoryRepositoryReader(changed),
+    });
+    expect(changed[0]?.content).toContain('symbol: missingExampleAgent');
+    expect(
+      result.evidence.filter(
+        (entry) =>
+          entry.agentId === 'support' &&
+          (entry.kind === 'agent-definition' || entry.kind === 'runtime-pattern'),
+      ),
+    ).toStrictEqual([]);
   });
 });

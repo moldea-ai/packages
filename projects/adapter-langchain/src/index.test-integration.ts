@@ -5,6 +5,10 @@ import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
+import { createCore } from '@moldea.ai/core';
+import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+
+import { parseDocumentationExample } from '../../../configs/package-documentation/example/index.js';
 import { verifyPackedDocumentation } from '../../../configs/package-documentation/index.js';
 
 import * as publicApi from './index.js';
@@ -88,7 +92,7 @@ describe('@moldea.ai/adapter-langchain public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-langchain',
-      version: '3.0.2',
+      version: '3.0.3',
     });
     expect(packedPaths).toEqual(
       expect.arrayContaining([
@@ -127,5 +131,92 @@ describe('@moldea.ai/adapter-langchain public API', () => {
       semver: '7.8.5',
       typescript: '6.0.3',
     });
+  });
+});
+
+describe('published binding example', () => {
+  const files = parseDocumentationExample(
+    readFileSync(new URL('../docs/binding-example.md', import.meta.url), 'utf8'),
+  );
+
+  test('establishes every documented relationship through the real adapter', async () => {
+    const result = await createCore({ adapters: [publicApi.langChainAdapter] }).validateProject({
+      repository: createMemoryRepositoryReader(files),
+    });
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(true);
+    for (const { path: sourcePath, symbol, ...identity } of [
+      {
+        agentId: 'support',
+        kind: 'agent-definition',
+        path: '/src/agent.ts',
+        symbol: 'supportAgent',
+      },
+      {
+        agentId: 'support',
+        kind: 'instruction-loader',
+        path: '/src/instructions.ts',
+        symbol: 'loadSupportInstruction',
+      },
+      {
+        agentId: 'support',
+        kind: 'schema',
+        path: '/src/contracts.ts',
+        symbol: 'SupportOutputSchema',
+      },
+      {
+        agentId: 'support',
+        kind: 'tool-registration',
+        capabilityId: 'find-order',
+        path: '/src/tools.ts',
+        symbol: 'findOrderTool',
+      },
+      {
+        agentId: 'support',
+        kind: 'schema',
+        capabilityId: 'find-order',
+        path: '/src/contracts.ts',
+        symbol: 'FindOrderInputSchema',
+      },
+    ]) {
+      const match = result.evidence.find(
+        (entry) =>
+          entry.source === 'langchain' &&
+          entry.agentId === identity.agentId &&
+          entry.kind === identity.kind &&
+          (!('capabilityId' in identity) || entry.capabilityId === identity.capabilityId) &&
+          entry.references.some(
+            (reference) =>
+              reference.path === sourcePath &&
+              (symbol === undefined || reference.symbol === symbol),
+          ),
+      );
+      expect(match, JSON.stringify({ ...identity, sourcePath, symbol })).toBeDefined();
+    }
+  });
+
+  test('does not establish runtime evidence for a misspelled binding', async () => {
+    const changed = files.map((file) =>
+      file.path === '/moldea/moldea.yaml'
+        ? {
+            ...file,
+            content: file.content.replace(
+              /symbol: ['"]?[A-Za-z0-9_-]+['"]?/u,
+              'symbol: missingExampleAgent',
+            ),
+          }
+        : file,
+    );
+    const result = await createCore({ adapters: [publicApi.langChainAdapter] }).validateProject({
+      repository: createMemoryRepositoryReader(changed),
+    });
+    expect(changed[0]?.content).toContain('symbol: missingExampleAgent');
+    expect(
+      result.evidence.filter(
+        (entry) =>
+          entry.agentId === 'support' &&
+          (entry.kind === 'agent-definition' || entry.kind === 'runtime-pattern'),
+      ),
+    ).toStrictEqual([]);
   });
 });

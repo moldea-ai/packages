@@ -5,6 +5,10 @@ import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
+import { createCore } from '@moldea.ai/core';
+import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+
+import { parseDocumentationExample } from '../../../configs/package-documentation/example/index.js';
 import { verifyPackedDocumentation } from '../../../configs/package-documentation/index.js';
 
 import * as publicApi from './index.js';
@@ -88,7 +92,7 @@ describe('@moldea.ai/adapter-claude-agent-sdk public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-claude-agent-sdk',
-      version: '3.0.1',
+      version: '3.0.2',
     });
     expect(packedPaths).toEqual(
       expect.arrayContaining([
@@ -127,5 +131,148 @@ describe('@moldea.ai/adapter-claude-agent-sdk public API', () => {
       semver: '7.8.5',
       typescript: '6.0.3',
     });
+  });
+});
+
+describe('published binding example', () => {
+  const files = parseDocumentationExample(
+    readFileSync(new URL('../docs/binding-example.md', import.meta.url), 'utf8'),
+  );
+
+  test('establishes every documented relationship through the real adapter', async () => {
+    const result = await createCore({
+      adapters: [publicApi.claudeAgentSdkAdapter],
+    }).validateProject({
+      repository: createMemoryRepositoryReader(files),
+    });
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(true);
+    for (const { path: sourcePath, symbol, ...identity } of [
+      {
+        agentId: 'billing',
+        kind: 'agent-definition',
+        path: '/src/agents.ts',
+        symbol: 'billingAgent',
+      },
+      {
+        agentId: 'billing',
+        kind: 'instruction-loader',
+        path: '/src/instructions.ts',
+        symbol: 'loadBillingInstruction',
+      },
+      {
+        agentId: 'billing',
+        kind: 'tool-registration',
+        capabilityId: 'find-order',
+        path: '/src/tools.ts',
+        symbol: 'findOrderTool',
+      },
+      {
+        agentId: 'billing',
+        kind: 'schema',
+        capabilityId: 'find-order',
+        path: '/src/contracts.ts',
+        symbol: 'FindOrderInputSchema',
+      },
+      {
+        agentId: 'triage',
+        kind: 'runtime-pattern',
+        path: '/src/runtime.ts',
+        symbol: 'triageAgent',
+      },
+      {
+        agentId: 'triage',
+        kind: 'instruction-loader',
+        path: '/src/instructions.ts',
+        symbol: 'loadTriageInstruction',
+      },
+      {
+        agentId: 'triage',
+        kind: 'schema',
+        path: '/src/contracts.ts',
+        symbol: 'TriageOutputSchema',
+      },
+      {
+        agentId: 'triage',
+        kind: 'tool-registration',
+        capabilityId: 'find-order',
+        path: '/src/tools.ts',
+        symbol: 'findOrderTool',
+      },
+      {
+        agentId: 'triage',
+        kind: 'schema',
+        capabilityId: 'find-order',
+        path: '/src/contracts.ts',
+        symbol: 'FindOrderInputSchema',
+      },
+    ]) {
+      const match = result.evidence.find(
+        (entry) =>
+          entry.source === 'claude-agent-sdk' &&
+          entry.agentId === identity.agentId &&
+          entry.kind === identity.kind &&
+          (!('capabilityId' in identity) || entry.capabilityId === identity.capabilityId) &&
+          entry.references.some(
+            (reference) =>
+              reference.path === sourcePath &&
+              (symbol === undefined || reference.symbol === symbol),
+          ),
+      );
+      expect(match, JSON.stringify({ ...identity, sourcePath, symbol })).toBeDefined();
+    }
+    expect(
+      result.evidence.find(
+        (entry) => entry.kind === 'handoff-registration' && entry.source === 'claude-agent-sdk',
+      ),
+    ).toMatchObject({ details: { targetAgentId: 'billing' } });
+  });
+
+  test('rejects routing text that differs from the canonical handoff description', async () => {
+    const changed = files.map((file) =>
+      file.path === '/moldea/agents/billing/handoff-description.md'
+        ? { ...file, content: 'Route a different class of requests here.\n' }
+        : file,
+    );
+    const result = await createCore({
+      adapters: [publicApi.claudeAgentSdkAdapter],
+    }).validateProject({
+      repository: createMemoryRepositoryReader(changed),
+    });
+    expect(result.valid).toBe(false);
+    expect(
+      result.diagnostics.some(
+        (entry) =>
+          entry.source === 'claude-agent-sdk' &&
+          entry.code.includes('ROUTING_DESCRIPTION_NOT_WIRED'),
+      ),
+    ).toBe(true);
+  });
+
+  test('does not establish runtime evidence for a misspelled binding', async () => {
+    const changed = files.map((file) =>
+      file.path === '/moldea/moldea.yaml'
+        ? {
+            ...file,
+            content: file.content.replace(
+              /symbol: ['"]?[A-Za-z0-9_-]+['"]?/u,
+              'symbol: missingExampleAgent',
+            ),
+          }
+        : file,
+    );
+    const result = await createCore({
+      adapters: [publicApi.claudeAgentSdkAdapter],
+    }).validateProject({
+      repository: createMemoryRepositoryReader(changed),
+    });
+    expect(changed[0]?.content).toContain('symbol: missingExampleAgent');
+    expect(
+      result.evidence.filter(
+        (entry) =>
+          entry.agentId === 'billing' &&
+          (entry.kind === 'agent-definition' || entry.kind === 'runtime-pattern'),
+      ),
+    ).toStrictEqual([]);
   });
 });

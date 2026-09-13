@@ -11,3 +11,5 @@ order: 1
 The adapter begins at each declared runtime-agent path, finds its nearest owning package, checks the primary and companion declarations together, and returns immutable evidence and stable diagnostics through Core. It does not execute the application or treat package presence as proof of an agent definition.
 
 The package exports only `langChainAdapter`. The generated API reference derives that surface from the package export.
+
+Start with the [complete binding example](https://packages.moldea.ai/adapters/langchain/binding-example/) when connecting runtime source to canonical instructions, schemas, tools, or routing metadata. The same example ships locally as `docs/binding-example.md` in the installed package.

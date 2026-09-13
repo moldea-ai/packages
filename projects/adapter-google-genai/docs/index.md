@@ -19,3 +19,5 @@ const core = createCore({ adapters: [googleGenAiAdapter] });
 The package is available with one technical target covering TypeScript ESM using direct `models.generateContent` calls with npm `@google/genai >=2.17.1`, Repository Format version `1`, and Core `^4.0.0`.
 
 The adapter never imports or calls the Google Gen AI SDK, executes no repository code, requires no credentials, and makes no network request. Its only public export is the immutable `googleGenAiAdapter` singleton.
+
+Start with the [complete binding example](https://packages.moldea.ai/adapters/google-genai/binding-example/) when connecting runtime source to canonical instructions, schemas, tools, or routing metadata. The same example ships locally as `docs/binding-example.md` in the installed package.

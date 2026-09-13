@@ -19,7 +19,7 @@ const core = createCore({ adapters: [langGraphAdapter] });
 
 ## Verified targets
 
-Version `3.0.2` supports Repository Format `1`, `@moldea.ai/core ^4.0.0`, and declared ranges that intersect `@langchain/langgraph >=1.4.12` with companion `@langchain/core >=1.2.9`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution. The targets recognize:
+Version `3.0.3` supports Repository Format `1`, `@moldea.ai/core ^4.0.0`, and declared ranges that intersect `@langchain/langgraph >=1.4.12` with companion `@langchain/core >=1.2.9`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution. The targets recognize:
 
 - directly exported compiled `StateGraph` definitions using supported inline fluent or single-owner module-local builders
 - closed modern Graph API schema initialization and direct input/output schema wiring
@@ -34,6 +34,8 @@ The adapter reads source through the Repository contract. It does not execute La
 The package exports only `langGraphAdapter`. It has no default export, configuration factory, LangGraph facade, parser export, or public diagnostic registry.
 
 ## Documentation
+
+- [Complete binding example](docs/binding-example.md): manifest, canonical instructions, runtime source, and supported schema or routing relationships.
 
 These guides are included in the installed package. Open only the page relevant to your task.
 

@@ -11,3 +11,5 @@ order: 0
 The adapter inspects TypeScript source through the repository reader supplied by Core. It does not execute source, load Cloudflare packages, inspect `node_modules`, use credentials, or make network requests. Runtime applications register the singleton with `createCore({ adapters: [cloudflareAgentsAdapter] })`; the local CLI registers active official adapters automatically.
 
 The [Runtime Compatibility Matrix](https://packages.moldea.ai/compatibility/) is authoritative. This documentation explains the package behavior but does not expand the verified target boundary.
+
+Start with the [complete binding example](https://packages.moldea.ai/adapters/cloudflare-agents/binding-example/) when connecting runtime source to canonical instructions, schemas, tools, or routing metadata. The same example ships locally as `docs/binding-example.md` in the installed package.

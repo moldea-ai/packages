@@ -2,7 +2,7 @@
 
 Deterministic runtime evidence and diagnostics for direct Anthropic SDK integrations.
 
-Version `4.0.1` supports this verified technical boundary:
+Version `4.0.2` supports this verified technical boundary:
 
 - TypeScript ESM source in `.ts`, `.tsx`, and `.mts` files
 - `@anthropic-ai/sdk >=0.117.1`
@@ -25,6 +25,8 @@ const core = createCore({ adapters: [anthropicAdapter] });
 ```
 
 ## Documentation
+
+- [Complete binding example](docs/binding-example.md): manifest, canonical instructions, runtime source, and supported schema or routing relationships.
 
 These guides are included in the installed package. Open only the page relevant to your task.
 
