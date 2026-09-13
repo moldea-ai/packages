@@ -2,6 +2,7 @@
 import { GitFork, Menu, Search } from '@lucide/astro';
 
 import ActionLink from '../action-link/action-link.component.astro';
+import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
 import ThemeControl from '../theme-control/theme-control.component.astro';
 
 export interface ISiteHeaderNavigationItem {
@@ -77,17 +78,26 @@ const responsiveClasses = breakpointClasses[breakpoint];
                   class="xl:hidden"
                   aria-hidden="true"
                 >
-                  {compactLabel}
+                  <InlineBrandText
+                    text={compactLabel}
+                    variant="compact"
+                  />
                 </span>
                 <span
                   class="hidden xl:inline"
                   aria-hidden="true"
                 >
-                  {label}
+                  <InlineBrandText
+                    text={label}
+                    variant="compact"
+                  />
                 </span>
               </>
             ) : (
-              label
+              <InlineBrandText
+                text={label}
+                variant="compact"
+              />
             )}
           </a>
         ))
@@ -150,7 +160,10 @@ const responsiveClasses = breakpointClasses[breakpoint];
                 href={href}
                 aria-current={isActive ? 'page' : undefined}
               >
-                {label}
+                <InlineBrandText
+                  text={label}
+                  variant="compact"
+                />
               </a>
             ))
           }
@@ -167,7 +180,10 @@ const responsiveClasses = breakpointClasses[breakpoint];
             target="_blank"
             rel="noopener noreferrer"
           >
-            {sourceLabel}
+            <InlineBrandText
+              text={sourceLabel}
+              variant="compact"
+            />
           </a>
           <slot name="mobile-actions" />
         </nav>

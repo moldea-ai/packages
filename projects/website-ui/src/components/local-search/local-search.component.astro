@@ -2,6 +2,7 @@
 import { Search } from '@lucide/astro';
 
 import ActionButton from '../action-button/action-button.component.astro';
+import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
 
 export interface Props {
   action: string;
@@ -74,7 +75,10 @@ const {
         size="lg"
         type="submit"
       >
-        {buttonLabel}
+        <InlineBrandText
+          text={buttonLabel}
+          variant="compact"
+        />
       </ActionButton>
     </div>
   </form>
@@ -84,7 +88,7 @@ const {
     aria-live="polite"
     data-search-status
   >
-    {initialPrompt}
+    <InlineBrandText text={initialPrompt} />
   </p>
   <ol
     class="mt-8 grid gap-4"
@@ -100,6 +104,24 @@ const {
     type ISearchDocument,
   } from '../../search/index.ts';
 
+  /** Replaces text with escaped text and semantic code nodes for every product-name match. */
+  const renderInlineBrandText = (element: HTMLElement, text: string): void => {
+    const content = document.createDocumentFragment();
+
+    for (const segment of text.split(/(\bmoldea\b)/giu)) {
+      if (/^moldea$/iu.test(segment)) {
+        const code = document.createElement('code');
+        code.className = 'inline-code tracking-normal';
+        code.textContent = 'moldea';
+        content.append(code);
+      } else {
+        content.append(document.createTextNode(segment));
+      }
+    }
+
+    element.replaceChildren(content);
+  };
+
   const createSearchResult = (searchDocument: ISearchDocument): HTMLLIElement => {
     const item = document.createElement('li');
     const link = document.createElement('a');
@@ -110,9 +132,9 @@ const {
     link.className = 'block rounded-md';
     link.href = searchDocument.url;
     title.className = 'text-xl font-semibold tracking-tight';
-    title.textContent = searchDocument.title;
+    renderInlineBrandText(title, searchDocument.title);
     excerpt.className = 'mt-2 leading-6 text-muted-foreground';
-    excerpt.textContent = searchDocument.description;
+    renderInlineBrandText(excerpt, searchDocument.description);
     link.append(title, excerpt);
     item.append(link);
 
@@ -157,11 +179,11 @@ const {
       results.replaceChildren();
 
       if (!query.trim()) {
-        status.textContent = root.dataset.initialPrompt ?? '';
+        renderInlineBrandText(status, root.dataset.initialPrompt ?? '');
         return;
       }
 
-      status.textContent = root.dataset.loadingMessage ?? '';
+      renderInlineBrandText(status, root.dataset.loadingMessage ?? '');
 
       const pendingDocuments = (documentsPromise ??= loadSearchDocuments(searchIndexUrl));
       const documents = await pendingDocuments;
@@ -170,15 +192,18 @@ const {
       if (latestRequest !== request || !root.isConnected) return;
 
       if (documents === null) {
-        status.textContent = root.dataset.failureMessage ?? '';
+        renderInlineBrandText(status, root.dataset.failureMessage ?? '');
         return;
       }
 
       const matches = searchDocuments(query, documents);
       results.replaceChildren(...matches.map(createSearchResult));
-      status.textContent = matches.length
-        ? `${matches.length} result${matches.length === 1 ? '' : 's'} for “${query}”.`
-        : (root.dataset.noResultsMessage ?? '');
+      renderInlineBrandText(
+        status,
+        matches.length
+          ? `${matches.length} result${matches.length === 1 ? '' : 's'} for “${query}”.`
+          : (root.dataset.noResultsMessage ?? ''),
+      );
     };
 
     form.addEventListener('submit', (event) => {

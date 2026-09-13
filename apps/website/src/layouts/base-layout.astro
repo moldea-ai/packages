@@ -1,5 +1,6 @@
 ---
 import { ClientRouter, fade } from 'astro:transitions';
+import CodeCopyControls from '@moldea.ai/website-ui/code-copy-controls';
 import NavigationProgress from '@moldea.ai/website-ui/navigation-progress';
 import ThemeBootstrap from '@moldea.ai/website-ui/theme-bootstrap';
 import { withBase } from '@moldea.ai/website-ui/site';
@@ -195,6 +196,7 @@ const structuredWebsiteJson = structuredWebsite
   </head>
   <body class:list={[flushFooter && '[&>footer]:mt-0']}>
     <NavigationProgress />
+    <CodeCopyControls />
     <a
       class="fixed start-3 top-3 z-[100] -translate-y-24 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground focus:translate-y-0"
       href="#main-content"

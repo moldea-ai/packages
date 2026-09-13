@@ -3,6 +3,8 @@ import { ChevronRight } from '@lucide/astro';
 
 import { withBase } from '../../site/index.ts';
 
+import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
+
 export interface IBreadcrumb {
   href?: string;
   label: string;
@@ -35,14 +37,20 @@ const { basePath = import.meta.env.BASE_URL, items } = Astro.props;
               class="plain-link"
               href={withBase(item.href, basePath)}
             >
-              {item.label}
+              <InlineBrandText
+                text={item.label}
+                variant="compact"
+              />
             </a>
           ) : (
             <span
               class="min-w-0 font-medium text-foreground"
               aria-current="page"
             >
-              {item.label}
+              <InlineBrandText
+                text={item.label}
+                variant="compact"
+              />
             </span>
           )}
         </li>

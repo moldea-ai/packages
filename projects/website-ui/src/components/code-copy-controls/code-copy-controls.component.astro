@@ -1,0 +1,111 @@
+---
+import { Copy } from '@lucide/astro';
+
+import ActionButton from '../action-button/action-button.component.astro';
+---
+
+<template data-code-copy-controls-template>
+  <div
+    class="code-copy-toolbar flex min-h-8 min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
+    data-code-copy-toolbar
+  >
+    <span
+      class="min-w-0 text-xs text-muted-foreground empty:hidden"
+      aria-live="polite"
+      aria-atomic="true"
+      data-code-copy-feedback
+    ></span>
+    <ActionButton
+      class="ms-auto"
+      size="sm"
+      variant="ghost"
+      aria-label="Copy code"
+      data-code-copy-button
+    >
+      <Copy
+        class="size-3.5"
+        aria-hidden="true"
+      />
+      <span aria-hidden="true">Copy</span>
+    </ActionButton>
+  </div>
+</template>
+
+<script>
+  const OPT_OUT_SELECTOR = '[data-code-copy="false"]';
+
+  /** Reports clipboard results beside the control without changing its accessible name. */
+  const setCopyFeedback = (feedback: HTMLElement, message: string): void => {
+    feedback.textContent = message;
+  };
+
+  /** Copies one block after an explicit button activation and reports the resolved outcome. */
+  const initializeCopyButton = (
+    button: HTMLButtonElement,
+    feedback: HTMLElement,
+    code: HTMLElement,
+  ): void => {
+    let latestRequest: symbol | undefined;
+
+    button.addEventListener('click', async () => {
+      const request = Symbol();
+      latestRequest = request;
+      setCopyFeedback(feedback, '');
+
+      const writeText = navigator.clipboard?.writeText;
+
+      if (writeText === undefined) {
+        setCopyFeedback(feedback, 'Copy is unavailable. Select the code, then copy it manually.');
+        return;
+      }
+
+      try {
+        await writeText.call(navigator.clipboard, code.textContent ?? '');
+
+        if (latestRequest === request && button.isConnected) {
+          setCopyFeedback(feedback, 'Copied.');
+        }
+      } catch {
+        if (latestRequest === request && button.isConnected) {
+          setCopyFeedback(feedback, 'Copy failed. Select the code, then copy it manually.');
+        }
+      }
+    });
+  };
+
+  /** Adds one copy toolbar to every eligible code block in the current document. */
+  const initializeCodeCopyControls = (): void => {
+    const template = document.querySelector<HTMLTemplateElement>(
+      '[data-code-copy-controls-template]',
+    );
+
+    if (template === null) return;
+
+    for (const pre of document.querySelectorAll<HTMLPreElement>('pre')) {
+      const code = pre.firstElementChild;
+
+      if (
+        !(code instanceof HTMLElement) ||
+        code.tagName !== 'CODE' ||
+        pre.dataset.codeCopyEnhanced === 'true' ||
+        pre.closest(OPT_OUT_SELECTOR) !== null
+      ) {
+        continue;
+      }
+
+      const fragment = template.content.cloneNode(true) as DocumentFragment;
+      const toolbar = fragment.querySelector<HTMLElement>('[data-code-copy-toolbar]');
+      const button = fragment.querySelector<HTMLButtonElement>('[data-code-copy-button]');
+      const feedback = fragment.querySelector<HTMLElement>('[data-code-copy-feedback]');
+
+      if (toolbar === null || button === null || feedback === null) continue;
+
+      initializeCopyButton(button, feedback, code);
+      pre.dataset.codeCopyEnhanced = 'true';
+      pre.before(toolbar);
+    }
+  };
+
+  document.addEventListener('astro:page-load', initializeCodeCopyControls);
+  initializeCodeCopyControls();
+</script>

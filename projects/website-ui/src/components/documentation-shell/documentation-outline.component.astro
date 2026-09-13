@@ -1,5 +1,6 @@
 ---
 import type { IDocumentationOutlineHeading } from './documentation-shell.component.astro';
+import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
 
 interface Props {
   headings: readonly IDocumentationOutlineHeading[];
@@ -14,7 +15,10 @@ const { headings } = Astro.props;
       class:list={['plain-link text-sm leading-5', heading.depth === 3 && 'ps-3']}
       href={`#${heading.id}`}
     >
-      {heading.text}
+      <InlineBrandText
+        text={heading.text}
+        variant="compact"
+      />
     </a>
   ))
 }

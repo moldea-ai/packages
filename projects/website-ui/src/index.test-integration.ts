@@ -80,9 +80,12 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.6.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.7.0' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
+    expect(packedPaths).toContain(
+      'src/components/code-copy-controls/code-copy-controls.component.astro',
+    );
     expect(packedPaths).toContain(
       'src/components/connection-label/connection-label.component.astro',
     );
@@ -194,6 +197,7 @@ describe('published website UI package', () => {
         "import BrandLogo from '@moldea.ai/website-ui/brand-logo';",
         "import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';",
         "import CodeBlock from '@moldea.ai/website-ui/code-block';",
+        "import CodeCopyControls from '@moldea.ai/website-ui/code-copy-controls';",
         "import ConnectionLabel from '@moldea.ai/website-ui/connection-label';",
         "import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';",
         "import Dialog from '@moldea.ai/website-ui/dialog';",
@@ -215,12 +219,13 @@ describe('published website UI package', () => {
         "import { withBase } from '@moldea.ai/website-ui/site';",
         "import '../styles.css';",
         '',
-        "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## Shared Markdown');",
+        "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## moldea Shared Markdown', { productNameTreatment: 'code' });",
         "const tree = buildEvaluationReplayPathTree([{ path: 'src/index.ts', type: 'file' }]);",
         "const replay = { trials: [{ confirmationIndex: 3, evaluatedAt: '2026-09-10T00:00:00.000Z', id: 'confirmation-3', kind: 'confirmation', steps: [], title: 'Confirmation 3' }] } satisfies IEvaluationReplayModel;",
-        "const navigationItems = [{ href: '/', isActive: true, label: 'Home' }, { href: '/repository-format/', isActive: false, label: 'Repository Format', compactLabel: 'Repo. Format' }] satisfies ComponentProps<typeof SiteHeader>['navigationItems'];",
+        "const navigationItems = [{ href: '/', isActive: true, label: 'moldea Home' }, { href: '/repository-format/', isActive: false, label: 'Repository Format', compactLabel: 'Repo. Format' }] satisfies ComponentProps<typeof SiteHeader>['navigationItems'];",
         'const fileProps = { path: "src/returns/policy.ts", label: "Return policy", tone: "warning" } satisfies ComponentProps<typeof FilePreview>;',
-        'const codeProps = { source: "echo order-status", language: "sh", variant: "plain" } satisfies ComponentProps<typeof CodeBlock>;',
+        'const codeProps = { source: "echo order-status", language: "sh", variant: "plain", copyable: true } satisfies ComponentProps<typeof CodeBlock>;',
+        'const nonCopyableCodeProps = { source: "incomplete result", language: "text", copyable: false } satisfies ComponentProps<typeof CodeBlock>;',
         'const connectionProps = { tone: "danger" } satisfies ComponentProps<typeof ConnectionLabel>;',
         'const accordionProps = { id: "check-two", group: "fixture-accordion", title: "Second check", isOpen: true } satisfies ComponentProps<typeof Accordion>;',
         'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", hideIconOnMobile: true, ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
@@ -233,17 +238,19 @@ describe('published website UI package', () => {
         '  </head>',
         '  <body>',
         '    <NavigationProgress />',
+        '    <CodeCopyControls />',
         '    <SiteHeader navigationItems={navigationItems} searchAriaLabel="Search fixture" searchHref="/search/" searchIsActive={false} sourceAriaLabel="Fixture source" sourceHref="https://example.com/source" themeStorageKey="fixture-theme">',
         '      <span slot="brand">Fixture brand</span>',
         '    </SiteHeader>',
         '    <BrandLogo compact darkCompactLogoPath="/dark-icon.png" darkLogoPath="/dark.png" homeLabel="Fixture home" lightCompactLogoPath="/light-icon.png" lightLogoPath="/light.png" suffix="fixture" />',
-        '    <Breadcrumbs items={[{ href: "/", label: "Home" }, { label: "Fixture" }]} />',
+        '    <Breadcrumbs items={[{ href: "/", label: "Home" }, { label: "moldea Fixture" }]} />',
         '    <InlineBrandText text="Use moldea here." />',
         '    <InlineBrandText text="Use MOLDEA compactly." variant="compact" />',
         '    <ActionButton>Run</ActionButton>',
         '    <section class="relative overflow-hidden"><HeroBackdrop /><h1 class="relative">Consumer hero</h1></section>',
         '    <CodeBlock source={JSON.stringify({ valid: false })} language="json" />',
         '    <CodeBlock {...codeProps} />',
+        '    <CodeBlock {...nonCopyableCodeProps} />',
         '    <CodeBlock source="Plain text wraps in narrow containers." language="text" />',
         '    <ConnectionLabel {...connectionProps}><span slot="icon">!</span>Missing from <code class="inline-code">moldea.yaml</code></ConnectionLabel>',
         '    <ConnectionLabel>Linked file</ConnectionLabel>',
@@ -259,7 +266,7 @@ describe('published website UI package', () => {
         '    <StatusBadge label="Available" tone="success" />',
         '    <TabbedPanels ariaLabel="Fixture views" id="fixture-tabs" items={[{ id: "first", label: "First", slotName: "first" }, { id: "second", label: "Second", slotName: "second" }]}><p slot="first">First panel</p><p slot="second">Second panel</p></TabbedPanels>',
         '    <EvaluationReplay id="fixture-replay" replay={replay} />',
-        '    <DocumentationShell breadcrumbs={[{ href: "/", label: "Home" }, { label: "Docs" }]} currentRoute="/docs/" headings={rendered.headings}><div class="prose-moldea" set:html={rendered.html} /></DocumentationShell>',
+        '    <DocumentationShell breadcrumbs={[{ href: "/", label: "Home" }, { label: "moldea Docs" }]} currentRoute="/docs/" headings={rendered.headings} navigationGroups={[{ label: "moldea Guides", items: [{ href: "/docs/", label: "moldea Start" }] }]} previousPage={{ href: "/previous/", label: "Previous moldea guide" }} nextPage={{ href: "/next/", label: "Next moldea guide" }}><div class="prose-moldea" set:html={rendered.html} /></DocumentationShell>',
         '    <p>{tree[0]?.name}</p>',
         '    <ThemeControl storageKey="fixture-theme" />',
         '    <LocalSearch action="/search/" failureMessage="Search unavailable." initialPrompt="Enter a query." placeholder="e.g. repository snapshots" searchIndexUrl="/search-index.json" shouldFocusOnLoad />',
@@ -305,6 +312,9 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('language-sh');
     expect(fixtureHtml).toContain('language-text');
     expect(fixtureHtml).toContain('role="region" aria-label="Code block"');
+    expect(fixtureHtml).toContain('data-code-copy-controls-template');
+    expect(fixtureHtml).toContain('data-code-copy="false"');
+    expect(fixtureHtml.match(/<code[^>]*>moldea<\/code>/gu)?.length).toBeGreaterThanOrEqual(8);
     expect(fixtureHtml).toContain('Linked file');
     expect(fixtureHtml).toContain('Missing from <code class="inline-code">moldea.yaml</code>');
     expect(fixtureHtml).toContain('data-search-focus-on-load="true"');

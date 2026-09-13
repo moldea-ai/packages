@@ -70,6 +70,7 @@ const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAle
       <CodeBlock
         source={JSON.stringify(getCapabilityResultExcerpt(example.result), null, 2)}
         language="json"
+        copyable={false}
       />
     </div>
     <p class="text-xs leading-6 text-muted-foreground">

@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, ChevronDown, Menu } from '@lucide/astro';
 
 import { withBase } from '../../site/index.ts';
 import Breadcrumbs, { type IBreadcrumb } from '../breadcrumbs/breadcrumbs.component.astro';
+import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
 
 import DocumentationOutline from './documentation-outline.component.astro';
 
@@ -77,7 +78,10 @@ const contentGridClass = hasNavigation
             class="size-4"
             aria-hidden="true"
           />
-          {mobileNavigationLabel}
+          <InlineBrandText
+            text={mobileNavigationLabel}
+            variant="compact"
+          />
         </summary>
         <nav
           class="grid gap-5 border-t border-border p-4"
@@ -85,7 +89,14 @@ const contentGridClass = hasNavigation
         >
           {navigationGroups.map((group) => (
             <div>
-              {group.label && <p class="eyebrow mb-2 px-2">{group.label}</p>}
+              {group.label && (
+                <p class="eyebrow mb-2 px-2">
+                  <InlineBrandText
+                    text={group.label}
+                    variant="compact"
+                  />
+                </p>
+              )}
               <div class="grid gap-1">
                 {group.items.map((item) => (
                   <a
@@ -93,7 +104,10 @@ const contentGridClass = hasNavigation
                     href={withBase(item.href, basePath)}
                     aria-current={item.href === currentRoute ? 'page' : undefined}
                   >
-                    {item.label}
+                    <InlineBrandText
+                      text={item.label}
+                      variant="compact"
+                    />
                   </a>
                 ))}
               </div>
@@ -108,7 +122,10 @@ const contentGridClass = hasNavigation
     hasOutline && (
       <details class="surface-card group sticky top-16 z-40 mt-3 xl:hidden">
         <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
-          {outlineLabel}
+          <InlineBrandText
+            text={outlineLabel}
+            variant="compact"
+          />
           <ChevronDown
             class="size-4"
             aria-hidden="true"
@@ -135,7 +152,14 @@ const contentGridClass = hasNavigation
             >
               {navigationGroups.map((group) => (
                 <div>
-                  {group.label && <p class="eyebrow mb-2 px-2">{group.label}</p>}
+                  {group.label && (
+                    <p class="eyebrow mb-2 px-2">
+                      <InlineBrandText
+                        text={group.label}
+                        variant="compact"
+                      />
+                    </p>
+                  )}
                   <div class="grid gap-1">
                     {group.items.map((item) => (
                       <a
@@ -143,7 +167,10 @@ const contentGridClass = hasNavigation
                         href={withBase(item.href, basePath)}
                         aria-current={item.href === currentRoute ? 'page' : undefined}
                       >
-                        {item.label}
+                        <InlineBrandText
+                          text={item.label}
+                          variant="compact"
+                        />
                       </a>
                     ))}
                   </div>
@@ -178,7 +205,12 @@ const contentGridClass = hasNavigation
                   <span class="block text-xs font-bold tracking-wide text-muted-foreground uppercase">
                     Previous
                   </span>
-                  <span class="mt-1 block font-semibold">{previousPage.label}</span>
+                  <span class="mt-1 block font-semibold">
+                    <InlineBrandText
+                      text={previousPage.label}
+                      variant="compact"
+                    />
+                  </span>
                 </span>
               </a>
             ) : (
@@ -193,7 +225,12 @@ const contentGridClass = hasNavigation
                   <span class="block text-xs font-bold tracking-wide text-muted-foreground uppercase">
                     Next
                   </span>
-                  <span class="mt-1 block font-semibold">{nextPage.label}</span>
+                  <span class="mt-1 block font-semibold">
+                    <InlineBrandText
+                      text={nextPage.label}
+                      variant="compact"
+                    />
+                  </span>
                 </span>
                 <ArrowRight
                   class="size-4 shrink-0"
@@ -210,7 +247,12 @@ const contentGridClass = hasNavigation
       (hasOutline || hasNavigation) && (
         <aside class="hidden xl:block">
           <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pe-2">
-            <p class="eyebrow mb-4">{outlineLabel}</p>
+            <p class="eyebrow mb-4">
+              <InlineBrandText
+                text={outlineLabel}
+                variant="compact"
+              />
+            </p>
             {hasOutline ? (
               <nav
                 class="grid gap-2 border-s ps-4"
@@ -219,7 +261,9 @@ const contentGridClass = hasNavigation
                 <DocumentationOutline headings={headings} />
               </nav>
             ) : (
-              <p class="text-sm text-muted-foreground">{outlineEmptyLabel}</p>
+              <p class="text-sm text-muted-foreground">
+                <InlineBrandText text={outlineEmptyLabel} />
+              </p>
             )}
           </div>
         </aside>

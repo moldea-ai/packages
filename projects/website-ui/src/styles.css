@@ -202,6 +202,22 @@
     @apply max-w-full overflow-x-auto rounded-xl border bg-code p-5 text-sm leading-6 text-code-foreground shadow-inset;
   }
 
+  .code-copy-toolbar {
+    @apply mb-2;
+  }
+
+  .prose-moldea .code-copy-toolbar {
+    @apply mt-5;
+  }
+
+  .prose-moldea[data-code-block] .code-copy-toolbar {
+    @apply mt-0;
+  }
+
+  .code-copy-toolbar + pre {
+    margin-top: 0;
+  }
+
   /* Preserve code, structured output, and file-tree alignment by default. */
   .code-block,
   .prose-moldea pre {
