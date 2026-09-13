@@ -2,37 +2,26 @@
 
 ## Objective and original issues
 
-Make all ten official adapters locally self-documenting without changing runtime behavior or running paid evaluations. Their repository-owned documentation was omitted from npm packages; six installed READMEs linked to missing guides. This encouraged unnecessary source exploration. Existing artifact tests did not require documentation, and release selection unconditionally excluded docs, preventing later shipped-document fixes from reaching users.
+Publish the existing guides in all ten official adapter packages so coding agents can read the relevant local documentation instead of exploring implementation sources. Six installed READMEs previously linked to omitted guides. Artifact tests did not detect missing documentation, and release selection excluded shipped docs from version checks.
 
-## Completed implementation
+## Completed work and findings
 
-Signed commit bd51c27aeb3e5913e89f861f629135b2a3fb4557 on packages main adds docs to all ten adapters, README navigation, shared packed-document verification, committed-manifest-based documentation release selection, corresponding tests, cache inputs, and packaging/release guidance. Exports, dependency ranges, engines, adapter implementations, the skill, and qualification evidence are unchanged. Root tests, all adapter suites, lint, typechecking, compatibility checks, documentation-source checks, and ten real tarball inspections passed. The platform specification already permits publishing package docs and needs no correction.
+Commit bd51c27aeb3e5913e89f861f629135b2a3fb4557 adds the package files, README navigation, shared packed-document verification, artifact regressions, manifest-aware release selection, cache inputs, and release documentation. Commit c2036dbdf1b96b9c2ce4429ba03a7a3d623772bb removes redundant index navigation that broke website routes. The full website build and all ten real tarball checks now pass. Earlier root and adapter suites, lint and typechecking passed.
 
-## Review finding and revised final contract
+CI then exposed a missed downstream test: projects/cli/src/bin/index.test-e2e.ts expects old adapter versions even though its installed tarballs correctly contain the new versions. This is stale test data, not a runtime regression. Both verification omissions remain recorded here.
 
-The full website build found that the additional local-guide links in docs/index.md render as nonexistent website .md routes. Publication and deployment stopped before releasing the candidate. Documentation-source validation alone was insufficient; full website build validation must precede the recovery push.
+## Remaining implementation
 
-Remove the redundant Local guides section from each adapter documentation index. Keep direct package-local navigation to all four guides in every README. Preserve the website's existing navigation and the explicit, verified HTTPS links for generated API references and compatibility pages. Do not modify the website renderer, duplicate documents, add redirects, or introduce compatibility/fallback behavior.
+Update only that CLI test and this plan. Derive the exact expected composition package names and versions from the thirteen source package manifests corresponding to the tarballs installed by the test. Retain the complete ordered package list and strict comparison; never derive expectations from observed CLI output. Preserve all other composition, installation, Git-state, cancellation and error checks.
 
-## Remaining implementation scope
+Run the CLI package's full test script, then its typecheck and lint scripts, targeted Prettier and git diff --check. Reuse the unchanged website build, adapter suites and tarball evidence. Review the full correction and cumulative task scope, then perform signed repo push and fast-forward main under existing autonomous authorization. Monitor npm publication and website deployment and verify all ten published tarballs before reporting completion.
 
-- projects/adapter-*/docs/index.md: remove only the added Local guides section; retain website-link corrections and all technical claims.
-- README.md: state that README links provide local navigation, without claiming additional index navigation.
-- Existing configs/package-documentation verification, adapter artifact tests, scripts/npm-release selection and tests, package manifests and docs/npm-releases.md remain the authoritative implementation.
-- Preserve candidate versions if the registry confirms they remain unpublished: Anthropic and OpenAI 4.0.1; Eve, LangChain and LangGraph 3.0.2; the other five adapters 3.0.1. Use the existing documented unpublished-candidate recovery workflow, not new release logic.
+## Versions and boundaries
 
-## Verification and review
+Keep the existing candidate patch versions only while npm confirms they remain unpublished: Anthropic and OpenAI 4.0.1; Eve, LangChain and LangGraph 3.0.2; the other five adapters 3.0.1. The existing release recovery workflow owns this behavior. The test correction must not require a CLI release.
 
-Run targeted Prettier and git diff --check; regenerate and fully build the packages website with pnpm website:build --output-logs=errors-only, including its existing complete internal-link/artifact validation. Repack all ten adapters and verify all four guides and README contents against actual tarballs, using the shared documentation check for local links. Reuse passed runtime, unit, integration, lint and typechecking evidence whose executable inputs remain unchanged. Confirm package versions are still unpublished and no unrelated paths, runtime code, tests, lockfiles or compatibility ranges changed in recovery. Review the complete correction and the cumulative task result before publication.
-
-## Publication and completion
-
-Work remains isolated on adapter_package_docs at /tmp/moldea-adapter-docs.K6MW2x; preserve other worktrees and unrelated agents' work. Challenge this revision, evaluate breakdown, complete the cohesive recovery scope, review, fix findings and review again, then repo push with a signed and signed-off commit. Fast-forward only the reviewed work into main under existing autonomous authorization. Monitor the existing trusted npm and website workflows; verify all ten registry tarballs before claiming completion. Do not overwrite tags, released artifacts or history. Report any genuine capability or unrelated CI blocker without bypassing checks.
-
-## Exclusions and resource controls
-
-No paid semantic evaluations or adapter qualifications, skill release, SKILL.md changes, runtime changes, new dependency, SDK-range change, website/UI redesign, migration shim, legacy path, skill-mock edit, or unrelated cleanup. The guides add approximately 86 KB across all ten adapters. Verification reuses existing package checks and bounded static artifacts; no new caching system or arbitrary resource ceiling is needed. Keep the original defect and the website-build oversight recorded in this plan.
+Work remains isolated on adapter_package_docs in /tmp/moldea-adapter-docs.K6MW2x. No production runtime, exports, SDK ranges, dependencies, lockfiles, platform specification, website renderer, skill, protected instructions or skill-mock changes. No paid evaluations, compatibility shim, legacy implementation or unrelated cleanup. Existing docs, release machinery and test fixtures remain authoritative.
 
 ## Approval required
 
-The user has authorized autonomous completion of this task and its workflow. This revision removes redundant navigation and strengthens required verification without changing the requested outcome; no additional approval checkpoint is requested.
+The user authorized autonomous completion and publication. This revision corrects required downstream verification within that scope; no additional approval checkpoint is requested.

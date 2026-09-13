@@ -651,25 +651,31 @@ describe('published CLI package and executable', () => {
       expect(jsonComposition.stderr).toBe('');
       expect(compositionEnvelope).toMatchObject({
         command: 'composition',
-        result: {
-          packages: [
-            { name: '@moldea.ai/adapter-anthropic', version: '4.0.0' },
-            { name: '@moldea.ai/adapter-claude-agent-sdk', version: '3.0.0' },
-            { name: '@moldea.ai/adapter-cloudflare-agents', version: '3.0.0' },
-            { name: '@moldea.ai/adapter-eve', version: '3.0.1' },
-            { name: '@moldea.ai/adapter-google-genai', version: '3.0.0' },
-            { name: '@moldea.ai/adapter-langchain', version: '3.0.1' },
-            { name: '@moldea.ai/adapter-langgraph', version: '3.0.1' },
-            { name: '@moldea.ai/adapter-openai', version: '4.0.0' },
-            { name: '@moldea.ai/adapter-openai-agents-sdk', version: '3.0.0' },
-            { name: '@moldea.ai/adapter-vercel-ai-sdk', version: '3.0.0' },
-            { name: '@moldea.ai/core', version: '4.0.1' },
-            { name: '@moldea.ai/repository', version: '2.0.0' },
-            { name: '@moldea.ai/repository-fs', version: '2.0.1' },
-          ],
-        },
         status: 'valid',
       });
+      expect(compositionEnvelope.result.packages).toStrictEqual(
+        [
+          ADAPTER_ANTHROPIC_PROJECT_DIRECTORY,
+          ADAPTER_CLAUDE_AGENT_SDK_PROJECT_DIRECTORY,
+          ADAPTER_CLOUDFLARE_AGENTS_PROJECT_DIRECTORY,
+          ADAPTER_EVE_PROJECT_DIRECTORY,
+          ADAPTER_GOOGLE_GENAI_PROJECT_DIRECTORY,
+          ADAPTER_LANGCHAIN_PROJECT_DIRECTORY,
+          ADAPTER_LANGGRAPH_PROJECT_DIRECTORY,
+          ADAPTER_OPENAI_PROJECT_DIRECTORY,
+          ADAPTER_OPENAI_AGENTS_SDK_PROJECT_DIRECTORY,
+          ADAPTER_VERCEL_AI_SDK_PROJECT_DIRECTORY,
+          CORE_PROJECT_DIRECTORY,
+          REPOSITORY_PROJECT_DIRECTORY,
+          REPOSITORY_FILESYSTEM_PROJECT_DIRECTORY,
+        ].map((projectDirectory) => {
+          const { name, version } = JSON.parse(
+            readFileSync(path.join(projectDirectory, 'package.json'), 'utf8'),
+          ) as IMoldeaCliPackageManifest;
+
+          return { name, version };
+        }),
+      );
       expect(compositionEnvelope.result.adapters).toHaveLength(11);
       for (const adapter of compositionEnvelope.result.adapters) {
         expect(adapter.repositoryFormatVersions).toStrictEqual([1]);
