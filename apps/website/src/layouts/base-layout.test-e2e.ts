@@ -8,6 +8,7 @@ import { DEFAULT_SITE_URL, SITE_NAME, SOCIAL_IMAGE_ALT } from '../lib/site/const
 const siteUrl = process.env.SITE_URL ?? DEFAULT_SITE_URL;
 const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const toPublicPath = (route: string): string => withBase(route, basePath);
+const normalizeClipboardLineEndings = (text: string): string => text.replaceAll('\r\n', '\n');
 
 for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
@@ -503,11 +504,13 @@ test('copies exact highlighted and literal code across direct and client navigat
   });
   const highlightedSource = await highlightedCode.locator(':scope > code').textContent();
 
-  expect(highlightedSource).not.toBeNull();
+  if (highlightedSource === null) throw new Error('Highlighted source text is unavailable.');
   await highlightedButton.click();
   await expect(highlightedButton).toBeFocused();
   await expect(highlightedToolbar.locator('[data-code-copy-feedback]')).toHaveText('Copied.');
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(highlightedSource);
+  expect(
+    normalizeClipboardLineEndings(await page.evaluate(() => navigator.clipboard.readText())),
+  ).toBe(normalizeClipboardLineEndings(highlightedSource));
 
   const literalSource = `  const marker = '<div data-code-copy="false">café</div>';
 
@@ -536,7 +539,9 @@ ${'long-line-'.repeat(32)}
   await literalButton.click();
   await expect(literalButton).toBeFocused();
   await expect(literalFixture.locator('[data-code-copy-feedback]')).toHaveText('Copied.');
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(literalSource);
+  expect(
+    normalizeClipboardLineEndings(await page.evaluate(() => navigator.clipboard.readText())),
+  ).toBe(normalizeClipboardLineEndings(literalSource));
 
   await page.getByRole('link', { name: 'Packages', exact: true }).first().click();
   await expect(page).toHaveURL(toPublicPath('/packages/'));
