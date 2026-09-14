@@ -82,11 +82,19 @@ const wrapTables = (html: string): string => {
   );
 };
 
+/** Escapes consumer-owned text before inserting it into an HTML attribute. */
+const escapeHtmlAttribute = (value: string): string =>
+  value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+
 /** Names code regions and makes their horizontal overflow keyboard-accessible. */
-const markCodeBlocks = (html: string): string =>
+const markCodeBlocks = (html: string, ariaLabel = 'Code block'): string =>
   html.replaceAll(/<pre\b([^>]*)>/gu, (_match, attributes: string) => {
     const focusAttribute = /\btabindex=/u.test(attributes) ? '' : ' tabindex="0"';
-    return `<pre${attributes}${focusAttribute} role="region" aria-label="Code block">`;
+    return `<pre${attributes}${focusAttribute} role="region" aria-label="${escapeHtmlAttribute(ariaLabel)}">`;
   });
 
 /** Applies the public product-name treatment outside existing code elements. */
@@ -220,14 +228,19 @@ export const renderMarkdownFragment = async (
  * Renders literal source without interpreting its contents as Markdown or HTML.
  * @param source Code or plain text to display verbatim.
  * @param language Syntax language; omitted languages remain unhighlighted and do not wrap.
+ * @param ariaLabel Accessible name for the keyboard-scrollable code region.
  * @returns Sanitized, highlighted HTML with a keyboard-accessible code region.
  */
-export const renderCodeBlock = async (source: string, language = ''): Promise<string> => {
+export const renderCodeBlock = async (
+  source: string,
+  language = '',
+  ariaLabel = 'Code block',
+): Promise<string> => {
   const processor = createMarkdownProcessor(false);
   const rendered = await processor.run({
     type: 'root',
     children: [{ type: 'code', lang: language || null, value: source }],
   });
 
-  return markCodeBlocks(processor.stringify(rendered));
+  return markCodeBlocks(processor.stringify(rendered), ariaLabel);
 };

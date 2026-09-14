@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.7.4
+pnpm add @moldea.ai/website-ui@1.7.5
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -166,7 +166,7 @@ The compiled `markdown` entry renders sanitized documents and fragments with sta
 
 ### Code and text wrapping
 
-`CodeBlock` receives literal `source`, optional `language`, `copyable`, and `variant="panel"` (default) or `variant="plain"` for use inside another surface. It owns compact typography, syntax highlighting, keyboard scrolling, and light/dark presentation. The plain variant has no inset, border, background, or shadow; its enclosing surface supplies the padding. Pass raw code rather than constructing a Markdown fence; embedded fences and HTML remain literal source. `renderCodeBlock` from the public `markdown` subpath exposes the same rendering for non-component consumers.
+`CodeBlock` receives literal `source`, optional `language`, `copyable`, `ariaLabel`, and `variant="panel"` (default) or `variant="plain"` for use inside another surface. It owns compact typography, syntax highlighting, keyboard scrolling, and light/dark presentation. `ariaLabel` defaults to “Code block”; provide a descriptive document-unique label when a page contains several regions. The plain variant has no inset, border, background, or shadow; its enclosing surface supplies the padding. Pass raw code rather than constructing a Markdown fence; embedded fences and HTML remain literal source. `renderCodeBlock` from the public `markdown` subpath accepts the same label for non-component consumers.
 
 ```astro
 ---
@@ -176,6 +176,7 @@ import CodeBlock from '@moldea.ai/website-ui/code-block';
 <CodeBlock
   source={JSON.stringify({ valid: false }, null, 2)}
   language="json"
+  ariaLabel="Validation result"
 />
 <CodeBlock
   source="pnpm test"

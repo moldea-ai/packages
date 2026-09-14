@@ -29,6 +29,19 @@ describe('website Markdown rendering', () => {
     },
   );
 
+  test('renders an escaped application-owned accessible label for literal code', async () => {
+    const html = await renderCodeBlock(
+      'const refundWindowDays = 14;',
+      'ts',
+      'Refund policy <source> "current" & verified',
+    );
+
+    expect(html).toContain(
+      'aria-label="Refund policy &lt;source&gt; &quot;current&quot; &amp; verified"',
+    );
+    expect(html).not.toContain('aria-label="Refund policy <source>');
+  });
+
   test('renders a sanitized base-aware document and stable heading outline', async () => {
     const rendered = await renderMarkdownDocument(
       '# Page\n\n## Use `moldea`\n\n[Local](/packages/) [External](https://example.com) <script>unsafe</script>',

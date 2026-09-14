@@ -3,13 +3,14 @@ import { renderCodeBlock } from '@moldea.ai/website-ui/markdown';
 
 // highlighted source, with a panel by default or a flat surface for composition inside another panel
 export interface Props {
+  ariaLabel?: string;
   copyable?: boolean;
   source: string;
   language?: string;
   variant?: 'panel' | 'plain';
 }
-const { copyable = true, source, language, variant = 'panel' } = Astro.props;
-const html = await renderCodeBlock(source, language);
+const { ariaLabel, copyable = true, source, language, variant = 'panel' } = Astro.props;
+const html = await renderCodeBlock(source, language, ariaLabel);
 ---
 
 <div

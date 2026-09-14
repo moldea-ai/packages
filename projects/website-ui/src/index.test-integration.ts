@@ -80,7 +80,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.7.4' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.7.5' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -224,7 +224,7 @@ describe('published website UI package', () => {
         "const replay = { trials: [{ confirmationIndex: 3, evaluatedAt: '2026-09-10T00:00:00.000Z', id: 'confirmation-3', kind: 'confirmation', steps: [], title: 'Confirmation 3' }] } satisfies IEvaluationReplayModel;",
         "const navigationItems = [{ href: '/', isActive: true, label: 'moldea Home' }, { href: '/repository-format/', isActive: false, label: 'Repository Format', compactLabel: 'Repo. Format' }] satisfies ComponentProps<typeof SiteHeader>['navigationItems'];",
         'const fileProps = { path: "src/returns/policy.ts", label: "Return policy", tone: "warning" } satisfies ComponentProps<typeof FilePreview>;',
-        'const codeProps = { source: "echo order-status", language: "sh", variant: "plain", copyable: true } satisfies ComponentProps<typeof CodeBlock>;',
+        'const codeProps = { source: "echo order-status", language: "sh", variant: "plain", copyable: true, ariaLabel: "Order status command" } satisfies ComponentProps<typeof CodeBlock>;',
         'const nonCopyableCodeProps = { source: "incomplete result", language: "text", copyable: false } satisfies ComponentProps<typeof CodeBlock>;',
         'const connectionProps = { tone: "danger" } satisfies ComponentProps<typeof ConnectionLabel>;',
         'const accordionProps = { id: "check-two", group: "fixture-accordion", title: "Second check", isOpen: true } satisfies ComponentProps<typeof Accordion>;',
@@ -312,6 +312,7 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('language-sh');
     expect(fixtureHtml).toContain('language-text');
     expect(fixtureHtml).toContain('role="region" aria-label="Code block"');
+    expect(fixtureHtml).toContain('role="region" aria-label="Order status command"');
     expect(fixtureHtml).toContain('data-code-copy-controls-template');
     expect(fixtureHtml).toContain('data-code-copy="false"');
     expect(fixtureHtml.match(/<code[^>]*>moldea<\/code>/gu)?.length).toBeGreaterThanOrEqual(8);
