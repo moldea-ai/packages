@@ -222,6 +222,11 @@
     @apply m-0 rounded-none border-0 shadow-none;
   }
 
+  /* Keep both icon states in one layer so utilities cannot hide copied feedback. */
+  [data-code-copy-success-icon] {
+    @apply scale-75 opacity-0;
+  }
+
   [data-code-copy-button][data-code-copy-state='copied'] [data-code-copy-icon] {
     @apply scale-75 opacity-0;
   }

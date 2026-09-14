@@ -164,7 +164,7 @@ The compiled `markdown` entry renders sanitized documents and fragments with sta
 
 ### Code and text wrapping
 
-`CodeBlock` receives literal `source`, optional `language`, `copyable`, and `variant="panel"` (default) or `variant="plain"` for use inside another surface. It owns compact typography, syntax highlighting, keyboard scrolling, and light/dark presentation. Pass raw code rather than constructing a Markdown fence; embedded fences and HTML remain literal source. `renderCodeBlock` from the public `markdown` subpath exposes the same rendering for non-component consumers.
+`CodeBlock` receives literal `source`, optional `language`, `copyable`, and `variant="panel"` (default) or `variant="plain"` for use inside another surface. It owns compact typography, syntax highlighting, keyboard scrolling, and light/dark presentation. The plain variant has no inset, border, background, or shadow; its enclosing surface supplies the padding. Pass raw code rather than constructing a Markdown fence; embedded fences and HTML remain literal source. `renderCodeBlock` from the public `markdown` subpath exposes the same rendering for non-component consumers.
 
 ```astro
 ---

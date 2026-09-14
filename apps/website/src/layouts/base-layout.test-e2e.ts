@@ -513,6 +513,11 @@ test('copies exact highlighted and literal code across direct and client navigat
   await expect(highlightedButton).toBeFocused();
   await expect(highlightedToolbar.locator('[data-code-copy-feedback]')).toHaveText('Copied.');
   await expect(highlightedButton).toHaveAttribute('data-code-copy-state', 'copied');
+  await expect(highlightedButton.locator('[data-code-copy-success-icon]')).toHaveCSS(
+    'opacity',
+    '1',
+  );
+  await expect(highlightedButton.locator('[data-code-copy-icon]')).toHaveCSS('opacity', '0');
   expect(
     normalizeClipboardLineEndings(await page.evaluate(() => navigator.clipboard.readText())),
   ).toBe(normalizeClipboardLineEndings(highlightedSource));
