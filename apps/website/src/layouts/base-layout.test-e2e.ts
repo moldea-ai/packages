@@ -770,7 +770,11 @@ test('persists an explicit theme and exposes mobile navigation from the keyboard
   const navigationButton = page.getByLabel('Open navigation');
   await navigationButton.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible();
+  const mobileNavigation = page.getByRole('navigation', { name: 'Mobile navigation' });
+  await expect(mobileNavigation).toBeVisible();
+  const sourceLink = mobileNavigation.getByRole('link', { name: 'Source on GitHub' });
+  await expect(sourceLink).toHaveAttribute('target', '_blank');
+  await expect(sourceLink.locator('[data-external-link-icon]')).toBeVisible();
 
   const themeControl = page.getByRole('button', { name: 'Use dark theme' }).last();
   await themeControl.focus();

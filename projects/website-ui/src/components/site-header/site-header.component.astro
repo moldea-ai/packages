@@ -1,5 +1,5 @@
 ---
-import { GitFork, Menu, Search } from '@lucide/astro';
+import { ExternalLink, GitFork, Menu, Search } from '@lucide/astro';
 
 import ActionLink from '../action-link/action-link.component.astro';
 import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
@@ -183,6 +183,11 @@ const responsiveClasses = breakpointClasses[breakpoint];
             <InlineBrandText
               text={sourceLabel}
               variant="compact"
+            />
+            <ExternalLink
+              class="ms-1.5 inline size-3.5"
+              aria-hidden="true"
+              data-external-link-icon
             />
           </a>
           <slot name="mobile-actions" />

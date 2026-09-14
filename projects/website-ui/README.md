@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.7.3
+pnpm add @moldea.ai/website-ui@1.7.4
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -49,6 +49,8 @@ The global stylesheet keeps keyboard focus visible; text-only links use their ro
 Dark prose keeps its primary foreground opaque before the 70%/60% opacity feedback. Compounding the platform's additional 80% dark hover text alpha with pressed opacity falls below 4.5:1 contrast on the shared dark background. This accessibility correction preserves the interaction scale without fading muted navigation or entire cards.
 
 `BrandLogo` stays background-free in its resting, hover, and pressed states while retaining the global keyboard focus ring.
+
+`SiteHeaderShell` marks its mobile source link with an external-link icon because the destination opens in a new tab. The desktop source action remains an icon-only control with an explicit accessible name.
 
 ## Utilities
 
