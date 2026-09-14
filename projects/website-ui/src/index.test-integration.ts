@@ -80,7 +80,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.7.2' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.7.3' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -270,7 +270,7 @@ describe('published website UI package', () => {
         '    <p>{tree[0]?.name}</p>',
         '    <ThemeControl storageKey="fixture-theme" />',
         '    <LocalSearch action="/search/" failureMessage="Search unavailable." initialPrompt="Enter a query." placeholder="e.g. repository snapshots" searchIndexUrl="/search-index.json" shouldFocusOnLoad />',
-        '    <SiteFooter><p slot="brand">Fixture footer</p><nav slot="primary-navigation" aria-label="Fixture documentation">Docs</nav><nav slot="secondary-navigation" aria-label="Fixture project">Project</nav></SiteFooter>',
+        '    <SiteFooter hasTopSpacing={false}><p slot="brand">Fixture footer</p><nav slot="primary-navigation" aria-label="Fixture documentation">Docs</nav><nav slot="secondary-navigation" aria-label="Fixture project">Project</nav></SiteFooter>',
         '  </body>',
         '</html>',
         '',
@@ -344,6 +344,7 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('Second visual');
     expect(fixtureHtml).toContain('Repo. Format');
     expect(fixtureHtml).toContain('aria-label="Repository Format"');
+    expect(fixtureHtml).toMatch(/<footer class="border-t border-border">/u);
     expect(fixtureHtml).toMatch(/<h3[^>]*>Metadata available<\/h3>/u);
     expect(fixtureHtml).toMatch(/<dialog\b[^>]*id="fixture-wide"[^>]*sm:max-w-5xl/u);
     expect(fixtureHtml).toContain('aria-describedby="fixture-wide-description"');

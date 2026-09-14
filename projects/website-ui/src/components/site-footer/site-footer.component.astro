@@ -1,4 +1,12 @@
-<footer class="mt-section-gap border-t border-border">
+---
+export interface Props {
+  hasTopSpacing?: boolean;
+}
+
+const { hasTopSpacing = true } = Astro.props;
+---
+
+<footer class:list={['border-t border-border', hasTopSpacing && 'mt-section-gap']}>
   <div class="page-shell grid gap-10 py-12 md:grid-cols-[1fr_auto_auto]">
     <div class="max-w-md space-y-4">
       <slot name="brand" />

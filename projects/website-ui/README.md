@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.7.1
+pnpm add @moldea.ai/website-ui@1.7.3
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -97,7 +97,7 @@ Every component has a dedicated public subpath:
 
 `ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. Mount `CodeCopyControls` once in the body to add compact header copy actions to eligible code blocks on direct loads and client navigation. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
 
-`SiteHeader`, `SiteFooter`, and `DocumentationShell` own responsive structure while consumers retain navigation data, accessible labels, copy, branding, actions, and page content. `TabbedPanels` keeps every panel readable without JavaScript and adds WAI-ARIA tab behavior, including Arrow Left, Arrow Right, Home, and End, after enhancement. `StatusBadge` exposes semantic tones and border treatments without defining domain status mappings.
+`SiteHeader`, `SiteFooter`, and `DocumentationShell` own responsive structure while consumers retain navigation data, accessible labels, copy, branding, actions, and page content. `SiteFooter` keeps its standard section gap by default; pass `hasTopSpacing={false}` when the preceding page section already provides the intended separation. `TabbedPanels` keeps every panel readable without JavaScript and adds WAI-ARIA tab behavior, including Arrow Left, Arrow Right, Home, and End, after enhancement. `StatusBadge` exposes semantic tones and border treatments without defining domain status mappings.
 
 Each `SiteHeader` navigation item accepts `href`, `isActive`, `label`, and optional `compactLabel`. The desktop navigation shows the compact label below `xl` (1280px) when supplied. Wider desktop navigation and the mobile menu show the full label. Accessible names always identify the full destination. The header's existing `md` or `lg` desktop breakpoint remains independent of label selection.
 
