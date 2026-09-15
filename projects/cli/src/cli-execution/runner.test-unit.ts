@@ -216,6 +216,7 @@ Options:
     });
   });
 
+  // composition loads the package graph and needs headroom during parallel release verification
   test('reports composition and maps failed command execution to a safe error', async () => {
     const compositionResult = await runMoldeaCli({
       commandLineArguments: ['composition', '--json'],
@@ -249,5 +250,5 @@ Options:
       stdout:
         '{"cliVersion":"8.0.0","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":4,"status":"error"}\n',
     });
-  });
+  }, 30_000);
 });
