@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.7.5
+pnpm add @moldea.ai/website-ui@1.8.0
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -226,10 +226,27 @@ The optional `heading` slot replaces the default heading with an application-own
 Use these typed props to customize presentation without replacing the shared controls:
 
 - `triggerVariant`: `outline` (default), `primary`, `secondary`, `ghost`, or `link`, using the corresponding `ActionButton` variant.
-- `triggerSize`: `compact` (default) preserves the existing result-card button; `sm`, `md`, and `lg` use standard `ActionButton` text-button sizes. The trigger remains a labelled text button.
+- `triggerSize`: `compact` (default) preserves the existing result-card button; `sm`, `md`, and `lg` use standard text-button sizes. `icon` and `icon-xs` use compact icon buttons with a default expand icon; a decorative `trigger-icon` slot can replace it. `triggerLabel` remains the accessible fallback and tooltip; use `triggerAriaLabel` when the surrounding context requires a more specific name.
 - `size`: `medium` (default) caps desktop width at 42rem; `large` uses the platform's 64rem cap for wider evidence. Both retain the viewport gutter, full-screen mobile layout, fixed header, scrolling body, and the same focus and dismissal behavior.
 
 For example, add `size="large" triggerVariant="primary" triggerSize="lg"` to the example above. Import the component through `@moldea.ai/website-ui/dialog`; consumers can derive its props with Astro's `ComponentProps<typeof Dialog>`.
+
+```astro
+<Dialog
+  id="complete-source"
+  title="Complete source"
+  triggerLabel="Open complete source"
+  triggerAriaLabel="Open complete source in a larger view"
+  triggerVariant="ghost"
+  triggerSize="icon-xs"
+  size="large"
+>
+  <CodeBlock
+    source={source}
+    language="yaml"
+  />
+</Dialog>
+```
 
 ### Website composition
 

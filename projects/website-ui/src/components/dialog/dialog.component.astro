@@ -1,5 +1,5 @@
 ---
-import { ArrowLeft, X } from '@lucide/astro';
+import { ArrowLeft, Maximize2, X } from '@lucide/astro';
 
 import ActionButton, {
   type Props as IActionButtonProps,
@@ -13,7 +13,7 @@ export interface Props {
   triggerLabel: string;
   triggerAriaLabel?: string;
   triggerVariant?: IActionButtonProps['variant'];
-  triggerSize?: 'compact' | Exclude<IActionButtonProps['size'], 'icon'>;
+  triggerSize?: 'compact' | IActionButtonProps['size'];
   size?: 'medium' | 'large';
   closeLabel?: string;
   // matches the platform's opt-in dismissal for read-only content
@@ -32,6 +32,7 @@ const {
   closeLabel = 'Close dialog',
   isOverlayCloseEnabled = false,
 } = Astro.props;
+const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
 ---
 
 <div data-dialog-root>
@@ -40,12 +41,27 @@ const {
     size={triggerSize === 'compact' ? 'sm' : triggerSize}
     class={triggerSize === 'compact' ? 'py-1 text-xs [hidden]:hidden' : '[hidden]:hidden'}
     aria-label={triggerAriaLabel}
+    title={isIconTrigger ? triggerLabel : undefined}
     aria-controls={id}
     aria-haspopup="dialog"
     data-dialog-trigger
     hidden
   >
-    {triggerLabel}
+    {
+      isIconTrigger ? (
+        <>
+          <slot name="trigger-icon">
+            <Maximize2
+              class="size-4"
+              aria-hidden="true"
+            />
+          </slot>
+          <span class="sr-only">{triggerLabel}</span>
+        </>
+      ) : (
+        triggerLabel
+      )
+    }
   </ActionButton>
   <dialog
     id={id}
