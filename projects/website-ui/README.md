@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.8.0
+pnpm add @moldea.ai/website-ui@1.8.1
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -36,7 +36,7 @@ Add `dark-surface-selection` to an intentionally dark surface and `light-surface
 
 Interaction roles follow the platform's `TextLink`, footer, navigation, button, and linked package-card patterns. Shared branding does not mean every anchor has the same feedback:
 
-- `text-link` uses the platform's primary text colors, a persistent underline, 70% hover opacity, 60% pressed opacity, and a current-color focus ring. Markdown links inherit this treatment.
+- `text-link` uses the platform's primary text colors, a persistent underline, 70% hover opacity, 60% pressed opacity, and a current-color focus ring. Markdown links inherit this treatment, and absolute web links add a consistent external-link icon when they open in a new tab.
 - `ActionLink` with `variant="link"` is a standalone text action: the same opacity feedback, no underline or pressed translation. `link-feedback` is available for high-contrast text compositions, not muted text or whole cards.
 - `plain-link` keeps footer, breadcrumb, and outline links muted at rest and uses foreground on hover and press, without fading or underlining them.
 - `navigation-link` uses secondary hover/pressed fills and a separate `aria-current="page"` selected treatment.
@@ -50,7 +50,7 @@ Dark prose keeps its primary foreground opaque before the 70%/60% opacity feedba
 
 `BrandLogo` stays background-free in its resting, hover, and pressed states while retaining the global keyboard focus ring.
 
-`SiteHeaderShell` marks its mobile source link with an external-link icon because the destination opens in a new tab. The desktop source action remains an icon-only control with an explicit accessible name.
+`SiteHeaderShell` marks its source links with an external-link icon because the destination opens in a new tab. The desktop source action remains an icon-only control with an explicit accessible name.
 
 ## Utilities
 

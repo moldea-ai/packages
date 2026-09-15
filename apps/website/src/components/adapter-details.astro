@@ -1,5 +1,5 @@
 ---
-import { ArrowUpRight } from '@lucide/astro';
+import { ExternalLink } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 
 import type { IAdapterPage } from '../lib/model/types.ts';
@@ -119,9 +119,10 @@ const { entry } = adapter;
               variant="outline"
             >
               Qualification evidence
-              <ArrowUpRight
+              <ExternalLink
                 class="size-4"
                 aria-hidden="true"
+                data-external-link-icon
               />
             </ActionLink>
           )}

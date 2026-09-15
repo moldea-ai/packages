@@ -80,7 +80,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.8.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.8.1' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -360,5 +360,6 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toMatch(/<span\b[^>]*class="sr-only"[^>]*>Open complete source<\/span>/u);
     expect(fixtureHtml).toContain('lucide-maximize-2');
     expect(fixtureHtml).toContain('Expanded source content');
+    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(2);
   }, 180_000);
 });

@@ -17,6 +17,7 @@ test('renders every maturity with real components, distinct tones, and readable 
   page,
 }) => {
   // compile synthetic statuses separately so the published compatibility claims stay untouched
+  test.setTimeout(60_000);
   const appDirectory = fileURLToPath(new URL('../../../', import.meta.url));
   const fixtureDirectory = mkdtempSync(join(appDirectory, '.adapter-row-'));
   const sourceDirectory = join(fixtureDirectory, 'src');

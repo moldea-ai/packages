@@ -1,5 +1,5 @@
 ---
-import { ExternalLink, GitFork, Menu, Search } from '@lucide/astro';
+import { ExternalLink, Menu, Search } from '@lucide/astro';
 
 import ActionLink from '../action-link/action-link.component.astro';
 import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
@@ -126,9 +126,10 @@ const responsiveClasses = breakpointClasses[breakpoint];
         rel="noopener noreferrer"
         aria-label={sourceAriaLabel}
       >
-        <GitFork
+        <ExternalLink
           class="size-4"
           aria-hidden="true"
+          data-external-link-icon
         />
       </ActionLink>
       <ThemeControl storageKey={themeStorageKey} />

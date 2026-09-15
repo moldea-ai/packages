@@ -34,6 +34,7 @@ test('links qualified targets to canonical evidence', async ({ page }) => {
   );
   await expect(evidenceLink).toHaveAttribute('target', '_blank');
   await expect(evidenceLink).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(evidenceLink.locator('[data-external-link-icon]')).toBeVisible();
 
   await evidenceLink.focus();
   await expect(evidenceLink).toBeFocused();

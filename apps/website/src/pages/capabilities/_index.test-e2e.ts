@@ -28,21 +28,25 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
         expect(
           (await page.locator('#variable-undeclared').boundingBox())!.width,
         ).toBeLessThanOrEqual(640);
-      await expect(page.locator('main summary [id$="-description"]')).toHaveCount(0);
+      await expect(page.locator('main summary [id$="-description"]')).toHaveCount(18);
       for (const { group } of showcase)
         await expect(
           page.getByRole('link', { name: group.reference.label, exact: true }),
         ).toHaveAttribute('href', withBase(group.reference.route, basePath));
-      for (const group of model.capabilities.groups) {
+      for (const { group, examples } of showcase) {
         const section = page.getByRole('region', { name: group.title, exact: true });
         await expect(section).toBeVisible();
         await expect(section.locator('[data-capability-coverage]')).toHaveText(
           `Also covers: ${group.coverage.join('; ')}.`,
         );
-        await expect(section.locator('details[open]')).toHaveCount(1);
-        await expect(section.locator('details[open]')).toHaveAttribute('id', group.exampleIds[0]);
-        for (const id of group.exampleIds)
-          await expect(section.locator(`#${id} > summary`)).toBeVisible();
+        await expect(section.locator('details[open]')).toHaveCount(0);
+        for (const [index, example] of examples.entries()) {
+          const summary = section.locator(`#${example.id} > summary`);
+          await expect(summary).toBeVisible();
+          await expect(summary.locator(`#${example.id}-description`)).toHaveText(
+            `Example ${index + 1} of ${examples.length}`,
+          );
+        }
       }
       const variable = await page.locator('#variable-undeclared').boundingBox();
       const mirror = await page.locator('#mirror-stale').boundingBox();
@@ -130,13 +134,33 @@ for (const width of [320, 1440]) {
         ).toBeGreaterThan(0);
         const close = dialog.getByRole('button', { name: 'Close capability result' });
         await expect(close).toBeFocused();
-        const icon = dialog
-          .getByRole('group', { name: 'Result', exact: true })
-          .locator(':scope > span');
+        const resultSummary = dialog.getByRole('group', { name: 'Result', exact: true });
+        const icon = resultSummary.locator(':scope > span');
         if (width < 640) await expect(icon).toBeHidden();
         else await expect(icon).toHaveCSS('width', '40px');
-        const badge = dialog.locator('[data-status-badge]').first();
+        await expect(resultSummary.locator('[data-status-badge]')).toHaveCount(0);
+        const excerptLabel = dialog.getByText('Executed result excerpt', { exact: true });
+        const excerptRow = excerptLabel.locator('xpath=..');
+        const badge = excerptRow.locator('[data-status-badge]');
+        await expect(badge).toHaveCount(1);
         expect((await badge.boundingBox())!.height).toBeLessThanOrEqual(22);
+        const excerptAlignment = await excerptRow.evaluate((element) => {
+          const label = element.querySelector('p');
+          const status = element.querySelector('[data-status-badge]');
+
+          if (label === null || status === null) return null;
+          const rowBounds = element.getBoundingClientRect();
+          const labelBounds = label.getBoundingClientRect();
+          const statusBounds = status.getBoundingClientRect();
+
+          return {
+            rightInset: rowBounds.right - statusBounds.right,
+            spacing: statusBounds.left - labelBounds.right,
+          };
+        });
+        expect(excerptAlignment).not.toBeNull();
+        expect(Math.abs(excerptAlignment!.rightInset)).toBeLessThanOrEqual(1);
+        expect(excerptAlignment!.spacing).toBeGreaterThanOrEqual(12);
         expect(
           await dialog.evaluate((element) =>
             element
@@ -254,7 +278,8 @@ for (const fragment of ['', '#', '#%ZZ', '#missing-example']) {
       };
     });
     await page.goto(`${route}${fragment}`);
-    await expect(page.locator('#variable-undeclared [data-accordion-panel]')).toBeVisible();
+    await expect(page.locator('main details[open]')).toHaveCount(0);
+    await expect(page.locator('#variable-undeclared [data-accordion-panel]')).toBeHidden();
     await expect(page.locator('#mirror-stale [data-accordion-panel]')).toBeHidden();
     expect(pageErrors).toStrictEqual([]);
 
@@ -315,7 +340,11 @@ test('explains file failures, successful checks, and source evidence without a t
   await expect(variable.locator('article')).toContainText('Check delivery status for order');
   await expect(variable.locator('article pre')).toHaveCount(1); // Optional JSON only, not the illustration.
   await expect(page.locator('#decision-replacement-chain')).toContainText('Valid');
-  const connections = page.getByRole('group', { name: 'Connections found in the OpenAI source' });
+  const runtime = page.locator('#openai-responses');
+  await runtime.locator(':scope > summary').click();
+  const connections = runtime.getByRole('group', {
+    name: 'Connections found in the OpenAI source',
+  });
   await expect(connections).toContainText('responses.create');
   await expect(connections).toContainText('loadInstruction');
   await expect(connections).toContainText('find_order');
@@ -338,6 +367,7 @@ test('renders each command verbatim without template indentation', async ({ page
     await expect(command).toHaveAttribute('tabindex', '0');
     await expect(command).toHaveAttribute('aria-label', 'Code block');
     await expect(command).toHaveCSS('white-space', 'pre');
+    await expect(command).toHaveCSS('padding', '16px');
   }
 });
 
@@ -510,6 +540,7 @@ for (const theme of ['light', 'dark'] as const) {
       const page = await context.newPage();
       await page.goto(route);
       await expect(page.locator('main [data-capability-outcome]')).toHaveCount(18);
+      await expect(page.locator('main details[open]')).toHaveCount(0);
       await expect(page.locator('#variable-undeclared')).toContainText('1 undeclared variable');
       for (const group of model.capabilities.groups)
         await expect(page.locator(`[data-capability-coverage="${group.id}"]`)).toHaveText(
@@ -519,10 +550,7 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(page.locator('#mirror-stale [data-accordion-panel]')).toBeVisible();
       await expect(page.locator('#variable-undeclared [data-accordion-panel]')).toBeHidden();
       await expect(page.getByRole('button', { name: /^View result:/u })).toHaveCount(0);
-      await page
-        .getByRole('navigation', { name: 'Capability sections' })
-        .getByRole('link', { name: 'Decisions', exact: true })
-        .click();
+      await page.locator('#decision-replacement-chain > summary').press('Enter');
       await expect(
         page.getByRole('group', { name: 'Consistent decision replacement' }),
       ).toBeVisible();

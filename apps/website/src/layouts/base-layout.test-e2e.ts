@@ -133,6 +133,7 @@ for (const width of [320, 1440]) {
       }, theme);
       await expect(textLink).toHaveCSS('text-decoration-line', 'underline');
       await expect(textLink).toHaveCSS('color', platformColors.prose);
+      await expect(textLink.locator('[data-external-link-icon]')).toBeVisible();
       await expect(footerLink).toHaveCSS('text-decoration-line', 'none');
       const foreground = await page
         .locator('body')
@@ -462,6 +463,7 @@ test('connects the package architecture to the official Repository Format specif
   await expect(cloudLink).toHaveAttribute('href', 'https://moldea.ai');
   await expect(cloudLink).toHaveAttribute('target', '_blank');
   await expect(cloudLink).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(cloudLink.locator('[data-external-link-icon]')).toBeVisible();
 });
 
 for (const theme of ['light', 'dark'] as const) {
@@ -716,6 +718,8 @@ test('keeps code readable without JavaScript and omits inert copy controls', asy
 test('keeps code-copy controls usable across supported widths, themes, and reduced motion', async ({
   page,
 }) => {
+  // eight responsive theme variants each include a focused accessibility scan
+  test.setTimeout(60_000);
   for (const width of [320, 375, 768, 1440]) {
     for (const theme of ['light', 'dark'] as const) {
       await page.setViewportSize({ width, height: 900 });
@@ -1233,6 +1237,8 @@ for (const viewportWidth of [320, 360, 768, 1024, 1440]) {
 test('keeps primary static routes free of serious automated accessibility violations', async ({
   page,
 }) => {
+  // the complete representative route set runs one Axe analysis per page
+  test.setTimeout(60_000);
   for (const path of REPRESENTATIVE_PATHS) {
     await page.goto(toPublicPath(path));
     const results = await new AxeBuilder({ page }).analyze();

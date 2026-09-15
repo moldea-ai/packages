@@ -1,4 +1,5 @@
 ---
+import { ExternalLink } from '@lucide/astro';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import SiteFooterShell from '@moldea.ai/website-ui/site-footer';
 import { withBase } from '@moldea.ai/website-ui/site';
@@ -62,34 +63,50 @@ const basePath = import.meta.env.BASE_URL;
   >
     <p class="font-bold">Project</p>
     <a
-      class="w-fit plain-link"
+      class="inline-flex w-fit items-center gap-1.5 plain-link"
       href="https://moldea.ai"
       target="_blank"
       rel="noopener noreferrer"
-      >Cloud</a
+      >Cloud <ExternalLink
+        class="size-3.5"
+        aria-hidden="true"
+        data-external-link-icon
+      /></a
     >
     <a
-      class="w-fit plain-link"
+      class="inline-flex w-fit items-center gap-1.5 plain-link"
       href="https://skill.moldea.ai/"
       target="_blank"
       rel="noopener noreferrer"
-      >Agent Skill</a
+      >Agent Skill <ExternalLink
+        class="size-3.5"
+        aria-hidden="true"
+        data-external-link-icon
+      /></a
     >
     <a
-      class="w-fit plain-link"
+      class="inline-flex w-fit items-center gap-1.5 plain-link"
       href="https://github.com/moldea-ai/packages"
       target="_blank"
       rel="noopener noreferrer"
     >
-      GitHub
+      GitHub <ExternalLink
+        class="size-3.5"
+        aria-hidden="true"
+        data-external-link-icon
+      />
     </a>
     <a
-      class="w-fit plain-link"
+      class="inline-flex w-fit items-center gap-1.5 plain-link"
       href="https://github.com/moldea-ai/packages/issues"
       target="_blank"
       rel="noopener noreferrer"
     >
-      Issues
+      Issues <ExternalLink
+        class="size-3.5"
+        aria-hidden="true"
+        data-external-link-icon
+      />
     </a>
     <span class="text-muted-foreground">MIT licensed</span>
   </nav>

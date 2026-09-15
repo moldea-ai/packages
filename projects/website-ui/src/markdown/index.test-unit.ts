@@ -60,6 +60,8 @@ describe('website Markdown rendering', () => {
     expect(rendered.html).toContain(
       'href="https://example.com" target="_blank" rel="noopener noreferrer"',
     );
+    expect(rendered.html).toContain('data-external-link-icon');
+    expect(rendered.html).toContain('<span class="whitespace-nowrap">External&#160;<svg');
     expect(rendered.html).not.toContain('<script>');
   });
 
@@ -71,6 +73,16 @@ describe('website Markdown rendering', () => {
 
     expect(rendered.html).toContain(
       '<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable table">',
+    );
+  });
+
+  test('keeps external-link indicators with the final path segment without blocking earlier wraps', async () => {
+    const html = await renderMarkdownFragment(
+      '[https://packages.moldea.ai/compatibility/runtimes.json](https://packages.moldea.ai/compatibility/runtimes.json)',
+    );
+
+    expect(html).toContain(
+      'https://packages.moldea.ai/compatibility/<span class="whitespace-nowrap">runtimes.json&#160;<svg',
     );
   });
 
@@ -133,6 +145,7 @@ describe('website Markdown rendering', () => {
 
     expect(html).toContain('Local and <code>moldea</code> with <code>moldea</code>');
     expect(html).toContain('href="https://example.com" target="_blank" rel="noopener noreferrer"');
+    expect(html.match(/data-external-link-icon/gu)).toHaveLength(1);
     expect(html).not.toContain('href="./source.md"');
   });
 });

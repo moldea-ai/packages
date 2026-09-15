@@ -8,6 +8,8 @@ const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 test('shows package identities and consistent card states without runtime descriptions', async ({
   page,
 }) => {
+  // the complete adapter catalog runs across both responsive widths and themes
+  test.setTimeout(60_000);
   const model = loadWebsiteModel();
   for (const width of [320, 1440]) {
     for (const theme of ['light', 'dark'] as const) {

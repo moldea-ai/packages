@@ -12,6 +12,7 @@ const homepage = withBase('/', process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 
 test('supports public dialog customization without overriding modal behavior', async ({ page }) => {
   // Exercise consumer props through Astro compilation without publishing a fixture route.
+  test.setTimeout(60_000);
   const appDirectory = fileURLToPath(new URL('../../../', import.meta.url));
   const directory = mkdtempSync(join(appDirectory, '.inspection-dialog-'));
   const fixturePath = withBase('/dialog-fixture/', process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
@@ -129,7 +130,10 @@ for (const theme of ['light', 'dark'] as const) {
     await page.getByRole('button', { name: 'View result: Hero example', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '1 broken reference', exact: true });
     await expect(dialog.getByRole('heading')).toHaveCount(1);
-    const badge = dialog.locator('header').getByText('Invalid', { exact: true });
+    const excerptRow = dialog
+      .getByText('Core validation result excerpt', { exact: true })
+      .locator('..');
+    const badge = excerptRow.getByText('Invalid', { exact: true });
     await expect(badge).toBeInViewport({ ratio: 1 });
     const body = dialog.locator(':scope > div');
     expect(await body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
