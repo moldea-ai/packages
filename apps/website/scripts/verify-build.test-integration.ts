@@ -59,6 +59,12 @@ describe('production discovery guards', () => {
     replaceArtifactText('llms.txt', 'https://skill.moldea.ai/', 'https://example.com/');
     expect(() => verifyProductionBuild(directory)).toThrow('llms.txt omits');
   });
+  test('rejects a new-tab link that loses its external-link icon', () => {
+    replaceArtifactText('index.html', 'data-external-link-icon', 'data-missing-link-icon');
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'new-tab link without an external-link icon',
+    );
+  });
   test.each([
     'MOLDEA_REFERENCE_MISSING',
     'MOLDEA_TOOL_IMPLEMENTATION_MISSING',

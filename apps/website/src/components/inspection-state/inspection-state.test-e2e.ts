@@ -40,33 +40,37 @@ for (const width of [320, 1440]) {
         await expect(page.locator('html')).toHaveCSS('overflow', 'hidden');
         await expect(dialog).toHaveCSS('animation-name', 'none');
         await expect(dialog).toContainText(state.declaredPath);
-        const heading = dialog.getByRole('heading', { name: resultTitle, exact: true });
+        await expect(dialog.getByRole('heading', { name: resultTitle, exact: true })).toBeVisible();
         await expect(dialog.getByRole('heading')).toHaveCount(1);
-        const badge = dialog
-          .locator('header')
-          .getByText(state.result.valid ? 'Valid' : 'Invalid', { exact: true });
+        const resultSummary = dialog.getByRole('group', { name: 'Result', exact: true });
+        await expect(resultSummary.locator('[data-status-badge]')).toHaveCount(0);
+        const excerptLabel = dialog.getByText('Core validation result excerpt', { exact: true });
+        const excerptRow = excerptLabel.locator('..');
+        const badge = excerptRow.getByText(state.result.valid ? 'Valid' : 'Invalid', {
+          exact: true,
+        });
         await expect(badge).toBeVisible();
-        const headingBounds = await heading.boundingBox();
         const badgeBounds = await badge.boundingBox();
         expect(badgeBounds!.height).toBe(20);
         await expect(badge).toHaveCSS('font-size', '10px');
         await expect(badge).toHaveCSS('font-weight', '600');
-        if (width >= 640) {
-          expect(badgeBounds!.x).toBeGreaterThan(headingBounds!.x + headingBounds!.width);
-          expect(
-            Math.abs(
-              badgeBounds!.y +
-                badgeBounds!.height / 2 -
-                headingBounds!.y -
-                headingBounds!.height / 2,
-            ),
-          ).toBeLessThan(1);
-        } else {
-          expect(
-            badgeBounds!.x >= headingBounds!.x + headingBounds!.width ||
-              badgeBounds!.y >= headingBounds!.y + headingBounds!.height,
-          ).toBe(true);
-        }
+        const excerptAlignment = await excerptRow.evaluate((element) => {
+          const label = element.querySelector('p');
+          const status = element.querySelector('[data-status-badge]');
+
+          if (label === null || status === null) return null;
+          const rowBounds = element.getBoundingClientRect();
+          const labelBounds = label.getBoundingClientRect();
+          const statusBounds = status.getBoundingClientRect();
+
+          return {
+            rightInset: rowBounds.right - statusBounds.right,
+            spacing: statusBounds.left - labelBounds.right,
+          };
+        });
+        expect(excerptAlignment).not.toBeNull();
+        expect(Math.abs(excerptAlignment!.rightInset)).toBeLessThanOrEqual(1);
+        expect(excerptAlignment!.spacing).toBeGreaterThanOrEqual(12);
         if (!state.result.valid)
           await expect(dialog.locator('pre')).toContainText(state.result.diagnostics[0].message);
         expect(JSON.parse(await dialog.locator('pre').innerText())).toStrictEqual(state.result);

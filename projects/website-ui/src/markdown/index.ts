@@ -54,6 +54,24 @@ const BADGE_TONE_CLASSES = {
   warning: 'border-warning/60 bg-warning/15 text-warning-foreground dark:text-foreground',
 } as const satisfies Readonly<Record<IMarkdownBadgeTone, string>>;
 
+// Lucide external-link icon used by sanitized Markdown links.
+const EXTERNAL_LINK_ICON_HTML =
+  '&#160;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide inline size-3.5" aria-hidden="true" data-external-link-icon><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>';
+
+/** Keeps an external-link indicator with the final readable segment without blocking earlier wraps. */
+const appendExternalLinkIcon = (content: string): string => {
+  const trailingSegmentMatch = content.match(/([^\s<>/]+\/?)(\s*(?:<\/[^>]+>\s*)*)$/u);
+
+  if (!trailingSegmentMatch || trailingSegmentMatch.index === undefined) {
+    return `<span class="whitespace-nowrap">${content}${EXTERNAL_LINK_ICON_HTML}</span>`;
+  }
+
+  const trailingSegment = trailingSegmentMatch[1] ?? '';
+  const closingTags = trailingSegmentMatch[2] ?? '';
+
+  return `${content.slice(0, trailingSegmentMatch.index)}<span class="whitespace-nowrap">${trailingSegment}${EXTERNAL_LINK_ICON_HTML}</span>${closingTags}`;
+};
+
 /** Removes rendered tags when deriving a plain heading label. */
 const stripTags = (html: string): string => html.replaceAll(/<[^>]+>/g, '');
 
@@ -66,11 +84,12 @@ const prefixInternalLinks = (html: string, basePath: string): string => {
 const unwrapLocalLinks = (html: string): string =>
   html.replaceAll(/<a href="(?!(?:[a-z][a-z\d+.-]*:|\/\/))[^" ]*">([\s\S]*?)<\/a>/giu, '$1');
 
-/** Adds safe external-window attributes to absolute web links. */
+/** Adds safe external-window behavior and a visible indicator to absolute web links. */
 const markExternalLinks = (html: string): string => {
   return html.replaceAll(
-    /<a href="((?:https?:)?\/\/[^" ]+)"/g,
-    '<a href="$1" target="_blank" rel="noopener noreferrer"',
+    /<a href="((?:https?:)?\/\/[^" ]+)"([^>]*)>([\s\S]*?)<\/a>/g,
+    (_match, href: string, attributes: string, content: string) =>
+      `<a href="${href}"${attributes} target="_blank" rel="noopener noreferrer">${appendExternalLinkIcon(content)}</a>`,
   );
 };
 

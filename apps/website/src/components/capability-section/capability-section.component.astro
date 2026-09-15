@@ -59,7 +59,7 @@ const { catalog, group, examples, position } = Astro.props;
               id={example.id}
               group={`${group.id}-examples`}
               title={example.title}
-              isOpen={index === 0}
+              description={`Example ${index + 1} of ${examples.length}`}
             >
               <span
                 slot="status"

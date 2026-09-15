@@ -88,11 +88,16 @@ const verifyHtmlLinks = (
     seenIds.add(id);
   }
 
-  for (const match of html.matchAll(/<a\b([^>]*)>/g)) {
+  for (const match of html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)) {
     const attributes = match[1];
+    const contents = match[2] ?? '';
     const href = /\shref="([^"]+)"/.exec(attributes)?.[1];
 
     if (!href) continue;
+
+    if (/\starget="_blank"/.test(attributes) && !/\bdata-external-link-icon\b/.test(contents)) {
+      throw new Error(`${relativeHtmlPath} has a new-tab link without an external-link icon.`);
+    }
 
     const url = new URL(href, deployedPageUrl);
 

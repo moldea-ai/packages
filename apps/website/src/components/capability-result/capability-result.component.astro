@@ -45,12 +45,6 @@ const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAle
       slot="icon"
       class="size-5"
     />
-    <StatusBadge
-      slot="status"
-      size="sm"
-      label={outcome.label}
-      tone={outcome.tone}
-    />
   </ResultSummary>
   <div class="grid min-w-0 gap-5">
     <dl class="grid gap-3 border-b pb-4 text-xs sm:grid-cols-2">
@@ -66,7 +60,14 @@ const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAle
       </div>
     </dl>
     <div class="min-w-0">
-      <p class="mb-3 text-xs font-semibold text-muted-foreground">Executed result excerpt</p>
+      <div class="mb-3 flex min-w-0 items-center justify-between gap-3">
+        <p class="text-xs font-semibold text-muted-foreground">Executed result excerpt</p>
+        <StatusBadge
+          size="sm"
+          label={outcome.label}
+          tone={outcome.tone}
+        />
+      </div>
       <CodeBlock
         source={JSON.stringify(getCapabilityResultExcerpt(example.result), null, 2)}
         language="json"

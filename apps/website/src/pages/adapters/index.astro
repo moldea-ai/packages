@@ -1,4 +1,5 @@
 ---
+import { ExternalLink } from '@lucide/astro';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
 import { withBase } from '@moldea.ai/website-ui/site';
 
@@ -96,7 +97,13 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Runtime Adapters' }
         href={withBase('/compatibility/runtimes.json', import.meta.env.BASE_URL)}
         target="_blank"
         rel="noopener noreferrer"
-        >machine-readable compatibility JSON</a
+        >machine-readable compatibility <span class="whitespace-nowrap"
+          >JSON&nbsp;<ExternalLink
+            class="inline size-3.5"
+            aria-hidden="true"
+            data-external-link-icon
+          /></span
+        ></a
       >.
     </p>
     <p class="mt-5 text-xs leading-5 text-muted-foreground">
