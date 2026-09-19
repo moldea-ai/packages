@@ -1,10 +1,8 @@
 # npm releases
 
-Public packages are released automatically after their changes reach `main`. Pull requests invoke `CI` directly, while every `main` push invokes `Publish npm Packages` as its sole verification and release orchestrator; manual `CI` dispatch remains available for branch checks. The publish workflow requires every changed public project manifest to declare a stable version that is strictly greater than its base version when one exists. The only same-version exception is an unchanged stable candidate that remains absent from npm after an earlier failed or interrupted publication. It selects changed public projects and every current repository version missing from npm, including a release left pending by that earlier workflow, and calls the reusable CI workflow exactly once for every `main` commit, including successful no-op releases. It then publishes the exact checksummed tarballs in dependency order when releases are selected.
+Public packages release automatically after their changes reach `main`. Pull requests invoke reusable `CI` directly; every `main` push invokes `Publish npm Packages` as its sole verification and release orchestrator, without a parallel branch-push CI run and including successful no-op releases. Manual `CI` dispatch remains available for branch checks. Selected projects must declare valid stable versions. After one complete verification boundary, the workflow publishes exact checksummed tarballs in dependency order.
 
-The reusable Linux verification job runs in the official Playwright image pinned to the exact `@playwright/test` version installed by the packages website. The image supplies Chromium and its operating-system dependencies, so CI does not perform an unbounded browser or system-package installation before verification. The Linux job binds the image's `/ms-playwright` browser directory explicitly, and the Turbo E2E task forwards that path through its strict environment allowlist. Package integration and E2E tasks run serially because several packages create real tarballs and isolated consumer installations whose concurrent package-manager and filesystem work is unreliable on shared runners, especially Windows. After checkout, CI explicitly trusts the container-mounted `GITHUB_WORKSPACE` Git path because it differs from the host path configured by the checkout action. Cross-platform macOS and Windows jobs continue installing only the matching Chromium binary required by their native test environments.
-
-All runtime adapters publish their package-owned `docs` directory alongside the README. Documentation changes under `projects/<project>/docs/**` select a package when either compared manifest includes docs in its npm file inventory. The selector uses committed file allowlists, including default npm inclusion and root-level patterns, without an adapter-name allowlist. Documentation omitted by both manifests remains website-only and does not select a release. Standardized `*.test-unit.*`, `*.test-integration.*`, `*.test-e2e.*`, and `*.test-bench.*` files are also excluded because production package builds must not emit them. `README.md`, `LICENSE`, `package.json`, declared package assets, public exports, and non-test source changes remain release-relevant. A change containing excluded documentation or tests together with release-relevant project files selects the project because of the release-relevant files.
+The reusable Linux job runs in the official Playwright image pinned to the `@playwright/test` version installed by the packages website. The image supplies Chromium and its operating-system dependencies instead of performing an unbounded browser or system-package installation, and the job explicitly binds `/ms-playwright` through Turbo's strict environment allowlist. Package integration and end-to-end tasks run serially because real tarball creation and isolated consumer installations are unreliable under shared-runner package-manager and filesystem concurrency, especially on Windows. CI trusts the container-mounted `GITHUB_WORKSPACE` Git path after checkout because it differs from the host path configured by the checkout action; macOS and Windows install only their matching Chromium binary.
 
 ## Release identity
 
@@ -26,13 +24,11 @@ All runtime adapters publish their package-owned `docs` directory alongside the 
 | `cli`                       | `@moldea.ai/cli`                       | `cli-v<version>`                       |
 | `website-ui`                | `@moldea.ai/website-ui`                | `website-ui-v<version>`                |
 
-Package versions follow their focused semantic-versioning contracts independently. A coordinated release may place multiple package tags on one commit, but it does not create a lockstep-versioning requirement.
-
-Workflow-created tags are annotated but not cryptographically signed. The repository does not store a long-lived tag-signing key.
+Packages follow their focused semantic-versioning contracts independently. A coordinated release may place multiple package tags on one commit without creating lockstep versioning. Workflow-created tags are annotated but not cryptographically signed; the repository stores no long-lived tag-signing key.
 
 ## Repository setup
 
-Create a GitHub environment named `npm-release` and restrict deployment to `main`. Configure each existing npm package with this trusted publisher:
+Create a GitHub environment named `npm-release`, restrict deployment to `main`, and configure each existing npm package with this trusted publisher:
 
 - provider: GitHub Actions
 - organization: `moldea-ai`
@@ -41,34 +37,42 @@ Create a GitHub environment named `npm-release` and restrict deployment to `main
 - environment: `npm-release`
 - allowed action: `npm publish`
 
-The workflow uses npm OIDC and contains no npm publication token. The publication steps run in the reusable `publish-package.yml` workflow, but npm validates the calling workflow identity, so the trusted-publisher filename remains `publish.yml`. Both workflow boundaries grant the required OIDC permission while the reusable jobs keep tag-writing and package-publishing permissions separate. After a trusted publication succeeds, restrict traditional token-based publication for the package and revoke any temporary automation token.
+Publication uses npm OIDC without an npm token. Although publication jobs run through reusable `publish-package.yml`, npm validates the calling `publish.yml` identity. Both workflow boundaries grant OIDC permission while tag-writing and package-publishing permissions remain separate. After trusted publication succeeds, restrict traditional token publication and revoke any temporary automation token.
 
 ## Preparing a release
 
-1. Update every changed existing public project's manifest to a stable version strictly greater than the version at the previous `main` commit. A newly introduced project whose manifest is absent from that commit may start at any canonical stable version.
-2. Update every directly affected first-class dependency range. First-party packages use compatible-major ranges so a compatible patch or minor does not force an otherwise unchanged downstream release. A breaking major still requires the downstream package to select and verify the new major explicitly.
-3. Regenerate compatibility artifacts when the CLI composition or compatibility claims change.
-4. Update directly affected package and release documentation.
-5. Complete review and merge the release commit into `main`.
+1. Audit the complete diff against its base commit using the release-relevance rules below. When both commits are available, run:
 
-Pull-request CI compares every public project's release-relevant files with the target commit and rejects a changed existing project with an unchanged, lower, prerelease, or noncanonical version. Website-only documentation, standardized test files, and colocated `*.test-fixtures.*` support files do not select a package; shipped documentation does. README, manifest, production source, license, and declared package-artifact changes remain release-relevant. A new project absent from the target commit is selected with no predecessor version and must still declare a canonical stable version. The resulting push to `main` repeats the comparison against the exact pushed commits, loads the published versions for every public package, and selects changed projects plus each current repository version absent from npm. When the current stable version equals the base version and is still unpublished, the push is treated as a recovery attempt rather than a missing version bump. An unpublished candidate uses the latest published version as its predecessor, so a safe skipped version can recover automatically while downgrades remain prohibited. A changed version already present on npm retains its base-commit predecessor so the reusable release boundary still validates its tag identity. The publish orchestrator verifies that commit once rather than starting a parallel standalone CI run. Selected projects pass one complete repository, supported-Node, cross-platform, packed-artifact, checksum, and runtime verification boundary before any tag or publication is attempted.
+   ```bash
+   pnpm release:check-changes <base-commit> <current-commit>
+   ```
 
-Repository publishes first, followed by Repository FS, Core, the Anthropic adapter, the Google Gen AI adapter, the OpenAI adapter, the OpenAI Agents SDK adapter, the Claude Agent SDK adapter, the Cloudflare Agents adapter, the Eve adapter, the LangChain adapter, the LangGraph adapter, the Vercel AI SDK adapter, and the CLI. Website UI is independent of that runtime dependency chain and may publish after the shared verification boundary without waiting for those package jobs. An unselected package is skipped without blocking later selected packages. A failed package blocks every dependent downstream release, while a rerun or manual trusted dispatch can resume from a matching tag without republishing completed versions.
+2. Give every selected existing public project a canonical stable manifest version greater than its base version. A newly introduced project with no base manifest may start at any canonical stable version.
+3. Update directly affected compatible-major first-class dependency ranges and the lockfile. A compatible patch or minor does not force an otherwise unchanged downstream release; a breaking major requires downstream selection and verification.
+4. Regenerate compatibility artifacts when CLI composition or compatibility claims change.
+5. Synchronize directly affected package documentation, generated compatibility documentation, release documentation, and version assertions.
+6. Complete review and merge the release commit into `main`.
 
-The workflow accepts stable semantic versions only. Prerelease versions and alternate npm distribution tags require a separately designed release path.
+Release selection compares committed project inventories: pull requests use the target commit, and `main` uses the exact pushed commits. Production source, `README.md`, `LICENSE`, `package.json`, public exports, and declared package files are release-relevant. Documentation under `projects/<project>/docs/**` selects a package when either compared manifest includes it in the npm file inventory; documentation omitted by both manifests remains website-only. The selector follows each committed manifest's file inventory, including default npm inclusion and root-level patterns, without an adapter-name allowlist. All runtime adapters publish their package-owned docs, so changes to those shipped guides select the adapter. Standardized `*.test-unit.*`, `*.test-integration.*`, `*.test-e2e.*`, `*.test-bench.*`, and colocated `*.test-fixtures.*` files do not select a package and must not enter production builds. A change containing excluded documentation or tests plus release-relevant files still selects the project.
+
+Pull-request CI rejects a selected existing project with an unchanged, lower, prerelease, or noncanonical version. A new project has no predecessor but still requires a canonical stable version. On `main`, the orchestrator also reads every public package's registry versions and selects any current repository version still absent from npm. An unchanged stable version missing after a failed or interrupted publication is a recovery candidate. Its latest published registry version becomes its predecessor, so safely skipped versions can recover while downgrades remain prohibited. A changed version already on npm retains its base-commit predecessor so release preparation still validates its tag identity.
+
+Selected projects pass one repository, supported-Node, cross-platform, packed-artifact, checksum, and runtime verification boundary before tagging or publication. Publication order is Repository, Repository FS, Core, Anthropic, Google Gen AI, OpenAI, OpenAI Agents SDK, Claude Agent SDK, Cloudflare Agents, Eve, LangChain, LangGraph, Vercel AI SDK, then CLI. Website UI is independent and may publish after shared verification without waiting for that chain. An unselected package is skipped without blocking later selected packages; a failed package blocks dependent downstream releases. Matching tags let a rerun or manual trusted dispatch resume without republishing completed versions.
+
+Only stable semantic versions are supported. Prereleases and alternate npm distribution tags require a separately designed release path.
 
 ## First publication bootstrap
 
-npm requires a package to exist before it can be connected to a trusted publisher. For a new package name:
+npm requires a package to exist before it can accept a trusted-publisher connection. For a new package name:
 
-1. Manually dispatch `Publish npm Packages` from `main` for the selected project in `bootstrap` mode. It verifies the complete release candidate, creates the annotated package tag, and retains `public-package-tarballs` without invoking `npm publish`.
-2. Download the workflow artifact and verify its `SHA256SUMS` entries from the repository root:
+1. Manually dispatch `Publish npm Packages` from `main` for the selected project in `bootstrap` mode. It verifies the complete candidate, creates the annotated tag, and retains `public-package-tarballs` without publishing.
+2. Download the artifact and verify `SHA256SUMS` from the repository root:
 
    ```bash
    pnpm release:checksums verify ./public-package-tarballs
    ```
 
-3. Publish the selected `.tgz` through an npm account protected by two-factor authentication:
+3. Publish the selected tarball through an npm account protected by two-factor authentication:
 
    ```bash
    npm publish ./public-package-tarballs/moldea.ai-repository-1.0.0.tgz \
@@ -76,9 +80,8 @@ npm requires a package to exist before it can be connected to a trusted publishe
      --registry https://registry.npmjs.org/
    ```
 
-4. Configure the trusted publisher through the package settings on npmjs.com using the fields under [Repository setup](#repository-setup). Explicitly select `npm publish` as an allowed action. The npm CLI bundled with the pinned Node.js version does not expose allowed-action selection, so it is not used for this setup step.
-
-5. Repeat for the remaining initial packages in dependency order:
+4. Configure the npm trusted publisher using [Repository setup](#repository-setup), explicitly selecting `npm publish` as the allowed action. The npm CLI bundled with the pinned Node.js version cannot select that action, so setup uses npmjs.com.
+5. Repeat in dependency order:
    1. `@moldea.ai/repository`
    2. `@moldea.ai/repository-fs`
    3. `@moldea.ai/core`
@@ -95,15 +98,11 @@ npm requires a package to exist before it can be connected to a trusted publishe
    14. `@moldea.ai/cli`
    15. `@moldea.ai/website-ui`
 
-Repository FS and Core require a compatible Repository version to exist on npm. Every package-backed runtime adapter requires compatible Repository and Core versions. The CLI requires Repository, Repository FS, Core, and active adapter versions that satisfy its declared compatible-major ranges. Its composition command reports the exact versions actually resolved and rejects missing, additional, prerelease, or breaking-major substitutions.
-
-Website UI has no dependency on the runtime package chain, so its first publication may be bootstrapped independently after its own artifact passes the shared release verification boundary.
+Repository FS and Core require a compatible Repository release. Every package-backed adapter requires compatible Repository and Core releases. CLI requires Repository, Repository FS, Core, and active adapter versions satisfying its compatible-major ranges; its composition check reports exact resolved versions and rejects missing, additional, prerelease, or breaking-major substitutions. Website UI has no dependency on that runtime chain and may bootstrap independently after shared verification.
 
 ## Trusted publication
 
-After each package has a trusted-publisher connection, ordinary releases require no manual dispatch. Merging a valid version-bumped package change into `main` verifies the release, creates or confirms the tag, and publishes only the selected tarball through OIDC. A later `main` push automatically retries any safe current package version still missing from npm. npm provenance is generated automatically for the public package.
-
-Manual `trusted` mode remains available from `main` for explicit recovery when an automatic run must resume a package whose version is still unpublished.
+After trusted publishers are configured, merging a valid version-bumped package change into `main` verifies the candidate, creates or confirms its tag, and publishes only the selected tarball through OIDC with npm provenance. A later `main` push automatically retries any safe current version still missing from npm. Manual `trusted` mode remains available from `main` for explicit recovery of an unpublished version.
 
 ## Recovery
 
@@ -117,8 +116,8 @@ The workflow never deletes, overwrites, or moves a release tag.
 | Present     | Absent           | Stop for manual reconciliation.                        |
 | Either      | Different commit | Stop without changing the tag or registry.             |
 
-Repository-wide release concurrency serializes automatic and manual publication workflows and uses GitHub's maximum pending queue. Cancellation is disabled so newer pushes and dispatches neither interrupt an active release sequence nor replace an earlier pending release.
+Repository-wide release concurrency serializes automatic and manual workflows and uses GitHub's maximum pending queue. Cancellation is disabled, so newer pushes and dispatches neither interrupt an active sequence nor replace an earlier pending release.
 
-Queue order is not a release-integrity assumption. Before publishing an unpublished automatic candidate, the workflow identifies its latest published registry version as the predecessor and requires the candidate to be greater than every version already present in the registry. A changed version already present in the registry still reaches release preparation, where its tag must resolve to the candidate commit before the release is treated as complete. An unpublished current version is selected again by the next `main` push. An unexpectedly reordered run therefore stops before tagging or publishing; after the earlier release completes, rerun the stopped workflow or allow the next `main` push to resume the newer release safely.
+Queue order is not an integrity assumption. Before publishing an unpublished automatic candidate, the workflow requires it to be greater than every version already in the registry, using the latest published version as its predecessor. A version already present still reaches preparation, where its tag must resolve to the candidate commit. An unexpectedly reordered run stops before tagging or publishing; rerun it after the earlier release completes, or let the next `main` push select the unpublished version again.
 
-Dependency-ordered releases also account for npm registry propagation. Release preparation reads each internal dependency immediately, then makes at most seven additional metadata requests over a bounded two-minute window when the required newly published version is not yet visible. It proceeds as soon as the dependency range is satisfied. If the registry still does not expose the dependency after that window, the release stops without tagging or publishing the dependent package, and the next `main` push resumes it through the same idempotent recovery path.
+Dependency-ordered publication accounts for npm registry propagation. Preparation reads each internal dependency immediately, then makes at most seven additional metadata requests over a bounded two-minute window when a newly published requirement is not visible. It continues as soon as the dependency range is satisfied. If the registry still lacks the dependency, the dependent package stops without tagging or publication and resumes through the same idempotent next-push or manual recovery path.

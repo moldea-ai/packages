@@ -1,140 +1,35 @@
 # packages
 
-The `packages` project is the open-source package monorepo for `moldea`. It develops the first-class public and private packages, shared internal packages, private applications, compatibility data, conformance fixtures, documentation, and generation tooling that implement and present the deterministic repository-reading and repository-format ecosystem.
+The `packages` repository develops the open-source package products, shared internal packages, private applications, compatibility data, conformance fixtures, documentation, and generation tooling for the deterministic `moldea` repository-reading and repository-format ecosystem.
 
-The repository is intentionally separate from the hosted [`platform`](https://github.com/moldea-ai/platform) monorepo. It contains reusable package products and their shared development infrastructure, not Cloud applications, hosted APIs, runtime infrastructure, or deployment configuration.
+It is intentionally separate from the hosted [`platform`](https://github.com/moldea-ai/platform) monorepo. This repository owns reusable packages and their development infrastructure, not Cloud applications, hosted APIs, runtime infrastructure, or deployment configuration.
 
-`@moldea.ai/repository`, `@moldea.ai/repository-fs`, `@moldea.ai/core`, `@moldea.ai/adapter-anthropic`, `@moldea.ai/adapter-claude-agent-sdk`, `@moldea.ai/adapter-cloudflare-agents`, `@moldea.ai/adapter-eve`, `@moldea.ai/adapter-google-genai`, `@moldea.ai/adapter-langchain`, `@moldea.ai/adapter-langgraph`, `@moldea.ai/adapter-openai`, `@moldea.ai/adapter-openai-agents-sdk`, `@moldea.ai/adapter-vercel-ai-sdk`, `@moldea.ai/cli`, and `@moldea.ai/website-ui` form the available package set. Repository version `2` owns bounded source-neutral pages, ranges, comparisons, and snapshot identities. Repository FS version `2` provides lazy, resource-limited local access without an eager repository-wide inventory. Core version `4.0.1` provides content-free validation and paged agent assignments, explicit canonical content ranges, cheap changed-path matching, and per-agent adapter contexts. The provider and agent-SDK adapters contribute static evidence through those bounded contexts. CLI version `8.0.0` composes the packages into a schema `4` read-only executable with independently keyed agent assignments, a 64 KiB default JSON page, and a 1 MiB maximum JSON page. Website UI provides the shared Astro and Tailwind foundations for moldea public websites. The built-in `custom` runtime and package-backed `anthropic`, `claude-agent-sdk`, `cloudflare-agents`, `eve`, `google-genai`, `langchain`, `langgraph`, `openai`, `openai-agents-sdk`, and `vercel-ai-sdk` runtimes are available for deterministic inspection under their published eligibility and source-pattern contracts. Real tarball installation and execution remain the release boundary for every package version.
+## Documentation
 
-## Specifications
+### Specifications
 
-The official [Repository Format version `1` specification](specifications/repository-format.md) is maintained in this repository and published at [`https://packages.moldea.ai/repository-format/`](https://packages.moldea.ai/repository-format/). It is the public contract for canonical files, manifest properties, deterministic validation, semantic evaluation boundaries, and conformance. `@moldea.ai/core` remains its executable reference implementation.
+The official [Repository Format version `1` specification](specifications/repository-format.md) is maintained here and published at [`https://packages.moldea.ai/repository-format/`](https://packages.moldea.ai/repository-format/). It defines canonical files, manifest properties, deterministic validation, semantic evaluation boundaries, and conformance; `@moldea.ai/core` is its executable reference implementation.
 
-The remaining product and package design specifications are maintained in the `platform` repository:
+The sibling `platform` repository owns the central [`moldea` packages specification](https://github.com/moldea-ai/platform/blob/main/moldea/context/packages.md), focused package specifications, the [Runtime Adapter Contract](https://github.com/moldea-ai/platform/blob/main/moldea/context/runtime-adapter-contract.md), and the [Runtime Compatibility Matrix](https://github.com/moldea-ai/platform/blob/main/moldea/context/runtime-compatibility-matrix.md). The [package catalog](#package-catalog) links each focused specification directly.
 
-- [`moldea` packages](https://github.com/moldea-ai/platform/blob/main/moldea/context/packages.md): monorepo organization, package catalog, dependencies, distribution, and shared conventions.
-- [`@moldea.ai/repository`](https://github.com/moldea-ai/platform/blob/main/moldea/context/repository-package.md): source-neutral repository-reader contract and in-memory reference implementation.
-- [`@moldea.ai/repository-fs`](https://github.com/moldea-ai/platform/blob/main/moldea/context/repository-fs-package.md): coherent local filesystem reader.
-- [`@moldea.ai/core`](https://github.com/moldea-ai/platform/blob/main/moldea/context/core-package.md): deterministic repository-format interpretation and indexing.
-- [`@moldea.ai/cli`](https://github.com/moldea-ai/platform/blob/main/moldea/context/cli-package.md): read-only Git working-tree composition and executable contract.
-- [`@moldea.ai/adapter-anthropic`](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-anthropic-package.md): TypeScript Anthropic Messages API inspection target.
-- [`@moldea.ai/adapter-claude-agent-sdk`](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-claude-agent-sdk-package.md): TypeScript Claude Agent SDK query and programmatic-subagent inspection target.
-- [`@moldea.ai/adapter-cloudflare-agents`](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-cloudflare-agents-package.md): TypeScript Cloudflare Think and AIChatAgent inspection targets.
-- [`@moldea.ai/adapter-eve`](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-eve-package.md): TypeScript Eve filesystem-agent inspection target.
-- [`@moldea.ai/adapter-google-genai`](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-google-genai-package.md): TypeScript Google Gen AI SDK inspection target.
-- [`@moldea.ai/adapter-langchain`](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-langchain-package.md): TypeScript LangChain `createAgent` inspection target.
-- [`@moldea.ai/adapter-langgraph`](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-langgraph-package.md): TypeScript LangGraph StateGraph and Functional API inspection targets.
-- [`@moldea.ai/adapter-openai`](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-openai-package.md): TypeScript OpenAI Responses API inspection target.
-- [`@moldea.ai/adapter-openai-agents-sdk`](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-openai-agents-sdk-package.md): TypeScript OpenAI Agents SDK agent and handoff inspection target.
-- [`@moldea.ai/adapter-vercel-ai-sdk`](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-vercel-ai-sdk-package.md): TypeScript Vercel AI SDK agent and generation inspection targets.
-- [Runtime Adapter Contract](https://github.com/moldea-ai/platform/blob/main/moldea/context/runtime-adapter-contract.md): deterministic extension contract for official adapters.
-- [Runtime Compatibility Matrix](https://github.com/moldea-ai/platform/blob/main/moldea/context/runtime-compatibility-matrix.md): canonical compatibility-data contract and initial adapter inventory.
+Specifications remain the design authority; this blueprint records implemented repository state. Published compatibility presentations derive from the canonical technical matrix and website maturity source and remain subject to their package and conformance requirements.
 
-The specification documents remain the design authority. Implemented compatibility artifacts derive from the canonical technical matrix and website maturity source and remain subject to their conformance requirements.
-
-## Project structure
-
-```text
-.github/
-  workflows/                   # Verification, npm publication, and GitHub Pages deployment
-apps/
-  website/                     # Private Astro packages-documentation application
-    content/                   # Getting-started guide and runtime target maturity
-compatibility/
-  runtimes.yaml                # Canonical technical runtime compatibility inventory
-configs/
-  typescript/                  # Shared environment and declaration configs
-  vite/                        # Shared ESM library build configuration
-  vitest/                      # Shared package test configuration
-fixtures/                      # Repository-wide conformance fixtures
-docs/
-  npm-releases.md             # Trusted npm publication and bootstrap process
-  runtime-compatibility.md     # Generated compatibility presentation
-specifications/
-  repository-format.md         # Official Repository Format version 1 contract
-packages/                      # Private shared implementation packages
-  adapter-static-analysis/    # Provider-neutral adapter source-analysis primitives
-projects/
-  adapter-anthropic/           # Anthropic Messages API runtime adapter
-  adapter-claude-agent-sdk/    # Claude Agent SDK runtime adapter
-  adapter-cloudflare-agents/  # Cloudflare Think and AIChatAgent runtime adapter
-  adapter-eve/                # Eve filesystem-agent runtime adapter
-  adapter-google-genai/        # Google Gen AI generate-content runtime adapter
-  adapter-langchain/           # LangChain createAgent runtime adapter
-  adapter-langgraph/           # LangGraph StateGraph and Functional API runtime adapter
-  adapter-openai/              # OpenAI Responses API runtime adapter
-  adapter-openai-agents-sdk/   # OpenAI Agents SDK runtime adapter
-  adapter-vercel-ai-sdk/       # Vercel AI SDK runtime adapter
-  cli/                         # Read-only local command-line composition
-  core/                        # Deterministic repository-format interpretation
-  repository/                  # Source-neutral reader contract and memory reader
-  repository-fs/               # Explicit local-filesystem repository reader
-  website-ui/                  # Shared Astro and Tailwind website foundations
-scripts/
-  runtime-compatibility/       # Matrix validation and deterministic generation
-eslint.config.js
-package.json
-pnpm-lock.yaml
-pnpm-workspace.yaml
-tsconfig.json
-turbo.json
-vitest.config.ts
-vitest-integration.config.ts
-```
-
-Every immediate child of [`projects/`](projects/) is an independently meaningful first-class package. Every immediate child of [`packages/`](packages/) is a private shared implementation package. Every immediate child of [`apps/`](apps/) is a private application built from or around the ecosystem. Applications do not appear in the package catalog, carry no independent public package compatibility promise, and may depend on projects or internal packages; projects and internal packages never depend on applications.
-
-`/docs` is reserved for concise, durable project concepts and processes. API and HTTP endpoint documentation belongs outside `/docs`, in the owning project's established documentation location.
-
-The website owns its getting-started guide, display-only discovery copy, and synthetic examples generated through real public package exports and the declared CLI executable. Its internal capability catalog covers Core operations and diagnostics, runtime evidence, reader behavior, and CLI commands. Package documentation and canonical runtime support data remain authoritative; see [`apps/website/README.md`](apps/website/README.md) for generation and verification ownership.
-
-## Dependency architecture
-
-An arrow means that the package on the left depends on the package on the right.
-
-```text
-repository-fs       → repository
-core                → repository
-adapter-*           → core
-cli                 → repository + repository-fs + core + active adapter packages
-packages-website    → website-ui + core + repository + repository-fs + cli + adapter-*
-                     (deterministic packages are build-time dependencies)
-```
-
-Shared internal packages may support first-class projects but never depend on them. Published packages must bundle private internal implementation or otherwise ensure that private imports and declarations do not leak into the consumer artifact.
-
-## Package catalog
-
-| Project                     | Package                                | Distribution |
-| --------------------------- | -------------------------------------- | ------------ |
-| `repository`                | `@moldea.ai/repository`                | Public       |
-| `repository-fs`             | `@moldea.ai/repository-fs`             | Public       |
-| `core`                      | `@moldea.ai/core`                      | Public       |
-| `cli`                       | `@moldea.ai/cli`                       | Public       |
-| `adapter-anthropic`         | `@moldea.ai/adapter-anthropic`         | Public       |
-| `adapter-claude-agent-sdk`  | `@moldea.ai/adapter-claude-agent-sdk`  | Public       |
-| `adapter-cloudflare-agents` | `@moldea.ai/adapter-cloudflare-agents` | Public       |
-| `adapter-eve`               | `@moldea.ai/adapter-eve`               | Public       |
-| `adapter-google-genai`      | `@moldea.ai/adapter-google-genai`      | Public       |
-| `adapter-langchain`         | `@moldea.ai/adapter-langchain`         | Public       |
-| `adapter-langgraph`         | `@moldea.ai/adapter-langgraph`         | Public       |
-| `adapter-openai`            | `@moldea.ai/adapter-openai`            | Public       |
-| `adapter-openai-agents-sdk` | `@moldea.ai/adapter-openai-agents-sdk` | Public       |
-| `adapter-vercel-ai-sdk`     | `@moldea.ai/adapter-vercel-ai-sdk`     | Public       |
-| `website-ui`                | `@moldea.ai/website-ui`                | Public       |
-
-The catalog records approved architecture, not implementation or release status. The `custom` adapter remains built into `@moldea.ai/core` and has no separate package project.
-
-The initial public tooling, instruction-consumption, and package-backed adapter phase is limited to the Node.js ecosystem. Runtime Compatibility Matrix version `2` therefore records npm packages only and interprets every package range with node-semver semantics.
-
-## Requirements
-
-- Node.js `24.15.0` or newer within Node.js 24 for repository development
-- pnpm `11.9.0`
-
-Development-tool requirements are intentionally separate from consumer runtime guarantees. Node-specific packages declare and verify the runtime ranges defined by their focused specifications. Environment-neutral packages must not import Node.js modules or inherit Node globals.
+| Need                                                  | Authority                                                                                                                               |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Local setup, commands, builds, and tests              | [Local development](docs/local-development.md)                                                                                          |
+| npm selection, preparation, publication, and recovery | [npm releases](docs/npm-releases.md)                                                                                                    |
+| Public package behavior                               | `projects/<project>/README.md` and `projects/<project>/docs/**`                                                                         |
+| Technical runtime compatibility                       | [`compatibility/runtimes.yaml`](compatibility/runtimes.yaml) and generated [compatibility documentation](docs/runtime-compatibility.md) |
+| Packages website source model and deployment          | [Packages website](apps/website/README.md)                                                                                              |
 
 ## Getting started
+
+### Requirements
+
+- Node.js `24.15.0` or newer within Node.js 24
+- pnpm `11.9.0`
+
+Development-tool requirements are separate from consumer runtime guarantees, which remain package-specific. Environment-neutral packages must not import Node.js modules or inherit Node globals.
 
 Install the pinned workspace dependencies:
 
@@ -152,74 +47,117 @@ pnpm build
 pnpm test
 ```
 
-Useful focused commands:
+Use `pnpm compatibility:check` for runtime-matrix synchronization and `pnpm website:check` for the complete packages-website boundary. [Local development](docs/local-development.md) lists focused commands and owns the detailed build and test conventions.
 
-| Command                       | Purpose                                                                     |
-| ----------------------------- | --------------------------------------------------------------------------- |
-| `pnpm test:root`              | Run root unit and integration tests.                                        |
-| `pnpm test:unit`              | Run root and package unit-test tasks.                                       |
-| `pnpm test:integration`       | Run root and package integration-test tasks.                                |
-| `pnpm test:e2e`               | Build and run installed-package end-to-end test tasks.                      |
-| `pnpm format`                 | Format repository-maintained files.                                         |
-| `pnpm compatibility:generate` | Regenerate technical compatibility documentation.                           |
-| `pnpm compatibility:check`    | Verify matrix, package, and generated-artifact synchronization.             |
-| `pnpm docs:generate`          | Generate the ignored deterministic website content model.                   |
-| `pnpm website:prepare`        | Build CLI, its dependency closure, and Website UI for direct website tasks. |
-| `pnpm docs:check`             | Validate package discovery, docs, exports, routes, and compatibility.       |
-| `pnpm website:dev`            | Generate content and run the local Astro development server.                |
-| `pnpm website:build`          | Build, index, and validate the complete static production website.          |
-| `pnpm website:check`          | Run website docs, tests, types, lint, build, and artifact checks.           |
+| Workflow                                | Command                                                      |
+| --------------------------------------- | ------------------------------------------------------------ |
+| Complete correctness suite              | `pnpm test`                                                  |
+| Root configuration tests                | `pnpm test:root`                                             |
+| Compatibility generation and validation | `pnpm compatibility:generate` and `pnpm compatibility:check` |
+| Package-documentation validation        | `pnpm docs:check`                                            |
+| Local packages website                  | `pnpm website:dev`                                           |
 
-Root `docs:check`, `docs:generate`, `website:dev`, and `website:check` run `website:prepare` first. Direct website-package commands are low-level tasks and require that preparation. Root `website:build` uses Turbo's dependency ordering. The website-specific tasks in `turbo.json` own source/environment cache inputs and restore the generated model together with its matching static artifact. An uncached website-only cleanup runs before building or restoring those outputs so removed pages cannot survive a cache hit.
+## Project blueprint
 
-## Build and test conventions
+### Project structure
 
-Public JavaScript artifacts are ESM-only unless a focused specification establishes another format. Vite bundles JavaScript in library mode with explicit entry points, stable output names, source maps by default, and deliberate dependency externalization. Packages may omit JavaScript source maps when bundling a private workspace implementation would expose private import paths in published artifacts. TypeScript performs strict source checking and emits declarations separately so public types remain a first-class package artifact. Package build scripts clean their output directory once, run Vite, and then emit declarations; the shared Vite configuration does not delete output owned by another build step. Website UI additionally publishes source Astro components and CSS because the consuming Astro application owns their compilation and Tailwind source scan.
+```text
+.github/       verification, npm publication, and GitHub Pages workflows
+apps/          private applications built from or around the package ecosystem
+compatibility/ canonical technical runtime compatibility data
+configs/       shared TypeScript, Vite, Vitest, and documentation configuration
+docs/          concise durable project concepts, processes, and generated presentations
+fixtures/      repository-wide conformance fixtures
+packages/      private shared implementation packages
+projects/      independently meaningful first-class package projects
+scripts/       compatibility, documentation, and release automation
+specifications/ public cross-package contracts owned by this repository
+```
 
-Environment-neutral packages extend `configs/typescript/environment-neutral.json`; Node-specific packages extend `configs/typescript/node.json`. Declaration builds use the corresponding `*-library.json` configuration and set package-local `rootDir` and `outDir` values.
+Every immediate child of [`projects/`](projects/) is a first-class package with a stable responsibility and package identity. Every immediate child of [`packages/`](packages/) is a private shared implementation package. Every immediate child of [`apps/`](apps/) is a private application: applications may consume projects and internal packages, but projects and internal packages never depend on applications.
 
-Package tests use Vitest without global test APIs. Tests are colocated with the source modules they exercise, and Node and non-React tests use the `*.test-unit.ts`, `*.test-integration.ts`, and `*.test-e2e.ts` names for the categories they own. Each package exposes a granular script for every category it contains, and its `test` command runs unit, integration, then end-to-end correctness suites when present. Shared conformance fixtures live at repository level when they represent a contract implemented by multiple packages.
+`/docs` is reserved for concise, quickly scannable documentation of essential, durable project concepts and processes. API and HTTP endpoint documentation belongs outside `/docs`, in the owning project's established documentation location.
 
-Unit tests retain Vitest's short default timeout and may read static fixtures, but their correctness must not depend on exercising real filesystem, compiler-program, package-manager, or child-process boundaries. Integration tests share a 120-second cross-platform test and hook budget through `configs/vitest/test.config.ts`; individual overrides are reserved for operations with measured requirements beyond that budget. Tests that depend on real workspace packages, temporary filesystems, compiler programs, package installation, or child processes belong to the integration suite even when the production API is synchronous.
+### Dependency architecture
 
-Repository FS, the Anthropic, Claude Agent SDK, Cloudflare Agents, Eve, Google Gen AI, LangChain, LangGraph, OpenAI, OpenAI Agents SDK, and Vercel AI SDK adapters, and CLI runtime composition are tested at packed-consumer boundaries. CI builds the required public tarballs on the pinned development runtime, then installs and executes the artifacts with package scripts disabled and strict engine validation on Node.js `22.11.0`, latest Node.js 22, Node.js `24.11.0`, latest Node.js 24, and Node.js `26.8.1`. The adapter harnesses exercise each installed public export and inspection boundary, while the CLI harness verifies installed package identities and real `version`, `composition`, `validate`, and `inspect` commands through the packed composition. Repository's optional testing subpath is also exercised with strict peers on Vitest `1.0.0`, `2.0.0`, `3.2.4`, and `4.1.10`; a separate pnpm `11.21.0` consumer proves that installing the complete CLI closure preserves an existing root Vitest `3.2.4`. This keeps consumer runtime guarantees independent from the newer runtime required by repository development tooling.
+An arrow means that the package on the left depends on the package on the right.
 
-Turborepo derives build order from declared workspace dependencies. Package dependencies must remain explicit and acyclic, and no task may rely on workspace enumeration order or undeclared cross-project state.
+```text
+repository-fs       → repository
+core                → repository
+adapter-*           → core
+cli                 → repository + repository-fs + core + active adapter packages
+packages-website    → website-ui + core + repository + repository-fs + cli + adapter-*
+                     (deterministic packages are build-time dependencies)
+```
 
-## Package documentation and generated artifacts
+Shared internal packages may support first-class projects but never depend on them. The dependency graph must remain explicit and acyclic. Published packages must bundle private implementation or otherwise ensure that private imports and declarations do not leak into consumer artifacts.
 
-Each runtime adapter's `docs/binding-example.md` contains one marked virtual file set that its public-entrypoint integration tests inspect through Core. Edit those Markdown blocks directly; do not maintain a second fixture copy. `configs/package-documentation/example` reads only the selected document, and existing packed-documentation checks require the example to ship. These checks establish static relationships, not live SDK execution or fresh paid qualification evidence.
+### Package catalog
 
-Every implemented public project owns its full documentation under `projects/<project>/docs/**`. The cross-package Repository Format contract is owned by [`specifications/repository-format.md`](specifications/repository-format.md). Package specifications, implementation, tests, public exports, manifests, technical compatibility source, and package-owned documentation are authoritative; the website discovers, validates, renders, searches, and presents visitor-facing package documentation while owning target maturity. Website UI remains a shared public package with repository-owned documentation, but its documentation pages are not published on the packages website. Concise package READMEs remain the GitHub and npm entry points. All ten runtime adapters also publish their package-owned docs for offline use. README links route to the relevant local guide; generated API references and compatibility pages use explicit HTTPS links. Artifact checks require every documentation page and local link target to appear in the package manager's packed inventory.
+| Project                     | Package                                | Distribution | Specification                                                                                                                    |
+| --------------------------- | -------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `repository`                | `@moldea.ai/repository`                | Public       | [Repository package](https://github.com/moldea-ai/platform/blob/main/moldea/context/repository-package.md)                       |
+| `repository-fs`             | `@moldea.ai/repository-fs`             | Public       | [Repository FS package](https://github.com/moldea-ai/platform/blob/main/moldea/context/repository-fs-package.md)                 |
+| `core`                      | `@moldea.ai/core`                      | Public       | [Core package](https://github.com/moldea-ai/platform/blob/main/moldea/context/core-package.md)                                   |
+| `cli`                       | `@moldea.ai/cli`                       | Public       | [CLI package](https://github.com/moldea-ai/platform/blob/main/moldea/context/cli-package.md)                                     |
+| `adapter-anthropic`         | `@moldea.ai/adapter-anthropic`         | Public       | [Anthropic adapter](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-anthropic-package.md)                 |
+| `adapter-claude-agent-sdk`  | `@moldea.ai/adapter-claude-agent-sdk`  | Public       | [Claude Agent SDK adapter](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-claude-agent-sdk-package.md)   |
+| `adapter-cloudflare-agents` | `@moldea.ai/adapter-cloudflare-agents` | Public       | [Cloudflare Agents adapter](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-cloudflare-agents-package.md) |
+| `adapter-eve`               | `@moldea.ai/adapter-eve`               | Public       | [Eve adapter](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-eve-package.md)                             |
+| `adapter-google-genai`      | `@moldea.ai/adapter-google-genai`      | Public       | [Google Gen AI adapter](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-google-genai-package.md)          |
+| `adapter-langchain`         | `@moldea.ai/adapter-langchain`         | Public       | [LangChain adapter](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-langchain-package.md)                 |
+| `adapter-langgraph`         | `@moldea.ai/adapter-langgraph`         | Public       | [LangGraph adapter](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-langgraph-package.md)                 |
+| `adapter-openai`            | `@moldea.ai/adapter-openai`            | Public       | [OpenAI adapter](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-openai-package.md)                       |
+| `adapter-openai-agents-sdk` | `@moldea.ai/adapter-openai-agents-sdk` | Public       | [OpenAI Agents SDK adapter](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-openai-agents-sdk-package.md) |
+| `adapter-vercel-ai-sdk`     | `@moldea.ai/adapter-vercel-ai-sdk`     | Public       | [Vercel AI SDK adapter](https://github.com/moldea-ai/platform/blob/main/moldea/context/adapter-vercel-ai-sdk-package.md)         |
+| `website-ui`                | `@moldea.ai/website-ui`                | Public       | [Central package architecture](https://github.com/moldea-ai/platform/blob/main/moldea/context/packages.md)                       |
 
-Generated files are not edited directly. Repository Format changes begin in [`specifications/repository-format.md`](specifications/repository-format.md), whose metadata, required sections, manifest property reference, internal anchors, and marked complete example are verified before publication. Technical runtime compatibility changes begin in [`compatibility/runtimes.yaml`](compatibility/runtimes.yaml), while website target maturity is edited only in [`apps/website/content/runtime-target-maturity.yaml`](apps/website/content/runtime-target-maturity.yaml). The website build requires an exact one-to-one match between those maturity entries and the matrix targets and publishes their deterministic combined view at [`https://packages.moldea.ai/compatibility/runtimes.json`](https://packages.moldea.ai/compatibility/runtimes.json). A target may link only to its canonical profile on `https://skill.moldea.ai`; qualification execution, fixtures, caches, and results remain owned by the skill repository. Run `pnpm compatibility:generate` to update [`docs/runtime-compatibility.md`](docs/runtime-compatibility.md). The website model, public Repository Format page, public compatibility JSON, API reference, route manifest, search input, and `llms.txt` are generated during documentation checks and builds from their canonical repository sources; none is maintained independently. CI reruns the applicable generators and fails when canonical inputs are invalid, routes contradict one another, public exports are omitted, links break, or the static artifact is incomplete.
+The catalog records approved architecture, not implementation or release status. The built-in `custom` runtime remains part of Core rather than a separate project. Public tooling, instruction consumption, and package-backed adapters currently target the Node.js ecosystem; compatibility uses npm packages and node-semver semantics.
 
-## Coding-agent maintenance rule
+### Key concepts
 
-The coding agent that changes a package or compatibility claim is responsible for reconsidering every affected representation and synchronizing only those that actually changed. Depending on the change, this includes implementation, public exports, package manifest, package specification, README, package-owned documentation, generated API reference, examples, tests and fixtures, compatibility source, generated compatibility documentation, website target maturity, website pages and navigation, compatibility pages, and `llms.txt`.
+- **Repository reading is source-neutral and bounded.** `@moldea.ai/repository` defines logical paths, bounded pages and ranges, deterministic comparisons, snapshot identities, and the reader contract. Its memory reader is the reference implementation used by shared conformance tests. `@moldea.ai/repository-fs` provides lazy, resource-limited local access through that contract without requiring an eager repository-wide content inventory.
+- **Core owns Repository Format interpretation.** `@moldea.ai/core` validates canonical structure and relationships without returning repository bodies, prepares deterministic inspection state, exposes paged agent assignments and diagnostics, matches changed paths cheaply, and gives each runtime adapter a bounded per-agent context. The public Repository Format specification remains the design authority.
+- **Adapters contribute static evidence.** Official adapters inspect supported TypeScript source patterns through Core contexts; they do not execute provider SDKs or user code. Provider-neutral text, binding, relationship, immutable-value, and inspection-session primitives live in the private `@moldea.ai/adapter-static-analysis` package and are bundled into public adapter artifacts. Each public adapter retains ownership of registration, evidence, diagnostics, supported patterns, and provider-specific limits.
+- **CLI is the installed read-only composition.** `@moldea.ai/cli` combines Repository, Repository FS, Core, and active adapters for deterministic working-tree validation, inspection, changed-path scope, explicit canonical content retrieval, and installed composition reporting. It uses bounded snapshot-aware output and performs no repository writes or model/runtime SDK execution. The built-in `custom` adapter comes from Core.
+- **Package and application truth remain separate.** Specifications, implementation, tests, exports, manifests, compatibility sources, and package-owned documentation define package behavior. The packages website validates and presents those authorities; it does not create an independent package contract. Private applications may compose public packages without becoming package sources of truth.
+- **Compatibility has distinct technical and presentation owners.** The runtime matrix records technical eligibility, source-pattern support, and optional qualification links. The website owns maturity presentation. Qualification execution, fixtures, caches, and results remain in the separate skill repository, and a link is valid only for that target's canonical skill profile.
+- **Consumer artifacts are the release boundary.** Public packages version independently, must not expose private workspace dependencies, and are verified through real packed installations. Development may use newer tooling than a package's supported consumer runtime; the focused package contract and installed artifact determine the public guarantee.
 
-Before completing any change, the coding agent must audit the complete diff against its base commit using the npm release project's release-relevance rules. Every changed existing public project selected for publication must receive a greater canonical stable version in the same change, while a newly introduced public project must declare a canonical stable version. The agent must also synchronize directly affected compatible-major workspace dependencies, the lockfile, generated compatibility documentation, package documentation, and version assertions, then run `pnpm release:check-changes <base-commit> <current-commit>` when both commits are available.
+### Build and test conventions
+
+Public JavaScript packages are ESM-only unless a focused specification says otherwise. Vite owns bundled JavaScript, TypeScript owns strict checking and declarations, and packages expose granular unit, integration, and end-to-end scripts for the categories they contain. Tests remain colocated with their implementation and excluded from production artifacts.
+
+[Local development](docs/local-development.md) owns the complete command matrix, environment-specific TypeScript configurations, build sequencing, test-category boundaries, integration budget, packed-consumer matrix, and Turborepo rules.
+
+### Package documentation and generated artifacts
+
+| Concern                         | Editable authority                                                                                       | Derived presentation                                                                           |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Repository Format               | [`specifications/repository-format.md`](specifications/repository-format.md)                             | Public specification page and schema-derived website artifacts                                 |
+| Technical runtime compatibility | [`compatibility/runtimes.yaml`](compatibility/runtimes.yaml)                                             | [`docs/runtime-compatibility.md`](docs/runtime-compatibility.md) and public compatibility JSON |
+| Runtime target maturity         | [`apps/website/content/runtime-target-maturity.yaml`](apps/website/content/runtime-target-maturity.yaml) | Packages website adapter presentation                                                          |
+| Package behavior                | Project implementation, specification, README, and `docs/**`                                             | Generated API reference, routes, search, sitemap, and `llms.txt`                               |
+
+Every implemented public project owns its documentation under `projects/<project>/docs/**`; concise project READMEs remain the GitHub and npm entry points. Runtime adapters publish their package-owned docs for offline use. Website UI retains repository documentation but is intentionally absent from the visitor-facing packages website.
+
+Generated files are never edited directly. Update the canonical source and run its documented generator. The website validates package discovery, exports, documentation, links, runtime compatibility, target maturity, and deterministic generated artifacts. Runtime qualification execution and evidence remain owned by the separate skill repository.
+
+### Coding-agent maintenance rule
+
+The agent changing a package or compatibility claim must reconsider every affected representation and synchronize only those that changed: implementation, exports, manifest, specification, README, package docs, examples, tests, compatibility sources, generated presentations, maturity, website routes, and version assertions as applicable.
+
+Before completion, audit the complete diff against its base commit using the [npm release relevance rules](docs/npm-releases.md). Give every selected existing public project a greater canonical stable version, give a new public project a canonical stable version, synchronize directly affected compatible-major workspace dependencies and the lockfile, and run `pnpm release:check-changes <base-commit> <current-commit>` when both commits are available.
 
 > **Reconsider and synchronize when affected. Do not edit unrelated surfaces merely because they exist.**
 
-Generated output changes through its canonical source and generator. Technical compatibility claims come only from `compatibility/runtimes.yaml`, and target maturity comes only from the packages website maturity file. Package documentation is part of package maintenance. A website-only maturity change does not create an npm release. Documentation under `projects/<project>/docs/**` is release-relevant when either compared manifest includes it in the npm file inventory; otherwise it remains website-only. All runtime adapters publish `docs`, so edits to their shipped guides require an adapter release. Committed manifests, including default npm inclusion and root-level file patterns, determine this boundary without a separate package allowlist. `README.md`, `package.json`, `LICENSE`, declared package files, public exports, and source remain release-relevant; combining docs with a release-relevant change still selects the project.
+### Packages website and deployment
 
-## Packages website and deployment
+[`apps/website`](apps/website/) is the private Astro application for `https://packages.moldea.ai`. It discovers and validates public projects, renders package-owned documentation and compatibility data, and owns navigation, presentation metadata, synthetic executable examples, search, SEO artifacts, target maturity, and Pages deployment. It consumes `@moldea.ai/website-ui` for shared foundations without becoming a package-catalog entry.
 
-[`apps/website`](apps/website/) is the private Astro static application for the public packages ecosystem. It consumes `@moldea.ai/website-ui` through the workspace protocol for shared design tokens, interaction states, theme behavior, search behavior, sanitized Markdown, responsive shells, and reusable components while retaining local ownership of navigation data, content generation, page composition, SEO identity, and assets. It uses `SITE_URL` and `BASE_PATH`; the defaults match the established `https://packages.moldea.ai/` custom domain, while explicit inputs continue to support a GitHub project-site base path without component changes. See its [application README](apps/website/README.md) for focused commands and source boundaries.
+Use `pnpm website:dev`, `pnpm website:build`, and `pnpm website:check` from the root. The [application README](apps/website/README.md) owns preparation, focused checks, design/rendering contracts, deployment triggers, base-path behavior, Search Console submission, and one-time repository setup. npm publication remains a separate workflow.
 
-The `/capabilities/` page introduces six capability families through eighteen executed illustrations in compact, initially collapsed, single-open accordions: structure, agents, decisions, runtime wiring, repository access, and CLI operations. Position labels keep each section's complete example set discoverable when an illustration is expanded. Examples show realistic maintenance mistakes, including undeclared variables, stale policy copies, disconnected instruction loaders, and a failed CI check for a missing reference. Shared file previews, result summaries, and optional dialogs show the examples; package references provide the full technical scope. Search indexes only the visible coverage, sections, and illustrations. The complete executable catalog remains internal verification evidence. Navigation, `llms.txt`, and the canonical sitemap link the page. Results come from build-time synthetic repositories, never visitor files or runtime execution.
+### Package releases
 
-Pull requests run non-deploying repository verification, including documentation discovery, generated API, route, and local search-index checks, website unit and browser tests, type checking, linting, the complete static build, internal-link validation, and final artifact inspection. Relevant pushes to `main` trigger [the Pages workflow](.github/workflows/pages.yml), read the configured host and base path from GitHub Pages, build the canonical HTTPS origin from that host, rebuild from the exact merged commit, and deploy with GitHub's official Pages artifact flow. After a successful push deployment, the workflow submits `https://packages.moldea.ai/sitemap-index.xml` to the `sc-domain:moldea.ai` Google Search Console property. npm publication remains a separate workflow and is never triggered merely by website or full-documentation changes.
-
-Repository owners must perform one initial GitHub setting if Pages is not already enabled: open **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**, and save. This is one-time enablement, not a publication step. After it is enabled, relevant merges and direct pushes publish automatically; a failed build never uploads or deploys a partial replacement.
-
-Search Console submission requires the `GOOGLE_SEARCH_CONSOLE_CREDENTIALS` Actions secret, configured at the `moldea-ai` organization level with this repository in its selected-repository policy. The secret contains the JSON key for `moldea-sitemap-submitter@moldea-prod.iam.gserviceaccount.com`, which must remain an owner of the Search Console property and retain `Service Account Token Creator` on itself. Manual workflow dispatches deploy the selected ref but do not submit its sitemap. A submission failure is reported after deployment and does not roll back the published Pages artifact.
-
-## Package releases
-
-A push to `main` automatically selects every release-relevant changed public project and uses the npm workflow as the commit's sole CI and release orchestrator; pull requests invoke the reusable CI workflow directly without a parallel branch-push run. Website-only documentation changes under `projects/<project>/docs/**`, standardized test files, and colocated `*.test-fixtures.*` support files are excluded; Shipped documentation, README, manifest, production source, license, and declared package-artifact changes remain included. An existing selected project must declare a stable version strictly greater than its version at the preceding commit, except when that same stable version remains absent from npm after an earlier failed or interrupted publication. A newly introduced project with no base manifest must declare a canonical stable version. The npm workflow verifies every `main` commit exactly once, including successful no-op releases, then creates package-qualified immutable tags and publishes the exact checksummed tarballs in dependency order through trusted publishing. Linux verification uses the official Playwright image pinned to the packages website's installed version instead of downloading Chromium and operating-system dependencies during each run. A project whose version is invalid for its release state fails before publication. Manual CI remains available for branch checks, while manual publication dispatch remains available for new-package bootstrap and release recovery. See [`docs/npm-releases.md`](docs/npm-releases.md).
-
-## Initial implementation sequence
-
-The first implementation project was `@moldea.ai/repository`, followed by its in-memory reader and shared conformance suite. Core's universal behavior was then completed through that memory-reader boundary, followed by Repository FS, the CLI's installed-tarball runtime boundary, and the first official package-backed adapters. The Anthropic, Claude Agent SDK, Cloudflare Agents, Eve, Google Gen AI, LangChain, LangGraph, OpenAI, OpenAI Agents SDK, and Vercel AI SDK adapters now own verified TypeScript technical targets with deterministic fixtures, diagnostics, evidence, package metadata, and packed-runtime verification. Their provider-neutral source analysis, relationship classification, and operation-local inspection caches live in the private `@moldea.ai/adapter-static-analysis` package and are bundled into each public adapter artifact. Website UI now owns the reusable public-website foundation independently of the runtime package chain. Package publication remains an explicit independently versioned release operation.
+Public packages version independently. A `main` push selects release-relevant changed projects and safe current versions still missing from npm, verifies the commit once, and publishes exact checksummed tarballs in dependency order through trusted publishing. New-package bootstrap and interrupted-publication recovery remain explicit, resumable workflows. See [npm releases](docs/npm-releases.md) for authoritative selection, preparation, identity, ordering, security, and recovery contracts.
