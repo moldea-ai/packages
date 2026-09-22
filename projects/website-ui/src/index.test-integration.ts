@@ -80,7 +80,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.9.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.9.1' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -347,6 +347,7 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('Second visual');
     expect(fixtureHtml).toContain('Repo. Format');
     expect(fixtureHtml).toContain('aria-label="Repository Format"');
+    expect(fixtureHtml).toContain('lucide-git-branch');
     expect(fixtureHtml).toMatch(/<footer class="border-t border-border">/u);
     expect(fixtureHtml).toMatch(/<h3[^>]*>Metadata available<\/h3>/u);
     expect(fixtureHtml).toMatch(/<dialog\b[^>]*id="fixture-wide"[^>]*sm:max-w-5xl/u);

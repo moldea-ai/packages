@@ -156,6 +156,14 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
         const search = await header
           .getByRole('link', { name: 'Search documentation' })
           .boundingBox();
+        const source = header.getByRole('link', {
+          name: 'moldea packages on GitHub',
+          exact: true,
+        });
+        await expect(source).toHaveAttribute('target', '_blank');
+        await expect(
+          source.locator('svg.lucide-git-branch[data-external-link-icon]'),
+        ).toBeVisible();
         expect(brand!.x + brand!.width).toBeLessThan(linkRects[0].x);
         expect(linkRects.at(-1)!.right).toBeLessThan(search!.x);
       }
