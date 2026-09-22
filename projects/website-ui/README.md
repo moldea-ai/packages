@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.8.1
+pnpm add @moldea.ai/website-ui@1.9.0
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -21,12 +21,24 @@ Tailwind scans the shipped Astro components through the package stylesheet's exp
 ## Composition guidelines
 
 - Keep reusable presentation, interaction behavior, tokens, and design guidance in this package. Websites own routes, content, fixtures, domain status mappings, result selection, and page composition. Compose public exports instead of copying their markup, querying their private DOM, or overriding their state styles.
-- Use `page-shell`, `section-title`, and `eyebrow` for the shared width and type hierarchy. For a two-column hero, keep badges inside the text column, followed by a `mb-7` gap, then the eyebrow with `mb-4` before the heading. Use `py-14 sm:py-18 lg:py-20` for hero insets, and align the example with the complete text column. Badge content and column proportions remain site-owned.
+- Use `page-shell`, the appropriate shared title role, and `eyebrow` for the shared width and type hierarchy. For a two-column hero, keep badges inside the text column, followed by a `mb-7` gap, then the eyebrow with `mb-4` before the heading. Use `py-14 sm:py-18 lg:py-20` for hero insets, and align the example with the complete text column. Badge content and column proportions remain site-owned.
 - Use `HeroBackdrop` inside a `relative overflow-hidden` section, with foreground content positioned `relative`. It owns the static, theme-aware radial/grid background shared with the Skill website. Do not duplicate its gradients in page markup.
 - Section introductions may place the title on the left and a concise explanation on the right at `lg`, stacking on mobile. Alternate this with compact stacked introductions when the content warrants it; do not force every section into the same composition.
 - Demonstrations should show recognizable files, one visible connection or mismatch, and a concise outcome. Compose `FilePreview`, `ConnectionLabel`, `ResultSummary`, `StatusBadge`, `CodeBlock`, and `Dialog`. Keep the essential result visible without interaction; dialogs contain optional evidence. Use `Accordion` when several examples share a section.
 - Preserve semantic inline code for filenames, variables, operations, and package names using `inline-code`; use `InlineBrandText` for prose containing the product name. Breadcrumbs, documentation navigation, the site header, and local-search results apply the same product-name treatment to their string labels. Keep code wrapping and interaction feedback in the shared policies below.
 - Verify compositions at 320px through desktop, in both themes, with keyboard focus and reduced motion. Flatten unnecessary mobile panels and preserve legible filenames, labels, and status text. Use icons and explicit text together rather than relying on color alone.
+
+## Heading roles
+
+Website UI owns three public title roles. Choose the role from the heading's visual purpose, independently of its semantic `h1` or `h2` level.
+
+| Role    | Class           | Responsive font size                        | Weight | Line height | Letter spacing | Use                                                 |
+| ------- | --------------- | ------------------------------------------- | ------ | ----------- | -------------- | --------------------------------------------------- |
+| Display | `display-title` | `48px` base, `60px` at `sm`, `72px` at `xl` | `700`  | `1.1`       | `-0.045em`     | The primary marketing statement on a landing page   |
+| Page    | `page-title`    | `36px` base, `48px` at `sm`, `60px` at `lg` | `700`  | `1.15`      | `-0.04em`      | The main title of an inner public page              |
+| Section | `section-title` | `30px` base, `36px` at `sm`, `48px` at `lg` | `700`  | `1.2`       | `-0.025em`     | A major landing-page or long-form section statement |
+
+Each class owns its complete font size, weight, line height, letter spacing, balanced wrapping, and safe word wrapping. Consumers may add layout, spacing, color, scroll, or focus utilities, but must not add conflicting `font-*`, `text-*`, `leading-*`, or `tracking-*` utilities. Card, table, navigation, Markdown, and nested headings remain compact semibold elements on their local scale instead of using a public title role.
 
 ## Surface-aware selection
 

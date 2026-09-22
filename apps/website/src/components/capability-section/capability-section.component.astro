@@ -32,7 +32,7 @@ const { catalog, group, examples, position } = Astro.props;
     <p class="eyebrow mb-3">{String(position).padStart(2, '0')} / {group.label}</p>
     <h2
       id={`${group.id}-heading`}
-      class="section-title text-3xl leading-tight font-semibold"
+      class="section-title"
     >
       <InlineBrandText text={group.title} />
     </h2>

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { DEFAULT_BASE_PATH, normalizeBasePath, withBase } from '@moldea.ai/website-ui/site';
 
 import { DEFAULT_SITE_URL, SITE_NAME, SOCIAL_IMAGE_ALT } from '../lib/site/constants.ts';
@@ -9,6 +9,108 @@ const siteUrl = process.env.SITE_URL ?? DEFAULT_SITE_URL;
 const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const toPublicPath = (route: string): string => withBase(route, basePath);
 const normalizeClipboardLineEndings = (text: string): string => text.replaceAll('\r\n', '\n');
+
+const HEADING_ROLE_WIDTHS = [320, 639, 640, 1023, 1024, 1279, 1280, 1440] as const;
+const HEADING_ROLE_VALUES = {
+  display: { letterSpacing: -0.045, lineHeight: 1.1 },
+  page: { letterSpacing: -0.04, lineHeight: 1.15 },
+  section: { letterSpacing: -0.025, lineHeight: 1.2 },
+} as const;
+
+type IHeadingRole = keyof typeof HEADING_ROLE_VALUES;
+
+/** Returns the exact responsive font size owned by a shared Website UI heading role. */
+const getHeadingRoleFontSize = (role: IHeadingRole, width: number): number => {
+  if (role === 'display') {
+    if (width >= 1280) return 72;
+    if (width >= 640) return 60;
+    return 48;
+  }
+
+  if (width >= 1024) return role === 'page' ? 60 : 48;
+  if (width >= 640) return role === 'page' ? 48 : 36;
+  return role === 'page' ? 36 : 30;
+};
+
+/** Verifies one shared heading role after the real bold Ubuntu Sans face has loaded. */
+const expectHeadingRole = async (
+  page: Page,
+  heading: Locator,
+  nextContent: Locator,
+  role: IHeadingRole,
+  width: number,
+  shouldWrap = true,
+): Promise<void> => {
+  await expect(heading).toBeVisible();
+
+  const fontAvailability = await heading.evaluate(async (element) => {
+    const text = (element.textContent ?? '').replaceAll(/\s+/gu, ' ').trim();
+    const fontSize = getComputedStyle(element).fontSize;
+    const fontSpecification = `700 ${fontSize} "Ubuntu Sans Variable"`;
+    const loadedFontFaces = await document.fonts.load(fontSpecification, text);
+
+    await document.fonts.ready;
+
+    return {
+      isAvailable: document.fonts.check(fontSpecification, text),
+      loadedFaceCount: loadedFontFaces.length,
+    };
+  });
+
+  expect(fontAvailability.loadedFaceCount).toBeGreaterThan(0);
+  expect(fontAvailability.isAvailable).toBe(true);
+
+  const typography = await heading.evaluate((element) => {
+    const computedStyle = getComputedStyle(element);
+    const bounds = element.getBoundingClientRect();
+
+    return {
+      blockHeight: bounds.height,
+      bottom: bounds.bottom,
+      clientWidth: element.clientWidth,
+      fontFamily: computedStyle.fontFamily,
+      fontSize: Number.parseFloat(computedStyle.fontSize),
+      fontWeight: computedStyle.fontWeight,
+      left: bounds.left,
+      letterSpacing: Number.parseFloat(computedStyle.letterSpacing),
+      lineHeight: Number.parseFloat(computedStyle.lineHeight),
+      overflowX: computedStyle.overflowX,
+      overflowY: computedStyle.overflowY,
+      overflowWrap: computedStyle.overflowWrap,
+      right: bounds.right,
+      scrollWidth: element.scrollWidth,
+      textWrap: computedStyle.textWrap,
+    };
+  });
+  const expectedFontSize = getHeadingRoleFontSize(role, width);
+  const expectedValues = HEADING_ROLE_VALUES[role];
+
+  expect(typography.fontFamily).toContain('Ubuntu Sans Variable');
+  expect(typography.fontSize).toBeCloseTo(expectedFontSize, 2);
+  expect(typography.fontWeight).toBe('700');
+  expect(typography.lineHeight).toBeCloseTo(expectedFontSize * expectedValues.lineHeight, 2);
+  expect(typography.letterSpacing).toBeCloseTo(expectedFontSize * expectedValues.letterSpacing, 2);
+  expect(typography.textWrap).toBe('balance');
+  expect(typography.overflowWrap).toBe('break-word');
+  if (shouldWrap) {
+    expect(typography.blockHeight).toBeGreaterThan(typography.lineHeight * 1.5);
+  } else {
+    expect(typography.blockHeight).toBeCloseTo(typography.lineHeight, 0);
+  }
+  expect(['clip', 'hidden']).not.toContain(typography.overflowX);
+  expect(['clip', 'hidden']).not.toContain(typography.overflowY);
+  expect(typography.scrollWidth).toBeLessThanOrEqual(typography.clientWidth + 1);
+  expect(typography.left).toBeGreaterThanOrEqual(-1);
+  expect(typography.right).toBeLessThanOrEqual(width + 1);
+
+  const nextContentTop = await nextContent.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  );
+  expect(nextContentTop).toBeGreaterThanOrEqual(typography.bottom - 1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+    width,
+  );
+};
 
 for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
@@ -279,41 +381,54 @@ const calculateContrastRatio = (firstColor: string, secondColor: string): number
   return (lighterLuminance + 0.05) / (darkerLuminance + 0.05);
 };
 
-test('keeps multiline shared titles legible with Ubuntu Sans', async ({ page }) => {
-  await page.setViewportSize({ height: 800, width: 1024 });
-  await page.goto(toPublicPath('/'));
+for (const width of HEADING_ROLE_WIDTHS) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`keeps shared heading roles legible at ${width}px in ${theme}`, async ({ page }) => {
+      await page.setViewportSize({ height: 900, width });
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto(toPublicPath('/'));
 
-  const displayTitleTypography = await page
-    .getByRole('heading', { level: 1 })
-    .evaluate((element) => {
-      const computedStyle = getComputedStyle(element);
+      const displayTitle = page.getByRole('heading', {
+        level: 1,
+        name: 'Keep agent instructions and code connected.',
+      });
+      const sectionTitle = page.getByRole('heading', {
+        level: 2,
+        name: 'A file moves. The connection breaks.',
+      });
 
-      return {
-        blockHeight: element.getBoundingClientRect().height,
-        fontSize: Number.parseFloat(computedStyle.fontSize),
-        lineHeight: Number.parseFloat(computedStyle.lineHeight),
-      };
+      await expectHeadingRole(
+        page,
+        displayTitle,
+        displayTitle.locator('xpath=following-sibling::*[1]'),
+        'display',
+        width,
+      );
+      await expectHeadingRole(
+        page,
+        sectionTitle,
+        page.locator('#how-it-works > div').first(),
+        'section',
+        width,
+      );
+
+      await page.goto(toPublicPath('/packages/'));
+      const pageTitle = page.getByRole('heading', {
+        level: 1,
+        name: 'One foundation. Explicit responsibilities.',
+      });
+
+      await expectHeadingRole(
+        page,
+        pageTitle,
+        pageTitle.locator('xpath=following-sibling::*[1]'),
+        'page',
+        width,
+        width !== 1023,
+      );
     });
-  const sectionTitleTypography = await page
-    .getByRole('heading', {
-      level: 2,
-      name: 'A file moves. The connection breaks.',
-    })
-    .evaluate((element) => {
-      const computedStyle = getComputedStyle(element);
-
-      return {
-        blockHeight: element.getBoundingClientRect().height,
-        fontSize: Number.parseFloat(computedStyle.fontSize),
-        lineHeight: Number.parseFloat(computedStyle.lineHeight),
-      };
-    });
-
-  expect(displayTitleTypography.blockHeight).toBeGreaterThan(displayTitleTypography.lineHeight);
-  expect(displayTitleTypography.lineHeight).toBeGreaterThan(displayTitleTypography.fontSize);
-  expect(sectionTitleTypography.blockHeight).toBeGreaterThan(sectionTitleTypography.lineHeight);
-  expect(sectionTitleTypography.lineHeight).toBeGreaterThan(sectionTitleTypography.fontSize);
-});
+  }
+}
 
 test('publishes unique canonical, social, and structured search metadata', async ({ page }) => {
   const homeUrl = new URL(toPublicPath('/'), siteUrl).href;

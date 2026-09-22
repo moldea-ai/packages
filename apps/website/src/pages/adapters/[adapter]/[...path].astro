@@ -132,7 +132,7 @@ const breadcrumbs = [
                 <p class="eyebrow mb-3">Public entry point</p>
                 <h2
                   id={createApiEntrypointAnchorId(entrypoint.name)}
-                  class="text-3xl font-semibold tracking-tight"
+                  class="section-title"
                 >
                   {entrypoint.name === '.'
                     ? packageModel.name
@@ -176,7 +176,7 @@ const breadcrumbs = [
               <StatusBadge kind={adapter.entry.implementationStatus} />
             </div>
             <p class="eyebrow mb-5">Official runtime adapter</p>
-            <h1 class="section-title font-semibold">{copy.name}</h1>
+            <h1 class="page-title">{copy.name}</h1>
             <p class="mt-7 max-w-2xl text-xl leading-9 text-muted-foreground">
               {adapter.entry.implementationStatus === 'planned'
                 ? `The ${adapter.id} adapter is approved in the official catalog but remains planned. No implementation package, installation command, verified target, or support claim is available yet.`
