@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.9.0
+pnpm add @moldea.ai/website-ui@1.9.1
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -62,7 +62,7 @@ Dark prose keeps its primary foreground opaque before the 70%/60% opacity feedba
 
 `BrandLogo` stays background-free in its resting, hover, and pressed states while retaining the global keyboard focus ring.
 
-`SiteHeaderShell` marks its source links with an external-link icon because the destination opens in a new tab. The desktop source action remains an icon-only control with an explicit accessible name.
+`SiteHeaderShell` marks both source links as external destinations because they open in a new tab. The desktop source action uses the same `GitBranch` icon as the platform website and retains an explicit accessible name; the mobile text link uses the compact external-link indicator.
 
 ## Utilities
 
