@@ -59,6 +59,15 @@ export const getCapabilityOutcome = (
         tone: 'danger',
       };
     }
+    const warningCount = result.diagnostics.filter(({ severity }) => severity === 'warning').length;
+    if (warningCount > 0) {
+      return {
+        title: `${warningCount} runtime relationship${warningCount === 1 ? '' : 's'} unverified`,
+        description,
+        label: 'Warnings',
+        tone: 'warning',
+      };
+    }
     const hasAbsentEvidence =
       result.kind === 'adapter' &&
       (catalog.runtimeTargets.some(({ patterns }) =>

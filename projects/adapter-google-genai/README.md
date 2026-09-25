@@ -44,6 +44,10 @@ The package exports only `googleGenAiAdapter`. It has no default export, mutable
 
 ## Evidence and diagnostics
 
+`GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+
+`GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified.
+
 The verified target may emit `runtime-package`, `language`, `runtime-pattern`, `instruction-loader`, `tool-registration`, and `schema` evidence. Evidence is source-grounded and never contains repository source, instructions, schemas, credentials, client configuration, provider payloads, or model output.
 
 See [Evidence and diagnostics](docs/evidence-and-diagnostics.md) for the complete stable catalog and cascade behavior.

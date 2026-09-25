@@ -17,22 +17,22 @@ beforeAll(async () => {
   examples = await createCliExamples(repositoryRoot, packages);
 });
 
-test('executes every public command with actual schema 4 status and process outcomes', () => {
+test('executes every public command with actual schema 5 status and process outcomes', () => {
   expect(examples).toHaveLength(9);
   expect(
     examples.map(({ result }) =>
       result.kind === 'cli' ? [result.schemaVersion, result.status, result.exitStatus] : null,
     ),
   ).toStrictEqual([
-    [4, 'valid', 0],
-    [4, 'valid', 0],
-    [4, 'valid', 0],
-    [4, 'valid', 0],
-    [4, 'valid', 0],
-    [4, 'valid', 0],
-    [4, 'error', 3],
-    [4, 'valid', 0],
-    [4, 'invalid', 1],
+    [5, 'valid', 0],
+    [5, 'valid', 0],
+    [5, 'valid', 0],
+    [5, 'valid', 0],
+    [5, 'valid', 0],
+    [5, 'valid', 0],
+    [5, 'error', 3],
+    [5, 'valid', 0],
+    [5, 'invalid', 1],
   ]);
 });
 

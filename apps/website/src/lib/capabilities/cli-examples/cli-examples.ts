@@ -140,7 +140,7 @@ const commandCase = (
 
 /**
  * Executes the declared CLI bin in an isolated Git fixture and verifies its read-only behavior.
- * @returns Validated schema 4 excerpts with real exit statuses and no host-specific identities.
+ * @returns Validated schema 5 excerpts with real exit statuses and no host-specific identities.
  */
 export const createCliExamples = async (
   repositoryRoot: string,
@@ -196,8 +196,14 @@ export const createCliExamples = async (
     const validation = await run(['validate']);
     const validationResult = CliCollectionResult.parse(validation.envelope.result);
     assertCapabilityFacts(
-      [validationResult.valid, validationResult.diagnosticCount, validationResult.page.records],
-      [true, 0, []],
+      [
+        validationResult.valid,
+        validationResult.diagnosticCount,
+        validationResult.errorCount,
+        validationResult.warningCount,
+        validationResult.page.records,
+      ],
+      [true, 0, 0, 0, []],
     );
     examples.push(
       commandCase(
@@ -207,13 +213,18 @@ export const createCliExamples = async (
         'moldea validate --json',
         validation.envelope,
         validation.exitStatus,
-        { valid: validationResult.valid, diagnosticCount: validationResult.diagnosticCount ?? 0 },
+        {
+          valid: validationResult.valid,
+          diagnosticCount: validationResult.diagnosticCount ?? 0,
+          errorCount: validationResult.errorCount ?? 0,
+          warningCount: validationResult.warningCount ?? 0,
+        },
       ),
     );
     const inspection = await run(['inspect']);
     const inspectionResult = CliCollectionResult.parse(inspection.envelope.result);
     const paths = inspectionResult.page.records.flatMap(({ path }) =>
-      path === undefined ? [] : [path],
+      typeof path === 'string' ? [path] : [],
     );
     assertCapabilityFacts(paths, [
       '/moldea/context/long-policy.md',
@@ -268,8 +279,10 @@ export const createCliExamples = async (
           {
             relevant: result.relevant ?? false,
             counts: result.counts ?? {},
-            matches: result.page.records.flatMap(({ match }) =>
-              match === undefined ? [] : [{ ...match, owner: { ...match.owner } }],
+            matches: result.page.records.flatMap((record) =>
+              record.kind !== 'match' || record.match === undefined
+                ? []
+                : [{ ...record.match, owner: { ...record.match.owner } }],
             ),
           },
         ),
@@ -396,8 +409,14 @@ export const createCliExamples = async (
     const invalid = await run(['validate']);
     const invalidResult = CliCollectionResult.parse(invalid.envelope.result);
     assertCapabilityFacts(
-      [invalid.exitStatus, invalidResult.valid, invalidResult.diagnosticCount],
-      [1, false, 1],
+      [
+        invalid.exitStatus,
+        invalidResult.valid,
+        invalidResult.diagnosticCount,
+        invalidResult.errorCount,
+        invalidResult.warningCount,
+      ],
+      [1, false, 1, 1, 0],
     );
     assertCapabilityFacts(
       invalidResult.page.records.map(({ code, path, pointer }) => ({ code, path, pointer })),
@@ -419,6 +438,8 @@ export const createCliExamples = async (
       {
         valid: invalidResult.valid,
         diagnosticCount: invalidResult.diagnosticCount ?? 0,
+        errorCount: invalidResult.errorCount ?? 0,
+        warningCount: invalidResult.warningCount ?? 0,
         diagnostics: invalidResult.page.records.map(({ code, path, pointer }) => ({
           code: code ?? null,
           path: path ?? null,

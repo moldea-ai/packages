@@ -8,9 +8,11 @@ order: 30
 
 ## JSON envelope
 
-`--json` writes one deterministic schema 4 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`. No command mixes a partial success result with an operational error.
+`--json` writes one deterministic schema 5 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`. No command mixes a partial success result with an operational error.
 
 `validate`, `inspect`, `scope`, and `composition` are recursively content-free. `inspect` projects only allowlisted records and splits unbounded collections into independent keys. Its `agent` record contains exactly one canonical `agentId` and manifest-declared `runtimeId`; it remains distinct from installed composition and runtime evidence. `content` is the only command allowed to return a `content` property, and it does so only for one explicitly selected canonical asset.
+
+Validation diagnostics carry required severity. Warning-only results use `valid` and exit `0`; confirmed errors use `invalid` and exit `1`. Complete error and warning counts appear on every collection page. The CLI projects only the closed relationship, reason, and safe version context of an unverified warning; arbitrary adapter error details remain private. Human warnings identify the affected relationship without implying successful verification or broken wiring.
 
 Collection and content JSON use a default 65,536-byte page budget and accept explicit budgets from 4,096 through 1,048,576 bytes. Byte accounting measures the final newline-terminated UTF-8 serialization after escaping. Opaque keyset cursors bind their format version, command, filters, source snapshot, last key, and checksum. Pages can traverse a large repository without gaps or duplicate records; a changed snapshot fails instead of mixing states.
 
@@ -18,7 +20,7 @@ Collection and content JSON use a default 65,536-byte page budget and accept exp
 
 | Outcome                                   | Status                       |               Exit code |
 | ----------------------------------------- | ---------------------------- | ----------------------: |
-| Completed valid inspection                | `valid`                      |                     `0` |
+| Completed inspection without errors       | `valid`                      |                     `0` |
 | Completed structurally invalid inspection | `invalid`                    |                     `1` |
 | Invocation or operational error           | `error`                      | `2` or `3`, by contract |
 | `SIGINT` before output completes          | no completed result required |                   `130` |
@@ -30,7 +32,7 @@ Collection and content JSON use a default 65,536-byte page budget and accept exp
 
 Known repository and Core exceptions retain their source, code, retryability, safe logical path when applicable, and non-confidential metadata. Git and CLI errors use a closed stable registry. Unexpected failures become `cli:INTERNAL_ERROR` without raw causes, stack traces, host paths, or process diagnostics.
 
-Schema 4 includes these stable CLI-owned contracts:
+Schema 5 includes these stable CLI-owned contracts:
 
 | Code                      | Stable message                                                      |
 | ------------------------- | ------------------------------------------------------------------- |

@@ -65,6 +65,33 @@ test('resolves selected illustrations in section order independently of case ord
 });
 
 describe('getCapabilityOutcome', () => {
+  test('shows a valid runtime result with an unverified relationship as a warning', () => {
+    const result: ICapabilityResult = {
+      kind: 'adapter',
+      valid: true,
+      diagnostics: [
+        {
+          code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+          details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
+          entity: { agentId: 'support' },
+          message: 'The declared runtime relationship could not be verified.',
+          path: parseRepositoryPath('/src/agent.ts'),
+          pointer: null,
+          range: null,
+          severity: 'warning',
+          source: 'anthropic',
+        },
+      ],
+      evidence: [],
+    };
+
+    expect(getCapabilityOutcome({ ...example, result }, catalog)).toMatchObject({
+      label: 'Warnings',
+      title: '1 runtime relationship unverified',
+      tone: 'warning',
+    });
+  });
+
   test.each([
     [{ kind: 'validation', valid: true, diagnostics: [] }, 'Valid', 'success'],
     [{ kind: 'validation', valid: false, diagnostics: [] }, 'Invalid', 'danger'],
@@ -76,7 +103,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'valid',
-        schemaVersion: 4,
+        schemaVersion: 5,
         exitStatus: 0,
         command: 'moldea inspect --json',
         facts: {},
@@ -88,7 +115,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'invalid',
-        schemaVersion: 4,
+        schemaVersion: 5,
         exitStatus: 1,
         command: 'moldea validate --json',
         facts: {},
@@ -100,7 +127,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'error',
-        schemaVersion: 4,
+        schemaVersion: 5,
         exitStatus: 3,
         command: 'moldea content --json',
         facts: {},

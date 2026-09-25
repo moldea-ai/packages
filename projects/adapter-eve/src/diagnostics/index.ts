@@ -5,70 +5,167 @@ import type { IEveAdapterDiagnosticCode, IEveDiagnosticInput } from '../contract
 
 // stable Eve adapter diagnostic code and message catalog
 export const EVE_ADAPTER_DIAGNOSTICS = Object.freeze({
-  EVE_PACKAGE_MANIFEST_INVALID:
-    'The owning package manifest is invalid for Eve dependency detection.',
-  EVE_SDK_VERSION_UNSUPPORTED:
-    'The observed Eve dependency range is disjoint from the supported range.',
-  EVE_SOURCE_TEXT_INVALID: 'The referenced Eve source file is not valid normalized text.',
-  EVE_SOURCE_SYNTAX_INVALID: 'The referenced Eve source file contains invalid TypeScript syntax.',
-  EVE_RUNTIME_AGENT_SYMBOL_NOT_FOUND: 'The declared Eve runtime-agent symbol was not found.',
-  EVE_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND:
-    'The declared Eve instruction-loader symbol was not found.',
-  EVE_AGENT_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND:
-    'The declared Eve agent output-schema symbol was not found.',
-  EVE_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND:
-    'The declared Eve tool implementation symbol was not found.',
-  EVE_TOOL_REGISTRATION_SYMBOL_NOT_FOUND:
-    'The declared Eve tool registration symbol was not found.',
-  EVE_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND:
-    'The declared Eve tool input-schema symbol was not found.',
-  EVE_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND:
-    'The declared Eve tool output-schema symbol was not found.',
-  EVE_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND:
-    'The declared Eve skill implementation symbol was not found.',
-  EVE_SKILL_REGISTRATION_SYMBOL_NOT_FOUND:
-    'The declared Eve skill registration symbol was not found.',
-  EVE_INSTRUCTION_ROOT_CONFLICT: 'The Eve instruction slot contains conflicting authored sources.',
-  EVE_INSTRUCTION_LOADER_NOT_WIRED:
-    'The declared instruction loader is not wired to the supported Eve instruction surface.',
-  EVE_AGENT_OUTPUT_SCHEMA_NOT_WIRED:
-    'The declared agent output schema is not wired to the Eve agent definition.',
-  EVE_TOOL_IMPLEMENTATION_NOT_WIRED:
-    'The declared tool implementation is not wired to the Eve tool definition.',
-  EVE_TOOL_REGISTRATION_NOT_WIRED:
-    'The declared tool registration is not wired to the owning Eve agent.',
-  EVE_TOOL_NAME_INVALID: 'The Eve filesystem tool name is invalid.',
-  EVE_TOOL_NAME_RESERVED: 'The Eve filesystem tool name is reserved by the runtime.',
-  EVE_TOOL_RUNTIME_NAME_COLLISION:
-    'Multiple Eve tool sources resolve to the same runtime tool name.',
-  EVE_TOOL_NAME_MISMATCH:
-    'The declared tool name does not match the Eve path-derived runtime name.',
-  EVE_TOOL_INPUT_SCHEMA_NOT_WIRED:
-    'The declared tool input schema is not wired to the Eve tool definition.',
-  EVE_TOOL_OUTPUT_SCHEMA_NOT_WIRED:
-    'The declared tool output schema is not wired to the Eve tool definition.',
-  EVE_SKILL_IMPLEMENTATION_NOT_WIRED:
-    'The declared skill implementation is not the discovered Eve skill artifact.',
-  EVE_SKILL_REGISTRATION_NOT_WIRED:
-    'The declared skill registration is not wired to the owning Eve agent.',
-  EVE_SKILL_NAME_MISMATCH:
-    'The declared skill name does not match the Eve path-derived runtime name.',
-  EVE_TOOL_SUBAGENT_NAME_COLLISION:
-    'The Eve tool and local subagent use the same runtime tool name.',
-  EVE_SUBAGENT_PARENT_AMBIGUOUS:
-    "Multiple registered Eve agents map to the local subagent's immediate parent root.",
-  EVE_ROUTING_DESCRIPTION_MISSING:
-    'The supported Eve local subagent definition is missing its routing description.',
-  EVE_ROUTING_DESCRIPTION_NOT_WIRED:
-    'The Eve local subagent description does not use the target effective routing description.',
-} as const satisfies Readonly<Record<IEveAdapterDiagnosticCode, string>>);
+  EVE_PACKAGE_MANIFEST_INVALID: {
+    message: 'The owning package manifest is invalid for Eve dependency detection.',
+    severity: 'error',
+  },
+  EVE_SDK_VERSION_UNSUPPORTED: {
+    message: 'The observed Eve dependency range is disjoint from the supported range.',
+    severity: 'error',
+  },
+  EVE_SOURCE_TEXT_INVALID: {
+    message: 'The referenced Eve source file is not valid normalized text.',
+    severity: 'error',
+  },
+  EVE_SOURCE_SYNTAX_INVALID: {
+    message: 'The referenced Eve source file contains invalid TypeScript syntax.',
+    severity: 'error',
+  },
+  EVE_RUNTIME_AGENT_SYMBOL_NOT_FOUND: {
+    message: 'The declared Eve runtime-agent symbol was not found.',
+    severity: 'error',
+  },
+  EVE_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND: {
+    message: 'The declared Eve instruction-loader symbol was not found.',
+    severity: 'error',
+  },
+  EVE_AGENT_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared Eve agent output-schema symbol was not found.',
+    severity: 'error',
+  },
+  EVE_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared Eve tool implementation symbol was not found.',
+    severity: 'error',
+  },
+  EVE_TOOL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared Eve tool registration symbol was not found.',
+    severity: 'error',
+  },
+  EVE_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared Eve tool input-schema symbol was not found.',
+    severity: 'error',
+  },
+  EVE_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared Eve tool output-schema symbol was not found.',
+    severity: 'error',
+  },
+  EVE_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared Eve skill implementation symbol was not found.',
+    severity: 'error',
+  },
+  EVE_SKILL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared Eve skill registration symbol was not found.',
+    severity: 'error',
+  },
+  EVE_INSTRUCTION_ROOT_CONFLICT: {
+    message: 'The Eve instruction slot contains conflicting authored sources.',
+    severity: 'error',
+  },
+  EVE_INSTRUCTION_LOADER_NOT_WIRED: {
+    message:
+      'The declared instruction loader is not wired to the supported Eve instruction surface.',
+    severity: 'error',
+  },
+  EVE_AGENT_OUTPUT_SCHEMA_NOT_WIRED: {
+    message: 'The declared agent output schema is not wired to the Eve agent definition.',
+    severity: 'error',
+  },
+  EVE_TOOL_IMPLEMENTATION_NOT_WIRED: {
+    message: 'The declared tool implementation is not wired to the Eve tool definition.',
+    severity: 'error',
+  },
+  EVE_TOOL_REGISTRATION_NOT_WIRED: {
+    message: 'The declared tool registration is not wired to the owning Eve agent.',
+    severity: 'error',
+  },
+  EVE_TOOL_NAME_INVALID: { message: 'The Eve filesystem tool name is invalid.', severity: 'error' },
+  EVE_TOOL_NAME_RESERVED: {
+    message: 'The Eve filesystem tool name is reserved by the runtime.',
+    severity: 'error',
+  },
+  EVE_TOOL_RUNTIME_NAME_COLLISION: {
+    message: 'Multiple Eve tool sources resolve to the same runtime tool name.',
+    severity: 'error',
+  },
+  EVE_TOOL_NAME_MISMATCH: {
+    message: 'The declared tool name does not match the Eve path-derived runtime name.',
+    severity: 'error',
+  },
+  EVE_TOOL_INPUT_SCHEMA_NOT_WIRED: {
+    message: 'The declared tool input schema is not wired to the Eve tool definition.',
+    severity: 'error',
+  },
+  EVE_TOOL_OUTPUT_SCHEMA_NOT_WIRED: {
+    message: 'The declared tool output schema is not wired to the Eve tool definition.',
+    severity: 'error',
+  },
+  EVE_SKILL_IMPLEMENTATION_NOT_WIRED: {
+    message: 'The declared skill implementation is not the discovered Eve skill artifact.',
+    severity: 'error',
+  },
+  EVE_SKILL_REGISTRATION_NOT_WIRED: {
+    message: 'The declared skill registration is not wired to the owning Eve agent.',
+    severity: 'error',
+  },
+  EVE_SKILL_NAME_MISMATCH: {
+    message: 'The declared skill name does not match the Eve path-derived runtime name.',
+    severity: 'error',
+  },
+  EVE_TOOL_SUBAGENT_NAME_COLLISION: {
+    message: 'The Eve tool and local subagent use the same runtime tool name.',
+    severity: 'error',
+  },
+  EVE_SUBAGENT_PARENT_AMBIGUOUS: {
+    message: "Multiple registered Eve agents map to the local subagent's immediate parent root.",
+    severity: 'error',
+  },
+  EVE_ROUTING_DESCRIPTION_MISSING: {
+    message: 'The supported Eve local subagent definition is missing its routing description.',
+    severity: 'error',
+  },
+  EVE_ROUTING_DESCRIPTION_NOT_WIRED: {
+    message:
+      'The Eve local subagent description does not use the target effective routing description.',
+    severity: 'error',
+  },
+  EVE_RUNTIME_RELATIONSHIP_UNVERIFIED: {
+    message: 'The declared runtime relationship could not be verified.',
+    severity: 'warning',
+  },
+} as const satisfies Readonly<
+  Record<
+    IEveAdapterDiagnosticCode,
+    { readonly message: string; readonly severity: 'error' | 'warning' }
+  >
+>);
 
 /** Creates one frozen, safely namespaced Eve adapter diagnostic. */
-export const createEveDiagnostic = (input: IEveDiagnosticInput): IAdapterDiagnostic =>
-  Object.freeze({
+export const createEveDiagnostic = (input: IEveDiagnosticInput): IAdapterDiagnostic => {
+  if (input.code === 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED') {
+    const definition = EVE_ADAPTER_DIAGNOSTICS[input.code];
+    const details = Object.freeze({ ...input.details });
+    const entity = input.entity === null ? null : Object.freeze({ ...input.entity });
+
+    return Object.freeze({
+      ...input,
+      details,
+      entity,
+      message: definition.message,
+      severity: definition.severity,
+      source: EVE_ADAPTER_ID,
+    });
+  }
+
+  const definition = EVE_ADAPTER_DIAGNOSTICS[input.code];
+  const details = Object.freeze({ ...input.details });
+  const entity = input.entity === null ? null : Object.freeze({ ...input.entity });
+
+  return Object.freeze({
     ...input,
-    details: Object.freeze({ ...input.details }),
-    entity: input.entity === null ? null : Object.freeze({ ...input.entity }),
-    message: EVE_ADAPTER_DIAGNOSTICS[input.code],
+    details,
+    entity,
+    message: definition.message,
+    severity: definition.severity,
     source: EVE_ADAPTER_ID,
   });
+};

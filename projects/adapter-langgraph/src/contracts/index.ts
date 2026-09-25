@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
 import type { ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 export type ILangGraphAdapterDiagnosticCode =
@@ -13,11 +13,19 @@ export type ILangGraphAdapterDiagnosticCode =
   | 'LANGGRAPH_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
   | 'LANGGRAPH_AGENT_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND'
   | 'LANGGRAPH_AGENT_INPUT_SCHEMA_NOT_WIRED'
-  | 'LANGGRAPH_AGENT_OUTPUT_SCHEMA_NOT_WIRED';
+  | 'LANGGRAPH_AGENT_OUTPUT_SCHEMA_NOT_WIRED'
+  | 'LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
-export type ILangGraphDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: ILangGraphAdapterDiagnosticCode;
-};
+export type ILangGraphDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<
+        ILangGraphAdapterDiagnosticCode,
+        'LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED'
+      >;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });
 
 export type ILangGraphTargetId = 'typescript-state-graph-1-4' | 'typescript-functional-api-1-4';
 

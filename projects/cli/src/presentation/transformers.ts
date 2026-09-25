@@ -22,9 +22,16 @@ import type {
 
 /** Rejects a Core validation result whose completion fields contradict its validity. */
 const assertProjectValidationInvariant = (validation: IProjectValidationResult): void => {
-  const isConsistent = validation.valid
-    ? validation.summary !== null && validation.diagnostics.length === 0
-    : validation.diagnostics.length > 0;
+  const observedErrorCount = validation.diagnostics.filter(
+    (diagnostic) => diagnostic.severity === 'error',
+  ).length;
+  const isConsistent =
+    Number.isSafeInteger(validation.errorCount) &&
+    Number.isSafeInteger(validation.warningCount) &&
+    validation.errorCount === observedErrorCount &&
+    validation.warningCount === validation.diagnostics.length - observedErrorCount &&
+    validation.valid === (validation.summary !== null && validation.errorCount === 0) &&
+    (validation.valid || validation.errorCount > 0);
 
   if (!isConsistent) {
     throw new TypeError('The Core validation result is internally inconsistent.');
@@ -39,27 +46,50 @@ const createRecordKey = (kind: string, ...parts: readonly unknown[]): string =>
 export const createMoldeaCliDiagnosticRecord = (
   diagnostic: IDiagnostic,
   occurrence = 0,
-): IMoldeaCliDiagnosticRecord =>
-  Object.freeze({
+): IMoldeaCliDiagnosticRecord => {
+  const record = {
     code: diagnostic.code,
     entity: diagnostic.entity,
     key: createRecordKey(
       'diagnostic',
       diagnostic.source,
+      diagnostic.severity,
       diagnostic.code,
       diagnostic.path,
       diagnostic.pointer,
+      diagnostic.severity === 'warning' ? diagnostic.details : null,
       occurrence,
     ),
-    kind: 'diagnostic',
+    kind: 'diagnostic' as const,
     message: diagnostic.message,
     path: diagnostic.path,
     pointer: diagnostic.pointer,
     range: diagnostic.range,
     source: diagnostic.source,
-  });
+  };
 
-/** Projects one bounded Core inspection item through the schema 4 allowlist. */
+  if (diagnostic.severity === 'warning') {
+    const details =
+      diagnostic.details.reason === 'version-dependent-behavior'
+        ? Object.freeze({
+            boundaryVersion: diagnostic.details.boundaryVersion,
+            declaredRange: diagnostic.details.declaredRange,
+            packageName: diagnostic.details.packageName,
+            reason: diagnostic.details.reason,
+            relationship: diagnostic.details.relationship,
+          })
+        : Object.freeze({
+            reason: diagnostic.details.reason,
+            relationship: diagnostic.details.relationship,
+          });
+
+    return Object.freeze({ ...record, details, severity: 'warning' as const });
+  }
+
+  return Object.freeze({ ...record, severity: 'error' as const });
+};
+
+/** Projects one bounded Core inspection item through the schema 5 allowlist. */
 const createInspectRecord = (
   item: IProjectInspectionItem,
   index: number,
@@ -80,7 +110,14 @@ const createInspectRecord = (
   if (item.kind === 'diagnostic') {
     return Object.freeze({
       ...createMoldeaCliDiagnosticRecord(item.diagnostic, index),
-      key: createRecordKey(order, 'diagnostic', item.diagnostic.source, item.diagnostic.code),
+      key: createRecordKey(
+        order,
+        'diagnostic',
+        item.diagnostic.source,
+        item.diagnostic.severity,
+        item.diagnostic.code,
+        item.diagnostic.severity === 'warning' ? item.diagnostic.details : null,
+      ),
     });
   }
 
@@ -143,21 +180,25 @@ export const createMoldeaCliValidateProjection = (
   );
   const snapshotDigest = calculateMoldeaCliJsonDigest({
     diagnostics,
+    errorCount: validation.errorCount,
     formatVersion: validation.formatVersion,
     summary: validation.summary,
     valid: validation.valid,
+    warningCount: validation.warningCount,
   } as unknown as IJsonValue);
 
   return Object.freeze({
     diagnostics,
+    errorCount: validation.errorCount,
     formatVersion: validation.formatVersion,
     snapshotDigest,
     source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
     valid: validation.valid,
+    warningCount: validation.warningCount,
   });
 };
 
-/** Projects one bounded Core page through the content-free schema 4 allowlist. */
+/** Projects one bounded Core page through the content-free schema 5 allowlist. */
 export const createMoldeaCliInspectProjection = (
   inspection: IProjectInspectionPageResult,
 ): IMoldeaCliInspectProjection => {

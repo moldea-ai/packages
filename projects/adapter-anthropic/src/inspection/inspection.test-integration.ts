@@ -71,7 +71,10 @@ const createNullPrototypeRecord = <Value extends object>(value: Value): Value =>
   Object.assign(Object.create(null) as Value, value);
 
 const createExpectedDiagnostic = (
-  code: keyof typeof ANTHROPIC_ADAPTER_DIAGNOSTICS,
+  code: Exclude<
+    keyof typeof ANTHROPIC_ADAPTER_DIAGNOSTICS,
+    'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
   path: string,
   range: IAdapterDiagnostic['range'],
   capabilityId?: string,
@@ -83,7 +86,8 @@ const createExpectedDiagnostic = (
     ...(capabilityId === undefined ? {} : { capabilityId, capabilityKind: 'tool' as const }),
     adapterId: 'anthropic',
   }),
-  message: ANTHROPIC_ADAPTER_DIAGNOSTICS[code],
+  message: ANTHROPIC_ADAPTER_DIAGNOSTICS[code].message,
+  severity: 'error',
   path: parseRepositoryPath(path),
   pointer: null,
   range,
@@ -94,7 +98,7 @@ describe('anthropicAdapter Core integration', () => {
   test('keeps the diagnostic catalog synchronized with its conformance golden', () => {
     expect(
       Object.entries(ANTHROPIC_ADAPTER_DIAGNOSTICS)
-        .map(([code, message]) => ({ code, message }))
+        .map(([code, definition]) => ({ code, ...definition }))
         .sort((left, right) => (left.code < right.code ? -1 : left.code > right.code ? 1 : 0)),
     ).toStrictEqual(expectedDiagnostics);
   });
@@ -360,8 +364,13 @@ describe('anthropicAdapter Core integration', () => {
 
     expect(result.valid).toBe(false);
     expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
+      'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
       'ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED',
     ]);
+    expect(result.diagnostics[0]).toMatchObject({
+      details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+      severity: 'warning',
+    });
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual([
       'language',
       'runtime-package',
@@ -632,7 +641,13 @@ describe('anthropicAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+    ]);
+    expect(result).toMatchObject({ errorCount: 0, warningCount: 1 });
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
@@ -751,7 +766,12 @@ describe('anthropicAdapter Core integration', () => {
     ]);
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });
 
@@ -789,7 +809,17 @@ describe('anthropicAdapter Core integration', () => {
       'ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED',
       'ANTHROPIC_TOOL_REGISTRATION_NOT_WIRED',
     ]);
-    expect(ambiguousResult.diagnostics).toStrictEqual([]);
+    expect(ambiguousResult.diagnostics).toMatchObject([
+      {
+        details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+      {
+        details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+    ]);
+    expect(ambiguousResult.valid).toBe(true);
   });
 
   test('suppresses negative relationship diagnostics for an aliased Messages candidate', async () => {
@@ -810,7 +840,16 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+      {
+        details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.valid).toBe(true);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
@@ -833,7 +872,12 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.valid).toBe(true);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });

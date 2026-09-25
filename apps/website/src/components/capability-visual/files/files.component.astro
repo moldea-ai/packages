@@ -18,11 +18,17 @@ const { example } = Astro.props;
 const diagnostic = example.result.kind === 'validation' ? example.result.diagnostics[0] : undefined;
 const isReference = example.id.startsWith('policy-reference-');
 const isTool = example.id === 'tool-implementation-missing';
-const isDirectory = diagnostic?.details.actualType === 'directory';
+const isDirectory =
+  diagnostic?.severity === 'error' && diagnostic.details.actualType === 'directory';
 const source = example.files.find(
   ({ path }) => path === (isReference ? '/moldea/project.md' : '/moldea/moldea.yaml'),
 );
-const missingPath = isReference || isTool ? diagnostic?.details.referencedPath : diagnostic?.path;
+const missingPath =
+  isReference || isTool
+    ? diagnostic?.severity === 'error'
+      ? diagnostic.details.referencedPath
+      : undefined
+    : diagnostic?.path;
 if (!source || typeof missingPath !== 'string')
   throw new Error('File illustration requires its source and missing path.');
 const html = isReference

@@ -33,6 +33,7 @@
     "release:checksums": "node scripts/npm-release/checksums.ts",
     "release:plan": "node scripts/npm-release/plan.ts",
     "release:prepare": "node scripts/npm-release/prepare.ts",
+    "resource:measure": "turbo run build --filter @moldea.ai/adapter-anthropic... --filter @moldea.ai/adapter-eve... && node scripts/resource-calibration/calibration.ts",
     "test": "pnpm test:unit && pnpm test:integration && pnpm test:e2e",
     "test:e2e": "turbo run test:e2e --concurrency=1",
     "test:integration": "pnpm test:root:integration && turbo run test:integration --concurrency=1",

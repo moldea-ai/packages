@@ -1,54 +1,72 @@
 [
   {
     "code": "ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED",
-    "message": "The declared instruction loader is not wired to the detected Anthropic Messages API call."
+    "message": "The declared instruction loader is not wired to the detected Anthropic Messages API call.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND",
-    "message": "The declared instruction-loader symbol was not found."
+    "message": "The declared instruction-loader symbol was not found.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_PACKAGE_MANIFEST_INVALID",
-    "message": "The owning package manifest is invalid for Anthropic dependency detection."
+    "message": "The owning package manifest is invalid for Anthropic dependency detection.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_RUNTIME_AGENT_SYMBOL_NOT_FOUND",
-    "message": "The declared runtime-agent symbol was not found."
+    "message": "The declared runtime-agent symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "message": "The declared runtime relationship could not be verified.",
+    "severity": "warning"
   },
   {
     "code": "ANTHROPIC_SDK_VERSION_UNSUPPORTED",
-    "message": "The observed Anthropic SDK dependency range is disjoint from the supported range."
+    "message": "The observed Anthropic SDK dependency range is disjoint from the supported range.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_SOURCE_SYNTAX_INVALID",
-    "message": "The referenced Anthropic source file contains invalid TypeScript syntax."
+    "message": "The referenced Anthropic source file contains invalid TypeScript syntax.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_SOURCE_TEXT_INVALID",
-    "message": "The referenced Anthropic source file is not valid normalized text."
+    "message": "The referenced Anthropic source file is not valid normalized text.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_TOOL_INPUT_SCHEMA_NOT_WIRED",
-    "message": "The declared tool input schema is not wired to the detected Anthropic client-tool input schema."
+    "message": "The declared tool input schema is not wired to the detected Anthropic client-tool input schema.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND",
-    "message": "The declared tool input-schema symbol was not found."
+    "message": "The declared tool input-schema symbol was not found.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_TOOL_NAME_INVALID",
-    "message": "The detected Anthropic client-tool name violates the supported provider limit."
+    "message": "The detected Anthropic client-tool name violates the supported provider limit.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_TOOL_NAME_MISMATCH",
-    "message": "The declared tool name does not match the detected Anthropic client-tool name."
+    "message": "The declared tool name does not match the detected Anthropic client-tool name.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_TOOL_REGISTRATION_NOT_WIRED",
-    "message": "The declared tool registration is not wired to the detected Anthropic Messages API call."
+    "message": "The declared tool registration is not wired to the detected Anthropic Messages API call.",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_TOOL_REGISTRATION_SYMBOL_NOT_FOUND",
-    "message": "The declared tool-registration symbol was not found."
+    "message": "The declared tool-registration symbol was not found.",
+    "severity": "error"
   }
 ]

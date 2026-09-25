@@ -69,6 +69,7 @@ export const createInstructionExample = async (
         entity: { agentId: 'support', capabilityKind: 'tool', capabilityId: 'get-delivery-status' },
         details: { reason: 'missing', referencedPath: '/src/orders/tracking.ts' },
         range: null,
+        severity: 'error',
         source: 'core',
       },
     ])

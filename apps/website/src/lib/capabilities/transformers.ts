@@ -1,43 +1,78 @@
-import type { IDiagnostic, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IAdapterDiagnostic, IDiagnostic, IRuntimeAdapterEvidence } from '@moldea.ai/core';
 import type { IRepositoryEntry } from '@moldea.ai/repository';
 import type { IMemoryRepositoryEntry } from '@moldea.ai/repository/memory';
 
 import type { ICapabilityFile } from './types.ts';
 
 /** Copies the diagnostic contract explicitly, excluding unexpected additive fields. */
-export const projectDiagnostics = (diagnostics: readonly IDiagnostic[]): IDiagnostic[] =>
-  diagnostics.map(({ code, source, message, path, pointer, range, entity, details }) => ({
-    code,
-    source,
-    message,
-    path,
-    pointer,
-    range:
-      range === null
-        ? null
-        : {
-            start: {
-              line: range.start.line,
-              column: range.start.column,
-              offset: range.start.offset,
+export const projectDiagnostics = (diagnostics: readonly IDiagnostic[]): IAdapterDiagnostic[] =>
+  diagnostics.map((diagnostic): IAdapterDiagnostic => {
+    const projected = {
+      code: diagnostic.code,
+      source: diagnostic.source,
+      message: diagnostic.message,
+      path: diagnostic.path,
+      pointer: diagnostic.pointer,
+      range:
+        diagnostic.range === null
+          ? null
+          : {
+              start: {
+                line: diagnostic.range.start.line,
+                column: diagnostic.range.start.column,
+                offset: diagnostic.range.start.offset,
+              },
+              end: {
+                line: diagnostic.range.end.line,
+                column: diagnostic.range.end.column,
+                offset: diagnostic.range.end.offset,
+              },
             },
-            end: { line: range.end.line, column: range.end.column, offset: range.end.offset },
-          },
-    entity:
-      entity === null
-        ? null
-        : {
-            ...(entity.agentId === undefined ? {} : { agentId: entity.agentId }),
-            ...(entity.capabilityId === undefined ? {} : { capabilityId: entity.capabilityId }),
-            ...(entity.capabilityKind === undefined
-              ? {}
-              : { capabilityKind: entity.capabilityKind }),
-            ...(entity.decisionId === undefined ? {} : { decisionId: entity.decisionId }),
-            ...(entity.variableId === undefined ? {} : { variableId: entity.variableId }),
-            ...(entity.adapterId === undefined ? {} : { adapterId: entity.adapterId }),
-          },
-    details: { ...details },
-  }));
+      entity:
+        diagnostic.entity === null
+          ? null
+          : {
+              ...(diagnostic.entity.agentId === undefined
+                ? {}
+                : { agentId: diagnostic.entity.agentId }),
+              ...(diagnostic.entity.capabilityId === undefined
+                ? {}
+                : { capabilityId: diagnostic.entity.capabilityId }),
+              ...(diagnostic.entity.capabilityKind === undefined
+                ? {}
+                : { capabilityKind: diagnostic.entity.capabilityKind }),
+              ...(diagnostic.entity.decisionId === undefined
+                ? {}
+                : { decisionId: diagnostic.entity.decisionId }),
+              ...(diagnostic.entity.variableId === undefined
+                ? {}
+                : { variableId: diagnostic.entity.variableId }),
+              ...(diagnostic.entity.adapterId === undefined
+                ? {}
+                : { adapterId: diagnostic.entity.adapterId }),
+            },
+    };
+
+    if (diagnostic.severity === 'warning') {
+      const details =
+        diagnostic.details.reason === 'version-dependent-behavior'
+          ? {
+              relationship: diagnostic.details.relationship,
+              reason: diagnostic.details.reason,
+              packageName: diagnostic.details.packageName,
+              declaredRange: diagnostic.details.declaredRange,
+              boundaryVersion: diagnostic.details.boundaryVersion,
+            }
+          : {
+              relationship: diagnostic.details.relationship,
+              reason: diagnostic.details.reason,
+            };
+
+      return { ...projected, details, severity: 'warning' };
+    }
+
+    return { ...projected, details: { ...diagnostic.details }, severity: 'error' };
+  });
 
 /** Retains the public relationship fields, never the reader snapshot or executable source. */
 export const projectEvidence = (

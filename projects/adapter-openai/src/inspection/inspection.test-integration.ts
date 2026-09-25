@@ -68,7 +68,7 @@ const createNullPrototypeRecord = <Value extends object>(value: Value): Value =>
   Object.assign(Object.create(null) as Value, value);
 
 const createExpectedDiagnostic = (
-  code: keyof typeof OPENAI_ADAPTER_DIAGNOSTICS,
+  code: Exclude<keyof typeof OPENAI_ADAPTER_DIAGNOSTICS, 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: string,
   range: IAdapterDiagnostic['range'],
   capabilityId?: string,
@@ -80,7 +80,8 @@ const createExpectedDiagnostic = (
     ...(capabilityId === undefined ? {} : { capabilityId, capabilityKind: 'tool' as const }),
     adapterId: 'openai',
   }),
-  message: OPENAI_ADAPTER_DIAGNOSTICS[code],
+  message: OPENAI_ADAPTER_DIAGNOSTICS[code].message,
+  severity: 'error',
   path: parseRepositoryPath(path),
   pointer: null,
   range,
@@ -91,7 +92,7 @@ describe('openAiAdapter Core integration', () => {
   test('keeps the diagnostic catalog synchronized with its conformance golden', () => {
     expect(
       Object.entries(OPENAI_ADAPTER_DIAGNOSTICS)
-        .map(([code, message]) => ({ code, message }))
+        .map(([code, definition]) => ({ code, ...definition }))
         .sort((left, right) => (left.code < right.code ? -1 : left.code > right.code ? 1 : 0)),
     ).toStrictEqual(expectedDiagnostics);
   });
@@ -355,8 +356,13 @@ describe('openAiAdapter Core integration', () => {
 
     expect(result.valid).toBe(false);
     expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
+      'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
       'OPENAI_INSTRUCTION_LOADER_NOT_WIRED',
     ]);
+    expect(result.diagnostics[0]).toMatchObject({
+      details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+      severity: 'warning',
+    });
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual([
       'language',
       'runtime-package',
@@ -505,7 +511,15 @@ describe('openAiAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.diagnostics.map(({ code, details, severity }) => ({ code, details, severity })),
+    ).toStrictEqual([
+      {
+        code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
@@ -625,7 +639,19 @@ describe('openAiAdapter Core integration', () => {
       'OPENAI_INSTRUCTION_LOADER_NOT_WIRED',
       'OPENAI_TOOL_REGISTRATION_NOT_WIRED',
     ]);
-    expect(ambiguousResult.diagnostics).toStrictEqual([]);
+    expect(ambiguousResult.valid).toBe(true);
+    expect(
+      ambiguousResult.diagnostics.map(({ details, severity }) => ({ details, severity })),
+    ).toStrictEqual([
+      {
+        details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+        severity: 'warning',
+      },
+      {
+        details: { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
+        severity: 'warning',
+      },
+    ]);
   });
 
   test('suppresses negative relationship diagnostics for an aliased Responses candidate', async () => {
@@ -646,7 +672,18 @@ describe('openAiAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.diagnostics.map(({ details, severity }) => ({ details, severity })),
+    ).toStrictEqual([
+      {
+        details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+        severity: 'warning',
+      },
+      {
+        details: { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.valid).toBe(true);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
@@ -669,7 +706,14 @@ describe('openAiAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.diagnostics.map(({ details, severity }) => ({ details, severity })),
+    ).toStrictEqual([
+      {
+        details: { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.valid).toBe(true);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });

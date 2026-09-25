@@ -26,6 +26,7 @@ describe('Core diagnostic normalization', () => {
       path: null,
       pointer: null,
       range: null,
+      severity: 'error',
       source: 'core',
     });
     expect(Object.isFrozen(diagnostic)).toBe(true);
@@ -125,6 +126,7 @@ describe('Core diagnostic normalization', () => {
       path: null,
       pointer: null,
       range: null,
+      severity: 'error',
       source: 'alpha',
     };
     const diagnostics = normalizeDiagnostics([
@@ -147,6 +149,7 @@ describe('Core diagnostic normalization', () => {
       path: parseRepositoryPath('/source.ts'),
       pointer: null,
       range: null,
+      severity: 'error',
       source: 'openai',
     };
     const createRange = (endColumn: number) => ({
@@ -170,6 +173,7 @@ describe('Core diagnostic normalization', () => {
       path: null,
       pointer: null,
       range: null,
+      severity: 'error',
       source: 'openai',
     });
     const diagnostics = normalizeDiagnostics([createDiagnostic('2'), createDiagnostic('10')]);

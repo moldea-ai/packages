@@ -22,6 +22,7 @@
             "offset": 0
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -38,6 +39,7 @@
         "path": "/moldea/moldea.yaml",
         "pointer": "/version",
         "range": null,
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -65,6 +67,7 @@
             "offset": 9
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -92,6 +95,7 @@
             "offset": 11
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -119,6 +123,7 @@
             "offset": 11
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -148,6 +153,7 @@
             "offset": 35
           }
         },
+        "severity": "error",
         "source": "core"
       },
       {
@@ -171,6 +177,7 @@
             "offset": 49
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -198,6 +205,7 @@
             "offset": 11
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -228,6 +236,7 @@
             "offset": 105
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -259,6 +268,7 @@
             "offset": 125
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -288,6 +298,7 @@
             "offset": 21
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -317,6 +328,7 @@
             "offset": 21
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -344,6 +356,7 @@
             "offset": 42
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -371,6 +384,7 @@
             "offset": 24
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -400,6 +414,7 @@
             "offset": 73
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -429,6 +444,7 @@
             "offset": 87
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -458,6 +474,7 @@
             "offset": 70
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -487,6 +504,7 @@
             "offset": 139
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -517,6 +535,7 @@
             "offset": 77
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -537,6 +556,7 @@
         "path": "/moldea/moldea.yaml",
         "pointer": "/agents/agent/skills/process/implementation",
         "range": null,
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -566,6 +586,7 @@
             "offset": 19
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -595,6 +616,7 @@
             "offset": 64
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -624,6 +646,7 @@
             "offset": 60
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -653,6 +676,7 @@
             "offset": 104
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -682,6 +706,7 @@
             "offset": 82
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -709,6 +734,7 @@
             "offset": 22
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -738,6 +764,7 @@
             "offset": 47
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -758,6 +785,7 @@
         "path": "/moldea/moldea.yaml",
         "pointer": "/agents/agent/tools/lookup/description",
         "range": null,
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -787,6 +815,7 @@
             "offset": 70
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]

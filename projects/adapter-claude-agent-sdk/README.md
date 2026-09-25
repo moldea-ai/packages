@@ -51,6 +51,8 @@ Evidence is source-grounded, references existing regular files, and contains no 
 
 ## Diagnostics
 
+`CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+
 | Code                                                     | Stable message                                                                                                            |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `CLAUDE_AGENT_SDK_PACKAGE_MANIFEST_INVALID`              | The owning package manifest is invalid for Claude Agent SDK dependency detection.                                         |
@@ -73,6 +75,7 @@ Evidence is source-grounded, references existing regular files, and contains no 
 | `CLAUDE_AGENT_SDK_HANDOFF_TARGET_AMBIGUOUS`              | The detected Claude Agent SDK subagent target matches more than one registered moldea agent.                              |
 | `CLAUDE_AGENT_SDK_HANDOFF_ROUTING_DESCRIPTION_MISSING`   | The detected Claude Agent SDK subagent registration has no supported routing description.                                 |
 | `CLAUDE_AGENT_SDK_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED` | The detected Claude Agent SDK subagent routing description does not use the target agent's effective routing description. |
+| `CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED`       | The declared runtime relationship could not be verified.                                                                  |
 
 Missing local runtime evidence is not a diagnostic. Dynamic or unsupported forms produce partial or no evidence rather than guessed failures.
 

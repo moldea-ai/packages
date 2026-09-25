@@ -28,9 +28,12 @@ Evidence contains no repository content, agent instructions, credentials, API ke
 | `OPENAI_TOOL_REGISTRATION_NOT_WIRED`         | Every supported resolved request proves the tool registration absent.    |
 | `OPENAI_TOOL_NAME_MISMATCH`                  | A detected OpenAI function-tool name contradicts the declared tool name. |
 | `OPENAI_TOOL_INPUT_SCHEMA_NOT_WIRED`         | Resolved parameters do not wire the declared input schema.               |
+| `OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED`     | The declared runtime relationship could not be verified.                 |
 
 Diagnostics use the shared Core adapter shape, preserve logical source locations, and remain deterministically ordered. Dynamic or indirect patterns yield partial or no evidence rather than guessed failures. Core validates adapter output and applies all-or-nothing inspection semantics.
 
 ## Package detection
 
 Detection stops at the nearest existing `package.json` owning each runtime-agent source. Supported dependency fields are considered collectively. A collectively disjoint range produces the unsupported-version diagnostic without package evidence; an ambiguous range remains evidence rather than being promoted to verified support. Invalid UTF-8 or NUL in the owning manifest produces only `OPENAI_PACKAGE_MANIFEST_INVALID`; `OPENAI_SOURCE_TEXT_INVALID` is reserved for referenced TypeScript source files.
+
+`OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.

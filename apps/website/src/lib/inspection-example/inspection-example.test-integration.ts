@@ -20,6 +20,7 @@ test('generates reproducible pass, fail, pass excerpts from real Core checks', a
       path: '/moldea/moldea.yaml',
       pointer: '/context/~1moldea~1project.md/bindings/0',
       details: { referencedPath: '/src/refund-policy.ts' },
+      severity: 'error',
     },
   ]);
   expect(states).toStrictEqual(await createInspectionExample());

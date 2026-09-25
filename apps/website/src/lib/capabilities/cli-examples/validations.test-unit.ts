@@ -5,9 +5,9 @@ import { CliCollectionResult } from './types.ts';
 import { parseCliExecution } from './validations.ts';
 
 const envelope = {
-  cliVersion: '8.0.0',
+  cliVersion: '9.0.0',
   command: 'validate',
-  schemaVersion: 4,
+  schemaVersion: 5,
   status: 'valid',
   error: null,
   result: { valid: true },
@@ -34,7 +34,7 @@ test.each([
       : null,
   };
   expect(
-    parseCliExecution({ stdout: JSON.stringify(output), exitStatus }, 'validate', '8.0.0'),
+    parseCliExecution({ stdout: JSON.stringify(output), exitStatus }, 'validate', '9.0.0'),
   ).toStrictEqual(output);
 });
 
@@ -52,7 +52,7 @@ test.each([
     parseCliExecution(
       { stdout: JSON.stringify({ ...envelope, ...changes }), exitStatus },
       'validate',
-      '8.0.0',
+      '9.0.0',
     ),
   ).toThrow();
 });
@@ -75,7 +75,7 @@ test('refuses partial success alongside an operational error', () => {
         exitStatus: 3,
       },
       'validate',
-      '8.0.0',
+      '9.0.0',
     ),
   ).toThrow('unexpected facts');
 });
@@ -98,4 +98,56 @@ test('retains selected command facts and strips unknown host/process fields', ()
     counts: { matchedPaths: 1 },
     page: { cursor: null, records: [{ kind: 'metadata', path: '/moldea/project.md' }] },
   });
+});
+
+const warningRecord = {
+  code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+  details: {
+    boundaryVersion: '1.2.3',
+    declaredRange: null,
+    packageName: '@anthropic-ai/sdk',
+    reason: 'version-dependent-behavior',
+    relationship: 'instruction-loader',
+  },
+  entity: { agentId: 'support' },
+  key: 'warning-1',
+  kind: 'diagnostic',
+  message: 'The declared runtime relationship could not be verified.',
+  path: '/src/agent.ts',
+  pointer: null,
+  range: null,
+  severity: 'warning',
+  source: 'anthropic',
+};
+
+test('accepts the closed warning record and complete validation counts', () => {
+  expect(
+    CliCollectionResult.parse({
+      valid: true,
+      diagnosticCount: 1,
+      errorCount: 0,
+      warningCount: 1,
+      page: { cursor: null, records: [warningRecord] },
+    }),
+  ).toMatchObject({
+    valid: true,
+    errorCount: 0,
+    warningCount: 1,
+    page: { records: [warningRecord] },
+  });
+});
+
+test.each([
+  ['missing severity', { severity: undefined }],
+  ['error severity with warning details', { severity: 'error' }],
+  ['missing warning details', { details: undefined }],
+  ['extra warning detail', { details: { ...warningRecord.details, sourceText: 'private' } }],
+  ['unknown relationship', { details: { ...warningRecord.details, relationship: 'provider-run' } }],
+])('rejects a diagnostic record with %s', (_description, changes) => {
+  expect(() =>
+    CliCollectionResult.parse({
+      valid: true,
+      page: { cursor: null, records: [{ ...warningRecord, ...changes }] },
+    }),
+  ).toThrow();
 });

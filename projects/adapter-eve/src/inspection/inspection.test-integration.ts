@@ -89,7 +89,7 @@ describe('eveAdapter Core integration', () => {
   test('keeps the complete stable diagnostic catalog synchronized', () => {
     expect(
       Object.entries(EVE_ADAPTER_DIAGNOSTICS)
-        .map(([code, message]) => ({ code, message }))
+        .map(([code, definition]) => ({ code, ...definition }))
         .sort((left, right) => (left.code < right.code ? -1 : left.code > right.code ? 1 : 0)),
     ).toStrictEqual(expectedDiagnostics);
   });

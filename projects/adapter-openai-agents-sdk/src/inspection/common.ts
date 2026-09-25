@@ -81,7 +81,10 @@ const createEntity = (agentId: string, capabilityId?: string) =>
  */
 export const addOpenAiAgentsSdkDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: IOpenAiAgentsSdkAdapterDiagnosticCode,
+  code: Exclude<
+    IOpenAiAgentsSdkAdapterDiagnosticCode,
+    'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,

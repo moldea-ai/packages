@@ -69,6 +69,19 @@ const createValidDiagnostic = (): Record<string, unknown> => ({
   path: evidencePath,
   pointer: null,
   range: null,
+  severity: 'error',
+  source: 'anthropic',
+});
+
+const createValidWarning = (): Record<string, unknown> => ({
+  code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+  details: { relationship: 'tool-implementation', reason: 'dynamic-source-pattern' },
+  entity: { agentId: 'alpha', capabilityId: 'audit', capabilityKind: 'tool' },
+  message: 'The declared runtime relationship could not be verified.',
+  path: parseRepositoryPath('/src/audit.ts'),
+  pointer: null,
+  range: null,
+  severity: 'warning',
   source: 'anthropic',
 });
 
@@ -96,6 +109,12 @@ const resolveAlphaResult = (
       ? (candidate as IRuntimeAdapterResult)
       : { diagnostics: [], evidence: [] },
   );
+
+const zetaAdapter: IRuntimeAdapter = {
+  id: 'openai',
+  inspect: () => Promise.resolve({ diagnostics: [], evidence: [] }),
+  supportedRepositoryFormatVersions: [1],
+};
 
 const malformedCases: readonly [string, () => unknown][] = [
   ['null result', () => null],
@@ -214,6 +233,140 @@ const malformedCases: readonly [string, () => unknown][] = [
     'incorrect diagnostic namespace',
     () => ({
       diagnostics: [{ ...createValidDiagnostic(), code: 'OTHER_ADAPTER_INVALID' }],
+      evidence: [],
+    }),
+  ],
+  [
+    'missing diagnostic severity',
+    () => ({
+      diagnostics: [{ ...createValidDiagnostic(), severity: undefined }],
+      evidence: [],
+    }),
+  ],
+  [
+    'failure code marked as a warning',
+    () => ({ diagnostics: [{ ...createValidDiagnostic(), severity: 'warning' }], evidence: [] }),
+  ],
+  [
+    'warning code marked as an error',
+    () => ({ diagnostics: [{ ...createValidWarning(), severity: 'error' }], evidence: [] }),
+  ],
+  [
+    'incorrect warning message',
+    () => ({ diagnostics: [{ ...createValidWarning(), message: 'Unverified' }], evidence: [] }),
+  ],
+  [
+    'warning without a source location',
+    () => ({ diagnostics: [{ ...createValidWarning(), path: null }], evidence: [] }),
+  ],
+  [
+    'warning with an undeclared subject',
+    () => ({
+      diagnostics: [{ ...createValidWarning(), entity: { agentId: 'beta' } }],
+      evidence: [],
+    }),
+  ],
+  [
+    'tool-schema warning without a declared schema',
+    () => ({
+      diagnostics: [
+        {
+          ...createValidWarning(),
+          details: { relationship: 'tool-output-schema', reason: 'dynamic-source-pattern' },
+        },
+      ],
+      evidence: [],
+    }),
+  ],
+  [
+    'agent relationship warning with a tool subject',
+    () => ({
+      diagnostics: [
+        {
+          ...createValidWarning(),
+          details: { relationship: 'handoff-registration', reason: 'dynamic-source-pattern' },
+        },
+      ],
+      evidence: [],
+    }),
+  ],
+  [
+    'variable-provider warning without a declared variable and binding',
+    () => ({
+      diagnostics: [
+        {
+          ...createValidWarning(),
+          details: { relationship: 'variable-provider', reason: 'dynamic-source-pattern' },
+          entity: { agentId: 'alpha', variableId: 'MISSING' },
+        },
+      ],
+      evidence: [],
+    }),
+  ],
+  [
+    'warning with unrelated details',
+    () => ({
+      diagnostics: [
+        {
+          ...createValidWarning(),
+          details: {
+            relationship: 'tool-implementation',
+            reason: 'dynamic-source-pattern',
+            source: '/src/audit.ts',
+          },
+        },
+      ],
+      evidence: [],
+    }),
+  ],
+  [
+    'warning with an accessor detail',
+    () => ({
+      diagnostics: [
+        {
+          ...createValidWarning(),
+          details: Object.defineProperty({ relationship: 'tool-implementation' }, 'reason', {
+            enumerable: true,
+            get: () => 'dynamic-source-pattern',
+          }),
+        },
+      ],
+      evidence: [],
+    }),
+  ],
+  [
+    'warning with an unnormalized version declaration',
+    () => ({
+      diagnostics: [
+        {
+          ...createValidWarning(),
+          details: {
+            relationship: 'tool-implementation',
+            reason: 'version-dependent-behavior',
+            packageName: '@anthropic-ai/sdk',
+            declaredRange: 'latest',
+            boundaryVersion: '1.2.3',
+          },
+        },
+      ],
+      evidence: [],
+    }),
+  ],
+  [
+    'warning with a noncanonical behavior boundary',
+    () => ({
+      diagnostics: [
+        {
+          ...createValidWarning(),
+          details: {
+            relationship: 'tool-implementation',
+            reason: 'version-dependent-behavior',
+            packageName: '@anthropic-ai/sdk',
+            declaredRange: '>=1.0.0 <2.0.0-0',
+            boundaryVersion: '01.2.3',
+          },
+        },
+      ],
       evidence: [],
     }),
   ],
@@ -346,6 +499,56 @@ describe('Core runtime-adapter result validation', () => {
     expect(Object.getPrototypeOf(result.diagnostics[0]?.details)).toBeNull();
   });
 
+  test('keeps scoped warnings valid and counts errors separately', async () => {
+    const warning = createValidWarning();
+    const alphaAdapter: IRuntimeAdapter = {
+      id: 'anthropic',
+      inspect: (context) =>
+        resolveAlphaResult(context, { diagnostics: [warning, warning], evidence: [] }),
+      supportedRepositoryFormatVersions: [1],
+    };
+    const result = await createCore({ adapters: [alphaAdapter, zetaAdapter] }).validateProject({
+      repository: createMemoryRepositoryReader(createEntries()),
+    });
+
+    expect(result).toMatchObject({ errorCount: 0, valid: true, warningCount: 1 });
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics[0]).toMatchObject(warning);
+  });
+
+  test('preserves safe version context and distinct behavior boundaries', async () => {
+    const warning = createValidWarning();
+    const first = {
+      ...warning,
+      details: {
+        boundaryVersion: '1.2.3',
+        declaredRange: '>=1.0.0 <2.0.0-0',
+        packageName: '@anthropic-ai/sdk',
+        reason: 'version-dependent-behavior',
+        relationship: 'tool-implementation',
+      },
+    };
+    const second = {
+      ...first,
+      details: { ...first.details, boundaryVersion: '2.0.0', declaredRange: null },
+    };
+    const alphaAdapter: IRuntimeAdapter = {
+      id: 'anthropic',
+      inspect: (context) =>
+        resolveAlphaResult(context, { diagnostics: [first, second], evidence: [] }),
+      supportedRepositoryFormatVersions: [1],
+    };
+    const result = await createCore({ adapters: [alphaAdapter, zetaAdapter] }).validateProject({
+      repository: createMemoryRepositoryReader(createEntries()),
+    });
+
+    expect(result).toMatchObject({ errorCount: 0, valid: true, warningCount: 2 });
+    expect(result.diagnostics.map((item) => item.details)).toStrictEqual([
+      first.details,
+      second.details,
+    ]);
+  });
+
   test('counts duplicate adapter diagnostics before deduplication', async () => {
     const diagnostic = createValidDiagnostic();
     const alphaAdapter: IRuntimeAdapter = {
@@ -365,6 +568,29 @@ describe('Core runtime-adapter result validation', () => {
         adapters: [zetaAdapter, alphaAdapter],
         limits: { maxDiagnostics: 1 },
       }).validateProject({ repository: createMemoryRepositoryReader(createEntries()) }),
+    ).rejects.toMatchObject({
+      code: 'RESOURCE_LIMIT_EXCEEDED',
+      limit: 'maxDiagnostics',
+      operation: 'validate-adapter',
+    });
+  });
+
+  test('counts duplicate warning candidates before deduplication', async () => {
+    const warning = createValidWarning();
+    const alphaAdapter: IRuntimeAdapter = {
+      id: 'anthropic',
+      inspect: (context) =>
+        resolveAlphaResult(context, { diagnostics: [warning, warning], evidence: [] }),
+      supportedRepositoryFormatVersions: [1],
+    };
+
+    await expect(
+      createCore({
+        adapters: [alphaAdapter, zetaAdapter],
+        limits: { maxDiagnostics: 1 },
+      }).validateProject({
+        repository: createMemoryRepositoryReader(createEntries()),
+      }),
     ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxDiagnostics',

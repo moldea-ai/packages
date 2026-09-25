@@ -57,6 +57,7 @@ export const createInspectionExample = async (
               details: { referencedPath: '/src/refund-policy.ts' },
               entity: null,
               range: null,
+              severity: 'error',
               source: 'core',
             },
           ]
@@ -74,12 +75,13 @@ export const createInspectionExample = async (
 
     const result = {
       valid,
-      diagnostics: diagnostics.map(({ code, message, path, pointer, details }) => ({
+      diagnostics: diagnostics.map(({ code, message, path, pointer, details, severity }) => ({
         code,
         message,
         path,
         pointer,
         details,
+        severity,
       })),
     };
     states.push({

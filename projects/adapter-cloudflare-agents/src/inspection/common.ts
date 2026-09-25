@@ -44,7 +44,10 @@ const createEntity = (agentId: string, capabilityId?: string) =>
 /** Appends one stable package-owned diagnostic. */
 export const addCloudflareAgentsDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: ICloudflareAgentsAdapterDiagnosticCode,
+  code: Exclude<
+    ICloudflareAgentsAdapterDiagnosticCode,
+    'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,
@@ -117,7 +120,10 @@ export const hasCloudflareAgentsSymbol = async (
   reference: IRepositoryReference,
   diagnostics: IAdapterDiagnostic[],
   agentId: string,
-  missingCode: ICloudflareAgentsAdapterDiagnosticCode,
+  missingCode: Exclude<
+    ICloudflareAgentsAdapterDiagnosticCode,
+    'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
   capabilityId?: string,
 ): Promise<ICloudflareAgentsSourceAnalysis | null> => {
   const analysis = await analyzeCloudflareAgentsBoundReference(

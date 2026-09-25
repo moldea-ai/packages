@@ -1,5 +1,9 @@
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterEvidence, ISourceRange } from '@moldea.ai/core';
+import type {
+  IRuntimeAdapterEvidence,
+  ISourceRange,
+  IUnverifiedRelationship,
+} from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 import type { IRepositoryPath } from '@moldea.ai/repository';
@@ -52,7 +56,7 @@ const createEntity = (agentId: string, capabilityId?: string) =>
  */
 export const addOpenAiDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: IOpenAiAdapterDiagnosticCode,
+  code: Exclude<IOpenAiAdapterDiagnosticCode, 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,
@@ -66,6 +70,27 @@ export const addOpenAiDiagnostic = (
       path,
       pointer: null,
       range,
+    }),
+  );
+};
+
+/** Appends a scoped warning when a declared relationship cannot be decided from source. */
+export const addOpenAiUnverifiedRelationship = (
+  diagnostics: IAdapterDiagnostic[],
+  relationship: IUnverifiedRelationship,
+  reason: 'unsupported-source-pattern' | 'dynamic-source-pattern',
+  path: IRepositoryPath,
+  agentId: string,
+  capabilityId?: string,
+): void => {
+  diagnostics.push(
+    createOpenAiDiagnostic({
+      code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason, relationship },
+      entity: createEntity(agentId, capabilityId),
+      path,
+      pointer: null,
+      range: null,
     }),
   );
 };

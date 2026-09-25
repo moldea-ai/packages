@@ -9,6 +9,8 @@ import type {
 import type { ISourceRange } from '@moldea.ai/core';
 import type {
   IAdapterDiagnostic,
+  IAdapterErrorDiagnostic,
+  IAdapterWarningDiagnostic,
   IIndexedAgent,
   IRuntimeAdapterEvidence,
   IRuntimeAdapterRepository,
@@ -46,11 +48,16 @@ export type IEveAdapterDiagnosticCode =
   | 'EVE_TOOL_SUBAGENT_NAME_COLLISION'
   | 'EVE_SUBAGENT_PARENT_AMBIGUOUS'
   | 'EVE_ROUTING_DESCRIPTION_MISSING'
-  | 'EVE_ROUTING_DESCRIPTION_NOT_WIRED';
+  | 'EVE_ROUTING_DESCRIPTION_NOT_WIRED'
+  | 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
-export type IEveDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: IEveAdapterDiagnosticCode;
-};
+export type IEveDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<IEveAdapterDiagnosticCode, 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED'>;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });
 
 export interface IEvePackageObservation {
   readonly compatibility: IStaticAnalysisPackageCompatibility;

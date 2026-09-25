@@ -51,6 +51,8 @@ The initial target may emit `runtime-package`, `language`, `runtime-pattern`, `i
 
 ## Diagnostics
 
+`OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+
 | Code                                         | Stable message                                                                               |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | `OPENAI_PACKAGE_MANIFEST_INVALID`            | The owning package manifest is invalid for OpenAI dependency detection.                      |
@@ -65,6 +67,7 @@ The initial target may emit `runtime-package`, `language`, `runtime-pattern`, `i
 | `OPENAI_TOOL_REGISTRATION_NOT_WIRED`         | The declared tool registration is not wired to the detected Responses API call.              |
 | `OPENAI_TOOL_NAME_MISMATCH`                  | The declared tool name does not match the detected OpenAI function-tool name.                |
 | `OPENAI_TOOL_INPUT_SCHEMA_NOT_WIRED`         | The declared tool input schema is not wired to the detected OpenAI function-tool parameters. |
+| `OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED`     | The declared runtime relationship could not be verified.                                     |
 
 Missing local runtime evidence is not a diagnostic. Dynamic or indirect patterns that cannot be resolved without execution produce partial or no evidence rather than guessed failures. Chat Completions and other OpenAI APIs are not rejected merely because the initial verified target uses Responses.
 

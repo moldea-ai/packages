@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
 import type { ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
@@ -18,7 +18,8 @@ export type IAnthropicAdapterDiagnosticCode =
   | 'ANTHROPIC_TOOL_REGISTRATION_NOT_WIRED'
   | 'ANTHROPIC_TOOL_NAME_MISMATCH'
   | 'ANTHROPIC_TOOL_NAME_INVALID'
-  | 'ANTHROPIC_TOOL_INPUT_SCHEMA_NOT_WIRED';
+  | 'ANTHROPIC_TOOL_INPUT_SCHEMA_NOT_WIRED'
+  | 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
 // normalized repository text and scalar source lookup
 export interface IAnthropicSourceLocator {
@@ -117,6 +118,13 @@ export interface IAnthropicInspectionSession {
 }
 
 // complete input used to construct one safe adapter diagnostic
-export type IAnthropicDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: IAnthropicAdapterDiagnosticCode;
-};
+export type IAnthropicDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<
+        IAnthropicAdapterDiagnosticCode,
+        'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED'
+      >;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });

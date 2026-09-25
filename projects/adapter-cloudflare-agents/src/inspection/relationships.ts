@@ -40,8 +40,14 @@ const inspectBinding = async (
   relationship: ICloudflareAgentsRelationship,
   analysis: ICloudflareAgentsSourceAnalysis,
   reference: IRepositoryReference,
-  symbolMissingCode: ICloudflareAgentsAdapterDiagnosticCode,
-  notWiredCode: ICloudflareAgentsAdapterDiagnosticCode,
+  symbolMissingCode: Exclude<
+    ICloudflareAgentsAdapterDiagnosticCode,
+    'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
+  notWiredCode: Exclude<
+    ICloudflareAgentsAdapterDiagnosticCode,
+    'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
   evidenceKind: 'instruction-loader' | 'schema',
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],
@@ -90,8 +96,14 @@ const inspectToolReference = async (
   relationship: ICloudflareAgentsRelationship,
   relationshipAnalysis: ICloudflareAgentsSourceAnalysis,
   reference: IRepositoryReference | undefined,
-  symbolMissingCode: ICloudflareAgentsAdapterDiagnosticCode,
-  notWiredCode: ICloudflareAgentsAdapterDiagnosticCode,
+  symbolMissingCode: Exclude<
+    ICloudflareAgentsAdapterDiagnosticCode,
+    'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
+  notWiredCode: Exclude<
+    ICloudflareAgentsAdapterDiagnosticCode,
+    'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
   diagnostics: IAdapterDiagnostic[],
 ): Promise<boolean> => {
   if (reference === undefined) {

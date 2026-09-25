@@ -16,7 +16,10 @@ export interface IInspectionSnapshot {
 // only the content-free validation fields shown publicly, not the complete Core result
 export interface IInspectionResultExcerpt {
   valid: boolean;
-  diagnostics: Pick<IDiagnostic, 'code' | 'message' | 'path' | 'pointer' | 'details'>[];
+  diagnostics: Pick<
+    IDiagnostic,
+    'code' | 'message' | 'path' | 'pointer' | 'details' | 'severity'
+  >[];
 }
 
 export interface IInspectionExampleState {

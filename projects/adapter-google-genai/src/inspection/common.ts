@@ -54,7 +54,7 @@ const createEntity = (agentId: string, capabilityId?: string) =>
  */
 export const addGoogleGenAiDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: IGoogleGenAiAdapterDiagnosticCode,
+  code: Exclude<IGoogleGenAiAdapterDiagnosticCode, 'GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,

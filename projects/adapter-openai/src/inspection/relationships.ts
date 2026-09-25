@@ -28,6 +28,7 @@ import type {
 } from '../contracts/index.js';
 import {
   addOpenAiDiagnostic,
+  addOpenAiUnverifiedRelationship,
   analyzeOpenAiBoundReference,
   compareOpenAiStrings,
   createOpenAiEvidence,
@@ -360,6 +361,13 @@ const inspectInstructionLoader = async (
   }
 
   if (loader.kind === 'present-unsupported') {
+    addOpenAiUnverifiedRelationship(
+      diagnostics,
+      'instruction-loader',
+      'unsupported-source-pattern',
+      reference.path,
+      agent.id,
+    );
     return;
   }
 
@@ -393,6 +401,14 @@ const inspectInstructionLoader = async (
       runtimeAnalysis.path,
       agent.id,
       getExpressionRange(runtimeAnalysis, relationship.expression),
+    );
+  } else {
+    addOpenAiUnverifiedRelationship(
+      diagnostics,
+      'instruction-loader',
+      'dynamic-source-pattern',
+      runtimeAnalysis.path,
+      agent.id,
     );
   }
 };
@@ -453,6 +469,18 @@ const inspectToolRelationships = async (
         runtimeAnalysis.path,
         agent.id,
         getExpressionRange(runtimeAnalysis, relationship.expression),
+        registration.capabilityId,
+      );
+      continue;
+    }
+
+    if (relationship.kind === 'ambiguous') {
+      addOpenAiUnverifiedRelationship(
+        diagnostics,
+        'tool-registration',
+        'dynamic-source-pattern',
+        runtimeAnalysis.path,
+        agent.id,
         registration.capabilityId,
       );
       continue;

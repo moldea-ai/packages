@@ -12,6 +12,7 @@
         "path": "/moldea/decisions/not-valid.md",
         "pointer": null,
         "range": null,
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -42,6 +43,7 @@
             "offset": 0
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -72,6 +74,7 @@
             "offset": 65
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -102,6 +105,7 @@
             "offset": 70
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -134,6 +138,7 @@
             "offset": 4
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -164,6 +169,7 @@
             "offset": 59
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -183,6 +189,7 @@
         "path": "/moldea/decisions/1786131723456-use-postgresql.md",
         "pointer": "/status",
         "range": null,
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -213,6 +220,7 @@
             "offset": 12
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -243,6 +251,7 @@
             "offset": 32
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -273,6 +282,7 @@
             "offset": 32
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -305,6 +315,7 @@
             "offset": 71
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -337,6 +348,7 @@
             "offset": 72
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -367,6 +379,7 @@
             "offset": 89
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -397,6 +410,7 @@
             "offset": 72
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -427,6 +441,7 @@
             "offset": 63
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]
@@ -455,6 +470,7 @@
             "offset": 21
           }
         },
+        "severity": "error",
         "source": "core"
       }
     ]

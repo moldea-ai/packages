@@ -8,24 +8,24 @@ For target runtime packages, eligible versions begin at the verified minimum. La
 
 | Adapter ID          | Owning package                         | Implementation | Distribution | Implementation range | Status      | Runtime guidance | Verified targets |
 | ------------------- | -------------------------------------- | -------------- | ------------ | -------------------- | ----------- | ---------------- | ---------------: |
-| `anthropic`         | `@moldea.ai/adapter-anthropic`         | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
-| `claude-agent-sdk`  | `@moldea.ai/adapter-claude-agent-sdk`  | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `1` |
-| `cloudflare-agents` | `@moldea.ai/adapter-cloudflare-agents` | `package`      | `public`     | `^3.0.0`             | `available` | `recommended`    |              `2` |
+| `anthropic`         | `@moldea.ai/adapter-anthropic`         | `package`      | `public`     | `^5.0.0`             | `available` | `optional`       |              `1` |
+| `claude-agent-sdk`  | `@moldea.ai/adapter-claude-agent-sdk`  | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
+| `cloudflare-agents` | `@moldea.ai/adapter-cloudflare-agents` | `package`      | `public`     | `^4.0.0`             | `available` | `recommended`    |              `2` |
 | `custom`            | `@moldea.ai/core`                      | `built-in`     | `public`     | Not available        | `available` | `required`       |              `1` |
-| `eve`               | `@moldea.ai/adapter-eve`               | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `1` |
-| `google-genai`      | `@moldea.ai/adapter-google-genai`      | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `1` |
-| `langchain`         | `@moldea.ai/adapter-langchain`         | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `1` |
-| `langgraph`         | `@moldea.ai/adapter-langgraph`         | `package`      | `public`     | `^3.0.0`             | `available` | `recommended`    |              `2` |
-| `openai`            | `@moldea.ai/adapter-openai`            | `package`      | `public`     | `^4.0.0`             | `available` | `recommended`    |              `1` |
-| `openai-agents-sdk` | `@moldea.ai/adapter-openai-agents-sdk` | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `1` |
-| `vercel-ai-sdk`     | `@moldea.ai/adapter-vercel-ai-sdk`     | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `2` |
+| `eve`               | `@moldea.ai/adapter-eve`               | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
+| `google-genai`      | `@moldea.ai/adapter-google-genai`      | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
+| `langchain`         | `@moldea.ai/adapter-langchain`         | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
+| `langgraph`         | `@moldea.ai/adapter-langgraph`         | `package`      | `public`     | `^4.0.0`             | `available` | `recommended`    |              `2` |
+| `openai`            | `@moldea.ai/adapter-openai`            | `package`      | `public`     | `^5.0.0`             | `available` | `recommended`    |              `1` |
+| `openai-agents-sdk` | `@moldea.ai/adapter-openai-agents-sdk` | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
+| `vercel-ai-sdk`     | `@moldea.ai/adapter-vercel-ai-sdk`     | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `2` |
 
 ## Adapter: `anthropic`
 
 - Owning package: `@moldea.ai/adapter-anthropic`
-- Implementation range: `^4.0.0`
+- Implementation range: `^5.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
 - Last verified: `2026-09-01`
 
@@ -79,9 +79,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 ## Adapter: `claude-agent-sdk`
 
 - Owning package: `@moldea.ai/adapter-claude-agent-sdk`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
 - Last verified: `2026-09-01`
 
@@ -168,9 +168,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 ## Adapter: `cloudflare-agents`
 
 - Owning package: `@moldea.ai/adapter-cloudflare-agents`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `recommended`
 - Last verified: `2026-09-01`
 
@@ -260,7 +260,7 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 - Owning package: `@moldea.ai/core`
 - Implementation range: Not available
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `required`
 - Last verified: `2026-09-01`
 
@@ -283,9 +283,9 @@ Runtime guidance notes: Project-local guidance defines the custom runtime integr
 ## Adapter: `eve`
 
 - Owning package: `@moldea.ai/adapter-eve`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
 - Last verified: `2026-09-01`
 
@@ -371,9 +371,9 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 ## Adapter: `google-genai`
 
 - Owning package: `@moldea.ai/adapter-google-genai`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
 - Last verified: `2026-09-01`
 
@@ -434,9 +434,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 ## Adapter: `langchain`
 
 - Owning package: `@moldea.ai/adapter-langchain`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
 - Last verified: `2026-09-01`
 
@@ -500,9 +500,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 ## Adapter: `langgraph`
 
 - Owning package: `@moldea.ai/adapter-langgraph`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `recommended`
 - Last verified: `2026-09-01`
 
@@ -620,9 +620,9 @@ Runtime guidance notes: Project-local guidance is recommended for prompt ownersh
 ## Adapter: `openai`
 
 - Owning package: `@moldea.ai/adapter-openai`
-- Implementation range: `^4.0.0`
+- Implementation range: `^5.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `recommended`
 - Last verified: `2026-09-01`
 
@@ -670,9 +670,9 @@ Runtime guidance notes: Document project-specific model selection, tool executio
 ## Adapter: `openai-agents-sdk`
 
 - Owning package: `@moldea.ai/adapter-openai-agents-sdk`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
 - Last verified: `2026-09-01`
 
@@ -735,9 +735,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 ## Adapter: `vercel-ai-sdk`
 
 - Owning package: `@moldea.ai/adapter-vercel-ai-sdk`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
 - Last verified: `2026-09-01`
 

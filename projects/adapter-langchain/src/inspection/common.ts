@@ -73,7 +73,7 @@ const createEntity = (agentId: string, capabilityId?: string) =>
 /** Appends one stable package-owned diagnostic. */
 export const addLangChainDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: ILangChainAdapterDiagnosticCode,
+  code: Exclude<ILangChainAdapterDiagnosticCode, 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,

@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
 import type { ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
@@ -26,7 +26,8 @@ export type IOpenAiAgentsSdkAdapterDiagnosticCode =
   | 'OPENAI_AGENTS_SDK_TOOL_OUTPUT_SCHEMA_NOT_WIRED'
   | 'OPENAI_AGENTS_SDK_HANDOFF_TARGET_AMBIGUOUS'
   | 'OPENAI_AGENTS_SDK_HANDOFF_ROUTING_DESCRIPTION_MISSING'
-  | 'OPENAI_AGENTS_SDK_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED';
+  | 'OPENAI_AGENTS_SDK_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED'
+  | 'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
 export type IOpenAiAgentsSdkPackageCompatibility = 'ambiguous' | 'supported' | 'unsupported';
 
@@ -179,9 +180,16 @@ export interface IOpenAiAgentsSdkInspectionSession {
 }
 
 // complete input used to construct one safe adapter diagnostic
-export type IOpenAiAgentsSdkDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: IOpenAiAgentsSdkAdapterDiagnosticCode;
-};
+export type IOpenAiAgentsSdkDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<
+        IOpenAiAgentsSdkAdapterDiagnosticCode,
+        'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED'
+      >;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });
 
 // source range paired with a relevant AST expression
 export interface IOpenAiAgentsSdkLocatedExpression {

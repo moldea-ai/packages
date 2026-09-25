@@ -43,5 +43,8 @@ The adapter may emit `runtime-package`, `language`, `agent-definition`, `instruc
 | `EVE_SUBAGENT_PARENT_AMBIGUOUS`             | Multiple registered Eve agents map to the local subagent's immediate parent root.         |
 | `EVE_ROUTING_DESCRIPTION_MISSING`           | The supported Eve local subagent definition is missing its routing description.           |
 | `EVE_ROUTING_DESCRIPTION_NOT_WIRED`         | The Eve local subagent description does not use the target effective routing description. |
+| `EVE_RUNTIME_RELATIONSHIP_UNVERIFIED`       | The declared runtime relationship could not be verified.                                  |
 
 Diagnostics never include source snippets, descriptions, instructions, schema contents, credentials, URLs, host paths, or raw TypeScript diagnostic messages.
+
+`EVE_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.

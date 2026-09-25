@@ -45,6 +45,8 @@ Evidence is source-grounded, references existing repository files, and contains 
 
 ## Diagnostics
 
+`CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+
 | Code                                                      | Stable message                                                                                                           |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `CLOUDFLARE_AGENTS_PACKAGE_MANIFEST_INVALID`              | The owning package manifest is invalid for Cloudflare Agents dependency detection.                                       |
@@ -68,6 +70,7 @@ Evidence is source-grounded, references existing repository files, and contains 
 | `CLOUDFLARE_AGENTS_HANDOFF_TARGET_AMBIGUOUS`              | The detected Cloudflare agent-tool target maps to more than one registered agent.                                        |
 | `CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_MISSING`   | The detected Cloudflare agent-tool routing description is missing.                                                       |
 | `CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED` | The detected Cloudflare agent-tool routing description is not wired to the target agent's effective routing description. |
+| `CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED`       | The declared runtime relationship could not be verified.                                                                 |
 
 ## Documentation
 

@@ -110,7 +110,7 @@ describe('cloudflareAgentsAdapter Core integration', () => {
   test('keeps the diagnostic catalog synchronized with its conformance golden', () => {
     expect(
       Object.entries(CLOUDFLARE_AGENTS_ADAPTER_DIAGNOSTICS)
-        .map(([code, message]) => ({ code, message }))
+        .map(([code, definition]) => ({ code, ...definition }))
         .sort((left, right) => (left.code < right.code ? -1 : left.code > right.code ? 1 : 0)),
     ).toStrictEqual(expectedDiagnostics);
   });

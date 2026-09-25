@@ -1,8 +1,13 @@
 // @vitest-environment node
 import { beforeAll, expect, test } from 'vitest';
 
+import { anthropicAdapter } from '@moldea.ai/adapter-anthropic';
+import { createCore } from '@moldea.ai/core';
+import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+
 import type { ICapabilityCase } from '../index.ts';
 
+import { ANTHROPIC_FILES } from './anthropic.ts';
 import { RUNTIME_EXAMPLES } from './fixtures.ts';
 import { RUNTIME_EXPECTED_RESULTS } from './expected-results.ts';
 import { createRuntimeExamples } from './runtime-examples.ts';
@@ -71,6 +76,66 @@ test('does not label an unestablished dynamic relationship invalid or supported'
       ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
     ),
   ).toStrictEqual([]);
+});
+
+test('keeps warning, confirmed failure, and mixed paginated outcomes distinct', async () => {
+  const createRepository = (instruction: string, tools: string) =>
+    createMemoryRepositoryReader(
+      ANTHROPIC_FILES.map((file) =>
+        file.path === '/src/agent.ts' && file.type === 'file' && typeof file.content === 'string'
+          ? {
+              ...file,
+              content: file.content
+                .replace('system: readInstruction()', `system: ${instruction}`)
+                .replace('tools: [registeredFindOrder]', `tools: ${tools}`),
+            }
+          : file,
+      ),
+    );
+  const core = createCore({ adapters: [anthropicAdapter] });
+  const warning = await core.validateProject({
+    repository: createRepository('dynamicSystem', '[registeredFindOrder]'),
+  });
+  expect([warning.valid, warning.errorCount, warning.warningCount]).toStrictEqual([true, 0, 1]);
+  expect(warning.diagnostics).toMatchObject([
+    {
+      code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+      severity: 'warning',
+    },
+  ]);
+  expect(warning.evidence.some(({ kind }) => kind === 'instruction-loader')).toBe(false);
+
+  const confirmed = await core.validateProject({
+    repository: createRepository("'Other instruction.'", '[registeredFindOrder]'),
+  });
+  expect([confirmed.valid, confirmed.errorCount, confirmed.warningCount]).toStrictEqual([
+    false,
+    1,
+    0,
+  ]);
+  expect(confirmed.diagnostics).toMatchObject([
+    { code: 'ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED', severity: 'error' },
+  ]);
+
+  const inspection = await core.createProjectInspection({
+    repository: createRepository('dynamicSystem', '[]'),
+  });
+  const first = inspection.readPage({ maxItems: 1, view: 'diagnostics' });
+  expect(first.page.nextCursor).not.toBeNull();
+  const second = inspection.readPage({
+    cursor: first.page.nextCursor ?? '',
+    maxItems: 1,
+    view: 'diagnostics',
+  });
+  expect(first.counts).toMatchObject({ diagnostics: 2, errors: 1, warnings: 1 });
+  expect(second.counts).toStrictEqual(first.counts);
+  expect(second.page.nextCursor).toBeNull();
+  expect(
+    [...first.page.records, ...second.page.records].map(({ item }) =>
+      item.kind === 'diagnostic' ? item.diagnostic.severity : null,
+    ),
+  ).toStrictEqual(['warning', 'error']);
 });
 
 test('retains deterministic outcomes when input file enumeration changes', async () => {

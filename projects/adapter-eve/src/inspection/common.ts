@@ -43,7 +43,7 @@ const createEntity = (agentId: string, capabilityKind?: 'skill' | 'tool', capabi
 /** Appends one stable package-owned Eve diagnostic. */
 export const addEveDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: IEveAdapterDiagnosticCode,
+  code: Exclude<IEveAdapterDiagnosticCode, 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,

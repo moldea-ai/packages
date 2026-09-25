@@ -84,7 +84,7 @@ describe('output pages', () => {
   });
 
   test('continues from an upstream source cursor without requiring the prior record', () => {
-    const sourceCursor = 'core4:metadata:1:snapshot';
+    const sourceCursor = 'core5:metadata:1:snapshot';
     const cursor = encodeMoldeaCliCursor(
       'inspect',
       { view: 'metadata' },

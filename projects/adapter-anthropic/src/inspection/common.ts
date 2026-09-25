@@ -1,5 +1,9 @@
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterEvidence, ISourceRange } from '@moldea.ai/core';
+import type {
+  IRuntimeAdapterEvidence,
+  ISourceRange,
+  IUnverifiedRelationship,
+} from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 import type { IRepositoryPath } from '@moldea.ai/repository';
@@ -54,7 +58,7 @@ const createEntity = (agentId: string, capabilityId?: string) =>
  */
 export const addAnthropicDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: IAnthropicAdapterDiagnosticCode,
+  code: Exclude<IAnthropicAdapterDiagnosticCode, 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,
@@ -68,6 +72,27 @@ export const addAnthropicDiagnostic = (
       path,
       pointer: null,
       range,
+    }),
+  );
+};
+
+/** Appends a scoped warning when a declared relationship cannot be decided from source. */
+export const addAnthropicUnverifiedRelationship = (
+  diagnostics: IAdapterDiagnostic[],
+  relationship: IUnverifiedRelationship,
+  reason: 'unsupported-source-pattern' | 'dynamic-source-pattern',
+  path: IRepositoryPath,
+  agentId: string,
+  capabilityId?: string,
+): void => {
+  diagnostics.push(
+    createAnthropicDiagnostic({
+      code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason, relationship },
+      entity: createEntity(agentId, capabilityId),
+      path,
+      pointer: null,
+      range: null,
     }),
   );
 };

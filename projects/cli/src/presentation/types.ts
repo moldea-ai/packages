@@ -7,6 +7,7 @@ import type {
   IProjectInspectionView,
   IProjectMetadataKind,
   IRuntimeAdapterEvidenceKind,
+  IUnverifiedRelationshipDetails,
 } from '@moldea.ai/core';
 import type { IRepositoryPath, IRepositorySourceErrorCode } from '@moldea.ai/repository';
 
@@ -57,7 +58,7 @@ export interface IMoldeaCliAgentRecord extends IMoldeaCliOutputRecord {
   readonly runtimeId: string;
 }
 
-export interface IMoldeaCliDiagnosticRecord extends IMoldeaCliOutputRecord {
+interface IMoldeaCliDiagnosticRecordBase extends IMoldeaCliOutputRecord {
   readonly code: string;
   readonly entity: IDiagnosticEntity | null;
   readonly kind: 'diagnostic';
@@ -67,6 +68,12 @@ export interface IMoldeaCliDiagnosticRecord extends IMoldeaCliOutputRecord {
   readonly range: IDiagnostic['range'];
   readonly source: string;
 }
+
+export type IMoldeaCliDiagnosticRecord = IMoldeaCliDiagnosticRecordBase &
+  (
+    | { readonly severity: 'error' }
+    | { readonly severity: 'warning'; readonly details: IUnverifiedRelationshipDetails }
+  );
 
 export interface IMoldeaCliMetadataRecord extends IMoldeaCliOutputRecord {
   readonly agentId: string | null;
@@ -132,17 +139,21 @@ export interface IMoldeaCliInspectResult {
 
 export interface IMoldeaCliValidateProjection {
   readonly diagnostics: readonly IMoldeaCliDiagnosticRecord[];
+  readonly errorCount: number;
   readonly formatVersion: number | null;
   readonly snapshotDigest: string;
   readonly source: IMoldeaCliSource;
   readonly valid: boolean;
+  readonly warningCount: number;
 }
 
 export interface IMoldeaCliValidateResult {
   readonly diagnosticCount: number;
+  readonly errorCount: number;
   readonly formatVersion: number | null;
   readonly page: IMoldeaCliOutputPage<IMoldeaCliDiagnosticRecord>;
   readonly snapshotDigest: string;
   readonly source: IMoldeaCliSource;
   readonly valid: boolean;
+  readonly warningCount: number;
 }

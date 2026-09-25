@@ -34,3 +34,9 @@ These guides are included in the installed package. Open only the page relevant 
 - [Verified target](docs/verified-target.md)
 - [Evidence and diagnostics](docs/evidence-and-diagnostics.md)
 - [Limitations](docs/limitations.md)
+
+## Diagnostics
+
+`ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+
+`ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified.

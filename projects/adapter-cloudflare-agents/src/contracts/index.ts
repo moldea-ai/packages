@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
 import type { ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 export type ICloudflareAgentsTargetId =
@@ -28,7 +28,8 @@ export type ICloudflareAgentsAdapterDiagnosticCode =
   | 'CLOUDFLARE_AGENTS_TOOL_OUTPUT_SCHEMA_NOT_WIRED'
   | 'CLOUDFLARE_AGENTS_HANDOFF_TARGET_AMBIGUOUS'
   | 'CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_MISSING'
-  | 'CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED';
+  | 'CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED'
+  | 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
 export type ICloudflareAgentsPackageCompatibility = 'ambiguous' | 'supported' | 'unsupported';
 
@@ -169,6 +170,13 @@ export interface ICloudflareAgentsInspectionSession {
   getEntry(path: IRepositoryPath): Promise<IRepositoryEntry | null>;
 }
 
-export type ICloudflareAgentsDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: ICloudflareAgentsAdapterDiagnosticCode;
-};
+export type ICloudflareAgentsDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<
+        ICloudflareAgentsAdapterDiagnosticCode,
+        'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
+      >;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });

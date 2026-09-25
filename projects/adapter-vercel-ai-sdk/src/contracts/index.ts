@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
 import type { ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
@@ -25,7 +25,8 @@ export type IVercelAiSdkAdapterDiagnosticCode =
   | 'VERCEL_AI_SDK_TOOL_REGISTRATION_NOT_WIRED'
   | 'VERCEL_AI_SDK_TOOL_NAME_MISMATCH'
   | 'VERCEL_AI_SDK_TOOL_INPUT_SCHEMA_NOT_WIRED'
-  | 'VERCEL_AI_SDK_TOOL_OUTPUT_SCHEMA_NOT_WIRED';
+  | 'VERCEL_AI_SDK_TOOL_OUTPUT_SCHEMA_NOT_WIRED'
+  | 'VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
 export type IVercelAiSdkPackageCompatibility = 'ambiguous' | 'supported' | 'unsupported';
 
@@ -189,6 +190,13 @@ export interface IVercelAiSdkInspectionSession {
 }
 
 // complete input used to construct one safe adapter diagnostic
-export type IVercelAiSdkDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: IVercelAiSdkAdapterDiagnosticCode;
-};
+export type IVercelAiSdkDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<
+        IVercelAiSdkAdapterDiagnosticCode,
+        'VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED'
+      >;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });

@@ -261,6 +261,7 @@ const serializeDiagnostic = (diagnostic: IDiagnostic): string => {
 
   return JSON.stringify([
     diagnostic.code,
+    diagnostic.severity,
     serializeDiagnosticDetails(diagnostic.details),
     entity,
     diagnostic.message,
@@ -304,6 +305,7 @@ const compareDiagnostics = (left: IDiagnostic, right: IDiagnostic): number => {
     compareNullableStrings(left.pointer, right.pointer) ||
     compareExactStrings(left.source, right.source) ||
     compareExactStrings(left.code, right.code) ||
+    compareExactStrings(left.severity, right.severity) ||
     compareExactStrings(
       readEntityValue(left.entity, 'agentId'),
       readEntityValue(right.entity, 'agentId'),
@@ -356,6 +358,7 @@ export const createCoreDiagnostic = (input: ICoreDiagnosticInput): ICoreDiagnost
     path: input.path,
     pointer: input.pointer ?? null,
     range: input.range ?? null,
+    severity: 'error' as const,
     source: 'core' as const,
   });
 };
@@ -381,6 +384,24 @@ export const normalizeDiagnostics = (
   }
 
   return freezeRecursively([...diagnostics.values()].sort(compareDiagnostics));
+};
+
+/** Counts the complete normalized diagnostic result by severity once. */
+export const countDiagnosticsBySeverity = (
+  diagnostics: readonly IDiagnostic[],
+): { readonly errorCount: number; readonly warningCount: number } => {
+  let errorCount = 0;
+  let warningCount = 0;
+
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.severity === 'error') {
+      errorCount += 1;
+    } else {
+      warningCount += 1;
+    }
+  }
+
+  return { errorCount, warningCount };
 };
 
 /**

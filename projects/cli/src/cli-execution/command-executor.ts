@@ -75,7 +75,7 @@ const createOperationalErrorResult = (
  * @param compositionLoader The installed executable-integrity composition boundary.
  * @param projectScopeExecutor The adapter-free manifest scope operation.
  * @param projectContentExecutor The adapter-free canonical content operation.
- * @returns A command executor for the schema 4 CLI.
+ * @returns A command executor for the schema 5 CLI.
  */
 export const createMoldeaCliCommandExecutor = (
   workingTreeDiscovery: IGitWorkingTreeDiscovery = discoverGitWorkingTree,

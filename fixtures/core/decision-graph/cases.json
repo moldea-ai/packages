@@ -56,7 +56,9 @@
           "path": "/moldea/decisions/1767225600001-source.md",
           "pointer": "/supersedes",
           "decisionId": "1767225600001",
-          "details": { "referencedDecisionId": "1767225600999" }
+          "details": {
+            "referencedDecisionId": "1767225600999"
+          }
         }
       ]
     },
@@ -195,14 +197,18 @@
           "path": "/moldea/decisions/1767225600000-first.md",
           "pointer": null,
           "decisionId": "1767225600000",
-          "details": { "occurrences": 2 }
+          "details": {
+            "occurrences": 2
+          }
         },
         {
           "code": "MOLDEA_DECISION_ID_DUPLICATE",
           "path": "/moldea/decisions/1767225600000-second.md",
           "pointer": null,
           "decisionId": "1767225600000",
-          "details": { "occurrences": 2 }
+          "details": {
+            "occurrences": 2
+          }
         }
       ]
     },

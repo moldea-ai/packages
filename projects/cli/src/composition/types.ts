@@ -28,7 +28,7 @@ export interface IMoldeaCliCompositionStateInput {
   readonly activeAdapters: readonly IRuntimeAdapter[];
   readonly coreSupportedRepositoryFormatVersions: readonly number[];
   readonly minimumGitVersion: string;
-  readonly outputSchemaVersion: 4;
+  readonly outputSchemaVersion: 5;
   readonly packageMetadata: IMoldeaCliPackageMetadata;
 }
 

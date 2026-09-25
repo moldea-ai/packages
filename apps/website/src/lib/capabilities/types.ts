@@ -37,7 +37,7 @@ export type ICapabilityResult =
       kind: 'cli';
       command: string;
       exitStatus: number;
-      schemaVersion: 4;
+      schemaVersion: 5;
       status: 'valid' | 'invalid' | 'error';
       facts: Record<string, ICapabilityFact>;
     };

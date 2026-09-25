@@ -1,38 +1,52 @@
 [
   {
     "code": "LANGGRAPH_AGENT_INPUT_SCHEMA_NOT_WIRED",
-    "message": "The declared agent input schema is not wired to the detected LangGraph input schema."
+    "message": "The declared agent input schema is not wired to the detected LangGraph input schema.",
+    "severity": "error"
   },
   {
     "code": "LANGGRAPH_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND",
-    "message": "The declared agent input-schema symbol was not found."
+    "message": "The declared agent input-schema symbol was not found.",
+    "severity": "error"
   },
   {
     "code": "LANGGRAPH_AGENT_OUTPUT_SCHEMA_NOT_WIRED",
-    "message": "The declared agent output schema is not wired to the detected LangGraph output schema."
+    "message": "The declared agent output schema is not wired to the detected LangGraph output schema.",
+    "severity": "error"
   },
   {
     "code": "LANGGRAPH_AGENT_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND",
-    "message": "The declared agent output-schema symbol was not found."
+    "message": "The declared agent output-schema symbol was not found.",
+    "severity": "error"
   },
   {
     "code": "LANGGRAPH_PACKAGE_MANIFEST_INVALID",
-    "message": "The owning package manifest is invalid for LangGraph dependency detection."
+    "message": "The owning package manifest is invalid for LangGraph dependency detection.",
+    "severity": "error"
   },
   {
     "code": "LANGGRAPH_RUNTIME_AGENT_SYMBOL_NOT_FOUND",
-    "message": "The declared runtime-agent symbol was not found."
+    "message": "The declared runtime-agent symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "message": "The declared runtime relationship could not be verified.",
+    "severity": "warning"
   },
   {
     "code": "LANGGRAPH_SOURCE_SYNTAX_INVALID",
-    "message": "The referenced LangGraph source file contains invalid TypeScript syntax."
+    "message": "The referenced LangGraph source file contains invalid TypeScript syntax.",
+    "severity": "error"
   },
   {
     "code": "LANGGRAPH_SOURCE_TEXT_INVALID",
-    "message": "The referenced LangGraph source file is not valid normalized text."
+    "message": "The referenced LangGraph source file is not valid normalized text.",
+    "severity": "error"
   },
   {
     "code": "LANGGRAPH_VERSION_UNSUPPORTED",
-    "message": "The observed LangGraph target package ranges are disjoint from the supported target."
+    "message": "The observed LangGraph target package ranges are disjoint from the supported target.",
+    "severity": "error"
   }
 ]

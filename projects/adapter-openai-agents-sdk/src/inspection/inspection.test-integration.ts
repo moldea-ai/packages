@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 
 import { createCore } from '@moldea.ai/core';
+import type { IAdapterErrorDiagnostic } from '@moldea.ai/core/adapter';
 import {
   createMemoryRepositoryReader,
   type IMemoryRepositoryEntry,
@@ -82,7 +83,7 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
   test('keeps the diagnostic catalog synchronized with its conformance golden', () => {
     expect(
       Object.entries(OPENAI_AGENTS_SDK_ADAPTER_DIAGNOSTICS)
-        .map(([code, message]) => ({ code, message }))
+        .map(([code, definition]) => ({ code, ...definition }))
         .sort((left, right) => (left.code < right.code ? -1 : left.code > right.code ? 1 : 0)),
     ).toStrictEqual(expectedDiagnostics);
   });
@@ -407,7 +408,9 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
       ]),
     });
     const diagnostics = result.diagnostics.filter(
-      ({ code }) => code === 'OPENAI_AGENTS_SDK_HANDOFF_TARGET_AMBIGUOUS',
+      (diagnostic): diagnostic is IAdapterErrorDiagnostic =>
+        diagnostic.severity === 'error' &&
+        diagnostic.code === 'OPENAI_AGENTS_SDK_HANDOFF_TARGET_AMBIGUOUS',
     );
 
     expect(

@@ -16,6 +16,8 @@ Evidence contains no repository content, instructions, descriptions, credentials
 
 ## Diagnostic catalog
 
+`VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified.
+
 The package owns the stable codes documented in its package README. They cover invalid package or source state, missing bound symbols, unwired instruction/schema/tool relationships, and tool-name mismatches.
 
 Diagnostics use Core's shared adapter shape, preserve logical source locations, and remain deterministically ordered. Dynamic or indirect patterns yield partial or no evidence rather than guessed failures. Core validates adapter output and applies all-or-nothing inspection semantics.
@@ -25,3 +27,5 @@ Diagnostics use Core's shared adapter shape, preserve logical source locations, 
 ## Package detection
 
 Detection stops at the nearest existing `package.json` owning each runtime-agent source. Supported dependency fields are considered collectively. A collectively disjoint range produces the unsupported-version diagnostic without package evidence; an ambiguous range remains evidence rather than being promoted to verified support. Invalid UTF-8 or NUL in the owning manifest produces only `VERCEL_AI_SDK_PACKAGE_MANIFEST_INVALID`; source text failures remain source diagnostics.
+
+`VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.

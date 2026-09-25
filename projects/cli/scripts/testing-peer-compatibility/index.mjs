@@ -197,7 +197,7 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
   assertCompatibilityInvariant(
     compositionEnvelope.cliVersion === cliVersion &&
       compositionEnvelope.command === 'composition' &&
-      compositionEnvelope.schemaVersion === 4 &&
+      compositionEnvelope.schemaVersion === 5 &&
       compositionEnvelope.status === 'valid' &&
       compositionEnvelope.result?.supportedNodeRange === '>=22.11.0',
     'The installed CLI composition envelope is invalid.',
@@ -327,11 +327,11 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
     'The installed CLI inspection failed.',
   );
   assertCompatibilityInvariant(
-    inspectEnvelope.schemaVersion === 4 &&
+    inspectEnvelope.schemaVersion === 5 &&
       inspectEnvelope.result?.project?.project?.path === '/moldea/project.md' &&
       !inspectResult.stdout.includes('# Project') &&
       !inspectResult.stdout.includes('"content"'),
-    'The installed CLI inspection did not preserve the content-free schema 4 contract.',
+    'The installed CLI inspection did not preserve the content-free schema 5 contract.',
   );
   assertCompatibilityInvariant(
     JSON.stringify(
@@ -349,14 +349,14 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
   assertCompatibilityInvariant(
     scopeResult.status === 0 &&
       scopeResult.stderr === '' &&
-      scopeEnvelope.schemaVersion === 4 &&
+      scopeEnvelope.schemaVersion === 5 &&
       scopeEnvelope.result?.relevant === true,
     'The installed CLI scope command failed.',
   );
   assertCompatibilityInvariant(
     contentResult.status === 0 &&
       contentResult.stderr === '' &&
-      contentEnvelope.schemaVersion === 4 &&
+      contentEnvelope.schemaVersion === 5 &&
       contentEnvelope.result?.asset?.path === '/moldea/project.md' &&
       contentEnvelope.result?.chunk?.content === '# Project\n',
     'The installed CLI content command failed.',

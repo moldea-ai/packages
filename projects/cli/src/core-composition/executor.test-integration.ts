@@ -318,6 +318,7 @@ describe('CLI Core composition with the memory repository reader', () => {
                     path: null,
                     pointer: null,
                     range: null,
+                    severity: 'error' as const,
                     source: id,
                   },
                 ]

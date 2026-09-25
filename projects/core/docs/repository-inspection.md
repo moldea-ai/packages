@@ -42,14 +42,14 @@ export const validate = async (repository: IRepositoryReader) => {
 
 The result contains source identity, validity, format version, summary counts and digests, diagnostics, and runtime evidence. Core internally composes canonical discovery, project and context validation, decision graphs, registered-agent assets, mirrors, references, relationships, and configured adapters through one budget-aware reader session.
 
-Structural repository errors return diagnostics. Reader access failures, snapshot drift, cancellation, resource exhaustion, invalid operation input, and invalid adapter output reject with typed exceptions.
+Structural repository errors return error diagnostics. Adapters may return scoped warnings for unverified declared runtime relationships without invalidating an otherwise valid project. Reader access failures, snapshot drift, cancellation, resource exhaustion, invalid operation input, and invalid adapter output reject with typed exceptions.
 
 ## Bounded inspection views
 
 `createProjectInspection` validates the supplied snapshot once and prepares one immutable content-free record set with these views:
 
 - `metadata`: one canonical agent-to-runtime assignment per agent plus canonical asset paths, kinds, sizes, digests, and agent or decision identity
-- `diagnostics`: structural diagnostics
+- `diagnostics`: structural and adapter diagnostics with required severity
 - `evidence`: validated runtime evidence
 - `all`: every assignment, metadata, diagnostic, and evidence item in deterministic order
 

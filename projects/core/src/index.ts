@@ -61,6 +61,8 @@ export { createCore } from './core/index.js';
 // diagnostic contracts
 export type {
   IAdapterDiagnostic,
+  IAdapterErrorDiagnostic,
+  IAdapterWarningDiagnostic,
   ICoreDiagnostic,
   ICoreDiagnosticCode,
   IDiagnostic,
@@ -68,6 +70,8 @@ export type {
   IDiagnosticEntity,
   ISourcePosition,
   ISourceRange,
+  IUnverifiedRelationship,
+  IUnverifiedRelationshipDetails,
 } from './diagnostics/index.js';
 
 // exception contracts

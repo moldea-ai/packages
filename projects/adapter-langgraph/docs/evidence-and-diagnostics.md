@@ -23,5 +23,8 @@ Runtime names and source-derived name details use the closed safety grammar `^[A
 | `LANGGRAPH_AGENT_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND` | The declared agent output-schema symbol was not found.                                 |
 | `LANGGRAPH_AGENT_INPUT_SCHEMA_NOT_WIRED`         | The declared agent input schema is not wired to the detected LangGraph input schema.   |
 | `LANGGRAPH_AGENT_OUTPUT_SCHEMA_NOT_WIRED`        | The declared agent output schema is not wired to the detected LangGraph output schema. |
+| `LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED`      | The declared runtime relationship could not be verified.                               |
 
 Dynamic, indirect, ambiguous, or unsupported forms suppress optimistic evidence and contradiction diagnostics that would require guessing runtime behavior.
+
+`LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
