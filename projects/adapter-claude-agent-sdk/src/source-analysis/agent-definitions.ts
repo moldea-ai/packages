@@ -32,6 +32,7 @@ const KNOWN_PROPERTIES = new Set([
   'model',
   'observer',
   'observerMessage',
+  'omitClaudeMd',
   'permissionMode',
   'skills',
 ]);

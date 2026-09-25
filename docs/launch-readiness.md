@@ -1,6 +1,6 @@
 # Package launch readiness
 
-This report records implementation and verification for the [approved launch plan](../coding-agent-planning/1790360458_adapter-launch-readiness/plan.md). A package is not declared production ready merely because its version or compatibility range has been updated. Milestones 3–9 and the final combined consumer matrix remain pending.
+This report records implementation and verification for the [approved launch plan](../coding-agent-planning/1790360458_adapter-launch-readiness/plan.md). A package is not declared production ready merely because its version or compatibility range has been updated. Milestones 4–9 and the final combined consumer matrix remain pending.
 
 ## Milestone 1: diagnostic contract and resource baseline
 
@@ -57,24 +57,40 @@ The website catalog contains 136 executed cases and witnesses all 95 currently a
 
 The new method family incurs no repeated whole-source parse per method, and source analysis remains bounded by Core's existing reader and output limits. The upstream maintenance check performs six serial disposable installations and is a CI/release cost rather than an inspection-time cost. The website's extra examples are generated at build time; unselected examples are not rendered in the public showcase. Milestone 8 still owns representative full-workflow resource measurements and the final package audit.
 
+## Milestone 3: Claude query and prompt controls
+
+The Claude Agent SDK adapter accepts named imports from the SDK root and `/core`. It retains canonical instruction-loader evidence for direct calls, typed custom prompt objects, and the `claude_code` preset's direct `append` binding when snapshot controls are present. `omitClaudeMd` and `verbatimPrompts` do not by themselves establish or remove canonical instruction identity. Existing query-local agent resolution and tool availability remain the ownership boundaries; the new source forms do not execute Claude processes or infer runtime prompt delivery.
+
+Pinned type-only consumers passed against Claude Agent SDK 0.3.234 and 0.3.282 with exact package integrity and fixed companion dependencies. The separate stable-latest probe also passed 0.3.283 on September 25, 2026. This checks SDK exports and accepted source shapes without starting a Claude session or sending a provider request. Minimum-only version eligibility remains unchanged. The adapter package is version `4.1.0`.
+
+The website catalog now has 137 executed cases. Its Claude example covers `/core`, typed custom and preset prompts, `snapshot`, `omitClaudeMd`, and `verbatimPrompts`, with exact evidence for separate query, prompt, and agent-definition relationships. The source fixture also uses the SDK's tool input and MCP result shapes. Package guidance, the compatibility matrix and generated presentation, and the matching platform specification were synchronized.
+
+### Verification recorded for Milestone 3
+
+- Claude adapter unit and integration suites passed: 34 and 31 tests respectively. `pnpm upstream:check` passed eight pinned SDK consumers; `pnpm upstream:check:latest` passed four stable-latest consumers.
+- `pnpm test` passed the complete workspace suite, including the installed CLI path and 211 Chromium website tests. `pnpm website:check` passed website documentation, 82 unit tests, Astro typecheck, lint, production build, and 132 integration tests.
+- `pnpm compatibility:check` passed the 15-package build and matrix/documentation synchronization. `pnpm typecheck` passed 33 root/workspace tasks.
+
+The extra source recognition uses the existing single source parse and bounded inspection. The two Claude upstream consumers add two serial disposable installations to the maintenance check and no inspection-time dependency. Milestone 8 still owns the representative full-workflow resource measurement and the complete package audit.
+
 ## Package audit status
 
-| Public package            | Current launch evidence                                                             | Remaining owner    |
-| ------------------------- | ----------------------------------------------------------------------------------- | ------------------ |
-| Repository                | Existing contract used by calibration; full audit pending                           | Milestone 8        |
-| Repository FS             | Full filesystem and OS audit pending                                                | Milestone 8        |
-| Core                      | Severity contract and regression suite passed; full audit pending                   | Milestone 8        |
-| CLI                       | Schema 5 and packed warning/error suite passed; full audit pending                  | Milestone 8        |
-| Anthropic adapter         | Direct method family, effective options, output-schema and pinned SDK checks passed | Milestones 1 and 2 |
-| OpenAI adapter            | Direct method family, effective options, output-schema and pinned SDK checks passed | Milestones 1 and 2 |
-| Google Gen AI adapter     | Direct generate/stream source checks and pinned SDK typing passed                   | Milestones 1 and 2 |
-| Claude Agent SDK adapter  | Severity contract; import/prompt checks pending                                     | Milestones 1 and 3 |
-| Cloudflare Agents adapter | Severity contract; Think and deferred-tool checks pending                           | Milestones 1 and 4 |
-| Vercel AI SDK adapter     | Severity contract; deferred-tool checks pending                                     | Milestones 1 and 4 |
-| Eve adapter               | Severity contract; nested/workspace checks pending                                  | Milestones 1 and 5 |
-| LangGraph adapter         | Severity contract; interrupt/tracing checks pending                                 | Milestones 1 and 6 |
-| LangChain adapter         | Severity contract; full advertised-surface audit pending                            | Milestones 1 and 6 |
-| OpenAI Agents SDK adapter | Severity contract; full advertised-surface audit pending                            | Milestones 1 and 6 |
-| Website UI                | Real consumer and visual audit pending                                              | Milestone 7        |
+| Public package            | Current launch evidence                                                              | Remaining owner    |
+| ------------------------- | ------------------------------------------------------------------------------------ | ------------------ |
+| Repository                | Existing contract used by calibration; full audit pending                            | Milestone 8        |
+| Repository FS             | Full filesystem and OS audit pending                                                 | Milestone 8        |
+| Core                      | Severity contract and regression suite passed; full audit pending                    | Milestone 8        |
+| CLI                       | Schema 5 and packed warning/error suite passed; full audit pending                   | Milestone 8        |
+| Anthropic adapter         | Direct method family, effective options, output-schema and pinned SDK checks passed  | Milestones 1 and 2 |
+| OpenAI adapter            | Direct method family, effective options, output-schema and pinned SDK checks passed  | Milestones 1 and 2 |
+| Google Gen AI adapter     | Direct generate/stream source checks and pinned SDK typing passed                    | Milestones 1 and 2 |
+| Claude Agent SDK adapter  | Root/core imports, prompt controls, and pinned SDK checks passed; full audit pending | Milestones 3 and 8 |
+| Cloudflare Agents adapter | Severity contract; Think and deferred-tool checks pending                            | Milestones 1 and 4 |
+| Vercel AI SDK adapter     | Severity contract; deferred-tool checks pending                                      | Milestones 1 and 4 |
+| Eve adapter               | Severity contract; nested/workspace checks pending                                   | Milestones 1 and 5 |
+| LangGraph adapter         | Severity contract; interrupt/tracing checks pending                                  | Milestones 1 and 6 |
+| LangChain adapter         | Severity contract; full advertised-surface audit pending                             | Milestones 1 and 6 |
+| OpenAI Agents SDK adapter | Severity contract; full advertised-surface audit pending                             | Milestones 1 and 6 |
+| Website UI                | Real consumer and visual audit pending                                               | Milestone 7        |
 
 The packages website is an application consumer, not a sixteenth public package. Its schema 5 examples are updated in Milestone 1; its full examples, visual, accessibility, and artifact checks belong to Milestone 7. Final release propagation and a coherent launch verdict belong to Milestone 9.

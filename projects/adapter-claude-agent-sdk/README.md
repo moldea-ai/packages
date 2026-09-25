@@ -8,15 +8,15 @@ The package implements the official `claude-agent-sdk` runtime adapter for `@mol
 
 ## Supported target
 
-Version `3.0.2` supports:
+Version `4.1.0` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^4.0.0`
+- `@moldea.ai/core ^5.0.0`
 - TypeScript ESM source
 - npm `@anthropic-ai/claude-agent-sdk >=0.3.234`
 - directly exported functions containing direct `query({ ... })` calls
 - directly exported immutable object-literal programmatic `AgentDefinition` values
-- query `systemPrompt`, `claude_code` preset `append`, and subagent `prompt` instruction loaders
+- direct query `systemPrompt`, typed custom `prompt`, `claude_code` preset `append`, and subagent `prompt` instruction loaders
 - query output schemas through `outputFormat: { type: 'json_schema', schema }`
 - custom tools created through positional `tool(...)` calls
 - SDK MCP servers created through `createSdkMcpServer(...)` and mounted through query `mcpServers`
@@ -24,7 +24,7 @@ Version `3.0.2` supports:
 - active programmatic-subagent registration through an available built-in `Agent` tool
 - exact routing-description comparison through `AgentDefinition.description`
 
-Named root-package imports and aliases of `query`, `tool`, and `createSdkMcpServer` are supported. Relative ESM named imports resolve exact paths plus `.js` to `.ts` or `.tsx` and `.mjs` to `.mts` substitutions. Relationship closure is independent: a dynamic relationship does not erase other relationships proved from the same query or definition.
+Named imports and aliases of `query`, `tool`, and `createSdkMcpServer` are supported from the package root and, for SDK 0.3.282 onward, `/core`. `systemPrompt.snapshot`, `verbatimPrompts`, and `AgentDefinition.omitClaudeMd` do not obscure independent canonical prompt, delegation, or tool relationships; their runtime effects are not verified. Relative ESM named imports resolve exact paths plus `.js` to `.ts` or `.tsx` and `.mjs` to `.mts` substitutions. Relationship closure is independent: a dynamic relationship does not erase other relationships proved from the same query or definition.
 
 The Runtime Compatibility Matrix is authoritative for exact versions, evidence, binding support, patterns, and known limitations.
 

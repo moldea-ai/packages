@@ -89,6 +89,36 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     files: CLAUDE_AGENT_SDK_FILES,
   },
   {
+    id: 'claude-core-prompt-controls',
+    adapter: claudeAgentSdkAdapter,
+    title: 'A Claude core query with explicit prompt controls',
+    description:
+      'The custom prompt snapshot, verbatim delivery, and subagent file setting preserve direct instruction, handoff, and tool relationships.',
+    files: overrideFiles(CLAUDE_AGENT_SDK_FILES, {
+      '/package.json': source(CLAUDE_AGENT_SDK_FILES, '/package.json').replace(
+        '"^0.3.234"',
+        '">=0.3.282"',
+      ),
+      '/src/agents.ts': source(CLAUDE_AGENT_SDK_FILES, '/src/agents.ts').replace(
+        '  prompt: loadBillingInstruction(),',
+        '  prompt: loadBillingInstruction(),\n  omitClaudeMd: true,',
+      ),
+      '/src/runtime.ts': source(CLAUDE_AGENT_SDK_FILES, '/src/runtime.ts')
+        .replace(
+          "import { query } from '@anthropic-ai/claude-agent-sdk';",
+          "import { query } from '@anthropic-ai/claude-agent-sdk/core';",
+        )
+        .replace(
+          'systemPrompt: await loadTriageInstruction(),',
+          "systemPrompt: { type: 'custom', prompt: await loadTriageInstruction(), snapshot: false },\n      verbatimPrompts: true,",
+        ),
+      '/src/tools.ts': source(CLAUDE_AGENT_SDK_FILES, '/src/tools.ts').replace(
+        "from '@anthropic-ai/claude-agent-sdk'",
+        "from '@anthropic-ai/claude-agent-sdk/core'",
+      ),
+    }),
+  },
+  {
     id: 'cloudflare-agents',
     adapter: cloudflareAgentsAdapter,
     title: 'Think and AIChatAgent source connections',

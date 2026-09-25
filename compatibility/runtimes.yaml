@@ -99,7 +99,7 @@ adapters:
       kind: package
       package: '@moldea.ai/adapter-claude-agent-sdk'
       distribution: public
-      versionRange: '^4.0.0'
+      versionRange: '^4.1.0'
     implementationStatus: available
     supportedRepositoryFormatVersions:
       - 1
@@ -148,15 +148,15 @@ adapters:
           - id: direct-query-wrapper
             kind: runtime
             support: full
-            description: A directly exported TypeScript function contains one or more direct query calls in its own lexical body.
+            description: A directly exported TypeScript function contains direct query calls from the SDK root or, from SDK 0.3.282, its core entry point in its own lexical body.
           - id: query-custom-system-prompt
             kind: instruction-loader
             support: full
-            description: A query-wrapper agent wires the declared instruction loader through a direct custom systemPrompt call.
+            description: A query-wrapper agent wires the declared instruction loader through a direct systemPrompt call or a typed custom prompt object, independent of snapshot and verbatim delivery controls.
           - id: query-preset-append
             kind: instruction-loader
             support: full
-            description: A query-wrapper agent uses the claude_code system-prompt preset and appends the declared canonical instruction loader directly.
+            description: A query-wrapper agent uses the claude_code system-prompt preset and appends the declared canonical instruction loader directly, independent of snapshot timing.
           - id: query-system-prompt-block-array
             kind: instruction-loader
             support: unsupported
@@ -164,7 +164,7 @@ adapters:
           - id: programmatic-agent-definition
             kind: agent
             support: full
-            description: A directly exported immutable object-literal AgentDefinition supplies independently analyzable prompt, routing-description, and tool-restriction relationships.
+            description: A directly exported immutable object-literal AgentDefinition supplies independently analyzable prompt, routing-description, and tool-restriction relationships; omitClaudeMd does not establish canonical prompt content.
           - id: closed-programmatic-agents-map
             kind: routing
             support: full
@@ -267,6 +267,10 @@ adapters:
             description: Skills, plugins, hooks, settings, CLAUDE.md loading, and other filesystem features are outside the initial deterministic relationship target.
         knownLimitations:
           - >-
+            Root imports are available at the verified minimum; the reviewed /core entry point starts at SDK 0.3.282. A broad dependency declaration alone does not prove an installed version provides /core.
+          - >-
+            verbatimPrompts, typed system-prompt snapshot controls, and AgentDefinition.omitClaudeMd do not establish prompt delivery, snapshot timing, or ambient-file content; direct canonical bindings remain independently inspectable.
+          - >-
             Arbitrary compiler resolution, path aliases, directory indexes, package exports, CommonJS, JavaScript, re-export graphs, and generated source are not resolved.
           - >-
             Query wrappers require a directly exported function and direct query calls with object-literal input and options forms.
@@ -302,8 +306,8 @@ adapters:
             Establishing query-configured Agent or SDK MCP tool availability does not prove that filesystem-loaded settings, managed policy, hooks, later session state, allowedTools, canUseTool, permission mode, or user approval preserve or permit a particular invocation, and no evidence claims that Claude will actually invoke the subagent or tool.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/claude-agent-sdk/typescript-query-subagents-0-3/'
-        lastVerifiedAt: '2026-09-01'
-    lastVerifiedAt: '2026-09-01'
+        lastVerifiedAt: '2026-09-25'
+    lastVerifiedAt: '2026-09-25'
   cloudflare-agents:
     implementation:
       kind: package

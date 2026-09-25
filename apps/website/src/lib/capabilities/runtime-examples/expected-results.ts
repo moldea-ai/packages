@@ -567,6 +567,300 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
     ],
     manifestDigest: 'sha256:b8fbde1a7799082e7ad95bd4b74b4530de771e2b26e4b968d17d1a2264966260',
   },
+  'claude-core-prompt-controls': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'billing',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          patternId: 'programmatic-agent-definition',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/src/agents.ts',
+            symbol: 'billingAgent',
+          },
+        ],
+        runtimeName: 'billingAgent',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          delegationAvailabilitySource: 'explicit-built-in-tools',
+          delegationTool: 'Agent',
+          registrationKind: 'programmatic-subagent',
+          registrationScope: 'query-session',
+          targetAgentId: 'billing',
+          targetRuntimeName: 'billing',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/src/agents.ts',
+            symbol: 'billingAgent',
+          },
+          {
+            path: '/src/runtime.ts',
+          },
+        ],
+        runtimeName: 'billing',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'billing',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          role: 'subagent-prompt',
+        },
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/src/agents.ts',
+          },
+          {
+            path: '/src/instructions.ts',
+            symbol: 'loadBillingInstruction',
+          },
+        ],
+        runtimeName: 'loadBillingInstruction',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          role: 'query-custom-prompt',
+        },
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/src/instructions.ts',
+            symbol: 'loadTriageInstruction',
+          },
+          {
+            path: '/src/runtime.ts',
+          },
+        ],
+        runtimeName: 'loadTriageInstruction',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'billing',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/src/agents.ts',
+            symbol: 'billingAgent',
+          },
+        ],
+        runtimeName: null,
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/src/runtime.ts',
+            symbol: 'triageAgent',
+          },
+        ],
+        runtimeName: null,
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'billing',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          compatibility: 'supported',
+          declaredRange: '>=0.3.282',
+          dependencyKind: 'dependencies',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: '@anthropic-ai/claude-agent-sdk',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          compatibility: 'supported',
+          declaredRange: '>=0.3.282',
+          dependencyKind: 'dependencies',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: '@anthropic-ai/claude-agent-sdk',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          call: 'query',
+          patternId: 'direct-query-wrapper',
+        },
+        kind: 'runtime-pattern',
+        references: [
+          {
+            path: '/src/runtime.ts',
+            symbol: 'triageAgent',
+          },
+        ],
+        runtimeName: 'triageAgent',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'billing',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          role: 'tool-input',
+          schemaKind: 'sdk-tool-input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'FindOrderInputSchema',
+          },
+          {
+            path: '/src/tools.ts',
+          },
+        ],
+        runtimeName: 'FindOrderInputSchema',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          role: 'agent-output',
+          schemaKind: 'json-schema',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'TriageOutputSchema',
+          },
+          {
+            path: '/src/runtime.ts',
+          },
+        ],
+        runtimeName: 'TriageOutputSchema',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          role: 'tool-input',
+          schemaKind: 'sdk-tool-input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'FindOrderInputSchema',
+          },
+          {
+            path: '/src/tools.ts',
+          },
+        ],
+        runtimeName: 'FindOrderInputSchema',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'billing',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          availabilitySource: 'explicit-subagent-tools',
+          registrationKind: 'sdk-mcp-tool',
+          serverKey: 'support',
+          underlyingToolName: 'find_order',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/src/find-order.ts',
+            symbol: 'findOrder',
+          },
+          {
+            path: '/src/runtime.ts',
+          },
+          {
+            path: '/src/tools.ts',
+            symbol: 'findOrderTool',
+          },
+        ],
+        runtimeName: 'mcp__support__find_order',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          availabilitySource: 'query',
+          registrationKind: 'sdk-mcp-tool',
+          serverKey: 'support',
+          underlyingToolName: 'find_order',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/src/find-order.ts',
+            symbol: 'findOrder',
+          },
+          {
+            path: '/src/runtime.ts',
+          },
+          {
+            path: '/src/tools.ts',
+            symbol: 'findOrderTool',
+          },
+        ],
+        runtimeName: 'mcp__support__find_order',
+        source: 'claude-agent-sdk',
+      },
+    ],
+    manifestDigest: 'sha256:b8fbde1a7799082e7ad95bd4b74b4530de771e2b26e4b968d17d1a2264966260',
+  },
   'cloudflare-agents': {
     valid: true,
     diagnostics: [],

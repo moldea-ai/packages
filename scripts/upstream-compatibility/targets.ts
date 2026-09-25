@@ -3,6 +3,7 @@ import type { IUpstreamTarget } from './types.ts';
 // exact npm tarball integrity values are reviewed alongside the tagged source and SDK versions
 export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze([
   {
+    companionPackages: ['zod@4.3.6'],
     family: 'anthropic',
     fixture: 'minimum',
     integrity:
@@ -12,6 +13,7 @@ export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze
     version: '0.117.1',
   },
   {
+    companionPackages: ['zod@4.3.6'],
     family: 'anthropic',
     fixture: 'current',
     integrity:
@@ -21,6 +23,35 @@ export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze
     version: '0.128.0',
   },
   {
+    companionPackages: [
+      '@anthropic-ai/sdk@0.128.0',
+      '@modelcontextprotocol/sdk@1.30.1',
+      'zod@4.3.6',
+    ],
+    family: 'claude-agent-sdk',
+    fixture: 'minimum',
+    integrity:
+      'sha512-988d+JfICQoIIDwcnQm9ivJ3CXfKUhDJ43XSQXiwa4PMnc/+NwAK71JUnOipXgGJNVu+znfzk42CV+wUeX25dg==',
+    packageName: '@anthropic-ai/claude-agent-sdk',
+    sourceReference: 'https://github.com/anthropics/claude-agent-sdk-typescript/tree/v0.3.234',
+    version: '0.3.234',
+  },
+  {
+    companionPackages: [
+      '@anthropic-ai/sdk@0.128.0',
+      '@modelcontextprotocol/sdk@1.30.1',
+      'zod@4.3.6',
+    ],
+    family: 'claude-agent-sdk',
+    fixture: 'current',
+    integrity:
+      'sha512-6UAerS1udzndLEx+0XW3gQWiICgfu/a+2fx/aLY3gUy+1JUQESbwYkhR40+D6d+yjueCslkLmvkPlZQFZDph6A==',
+    packageName: '@anthropic-ai/claude-agent-sdk',
+    sourceReference: 'https://github.com/anthropics/claude-agent-sdk-typescript/tree/v0.3.282',
+    version: '0.3.282',
+  },
+  {
+    companionPackages: [],
     family: 'google-genai',
     fixture: 'minimum',
     integrity:
@@ -30,6 +61,7 @@ export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze
     version: '2.17.1',
   },
   {
+    companionPackages: [],
     family: 'google-genai',
     fixture: 'current',
     integrity:
@@ -39,6 +71,7 @@ export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze
     version: '2.24.0',
   },
   {
+    companionPackages: ['zod@4.3.6'],
     family: 'openai',
     fixture: 'minimum',
     integrity:
@@ -48,6 +81,7 @@ export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze
     version: '7.4.0',
   },
   {
+    companionPackages: ['zod@4.3.6'],
     family: 'openai',
     fixture: 'current',
     integrity:

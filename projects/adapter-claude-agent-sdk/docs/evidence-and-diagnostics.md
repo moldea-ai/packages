@@ -12,6 +12,8 @@ The target may emit `runtime-package`, `language`, `runtime-pattern`, `agent-def
 
 `runtime-pattern` identifies a direct query wrapper. `agent-definition` identifies a supported immutable programmatic definition. `handoff-registration` requires an active query context whose built-in `Agent` tool is available. `tool-registration` requires a canonical server key, an exact fully qualified runtime name, and available query or subagent tool state.
 
+Instruction evidence distinguishes a direct query prompt, a typed custom prompt, a preset append, and a subagent prompt. Snapshot, verbatim delivery, and ambient-file controls leave direct binding evidence intact; they do not prove what the model receives in a session.
+
 Evidence contains no repository content, prompts, descriptions, credentials, API keys, tool arguments, provider payloads, MCP results, session transcripts, or model responses. Missing local evidence is not itself a diagnostic.
 
 ## Diagnostic catalog

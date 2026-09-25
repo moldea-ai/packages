@@ -88,6 +88,19 @@ describe('query wrapper analysis', () => {
     expect(getClaudeAgentSdkQueryWrapper(indirect, 'runtime').kind).toBe('present-unsupported');
     expect(getClaudeAgentSdkQueryWrapper(shadowed, 'runtime').kind).toBe('present-unsupported');
   });
+
+  test('recognizes direct aliased query imports from the core entry point', () => {
+    const analysis = analyze(`
+      import { query as runQuery } from '@anthropic-ai/claude-agent-sdk/core';
+      export const runtime = () => runQuery({ prompt: 'request', options: { tools: ['Agent'] } });
+    `);
+    const result = getClaudeAgentSdkQueryWrapper(analysis, 'runtime');
+
+    expect(result.kind).toBe('present-supported');
+    if (result.kind === 'present-supported') {
+      expect(result.wrapper.contexts[0]?.tools.kind).toBe('present');
+    }
+  });
 });
 
 describe('programmatic definitions and SDK helpers', () => {
@@ -118,6 +131,24 @@ describe('programmatic definitions and SDK helpers', () => {
       `export const billing = { description: 'Billing', futureField: true };`,
     );
     expect(getClaudeAgentSdkAgentDefinition(analysis, 'billing').kind).toBe('present-unsupported');
+  });
+
+  test('keeps a subagent definition closed with omitClaudeMd', () => {
+    const analysis = analyze(`
+      export const billing = {
+        description: 'Route billing requests.',
+        prompt: 'Handle billing.',
+        omitClaudeMd: true,
+        tools: ['mcp__support__lookup'],
+      };
+    `);
+
+    const result = getClaudeAgentSdkAgentDefinition(analysis, 'billing');
+    expect(result.kind).toBe('present-supported');
+    if (result.kind === 'present-supported') {
+      expect(result.definition.prompt.kind).toBe('present');
+      expect(result.definition.tools.kind).toBe('present');
+    }
   });
 
   test('recognizes the positional tool helper and SDK MCP server configuration', () => {
@@ -161,6 +192,37 @@ describe('instruction and tool availability analysis', () => {
     if (wrapper.kind === 'present-supported') {
       const relationship = wrapper.wrapper.contexts[0]?.systemPrompt;
 
+      if (relationship !== undefined) {
+        expect(
+          classifyClaudeAgentSdkInstructionLoader(
+            relationship,
+            analysis,
+            { path: parseRepositoryPath('/src/prompt.ts'), symbol: 'loadPrompt' },
+            true,
+          ),
+        ).toBe(true);
+      }
+    }
+  });
+
+  test.each([
+    ['preset', "{ type: 'preset', preset: 'claude_code', append: loadPrompt(), snapshot: false }"],
+    ['custom', "{ type: 'custom', prompt: loadPrompt(), snapshot: true }"],
+  ])('retains canonical loader identity with %s snapshot controls', (_kind, systemPrompt) => {
+    const analysis = analyze(`
+      import { query } from '@anthropic-ai/claude-agent-sdk/core';
+      import { loadPrompt } from './prompt.js';
+      export const runtime = () => query({
+        prompt: 'request',
+        options: { systemPrompt: ${systemPrompt}, verbatimPrompts: true },
+      });
+    `);
+    const wrapper = getClaudeAgentSdkQueryWrapper(analysis, 'runtime');
+
+    expect(wrapper.kind).toBe('present-supported');
+    if (wrapper.kind === 'present-supported') {
+      const relationship = wrapper.wrapper.contexts[0]?.systemPrompt;
+      expect(relationship).toBeDefined();
       if (relationship !== undefined) {
         expect(
           classifyClaudeAgentSdkInstructionLoader(

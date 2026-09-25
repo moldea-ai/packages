@@ -82,6 +82,7 @@ export const REQUIRED_CASE_IDS: string[] = [
   'anthropic-messages',
   'anthropic-parse-output',
   'claude-query',
+  'claude-core-prompt-controls',
   'cloudflare-agents',
   'eve-filesystem',
   'google-generate-content',
@@ -771,6 +772,19 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           },
         },
       },
+      {
+        caseId: 'claude-core-prompt-controls',
+        source: {
+          path: '/src/runtime.ts',
+          contains: "from '@anthropic-ai/claude-agent-sdk/core'",
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'runtime-pattern',
+          agentId: 'triage',
+          details: { patternId: 'direct-query-wrapper' },
+        },
+      },
     ],
     'query-custom-system-prompt': [
       {
@@ -786,6 +800,20 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           details: {
             role: 'query-system-prompt',
           },
+        },
+      },
+      {
+        caseId: 'claude-core-prompt-controls',
+        source: {
+          path: '/src/runtime.ts',
+          contains:
+            "systemPrompt: { type: 'custom', prompt: await loadTriageInstruction(), snapshot: false }",
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'triage',
+          details: { role: 'query-custom-prompt' },
         },
       },
     ],
@@ -812,6 +840,18 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
         source: {
           path: '/src/agents.ts',
           contains: 'export const billingAgent = {',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'agent-definition',
+          agentId: 'billing',
+        },
+      },
+      {
+        caseId: 'claude-core-prompt-controls',
+        source: {
+          path: '/src/agents.ts',
+          contains: 'omitClaudeMd: true',
         },
         witness: {
           kind: 'evidence',

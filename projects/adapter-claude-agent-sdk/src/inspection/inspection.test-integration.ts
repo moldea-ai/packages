@@ -96,6 +96,67 @@ describe('claudeAgentSdkAdapter Core integration', () => {
     expect(result.summary).not.toBeNull();
   });
 
+  test('preserves query-local prompt, handoff, and tool evidence with current prompt controls', async () => {
+    const result = await inspect({
+      '/src/runtime.ts': getFixtureText('/src/runtime.ts')
+        .replace(
+          "import { query } from '@anthropic-ai/claude-agent-sdk';",
+          "import { query } from '@anthropic-ai/claude-agent-sdk/core';",
+        )
+        .replace(
+          'systemPrompt: await loadTriageInstruction(),',
+          "systemPrompt: { type: 'custom', prompt: await loadTriageInstruction(), snapshot: false },\n      verbatimPrompts: true,",
+        ),
+      '/src/agents.ts': getFixtureText('/src/agents.ts').replace(
+        '  prompt: loadBillingInstruction(),',
+        '  prompt: loadBillingInstruction(),\n  omitClaudeMd: true,',
+      ),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.evidence).toContainEqual(
+      expect.objectContaining({
+        agentId: 'triage',
+        details: { role: 'query-custom-prompt' },
+        kind: 'instruction-loader',
+      }),
+    );
+    expect(result.evidence.filter(({ kind }) => kind === 'handoff-registration')).toHaveLength(1);
+    expect(result.evidence.filter(({ kind }) => kind === 'tool-registration')).toHaveLength(2);
+  });
+
+  test('does not combine delegation and agent maps from separate core queries', async () => {
+    const runtime = getFixtureText('/src/runtime.ts')
+      .replace(
+        "import { query } from '@anthropic-ai/claude-agent-sdk';",
+        "import { query } from '@anthropic-ai/claude-agent-sdk/core';",
+      )
+      .replace(
+        'export const triageAgent = async (prompt: string) =>\n  query({',
+        'export const triageAgent = async (prompt: string) => {\n  query({',
+      )
+      .replace(
+        'systemPrompt: await loadTriageInstruction(),',
+        "systemPrompt: { type: 'custom', prompt: await loadTriageInstruction(), snapshot: false },",
+      )
+      .replace("tools: ['Agent'],", 'tools: [],')
+      .replace(
+        '  });\n',
+        "  });\n  return query({ prompt, options: { tools: ['Agent'], mcpServers: { support: supportServer } } });\n};\n",
+      );
+    const result = await inspect({ '/src/runtime.ts': runtime });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.evidence.filter(({ kind }) => kind === 'handoff-registration')).toHaveLength(0);
+    expect(
+      result.evidence
+        .filter(({ kind }) => kind === 'tool-registration')
+        .map(({ agentId }) => agentId),
+    ).toStrictEqual(['triage']);
+  });
+
   test('accepts a later stable provider major through the minimum-only range', async () => {
     const result = await inspect({
       '/package.json': '{"dependencies":{"@anthropic-ai/claude-agent-sdk":"1.0.0"}}',

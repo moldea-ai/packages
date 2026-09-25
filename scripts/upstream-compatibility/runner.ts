@@ -99,7 +99,7 @@ export const checkUpstreamTarget = async (
         '--no-audit',
         '--no-fund',
         `${target.packageName}@${target.version}`,
-        ...(target.family === 'google-genai' ? [] : ['zod@4.3.6']),
+        ...target.companionPackages,
       ],
       directory,
     );
@@ -152,7 +152,7 @@ export const checkUpstreamTarget = async (
     );
     await runCommand(process.execPath, [TSC_PATH, '-p', 'tsconfig.json'], directory);
 
-    const requestPreparationChecked = target.family !== 'google-genai';
+    const requestPreparationChecked = target.family === 'anthropic' || target.family === 'openai';
 
     if (requestPreparationChecked) {
       await copyFile(
