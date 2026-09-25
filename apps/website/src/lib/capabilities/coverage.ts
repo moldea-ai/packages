@@ -80,15 +80,18 @@ export const REQUIRED_CASE_IDS: string[] = [
   'decision-relationship-accepted',
   'decision-relationship-proposed',
   'anthropic-messages',
+  'anthropic-parse-output',
   'claude-query',
   'cloudflare-agents',
   'eve-filesystem',
   'google-generate-content',
+  'google-mixed-generation',
   'langchain-create-agent',
   'langchain-direct-schema',
   'langchain-tool-strategy',
   'langgraph-workflows',
   'openai-responses',
+  'openai-parse-output',
   'openai-agent-handoffs',
   'vercel-agent-and-stream',
   'claude-preset',
@@ -654,7 +657,7 @@ export const CORE_DIAGNOSTIC_COVERAGE: Record<ICoreDiagnosticCode, IDiagnosticCo
 // exact matrix keys and source/result witnesses for every full or partial pattern
 export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatternProof[]>> = {
   'anthropic/typescript-messages-api-0-117': {
-    'direct-messages-create': [
+    'direct-messages-request-family': [
       {
         caseId: 'anthropic-messages',
         source: {
@@ -665,6 +668,17 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           kind: 'evidence',
           evidenceKind: 'runtime-pattern',
           agentId: 'support',
+          runtimeName: 'messages.create',
+        },
+      },
+      {
+        caseId: 'anthropic-parse-output',
+        source: { path: '/src/agent.ts', contains: 'client.messages.parse({' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'runtime-pattern',
+          agentId: 'support',
+          runtimeName: 'messages.parse',
         },
       },
     ],
@@ -710,6 +724,32 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           details: {
             schemaRole: 'input',
           },
+        },
+      },
+    ],
+    'direct-output-schema': [
+      {
+        caseId: 'anthropic-parse-output',
+        source: {
+          path: '/src/agent.ts',
+          contains: "output_config: { format: { type: 'json_schema', schema: SupportOutput } }",
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'schema',
+          agentId: 'support',
+          details: { requestProperty: 'output_config.format', schemaRole: 'output' },
+        },
+      },
+    ],
+    'effective-messages-options': [
+      {
+        caseId: 'anthropic-parse-output',
+        source: { path: '/src/agent.ts', contains: 'timeout: 1000' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'support',
         },
       },
     ],
@@ -1328,6 +1368,17 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           kind: 'evidence',
           evidenceKind: 'runtime-pattern',
           agentId: 'support',
+          runtimeName: 'models.generateContent',
+        },
+      },
+      {
+        caseId: 'google-mixed-generation',
+        source: { path: '/src/agent.ts', contains: 'client.models.generateContentStream({' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'runtime-pattern',
+          agentId: 'support',
+          runtimeName: 'models.generateContentStream',
         },
       },
     ],
@@ -1754,6 +1805,17 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           kind: 'evidence',
           evidenceKind: 'runtime-pattern',
           agentId: 'support',
+          runtimeName: 'responses.create',
+        },
+      },
+      {
+        caseId: 'openai-parse-output',
+        source: { path: '/src/agent.ts', contains: 'client.responses.parse({' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'runtime-pattern',
+          agentId: 'support',
+          runtimeName: 'responses.parse',
         },
       },
     ],
@@ -1799,6 +1861,29 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           details: {
             schemaRole: 'input',
           },
+        },
+      },
+    ],
+    'direct-output-schema': [
+      {
+        caseId: 'openai-parse-output',
+        source: { path: '/src/agent.ts', contains: "zodTextFormat(SupportOutput, 'support')" },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'schema',
+          agentId: 'support',
+          details: { requestProperty: 'text.format', schemaRole: 'output' },
+        },
+      },
+    ],
+    'effective-responses-options': [
+      {
+        caseId: 'openai-parse-output',
+        source: { path: '/src/agent.ts', contains: 'body: {' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'support',
         },
       },
     ],

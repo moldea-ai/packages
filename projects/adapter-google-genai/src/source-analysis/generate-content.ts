@@ -74,12 +74,13 @@ export const analyzeGoogleGenAiGenerateContent = (
     signal,
   );
   const requests: IGoogleGenAiGenerateContentRequest[] = result.requests.map(
-    ({ object, relationships }) => {
+    ({ methodName, object, relationships }) => {
       const config = relationships.get('config') ?? ABSENT_RELATIONSHIP;
       const nested = analyzeConfig(config);
 
       return Object.freeze({
         config,
+        methodName,
         object,
         systemInstruction: nested.systemInstruction,
         tools: nested.tools,

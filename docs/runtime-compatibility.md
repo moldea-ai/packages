@@ -27,7 +27,7 @@ For target runtime packages, eligible versions begin at the verified minimum. La
 - Supported repository-format versions: `1`
 - Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers or unsupported indirect integration patterns.
 
@@ -36,7 +36,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/anthropic/typescript-messages-api-0-117/)
 
 | Ecosystem | Package             | Role      | Eligible versions |
@@ -48,20 +48,23 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 | Subject              | Relationship | Symbol |
 | -------------------- | ------------ | ------ |
 | `runtime-agent`      | `full`       | `full` |
+| `output-schema`      | `full`       | `full` |
 | `instruction-loader` | `full`       | `full` |
 | `tool-registration`  | `full`       | `full` |
 | `tool-input-schema`  | `full`       | `full` |
 
 #### Patterns
 
-| Kind                 | Pattern                        | Support       | Description                                                                                                        | Notes         |
-| -------------------- | ------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------ | ------------- |
-| `instruction-loader` | `direct-system-loader`         | `full`        | A directly bound instruction loader supplies the top-level system request property.                                | Not available |
-| `runtime`            | `direct-messages-create`       | `full`        | Direct Anthropic Messages API invocation through a module-local client in a directly exported TypeScript function. | Not available |
-| `runtime`            | `dynamic-request-construction` | `ambiguous`   | Dynamically assembled Messages requests cannot be mapped reliably without semantic analysis.                       | Not available |
-| `schema`             | `direct-tool-input-schema`     | `full`        | A bound tool input schema is referenced directly through the client tool input_schema property.                    | Not available |
-| `tool`               | `closed-client-tool-array`     | `full`        | Closed inline or immutable module-local arrays contain statically declared Anthropic client tools.                 | Not available |
-| `tool`               | `provider-server-tools`        | `unsupported` | Anthropic provider or server tools are outside the initial client-tool target.                                     | Not available |
+| Kind                 | Pattern                          | Support       | Description                                                                                                                               | Notes         |
+| -------------------- | -------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `instruction-loader` | `direct-system-loader`           | `full`        | A directly bound instruction loader supplies the top-level system request property.                                                       | Not available |
+| `runtime`            | `direct-messages-request-family` | `full`        | Direct Anthropic messages.create, parse, and stream requests through a module-local client in a directly exported TypeScript function.    | Not available |
+| `runtime`            | `dynamic-request-construction`   | `ambiguous`   | Dynamically assembled Messages requests cannot be mapped reliably without semantic analysis.                                              | Not available |
+| `runtime`            | `effective-messages-options`     | `full`        | A static second-argument body replaces the first request body; transport-only options leave canonical relationships unchanged.            | Not available |
+| `schema`             | `direct-output-schema`           | `full`        | A bound agent output schema is referenced through output_config.format as direct JSON Schema or a direct zodOutputFormat helper argument. | Not available |
+| `schema`             | `direct-tool-input-schema`       | `full`        | A bound tool input schema is referenced directly through the client tool input_schema property.                                           | Not available |
+| `tool`               | `closed-client-tool-array`       | `full`        | Closed inline or immutable module-local arrays contain statically declared Anthropic client tools.                                        | Not available |
+| `tool`               | `provider-server-tools`          | `unsupported` | Anthropic provider or server tools are outside the initial client-tool target.                                                            | Not available |
 
 #### Provider limits
 
@@ -72,9 +75,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 #### Known limitations
 
 - Arbitrary compiler resolution, path aliases, directory indexes, package exports, and re-export graphs are not resolved.
-- Beta resources, client.messages.stream, parse helpers, and tool-runner abstractions are not interpreted; an exact stream property on direct messages.create requests is tolerated, but its semantics are not validated.
+- Beta resources, tool-runner abstractions, and provider execution are not interpreted; direct stream calls establish source wiring without validating streaming lifecycle behavior.
 - Client-tool input-schema contents, including the provider-required top-level type object, are not validated; the target establishes only direct schema wiring.
-- Source forms outside the verified TypeScript ESM target, dynamic factories, mutable requests, provider tools, output schemas, runtime variables, and handoffs are outside the initial target.
+- Source forms outside the verified TypeScript ESM target, dynamic factories, mutable requests, provider tools, agent input schemas, runtime variables, and handoffs are outside the target.
 
 ## Adapter: `claude-agent-sdk`
 
@@ -375,7 +378,7 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 - Supported repository-format versions: `1`
 - Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers or unsupported indirect integration patterns.
 
@@ -384,7 +387,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/google-genai/typescript-models-generate-content-2/)
 
 | Ecosystem | Package         | Role      | Eligible versions |
@@ -402,17 +405,17 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 
 #### Patterns
 
-| Kind                 | Pattern                             | Support       | Description                                                                                                                             | Notes         |
-| -------------------- | ----------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `instruction-loader` | `direct-config-system-instruction`  | `full`        | A directly bound instruction loader supplies config.systemInstruction in a closed generate-content request.                             | Not available |
-| `runtime`            | `direct-models-generate-content`    | `full`        | Direct Google Gen AI models.generateContent invocation through a module-local client in a directly exported TypeScript function.        | Not available |
-| `runtime`            | `dynamic-request-or-config`         | `ambiguous`   | Dynamically assembled requests or configuration cannot be mapped reliably without semantic analysis.                                    | Not available |
-| `runtime`            | `streaming-chat-live-interactions`  | `unsupported` | Streaming generation, chat sessions, live sessions, and Interactions API calls are outside the initial direct generate-content target.  | Not available |
-| `schema`             | `alternative-parameters-schema`     | `unsupported` | FunctionDeclaration.parameters and its OpenAPI-style Schema representation are outside the initial JSON-schema target.                  | Not available |
-| `schema`             | `direct-parameters-json-schema`     | `full`        | A bound tool input schema is referenced directly through the function declaration parametersJsonSchema property.                        | Not available |
-| `tool`               | `callable-and-mcp-tools`            | `unsupported` | Callable tools, MCP conversion helpers, and automatic tool execution are outside the initial static function-declaration target.        | Not available |
-| `tool`               | `closed-function-declaration-tools` | `full`        | Closed inline or immutable module-local collections expose statically declared functions through config.tools and functionDeclarations. | Not available |
-| `tool`               | `provider-server-tools`             | `unsupported` | Google-hosted or provider/server tools do not establish version 1 repository-local manifest tool relationships.                         | Not available |
+| Kind                 | Pattern                             | Support       | Description                                                                                                                                              | Notes         |
+| -------------------- | ----------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `instruction-loader` | `direct-config-system-instruction`  | `full`        | A directly bound instruction loader supplies config.systemInstruction in a closed generate-content request.                                              | Not available |
+| `runtime`            | `chat-live-interactions`            | `unsupported` | Chat sessions, live sessions, and Interactions API calls are outside the direct generate-content target.                                                 | Not available |
+| `runtime`            | `direct-models-generate-content`    | `full`        | Direct Google Gen AI models.generateContent and generateContentStream requests through a module-local client in a directly exported TypeScript function. | Not available |
+| `runtime`            | `dynamic-request-or-config`         | `ambiguous`   | Dynamically assembled requests or configuration cannot be mapped reliably without semantic analysis.                                                     | Not available |
+| `schema`             | `alternative-parameters-schema`     | `unsupported` | FunctionDeclaration.parameters and its OpenAPI-style Schema representation are outside the initial JSON-schema target.                                   | Not available |
+| `schema`             | `direct-parameters-json-schema`     | `full`        | A bound tool input schema is referenced directly through the function declaration parametersJsonSchema property.                                         | Not available |
+| `tool`               | `callable-and-mcp-tools`            | `unsupported` | Callable tools, MCP conversion helpers, and automatic tool execution are outside the initial static function-declaration target.                         | Not available |
+| `tool`               | `closed-function-declaration-tools` | `full`        | Closed inline or immutable module-local collections expose statically declared functions through config.tools and functionDeclarations.                  | Not available |
+| `tool`               | `provider-server-tools`             | `unsupported` | Google-hosted or provider/server tools do not establish version 1 repository-local manifest tool relationships.                                          | Not available |
 
 #### Provider limits
 
@@ -427,7 +430,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Arbitrary compiler resolution, path aliases, directory indexes, package exports, subpath imports, and re-export graphs are not resolved.
 - Backend-specific function-name restrictions are not validated; the published function-name rules cover only the version-matched SDK declaration contract.
 - Constructor configuration, provider backend, API version, authentication mode, model selection, request contents, and response handling are not interpreted.
-- Dynamic configuration, callable tools, MCP helpers, provider/server tools, automatic function execution, streaming, chats, live sessions, and Interactions API calls are outside the initial target.
+- Dynamic configuration, callable tools, MCP helpers, provider/server tools, automatic function execution, chats, live sessions, and Interactions API calls are outside the target; streaming lifecycle behavior is not inferred from generateContentStream source calls.
 - Function input-schema contents, including top-level object shape and parameter-name restrictions, are not validated; the target establishes only direct parametersJsonSchema wiring.
 - Source forms outside the verified TypeScript ESM target, legacy @google/generative-ai, alternative parameters schemas, output schemas, runtime variables, and handoffs are outside the initial target.
 
@@ -624,7 +627,7 @@ Runtime guidance notes: Project-local guidance is recommended for prompt ownersh
 - Supported repository-format versions: `1`
 - Compatible Core range: `^5.0.0`
 - Runtime guidance: `recommended`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Document project-specific model selection, tool execution, streaming, retry, and error behavior that static inspection cannot establish.
 
@@ -633,7 +636,7 @@ Runtime guidance notes: Document project-specific model selection, tool executio
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/openai/typescript-responses-api-7/)
 
 | Ecosystem | Package  | Role      | Eligible versions |
@@ -645,27 +648,30 @@ Runtime guidance notes: Document project-specific model selection, tool executio
 | Subject              | Relationship | Symbol |
 | -------------------- | ------------ | ------ |
 | `runtime-agent`      | `full`       | `full` |
+| `output-schema`      | `full`       | `full` |
 | `instruction-loader` | `full`       | `full` |
 | `tool-registration`  | `full`       | `full` |
 | `tool-input-schema`  | `full`       | `full` |
 
 #### Patterns
 
-| Kind                 | Pattern                          | Support     | Description                                                                                                                                                             | Notes         |
-| -------------------- | -------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `instruction-loader` | `direct-instruction-loader`      | `full`      | A bound loader is called directly, optionally through await, by a Responses request instructions property.                                                              | Not available |
-| `runtime`            | `chat-completions`               | `ambiguous` | Chat Completions usage is outside this target and is not rejected merely because Responses is preferred.                                                                | Not available |
-| `runtime`            | `direct-responses-runtime-agent` | `full`      | A bound exported TypeScript function uses a module-local OpenAI client for one or more direct Responses API object-literal requests with relationship-specific closure. | Not available |
-| `runtime`            | `dynamic-source-indirection`     | `ambiguous` | Factories, relationship-affecting computed properties and spreads, mutable arrays, and indirect request values remain unresolved.                                       | Not available |
-| `schema`             | `direct-tool-input-schema`       | `full`      | A bound tool input schema is referenced directly by function-tool parameters.                                                                                           | Not available |
-| `tool`               | `static-function-tools`          | `full`      | Bound static OpenAI function-tool objects with the supported exact fields are included in a closed inline or immutable module-local Responses tools array.              | Not available |
+| Kind                 | Pattern                          | Support     | Description                                                                                                                                                                       | Notes         |
+| -------------------- | -------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `instruction-loader` | `direct-instruction-loader`      | `full`      | A bound loader is called directly, optionally through await, by a Responses request instructions property.                                                                        | Not available |
+| `runtime`            | `chat-completions`               | `ambiguous` | Chat Completions usage is outside this target and is not rejected merely because Responses is preferred.                                                                          | Not available |
+| `runtime`            | `direct-responses-runtime-agent` | `full`      | A bound exported TypeScript function uses a module-local OpenAI client for direct responses.create, parse, and stream object-literal requests with relationship-specific closure. | Not available |
+| `runtime`            | `dynamic-source-indirection`     | `ambiguous` | Factories, relationship-affecting computed properties and spreads, mutable arrays, and indirect request values remain unresolved.                                                 | Not available |
+| `runtime`            | `effective-responses-options`    | `full`      | A static second-argument body replaces the first request body; transport-only options leave canonical relationships unchanged.                                                    | Not available |
+| `schema`             | `direct-output-schema`           | `full`      | A bound agent output schema is referenced through text.format as direct JSON Schema or a direct zodTextFormat helper argument.                                                    | Not available |
+| `schema`             | `direct-tool-input-schema`       | `full`      | A bound tool input schema is referenced directly by function-tool parameters.                                                                                                     | Not available |
+| `tool`               | `static-function-tools`          | `full`      | Bound static OpenAI function-tool objects with the supported exact fields are included in a closed inline or immutable module-local Responses tools array.                        | Not available |
 
 #### Known limitations
 
-- Agent input and output schemas, tool implementations and output schemas, skills, variables, and runtime-native routing do not produce evidence.
-- Only TypeScript ESM files with supported direct default and relative named imports are interpreted.
+- Agent input schemas, tool implementations and output schemas, skills, variables, and runtime-native routing do not produce evidence.
+- Only TypeScript ESM files with supported direct default or named OpenAI imports, selected direct helper imports, and relative named imports are interpreted.
 - Package versions are classified from nearest package manifests; lockfiles and installed node_modules are not inspected.
-- Source forms outside the verified TypeScript ESM target, Realtime, Assistants, Agents SDK, streaming semantics, and provider-hosted configuration are not interpreted.
+- Source forms outside the verified TypeScript ESM target, Realtime, Assistants, Agents SDK, streaming lifecycle semantics, and provider-hosted configuration are not interpreted.
 
 ## Adapter: `openai-agents-sdk`
 

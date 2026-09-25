@@ -2,14 +2,16 @@
 
 Deterministic runtime evidence and diagnostics for direct Anthropic SDK integrations.
 
-Version `4.0.2` supports this verified technical boundary:
+Version `5.1.0` supports this verified technical boundary:
 
 - TypeScript ESM source in `.ts`, `.tsx`, and `.mts` files
 - `@anthropic-ai/sdk >=0.117.1`
-- `@moldea.ai/core ^4.0.0`
+- `@moldea.ai/core ^5.0.0`
 - Repository Format version `1`
-- direct `client.messages.create(...)` calls
+- direct `client.messages.create(...)`, `parse(...)`, and `stream(...)` calls
+- effective second-argument `body` overrides; transport-only options leave request wiring unchanged
 - instruction loaders wired through `system`
+- agent output schemas wired through `output_config.format` as direct JSON Schema or a direct `zodOutputFormat` argument
 - closed client-tool arrays and direct `input_schema` bindings
 - client-tool names matching `^[A-Za-z0-9_-]{1,64}$`
 

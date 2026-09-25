@@ -94,6 +94,7 @@ export interface IRuntimePatternProof {
         evidenceKind: IRuntimeAdapterEvidenceKind;
         agentId: string;
         details?: Record<string, string | number | boolean>;
+        runtimeName?: string;
       }
     | { kind: 'absence'; evidenceKind: IRuntimeAdapterEvidenceKind; agentId: string }
     | { kind: 'diagnostic'; code: string }

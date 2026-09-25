@@ -23,6 +23,7 @@ export type {
   IStaticAnalysisPackageTarget,
   IStaticAnalysisDiscoveredPackage,
   IStaticAnalysisReference,
+  IStaticAnalysisObjectRelationships,
   IStaticAnalysisRelationshipResult,
   IStaticAnalysisRequest,
   IStaticAnalysisRequestConfig,

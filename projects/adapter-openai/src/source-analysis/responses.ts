@@ -1,6 +1,12 @@
-import type ts from 'typescript';
+import ts from 'typescript';
 
-import { analyzeClientRequests } from '@moldea.ai/adapter-static-analysis';
+import {
+  analyzeClientRequests,
+  analyzeObjectRelationships,
+  unwrapExpression,
+  type IStaticAnalysisRequest,
+  type IStaticAnalysisRequestRelationship,
+} from '@moldea.ai/adapter-static-analysis';
 
 import type {
   IOpenAiResponsesAnalysis,
@@ -8,6 +14,36 @@ import type {
   IOpenAiSourceAnalysis,
 } from '../contracts/index.js';
 import { OPENAI_SOURCE_CONFIG } from './source-analysis.js';
+
+const RELATIONSHIP_NAMES = ['instructions', 'tools', 'text'] as const;
+
+const getEffectiveRelationships = (
+  request: IStaticAnalysisRequest,
+): ReadonlyMap<string, IStaticAnalysisRequestRelationship> => {
+  if (request.options === null) {
+    return request.relationships;
+  }
+
+  const options = unwrapExpression(request.options);
+
+  if (ts.isObjectLiteralExpression(options)) {
+    const body = analyzeObjectRelationships(options, ['body']).relationships.get('body');
+
+    if (body?.kind === 'absent') {
+      return request.relationships;
+    }
+
+    if (body?.kind === 'present') {
+      const expression = unwrapExpression(body.expression);
+
+      if (ts.isObjectLiteralExpression(expression)) {
+        return analyzeObjectRelationships(expression, RELATIONSHIP_NAMES).relationships;
+      }
+    }
+  }
+
+  return new Map(RELATIONSHIP_NAMES.map((name) => [name, { kind: 'unresolved' as const }]));
+};
 
 /**
  * Finds every direct Responses request owned by one runtime-agent body.
@@ -23,13 +59,17 @@ export const analyzeOpenAiResponses = (
   signal?: AbortSignal,
 ): IOpenAiResponsesAnalysis => {
   const result = analyzeClientRequests(analysis, body, OPENAI_SOURCE_CONFIG.requestConfig, signal);
-  const requests: IOpenAiResponsesRequest[] = result.requests.map(({ object, relationships }) =>
-    Object.freeze({
+  const requests: IOpenAiResponsesRequest[] = result.requests.map((request) => {
+    const relationships = getEffectiveRelationships(request);
+
+    return Object.freeze({
       instructions: relationships.get('instructions') ?? Object.freeze({ kind: 'absent' }),
-      object,
+      methodName: request.methodName,
+      object: request.object,
+      text: relationships.get('text') ?? Object.freeze({ kind: 'absent' }),
       tools: relationships.get('tools') ?? Object.freeze({ kind: 'absent' }),
-    }),
-  );
+    });
+  });
 
   return Object.freeze({
     hasAmbiguousCandidate: result.hasAmbiguousCandidate,

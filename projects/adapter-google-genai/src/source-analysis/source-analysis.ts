@@ -12,7 +12,7 @@ export const GOOGLE_GENAI_SOURCE_CONFIG = Object.freeze({
   }),
   requestConfig: Object.freeze({
     acceptedArgumentCounts: Object.freeze([1]),
-    methodName: 'generateContent',
+    methodNames: Object.freeze(['generateContent', 'generateContentStream']),
     relationshipNames: Object.freeze(['config']),
     resourceName: 'models',
   }),

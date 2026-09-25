@@ -16,7 +16,7 @@ The current verified target does not claim support for:
 - streaming semantics
 - provider-hosted configuration
 - source factories, mutable relationship arrays, computed relationship properties, or indirect request values
-- agent input or output-schema evidence
+- agent input-schema evidence
 - tool implementation or output-schema evidence
 - skills, variables, or runtime-native routing evidence
 

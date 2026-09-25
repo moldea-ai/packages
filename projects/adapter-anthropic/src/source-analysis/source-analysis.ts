@@ -7,13 +7,14 @@ import type { IAnthropicSourceAnalysisResult } from '../contracts/index.js';
 export const ANTHROPIC_SOURCE_CONFIG = Object.freeze({
   importConfig: Object.freeze({
     namedConstructorImports: Object.freeze(['Anthropic']),
+    namedHelperModuleSpecifiers: Object.freeze(['@anthropic-ai/sdk/helpers/zod']),
     packageName: '@anthropic-ai/sdk',
     supportsDefaultConstructorImport: true,
   }),
   requestConfig: Object.freeze({
     acceptedArgumentCounts: Object.freeze([1, 2]),
-    methodName: 'create',
-    relationshipNames: Object.freeze(['system', 'tools']),
+    methodNames: Object.freeze(['create', 'parse', 'stream']),
+    relationshipNames: Object.freeze(['system', 'tools', 'output_config']),
     resourceName: 'messages',
     toolRelationshipName: 'tools',
   }),

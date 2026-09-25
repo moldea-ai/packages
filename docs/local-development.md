@@ -20,6 +20,8 @@ Run commands from the repository root.
 | `pnpm format`                 | Format repository-maintained files.                                                               |
 | `pnpm compatibility:generate` | Regenerate technical compatibility documentation from the canonical matrix.                       |
 | `pnpm compatibility:check`    | Verify matrix, package, and generated-artifact synchronization.                                   |
+| `pnpm upstream:check`         | Type-check exact pinned minimum/current SDK consumers and check controlled request preparation.   |
+| `pnpm upstream:check:latest`  | Resolve stable npm latest SDK releases and test them without changing the pinned targets.         |
 | `pnpm docs:generate`          | Build required packages and generate the ignored website content model.                           |
 | `pnpm docs:check`             | Build required packages and validate package discovery, docs, exports, routes, and compatibility. |
 | `pnpm website:prepare`        | Build CLI and its dependency closure plus Website UI for direct website tasks.                    |
@@ -28,6 +30,8 @@ Run commands from the repository root.
 | `pnpm website:check`          | Prepare and run website docs, tests, types, lint, build, and artifact checks.                     |
 
 Direct website-package commands are lower-level tasks and require `pnpm website:prepare` first. Root `docs:check`, `docs:generate`, `website:dev`, and `website:check` perform that preparation automatically; `website:build` retains Turbo dependency ordering. See the [packages website README](../apps/website/README.md#commands) for application-specific inputs, cache behavior, focused browser checks, and alternate-origin verification.
+
+The upstream check installs exact SDK versions in disposable consumers with lifecycle scripts disabled, verifies package integrity, type-checks source fixtures against their real exports, and checks Anthropic/OpenAI request-body precedence through controlled transport. It runs serially and removes each consumer after use. A latest check is a maintenance signal: inspect source-owned release notes and changed declarations, reproduce any changed contract in its owning adapter and fixture, run focused and broader regressions, then release only affected packages. The latest command never rewrites compatibility ranges or asserts that every future version has today's behavior. Provider requests, credentials, process agents, and cloud execution are outside this check.
 
 ## Build conventions
 

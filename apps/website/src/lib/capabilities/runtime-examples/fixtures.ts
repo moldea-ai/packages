@@ -59,6 +59,28 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     files: ANTHROPIC_FILES,
   },
   {
+    id: 'anthropic-parse-output',
+    adapter: anthropicAdapter,
+    title: 'A parsed Messages request with a bound output schema',
+    description:
+      'The direct output format and transport-only options preserve the instruction and tool relationships.',
+    files: overrideFiles(ANTHROPIC_FILES, {
+      '/moldea/moldea.yaml': source(ANTHROPIC_FILES, '/moldea/moldea.yaml').replace(
+        '      instructionLoader:',
+        '      outputSchema:\n        path: /src/contracts.ts\n        symbol: SupportOutput\n      instructionLoader:',
+      ),
+      '/src/contracts.ts': `${source(ANTHROPIC_FILES, '/src/contracts.ts')}\nexport const SupportOutput = { type: 'object', properties: { answer: { type: 'string' } }, required: ['answer'], additionalProperties: false } as const;\n`,
+      '/src/agent.ts': source(ANTHROPIC_FILES, '/src/agent.ts')
+        .replace('import { FindOrderInput }', 'import { FindOrderInput, SupportOutput }')
+        .replace('client.messages.create({', 'client.messages.parse({')
+        .replace(
+          '    tools: [registeredFindOrder],',
+          "    tools: [registeredFindOrder],\n    output_config: { format: { type: 'json_schema', schema: SupportOutput } },",
+        )
+        .replace('  });', '  }, { timeout: 1000 });'),
+    }),
+  },
+  {
     id: 'claude-query',
     adapter: claudeAgentSdkAdapter,
     title: 'A query that can delegate',
@@ -89,6 +111,24 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     description:
       'Inspect the system instruction and closed function declarations with their parameter schemas.',
     files: GOOGLE_GENAI_FILES,
+  },
+  {
+    id: 'google-mixed-generation',
+    adapter: googleGenAiAdapter,
+    title: 'Generate content and stream from the same agent',
+    description:
+      'Both direct model methods retain the declared instruction and function relationships.',
+    files: overrideFiles(GOOGLE_GENAI_FILES, {
+      '/src/agent.ts': source(GOOGLE_GENAI_FILES, '/src/agent.ts')
+        .replace(
+          'export const supportAgent = async () =>\n  client.models.generateContent(',
+          'export const supportAgent = async () => {\n  const initial = client.models.generateContent(',
+        )
+        .replace(
+          '  });\n',
+          "  });\n  const streamed = client.models.generateContentStream({ model: 'gemini-2.5-flash', contents: 'Help the customer.', config: { systemInstruction: await readInstruction(), tools: [{ functionDeclarations: [registeredFindOrder] }] } });\n  return [initial, streamed];\n};\n",
+        ),
+    }),
   },
   {
     id: 'langchain-create-agent',
@@ -139,6 +179,35 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     description:
       'The source connects this request to an instruction loader and an order-lookup tool.',
     files: OPENAI_FILES,
+  },
+  {
+    id: 'openai-parse-output',
+    adapter: openAiAdapter,
+    title: 'A parsed Responses request with a bound output schema',
+    description:
+      'The direct Zod helper and effective options body retain the instruction, output, and tool bindings.',
+    files: overrideFiles(OPENAI_FILES, {
+      '/package.json': source(OPENAI_FILES, '/package.json').replace(
+        '"openai": "^7.4.0"',
+        '"openai": "^7.4.0",\n    "zod": "^4.3.6"',
+      ),
+      '/moldea/moldea.yaml': source(OPENAI_FILES, '/moldea/moldea.yaml').replace(
+        '      instructionLoader:',
+        '      outputSchema:\n        path: /src/contracts.ts\n        symbol: SupportOutput\n      instructionLoader:',
+      ),
+      '/src/contracts.ts': `import { z } from 'zod';\n\n${source(OPENAI_FILES, '/src/contracts.ts')}\nexport const SupportOutput = z.object({ answer: z.string() });\n`,
+      '/src/agent.ts': source(OPENAI_FILES, '/src/agent.ts')
+        .replace(
+          "import OpenAIClient from 'openai';",
+          "import { OpenAI as OpenAIClient } from 'openai';\nimport { zodTextFormat } from 'openai/helpers/zod';",
+        )
+        .replace('import { FindOrderInput }', 'import { FindOrderInput, SupportOutput }')
+        .replace('client.responses.create({', 'client.responses.parse({')
+        .replace(
+          '  });',
+          "  }, { body: { model: 'gpt-5', input: 'Help the customer.', instructions: readInstruction(), tools: [registeredFindOrder], text: { format: zodTextFormat(SupportOutput, 'support') } } });",
+        ),
+    }),
   },
   {
     id: 'openai-agent-handoffs',

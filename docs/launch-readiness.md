@@ -1,6 +1,6 @@
 # Package launch readiness
 
-This report records implementation and verification for the [approved launch plan](../coding-agent-planning/1790360458_adapter-launch-readiness/plan.md). A package is not declared production ready merely because its version or compatibility range has been updated. Milestones 2–9 and the final combined consumer matrix remain pending.
+This report records implementation and verification for the [approved launch plan](../coding-agent-planning/1790360458_adapter-launch-readiness/plan.md). A package is not declared production ready merely because its version or compatibility range has been updated. Milestones 3–9 and the final combined consumer matrix remain pending.
 
 ## Milestone 1: diagnostic contract and resource baseline
 
@@ -39,24 +39,42 @@ RSS is sampled from one long-lived process every 5 ms and therefore includes pri
 
 These checks establish the coordinated diagnostic migration and its current consumers. They do not establish the later upstream capability, full package audit, final release artifact, or cross-platform launch verdict.
 
+## Milestone 2: direct SDK method families and upstream checks
+
+The shared static analyzer recognizes configured resource method families in one traversal and retains each call's first request object and optional options expression. Anthropic and OpenAI inspect the effective body when static second-argument options replace it; transport-only options leave the first body in force, and dynamic override-capable options leave only dependent relationships unverified. Anthropic recognizes direct `messages.create`, `parse`, and `stream` calls plus agent output-schema wiring through `output_config.format`. OpenAI recognizes direct `responses.create`, `parse`, and `stream`, default or named constructors, and agent output-schema wiring through `text.format`. Direct JSON Schema and the respective direct Zod helpers retain exact bound-schema identity. Google Gen AI recognizes both `models.generateContent` and `generateContentStream`; these source observations do not prove streaming lifecycle behavior.
+
+The serial `pnpm upstream:check` installs six exact minimum/current SDK targets in disposable consumers with lifecycle scripts disabled and pinned SHA-512 tarball integrity. It type-checks source forms against real SDK exports, including the methods and helpers at each declared minimum. Anthropic and OpenAI request preparation is exercised through a controlled fetch with a loopback fallback origin; the check neither sends a provider request nor imports provider SDKs into adapter production artifacts. `pnpm upstream:check:latest` resolves stable npm latest versions for an explicit maintenance signal and ran against the same three current releases on September 25, 2026. A future release remains eligible under each minimum-only range, but its behavior must be rechecked; the latest command never rewrites ranges or fixtures.
+
+The website catalog contains 136 executed cases and witnesses all 95 currently advertised full or partial patterns. Three new cases demonstrate Anthropic parse with an output schema, OpenAI parse with a direct Zod helper and effective options body, and mixed Google generation methods. Those cases run Core's static inspection on synthetic source; provider execution and output validation remain outside their claim. Source-specific guides, the canonical compatibility matrix and generated page, and the matching platform adapter specifications were synchronized. The three adapter packages now carry minor versions `5.1.0`, `5.1.0`, and `4.1.0` respectively without adding SDK production dependencies or changing minimum-only eligibility.
+
+### Verification recorded for Milestone 2
+
+- `pnpm upstream:check`: six exact minimum/current SDK consumers passed type checks; Anthropic and OpenAI also passed controlled request-preparation checks.
+- `pnpm upstream:check:latest`: the three stable latest targets passed without changing the pinned target list.
+- `pnpm test`: complete workspace unit, integration, and end-to-end phases passed, including installed CLI tarball execution and 211 website Chromium tests across responsive widths and both themes.
+- `pnpm website:check`: documentation, 82 website unit tests, Astro typecheck, lint, production build, and 132 integration tests passed.
+- `pnpm typecheck`: 33 root/workspace tasks passed after correcting two test-only indexed-property accesses. `pnpm lint`: 33 tasks passed. `pnpm format:check` and `pnpm compatibility:check` passed.
+
+The new method family incurs no repeated whole-source parse per method, and source analysis remains bounded by Core's existing reader and output limits. The upstream maintenance check performs six serial disposable installations and is a CI/release cost rather than an inspection-time cost. The website's extra examples are generated at build time; unselected examples are not rendered in the public showcase. Milestone 8 still owns representative full-workflow resource measurements and the final package audit.
+
 ## Package audit status
 
-| Public package            | Current launch evidence                                              | Remaining owner    |
-| ------------------------- | -------------------------------------------------------------------- | ------------------ |
-| Repository                | Existing contract used by calibration; full audit pending            | Milestone 8        |
-| Repository FS             | Full filesystem and OS audit pending                                 | Milestone 8        |
-| Core                      | Severity contract and regression suite passed; full audit pending    | Milestone 8        |
-| CLI                       | Schema 5 and packed warning/error suite passed; full audit pending   | Milestone 8        |
-| Anthropic adapter         | Scoped ambiguity warning; request-family and upstream checks pending | Milestones 1 and 2 |
-| OpenAI adapter            | Scoped ambiguity warning; request-family and upstream checks pending | Milestones 1 and 2 |
-| Google Gen AI adapter     | Severity contract; streaming and upstream checks pending             | Milestones 1 and 2 |
-| Claude Agent SDK adapter  | Severity contract; import/prompt checks pending                      | Milestones 1 and 3 |
-| Cloudflare Agents adapter | Severity contract; Think and deferred-tool checks pending            | Milestones 1 and 4 |
-| Vercel AI SDK adapter     | Severity contract; deferred-tool checks pending                      | Milestones 1 and 4 |
-| Eve adapter               | Severity contract; nested/workspace checks pending                   | Milestones 1 and 5 |
-| LangGraph adapter         | Severity contract; interrupt/tracing checks pending                  | Milestones 1 and 6 |
-| LangChain adapter         | Severity contract; full advertised-surface audit pending             | Milestones 1 and 6 |
-| OpenAI Agents SDK adapter | Severity contract; full advertised-surface audit pending             | Milestones 1 and 6 |
-| Website UI                | Real consumer and visual audit pending                               | Milestone 7        |
+| Public package            | Current launch evidence                                                             | Remaining owner    |
+| ------------------------- | ----------------------------------------------------------------------------------- | ------------------ |
+| Repository                | Existing contract used by calibration; full audit pending                           | Milestone 8        |
+| Repository FS             | Full filesystem and OS audit pending                                                | Milestone 8        |
+| Core                      | Severity contract and regression suite passed; full audit pending                   | Milestone 8        |
+| CLI                       | Schema 5 and packed warning/error suite passed; full audit pending                  | Milestone 8        |
+| Anthropic adapter         | Direct method family, effective options, output-schema and pinned SDK checks passed | Milestones 1 and 2 |
+| OpenAI adapter            | Direct method family, effective options, output-schema and pinned SDK checks passed | Milestones 1 and 2 |
+| Google Gen AI adapter     | Direct generate/stream source checks and pinned SDK typing passed                   | Milestones 1 and 2 |
+| Claude Agent SDK adapter  | Severity contract; import/prompt checks pending                                     | Milestones 1 and 3 |
+| Cloudflare Agents adapter | Severity contract; Think and deferred-tool checks pending                           | Milestones 1 and 4 |
+| Vercel AI SDK adapter     | Severity contract; deferred-tool checks pending                                     | Milestones 1 and 4 |
+| Eve adapter               | Severity contract; nested/workspace checks pending                                  | Milestones 1 and 5 |
+| LangGraph adapter         | Severity contract; interrupt/tracing checks pending                                 | Milestones 1 and 6 |
+| LangChain adapter         | Severity contract; full advertised-surface audit pending                            | Milestones 1 and 6 |
+| OpenAI Agents SDK adapter | Severity contract; full advertised-surface audit pending                            | Milestones 1 and 6 |
+| Website UI                | Real consumer and visual audit pending                                              | Milestone 7        |
 
 The packages website is an application consumer, not a sixteenth public package. Its schema 5 examples are updated in Milestone 1; its full examples, visual, accessibility, and artifact checks belong to Milestone 7. Final release propagation and a coherent launch verdict belong to Milestone 9.

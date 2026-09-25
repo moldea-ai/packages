@@ -19,7 +19,7 @@ const SOURCE_CONFIG: IStaticAnalysisSourceConfig = {
   },
   requestConfig: {
     acceptedArgumentCounts: [1],
-    methodName: 'create',
+    methodNames: ['create'],
     relationshipNames: ['tools'],
     resourceName: 'messages',
     toolRelationshipName: 'tools',

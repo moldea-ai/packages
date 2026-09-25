@@ -22,9 +22,11 @@ Evidence contains no repository content, instructions, system prompts, credentia
 | `ANTHROPIC_SOURCE_SYNTAX_INVALID`               | The referenced Anthropic source file contains invalid TypeScript syntax.                        |
 | `ANTHROPIC_RUNTIME_AGENT_SYMBOL_NOT_FOUND`      | The declared runtime-agent symbol was not found.                                                |
 | `ANTHROPIC_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND` | The declared instruction-loader symbol was not found.                                           |
+| `ANTHROPIC_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND`      | The declared agent output-schema symbol was not found.                                          |
 | `ANTHROPIC_TOOL_REGISTRATION_SYMBOL_NOT_FOUND`  | The declared tool-registration symbol was not found.                                            |
 | `ANTHROPIC_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND`  | The declared tool input-schema symbol was not found.                                            |
 | `ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED`        | The declared instruction loader is not wired to the detected Anthropic Messages API call.       |
+| `ANTHROPIC_OUTPUT_SCHEMA_NOT_WIRED`             | The declared agent output schema is not wired to the detected Messages output format.           |
 | `ANTHROPIC_TOOL_REGISTRATION_NOT_WIRED`         | The declared tool registration is not wired to the detected Anthropic Messages API call.        |
 | `ANTHROPIC_TOOL_NAME_MISMATCH`                  | The declared tool name does not match the detected Anthropic client-tool name.                  |
 | `ANTHROPIC_TOOL_NAME_INVALID`                   | The detected Anthropic client-tool name violates the supported provider limit.                  |

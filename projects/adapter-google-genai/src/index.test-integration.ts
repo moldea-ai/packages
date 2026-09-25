@@ -92,7 +92,7 @@ describe('@moldea.ai/adapter-google-genai public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-google-genai',
-      version: '4.0.0',
+      version: '4.1.0',
     });
     expect(packedPaths).toEqual(
       expect.arrayContaining([

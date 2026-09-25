@@ -86,6 +86,9 @@ jobs:
       - name: Check Package Documentation Sources
         run: pnpm docs:check
 
+      - name: Check Pinned Upstream SDKs
+        run: pnpm upstream:check
+
       - name: Check Formatting
         run: pnpm format:check
 

@@ -13,6 +13,14 @@ export const OPENAI_ADAPTER_DIAGNOSTICS = Object.freeze({
     message: 'The declared instruction-loader symbol was not found.',
     severity: 'error',
   },
+  OPENAI_OUTPUT_SCHEMA_NOT_WIRED: {
+    message: 'The declared agent output schema is not wired to the detected Responses text format.',
+    severity: 'error',
+  },
+  OPENAI_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent output-schema symbol was not found.',
+    severity: 'error',
+  },
   OPENAI_PACKAGE_MANIFEST_INVALID: {
     message: 'The owning package manifest is invalid for OpenAI dependency detection.',
     severity: 'error',

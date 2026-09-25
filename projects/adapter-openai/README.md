@@ -10,15 +10,17 @@ Its behavior is intentionally uneventful: the same repository snapshot and resou
 
 ## Supported target
 
-Version `4.0.2` supports:
+Version `5.1.0` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^4.0.0`
+- `@moldea.ai/core ^5.0.0`
 - TypeScript ESM source
 - npm `openai >=7.4.0`
-- a default `openai` import and module-local client
-- a bound exported runtime-agent function containing one or more direct `client.responses.create({ ... })` object-literal calls
+- a default or named `OpenAI` value import and module-local client
+- a bound exported runtime-agent function containing direct `client.responses.create({ ... })`, `parse({ ... })`, or `stream({ ... })` object-literal calls
+- effective second-argument `body` overrides; transport-only options leave request wiring unchanged
 - direct instruction-loader wiring through `instructions`, with optional direct `await`
+- agent output schemas wired through `text.format` as direct JSON Schema or a direct `zodTextFormat` argument
 - static OpenAI function-tool registrations through a closed inline or immutable module-local `tools` array
 - direct tool input-schema wiring through `parameters`
 
@@ -63,10 +65,12 @@ The initial target may emit `runtime-package`, `language`, `runtime-pattern`, `i
 | `OPENAI_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND` | The declared instruction-loader symbol was not found.                                        |
 | `OPENAI_TOOL_REGISTRATION_SYMBOL_NOT_FOUND`  | The declared tool-registration symbol was not found.                                         |
 | `OPENAI_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND`  | The declared tool input-schema symbol was not found.                                         |
+| `OPENAI_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND`      | The declared agent output-schema symbol was not found.                                       |
 | `OPENAI_INSTRUCTION_LOADER_NOT_WIRED`        | The declared instruction loader is not wired to the detected Responses API call.             |
 | `OPENAI_TOOL_REGISTRATION_NOT_WIRED`         | The declared tool registration is not wired to the detected Responses API call.              |
 | `OPENAI_TOOL_NAME_MISMATCH`                  | The declared tool name does not match the detected OpenAI function-tool name.                |
 | `OPENAI_TOOL_INPUT_SCHEMA_NOT_WIRED`         | The declared tool input schema is not wired to the detected OpenAI function-tool parameters. |
+| `OPENAI_OUTPUT_SCHEMA_NOT_WIRED`             | The declared agent output schema is not wired to the detected Responses output format.       |
 | `OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED`     | The declared runtime relationship could not be verified.                                     |
 
 Missing local runtime evidence is not a diagnostic. Dynamic or indirect patterns that cannot be resolved without execution produce partial or no evidence rather than guessed failures. Chat Completions and other OpenAI APIs are not rejected merely because the initial verified target uses Responses.

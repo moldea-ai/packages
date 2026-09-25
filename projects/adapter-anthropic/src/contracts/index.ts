@@ -19,6 +19,8 @@ export type IAnthropicAdapterDiagnosticCode =
   | 'ANTHROPIC_TOOL_NAME_MISMATCH'
   | 'ANTHROPIC_TOOL_NAME_INVALID'
   | 'ANTHROPIC_TOOL_INPUT_SCHEMA_NOT_WIRED'
+  | 'ANTHROPIC_OUTPUT_SCHEMA_NOT_WIRED'
+  | 'ANTHROPIC_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND'
   | 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
 // normalized repository text and scalar source lookup
@@ -99,7 +101,9 @@ export type IAnthropicRequestRelationship =
   | { readonly kind: 'unresolved' };
 
 export interface IAnthropicMessagesRequest {
+  readonly methodName: string;
   readonly object: ts.ObjectLiteralExpression;
+  readonly outputConfig: IAnthropicRequestRelationship;
   readonly system: IAnthropicRequestRelationship;
   readonly tools: IAnthropicRequestRelationship;
 }

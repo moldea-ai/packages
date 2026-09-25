@@ -92,7 +92,7 @@ describe('@moldea.ai/adapter-anthropic public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-anthropic',
-      version: '5.0.0',
+      version: '5.1.0',
     });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');

@@ -43,6 +43,8 @@
     "test:unit": "pnpm test:root:unit && turbo run test:unit",
     "typecheck": "pnpm typecheck:root && turbo run typecheck",
     "typecheck:root": "tsc -p tsconfig.json --noEmit",
+    "upstream:check": "node scripts/upstream-compatibility/index.ts",
+    "upstream:check:latest": "node scripts/upstream-compatibility/index.ts latest",
     "website:build": "turbo run build --filter @moldea.ai/packages-website",
     "website:check": "pnpm website:prepare && pnpm --filter @moldea.ai/packages-website check",
     "website:dev": "pnpm website:prepare && pnpm --filter @moldea.ai/packages-website dev",

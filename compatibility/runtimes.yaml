@@ -36,6 +36,9 @@ adapters:
           instruction-loader:
             relationship: full
             symbol: full
+          output-schema:
+            relationship: full
+            symbol: full
           tool-registration:
             relationship: full
             symbol: full
@@ -43,10 +46,10 @@ adapters:
             relationship: full
             symbol: full
         patterns:
-          - id: direct-messages-create
+          - id: direct-messages-request-family
             kind: runtime
             support: full
-            description: Direct Anthropic Messages API invocation through a module-local client in a directly exported TypeScript function.
+            description: Direct Anthropic messages.create, parse, and stream requests through a module-local client in a directly exported TypeScript function.
           - id: direct-system-loader
             kind: instruction-loader
             support: full
@@ -59,6 +62,14 @@ adapters:
             kind: schema
             support: full
             description: A bound tool input schema is referenced directly through the client tool input_schema property.
+          - id: direct-output-schema
+            kind: schema
+            support: full
+            description: A bound agent output schema is referenced through output_config.format as direct JSON Schema or a direct zodOutputFormat helper argument.
+          - id: effective-messages-options
+            kind: runtime
+            support: full
+            description: A static second-argument body replaces the first request body; transport-only options leave canonical relationships unchanged.
           - id: dynamic-request-construction
             kind: runtime
             support: ambiguous
@@ -76,13 +87,13 @@ adapters:
             reference: Anthropic Messages API reference for client tools.
         knownLimitations:
           - Arbitrary compiler resolution, path aliases, directory indexes, package exports, and re-export graphs are not resolved.
-          - Beta resources, client.messages.stream, parse helpers, and tool-runner abstractions are not interpreted; an exact stream property on direct messages.create requests is tolerated, but its semantics are not validated.
+          - Beta resources, tool-runner abstractions, and provider execution are not interpreted; direct stream calls establish source wiring without validating streaming lifecycle behavior.
           - Client-tool input-schema contents, including the provider-required top-level type object, are not validated; the target establishes only direct schema wiring.
-          - Source forms outside the verified TypeScript ESM target, dynamic factories, mutable requests, provider tools, output schemas, runtime variables, and handoffs are outside the initial target.
+          - Source forms outside the verified TypeScript ESM target, dynamic factories, mutable requests, provider tools, agent input schemas, runtime variables, and handoffs are outside the target.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/anthropic/typescript-messages-api-0-117/'
-        lastVerifiedAt: '2026-09-01'
-    lastVerifiedAt: '2026-09-01'
+        lastVerifiedAt: '2026-09-25'
+    lastVerifiedAt: '2026-09-25'
   claude-agent-sdk:
     implementation:
       kind: package
@@ -689,7 +700,7 @@ adapters:
           - id: direct-models-generate-content
             kind: runtime
             support: full
-            description: Direct Google Gen AI models.generateContent invocation through a module-local client in a directly exported TypeScript function.
+            description: Direct Google Gen AI models.generateContent and generateContentStream requests through a module-local client in a directly exported TypeScript function.
           - id: direct-config-system-instruction
             kind: instruction-loader
             support: full
@@ -718,10 +729,10 @@ adapters:
             kind: tool
             support: unsupported
             description: Google-hosted or provider/server tools do not establish version 1 repository-local manifest tool relationships.
-          - id: streaming-chat-live-interactions
+          - id: chat-live-interactions
             kind: runtime
             support: unsupported
-            description: Streaming generation, chat sessions, live sessions, and Interactions API calls are outside the initial direct generate-content target.
+            description: Chat sessions, live sessions, and Interactions API calls are outside the direct generate-content target.
         providerLimits:
           - id: function-name-length
             subject: tool-name
@@ -745,13 +756,13 @@ adapters:
           - Arbitrary compiler resolution, path aliases, directory indexes, package exports, subpath imports, and re-export graphs are not resolved.
           - Constructor configuration, provider backend, API version, authentication mode, model selection, request contents, and response handling are not interpreted.
           - Backend-specific function-name restrictions are not validated; the published function-name rules cover only the version-matched SDK declaration contract.
-          - Dynamic configuration, callable tools, MCP helpers, provider/server tools, automatic function execution, streaming, chats, live sessions, and Interactions API calls are outside the initial target.
+          - Dynamic configuration, callable tools, MCP helpers, provider/server tools, automatic function execution, chats, live sessions, and Interactions API calls are outside the target; streaming lifecycle behavior is not inferred from generateContentStream source calls.
           - Function input-schema contents, including top-level object shape and parameter-name restrictions, are not validated; the target establishes only direct parametersJsonSchema wiring.
           - Source forms outside the verified TypeScript ESM target, legacy @google/generative-ai, alternative parameters schemas, output schemas, runtime variables, and handoffs are outside the initial target.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/google-genai/typescript-models-generate-content-2/'
-        lastVerifiedAt: '2026-09-01'
-    lastVerifiedAt: '2026-09-01'
+        lastVerifiedAt: '2026-09-25'
+    lastVerifiedAt: '2026-09-25'
   langchain:
     implementation:
       kind: package
@@ -1101,6 +1112,9 @@ adapters:
           instruction-loader:
             relationship: full
             symbol: full
+          output-schema:
+            relationship: full
+            symbol: full
           tool-registration:
             relationship: full
             symbol: full
@@ -1111,7 +1125,7 @@ adapters:
           - id: direct-responses-runtime-agent
             kind: runtime
             support: full
-            description: A bound exported TypeScript function uses a module-local OpenAI client for one or more direct Responses API object-literal requests with relationship-specific closure.
+            description: A bound exported TypeScript function uses a module-local OpenAI client for direct responses.create, parse, and stream object-literal requests with relationship-specific closure.
           - id: direct-instruction-loader
             kind: instruction-loader
             support: full
@@ -1124,6 +1138,14 @@ adapters:
             kind: schema
             support: full
             description: A bound tool input schema is referenced directly by function-tool parameters.
+          - id: direct-output-schema
+            kind: schema
+            support: full
+            description: A bound agent output schema is referenced through text.format as direct JSON Schema or a direct zodTextFormat helper argument.
+          - id: effective-responses-options
+            kind: runtime
+            support: full
+            description: A static second-argument body replaces the first request body; transport-only options leave canonical relationships unchanged.
           - id: dynamic-source-indirection
             kind: runtime
             support: ambiguous
@@ -1133,14 +1155,14 @@ adapters:
             support: ambiguous
             description: Chat Completions usage is outside this target and is not rejected merely because Responses is preferred.
         knownLimitations:
-          - Only TypeScript ESM files with supported direct default and relative named imports are interpreted.
+          - Only TypeScript ESM files with supported direct default or named OpenAI imports, selected direct helper imports, and relative named imports are interpreted.
           - Package versions are classified from nearest package manifests; lockfiles and installed node_modules are not inspected.
-          - Source forms outside the verified TypeScript ESM target, Realtime, Assistants, Agents SDK, streaming semantics, and provider-hosted configuration are not interpreted.
-          - Agent input and output schemas, tool implementations and output schemas, skills, variables, and runtime-native routing do not produce evidence.
+          - Source forms outside the verified TypeScript ESM target, Realtime, Assistants, Agents SDK, streaming lifecycle semantics, and provider-hosted configuration are not interpreted.
+          - Agent input schemas, tool implementations and output schemas, skills, variables, and runtime-native routing do not produce evidence.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/openai/typescript-responses-api-7/'
-        lastVerifiedAt: '2026-09-01'
-    lastVerifiedAt: '2026-09-01'
+        lastVerifiedAt: '2026-09-25'
+    lastVerifiedAt: '2026-09-25'
   openai-agents-sdk:
     implementation:
       kind: package

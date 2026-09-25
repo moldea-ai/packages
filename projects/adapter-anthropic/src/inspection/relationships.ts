@@ -32,6 +32,7 @@ import {
   compareAnthropicStrings,
   createAnthropicEvidence,
 } from './common.js';
+import { inspectAnthropicOutputSchema } from './output-schema.js';
 
 interface IAnthropicRegistrationInspection {
   readonly capabilityId: string;
@@ -548,5 +549,13 @@ export const inspectAnthropicRelationships = async (
   diagnostics: IAdapterDiagnostic[],
 ): Promise<void> => {
   await inspectInstructionLoader(session, agent, runtimeAnalysis, messages, evidence, diagnostics);
+  await inspectAnthropicOutputSchema(
+    session,
+    agent,
+    runtimeAnalysis,
+    messages,
+    evidence,
+    diagnostics,
+  );
   await inspectToolRelationships(session, agent, runtimeAnalysis, messages, evidence, diagnostics);
 };

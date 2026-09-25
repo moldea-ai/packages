@@ -18,6 +18,8 @@ export type IOpenAiAdapterDiagnosticCode =
   | 'OPENAI_TOOL_REGISTRATION_NOT_WIRED'
   | 'OPENAI_TOOL_NAME_MISMATCH'
   | 'OPENAI_TOOL_INPUT_SCHEMA_NOT_WIRED'
+  | 'OPENAI_OUTPUT_SCHEMA_NOT_WIRED'
+  | 'OPENAI_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND'
   | 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
 // normalized repository text and scalar source lookup
@@ -99,7 +101,9 @@ export type IOpenAiRequestRelationship =
 
 export interface IOpenAiResponsesRequest {
   readonly instructions: IOpenAiRequestRelationship;
+  readonly methodName: string;
   readonly object: ts.ObjectLiteralExpression;
+  readonly text: IOpenAiRequestRelationship;
   readonly tools: IOpenAiRequestRelationship;
 }
 

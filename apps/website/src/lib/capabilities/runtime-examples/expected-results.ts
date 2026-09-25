@@ -132,6 +132,147 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
     ],
     manifestDigest: 'sha256:9b1b91e86f651188117f35779da3cf38dafc30e626120acfb6cf1e54e26628e9',
   },
+  'anthropic-parse-output': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          requestProperty: 'system',
+        },
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/instructions.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: null,
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          compatibility: 'supported',
+          declaredRange: '^0.117.1',
+          dependencyKind: 'dependencies',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: '@anthropic-ai/sdk',
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          api: 'messages',
+        },
+        kind: 'runtime-pattern',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: 'messages.parse',
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          requestProperty: 'output_config.format',
+          schemaRole: 'output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/contracts.ts',
+            symbol: 'SupportOutput',
+          },
+        ],
+        runtimeName: 'SupportOutput',
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          requestProperty: 'input_schema',
+          schemaRole: 'input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'FindOrderInput',
+          },
+          {
+            path: '/src/find-order.ts',
+          },
+        ],
+        runtimeName: 'FindOrderInput',
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          toolType: 'client',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/find-order.ts',
+            symbol: 'findOrderTool',
+          },
+        ],
+        runtimeName: 'find_order',
+        source: 'anthropic',
+      },
+    ],
+    manifestDigest: 'sha256:d9e77821b672e87488d844bf55e4bbbc5b6eaa06905374cd1f636bbc10a6dd51',
+  },
   'claude-query': {
     valid: true,
     diagnostics: [],
@@ -1133,6 +1274,143 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
           },
         ],
         runtimeName: 'models.generateContent',
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          requestProperty: 'parametersJsonSchema',
+          schemaRole: 'input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'FindOrderInput',
+          },
+          {
+            path: '/src/find-order.ts',
+          },
+        ],
+        runtimeName: 'FindOrderInput',
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          toolType: 'function-declaration',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/find-order.ts',
+            symbol: 'findOrderDeclaration',
+          },
+        ],
+        runtimeName: 'find_order',
+        source: 'google-genai',
+      },
+    ],
+    manifestDigest: 'sha256:7a7801f5eee21d5b1ce17232bde3918ce2e62eb376467aa4c25de51607db9a31',
+  },
+  'google-mixed-generation': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          requestProperty: 'config.systemInstruction',
+        },
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/instructions.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: null,
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          compatibility: 'supported',
+          declaredRange: '^2.17.1',
+          dependencyKind: 'dependencies',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: '@google/genai',
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          api: 'models',
+        },
+        kind: 'runtime-pattern',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: 'models.generateContent',
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          api: 'models',
+        },
+        kind: 'runtime-pattern',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: 'models.generateContentStream',
         source: 'google-genai',
       },
       {
@@ -2249,6 +2527,147 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
       },
     ],
     manifestDigest: 'sha256:a2f1308a6155dedf12282c0f09b308472e74b620490c721eb0135f55c694b32a',
+  },
+  'openai-parse-output': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          requestProperty: 'instructions',
+        },
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/instructions.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: null,
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          compatibility: 'supported',
+          declaredRange: '^7.4.0',
+          dependencyKind: 'dependencies',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: 'openai',
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          api: 'responses',
+        },
+        kind: 'runtime-pattern',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: 'responses.parse',
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          requestProperty: 'text.format',
+          schemaRole: 'output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/contracts.ts',
+            symbol: 'SupportOutput',
+          },
+        ],
+        runtimeName: 'SupportOutput',
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          requestProperty: 'parameters',
+          schemaRole: 'input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'FindOrderInput',
+          },
+          {
+            path: '/src/find-order.ts',
+          },
+        ],
+        runtimeName: 'FindOrderInput',
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          toolType: 'function',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/find-order.ts',
+            symbol: 'findOrderTool',
+          },
+        ],
+        runtimeName: 'find_order',
+        source: 'openai',
+      },
+    ],
+    manifestDigest: 'sha256:35bb4ddb27e075ec4b2c2f51d4df984543740ca606ea760f13716efbcc658575',
   },
   'openai-agent-handoffs': {
     valid: true,

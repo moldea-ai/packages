@@ -9,7 +9,7 @@ import type {
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
 
-import { OPENAI_ADAPTER_ID, OPENAI_RESPONSES_RUNTIME_NAME } from '../constants/index.js';
+import { OPENAI_ADAPTER_ID } from '../constants/index.js';
 import type { IOpenAiInspectionSession } from '../contracts/index.js';
 import { analyzeOpenAiResponses } from '../source-analysis/index.js';
 import {
@@ -88,18 +88,22 @@ const inspectAgent = async (
     return;
   }
 
-  evidence.push(
-    createOpenAiEvidence({
-      agentId: agent.id,
-      capabilityId: null,
-      capabilityKind: null,
-      details: { api: 'responses' },
-      kind: 'runtime-pattern',
-      references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
-      runtimeName: OPENAI_RESPONSES_RUNTIME_NAME,
-      source: OPENAI_ADAPTER_ID,
-    }),
-  );
+  for (const methodName of [
+    ...new Set(responses.requests.map((request) => request.methodName)),
+  ].sort()) {
+    evidence.push(
+      createOpenAiEvidence({
+        agentId: agent.id,
+        capabilityId: null,
+        capabilityKind: null,
+        details: { api: 'responses' },
+        kind: 'runtime-pattern',
+        references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
+        runtimeName: `responses.${methodName}`,
+        source: OPENAI_ADAPTER_ID,
+      }),
+    );
+  }
 
   await inspectOpenAiRelationships(session, agent, analysis, responses, evidence, diagnostics);
 };

@@ -1,6 +1,7 @@
 import ts from 'typescript';
 
 import type {
+  IStaticAnalysisObjectRelationships,
   IStaticAnalysisRequest,
   IStaticAnalysisRequestConfig,
   IStaticAnalysisRequestRelationship,
@@ -82,7 +83,7 @@ const classifyCreateAccess = (
 
   if (
     methodAccess === null ||
-    (methodAccess.name !== null && methodAccess.name !== config.methodName)
+    (methodAccess.name !== null && !config.methodNames.includes(methodAccess.name))
   ) {
     return null;
   }
@@ -182,7 +183,7 @@ const getPotentialRelationshipNames = (
 export const analyzeObjectRelationships = (
   object: ts.ObjectLiteralExpression,
   relationshipNames: readonly string[],
-): IStaticAnalysisRequest => {
+): IStaticAnalysisObjectRelationships => {
   const states = new Map<string, IMutableRelationshipState>(
     relationshipNames.map((name) => [
       name,
@@ -402,11 +403,25 @@ export const analyzeClientRequests = (
         hasAmbiguousCandidate = true;
       } else if (classification === 'recognized') {
         const request = unwrapExpression(node.arguments[0] as ts.Expression);
+        const methodName = getAccessSegment(node.expression)?.name;
+
+        if (methodName === null || methodName === undefined) {
+          hasAmbiguousCandidate = true;
+          return;
+        }
+
+        const relationships = analyzeObjectRelationships(
+          request as ts.ObjectLiteralExpression,
+          config.relationshipNames,
+        );
         requests.push(
-          analyzeObjectRelationships(
-            request as ts.ObjectLiteralExpression,
-            config.relationshipNames,
-          ),
+          Object.freeze({
+            call: node,
+            methodName,
+            object: relationships.object,
+            options: node.arguments[1] ?? null,
+            relationships: relationships.relationships,
+          }),
         );
       }
     }
@@ -531,12 +546,27 @@ const isDirectToolRequestPropertyUse = (
   }
 
   const request = skipTransparentParents(property.parent);
-  const call = request.parent;
+  let call = request.parent;
+  let argumentIndex = 0;
+  let requestArgument = request;
+
+  if (ts.isPropertyAssignment(call) && getDirectPropertyName(call.name) === 'body') {
+    const options = skipTransparentParents(call.parent);
+
+    if (ts.isObjectLiteralExpression(options)) {
+      call = options.parent;
+      argumentIndex = 1;
+      requestArgument = options;
+    }
+  }
+
+  const callArgument = ts.isCallExpression(call) ? call.arguments[argumentIndex] : undefined;
 
   if (
     !ts.isCallExpression(call) ||
     !config.acceptedArgumentCounts.includes(call.arguments.length) ||
-    skipTransparentParents(call.arguments[0] as ts.Expression) !== request
+    callArgument === undefined ||
+    skipTransparentParents(callArgument) !== requestArgument
   ) {
     return false;
   }

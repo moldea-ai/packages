@@ -17,6 +17,15 @@ export const ANTHROPIC_ADAPTER_DIAGNOSTICS = Object.freeze({
     message: 'The declared instruction-loader symbol was not found.',
     severity: 'error',
   },
+  ANTHROPIC_OUTPUT_SCHEMA_NOT_WIRED: {
+    message:
+      'The declared agent output schema is not wired to the detected Messages output format.',
+    severity: 'error',
+  },
+  ANTHROPIC_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent output-schema symbol was not found.',
+    severity: 'error',
+  },
   ANTHROPIC_PACKAGE_MANIFEST_INVALID: {
     message: 'The owning package manifest is invalid for Anthropic dependency detection.',
     severity: 'error',

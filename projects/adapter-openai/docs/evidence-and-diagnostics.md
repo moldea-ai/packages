@@ -14,21 +14,23 @@ Evidence contains no repository content, agent instructions, credentials, API ke
 
 ## Diagnostic catalog
 
-| Code                                         | Meaning                                                                  |
-| -------------------------------------------- | ------------------------------------------------------------------------ |
-| `OPENAI_PACKAGE_MANIFEST_INVALID`            | The owning package manifest cannot establish valid dependency data.      |
-| `OPENAI_SDK_VERSION_UNSUPPORTED`             | The observed OpenAI range is disjoint from the eligible versions.        |
-| `OPENAI_SOURCE_TEXT_INVALID`                 | The source is not valid normalized text.                                 |
-| `OPENAI_SOURCE_SYNTAX_INVALID`               | The source contains invalid TypeScript syntax.                           |
-| `OPENAI_RUNTIME_AGENT_SYMBOL_NOT_FOUND`      | The bound runtime-agent symbol is absent.                                |
-| `OPENAI_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND` | The bound instruction-loader symbol is absent.                           |
-| `OPENAI_TOOL_REGISTRATION_SYMBOL_NOT_FOUND`  | The bound tool-registration symbol is absent.                            |
-| `OPENAI_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND`  | The bound input-schema symbol is absent.                                 |
-| `OPENAI_INSTRUCTION_LOADER_NOT_WIRED`        | Every supported resolved request proves the loader absent.               |
-| `OPENAI_TOOL_REGISTRATION_NOT_WIRED`         | Every supported resolved request proves the tool registration absent.    |
-| `OPENAI_TOOL_NAME_MISMATCH`                  | A detected OpenAI function-tool name contradicts the declared tool name. |
-| `OPENAI_TOOL_INPUT_SCHEMA_NOT_WIRED`         | Resolved parameters do not wire the declared input schema.               |
-| `OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED`     | The declared runtime relationship could not be verified.                 |
+| Code                                         | Meaning                                                                                |
+| -------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `OPENAI_PACKAGE_MANIFEST_INVALID`            | The owning package manifest cannot establish valid dependency data.                    |
+| `OPENAI_SDK_VERSION_UNSUPPORTED`             | The observed OpenAI range is disjoint from the eligible versions.                      |
+| `OPENAI_SOURCE_TEXT_INVALID`                 | The source is not valid normalized text.                                               |
+| `OPENAI_SOURCE_SYNTAX_INVALID`               | The source contains invalid TypeScript syntax.                                         |
+| `OPENAI_RUNTIME_AGENT_SYMBOL_NOT_FOUND`      | The bound runtime-agent symbol is absent.                                              |
+| `OPENAI_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND` | The bound instruction-loader symbol is absent.                                         |
+| `OPENAI_TOOL_REGISTRATION_SYMBOL_NOT_FOUND`  | The bound tool-registration symbol is absent.                                          |
+| `OPENAI_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND`  | The bound input-schema symbol is absent.                                               |
+| `OPENAI_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND`      | The declared agent output-schema symbol was not found.                                 |
+| `OPENAI_INSTRUCTION_LOADER_NOT_WIRED`        | Every supported resolved request proves the loader absent.                             |
+| `OPENAI_TOOL_REGISTRATION_NOT_WIRED`         | Every supported resolved request proves the tool registration absent.                  |
+| `OPENAI_TOOL_NAME_MISMATCH`                  | A detected OpenAI function-tool name contradicts the declared tool name.               |
+| `OPENAI_TOOL_INPUT_SCHEMA_NOT_WIRED`         | Resolved parameters do not wire the declared input schema.                             |
+| `OPENAI_OUTPUT_SCHEMA_NOT_WIRED`             | The declared agent output schema is not wired to the detected Responses output format. |
+| `OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED`     | The declared runtime relationship could not be verified.                               |
 
 Diagnostics use the shared Core adapter shape, preserve logical source locations, and remain deterministically ordered. Dynamic or indirect patterns yield partial or no evidence rather than guessed failures. Core validates adapter output and applies all-or-nothing inspection semantics.
 

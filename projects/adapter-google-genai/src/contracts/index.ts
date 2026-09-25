@@ -105,6 +105,7 @@ export type IGoogleGenAiRequestRelationship =
 
 export interface IGoogleGenAiGenerateContentRequest {
   readonly config: IGoogleGenAiRequestRelationship;
+  readonly methodName: string;
   readonly object: ts.ObjectLiteralExpression;
   readonly systemInstruction: IGoogleGenAiRequestRelationship;
   readonly tools: IGoogleGenAiRequestRelationship;

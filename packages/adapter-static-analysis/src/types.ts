@@ -126,6 +126,7 @@ export interface IStaticAnalysisModuleArray {
 // supported SDK constructor import forms
 export interface IStaticAnalysisImportConfig {
   readonly namedConstructorImports: readonly string[];
+  readonly namedHelperModuleSpecifiers?: readonly string[];
   readonly packageName: string;
   readonly supportsDefaultConstructorImport: boolean;
 }
@@ -133,7 +134,7 @@ export interface IStaticAnalysisImportConfig {
 // direct client call and request relationship configuration
 export interface IStaticAnalysisRequestConfig {
   readonly acceptedArgumentCounts: readonly number[];
-  readonly methodName: string;
+  readonly methodNames: readonly string[];
   readonly relationshipNames: readonly string[];
   readonly resourceName: string;
   readonly toolRelationshipName?: string;
@@ -216,10 +217,17 @@ export type IStaticAnalysisRequestRelationship =
   | { readonly expression: ts.Expression; readonly kind: 'present' }
   | { readonly kind: 'unresolved' };
 
-// one recognized direct SDK request
-export interface IStaticAnalysisRequest {
+// selected relationships in one direct object literal
+export interface IStaticAnalysisObjectRelationships {
   readonly object: ts.ObjectLiteralExpression;
   readonly relationships: ReadonlyMap<string, IStaticAnalysisRequestRelationship>;
+}
+
+// one recognized direct SDK request
+export interface IStaticAnalysisRequest extends IStaticAnalysisObjectRelationships {
+  readonly call: ts.CallExpression;
+  readonly methodName: string;
+  readonly options: ts.Expression | null;
 }
 
 // direct requests and conservative ambiguity state for one runtime body

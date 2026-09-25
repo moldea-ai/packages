@@ -105,10 +105,12 @@ export const validateRuntimeWitness = (
     return;
   }
   assertCapabilityFacts(
-    matching.some((entry) =>
-      Object.entries(witness.details ?? {}).every(
-        ([key, expected]) => entry.details[key] === expected,
-      ),
+    matching.some(
+      (entry) =>
+        (witness.runtimeName === undefined || entry.runtimeName === witness.runtimeName) &&
+        Object.entries(witness.details ?? {}).every(
+          ([key, expected]) => entry.details[key] === expected,
+        ),
     ),
     true,
   );

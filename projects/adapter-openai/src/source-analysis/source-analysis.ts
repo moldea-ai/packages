@@ -6,14 +6,15 @@ import type { IOpenAiSourceAnalysisResult } from '../contracts/index.js';
 
 export const OPENAI_SOURCE_CONFIG = Object.freeze({
   importConfig: Object.freeze({
-    namedConstructorImports: Object.freeze([]),
+    namedConstructorImports: Object.freeze(['OpenAI']),
+    namedHelperModuleSpecifiers: Object.freeze(['openai/helpers/zod']),
     packageName: 'openai',
     supportsDefaultConstructorImport: true,
   }),
   requestConfig: Object.freeze({
-    acceptedArgumentCounts: Object.freeze([1]),
-    methodName: 'create',
-    relationshipNames: Object.freeze(['instructions', 'tools']),
+    acceptedArgumentCounts: Object.freeze([1, 2]),
+    methodNames: Object.freeze(['create', 'parse', 'stream']),
+    relationshipNames: Object.freeze(['instructions', 'tools', 'text']),
     resourceName: 'responses',
     toolRelationshipName: 'tools',
   }),

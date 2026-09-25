@@ -33,6 +33,7 @@ import {
   compareOpenAiStrings,
   createOpenAiEvidence,
 } from './common.js';
+import { inspectOpenAiOutputSchema } from './output-schema.js';
 
 interface IOpenAiRegistrationInspection {
   readonly capabilityId: string;
@@ -524,5 +525,13 @@ export const inspectOpenAiRelationships = async (
   diagnostics: IAdapterDiagnostic[],
 ): Promise<void> => {
   await inspectInstructionLoader(session, agent, runtimeAnalysis, responses, evidence, diagnostics);
+  await inspectOpenAiOutputSchema(
+    session,
+    agent,
+    runtimeAnalysis,
+    responses,
+    evidence,
+    diagnostics,
+  );
   await inspectToolRelationships(session, agent, runtimeAnalysis, responses, evidence, diagnostics);
 };

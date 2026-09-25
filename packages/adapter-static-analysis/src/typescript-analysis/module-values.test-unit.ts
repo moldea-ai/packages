@@ -14,7 +14,7 @@ const SOURCE_CONFIG: IStaticAnalysisSourceConfig = {
   },
   requestConfig: {
     acceptedArgumentCounts: [1],
-    methodName: 'run',
+    methodNames: ['run'],
     relationshipNames: ['config'],
     resourceName: 'models',
   },

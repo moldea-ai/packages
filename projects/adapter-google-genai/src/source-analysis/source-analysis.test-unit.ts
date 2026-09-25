@@ -64,6 +64,31 @@ describe('Google Gen AI source analysis', () => {
     });
   });
 
+  test('keeps ordinary and streaming requests in the same supported family', () => {
+    const { generateContent } = findGenerateContent(
+      [
+        "import { GoogleGenAI } from '@google/genai';",
+        'const client = new GoogleGenAI();',
+        'export const agent = () => {',
+        '  client.models.generateContent({ config: { systemInstruction: loadInstruction() } });',
+        '  return client.models.generateContentStream({ config: { tools: [tool] } });',
+        '};',
+      ].join('\n'),
+    );
+
+    expect(generateContent.hasAmbiguousCandidate).toBe(false);
+    expect(
+      generateContent.requests.map(({ methodName, systemInstruction, tools }) => ({
+        methodName,
+        systemInstruction: systemInstruction.kind,
+        tools: tools.kind,
+      })),
+    ).toStrictEqual([
+      { methodName: 'generateContent', systemInstruction: 'present', tools: 'absent' },
+      { methodName: 'generateContentStream', systemInstruction: 'absent', tools: 'present' },
+    ]);
+  });
+
   test('keeps request and nested configuration closure relationship-specific', () => {
     const { generateContent } = findGenerateContent(
       [
@@ -117,7 +142,6 @@ describe('Google Gen AI source analysis', () => {
   test.each([
     ['computed models', "client['models'].generateContent({})"],
     ['computed method', "client.models['generateContent']({})"],
-    ['streaming', 'client.models.generateContentStream({})'],
     ['dynamic request', 'client.models.generateContent(request)'],
     ['two arguments', 'client.models.generateContent({}, options)'],
   ])('does not recognize %s as a supported direct call', (_description, expression) => {

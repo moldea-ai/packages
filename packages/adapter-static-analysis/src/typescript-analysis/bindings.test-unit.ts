@@ -109,7 +109,7 @@ describe('static TypeScript bindings', () => {
         },
         requestConfig: {
           acceptedArgumentCounts: [1],
-          methodName: 'create',
+          methodNames: ['create'],
           relationshipNames: ['tools'],
           resourceName: 'messages',
           toolRelationshipName: 'tools',
