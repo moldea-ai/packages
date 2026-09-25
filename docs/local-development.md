@@ -1,6 +1,6 @@
 # Local development
 
-The root [README](../README.md#getting-started) owns repository purpose, requirements, installation, and the project blueprint. This guide owns the detailed development commands, package build conventions, test categories, and packed-consumer verification boundary.
+The root [README](../README.md#getting-started) owns repository purpose, requirements, and installation. The [project blueprint](project-blueprint.md) owns architecture and package ownership. This guide owns the detailed development commands, package build conventions, test categories, and packed-consumer verification boundary.
 
 ## Commands
 
@@ -35,7 +35,7 @@ Public JavaScript artifacts are ESM-only unless a focused specification establis
 
 TypeScript performs strict source checking and emits declarations separately so public types remain first-class package artifacts. Package build scripts clean their output once, run Vite, and then emit declarations; the shared Vite configuration does not delete output owned by another build step. Website UI also publishes source Astro components and CSS because its consuming Astro application owns compilation and Tailwind source scanning.
 
-Environment-neutral packages extend `configs/typescript/environment-neutral.json`; Node.js packages extend `configs/typescript/node.json`. Declaration builds use the corresponding `environment-neutral-library.json` or `node-library.json` configuration and set package-local `rootDir` and `outDir` values.
+Environment-neutral packages extend `configs/typescript/environment-neutral.json` and must not import Node.js modules or inherit Node globals; Node.js packages extend `configs/typescript/node.json`. Declaration builds use the corresponding `environment-neutral-library.json` or `node-library.json` configuration and set package-local `rootDir` and `outDir` values.
 
 Turborepo derives execution order from declared workspace dependencies. Package dependencies must remain explicit and acyclic, and no task may depend on workspace enumeration order or undeclared cross-project state.
 
