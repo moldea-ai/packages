@@ -233,6 +233,10 @@ for (const width of [320, 1440]) {
       await page.goto(route);
       for (const { group } of showcase) {
         const first = page.locator(`#${group.exampleIds[0]}`);
+        const firstSummary = first.locator(':scope > summary');
+        await firstSummary.focus();
+        await page.keyboard.press('Enter');
+        await expect(first.locator('[data-accordion-panel]')).toBeVisible();
         for (const id of group.exampleIds.slice(1, 2)) {
           const second = page.locator(`#${id}`);
           const summary = second.locator(':scope > summary');
@@ -251,7 +255,7 @@ for (const width of [320, 1440]) {
             .not.toBe(background);
           await page.keyboard.press('Enter');
           await expect(second.locator('[data-accordion-panel]')).toBeVisible();
-          await expect(first.locator('[data-accordion-panel]')).toBeHidden();
+          await expect(first.locator('[data-accordion-panel]')).toBeVisible();
           await expect(summary).toBeFocused();
           await expect(second.locator('[data-accordion-panel]')).toHaveCSS(
             'animation-name',
@@ -268,6 +272,8 @@ for (const width of [320, 1440]) {
           ).toStrictEqual([]);
           await page.keyboard.press('Space');
           await expect(second.locator('[data-accordion-panel]')).toBeHidden();
+          await expect(first.locator('[data-accordion-panel]')).toBeVisible();
+          await firstSummary.click();
           await expect(page.locator(`#${group.id} details[open]`)).toHaveCount(0);
         }
       }
@@ -369,6 +375,12 @@ test('keeps empty file previews and capability summaries free of extra dividers'
       '0px',
     );
     await expect(item.locator('article > div').last()).toHaveCSS('border-top-width', '0px');
+  }
+  for (const id of ['foundation-missing', 'manifest-change-relevance']) {
+    await expect(page.locator(`#${id} [data-file-preview-header]`).first()).toHaveCSS(
+      'border-bottom-width',
+      '0px',
+    );
   }
   const withBody = page.locator('#policy-reference-missing');
   await withBody.locator(':scope > summary').click();
@@ -672,6 +684,9 @@ for (const theme of ['light', 'dark'] as const) {
       await page.locator('#mirror-stale > summary').click();
       await expect(page.locator('#mirror-stale [data-accordion-panel]')).toBeVisible();
       await expect(page.locator('#variable-undeclared [data-accordion-panel]')).toBeHidden();
+      await page.locator('#variable-undeclared > summary').click();
+      await expect(page.locator('#mirror-stale [data-accordion-panel]')).toBeVisible();
+      await expect(page.locator('#variable-undeclared [data-accordion-panel]')).toBeVisible();
       await expect(page.getByRole('button', { name: /^View result:/u })).toHaveCount(0);
       await page.locator('#decision-replacement-chain > summary').press('Enter');
       await expect(

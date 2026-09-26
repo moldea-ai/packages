@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.9.2
+pnpm add @moldea.ai/website-ui@1.10.0
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -117,7 +117,7 @@ Each `SiteHeader` navigation item accepts `href`, `isActive`, `label`, and optio
 
 ### Accordions
 
-`Accordion` is one native disclosure item. Keep related items together in a section, give each a document-unique `id`, and use the same document-unique `group` for mutually exclusive items. At most one item in a group can be open; users can also close every item. Pass `isOpen` to the first item to show an example immediately. Do not mark multiple items in one group initially open.
+`Accordion` is one native disclosure item. Keep related items together in a section and give each a document-unique `id`. Items without `group` open independently, so several can remain open. Use the same document-unique `group` only when items should be mutually exclusive; at most one item in a group can be open, and users can also close every item. Pass `isOpen` to show an example immediately. Do not mark multiple items in one group initially open.
 
 ```astro
 ---
@@ -154,9 +154,9 @@ import StatusBadge from '@moldea.ai/website-ui/status-badge';
 </section>
 ```
 
-Required props are `id`, `group`, and `title`. Optional `description` stays visible when closed and supplies the control's accessible description; `isOpen` defaults to `false`. The default slot accepts arbitrary content, including files and dialogs. The optional `status` slot accepts a compact non-interactive status, not another button or link. Consumers can derive props using `ComponentProps<typeof Accordion>` through the public subpath.
+Required props are `id` and `title`. Optional `group` enables native mutual exclusion; without it, items stay independent. Optional `description` stays visible when closed and supplies the control's accessible description; `isOpen` defaults to `false`. The default slot accepts arbitrary content, including files and dialogs. The optional `status` slot accepts a compact non-interactive status, not another button or link. Consumers can derive props using `ComponentProps<typeof Accordion>` through the public subpath.
 
-Native disclosure and group exclusivity work without JavaScript. JavaScript reveals hash-linked items on initial load, hash changes, and Astro client navigation without adding history entries or taking focus. Variable-height panels use a short fade; reduced motion removes it and the chevron transition. Mobile items use a flat surface, while desktop items retain the shared border, radius, colors, and interaction states. The package owns no example content or domain status mapping.
+Native disclosure, independent opening, and optional group exclusivity work without JavaScript. JavaScript reveals hash-linked items on initial load, hash changes, and Astro client navigation without adding history entries or taking focus. Variable-height panels use a short fade; reduced motion removes it and the chevron transition. Mobile items use a flat surface, while desktop items retain the shared border, radius, colors, and interaction states. The package owns no example content or domain status mapping.
 
 ### Files and result summaries
 

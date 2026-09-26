@@ -80,7 +80,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.9.2' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.10.0' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -256,7 +256,7 @@ describe('published website UI package', () => {
         '    <ConnectionLabel {...connectionProps}><span slot="icon">!</span>Missing from <code class="inline-code">moldea.yaml</code></ConnectionLabel>',
         '    <ConnectionLabel>Linked file</ConnectionLabel>',
         '    <section><h2>Fixture checks</h2><Accordion id="check-one" group="fixture-accordion" title="First check" description="One concise outcome."><StatusBadge slot="status" label="Valid" tone="success" size="sm" /><p>First visual</p></Accordion><Accordion {...accordionProps}><FilePreview path="src/policy.ts" label="Policy"><p>Second visual</p></FilePreview></Accordion></section>',
-        '    <Accordion id="closed-check" group="closed-accordion" title="Closed check"><p>Optional detail</p></Accordion>',
+        '    <Accordion id="closed-check" title="Closed check"><p>Optional detail</p></Accordion>',
         '    <FilePreview {...fileProps}><span slot="icon">File</span><StatusBadge slot="status" label="Missing" size="sm" tone="danger" /><pre class="code-block" tabindex="0" role="region" aria-label="Return policy source"><code>export const returnWindowDays = 30;</code></pre></FilePreview>',
         '    <Dialog id="composed-result" title="Reference not found" triggerLabel="Inspect composed result" isOverlayCloseEnabled><ResultSummary slot="heading" {...summaryProps}><span slot="icon">!</span><StatusBadge slot="status" label="Invalid" size="sm" tone="danger" /></ResultSummary><p>Composed result body</p></Dialog>',
         '    <ResultSummary title="Metadata available" description="Logical paths only." as="h3" />',
@@ -340,7 +340,7 @@ describe('published website UI package', () => {
       /<details\b[^>]*id="check-two"[^>]*name="fixture-accordion"[^>]*\bopen\b/u,
     );
     expect(fixtureHtml).toMatch(
-      /<details\b[^>]*id="closed-check"[^>]*name="closed-accordion"(?![^>]*\bopen\b)/u,
+      /<details\b[^>]*id="closed-check"(?![^>]*\bname=)(?![^>]*\bopen\b)/u,
     );
     expect(fixtureHtml).toContain('aria-describedby="check-one-description"');
     expect(fixtureHtml).toContain('First visual');
