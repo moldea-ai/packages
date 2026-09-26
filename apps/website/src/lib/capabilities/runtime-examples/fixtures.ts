@@ -13,7 +13,7 @@ import type { IMemoryRepositoryEntry } from '@moldea.ai/repository/memory';
 import { ANTHROPIC_FILES } from './anthropic.ts';
 import { CLAUDE_AGENT_SDK_FILES } from './claude-agent-sdk.ts';
 import { CLOUDFLARE_AGENTS_FILES } from './cloudflare-agents.ts';
-import { EVE_FILES } from './eve.ts';
+import { EVE_CURRENT_FILES, EVE_FILES } from './eve.ts';
 import { GOOGLE_GENAI_FILES } from './google-genai.ts';
 import { LANGCHAIN_FILES } from './langchain.ts';
 import { LANGGRAPH_FILES } from './langgraph.ts';
@@ -199,7 +199,7 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     title: 'The filesystem describes the agent',
     description:
       'Inspect the nested agent, instruction loader, tool, TypeScript skill, and directory-local subagent.',
-    files: EVE_FILES,
+    files: EVE_CURRENT_FILES,
   },
   {
     id: 'eve-workflow-tool',

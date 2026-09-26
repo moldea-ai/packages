@@ -85,6 +85,25 @@ const replaceFixture = (path: string, search: string, replacement: string): stri
   return source.replace(search, replacement);
 };
 
+const agentSchemaReplacements = (
+  version: string,
+  hasAuthoredSchema: boolean,
+  hasBoundSchema: boolean,
+): Readonly<Record<string, IFixtureReplacement>> => ({
+  '/package.json': `{"name":"@acme/support-app","dependencies":{"eve":"${version}"}}`,
+  '/agent/agent.ts': replaceFixture(
+    '/agent/agent.ts',
+    ', outputSchema: SupportOutputSchema',
+    hasAuthoredSchema ? ', outputSchema: SupportOutputSchema' : '',
+  ),
+  '/moldea/moldea.yaml': hasBoundSchema
+    ? fixture.manifest
+    : fixture.manifest.replace(
+        '      outputSchema:\n        path: /agent/contracts.ts\n        symbol: SupportOutputSchema\n',
+        '',
+      ),
+});
+
 const workspaceManifest = (includeResearch: boolean): string =>
   `version: 1\nagents:\n  support:\n    runtime:\n      id: eve\n    bindings:\n      runtimeAgent:\n        path: /agents/support/agent/agent.ts\n        symbol: default\n${
     includeResearch
@@ -132,12 +151,105 @@ describe('eveAdapter Core integration', () => {
   });
 
   test('accepts a later stable provider major through the minimum-only range', async () => {
-    const result = await inspect({
-      '/package.json': '{"name":"@acme/support-app","dependencies":{"eve":"1.0.0"}}',
-    });
+    const result = await inspect(agentSchemaReplacements('1.0.0', false, false));
 
     expect(result.diagnostics).toStrictEqual([]);
     expect(result.valid).toBe(true);
+  });
+
+  test.each([
+    ['0.66.3', true, true, null, true],
+    ['0.67.0', true, true, 'EVE_SDK_FEATURE_UNAVAILABLE', false],
+    ['0.67.0', true, false, 'EVE_SDK_FEATURE_UNAVAILABLE', false],
+    ['0.67.0', false, true, 'EVE_SDK_FEATURE_UNAVAILABLE', false],
+    ['>=0.39.1', true, true, 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED', false],
+    ['>=0.39.1', true, false, 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED', false],
+    ['>=0.39.1', false, true, 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED', false],
+  ])(
+    'classifies Eve %s agent schema authored=%s bound=%s',
+    async (version, hasAuthoredSchema, hasBoundSchema, expectedCode, hasSchemaEvidence) => {
+      const result = await inspect(
+        agentSchemaReplacements(version, hasAuthoredSchema, hasBoundSchema),
+      );
+
+      expect(result.diagnostics.map(({ code }) => code)).toStrictEqual(
+        expectedCode === null ? [] : [expectedCode],
+      );
+      expect(result.valid).toBe(expectedCode !== 'EVE_SDK_FEATURE_UNAVAILABLE');
+      expect(
+        result.evidence.some(
+          ({ agentId, kind, details }) =>
+            agentId === 'support' && kind === 'schema' && details['schemaRole'] === 'agent-output',
+        ),
+      ).toBe(hasSchemaEvidence);
+      expect(
+        result.evidence.some(
+          ({ agentId, kind }) => agentId === 'support' && kind === 'agent-definition',
+        ),
+      ).toBe(expectedCode === null);
+      if (expectedCode !== null) {
+        expect(result.evidence.some(({ kind }) => kind === 'handoff-registration')).toBe(false);
+      }
+      if (expectedCode === 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED') {
+        expect(result.diagnostics[0]?.details).toMatchObject({
+          boundaryVersion: '0.67.0',
+          reason: 'version-dependent-behavior',
+          relationship: hasBoundSchema ? 'agent-output-schema' : 'runtime-agent',
+        });
+      }
+    },
+  );
+
+  test('keeps the Eve 0.67.0 agent and tool evidence when no agent schema is declared', async () => {
+    const result = await inspect(agentSchemaReplacements('0.67.0', false, false));
+
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(true);
+    expect(
+      result.evidence.some(
+        ({ agentId, kind }) => agentId === 'support' && kind === 'agent-definition',
+      ),
+    ).toBe(true);
+    expect(
+      result.evidence.some(
+        ({ capabilityId, kind, details }) =>
+          capabilityId === 'search' && kind === 'schema' && details['schemaRole'] === 'tool-output',
+      ),
+    ).toBe(true);
+  });
+
+  test('keeps the older missing-agent-schema wiring failure distinct from removal', async () => {
+    const result = await inspect(agentSchemaReplacements('0.66.3', false, true));
+
+    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
+      'EVE_AGENT_OUTPUT_SCHEMA_NOT_WIRED',
+    ]);
+    expect(result.valid).toBe(false);
+    expect(
+      result.evidence.some(
+        ({ agentId, kind }) => agentId === 'support' && kind === 'agent-definition',
+      ),
+    ).toBe(true);
+  });
+
+  test('reports the removed schema even alongside an unsupported advanced agent option', async () => {
+    const result = await inspect({
+      ...agentSchemaReplacements('0.67.0', true, true),
+      '/agent/agent.ts': replaceFixture(
+        '/agent/agent.ts',
+        'model: MODEL,',
+        "model: MODEL, reasoning: { effort: 'high' },",
+      ),
+    });
+
+    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
+      'EVE_SDK_FEATURE_UNAVAILABLE',
+    ]);
+    expect(
+      result.evidence.some(
+        ({ agentId, kind }) => agentId === 'support' && kind === 'agent-definition',
+      ),
+    ).toBe(false);
   });
 
   test('is deterministic for reversed entries and concurrent inspections', async () => {

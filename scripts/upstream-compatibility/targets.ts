@@ -176,12 +176,22 @@ export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze
   {
     companionPackages: ['zod@4.3.6'],
     family: 'eve',
-    fixture: 'current',
+    fixture: 'agent-schema-before',
     integrity:
       'sha512-oJkQdVrlmb1GFeaSUNY6IF71ttXjQdFnkKQP+84Qlvs/M+fUqMjGTqnwevQ+qFvc8KCswo3cbBohKOCGdgZPFg==',
     packageName: 'eve',
     sourceReference: 'https://github.com/vercel/eve/releases/tag/eve%400.66.3',
     version: '0.66.3',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'eve',
+    fixture: 'current',
+    integrity:
+      'sha512-eMN9wSmGEeCcEffoB238DOx/iqisNmvc+VCLasJ2MssCB5pdmIbm4GX/KUVJARxP3twCxB7VOvy5N9w4BHOb4w==',
+    packageName: 'eve',
+    sourceReference: 'https://registry.npmjs.org/eve/0.67.0',
+    version: '0.67.0',
   },
   {
     companionPackages: [],

@@ -71,6 +71,7 @@ export interface IEvePackageObservation {
 }
 
 export interface IEveInspectedPackage {
+  readonly agentOutputSchemaBehavior: IVersionBehavior | null;
   readonly availableInSubagentsBehavior: IVersionBehavior | null;
   readonly declaredRange: string | null;
   readonly defaultToolBehavior: IVersionBehavior | null;

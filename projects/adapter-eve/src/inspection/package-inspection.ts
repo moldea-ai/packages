@@ -7,6 +7,7 @@ import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import {
   EVE_ADAPTER_ID,
+  EVE_AGENT_OUTPUT_SCHEMA_REMOVAL_VERSION,
   EVE_DEFAULT_TOOLS_BOUNDARY_VERSION,
   EVE_DEFAULT_TOOLS_OPTION_BOUNDARY_VERSION,
   EVE_TARGET_ID,
@@ -81,6 +82,10 @@ export const inspectEvePackage = async (
   );
 
   return Object.freeze({
+    agentOutputSchemaBehavior: classifyVersionBehavior(
+      observation.declarations,
+      EVE_AGENT_OUTPUT_SCHEMA_REMOVAL_VERSION,
+    ),
     availableInSubagentsBehavior: classifyVersionBehavior(
       observation.declarations,
       EVE_SUBAGENT_TOOL_EXPOSURE_BOUNDARY_VERSION,

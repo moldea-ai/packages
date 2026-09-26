@@ -21,6 +21,7 @@ export interface IUpstreamTarget {
     | 'exposure-boundary'
     | 'defaults-boundary'
     | 'exclusion-boundary'
+    | 'agent-schema-before'
     | 'current';
   readonly integrity: string;
   readonly packageName: string;

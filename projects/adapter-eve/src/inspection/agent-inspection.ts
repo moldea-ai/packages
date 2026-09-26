@@ -5,6 +5,7 @@ import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 
 import {
   EVE_ADAPTER_ID,
+  EVE_AGENT_OUTPUT_SCHEMA_REMOVAL_VERSION,
   EVE_DEFAULT_TOOLS_OPTION_BOUNDARY_VERSION,
   EVE_SUBAGENT_MODEL_VISIBILITY_BOUNDARY_VERSION,
   EVE_TARGET_ID,
@@ -159,8 +160,40 @@ export const inspectEveAgent = async (
     return null;
   }
 
+  if (definition.kind !== 'present-supported') {
+    return null;
+  }
+
+  const outputSchema = agent.declaration.bindings?.outputSchema;
+
+  if (definition.properties.has('outputSchema') || outputSchema !== undefined) {
+    if (inspectedPackage.agentOutputSchemaBehavior === 'after') {
+      addEveDiagnostic(
+        diagnostics,
+        'EVE_SDK_FEATURE_UNAVAILABLE',
+        runtimeAgent.path,
+        agent.id,
+        null,
+        undefined,
+        undefined,
+        { feature: 'agent-output-schema' },
+      );
+      return null;
+    }
+
+    if (inspectedPackage.agentOutputSchemaBehavior === null) {
+      addEveWarning(diagnostics, runtimeAgent.path, agent.id, {
+        boundaryVersion: EVE_AGENT_OUTPUT_SCHEMA_REMOVAL_VERSION,
+        declaredRange: inspectedPackage.declaredRange,
+        packageName: 'eve',
+        reason: 'version-dependent-behavior',
+        relationship: outputSchema === undefined ? 'runtime-agent' : 'agent-output-schema',
+      });
+      return null;
+    }
+  }
+
   if (
-    definition.kind !== 'present-supported' ||
     [...definition.properties].some(
       ([key, property]) => !POSITIVE_AGENT_KEYS.has(key) || !ts.isPropertyAssignment(property),
     )
@@ -238,8 +271,6 @@ export const inspectEveAgent = async (
       source: EVE_ADAPTER_ID,
     }),
   );
-
-  const outputSchema = agent.declaration.bindings?.outputSchema;
 
   if (outputSchema !== undefined && outputSchema.symbol !== undefined) {
     const schemaSource = await session.analyzeSource(outputSchema.path);

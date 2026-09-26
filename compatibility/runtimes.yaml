@@ -514,8 +514,8 @@ adapters:
             relationship: full
             symbol: partial
           output-schema:
-            relationship: full
-            symbol: full
+            relationship: partial
+            symbol: partial
           instruction-loader:
             relationship: partial
             symbol: partial
@@ -664,7 +664,7 @@ adapters:
             description: Eve reserves exact Workflow for its runtime workflow tool and rejects an authored tool with that flattened name.
             reference: 'eve@0.39.1 WORKFLOW_TOOL_NAME'
         knownLimitations:
-          - Positive agent-definition evidence requires the closed defineAgent object to use model plus optional description, outputSchema, defaultTools, and tool, with a supported static model string and version-eligible options. Every other verified Eve agent option remains present-unsupported until a future target validates its nested runtime shape; dynamic models and sibling overrides therefore cannot produce optimistic evidence.
+          - Positive agent-definition evidence requires the closed defineAgent object to use model plus optional description, defaultTools, and tool, with a supported static model string and version-eligible options. Directly bound agent outputSchema is supported only before Eve 0.67.0; authored or bound agent schemas on newer declarations are confirmed feature errors, while spanning declarations leave dependent evidence unverified. Tool outputSchema remains supported. Every other verified Eve agent option remains present-unsupported until a future target validates its nested runtime shape; dynamic models and sibling overrides therefore cannot produce optimistic evidence.
           - The adapter analyzes exact bound static agent.ts roots in flat, nested, and workspace layouts plus directory-backed local descendants; a configuration-free Eve root or single-file local subagent produces no positive target-specific definition or handoff evidence.
           - Only direct TypeScript default exports, exact Eve helper imports, and limited relative named-import resolution are supported; path aliases, package exports, directory indexes, CommonJS, re-exports, wrappers, and arbitrary compiler resolution remain unresolved.
           - The adapter parses only .ts authored modules. It inspects .cts, .mts, .cjs, .mjs, .ts, and .js entry names only to prevent false positive evidence when an Eve filesystem slot or local-subagent identity is collided.
@@ -680,8 +680,8 @@ adapters:
           - Eve 0.39.x requires Node.js 24 or newer for the inspected application runtime. The adapter records but does not validate that application prerequisite and may itself run on another adapter-supported Node.js line.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/eve/typescript-filesystem-agent-0-39/'
-        lastVerifiedAt: '2026-09-25'
-    lastVerifiedAt: '2026-09-25'
+        lastVerifiedAt: '2026-09-26'
+    lastVerifiedAt: '2026-09-26'
   google-genai:
     implementation:
       kind: package

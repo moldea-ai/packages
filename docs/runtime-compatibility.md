@@ -292,7 +292,7 @@ Runtime guidance notes: Project-local guidance defines the custom runtime integr
 - Supported repository-format versions: `1`
 - Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-09-25`
+- Last verified: `2026-09-26`
 
 Runtime guidance notes: Project-local guidance is needed only for unsupported dynamic capabilities, extensions, remote agents, non-canonical or composed instructions, positive single-file subagent analysis, Markdown skill registration, framework-tool overrides, or other repository-specific Eve patterns outside the verified static filesystem target.
 
@@ -301,7 +301,7 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `schema`, `skill-registration`, `tool-registration`
-- Last verified: `2026-09-25`
+- Last verified: `2026-09-26`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/eve/typescript-filesystem-agent-0-39/)
 
 | Ecosystem | Package | Role      | Eligible versions |
@@ -313,7 +313,7 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 | Subject                | Relationship | Symbol    |
 | ---------------------- | ------------ | --------- |
 | `runtime-agent`        | `full`       | `partial` |
-| `output-schema`        | `full`       | `full`    |
+| `output-schema`        | `partial`    | `partial` |
 | `instruction-loader`   | `partial`    | `partial` |
 | `tool-implementation`  | `full`       | `partial` |
 | `tool-registration`    | `full`       | `partial` |
@@ -371,7 +371,7 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 - Extension declarations and contributions are not interpreted. Observable extension mount names participate only in conservative namespace-prefix preflight so root contributions cannot receive false registration evidence under a prefix Eve reserves for a mounted extension.
 - Flat and packaged Markdown skill paths may establish implementation-path relationships, but the target emits no Markdown skill-registration evidence because it does not reproduce Eve frontmatter acceptance and collision resolution.
 - Only direct TypeScript default exports, exact Eve helper imports, and limited relative named-import resolution are supported; path aliases, package exports, directory indexes, CommonJS, re-exports, wrappers, and arbitrary compiler resolution remain unresolved.
-- Positive agent-definition evidence requires the closed defineAgent object to use model plus optional description, outputSchema, defaultTools, and tool, with a supported static model string and version-eligible options. Every other verified Eve agent option remains present-unsupported until a future target validates its nested runtime shape; dynamic models and sibling overrides therefore cannot produce optimistic evidence.
+- Positive agent-definition evidence requires the closed defineAgent object to use model plus optional description, defaultTools, and tool, with a supported static model string and version-eligible options. Directly bound agent outputSchema is supported only before Eve 0.67.0; authored or bound agent schemas on newer declarations are confirmed feature errors, while spanning declarations leave dependent evidence unverified. Tool outputSchema remains supported. Every other verified Eve agent option remains present-unsupported until a future target validates its nested runtime shape; dynamic models and sibling overrides therefore cannot produce optimistic evidence.
 - Recursive static tools and direct Workflow tool declarations are supported. Static prepared-name effects from authored tools, versioned framework defaults, and unresolved same-name override candidates participate in registration preflight; dynamic, extension, connection, provider, disable-sentinel, and durable Workflow execution semantics remain outside the target.
 - The adapter analyzes exact bound static agent.ts roots in flat, nested, and workspace layouts plus directory-backed local descendants; a configuration-free Eve root or single-file local subagent produces no positive target-specific definition or handoff evidence.
 - The adapter parses only .ts authored modules. It inspects .cts, .mts, .cjs, .mjs, .ts, and .js entry names only to prevent false positive evidence when an Eve filesystem slot or local-subagent identity is collided.

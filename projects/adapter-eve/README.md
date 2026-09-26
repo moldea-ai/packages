@@ -28,11 +28,11 @@ Version `4.0.0` supports Repository Format `1`, `@moldea.ai/core ^5.0.0`, and di
 - recursive `defineTool(...)` modules
 - direct `defineWorkflowTool(...)` modules from Eve `0.52.0`, including declared background execution and, from `0.61.0`, subagent exposure
 - TypeScript `defineSkill(...)` modules
-- direct output, input, and output-schema relationships
+- direct agent output schemas before Eve `0.67.0`, plus tool input and output schemas
 
 The adapter reads source through the Repository contract. It does not execute Eve, import inspected modules, resolve installed packages, read lockfiles, or write to the repository.
 
-Eve `0.52.2` adds `defaultTools` and `task_cancel`; Eve `0.59.1` adds the subagent `tool` option; Eve `0.61.0` adds `availableInSubagents`; Eve `0.65.0` removes the `todo` and `ask_question` defaults; Eve `0.66.2` excludes test/spec tool and subagent files and `__tests__` paths. Earlier eligible releases keep their prior behavior. A spanning declared range produces a scoped warning only when a specific relationship changes across the boundary. The adapter does not prove that a Workflow runs durably or that a registered tool is exposed on every model turn.
+Eve `0.52.2` adds `defaultTools` and `task_cancel`; Eve `0.59.1` adds the subagent `tool` option; Eve `0.61.0` adds `availableInSubagents`; Eve `0.65.0` removes the `todo` and `ask_question` defaults; Eve `0.66.2` excludes test/spec tool and subagent files and `__tests__` paths; Eve `0.67.0` removes `defineAgent.outputSchema`. Earlier eligible releases keep their prior behavior. A spanning declared range produces a scoped warning only when a specific relationship changes across the boundary. An authored or bound agent output schema on Eve `0.67.0` is a confirmed feature error. Tool output schemas remain supported. The adapter does not prove that a Workflow runs durably or that a registered tool is exposed on every model turn.
 
 ## Public API
 

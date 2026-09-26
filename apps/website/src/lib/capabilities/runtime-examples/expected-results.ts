@@ -1371,7 +1371,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: null,
         capabilityKind: null,
         details: {
-          declaredRange: '^0.39.1',
+          declaredRange: '0.67.0',
           dependencyKind: 'dependencies',
           packageClassification: 'supported',
           targetId: 'typescript-filesystem-agent-0-39',
@@ -1390,7 +1390,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: null,
         capabilityKind: null,
         details: {
-          declaredRange: '^0.39.1',
+          declaredRange: '0.67.0',
           dependencyKind: 'dependencies',
           packageClassification: 'supported',
           targetId: 'typescript-filesystem-agent-0-39',
@@ -1402,23 +1402,6 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
           },
         ],
         runtimeName: null,
-        source: 'eve',
-      },
-      {
-        agentId: 'support',
-        capabilityId: null,
-        capabilityKind: null,
-        details: {
-          schemaRole: 'agent-output',
-        },
-        kind: 'schema',
-        references: [
-          {
-            path: '/agent/contracts.ts',
-            symbol: 'SupportOutputSchema',
-          },
-        ],
-        runtimeName: 'SupportOutputSchema',
         source: 'eve',
       },
       {
@@ -1494,7 +1477,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         source: 'eve',
       },
     ],
-    manifestDigest: 'sha256:57c6acbd72e25c90e7cb04c126f069abff050b56cc5ba117ea0ce1fd6dc8e421',
+    manifestDigest: 'sha256:9aea9f84d28e07bf896fec1721662e4ff8b7ee098da05733b1725ba43104bf05',
   },
   'google-generate-content': {
     valid: true,

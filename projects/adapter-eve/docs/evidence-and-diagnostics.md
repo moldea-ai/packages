@@ -51,3 +51,5 @@ The adapter may emit `runtime-package`, `language`, `agent-definition`, `instruc
 Diagnostics never include source snippets, descriptions, instructions, schema contents, credentials, URLs, host paths, or raw TypeScript diagnostic messages.
 
 `EVE_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+
+The Eve `0.67.0` removal of `defineAgent.outputSchema` applies only when an agent schema property or binding is present. A declaration confined to `0.67.0` or later produces `EVE_SDK_FEATURE_UNAVAILABLE` for that relationship. A range spanning the removal emits `EVE_RUNTIME_RELATIONSHIP_UNVERIFIED` and withholds dependent agent and handoff evidence. An unaffected agent and a tool `outputSchema` keep their independent evidence.

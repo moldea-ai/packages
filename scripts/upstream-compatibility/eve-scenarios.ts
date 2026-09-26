@@ -133,6 +133,12 @@ const prepareScenario = async (root: string, target: IUpstreamTarget): Promise<s
     await writeScenarioFile(root, 'agent/tools/__tests__/ignored.ts', 'export default (\n');
     await writeScenarioFile(root, 'agent/subagents/ignored.test.ts', 'export default (\n');
     await writeScenarioFile(root, 'agent/subagents/__tests__/agent.ts', 'export default (\n');
+  } else if (target.fixture === 'agent-schema-before') {
+    await writeScenarioFile(
+      root,
+      'agent/agent.ts',
+      "import { defineAgent } from 'eve'; import { z } from 'zod'; export default defineAgent({ model: 'openai/gpt-4.1', outputSchema: z.object({ answer: z.string() }) });\n",
+    );
   } else {
     throw new TypeError('The Eve upstream fixture is unsupported.');
   }
@@ -188,6 +194,10 @@ export const checkEveCompilerScenario = async (
     ) {
       throw new Error('Eve did not exclude test-file tool and subagent sources.');
     }
+  } else if (target.fixture === 'agent-schema-before') {
+    if (subagents.length !== 0) {
+      throw new Error('Eve did not compile the older agent output schema scenario.');
+    }
   } else {
     requireNames(subagents, ['summary', 'deep'], 'nested subagent');
     const peers = getRecords(compiled, 'remoteAgents');
@@ -207,6 +217,34 @@ export const checkEveCompilerScenario = async (
       handling.kind !== 'workflow-tool'
     ) {
       throw new Error('Eve did not compile the scoped workflow tool exposure.');
+    }
+
+    await writeScenarioFile(
+      root,
+      'agents/support/agent/agent.ts',
+      "import { defineAgent } from 'eve'; import { z } from 'zod'; export default defineAgent({ model: 'openai/gpt-4.1', outputSchema: z.object({ answer: z.string() }) });\n",
+    );
+    const rejectedSource = await execFileAsync(
+      process.execPath,
+      [cli, 'info', '--agent', 'support'],
+      {
+        cwd: root,
+        maxBuffer: 2_097_152,
+        timeout: 120_000,
+      },
+    ).then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+    if (
+      typeof rejectedSource !== 'object' ||
+      rejectedSource === null ||
+      !('stderr' in rejectedSource) ||
+      typeof rejectedSource.stderr !== 'string' ||
+      !rejectedSource.stderr.includes('outputSchema')
+    ) {
+      throw new Error('Eve did not reject the removed agent outputSchema field.');
     }
   }
 };

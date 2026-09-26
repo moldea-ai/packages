@@ -10,7 +10,9 @@ Read this example before searching adapter implementation for binding syntax. It
 
 ## How the bindings connect
 
-Use `symbol: default` for directly default-exported Eve agents and tools. The `instructionLoader` points to the exact `instructions.md` path without a symbol; `mirrors` makes that file an exact copy of the owner's canonical instruction. `outputSchema` binds the exported schema used by `defineAgent`. A subagent's static `description` must match its canonical `handoff-description.md` (or canonical description when no handoff description exists). Register the child agent itself, not a synthetic handoff tool. Do not attach package or compiler files to every agent mechanically.
+This example pins Eve `0.66.3`, the last verified release that accepts `defineAgent.outputSchema`. The `outputSchema` binding below names that older agent-definition property; Eve `0.67.0` removes it. For newer Eve, omit both the agent property and its manifest binding. Tool output schemas are independent and remain supported.
+
+Use `symbol: default` for directly default-exported Eve agents and tools. The `instructionLoader` points to the exact `instructions.md` path without a symbol; `mirrors` makes that file an exact copy of the owner's canonical instruction. A subagent's static `description` must match its canonical `handoff-description.md` (or canonical description when no handoff description exists). Register the child agent itself, not a synthetic handoff tool. Do not attach package or compiler files to every agent mechanically.
 
 Paths below are repository-root-relative logical paths. Keep the canonical instructions as the policy source. General manifest semantics belong to the [Repository Format specification](https://packages.moldea.ai/repository-format/). Use the other local guides for the full supported boundary and limitations; this example does not expand them.
 
@@ -72,7 +74,7 @@ agents:
 {
   "name": "binding-example",
   "dependencies": {
-    "eve": "^0.39.1",
+    "eve": "0.66.3",
     "zod": "4.6.4"
   },
   "private": true,

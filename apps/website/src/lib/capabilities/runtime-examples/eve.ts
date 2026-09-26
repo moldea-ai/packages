@@ -90,3 +90,42 @@ export const EVE_FILES: IMemoryRepositoryEntry[] = [
       "import { defineAgent } from 'eve';\nexport default defineAgent({ description: 'Summarizes a support request.', model: 'provider/model' });\n",
   },
 ];
+
+// current Eve removes the agent schema relationship; older witnesses retain it
+export const EVE_CURRENT_FILES: IMemoryRepositoryEntry[] = EVE_FILES.map((entry) => {
+  if (entry.type !== 'file' || typeof entry.content !== 'string') {
+    return entry;
+  }
+
+  if (entry.path === '/package.json') {
+    return { ...entry, content: entry.content.replace('^0.39.1', '0.67.0') };
+  }
+
+  if (entry.path === '/moldea/moldea.yaml') {
+    return {
+      ...entry,
+      content: entry.content.replace(
+        '      outputSchema:\n        path: /agent/contracts.ts\n        symbol: SupportOutputSchema\n',
+        '',
+      ),
+    };
+  }
+
+  if (entry.path === '/agent/agent.ts') {
+    return {
+      ...entry,
+      content: entry.content
+        .replace("import { SupportOutputSchema } from './contracts.js';\n", '')
+        .replace(', outputSchema: SupportOutputSchema', ''),
+    };
+  }
+
+  if (entry.path === '/agent/contracts.ts') {
+    return {
+      ...entry,
+      content: entry.content.replace('export const SupportOutputSchema = {};\n', ''),
+    };
+  }
+
+  return entry;
+});
