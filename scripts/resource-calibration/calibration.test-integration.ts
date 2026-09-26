@@ -48,6 +48,9 @@ describe('complete-workflow resource calibration', () => {
         expect(sample.outputBytes).toBeGreaterThan(0);
         expect(sample.snapshotAccesses).toBeGreaterThan(0);
         expect(sample.snapshotAttempts).toBe(1);
+        expect(sample.logicalPeakRetainedBytes).toBeGreaterThan(0);
+        expect(sample.logicalPreparedBytes).toBeGreaterThan(0);
+        expect(sample.peakHeapBytes).toBeGreaterThanOrEqual(sample.heapBaselineBytes);
       }
     }
     expect(

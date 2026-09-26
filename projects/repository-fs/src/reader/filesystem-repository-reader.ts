@@ -37,6 +37,8 @@ import {
   type INormalizedFilesystemRepositoryReaderOptions,
 } from '../options/index.js';
 
+import { cacheFilePage, type ICachedFilePage } from './page-cache.js';
+
 interface ICursorFrame {
   readonly lastName: string | null;
   readonly namesIdentity: string;
@@ -65,11 +67,6 @@ type IFilesystemCursor = IDirectoryCursor | IPathCursor;
 interface IRuntimeCursorFrame extends ICursorFrame {
   readonly names: readonly string[];
   readonly nextIndex: number;
-}
-
-interface ICachedFilePage {
-  readonly bytes: Uint8Array;
-  readonly entryIdentity: string;
 }
 
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
@@ -534,31 +531,17 @@ class FilesystemRepositoryReader implements IRepositoryReader {
         bytesToRead,
         options.signal,
       );
-      this.#cachePage(cacheKey, bytes, entryIdentity);
+      this.#cachedBytes = cacheFilePage(
+        this.#cache,
+        this.#cachedBytes,
+        cacheKey,
+        bytes,
+        entryIdentity,
+        this.#limits.maxCachedBytes,
+      );
 
       return this.#createFilePage(bytes.slice(), entry.byteLength, offset);
     });
-  }
-
-  #cachePage(cacheKey: string, bytes: Uint8Array, entryIdentity: string): void {
-    if (bytes.byteLength > this.#limits.maxCachedBytes) {
-      return;
-    }
-
-    while (this.#cachedBytes + bytes.byteLength > this.#limits.maxCachedBytes) {
-      const oldestKey = this.#cache.keys().next().value;
-
-      if (oldestKey === undefined) {
-        break;
-      }
-
-      const oldest = this.#cache.get(oldestKey);
-      this.#cache.delete(oldestKey);
-      this.#cachedBytes -= oldest?.bytes.byteLength ?? 0;
-    }
-
-    this.#cache.set(cacheKey, { bytes: bytes.slice(), entryIdentity });
-    this.#cachedBytes += bytes.byteLength;
   }
 
   #createFilePage(bytes: Uint8Array, totalBytes: number, offset: number): IRepositoryFilePage {
@@ -989,6 +972,8 @@ class FilesystemRepositoryReader implements IRepositoryReader {
         }
       }
 
+      await this.#observeEntry(logicalPath, operation);
+
       return names.sort();
     } catch (cause) {
       if (cause instanceof RepositorySourceException) {
@@ -1042,17 +1027,16 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     logicalPath: IRepositoryPath,
     operation: IRepositoryOperation,
   ): Promise<BigIntStats | null> {
+    const rootStatistics = await this.#assertRootUnchanged(operation, logicalPath);
+
     if (logicalPath === REPOSITORY_ROOT) {
-      try {
-        return await lstat(this.#rootDirectory, { bigint: true });
-      } catch (cause) {
-        return throwMappedHostError(cause, operation, logicalPath);
-      }
+      return rootStatistics;
     }
 
     const segments = logicalPath.slice(1).split('/');
     let currentPath = REPOSITORY_ROOT;
     let statistics: BigIntStats | null = null;
+    const parentIdentities: { path: IRepositoryPath; identity: string }[] = [];
 
     for (const [index, segment] of segments.entries()) {
       if (!(await this.#hasExactChildName(currentPath, segment, operation))) {
@@ -1072,9 +1056,61 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       if (index < segments.length - 1 && !statistics.isDirectory()) {
         return null;
       }
+
+      if (index < segments.length - 1) {
+        parentIdentities.push({
+          identity: getStatisticsIdentity(statistics, 'directory'),
+          path: currentPath,
+        });
+      }
     }
 
+    for (const parent of parentIdentities) {
+      let currentStatistics: BigIntStats;
+
+      try {
+        currentStatistics = await lstat(this.#getHostPath(parent.path), { bigint: true });
+      } catch (cause) {
+        return throwMappedHostError(cause, operation, parent.path);
+      }
+
+      if (
+        !currentStatistics.isDirectory() ||
+        getStatisticsIdentity(currentStatistics, 'directory') !== parent.identity
+      ) {
+        return throwSource('SNAPSHOT_CHANGED', operation, parent.path, true);
+      }
+    }
+
+    await this.#assertRootUnchanged(operation, logicalPath);
+
     return statistics;
+  }
+
+  async #assertRootUnchanged(
+    operation: IRepositoryOperation,
+    logicalPath: IRepositoryPath,
+  ): Promise<BigIntStats> {
+    try {
+      const statistics = await lstat(this.#rootDirectory, { bigint: true });
+      const rootIdentity = this.#observations.get(REPOSITORY_ROOT);
+
+      if (
+        !statistics.isDirectory() ||
+        rootIdentity === undefined ||
+        getStatisticsIdentity(statistics, 'directory') !== rootIdentity
+      ) {
+        return throwSource('SNAPSHOT_CHANGED', operation, logicalPath, true);
+      }
+
+      return statistics;
+    } catch (cause) {
+      if (cause instanceof RepositorySourceException) {
+        throw cause;
+      }
+
+      return throwMappedHostError(cause, operation, logicalPath);
+    }
   }
 
   async #observeEntry(

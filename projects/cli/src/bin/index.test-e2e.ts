@@ -621,9 +621,47 @@ describe('published CLI package and executable', () => {
       writeFileSync(
         warningSourcePath,
         readFileSync(warningSourcePath, 'utf8').replace(
-          'system: dynamicSystem',
-          "system: 'Other instruction.'",
+          'tools: [registeredFindOrder]',
+          'tools: []',
         ),
+        'utf8',
+      );
+      const mixedValidation = executeWarningCase('validate');
+      expect(mixedValidation.status).toBe(1);
+      expect(JSON.parse(mixedValidation.stdout)).toMatchObject({
+        result: { errorCount: 1, warningCount: 1 },
+        status: 'invalid',
+      });
+      const mixedInspection = executeWarningCase('inspect');
+      expect(mixedInspection.status).toBe(1);
+      const mixedInspectionResult = JSON.parse(mixedInspection.stdout) as {
+        readonly result: {
+          readonly counts: { readonly errors: number; readonly warnings: number };
+          readonly page: {
+            readonly records: readonly { readonly code?: string; readonly severity?: string }[];
+          };
+        };
+      };
+      expect(mixedInspectionResult.result.counts).toMatchObject({ errors: 1, warnings: 1 });
+      expect(
+        mixedInspectionResult.result.page.records
+          .filter((record) => record.severity !== undefined)
+          .map(({ code, severity }) => ({ code, severity })),
+      ).toStrictEqual(
+        expect.arrayContaining([
+          {
+            code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+            severity: 'warning',
+          },
+          { code: 'ANTHROPIC_TOOL_REGISTRATION_NOT_WIRED', severity: 'error' },
+        ]),
+      );
+
+      writeFileSync(
+        warningSourcePath,
+        readFileSync(warningSourcePath, 'utf8')
+          .replace('system: dynamicSystem', "system: 'Other instruction.'")
+          .replace('tools: []', 'tools: [registeredFindOrder]'),
         'utf8',
       );
       const confirmedFailure = executeWarningCase('validate');

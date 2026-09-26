@@ -23,9 +23,13 @@ interface ICalibrationSample extends IReaderMetrics {
   cpuMilliseconds: number;
   elapsedMilliseconds: number;
   handoffRegistrations: number;
+  heapBaselineBytes: number;
   inspectionPages: number;
+  logicalPeakRetainedBytes: number;
+  logicalPreparedBytes: number;
   outputBytes: number;
   parserInvocations: number | null;
+  peakHeapBytes: number;
   peakRssBytes: number;
   records: number;
 }
@@ -111,9 +115,13 @@ const measure = async (
     detailed: true,
   });
 
-  let peakRssBytes = process.memoryUsage().rss;
+  const baselineMemory = process.memoryUsage();
+  let peakHeapBytes = baselineMemory.heapUsed;
+  let peakRssBytes = baselineMemory.rss;
   const memorySampler = setInterval(() => {
-    peakRssBytes = Math.max(peakRssBytes, process.memoryUsage().rss);
+    const memory = process.memoryUsage();
+    peakHeapBytes = Math.max(peakHeapBytes, memory.heapUsed);
+    peakRssBytes = Math.max(peakRssBytes, memory.rss);
   }, 5);
   const startCpu = process.cpuUsage();
   const startTime = performance.now();
@@ -150,7 +158,9 @@ const measure = async (
 
     const elapsedMilliseconds = performance.now() - startTime;
     const cpu = process.cpuUsage(startCpu);
-    peakRssBytes = Math.max(peakRssBytes, process.memoryUsage().rss);
+    const finalMemory = process.memoryUsage();
+    peakHeapBytes = Math.max(peakHeapBytes, finalMemory.heapUsed);
+    peakRssBytes = Math.max(peakRssBytes, finalMemory.rss);
     const coverage = await postInspector<Parameters<typeof countSourceParses>[0]>(
       inspector,
       'Profiler.takePreciseCoverage',
@@ -161,9 +171,13 @@ const measure = async (
       cpuMilliseconds: (cpu.user + cpu.system) / 1_000,
       elapsedMilliseconds,
       handoffRegistrations,
+      heapBaselineBytes: baselineMemory.heapUsed,
       inspectionPages,
+      logicalPeakRetainedBytes: inspection.resourceUsage.peakRetainedBytes,
+      logicalPreparedBytes: inspection.resourceUsage.preparedBytes,
       outputBytes,
       parserInvocations: countSourceParses(coverage),
+      peakHeapBytes,
       peakRssBytes,
       records,
     };

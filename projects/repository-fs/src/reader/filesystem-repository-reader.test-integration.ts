@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import {
@@ -121,6 +122,69 @@ describe('filesystem repository reader', () => {
     );
   });
 
+  test('rejects a selected root replaced by a symlink before reading outside files', async () => {
+    const suiteDirectory = await mkdtemp(path.join(tmpdir(), 'moldea-root-drift-'));
+    const rootDirectory = path.join(suiteDirectory, 'root');
+    const outsideDirectory = path.join(suiteDirectory, 'outside');
+    const secretPath = parseRepositoryPath('/secret.txt');
+
+    try {
+      await mkdir(rootDirectory);
+      await mkdir(outsideDirectory);
+      await writeFile(path.join(outsideDirectory, 'secret.txt'), 'outside content');
+      const reader = await createFilesystemRepositoryReader({
+        rootDirectory,
+        selection: { kind: 'directory' },
+      });
+
+      await rename(rootDirectory, path.join(suiteDirectory, 'original'));
+      await symlink(outsideDirectory, rootDirectory, 'dir');
+
+      await expectToRejectCode(reader.getEntry(secretPath), 'SNAPSHOT_CHANGED');
+      await expectToRejectCode(reader.listEntriesPage({ maxEntries: 4 }), 'SNAPSHOT_CHANGED');
+      await expectToRejectCode(
+        reader.readFilePage(secretPath, { maxBytes: 32, offset: 0 }),
+        'SNAPSHOT_CHANGED',
+      );
+    } finally {
+      await rm(suiteDirectory, { force: true, recursive: true });
+    }
+  });
+
+  test('rejects a previously read file when its parent becomes a symlink', async () => {
+    const suiteDirectory = await mkdtemp(path.join(tmpdir(), 'moldea-parent-drift-'));
+    const rootDirectory = path.join(suiteDirectory, 'root');
+    const parentDirectory = path.join(rootDirectory, 'nested', 'deep');
+    const outsideDirectory = path.join(suiteDirectory, 'outside');
+    const logicalPath = parseRepositoryPath('/nested/deep/file.txt');
+
+    try {
+      await mkdir(parentDirectory, { recursive: true });
+      await mkdir(outsideDirectory);
+      await writeFile(path.join(parentDirectory, 'file.txt'), 'selected content');
+      await writeFile(path.join(outsideDirectory, 'file.txt'), 'outside content');
+      const reader = await createFilesystemRepositoryReader({
+        rootDirectory,
+        selection: { kind: 'directory' },
+      });
+
+      await expect(
+        reader.readFilePage(logicalPath, { maxBytes: 32, offset: 0 }),
+      ).resolves.toMatchObject({
+        bytes: new TextEncoder().encode('selected content'),
+      });
+      await rename(parentDirectory, path.join(rootDirectory, 'nested', 'original'));
+      await symlink(outsideDirectory, parentDirectory, 'dir');
+
+      await expectToRejectCode(
+        reader.readFilePage(logicalPath, { maxBytes: 32, offset: 0 }),
+        'SNAPSHOT_CHANGED',
+      );
+    } finally {
+      await rm(suiteDirectory, { force: true, recursive: true });
+    }
+  });
+
   test('pages only selected paths and their directory parents', async () => {
     const reader = await createFilesystemRepositoryReader({
       rootDirectory: fixtures.primary.rootDirectory,
@@ -228,6 +292,35 @@ describe('filesystem repository reader', () => {
     await expect(oversizedRead).rejects.toMatchObject({
       resource: { dimension: 'readBytes', limit: 2, observed: 3 },
     });
+  });
+
+  test('bounds concurrent work, cancels queued reads, and releases the active slot', async () => {
+    const logicalPath = parseRepositoryPath('/nested/deep/data.bin');
+    const reader = await createFilesystemRepositoryReader({
+      limits: { maxConcurrentOperations: 1, maxQueuedOperations: 1 },
+      rootDirectory: fixtures.primary.rootDirectory,
+      selection: { kind: 'directory' },
+    });
+    const controller = new AbortController();
+    const firstRead = reader.readFilePage(logicalPath, { maxBytes: 2, offset: 0 });
+    const queuedRead = reader.readFilePage(logicalPath, {
+      maxBytes: 2,
+      offset: 0,
+      signal: controller.signal,
+    });
+    const overflowRead = reader.readFilePage(logicalPath, { maxBytes: 2, offset: 0 });
+    const queuedFailure = expectToRejectCode(queuedRead, 'ABORTED');
+    const overflowFailure = expectToRejectCode(overflowRead, 'RESOURCE_LIMIT_EXCEEDED');
+
+    controller.abort();
+
+    await Promise.all([queuedFailure, overflowFailure]);
+    await expect(firstRead).resolves.toMatchObject({
+      bytes: fixtures.primary.fileBytes.slice(0, 2),
+    });
+    await expect(
+      reader.readFilePage(logicalPath, { maxBytes: 2, offset: 0 }),
+    ).resolves.toMatchObject({ bytes: fixtures.primary.fileBytes.slice(0, 2) });
   });
 
   test('stops streaming a wide directory at the configured entry limit', async () => {

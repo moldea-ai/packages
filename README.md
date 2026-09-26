@@ -37,7 +37,7 @@ API and HTTP endpoint documentation belongs in the owning project's established 
 - [Repository Format version `1` specification](specifications/repository-format.md): the public format contract; `@moldea.ai/core` is its executable reference implementation.
 - [Local development](docs/local-development.md): commands, builds, tests, and packed-consumer checks.
 - [npm releases](docs/npm-releases.md): version selection, preparation, publication, and recovery.
-- [Launch readiness](docs/launch-readiness.md): milestone verification, resource calibration, and remaining package audit work.
+- [Launch readiness](docs/launch-readiness.md): milestone verification, resource calibration, package audits, and final release gates.
 - [Runtime compatibility](docs/runtime-compatibility.md): generated presentation of [`compatibility/runtimes.yaml`](compatibility/runtimes.yaml).
 - [Packages website](apps/website/README.md): website source model, verification, and deployment.
 - `projects/<project>/README.md` and `projects/<project>/docs/**`: public package behavior and API documentation.
