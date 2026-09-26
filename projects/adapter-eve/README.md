@@ -19,7 +19,7 @@ const core = createCore({ adapters: [eveAdapter] });
 
 ## Verified target
 
-Version `4.0.0` supports Repository Format `1`, `@moldea.ai/core ^5.0.0`, and direct TypeScript Eve filesystem agents whose declared Eve range intersects `eve >=0.39.1`. Eve `0.39.1` is the verified minimum. Later stable releases remain eligible; the adapter interprets recognized behavior changes from the declared range and leaves a version-dependent relationship unverified when that range spans incompatible behaviors. Qualification evidence records the exact package versions and date used for each execution. The target recognizes:
+Version `4.0.1` supports Repository Format `1`, `@moldea.ai/core ^5.0.0`, and direct TypeScript Eve filesystem agents whose declared Eve range intersects `eve >=0.39.1`. Eve `0.39.1` is the verified minimum. Later stable releases remain eligible; the adapter interprets recognized behavior changes from the declared range and leaves a version-dependent relationship unverified when that range spans incompatible behaviors. Qualification evidence records the exact package versions and date used for each execution. The target recognizes:
 
 - flat and nested root `agent.ts` definitions
 - recursive directory-backed local subagents
