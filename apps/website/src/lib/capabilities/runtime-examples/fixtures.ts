@@ -202,6 +202,40 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     files: EVE_FILES,
   },
   {
+    id: 'eve-workflow-tool',
+    adapter: eveAdapter,
+    title: 'A declared workflow tool',
+    description:
+      'The source establishes a workflow executor and its declared background and subagent exposure settings.',
+    files: overrideFiles(EVE_FILES, {
+      '/package.json': '{"name":"@acme/support-app","dependencies":{"eve":"0.66.3"}}',
+      '/agent/implementations.ts':
+        "export async function searchKnowledge() { 'use workflow'; return { matches: [] }; }\n",
+      '/agent/tools/search.ts': source(EVE_FILES, '/agent/tools/search.ts')
+        .replace('defineTool', 'defineWorkflowTool')
+        .replace('defineTool(', 'defineWorkflowTool(')
+        .replace(
+          'execute: searchKnowledge',
+          "availableInSubagents: false, execution: 'background', execute: searchKnowledge",
+        ),
+    }),
+  },
+  {
+    id: 'eve-excluded-test-tool',
+    adapter: eveAdapter,
+    title: 'Test modules stay outside the tool registry',
+    description: 'Eve 0.66.2 excludes a declared test module from filesystem tool registration.',
+    files: overrideFiles(EVE_FILES, {
+      '/package.json': '{"name":"@acme/support-app","dependencies":{"eve":"0.66.2"}}',
+      '/moldea/moldea.yaml': eveManifest.replaceAll(
+        '/agent/tools/search.ts',
+        '/agent/tools/search.test.ts',
+      ),
+      '/agent/tools/search.ts': null,
+      '/agent/tools/search.test.ts': source(EVE_FILES, '/agent/tools/search.ts'),
+    }),
+  },
+  {
     id: 'google-generate-content',
     adapter: googleGenAiAdapter,
     title: 'A generate-content request with declared functions',
@@ -449,6 +483,51 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     })),
   },
   {
+    id: 'eve-workspace-peer',
+    adapter: eveAdapter,
+    title: 'A workspace agent delegates to a registered peer',
+    description:
+      'The workspace reference resolves only through the declared research agent and preserves the local summary edge.',
+    files: [
+      ...EVE_FILES.map((entry) => ({
+        ...entry,
+        path: entry.path.replace(/^\/agent\//u, '/agents/support/agent/'),
+        ...(entry.type === 'file' && typeof entry.content === 'string'
+          ? {
+              content:
+                entry.path === '/package.json'
+                  ? '{"name":"@acme/support-app","dependencies":{"eve":"0.66.3"}}'
+                  : entry.path === '/moldea/moldea.yaml'
+                    ? `${entry.content.replaceAll('/agent/', '/agents/support/agent/')}  research:\n    runtime:\n      id: eve\n    bindings:\n      runtimeAgent:\n        path: /agents/research/agent/agent.ts\n        symbol: default\n`
+                    : entry.content,
+            }
+          : {}),
+      })),
+      {
+        path: '/agents/support/agent/subagents/research.ts',
+        type: 'file',
+        content:
+          "import { defineWorkspaceAgent } from 'eve'; export default defineWorkspaceAgent({ name: 'research' });\n",
+      },
+      {
+        path: '/agents/research/agent/agent.ts',
+        type: 'file',
+        content:
+          "import { defineAgent } from 'eve'; export default defineAgent({ description: 'Researches support requests.', model: 'provider/model' });\n",
+      },
+      {
+        path: '/moldea/agents/research/description.md',
+        type: 'file',
+        content: 'Researches support requests.\n',
+      },
+      {
+        path: '/moldea/agents/research/instruction.md',
+        type: 'file',
+        content: 'You are the `research` agent.\n',
+      },
+    ],
+  },
+  {
     id: 'eve-markdown-instruction',
     adapter: eveAdapter,
     title: 'A single Markdown instruction slot',
@@ -557,12 +636,30 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     adapter: eveAdapter,
     title: 'A subagent collides with a framework tool',
     description:
-      'The static namespace prevents claiming a handoff named glob. This does not establish turn-time tool availability.',
+      'The static namespace prevents claiming a handoff named bash. This does not establish turn-time tool availability.',
     files: EVE_FILES.map((entry) => ({
       ...entry,
-      path: entry.path.replaceAll('summary', 'glob'),
+      path: entry.path.replaceAll('summary', 'bash'),
       ...(entry.type === 'file' && typeof entry.content === 'string'
-        ? { content: entry.content.replaceAll('summary', 'glob') }
+        ? { content: entry.content.replaceAll('summary', 'bash') }
+        : {}),
+    })),
+  },
+  {
+    id: 'eve-removed-default',
+    adapter: eveAdapter,
+    title: 'A removed default frees its subagent name',
+    description: 'At Eve 0.65.0, todo no longer occupies the default tool namespace.',
+    files: EVE_FILES.map((entry) => ({
+      ...entry,
+      path: entry.path.replaceAll('summary', 'todo'),
+      ...(entry.type === 'file' && typeof entry.content === 'string'
+        ? {
+            content:
+              entry.path === '/package.json'
+                ? '{"name":"@acme/support-app","dependencies":{"eve":"0.65.0"}}'
+                : entry.content.replaceAll('summary', 'todo'),
+          }
         : {}),
     })),
   },

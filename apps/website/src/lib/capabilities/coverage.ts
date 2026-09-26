@@ -88,6 +88,10 @@ export const REQUIRED_CASE_IDS: string[] = [
   'cloudflare-think-configured-context',
   'cloudflare-think-ambiguous-context',
   'eve-filesystem',
+  'eve-workflow-tool',
+  'eve-excluded-test-tool',
+  'eve-workspace-peer',
+  'eve-removed-default',
   'google-generate-content',
   'google-mixed-generation',
   'langchain-create-agent',
@@ -1175,6 +1179,95 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
     ],
   },
   'eve/typescript-filesystem-agent-0-39': {
+    'workspace-root-agent': [
+      {
+        caseId: 'eve-workspace-peer',
+        source: {
+          path: '/agents/support/agent/agent.ts',
+          contains: 'export default defineAgent(',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'agent-definition',
+          agentId: 'support',
+          details: { agentKind: 'workspace', layout: 'workspace' },
+        },
+      },
+    ],
+    'workspace-subagent-reference': [
+      {
+        caseId: 'eve-workspace-peer',
+        source: {
+          path: '/agents/support/agent/subagents/research.ts',
+          contains: 'defineWorkspaceAgent(',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'handoff-registration',
+          agentId: 'support',
+          details: { registrationKind: 'workspace-subagent', targetAgentId: 'research' },
+        },
+      },
+    ],
+    'workflow-tool-declaration': [
+      {
+        caseId: 'eve-workflow-tool',
+        source: {
+          path: '/agent/tools/search.ts',
+          contains: 'defineWorkflowTool(',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: {
+            declaredAvailableInSubagents: 'disabled',
+            declaredExecution: 'background',
+            registrationKind: 'filesystem-workflow-tool',
+          },
+        },
+      },
+    ],
+    'subagent-tool-exposure': [
+      {
+        caseId: 'eve-workflow-tool',
+        source: {
+          path: '/agent/tools/search.ts',
+          contains: 'availableInSubagents: false',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: { declaredAvailableInSubagents: 'disabled' },
+        },
+      },
+    ],
+    'versioned-default-tool-namespace': [
+      {
+        caseId: 'eve-removed-default',
+        source: {
+          path: '/agent/subagents/todo/agent.ts',
+          contains: 'defineAgent(',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'handoff-registration',
+          agentId: 'support',
+          details: { targetAgentId: 'todo' },
+        },
+      },
+    ],
+    'test-source-exclusion': [
+      {
+        caseId: 'eve-excluded-test-tool',
+        source: {
+          path: '/agent/tools/search.test.ts',
+          contains: 'defineTool(',
+        },
+        witness: { kind: 'diagnostic', code: 'EVE_TOOL_REGISTRATION_NOT_WIRED' },
+      },
+    ],
     'nested-root-agent': [
       {
         caseId: 'eve-filesystem',
@@ -1378,7 +1471,7 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
       {
         caseId: 'eve-framework-namespace',
         source: {
-          path: '/agent/subagents/glob/agent.ts',
+          path: '/agent/subagents/bash/agent.ts',
           contains: 'defineAgent(',
         },
         witness: {
@@ -1448,7 +1541,7 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
       {
         caseId: 'eve-framework-namespace',
         source: {
-          path: '/agent/subagents/glob/agent.ts',
+          path: '/agent/subagents/bash/agent.ts',
           contains: 'defineAgent(',
         },
         witness: {

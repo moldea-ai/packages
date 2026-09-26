@@ -104,6 +104,86 @@ export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze
     version: '0.19.0',
   },
   {
+    companionPackages: ['zod@4.3.6'],
+    family: 'eve',
+    fixture: 'minimum',
+    integrity:
+      'sha512-HTd1A3/GsRKNpJ+6WEW4OEPAhWAId5IZ769hjuY3eJqj3cWeaEvBUDZSjUFjSDit63aqbfur0u7AH1m0JNr7EQ==',
+    packageName: 'eve',
+    sourceReference: 'https://registry.npmjs.org/eve/0.39.1',
+    version: '0.39.1',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'eve',
+    fixture: 'agent-options-boundary',
+    integrity:
+      'sha512-FM3aC2A3SCKQxtyhSNR5+CaIVlKJmTGb7rCqcuHEhZShDKo1IXCTt/F7r4toqkLDG6lW7VcStTku77KWiosLfg==',
+    packageName: 'eve',
+    sourceReference: 'https://registry.npmjs.org/eve/0.52.2',
+    version: '0.52.2',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'eve',
+    fixture: 'visibility-boundary',
+    integrity:
+      'sha512-YTOPZXZAQSL1/sG8MEoAeZESGfvMaaCniMeKI2Whhst5Buj8PG37Fh2Po2SjXXdvP0NtqdrbmG38L9ZX2llTBw==',
+    packageName: 'eve',
+    sourceReference: 'https://registry.npmjs.org/eve/0.59.1',
+    version: '0.59.1',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'eve',
+    fixture: 'exposure-before',
+    integrity:
+      'sha512-hiKqy326LtGjL9vG23FlIm+8X2GPH+ZPzdH1CFvYMWvybV95coRc4tYWUKiVtLYijOoocdq2HCu54U0S+LPC+Q==',
+    packageName: 'eve',
+    sourceReference: 'https://registry.npmjs.org/eve/0.60.1',
+    version: '0.60.1',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'eve',
+    fixture: 'exposure-boundary',
+    integrity:
+      'sha512-el9Mm7VZW4QibR3WwUM3LsWDaqiyVJtv5JieREflVcTR3WkEn0kqeJ/wcbaZJ6+goTbi6yYO2tpEdWOhkIJQIg==',
+    packageName: 'eve',
+    sourceReference: 'https://registry.npmjs.org/eve/0.61.0',
+    version: '0.61.0',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'eve',
+    fixture: 'defaults-boundary',
+    integrity:
+      'sha512-16dcyvpucnMp6f1TKZROvRrDAYWIlV7ulZfEMK+IuK1AVXMQPoLLOrGuLT/qI1TjIkxZt9g1JcXXOv/uu3yjdQ==',
+    packageName: 'eve',
+    sourceReference: 'https://github.com/vercel/eve/releases/tag/eve%400.65.0',
+    version: '0.65.0',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'eve',
+    fixture: 'exclusion-boundary',
+    integrity:
+      'sha512-GPvfl78stQLocxM7Mq6Bzpiwlooiofb577OrhtyLx7wZSvgPg/L6wddRZTyIkbVLhoZYWYvnetAnwU+H448n7Q==',
+    packageName: 'eve',
+    sourceReference: 'https://github.com/vercel/eve/releases/tag/eve%400.66.2',
+    version: '0.66.2',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'eve',
+    fixture: 'current',
+    integrity:
+      'sha512-oJkQdVrlmb1GFeaSUNY6IF71ttXjQdFnkKQP+84Qlvs/M+fUqMjGTqnwevQ+qFvc8KCswo3cbBohKOCGdgZPFg==',
+    packageName: 'eve',
+    sourceReference: 'https://github.com/vercel/eve/releases/tag/eve%400.66.3',
+    version: '0.66.3',
+  },
+  {
     companionPackages: [],
     family: 'google-genai',
     fixture: 'minimum',

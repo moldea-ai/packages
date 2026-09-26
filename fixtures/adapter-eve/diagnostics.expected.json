@@ -31,12 +31,12 @@
   },
   {
     "code": "EVE_ROUTING_DESCRIPTION_MISSING",
-    "message": "The supported Eve local subagent definition is missing its routing description.",
+    "message": "The supported Eve subagent definition is missing its routing description.",
     "severity": "error"
   },
   {
     "code": "EVE_ROUTING_DESCRIPTION_NOT_WIRED",
-    "message": "The Eve local subagent description does not use the target effective routing description.",
+    "message": "The Eve subagent description does not use the target effective routing description.",
     "severity": "error"
   },
   {
@@ -48,6 +48,11 @@
     "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
     "message": "The declared runtime relationship could not be verified.",
     "severity": "warning"
+  },
+  {
+    "code": "EVE_SDK_FEATURE_UNAVAILABLE",
+    "message": "The declared Eve feature is unavailable in the eligible SDK versions.",
+    "severity": "error"
   },
   {
     "code": "EVE_SDK_VERSION_UNSUPPORTED",
@@ -92,6 +97,11 @@
   {
     "code": "EVE_SUBAGENT_PARENT_AMBIGUOUS",
     "message": "Multiple registered Eve agents map to the local subagent's immediate parent root.",
+    "severity": "error"
+  },
+  {
+    "code": "EVE_SUBAGENT_REGISTRATION_NOT_WIRED",
+    "message": "The declared Eve subagent is not discovered by the runtime.",
     "severity": "error"
   },
   {
@@ -156,7 +166,12 @@
   },
   {
     "code": "EVE_TOOL_SUBAGENT_NAME_COLLISION",
-    "message": "The Eve tool and local subagent use the same runtime tool name.",
+    "message": "The Eve tool and subagent use the same runtime tool name.",
+    "severity": "error"
+  },
+  {
+    "code": "EVE_WORKFLOW_EXECUTOR_NOT_WIRED",
+    "message": "The Eve workflow tool lacks a compiled use workflow executor.",
     "severity": "error"
   }
 ]

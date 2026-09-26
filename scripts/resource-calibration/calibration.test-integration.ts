@@ -53,5 +53,10 @@ describe('complete-workflow resource calibration', () => {
     expect(
       results.find((result) => result.workload === 'multi-page')?.samples[0]?.inspectionPages,
     ).toBeGreaterThan(1);
+    expect(
+      results
+        .find((result) => result.workload === 'broad-eve')
+        ?.samples.map((sample) => sample.handoffRegistrations),
+    ).toStrictEqual([81, 81, 81]);
   });
 });

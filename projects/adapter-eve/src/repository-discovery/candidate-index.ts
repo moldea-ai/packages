@@ -25,6 +25,10 @@ const getDirectRelativePath = (root: IRepositoryPath, path: IRepositoryPath): st
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 };
 
+const isAuthoredTestSource = (relativePath: string): boolean =>
+  relativePath.split('/').includes('__tests__') ||
+  /\.(?:test|spec)\.[cm]?[jt]s$/u.test(relativePath);
+
 const indexExtensionNamespaces = (
   root: IRepositoryPath,
   entries: readonly IRepositoryEntry[],
@@ -69,8 +73,19 @@ const indexExtensionNamespaces = (
   return namespaces;
 };
 
-const isExtensionReserved = (name: string, namespaces: ReadonlySet<string>): boolean =>
-  [...namespaces].some((namespace) => name.startsWith(`${namespace}__`));
+const isExtensionReserved = (name: string, namespaces: ReadonlySet<string>): boolean => {
+  let separator = name.indexOf('__');
+
+  while (separator >= 0) {
+    if (namespaces.has(name.slice(0, separator))) {
+      return true;
+    }
+
+    separator = name.indexOf('__', separator + 2);
+  }
+
+  return false;
+};
 
 const indexTools = (
   root: IRepositoryPath,
@@ -114,6 +129,7 @@ const indexTools = (
         isCollidedSlot: (slots.get(relativePath) ?? 0) > 1,
         isExtensionReserved: isExtensionReserved(segments[0] ?? '', namespaces),
         isSupportedSource: extension === '.ts',
+        isTestSource: isAuthoredTestSource(entry.path),
         path: entry.path,
         relativePath,
         runtimeName,
@@ -250,11 +266,11 @@ const indexSubagents = (
     raw.map((candidate) =>
       Object.freeze({
         agentPath: candidate.agentPath,
-        isDirectoryBacked:
-          candidate.kind === 'directory' &&
-          candidate.agentPath.endsWith('/agent.ts') &&
-          (identities.get(candidate.runtimeName) ?? 0) === 1,
+        isCollidedSlot: (identities.get(candidate.runtimeName) ?? 0) > 1,
         isExtensionReserved: isExtensionReserved(candidate.runtimeName, namespaces),
+        isSupportedSource: candidate.agentPath.endsWith('.ts'),
+        isTestSource: isAuthoredTestSource(candidate.agentPath),
+        kind: candidate.kind,
         runtimeName: candidate.runtimeName,
       }),
     ),

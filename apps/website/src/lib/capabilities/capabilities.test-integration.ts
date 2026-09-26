@@ -23,11 +23,11 @@ beforeAll(async () => {
 
 test('accounts for every release-owned operation, diagnostic, target, and inspected pattern', () => {
   const catalog = model.capabilities;
-  expect(catalog.cases).toHaveLength(141);
+  expect(catalog.cases).toHaveLength(145);
   expect(Object.keys(catalog.coreOperations)).toHaveLength(8);
   expect(Object.keys(catalog.diagnostics)).toHaveLength(82);
   expect(catalog.runtimeTargets).toHaveLength(14);
-  expect(catalog.runtimeTargets.flatMap(({ patterns }) => patterns)).toHaveLength(95);
+  expect(catalog.runtimeTargets.flatMap(({ patterns }) => patterns)).toHaveLength(101);
   expect(() =>
     validateCapabilities(catalog, model.runtimeCompatibilityPublication, sourcePaths),
   ).not.toThrow();

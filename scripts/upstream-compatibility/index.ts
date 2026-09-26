@@ -10,6 +10,6 @@ const results = await runUpstreamCompatibility(mode === 'latest');
 
 for (const result of results) {
   process.stdout.write(
-    `${result.family} ${result.version} ${result.integrity} typecheck=passed request-preparation=${result.requestPreparationChecked ? 'passed' : 'not-applicable'}\n`,
+    `${result.family} ${result.version} ${result.integrity} typecheck=passed compiler=${result.compilerChecked ? 'passed' : 'not-applicable'} request-preparation=${result.requestPreparationChecked ? 'passed' : 'not-applicable'}\n`,
   );
 }

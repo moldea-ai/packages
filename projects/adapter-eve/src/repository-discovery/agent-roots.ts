@@ -96,5 +96,41 @@ export const resolveEveAgentRoot = (
     });
   }
 
+  const workspaceRelative = path.slice(packageRoot === '/' ? 1 : packageRoot.length + 1);
+  const workspaceSegments = workspaceRelative.split('/');
+
+  if (
+    workspaceSegments.length === 4 &&
+    workspaceSegments[0] === 'agents' &&
+    workspaceSegments[1] !== undefined &&
+    isSafeRuntimeName(workspaceSegments[1]) &&
+    workspaceSegments[2] === 'agent' &&
+    workspaceSegments[3] === 'agent.ts'
+  ) {
+    return Object.freeze({
+      agentKind: 'workspace',
+      agentRoot: parseRepositoryPath(posix.dirname(path)),
+      layout: 'workspace',
+      parentRoot: null,
+      runtimeName: workspaceSegments[1],
+    });
+  }
+
+  if (
+    workspaceSegments[0] === 'agents' &&
+    workspaceSegments[1] !== undefined &&
+    isSafeRuntimeName(workspaceSegments[1]) &&
+    workspaceSegments[2] === 'agent'
+  ) {
+    const workspaceRoot = parseRepositoryPath(
+      posix.join(packageRoot, 'agents', workspaceSegments[1], 'agent'),
+    );
+    const localRoot = getLocalRoot(path, workspaceRoot, 'workspace');
+
+    if (localRoot !== null) {
+      return localRoot;
+    }
+  }
+
   return getLocalRoot(path, packageRoot, 'flat') ?? getLocalRoot(path, nestedRoot, 'nested');
 };

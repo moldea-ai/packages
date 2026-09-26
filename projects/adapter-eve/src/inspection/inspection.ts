@@ -6,12 +6,14 @@ import type {
 } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
-import type { IEveAgentDefinition } from '../contracts/index.js';
+import { EVE_TEST_EXCLUSION_BOUNDARY_VERSION } from '../constants/index.js';
+import type { IEveAgentDefinition, IEveWorkspaceSubagentRegistration } from '../contracts/index.js';
 import { inspectEveAgent } from './agent-inspection.js';
+import { addEveWarning } from './common.js';
 import { inspectEveInstructions } from './instruction-inspection.js';
 import { createEveInspectionSession } from './session.js';
 import { inspectEveSkills } from './skill-inspection.js';
-import { inspectEveSubagents } from './subagent-inspection.js';
+import { inspectEveSubagents, resolveEveWorkspaceSubagent } from './subagent-inspection.js';
 import { inspectEveTools } from './tool-inspection.js';
 
 /**
@@ -38,6 +40,7 @@ export const inspectEve = async (
   const evidence: IRuntimeAdapterEvidence[] = [];
   const diagnostics: IAdapterDiagnostic[] = [];
   const definitions: IEveAgentDefinition[] = [];
+  const workspaceRegistrations: IEveWorkspaceSubagentRegistration[] = [];
   const definition = await inspectEveAgent(session, context.agent, evidence, diagnostics);
 
   if (definition !== null) {
@@ -58,7 +61,7 @@ export const inspectEve = async (
 
   const ambiguousParentRoots = new Map<IRepositoryPath, number>();
 
-  if (definition?.root.agentKind === 'root') {
+  if (definition !== null) {
     const runtimeAgent = definition.agent.declaration.bindings?.runtimeAgent;
 
     if (runtimeAgent !== undefined) {
@@ -70,7 +73,46 @@ export const inspectEve = async (
     }
 
     for (const candidate of definition.rootIndex.subagentCandidates) {
-      if (!candidate.isDirectoryBacked || candidate.isExtensionReserved) {
+      if (candidate.kind === 'file') {
+        const registration = await resolveEveWorkspaceSubagent(
+          session,
+          context,
+          definition,
+          candidate,
+          diagnostics,
+        );
+
+        if (registration !== null) {
+          workspaceRegistrations.push(registration);
+        }
+        continue;
+      }
+
+      if (
+        !candidate.isSupportedSource ||
+        candidate.isCollidedSlot ||
+        candidate.isExtensionReserved
+      ) {
+        continue;
+      }
+
+      if (
+        candidate.isTestSource &&
+        definition.inspectedPackage.testExclusionBehavior !== 'before'
+      ) {
+        if (definition.inspectedPackage.testExclusionBehavior === null) {
+          const resolution = context.resolveAgent({ path: candidate.agentPath, symbol: 'default' });
+
+          if (resolution.kind === 'matched') {
+            addEveWarning(diagnostics, candidate.agentPath, definition.agent.id, {
+              boundaryVersion: EVE_TEST_EXCLUSION_BOUNDARY_VERSION,
+              declaredRange: definition.inspectedPackage.declaredRange,
+              packageName: 'eve',
+              reason: 'version-dependent-behavior',
+              relationship: 'handoff-registration',
+            });
+          }
+        }
         continue;
       }
 
@@ -84,12 +126,23 @@ export const inspectEve = async (
 
       if (relatedDefinition !== null) {
         definitions.push(relatedDefinition);
+        preparedToolNames.set(
+          relatedDefinition.agent.id,
+          await inspectEveTools(session, relatedDefinition, [], []),
+        );
       }
     }
   }
 
   context.signal?.throwIfAborted();
-  inspectEveSubagents(definitions, preparedToolNames, ambiguousParentRoots, evidence, diagnostics);
+  inspectEveSubagents(
+    definitions,
+    workspaceRegistrations,
+    preparedToolNames,
+    ambiguousParentRoots,
+    evidence,
+    diagnostics,
+  );
 
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),

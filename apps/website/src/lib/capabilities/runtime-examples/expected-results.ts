@@ -8067,11 +8067,11 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
           collisionKind: 'runtime-tool',
         },
         entity: {
-          agentId: 'glob',
+          agentId: 'bash',
           adapterId: 'eve',
         },
-        message: 'The Eve tool and local subagent use the same runtime tool name.',
-        path: '/agent/subagents/glob/agent.ts',
+        message: 'The Eve tool and subagent use the same runtime tool name.',
+        path: '/agent/subagents/bash/agent.ts',
         pointer: null,
         range: null,
         severity: 'error',
@@ -8080,23 +8080,23 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
     ],
     evidence: [
       {
-        agentId: 'glob',
+        agentId: 'bash',
         capabilityId: null,
         capabilityKind: null,
         details: {
           agentKind: 'local-subagent',
-          agentRoot: '/agent/subagents/glob',
+          agentRoot: '/agent/subagents/bash',
           layout: 'nested',
           targetId: 'typescript-filesystem-agent-0-39',
         },
         kind: 'agent-definition',
         references: [
           {
-            path: '/agent/subagents/glob/agent.ts',
+            path: '/agent/subagents/bash/agent.ts',
             symbol: 'default',
           },
         ],
-        runtimeName: 'glob',
+        runtimeName: 'bash',
         source: 'eve',
       },
       {
@@ -8135,7 +8135,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         source: 'eve',
       },
       {
-        agentId: 'glob',
+        agentId: 'bash',
         capabilityId: null,
         capabilityKind: null,
         details: {
@@ -8144,7 +8144,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'language',
         references: [
           {
-            path: '/agent/subagents/glob/agent.ts',
+            path: '/agent/subagents/bash/agent.ts',
             symbol: 'default',
           },
         ],
@@ -8169,7 +8169,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         source: 'eve',
       },
       {
-        agentId: 'glob',
+        agentId: 'bash',
         capabilityId: null,
         capabilityKind: null,
         details: {
@@ -8296,7 +8296,1046 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         source: 'eve',
       },
     ],
-    manifestDigest: 'sha256:2ae04b86367f7f0871cee1d672e358e3dd789ff297a249049dca0b57e0b9b336',
+    manifestDigest: 'sha256:c1b30507802bf0f414ef0c2358fc4fb7ae82591246f61f5938f1fe0f381d5345',
+  },
+  'eve-workflow-tool': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'local-subagent',
+          agentRoot: '/agent/subagents/summary',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'root',
+          agentRoot: '/agent',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'support-app',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          registrationKind: 'local-subagent-package',
+          routingDescriptionSource: 'handoff-description',
+          routingDescriptionWired: true,
+          targetAgentId: 'summary',
+          targetRuntimeName: 'summary',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {},
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/agent/loaders.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.3',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.3',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          schemaRole: 'agent-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SupportOutputSchema',
+          },
+        ],
+        runtimeName: 'SupportOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SearchInputSchema',
+          },
+        ],
+        runtimeName: 'SearchInputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SearchOutputSchema',
+          },
+        ],
+        runtimeName: 'SearchOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'analyze',
+        capabilityKind: 'skill',
+        details: {
+          registrationKind: 'typescript',
+        },
+        kind: 'skill-registration',
+        references: [
+          {
+            path: '/agent/skills/analyze.ts',
+          },
+        ],
+        runtimeName: 'analyze',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          declaredAvailableInSubagents: 'disabled',
+          declaredExecution: 'background',
+          implementationKind: 'bound-function',
+          pathDepth: 1,
+          registrationKind: 'filesystem-workflow-tool',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/agent/implementations.ts',
+            symbol: 'searchKnowledge',
+          },
+          {
+            path: '/agent/tools/search.ts',
+          },
+        ],
+        runtimeName: 'search',
+        source: 'eve',
+      },
+    ],
+    manifestDigest: 'sha256:57c6acbd72e25c90e7cb04c126f069abff050b56cc5ba117ea0ce1fd6dc8e421',
+  },
+  'eve-excluded-test-tool': {
+    valid: false,
+    diagnostics: [
+      {
+        code: 'EVE_TOOL_REGISTRATION_NOT_WIRED',
+        details: {},
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'search',
+          adapterId: 'eve',
+        },
+        message: 'The declared tool registration is not wired to the owning Eve agent.',
+        path: '/agent/tools/search.test.ts',
+        pointer: null,
+        range: null,
+        severity: 'error',
+        source: 'eve',
+      },
+    ],
+    evidence: [
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'local-subagent',
+          agentRoot: '/agent/subagents/summary',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'root',
+          agentRoot: '/agent',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'support-app',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          registrationKind: 'local-subagent-package',
+          routingDescriptionSource: 'handoff-description',
+          routingDescriptionWired: true,
+          targetAgentId: 'summary',
+          targetRuntimeName: 'summary',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {},
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/agent/loaders.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.2',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.2',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          schemaRole: 'agent-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SupportOutputSchema',
+          },
+        ],
+        runtimeName: 'SupportOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'analyze',
+        capabilityKind: 'skill',
+        details: {
+          registrationKind: 'typescript',
+        },
+        kind: 'skill-registration',
+        references: [
+          {
+            path: '/agent/skills/analyze.ts',
+          },
+        ],
+        runtimeName: 'analyze',
+        source: 'eve',
+      },
+    ],
+    manifestDigest: 'sha256:47872c749ceeb809d2b623236fa481aba57da5e5b42de8f1141e20bd6f910a94',
+  },
+  'eve-workspace-peer': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'research',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'workspace',
+          agentRoot: '/agents/research/agent',
+          layout: 'workspace',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agents/research/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'research',
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'local-subagent',
+          agentRoot: '/agents/support/agent/subagents/summary',
+          layout: 'workspace',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agents/support/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'workspace',
+          agentRoot: '/agents/support/agent',
+          layout: 'workspace',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agents/support/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'support',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          registrationKind: 'workspace-subagent',
+          routingDescriptionSource: 'agent-description',
+          routingDescriptionWired: true,
+          targetAgentId: 'research',
+          targetRuntimeName: 'research',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/agents/research/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agents/support/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agents/support/agent/subagents/research.ts',
+          },
+        ],
+        runtimeName: 'research',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          registrationKind: 'local-subagent-package',
+          routingDescriptionSource: 'handoff-description',
+          routingDescriptionWired: true,
+          targetAgentId: 'summary',
+          targetRuntimeName: 'summary',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/agents/support/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agents/support/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {},
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/agents/support/agent/loaders.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'eve',
+      },
+      {
+        agentId: 'research',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agents/research/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agents/support/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agents/support/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'research',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.3',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.3',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.3',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          schemaRole: 'agent-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agents/support/agent/contracts.ts',
+            symbol: 'SupportOutputSchema',
+          },
+        ],
+        runtimeName: 'SupportOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agents/support/agent/contracts.ts',
+            symbol: 'SearchInputSchema',
+          },
+        ],
+        runtimeName: 'SearchInputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agents/support/agent/contracts.ts',
+            symbol: 'SearchOutputSchema',
+          },
+        ],
+        runtimeName: 'SearchOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'analyze',
+        capabilityKind: 'skill',
+        details: {
+          registrationKind: 'typescript',
+        },
+        kind: 'skill-registration',
+        references: [
+          {
+            path: '/agents/support/agent/skills/analyze.ts',
+          },
+        ],
+        runtimeName: 'analyze',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          implementationKind: 'bound-function',
+          pathDepth: 1,
+          registrationKind: 'filesystem-tool',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/agents/support/agent/implementations.ts',
+            symbol: 'searchKnowledge',
+          },
+          {
+            path: '/agents/support/agent/tools/search.ts',
+          },
+        ],
+        runtimeName: 'search',
+        source: 'eve',
+      },
+    ],
+    manifestDigest: 'sha256:983c82c02abd13a0e20c7e2e9bc3d13ce9ff3f94bfa7ea9e6a2526b036cd3f33',
+  },
+  'eve-removed-default': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'root',
+          agentRoot: '/agent',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'support-app',
+        source: 'eve',
+      },
+      {
+        agentId: 'todo',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'local-subagent',
+          agentRoot: '/agent/subagents/todo',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/subagents/todo/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'todo',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          registrationKind: 'local-subagent-package',
+          routingDescriptionSource: 'handoff-description',
+          routingDescriptionWired: true,
+          targetAgentId: 'todo',
+          targetRuntimeName: 'todo',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agent/subagents/todo/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'todo',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {},
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/agent/loaders.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'todo',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/subagents/todo/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.65.0',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'todo',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.65.0',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          schemaRole: 'agent-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SupportOutputSchema',
+          },
+        ],
+        runtimeName: 'SupportOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SearchInputSchema',
+          },
+        ],
+        runtimeName: 'SearchInputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SearchOutputSchema',
+          },
+        ],
+        runtimeName: 'SearchOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'analyze',
+        capabilityKind: 'skill',
+        details: {
+          registrationKind: 'typescript',
+        },
+        kind: 'skill-registration',
+        references: [
+          {
+            path: '/agent/skills/analyze.ts',
+          },
+        ],
+        runtimeName: 'analyze',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          implementationKind: 'bound-function',
+          pathDepth: 1,
+          registrationKind: 'filesystem-tool',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/agent/implementations.ts',
+            symbol: 'searchKnowledge',
+          },
+          {
+            path: '/agent/tools/search.ts',
+          },
+        ],
+        runtimeName: 'search',
+        source: 'eve',
+      },
+    ],
+    manifestDigest: 'sha256:e2c228719dc7034baf43c45688307ba49150b20780532bfa769ca877fb153a21',
   },
   'openai-loader-disconnected': {
     valid: false,

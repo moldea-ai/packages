@@ -197,3 +197,9 @@ Summarize the supplied support request without inventing facts.
 ## What the check establishes
 
 The integration check reads these exact file blocks, requires positive adapter evidence for the documented relationships, and rejects a broken runtime binding. It does not prove that instructions are followed, that every SDK version accepts these forms, or that the application is ready for production. Continue using the installed adapter diagnostics for your actual source.
+
+## Newer Eve forms
+
+For a workspace, bind each root to its exact `agents/<name>/agent/agent.ts` path. A workspace parent's `subagents/<slot>.ts` can directly export `defineWorkspaceAgent({ name: '<peer>' })` from Eve `0.54.3`; declare the peer in the same manifest at `agents/<peer>/agent/agent.ts`. Each parent may also register immediate directory-backed local children. `defaultTools: false` is available from Eve `0.52.2`; `tool: false` on a child or workspace reference is available from Eve `0.59.1` and suppresses model-visible handoff evidence while preserving its callable declaration.
+
+From Eve `0.52.0`, a directly exported `defineWorkflowTool(...)` can be bound like the `search` tool above when its executor is a top-level async function declaration or the definition's direct async `execute` method beginning with `use workflow`. This inspection establishes static registration and declared background execution, not durable workflow behavior. From Eve `0.61.0`, the tool may declare `availableInSubagents` explicitly. Keep test/spec files and `__tests__` paths out of runtime bindings for Eve `0.66.2` and later. See the Verified target guide for version-sensitive default-tool names and supported source shapes.

@@ -82,3 +82,101 @@ export const isEveResolvedFunctionValue = async (
     isEveFunctionDeclaration(result.analysis.runtimeSymbols.get(imported.importedName))
   );
 };
+
+const hasWorkflowDirective = (
+  declaration:
+    ts.ArrowFunction | ts.FunctionDeclaration | ts.FunctionExpression | ts.MethodDeclaration,
+): boolean => {
+  const directive =
+    declaration.body !== undefined && ts.isBlock(declaration.body)
+      ? declaration.body.statements[0]
+      : undefined;
+  return (
+    declaration.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword) ===
+      true &&
+    directive !== undefined &&
+    ts.isExpressionStatement(directive) &&
+    ts.isStringLiteral(directive.expression) &&
+    directive.expression.text === 'use workflow'
+  );
+};
+
+const classifyWorkflowDeclaration = (
+  declaration: ts.Declaration | undefined,
+): 'valid' | 'invalid' | 'unknown' => {
+  if (declaration === undefined) {
+    return 'unknown';
+  }
+
+  if (ts.isFunctionDeclaration(declaration)) {
+    return hasWorkflowDirective(declaration) ? 'valid' : 'invalid';
+  }
+
+  if (ts.isVariableDeclaration(declaration) && declaration.initializer !== undefined) {
+    const initializer = unwrapExpression(declaration.initializer);
+
+    if (ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer)) {
+      return 'invalid';
+    }
+  }
+
+  return 'unknown';
+};
+
+/** Classifies an Eve workflow executor at its exact local or relative-imported declaration. */
+export const classifyEveWorkflowExecutor = async (
+  session: IEveInspectionSession,
+  analysis: IEveSourceAnalysis,
+  member: ts.ObjectLiteralElementLike,
+): Promise<'valid' | 'invalid' | 'unknown'> => {
+  if (ts.isMethodDeclaration(member)) {
+    return hasWorkflowDirective(member) ? 'valid' : 'invalid';
+  }
+
+  if (!ts.isPropertyAssignment(member)) {
+    return 'invalid';
+  }
+
+  const candidate = unwrapExpression(member.initializer);
+
+  if (ts.isFunctionExpression(candidate) || ts.isArrowFunction(candidate)) {
+    return 'invalid';
+  }
+
+  if (!ts.isIdentifier(candidate)) {
+    return 'invalid';
+  }
+
+  const local = analysis.runtimeSymbols.get(candidate.text);
+
+  if (local !== undefined) {
+    return classifyWorkflowDeclaration(local);
+  }
+
+  const imported = analysis.namedImports.get(candidate.text);
+
+  if (imported === undefined || !imported.moduleSpecifier.startsWith('.')) {
+    return 'unknown';
+  }
+
+  const resolved = posix.resolve(posix.dirname(analysis.path), imported.moduleSpecifier);
+  const path = parseRepositoryPath(
+    resolved.endsWith('.js') ? `${resolved.slice(0, -3)}.ts` : resolved,
+  );
+  const entry = await session.getEntry(path);
+
+  if (entry?.type !== 'file' || !path.endsWith('.ts')) {
+    return 'unknown';
+  }
+
+  const result = await session.analyzeSource(path);
+
+  if (result.kind !== 'valid') {
+    return 'unknown';
+  }
+
+  const exported = result.analysis.exports.get(imported.importedName);
+  return exported?.kind === 'present-supported'
+    ? classifyWorkflowDeclaration(result.analysis.runtimeSymbols.get(imported.importedName))
+    : 'unknown';
+};

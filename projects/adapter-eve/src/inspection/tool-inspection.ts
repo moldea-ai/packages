@@ -7,7 +7,10 @@ import type { IToolManifestEntry } from '@moldea.ai/core/format';
 import {
   EVE_ADAPTER_ID,
   EVE_RESERVED_TOOL_NAME,
+  EVE_SUBAGENT_TOOL_EXPOSURE_BOUNDARY_VERSION,
+  EVE_TEST_EXCLUSION_BOUNDARY_VERSION,
   EVE_TOOL_NAME_PATTERN,
+  EVE_WORKFLOW_TOOL_BOUNDARY_VERSION,
 } from '../constants/index.js';
 import type {
   IEveAgentDefinition,
@@ -17,6 +20,7 @@ import type {
   IEveToolCandidate,
 } from '../contracts/index.js';
 import {
+  classifyEveWorkflowExecutor,
   getEveDefinition,
   getEveObjectMembers,
   getEvePropertyExpression,
@@ -26,6 +30,7 @@ import {
 import {
   addEveDiagnostic,
   addEveSourceFailureDiagnostic,
+  addEveWarning,
   compareEveStrings,
   createEveEvidence,
 } from './common.js';
@@ -33,12 +38,17 @@ import { classifyEveBoundExpression } from './relationships.js';
 
 interface IPreparedTool {
   readonly analysis: IEveSourceAnalysis;
+  readonly availability: 'absent' | 'enabled' | 'disabled' | 'unknown';
   readonly candidate: IEveToolCandidate;
   readonly definition: Extract<IEveDefinitionResult, { readonly kind: 'present-supported' }>;
+  readonly execution: 'background' | 'foreground' | 'unknown';
+  readonly helperKind: 'tool' | 'workflow-tool';
   readonly isRegistrationEligible: boolean;
+  readonly workflowExecutor: 'valid' | 'invalid' | 'unknown' | null;
 }
 
 const ALLOWED_TOOL_KEYS = new Set([
+  'availableInSubagents',
   'approval',
   'description',
   'execute',
@@ -46,6 +56,7 @@ const ALLOWED_TOOL_KEYS = new Set([
   'outputSchema',
   'toModelOutput',
 ]);
+const TOOL_PREPARATION_BATCH_SIZE = 8;
 
 const isApprovalSupported = async (
   session: IEveInspectionSession,
@@ -111,18 +122,44 @@ const prepareTool = async (
     return null;
   }
 
-  const definition = getEveDefinition(result.analysis, 'tool');
+  const directTool = getEveDefinition(result.analysis, 'tool');
+  const workflowTool = getEveDefinition(result.analysis, 'workflow-tool');
+  const definition = directTool.kind === 'present-supported' ? directTool : workflowTool;
+  const helperKind = directTool.kind === 'present-supported' ? 'tool' : 'workflow-tool';
 
   if (definition.kind !== 'present-supported') {
     return null;
   }
 
   const description = getEvePropertyExpression(definition.properties, 'description');
+  const availabilityMember = definition.properties.get('availableInSubagents');
+  const availabilityExpression = getEvePropertyExpression(
+    definition.properties,
+    'availableInSubagents',
+  );
+  const availability =
+    availabilityMember === undefined
+      ? 'absent'
+      : availabilityExpression?.kind === ts.SyntaxKind.TrueKeyword
+        ? 'enabled'
+        : availabilityExpression?.kind === ts.SyntaxKind.FalseKeyword
+          ? 'disabled'
+          : 'unknown';
   const inputSchema = getEvePropertyExpression(definition.properties, 'inputSchema');
+  const executionExpression = getEvePropertyExpression(definition.properties, 'execution');
+  const executionValue =
+    executionExpression === null
+      ? null
+      : await resolveEveStaticString(session, result.analysis, executionExpression);
+  const execution = !definition.properties.has('execution')
+    ? 'foreground'
+    : executionValue?.kind === 'supported' && executionValue.value === 'background'
+      ? 'background'
+      : 'unknown';
   const executeMember = definition.properties.get('execute');
   const toModelOutput = definition.properties.get('toModelOutput');
   const hasSupportedMembers = [...definition.properties].every(([key, member]) => {
-    if (!ALLOWED_TOOL_KEYS.has(key)) {
+    if (!ALLOWED_TOOL_KEYS.has(key) && !(helperKind === 'workflow-tool' && key === 'execution')) {
       return false;
     }
 
@@ -136,6 +173,12 @@ const prepareTool = async (
     (ts.isMethodDeclaration(executeMember) ||
       (ts.isPropertyAssignment(executeMember) &&
         (await isEveResolvedFunctionValue(session, result.analysis, executeMember.initializer))));
+  const workflowExecutor =
+    helperKind === 'workflow-tool'
+      ? executeMember !== undefined
+        ? await classifyEveWorkflowExecutor(session, result.analysis, executeMember)
+        : 'invalid'
+      : null;
   const toModelOutputSupported =
     toModelOutput === undefined ||
     ts.isMethodDeclaration(toModelOutput) ||
@@ -143,18 +186,25 @@ const prepareTool = async (
       (await isEveResolvedFunctionValue(session, result.analysis, toModelOutput.initializer)));
   const isRegistrationEligible =
     hasSupportedMembers &&
+    availability !== 'unknown' &&
+    execution !== 'unknown' &&
     description !== null &&
     inputSchema !== null &&
     executeSupported &&
+    (workflowExecutor === null || workflowExecutor === 'valid') &&
     toModelOutputSupported &&
     (await isApprovalSupported(session, result.analysis, definition.properties.get('approval'))) &&
     (await resolveEveStaticString(session, result.analysis, description)).kind === 'supported';
 
   return Object.freeze({
     analysis: result.analysis,
+    availability,
     candidate,
     definition,
+    execution,
+    helperKind,
     isRegistrationEligible,
+    workflowExecutor,
   });
 };
 
@@ -285,14 +335,23 @@ export const inspectEveTools = async (
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],
 ): Promise<ReadonlySet<string>> => {
-  const prepared = (
-    await Promise.all(
-      definition.rootIndex.toolCandidates.map((candidate) => prepareTool(session, candidate)),
-    )
-  ).filter((candidate): candidate is IPreparedTool => candidate !== null);
+  const testExclusionBehavior = definition.inspectedPackage.testExclusionBehavior;
+  const sourceCandidates = definition.rootIndex.toolCandidates.filter(
+    ({ isTestSource }) => !isTestSource || testExclusionBehavior === 'before',
+  );
+  const prepared: IPreparedTool[] = [];
+
+  for (let index = 0; index < sourceCandidates.length; index += TOOL_PREPARATION_BATCH_SIZE) {
+    const batch = await Promise.all(
+      sourceCandidates
+        .slice(index, index + TOOL_PREPARATION_BATCH_SIZE)
+        .map((candidate) => prepareTool(session, candidate)),
+    );
+    prepared.push(...batch.filter((candidate): candidate is IPreparedTool => candidate !== null));
+  }
   const runtimeGroups = new Map<string, IEveToolCandidate[]>();
 
-  for (const candidate of definition.rootIndex.toolCandidates) {
+  for (const candidate of sourceCandidates) {
     if (
       !candidate.isSupportedSource ||
       candidate.isCollidedSlot ||
@@ -330,10 +389,54 @@ export const inspectEveTools = async (
   }
 
   for (const [capabilityId, tool] of Object.entries(definition.agent.declaration.tools ?? {})) {
+    const affectedTestSource = definition.rootIndex.toolCandidates.find(
+      ({ isTestSource, path, runtimeName }) =>
+        isTestSource &&
+        (path === tool.registration?.path ||
+          path === tool.implementation.path ||
+          runtimeName === tool.name),
+    );
+
+    if (affectedTestSource !== undefined && testExclusionBehavior !== 'before') {
+      if (testExclusionBehavior === 'after') {
+        if (
+          affectedTestSource.path === tool.registration?.path ||
+          affectedTestSource.path === tool.implementation.path
+        ) {
+          addEveDiagnostic(
+            diagnostics,
+            'EVE_TOOL_REGISTRATION_NOT_WIRED',
+            affectedTestSource.path,
+            definition.agent.id,
+            null,
+            'tool',
+            capabilityId,
+          );
+          continue;
+        }
+      } else {
+        addEveWarning(
+          diagnostics,
+          affectedTestSource.path,
+          definition.agent.id,
+          {
+            boundaryVersion: EVE_TEST_EXCLUSION_BOUNDARY_VERSION,
+            declaredRange: definition.inspectedPackage.declaredRange,
+            packageName: 'eve',
+            reason: 'version-dependent-behavior',
+            relationship: 'tool-registration',
+          },
+          'tool',
+          capabilityId,
+        );
+        continue;
+      }
+    }
+
     const selected = selectTool(prepared, tool);
 
     if (selected === null) {
-      const candidate = selectToolCandidate(definition.rootIndex.toolCandidates, tool);
+      const candidate = selectToolCandidate(sourceCandidates, tool);
 
       if (
         candidate !== null &&
@@ -355,6 +458,125 @@ export const inspectEveTools = async (
     }
 
     const { candidate } = selected;
+    if (selected.helperKind === 'workflow-tool') {
+      const behavior = definition.inspectedPackage.workflowToolBehavior;
+
+      if (behavior === 'before') {
+        addEveDiagnostic(
+          diagnostics,
+          'EVE_SDK_FEATURE_UNAVAILABLE',
+          candidate.path,
+          definition.agent.id,
+          null,
+          'tool',
+          capabilityId,
+          { feature: 'workflow-tool' },
+        );
+        continue;
+      }
+
+      if (behavior === null) {
+        addEveWarning(
+          diagnostics,
+          candidate.path,
+          definition.agent.id,
+          {
+            boundaryVersion: EVE_WORKFLOW_TOOL_BOUNDARY_VERSION,
+            declaredRange: definition.inspectedPackage.declaredRange,
+            packageName: 'eve',
+            reason: 'version-dependent-behavior',
+            relationship: 'tool-registration',
+          },
+          'tool',
+          capabilityId,
+        );
+        continue;
+      }
+    }
+
+    if (selected.availability !== 'absent') {
+      const behavior = definition.inspectedPackage.availableInSubagentsBehavior;
+
+      if (behavior === 'before') {
+        addEveDiagnostic(
+          diagnostics,
+          'EVE_SDK_FEATURE_UNAVAILABLE',
+          candidate.path,
+          definition.agent.id,
+          null,
+          'tool',
+          capabilityId,
+          { feature: 'subagent-tool-exposure' },
+        );
+        continue;
+      }
+
+      if (behavior === null) {
+        addEveWarning(
+          diagnostics,
+          candidate.path,
+          definition.agent.id,
+          {
+            boundaryVersion: EVE_SUBAGENT_TOOL_EXPOSURE_BOUNDARY_VERSION,
+            declaredRange: definition.inspectedPackage.declaredRange,
+            packageName: 'eve',
+            reason: 'version-dependent-behavior',
+            relationship: 'tool-registration',
+          },
+          'tool',
+          capabilityId,
+        );
+        continue;
+      }
+    }
+
+    if (selected.workflowExecutor === 'invalid') {
+      addEveDiagnostic(
+        diagnostics,
+        'EVE_WORKFLOW_EXECUTOR_NOT_WIRED',
+        candidate.path,
+        definition.agent.id,
+        null,
+        'tool',
+        capabilityId,
+      );
+      continue;
+    }
+
+    if (selected.workflowExecutor === 'unknown') {
+      addEveWarning(
+        diagnostics,
+        candidate.path,
+        definition.agent.id,
+        { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
+        'tool',
+        capabilityId,
+      );
+      continue;
+    }
+
+    if (selected.availability === 'unknown') {
+      addEveWarning(
+        diagnostics,
+        candidate.path,
+        definition.agent.id,
+        { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
+        'tool',
+        capabilityId,
+      );
+      continue;
+    }
+    if (selected.execution === 'unknown') {
+      addEveWarning(
+        diagnostics,
+        candidate.path,
+        definition.agent.id,
+        { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
+        'tool',
+        capabilityId,
+      );
+      continue;
+    }
     const invalidSegmentIndex = candidate.segments.findIndex(
       (segment) => !EVE_TOOL_NAME_PATTERN.test(segment),
     );
@@ -572,7 +794,16 @@ export const inspectEveTools = async (
         details: {
           implementationKind,
           pathDepth: candidate.segments.length,
-          registrationKind: 'filesystem-tool',
+          registrationKind:
+            selected.helperKind === 'workflow-tool'
+              ? 'filesystem-workflow-tool'
+              : 'filesystem-tool',
+          ...(selected.availability === 'absent'
+            ? {}
+            : { declaredAvailableInSubagents: selected.availability }),
+          ...(selected.helperKind === 'workflow-tool'
+            ? { declaredExecution: selected.execution }
+            : {}),
         },
         kind: 'tool-registration',
         references,
@@ -585,8 +816,11 @@ export const inspectEveTools = async (
   return new Set(
     prepared
       .filter(
-        ({ candidate, isRegistrationEligible }) =>
+        ({ availability, candidate, helperKind, isRegistrationEligible }) =>
           isRegistrationEligible &&
+          (availability === 'absent' ||
+            definition.inspectedPackage.availableInSubagentsBehavior === 'after') &&
+          (helperKind === 'tool' || definition.inspectedPackage.workflowToolBehavior === 'after') &&
           !collidedNames.has(candidate.runtimeName) &&
           candidate.runtimeName !== EVE_RESERVED_TOOL_NAME &&
           candidate.segments.every((segment) => EVE_TOOL_NAME_PATTERN.test(segment)),

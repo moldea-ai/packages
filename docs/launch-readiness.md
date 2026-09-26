@@ -1,6 +1,6 @@
 # Package launch readiness
 
-This report records implementation and verification for the [approved launch plan](../coding-agent-planning/1790360458_adapter-launch-readiness/plan.md). A package is not declared production ready merely because its version or compatibility range has been updated. Milestones 5–9 and the final combined consumer matrix remain pending.
+This report records implementation and verification for the [approved launch plan](../coding-agent-planning/1790360458_adapter-launch-readiness/plan.md). A package is not declared production ready merely because its version or compatibility range has been updated. Milestones 6–9 and the final combined consumer matrix remain pending.
 
 ## Milestone 1: diagnostic contract and resource baseline
 
@@ -89,24 +89,38 @@ The upstream compatibility check now covers 13 exact consumers, including Think 
 
 The classifier and context merge work inside an existing bounded inspection and add no model calls, provider requests, or token use. The expanded upstream check performs 13 serial disposable installations as maintenance work, not per inspection. Website examples are generated during the site build; selecting one example does not execute the entire catalog in a visitor's browser. Milestone 8 will repeat the complete-workflow resource measurements after the remaining adapters change.
 
+## Milestone 5: Eve discovery and registration
+
+The Eve adapter now inspects flat, nested, and workspace agent roots and proves immediate directory-backed child handoffs at each level. A direct workspace `defineWorkspaceAgent(...)` reference resolves only to the exact peer agent registered by the manifest, including aliases; an unrelated workspace agent does not become a target merely because its files exist. Scoped root indexes retain malformed and competing sources for collision analysis without creating a global agent registry. The adapter distinguishes a callable child from one exposed as a model tool, recognizes direct workflow-tool registrations without claiming durable execution, and applies the proven `defaultTools`, `task_cancel`, `tool`, `availableInSubagents`, removed-default, and test-source boundaries. A declared version range spanning one of those boundaries leaves the affected relationship unverified with a warning; a confirmed mismatch remains an error. The minimum-only Eve eligibility remains `>=0.39.1`.
+
+The real Eve compiler established the narrower workflow directive rule: a top-level async function declaration or a direct async `execute` method can carry `use workflow`; an arrow or function expression in that position cannot. The adapter and tests were corrected after an imported arrow failed the compiler probe. Pinned consumers now cover Eve 0.39.1, 0.52.2, 0.59.1, 0.60.1, 0.61.0, 0.65.0, 0.66.2, and 0.66.3, exercising older support and the changed compiler/discovery behaviors. The stable-latest probe passed 0.66.3 on September 25, 2026. These checks compile and inspect local disposable projects; they do not launch a model request or a durable workflow. Package guidance, the compatibility matrix and generated page, the website witnesses, and the matching platform specification were synchronized. The website catalog has 145 executed cases, including the new Eve cases, and 101 full or partial runtime patterns with executable witnesses.
+
+### Verification recorded for Milestone 5
+
+- Eve unit and integration suites passed: 18 and 66 tests. `pnpm compatibility:check` passed the 15-package build and generated matrix synchronization. `pnpm upstream:check` passed all 21 pinned consumers, including eight Eve compiler checks; `pnpm upstream:check:latest` passed all seven current consumers, including Eve 0.66.3.
+- `pnpm test` passed the complete workspace unit, integration, and end-to-end phases after the final per-parent tool-name indexing correction, including three installed CLI tests and 211 Chromium website tests. `pnpm website:check` passed its docs, 82 unit tests, Astro typecheck, lint, production build, and 132 integration tests. `pnpm typecheck`, `pnpm lint`, and `pnpm format:check` passed, with 33 root/workspace tasks for each of the first two. Eve's 18 unit and 66 integration tests, package typecheck, and package lint also passed after the indexing correction and the final visibility assertions.
+- The broad Eve calibration fixture contains 82 agents and proves 81 direct handoffs across 16 branches of four leaves. Three uncontended sequential samples after per-parent tool-name indexing had median 200.3 ms elapsed time and 291.4 ms CPU time, with 49,779 repository bytes read, 169 parser calls, 1,579 entry lookups, 164 listing pages, 499 read pages, 582 output records, 37 inspection pages, and 404,115 cumulative JSON bytes. The process RSS sample was 282.5 MiB, including prior fixture allocations in the same long-lived process.
+
+The broad fixture demonstrates bounded output paging and correct direct edges, but its full 404 KiB output could consume substantial tokens if copied into a coding-agent prompt. Consumers should request relevant `scope` or `content` and only the necessary result pages. The measurement has no model calls and does not yield an exact token count. Milestone 8 owns the final resource envelope and concurrency assessment.
+
 ## Package audit status
 
-| Public package            | Current launch evidence                                                                     | Remaining owner    |
-| ------------------------- | ------------------------------------------------------------------------------------------- | ------------------ |
-| Repository                | Existing contract used by calibration; full audit pending                                   | Milestone 8        |
-| Repository FS             | Full filesystem and OS audit pending                                                        | Milestone 8        |
-| Core                      | Severity contract and regression suite passed; full audit pending                           | Milestone 8        |
-| CLI                       | Schema 5 and packed warning/error suite passed; full audit pending                          | Milestone 8        |
-| Anthropic adapter         | Direct method family, effective options, output-schema and pinned SDK checks passed         | Milestones 1 and 2 |
-| OpenAI adapter            | Direct method family, effective options, output-schema and pinned SDK checks passed         | Milestones 1 and 2 |
-| Google Gen AI adapter     | Direct generate/stream source checks and pinned SDK typing passed                           | Milestones 1 and 2 |
-| Claude Agent SDK adapter  | Root/core imports, prompt controls, and pinned SDK checks passed; full audit pending        | Milestones 3 and 8 |
-| Cloudflare Agents adapter | Think boundary, context merge, deferred-tool and upstream checks passed; full audit pending | Milestones 4 and 8 |
-| Vercel AI SDK adapter     | Shared deferred-tool recognition and upstream AI SDK typing passed; full audit pending      | Milestones 4 and 8 |
-| Eve adapter               | Severity contract; nested/workspace checks pending                                          | Milestones 1 and 5 |
-| LangGraph adapter         | Severity contract; interrupt/tracing checks pending                                         | Milestones 1 and 6 |
-| LangChain adapter         | Severity contract; full advertised-surface audit pending                                    | Milestones 1 and 6 |
-| OpenAI Agents SDK adapter | Severity contract; full advertised-surface audit pending                                    | Milestones 1 and 6 |
-| Website UI                | Real consumer and visual audit pending                                                      | Milestone 7        |
+| Public package            | Current launch evidence                                                                                  | Remaining owner    |
+| ------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------ |
+| Repository                | Existing contract used by calibration; full audit pending                                                | Milestone 8        |
+| Repository FS             | Full filesystem and OS audit pending                                                                     | Milestone 8        |
+| Core                      | Severity contract and regression suite passed; full audit pending                                        | Milestone 8        |
+| CLI                       | Schema 5 and packed warning/error suite passed; full audit pending                                       | Milestone 8        |
+| Anthropic adapter         | Direct method family, effective options, output-schema and pinned SDK checks passed                      | Milestones 1 and 2 |
+| OpenAI adapter            | Direct method family, effective options, output-schema and pinned SDK checks passed                      | Milestones 1 and 2 |
+| Google Gen AI adapter     | Direct generate/stream source checks and pinned SDK typing passed                                        | Milestones 1 and 2 |
+| Claude Agent SDK adapter  | Root/core imports, prompt controls, and pinned SDK checks passed; full audit pending                     | Milestones 3 and 8 |
+| Cloudflare Agents adapter | Think boundary, context merge, deferred-tool and upstream checks passed; full audit pending              | Milestones 4 and 8 |
+| Vercel AI SDK adapter     | Shared deferred-tool recognition and upstream AI SDK typing passed; full audit pending                   | Milestones 4 and 8 |
+| Eve adapter               | Nested/workspace, workflow, exposure, defaults, exclusion and compiler checks passed; full audit pending | Milestones 5 and 8 |
+| LangGraph adapter         | Severity contract; interrupt/tracing checks pending                                                      | Milestones 1 and 6 |
+| LangChain adapter         | Severity contract; full advertised-surface audit pending                                                 | Milestones 1 and 6 |
+| OpenAI Agents SDK adapter | Severity contract; full advertised-surface audit pending                                                 | Milestones 1 and 6 |
+| Website UI                | Real consumer and visual audit pending                                                                   | Milestone 7        |
 
 The packages website is an application consumer, not a sixteenth public package. Its schema 5 examples are updated in Milestone 1; its full examples, visual, accessibility, and artifact checks belong to Milestone 7. Final release propagation and a coherent launch verdict belong to Milestone 9.

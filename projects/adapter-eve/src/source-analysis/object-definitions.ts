@@ -13,6 +13,8 @@ const DEFINITION_HELPER_KEYS = Object.freeze({
   instructions: 'defineInstructions',
   skill: 'defineSkill',
   tool: 'defineTool',
+  'workflow-tool': 'defineWorkflowTool',
+  'workspace-agent': 'defineWorkspaceAgent',
 } as const);
 
 /** Returns the exact static name of an ordinary Eve object member. */

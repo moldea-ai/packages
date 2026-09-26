@@ -13,6 +13,10 @@ export const EVE_ADAPTER_DIAGNOSTICS = Object.freeze({
     message: 'The observed Eve dependency range is disjoint from the supported range.',
     severity: 'error',
   },
+  EVE_SDK_FEATURE_UNAVAILABLE: {
+    message: 'The declared Eve feature is unavailable in the eligible SDK versions.',
+    severity: 'error',
+  },
   EVE_SOURCE_TEXT_INVALID: {
     message: 'The referenced Eve source file is not valid normalized text.',
     severity: 'error',
@@ -78,6 +82,10 @@ export const EVE_ADAPTER_DIAGNOSTICS = Object.freeze({
     message: 'The declared tool registration is not wired to the owning Eve agent.',
     severity: 'error',
   },
+  EVE_WORKFLOW_EXECUTOR_NOT_WIRED: {
+    message: 'The Eve workflow tool lacks a compiled use workflow executor.',
+    severity: 'error',
+  },
   EVE_TOOL_NAME_INVALID: { message: 'The Eve filesystem tool name is invalid.', severity: 'error' },
   EVE_TOOL_NAME_RESERVED: {
     message: 'The Eve filesystem tool name is reserved by the runtime.',
@@ -111,8 +119,12 @@ export const EVE_ADAPTER_DIAGNOSTICS = Object.freeze({
     message: 'The declared skill name does not match the Eve path-derived runtime name.',
     severity: 'error',
   },
+  EVE_SUBAGENT_REGISTRATION_NOT_WIRED: {
+    message: 'The declared Eve subagent is not discovered by the runtime.',
+    severity: 'error',
+  },
   EVE_TOOL_SUBAGENT_NAME_COLLISION: {
-    message: 'The Eve tool and local subagent use the same runtime tool name.',
+    message: 'The Eve tool and subagent use the same runtime tool name.',
     severity: 'error',
   },
   EVE_SUBAGENT_PARENT_AMBIGUOUS: {
@@ -120,12 +132,11 @@ export const EVE_ADAPTER_DIAGNOSTICS = Object.freeze({
     severity: 'error',
   },
   EVE_ROUTING_DESCRIPTION_MISSING: {
-    message: 'The supported Eve local subagent definition is missing its routing description.',
+    message: 'The supported Eve subagent definition is missing its routing description.',
     severity: 'error',
   },
   EVE_ROUTING_DESCRIPTION_NOT_WIRED: {
-    message:
-      'The Eve local subagent description does not use the target effective routing description.',
+    message: 'The Eve subagent description does not use the target effective routing description.',
     severity: 'error',
   },
   EVE_RUNTIME_RELATIONSHIP_UNVERIFIED: {

@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 
 import semver from 'semver';
 
+import { checkEveCompilerScenario } from './eve-scenarios.ts';
 import { PINNED_UPSTREAM_TARGETS } from './targets.ts';
 import type { IUpstreamResult, IUpstreamTarget } from './types.ts';
 
@@ -152,6 +153,12 @@ export const checkUpstreamTarget = async (
     );
     await runCommand(process.execPath, [TSC_PATH, '-p', 'tsconfig.json'], directory);
 
+    const compilerChecked = target.family === 'eve';
+
+    if (compilerChecked) {
+      await checkEveCompilerScenario(directory, target);
+    }
+
     const requestPreparationChecked = target.family === 'anthropic' || target.family === 'openai';
 
     if (requestPreparationChecked) {
@@ -162,7 +169,11 @@ export const checkUpstreamTarget = async (
       await runCommand(process.execPath, ['request-preparation.mjs', target.family], directory);
     }
 
-    return Object.freeze({ ...target, requestPreparationChecked });
+    return Object.freeze({
+      ...target,
+      ...(compilerChecked ? { compilerChecked } : {}),
+      requestPreparationChecked,
+    });
   } finally {
     await rm(directory, { force: true, recursive: true });
   }

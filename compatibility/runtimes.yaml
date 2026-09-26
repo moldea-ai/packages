@@ -542,6 +542,10 @@ adapters:
             kind: agent
             support: full
             description: An uncollided bound package-relative agent/agent.ts directly default-exports one defineAgent configuration using the positive key subset and a supported static model string.
+          - id: workspace-root-agent
+            kind: agent
+            support: full
+            description: An exact bound agents/<name>/agent/agent.ts workspace root directly default-exports the supported static defineAgent subset; local children are resolved from each registered immediate parent.
           - id: flat-root-agent
             kind: agent
             support: full
@@ -549,7 +553,11 @@ adapters:
           - id: directory-local-subagent
             kind: routing
             support: full
-            description: A unique direct subagents/<name>/agent.ts package registers one immediate local subagent only when both parent and target use the positive static agent-definition subset, the target has a statically proved non-empty string description, and the mapping and runtime tool namespace are unambiguous; an omitted or exact empty description produces no handoff evidence.
+            description: A unique direct subagents/<name>/agent.ts package registers one immediate local subagent under a flat, nested, or workspace parent only when both definitions use the positive static subset, the target has a statically proved non-empty description, and the mapping and runtime tool namespace are unambiguous; each registered child may in turn own immediate children.
+          - id: workspace-subagent-reference
+            kind: routing
+            support: full
+            description: From Eve 0.54.3, a direct workspace-parent defineWorkspaceAgent reference resolves only to an exact manifest-registered agents/<name>/agent/agent.ts peer; from Eve 0.59.1, tool false keeps the peer callable without asserting a model-visible handoff.
           - id: single-file-local-subagent
             kind: routing
             support: partial
@@ -582,6 +590,14 @@ adapters:
             kind: tool
             support: full
             description: An uncollided direct or nested tools/**/*.ts module with valid path segments and one unique non-reserved flattened name default-exports one registration-eligible defineTool configuration with supported implementation and schema relationships.
+          - id: workflow-tool-declaration
+            kind: tool
+            support: partial
+            description: From Eve 0.52.0, a direct defineWorkflowTool declaration with a top-level async function or direct async execute method marked use workflow establishes static registration and declared background execution; subagent exposure is interpreted from Eve 0.61.0, while durable execution and turn-time availability are not verified.
+          - id: subagent-tool-exposure
+            kind: tool
+            support: partial
+            description: From Eve 0.61.0, an explicit availableInSubagents option is interpreted on a direct supported tool declaration; older versions reject it and spanning declarations leave registration unverified.
           - id: flattened-tool-runtime-name
             kind: tool
             support: full
@@ -593,7 +609,15 @@ adapters:
           - id: local-subagent-tool-namespace
             kind: routing
             support: full
-            description: Static local subagents produce handoff evidence only when their names are unique among the supported static candidates and do not collide with mechanically established prepared authored, active framework, or reserved load_skill tool names; unresolved same-name static candidates suppress the claim.
+            description: Static local subagents produce model-visible handoff evidence only when their names are unique among supported static candidates and do not collide with prepared authored or active framework tool names; defaultTools false removes default collisions and unresolved same-name candidates suppress the claim.
+          - id: versioned-default-tool-namespace
+            kind: routing
+            support: full
+            description: Eve 0.52.2 introduces defaultTools and task_cancel; Eve 0.59.1 introduces the subagent tool option; Eve 0.65.0 removes todo and ask_question defaults. The adapter applies the known side of each declared-version boundary and leaves only an affected spanning conclusion unverified.
+          - id: test-source-exclusion
+            kind: tool
+            support: full
+            description: Eve 0.66.2 excludes tool and subagent test/spec modules and __tests__ paths from discovery; earlier supported versions retain their previous interpretation and spanning declarations leave affected registration unverified.
           - id: flat-markdown-skill
             kind: skill
             support: partial
@@ -617,7 +641,7 @@ adapters:
           - id: remote-agents
             kind: routing
             support: unsupported
-            description: Remote Eve subagents, remote authentication, URLs, and cross-repository target identity are outside the initial target.
+            description: Remote network agents, authentication, URLs, and cross-repository target identity remain outside the target; exact same-workspace peers are covered by workspace-subagent-reference.
           - id: extension-contributions
             kind: runtime
             support: unsupported
@@ -625,7 +649,7 @@ adapters:
           - id: connections-and-framework-tools
             kind: tool
             support: partial
-            description: Connection-provided, provider-managed, framework opt-in, disabled, and Workflow tools are not exposed as manifest capabilities. The target models the prepared static framework namespace needed for registration evidence but makes no turn-time dynamic-tool availability claim.
+            description: Connection-provided, provider-managed, framework opt-in, and disabled tools are not exposed as manifest capabilities. Supported direct Workflow tool declarations are statically recognized, but durable execution and turn-time availability are not claimed.
         providerLimits:
           - id: filesystem-tool-path-segment-pattern
             subject: tool-name
@@ -640,24 +664,24 @@ adapters:
             description: Eve reserves exact Workflow for its runtime workflow tool and rejects an authored tool with that flattened name.
             reference: 'eve@0.39.1 WORKFLOW_TOOL_NAME'
         knownLimitations:
-          - Positive agent-definition evidence requires the closed defineAgent object to use only model, optional description, and optional outputSchema, with a supported static model string. Every other verified Eve agent option remains present-unsupported until a future target validates its nested runtime shape; dynamic models and sibling overrides therefore cannot produce optimistic evidence.
-          - The adapter analyzes only a root or directory-backed local subagent with an exact bound static agent.ts; a configuration-free Eve root or single-file local subagent produces no positive target-specific definition or handoff evidence.
+          - Positive agent-definition evidence requires the closed defineAgent object to use model plus optional description, outputSchema, defaultTools, and tool, with a supported static model string and version-eligible options. Every other verified Eve agent option remains present-unsupported until a future target validates its nested runtime shape; dynamic models and sibling overrides therefore cannot produce optimistic evidence.
+          - The adapter analyzes exact bound static agent.ts roots in flat, nested, and workspace layouts plus directory-backed local descendants; a configuration-free Eve root or single-file local subagent produces no positive target-specific definition or handoff evidence.
           - Only direct TypeScript default exports, exact Eve helper imports, and limited relative named-import resolution are supported; path aliases, package exports, directory indexes, CommonJS, re-exports, wrappers, and arbitrary compiler resolution remain unresolved.
           - The adapter parses only .ts authored modules. It inspects .cts, .mts, .cjs, .mjs, .ts, and .js entry names only to prevent false positive evidence when an Eve filesystem slot or local-subagent identity is collided.
           - Complete positive instruction evidence requires one exclusive exact-lowercase modern Markdown or exact-shape TypeScript system source. Eve directory composition, case-varied Markdown, unsupported module extensions, deprecated system.* fallback, the deprecated markdown definition branch, user-role entries, and dynamic instruction sources remain outside positive target evidence.
-          - Recursive static tools are supported. Static prepared-name effects from supported authored tools, framework defaults, and unresolved same-name override candidates participate in registration preflight; dynamic, extension, connection, provider, disable-sentinel, and Workflow execution semantics otherwise remain outside the target.
+          - Recursive static tools and direct Workflow tool declarations are supported. Static prepared-name effects from authored tools, versioned framework defaults, and unresolved same-name override candidates participate in registration preflight; dynamic, extension, connection, provider, disable-sentinel, and durable Workflow execution semantics remain outside the target.
           - Extension declarations and contributions are not interpreted. Observable extension mount names participate only in conservative namespace-prefix preflight so root contributions cannot receive false registration evidence under a prefix Eve reserves for a mounted extension.
           - Tool and skill descriptions are required to be statically provable strings for positive registration evidence but are not compared byte for byte with manifest capability descriptions; semantic alignment remains with the skill, evaluate, and PR Assurance.
           - Tool approval and toModelOutput behavior is not interpreted beyond the static value shape required to avoid false registration claims.
           - TypeScript skill metadata and files are supported only as closed static string-valued records; Eve-valid Uint8Array skill files and dynamic package content remain outside positive registration evidence.
           - Agent output, tool input, and tool output schema contents are not validated; the target establishes only direct binding relationships.
           - Flat and packaged Markdown skill paths may establish implementation-path relationships, but the target emits no Markdown skill-registration evidence because it does not reproduce Eve frontmatter acceptance and collision resolution.
-          - Dynamic capabilities, remote agents, extensions, connections, channels, schedules, hooks, sandboxes, approvals, auth, state, sessions, compaction, task orchestration, and runtime-variable providers are not interpreted.
+          - Dynamic capabilities, remote network agents, extensions, connections, channels, schedules, hooks, sandboxes, approvals, auth, state, sessions, compaction, task orchestration, and runtime-variable providers are not interpreted.
           - Eve 0.39.x requires Node.js 24 or newer for the inspected application runtime. The adapter records but does not validate that application prerequisite and may itself run on another adapter-supported Node.js line.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/eve/typescript-filesystem-agent-0-39/'
-        lastVerifiedAt: '2026-09-01'
-    lastVerifiedAt: '2026-09-01'
+        lastVerifiedAt: '2026-09-25'
+    lastVerifiedAt: '2026-09-25'
   google-genai:
     implementation:
       kind: package

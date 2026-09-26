@@ -22,6 +22,7 @@ interface IReaderMetrics {
 interface ICalibrationSample extends IReaderMetrics {
   cpuMilliseconds: number;
   elapsedMilliseconds: number;
+  handoffRegistrations: number;
   inspectionPages: number;
   outputBytes: number;
   parserInvocations: number | null;
@@ -130,6 +131,7 @@ const measure = async (
     let inspectionPages = 0;
     let outputBytes = 0;
     let records = 0;
+    let handoffRegistrations = 0;
 
     do {
       const result = inspection.readPage({
@@ -139,6 +141,9 @@ const measure = async (
       });
       inspectionPages += 1;
       records += result.page.records.length;
+      handoffRegistrations += result.page.records.filter(
+        ({ item }) => item.kind === 'evidence' && item.evidence.kind === 'handoff-registration',
+      ).length;
       outputBytes += encoder.encode(JSON.stringify(result)).byteLength;
       cursor = result.page.nextCursor ?? undefined;
     } while (cursor !== undefined);
@@ -155,6 +160,7 @@ const measure = async (
       ...metrics,
       cpuMilliseconds: (cpu.user + cpu.system) / 1_000,
       elapsedMilliseconds,
+      handoffRegistrations,
       inspectionPages,
       outputBytes,
       parserInvocations: countSourceParses(coverage),
@@ -185,7 +191,10 @@ export const runCalibration = async (
   const results: ICalibrationResult[] = [];
 
   for (const workload of CALIBRATION_WORKLOADS) {
-    const adapter = workload === 'deep-eve' ? eve.eveAdapter : anthropic.anthropicAdapter;
+    const adapter =
+      workload === 'deep-eve' || workload === 'broad-eve'
+        ? eve.eveAdapter
+        : anthropic.anthropicAdapter;
     const samples: ICalibrationSample[] = [];
 
     for (let index = 0; index < 3; index += 1) {
