@@ -4,16 +4,23 @@ import { expect, test } from 'vitest';
 import { checkUpstreamTarget } from './runner.ts';
 import { PINNED_UPSTREAM_TARGETS } from './targets.ts';
 
-test('checks real current SDK exports and controlled request preparation', async () => {
-  const target = PINNED_UPSTREAM_TARGETS.find(
-    ({ family, fixture }) => family === 'openai' && fixture === 'current',
-  );
+// three subprocesses can each use the 120-second cap; allow time to remove the consumer
+const UPSTREAM_TARGET_TEST_TIMEOUT_MS = 480_000;
 
-  if (target === undefined) {
-    throw new TypeError('The current OpenAI upstream target is required.');
-  }
+test(
+  'checks real current SDK exports and controlled request preparation',
+  async () => {
+    const target = PINNED_UPSTREAM_TARGETS.find(
+      ({ family, fixture }) => family === 'openai' && fixture === 'current',
+    );
 
-  const result = await checkUpstreamTarget(target);
+    if (target === undefined) {
+      throw new TypeError('The current OpenAI upstream target is required.');
+    }
 
-  expect(result).toStrictEqual({ ...target, requestPreparationChecked: true });
-});
+    const result = await checkUpstreamTarget(target);
+
+    expect(result).toStrictEqual({ ...target, requestPreparationChecked: true });
+  },
+  UPSTREAM_TARGET_TEST_TIMEOUT_MS,
+);
