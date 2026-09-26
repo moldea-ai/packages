@@ -351,9 +351,24 @@ describe('npm release project changes', () => {
           outDir: join(projectDirectory, 'dist'),
         },
       });
-      const output = execFileSync(
+      const npmArguments = [
+        'pack',
+        '--ignore-scripts',
+        '--json',
+        '--pack-destination',
+        destination,
+      ];
+      // npm.cmd cannot be launched through execFileSync on Windows
+      const npmCliPath = join(
+        dirname(process.execPath),
+        'node_modules',
         'npm',
-        ['pack', '--ignore-scripts', '--json', '--pack-destination', destination],
+        'bin',
+        'npm-cli.js',
+      );
+      const output = execFileSync(
+        process.platform === 'win32' ? process.execPath : 'npm',
+        process.platform === 'win32' ? [npmCliPath, ...npmArguments] : npmArguments,
         { cwd: projectDirectory, encoding: 'utf8' },
       );
       const artifacts = JSON.parse(output) as { filename: string }[];
