@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/website-ui",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "description": "Shared Astro foundations for moldea public websites.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/website-ui#readme",
   "bugs": {
@@ -150,13 +150,13 @@
     "error-message-utils": "1.2.11"
   },
   "peerDependencies": {
-    "astro": "7.2.2",
+    "astro": "7.2.8",
     "tailwindcss": "4.3.3"
   },
   "devDependencies": {
     "@shikijs/rehype": "4.4.3",
     "@types/node": "22.20.1",
-    "astro": "7.2.2",
+    "astro": "7.2.8",
     "rehype-sanitize": "6.0.0",
     "rehype-slug": "6.0.0",
     "rehype-stringify": "10.0.1",

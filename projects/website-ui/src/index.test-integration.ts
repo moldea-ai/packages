@@ -80,7 +80,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.10.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.10.2' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -148,7 +148,7 @@ describe('published website UI package', () => {
             '@astrojs/check': '0.9.10',
             '@moldea.ai/website-ui': `file:${tarballPath}`,
             '@tailwindcss/vite': '4.3.3',
-            astro: '7.2.2',
+            astro: '7.2.8',
             tailwindcss: '4.3.3',
             typescript: '6.0.3',
           },
