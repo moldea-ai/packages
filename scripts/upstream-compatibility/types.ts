@@ -1,8 +1,9 @@
 // one immutable SDK package used by a disposable compatibility consumer
 export interface IUpstreamTarget {
   readonly companionPackages: readonly string[];
-  readonly family: 'anthropic' | 'claude-agent-sdk' | 'google-genai' | 'openai';
-  readonly fixture: 'minimum' | 'current';
+  readonly family:
+    'ai-sdk' | 'anthropic' | 'claude-agent-sdk' | 'cloudflare-think' | 'google-genai' | 'openai';
+  readonly fixture: 'minimum' | 'boundary' | 'current';
   readonly integrity: string;
   readonly packageName: string;
   readonly sourceReference: string;

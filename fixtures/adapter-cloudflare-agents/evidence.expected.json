@@ -340,6 +340,7 @@
     "capabilityId": "find-order",
     "capabilityKind": "tool",
     "details": {
+      "declaredDeferredLoading": "absent",
       "toolName": "find_order"
     },
     "kind": "tool-registration",
@@ -361,6 +362,7 @@
     "capabilityId": "find-order",
     "capabilityKind": "tool",
     "details": {
+      "declaredDeferredLoading": "absent",
       "toolName": "find_order"
     },
     "kind": "tool-registration",

@@ -10,6 +10,8 @@ Package evidence records exact dependency declarations and whether each declarat
 
 `agent-definition` identifies a supported exported class. `runtime-pattern` identifies direct AI SDK generation in `AIChatAgent`; Think does not emit it. `instruction-loader`, `schema`, and `tool-registration` require exact manifest binding identity. `handoff-registration` requires an active `agentTool` in a closed tools map, a unique registered target class, and an exact routing-description match against the target agent's handoff description or description fallback.
 
+Function-tool registration details include `declaredDeferredLoading` (`absent`, `enabled`, `disabled`, or `unknown`). This is source evidence, not a claim about per-turn tool availability. Think instruction analysis follows known pre-0.18 and 0.18-or-newer context behavior when declarations establish one side. A spanning declaration produces a version-dependent warning only when the conclusions differ.
+
 The package README is the canonical package diagnostic catalog. Dynamic or unsupported forms yield partial or no evidence rather than guessed relationships. Unsupported class initialization preserves package and language observations but suppresses all class method-derived results.
 
 ## Diagnostics

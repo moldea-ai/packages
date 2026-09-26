@@ -1,7 +1,7 @@
 import type { IDiagnostic, IRuntimeAdapterEvidence } from '@moldea.ai/core';
 
 // complete reviewed results; manifest identity pins declarations even when evidence is intentionally absent
-export const RUNTIME_EXPECTED_RESULTS: Record<
+const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   string,
   {
     valid: boolean;
@@ -1206,6 +1206,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           toolName: 'find_order',
         },
         kind: 'tool-registration',
@@ -1227,6 +1228,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           toolName: 'find_order',
         },
         kind: 'tool-registration',
@@ -3529,6 +3531,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-generate-stream-text-7',
           toolType: 'function',
         },
@@ -3562,6 +3565,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-tool-loop-agent-7',
           toolType: 'function',
         },
@@ -4876,6 +4880,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-generate-stream-text-7',
           toolType: 'function',
         },
@@ -4909,6 +4914,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-tool-loop-agent-7',
           toolType: 'function',
         },
@@ -5242,6 +5248,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-generate-stream-text-7',
           toolType: 'function',
         },
@@ -5275,6 +5282,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-tool-loop-agent-7',
           toolType: 'function',
         },
@@ -5608,6 +5616,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-generate-stream-text-7',
           toolType: 'function',
         },
@@ -5641,6 +5650,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-tool-loop-agent-7',
           toolType: 'function',
         },
@@ -5933,6 +5943,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-generate-stream-text-7',
           toolType: 'function',
         },
@@ -8413,4 +8424,105 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
     ],
     manifestDigest: 'sha256:a2f1308a6155dedf12282c0f09b308472e74b620490c721eb0135f55c694b32a',
   },
+};
+
+type IRuntimeExpectedResult = (typeof BASE_RUNTIME_EXPECTED_RESULTS)[string];
+
+const getBaseResult = (id: string): IRuntimeExpectedResult => {
+  const result = BASE_RUNTIME_EXPECTED_RESULTS[id];
+  if (result === undefined) throw new Error(`The ${id} runtime result is required.`);
+  return result;
+};
+
+const deriveCloudflareThinkResult = (options: {
+  thinkRange: string;
+  agentsRange: string;
+  aiRange?: string;
+  hasDeferredTool?: boolean;
+  isVersionAmbiguous?: boolean;
+}): IRuntimeExpectedResult => {
+  const base = getBaseResult('cloudflare-agents');
+  return {
+    ...base,
+    diagnostics: options.isVersionAmbiguous
+      ? [
+          {
+            code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+            details: {
+              boundaryVersion: '0.18.0',
+              declaredRange: options.thinkRange,
+              packageName: '@cloudflare/think',
+              reason: 'version-dependent-behavior',
+              relationship: 'instruction-loader',
+            },
+            entity: { adapterId: 'cloudflare-agents', agentId: 'support' },
+            message: 'The declared runtime relationship could not be verified.',
+            path: '/src/agents.ts',
+            pointer: null,
+            range: null,
+            severity: 'warning',
+            source: 'cloudflare-agents',
+          },
+        ]
+      : [],
+    evidence: base.evidence.flatMap((entry) => {
+      if (
+        options.isVersionAmbiguous &&
+        entry.agentId === 'support' &&
+        entry.kind === 'instruction-loader'
+      ) {
+        return [];
+      }
+      if (entry.kind === 'runtime-package') {
+        const declaredRange =
+          entry.runtimeName === '@cloudflare/think'
+            ? options.thinkRange
+            : entry.runtimeName === 'agents'
+              ? options.agentsRange
+              : entry.runtimeName === 'ai'
+                ? options.aiRange
+                : undefined;
+        return declaredRange === undefined
+          ? [entry]
+          : [{ ...entry, details: { ...entry.details, declaredRange } }];
+      }
+      return entry.kind === 'tool-registration' && options.hasDeferredTool
+        ? [{ ...entry, details: { ...entry.details, declaredDeferredLoading: 'enabled' } }]
+        : [entry];
+    }),
+  };
+};
+
+const deriveVercelDeferredResult = (): IRuntimeExpectedResult => {
+  const base = getBaseResult('vercel-agent-and-stream');
+  return {
+    ...base,
+    evidence: base.evidence.map((entry) =>
+      entry.kind === 'runtime-package'
+        ? { ...entry, details: { ...entry.details, declaredRange: '7.0.116' } }
+        : entry.kind === 'tool-registration'
+          ? { ...entry, details: { ...entry.details, declaredDeferredLoading: 'enabled' } }
+          : entry,
+    ),
+  };
+};
+
+export const RUNTIME_EXPECTED_RESULTS: Record<string, IRuntimeExpectedResult> = {
+  ...BASE_RUNTIME_EXPECTED_RESULTS,
+  'cloudflare-think-session-context': deriveCloudflareThinkResult({
+    thinkRange: '0.17.0',
+    agentsRange: '0.21.0',
+  }),
+  'cloudflare-think-configured-context': deriveCloudflareThinkResult({
+    thinkRange: '0.18.0',
+    agentsRange: '0.23.0',
+    aiRange: '7.0.116',
+    hasDeferredTool: true,
+  }),
+  'cloudflare-think-ambiguous-context': deriveCloudflareThinkResult({
+    thinkRange: '>=0.17.0',
+    agentsRange: '>=0.23.0',
+    isVersionAmbiguous: true,
+  }),
+  'vercel-deferred-tool': deriveVercelDeferredResult(),
 };

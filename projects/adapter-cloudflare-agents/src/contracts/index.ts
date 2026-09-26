@@ -109,6 +109,27 @@ export type ICloudflareAgentsRelationship =
   | { readonly expression: ts.Expression; readonly kind: 'present' }
   | { readonly kind: 'unresolved' };
 
+// one statically named Think context block and its canonical loader candidate
+export interface ICloudflareAgentsContextInstruction {
+  readonly label: string;
+  readonly relationship: ICloudflareAgentsRelationship;
+}
+
+export type ICloudflareAgentsThinkContextSources =
+  | { readonly kind: 'unresolved' }
+  | {
+      readonly contexts: readonly ICloudflareAgentsContextInstruction[];
+      readonly kind: 'closed';
+    };
+
+export type ICloudflareAgentsThinkSessionSources =
+  | { readonly kind: 'unresolved' }
+  | {
+      readonly cachedPrompt: ICloudflareAgentsRelationship;
+      readonly contexts: readonly ICloudflareAgentsContextInstruction[];
+      readonly kind: 'closed';
+    };
+
 export interface ICloudflareAgentsMethod {
   readonly body: ts.Block;
   readonly declaration: ts.MethodDeclaration;
@@ -139,6 +160,7 @@ export interface ICloudflareAgentsGenerationRequest {
 
 export interface ICloudflareAgentsFunctionTool {
   readonly declaration: ts.VariableDeclaration;
+  readonly deferLoading: ICloudflareAgentsRelationship;
   readonly execute: ICloudflareAgentsRelationship;
   readonly inputSchema: ICloudflareAgentsRelationship;
   readonly outputSchema: ICloudflareAgentsRelationship;

@@ -177,7 +177,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Supported repository-format versions: `1`
 - Compatible Core range: `^5.0.0`
 - Runtime guidance: `recommended`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Project-local guidance should document Cloudflare bindings, Durable Object wiring, and deployment-specific behavior outside the verified static source boundary.
 
@@ -186,7 +186,7 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-ai-chat-agent-0-10-ai-sdk-7/)
 
 | Ecosystem | Package               | Role        | Eligible versions |
@@ -209,11 +209,11 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 
 #### Patterns
 
-| Kind      | Pattern                                 | Support   | Description                                                                                                                                    | Notes         |
-| --------- | --------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `agent`   | `directly-exported-ai-chat-agent-class` | `partial` | Directly exported TypeScript classes extending an exact named AIChatAgent import with the supported onChatMessage signature.                   | Not available |
-| `runtime` | `direct-ai-sdk-generation`              | `partial` | Direct generateText or streamText calls in the onChatMessage method's own lexical body.                                                        | Not available |
-| `tool`    | `ai-chat-structured-output-and-tools`   | `partial` | Output.object agent schemas, repository-local AI SDK function tools, and Cloudflare agentTool helpers in closed generation-request tools maps. | Not available |
+| Kind      | Pattern                                 | Support   | Description                                                                                                                                                                                                     | Notes         |
+| --------- | --------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `agent`   | `directly-exported-ai-chat-agent-class` | `partial` | Directly exported TypeScript classes extending an exact named AIChatAgent import with the supported onChatMessage signature.                                                                                    | Not available |
+| `runtime` | `direct-ai-sdk-generation`              | `partial` | Direct generateText or streamText calls in the onChatMessage method's own lexical body.                                                                                                                         | Not available |
+| `tool`    | `ai-chat-structured-output-and-tools`   | `partial` | Output.object agent schemas, repository-local AI SDK function tools, and Cloudflare agentTool helpers in closed generation-request tools maps; declared deferLoading does not establish turn-time availability. | Not available |
 
 #### Known limitations
 
@@ -226,7 +226,7 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-think-0-16-ai-sdk-7/)
 
 | Ecosystem | Package             | Role        | Eligible versions |
@@ -248,17 +248,17 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 
 #### Patterns
 
-| Kind                 | Pattern                         | Support   | Description                                                                                                  | Notes         |
-| -------------------- | ------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------ | ------------- |
-| `agent`              | `directly-exported-think-class` | `partial` | Directly exported TypeScript classes extending an exact named Think import with closed class initialization. | Not available |
-| `instruction-loader` | `think-instruction-methods`     | `partial` | Direct loader calls returned by getSystemPrompt or supported closed configureSession chaining.               | Not available |
-| `tool`               | `closed-think-tools-map`        | `partial` | Repository-local AI SDK function tools and Cloudflare agentTool helpers active in a closed getTools map.     | Not available |
+| Kind                 | Pattern                         | Support   | Description                                                                                                                                                                                                                                                              | Notes         |
+| -------------------- | ------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| `agent`              | `directly-exported-think-class` | `partial` | Directly exported TypeScript classes extending an exact named Think import with closed class initialization.                                                                                                                                                             | Not available |
+| `instruction-loader` | `think-instruction-methods`     | `partial` | Direct getSystemPrompt calls and closed session context blocks are inspected; Think 0.18.0 and newer also support configureContext blocks with later session blocks winning duplicate labels. Spanning version declarations leave only dependent conclusions unverified. | Not available |
+| `tool`               | `closed-think-tools-map`        | `partial` | Repository-local AI SDK function tools and Cloudflare agentTool helpers active in a closed getTools map; a declared deferLoading option is recorded without claiming turn-time availability.                                                                             | Not available |
 
 #### Known limitations
 
 - Agent input and output schemas are not supported for Think.
 - Bare Agent classes, factories, indirect subclasses, decorators, executable fields, static blocks, computed members, generators, and non-pass-through constructors are outside the target.
-- Dynamic session builders, onCompaction interpretation, runtime mutation, channel-provided tool replacement, and open tools maps are outside the target.
+- Dynamic session builders, onCompaction interpretation, runtime mutation, channel-provided tool replacement, and open tools maps are outside the target. Older eligible AI SDK 7 versions may not accept deferLoading.
 
 ## Adapter: `custom`
 
@@ -747,7 +747,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Supported repository-format versions: `1`
 - Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers or unsupported dynamic integration patterns.
 
@@ -756,7 +756,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-generate-stream-text-7/)
 
 | Ecosystem | Package | Role      | Eligible versions |
@@ -777,22 +777,22 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 
 #### Patterns
 
-| Kind                 | Pattern                                | Support       | Description                                                                                                             | Notes         |
-| -------------------- | -------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `agent`              | `direct-generate-text-wrapper`         | `full`        | A directly exported function containing a direct generateText object-literal call is recognized as the runtime pattern. | Not available |
-| `agent`              | `direct-stream-text-wrapper`           | `full`        | A directly exported function containing a direct streamText object-literal call is recognized as the runtime pattern.   | Not available |
-| `instruction-loader` | `direct-generation-instruction-loader` | `partial`     | Direct loader calls are supported when prepareStep cannot replace the instructions.                                     | Not available |
-| `instruction-loader` | `instructions-system-precedence`       | `full`        | instructions is authoritative and deprecated system is used only through the supported absence fallback.                | Not available |
-| `instruction-loader` | `prepare-step-instruction-overrides`   | `ambiguous`   | prepareStep may replace per-step instructions and is not interpreted by the initial target.                             | Not available |
-| `runtime`            | `indirect-generation-wrapper`          | `unsupported` | Calls routed through arbitrary wrappers, factories, callbacks, or request builders are outside the initial target.      | Not available |
-| `schema`             | `direct-agent-input-schema`            | `unsupported` | The initial direct-generation target publishes no agent input-schema relationship.                                      | Not available |
-| `schema`             | `object-output-schema`                 | `partial`     | Direct Output.object schema binding establishes the agent output-schema relationship.                                   | Not available |
-| `tool`               | `closed-tools-map`                     | `partial`     | Closed object-map registration supports repository-local function tools created through tool.                           | Not available |
-| `tool`               | `direct-function-tool-bindings`        | `partial`     | Direct execute, inputSchema, and outputSchema bindings are interpreted without executing the tool.                      | Not available |
+| Kind                 | Pattern                                | Support       | Description                                                                                                                                                                                                      | Notes         |
+| -------------------- | -------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `agent`              | `direct-generate-text-wrapper`         | `full`        | A directly exported function containing a direct generateText object-literal call is recognized as the runtime pattern.                                                                                          | Not available |
+| `agent`              | `direct-stream-text-wrapper`           | `full`        | A directly exported function containing a direct streamText object-literal call is recognized as the runtime pattern.                                                                                            | Not available |
+| `instruction-loader` | `direct-generation-instruction-loader` | `partial`     | Direct loader calls are supported when prepareStep cannot replace the instructions.                                                                                                                              | Not available |
+| `instruction-loader` | `instructions-system-precedence`       | `full`        | instructions is authoritative and deprecated system is used only through the supported absence fallback.                                                                                                         | Not available |
+| `instruction-loader` | `prepare-step-instruction-overrides`   | `ambiguous`   | prepareStep may replace per-step instructions and is not interpreted by the initial target.                                                                                                                      | Not available |
+| `runtime`            | `indirect-generation-wrapper`          | `unsupported` | Calls routed through arbitrary wrappers, factories, callbacks, or request builders are outside the initial target.                                                                                               | Not available |
+| `schema`             | `direct-agent-input-schema`            | `unsupported` | The initial direct-generation target publishes no agent input-schema relationship.                                                                                                                               | Not available |
+| `schema`             | `object-output-schema`                 | `partial`     | Direct Output.object schema binding establishes the agent output-schema relationship.                                                                                                                            | Not available |
+| `tool`               | `closed-tools-map`                     | `partial`     | Closed object-map registration supports repository-local function tools created through tool, including declared deferLoading and an additional toolSearch declaration, without asserting per-turn availability. | Not available |
+| `tool`               | `direct-function-tool-bindings`        | `partial`     | Direct execute, inputSchema, and outputSchema bindings are interpreted without executing the tool.                                                                                                               | Not available |
 
 #### Known limitations
 
-- Lockfiles and installed package versions are not inspected.
+- Lockfiles and installed package versions are not inspected. Older eligible AI SDK 7 versions may not accept deferLoading.
 - Only Output.object establishes an agent output-schema relationship.
 - Only TypeScript ESM source and documented direct relative imports are interpreted.
 - Only direct generateText and streamText calls in the bound function's own lexical body are interpreted.
@@ -804,7 +804,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `instruction-loader`, `language`, `runtime-package`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-tool-loop-agent-7/)
 
 | Ecosystem | Package | Role      | Eligible versions |
@@ -826,22 +826,22 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 
 #### Patterns
 
-| Kind                 | Pattern                               | Support       | Description                                                                                                                           | Notes         |
-| -------------------- | ------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `agent`              | `direct-tool-loop-agent-construction` | `full`        | Directly exported ToolLoopAgent construction through one closed object-literal settings value.                                        | Not available |
-| `agent`              | `prepare-call-overrides`              | `ambiguous`   | prepareCall may replace instructions and tools or omit the construction-time output, and is not interpreted by the initial target.    | Not available |
-| `agent`              | `workflow-agent`                      | `unsupported` | WorkflowAgent and @ai-sdk/workflow are outside the initial target.                                                                    | Not available |
-| `instruction-loader` | `direct-agent-instruction-loader`     | `partial`     | Direct loader calls in instructions are supported when prepareCall and prepareStep cannot replace them.                               | Not available |
-| `instruction-loader` | `prepare-step-instruction-overrides`  | `ambiguous`   | prepareStep may replace per-step instructions and is not interpreted by the initial target.                                           | Not available |
-| `routing`            | `subagent-handoff-inference`          | `unsupported` | A function tool that calls another agent does not establish a target or handoff relationship in the initial target.                   | Not available |
-| `schema`             | `call-options-input-schema`           | `full`        | Direct callOptionsSchema binding establishes the agent input-schema relationship.                                                     | Not available |
-| `schema`             | `object-output-schema`                | `partial`     | Direct Output.object schema binding establishes the agent output-schema relationship when no uninterpreted prepareCall can remove it. | Not available |
-| `tool`               | `closed-tools-map`                    | `partial`     | Closed object-map registration supports repository-local function tools created through tool.                                         | Not available |
-| `tool`               | `direct-function-tool-bindings`       | `partial`     | Direct execute, inputSchema, and outputSchema bindings are interpreted without executing the tool.                                    | Not available |
+| Kind                 | Pattern                               | Support       | Description                                                                                                                                                                                                      | Notes         |
+| -------------------- | ------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `agent`              | `direct-tool-loop-agent-construction` | `full`        | Directly exported ToolLoopAgent construction through one closed object-literal settings value.                                                                                                                   | Not available |
+| `agent`              | `prepare-call-overrides`              | `ambiguous`   | prepareCall may replace instructions and tools or omit the construction-time output, and is not interpreted by the initial target.                                                                               | Not available |
+| `agent`              | `workflow-agent`                      | `unsupported` | WorkflowAgent and @ai-sdk/workflow are outside the initial target.                                                                                                                                               | Not available |
+| `instruction-loader` | `direct-agent-instruction-loader`     | `partial`     | Direct loader calls in instructions are supported when prepareCall and prepareStep cannot replace them.                                                                                                          | Not available |
+| `instruction-loader` | `prepare-step-instruction-overrides`  | `ambiguous`   | prepareStep may replace per-step instructions and is not interpreted by the initial target.                                                                                                                      | Not available |
+| `routing`            | `subagent-handoff-inference`          | `unsupported` | A function tool that calls another agent does not establish a target or handoff relationship in the initial target.                                                                                              | Not available |
+| `schema`             | `call-options-input-schema`           | `full`        | Direct callOptionsSchema binding establishes the agent input-schema relationship.                                                                                                                                | Not available |
+| `schema`             | `object-output-schema`                | `partial`     | Direct Output.object schema binding establishes the agent output-schema relationship when no uninterpreted prepareCall can remove it.                                                                            | Not available |
+| `tool`               | `closed-tools-map`                    | `partial`     | Closed object-map registration supports repository-local function tools created through tool, including declared deferLoading and an additional toolSearch declaration, without asserting per-turn availability. | Not available |
+| `tool`               | `direct-function-tool-bindings`       | `partial`     | Direct execute, inputSchema, and outputSchema bindings are interpreted without executing the tool.                                                                                                               | Not available |
 
 #### Known limitations
 
-- Lockfiles and installed package versions are not inspected.
+- Lockfiles and installed package versions are not inspected. Older eligible AI SDK 7 versions may not accept deferLoading.
 - Only Output.object establishes an agent output-schema relationship.
 - Only TypeScript ESM source and documented direct relative imports are interpreted.
 - The target does not infer providers, models, routing targets, handoffs, or subagent control transfer.

@@ -8,10 +8,10 @@ The package implements the official `vercel-ai-sdk` runtime adapter for `@moldea
 
 ## Supported targets
 
-Version `3.0.2` supports:
+Version `4.0.0` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^4.0.0`
+- `@moldea.ai/core ^5.0.0`
 - TypeScript ESM `.ts`, `.tsx`, and `.mts` source
 - npm `ai >=7.0.66`
 - directly exported `ToolLoopAgent` definitions
@@ -22,6 +22,7 @@ Version `3.0.2` supports:
 - repository-local function tools declared through `tool({ ... })`
 - closed object-map tool registration with runtime identity derived from each map key
 - direct tool implementation, input-schema, and output-schema relationships
+- the declared `deferLoading` option on function tools in newer AI SDK 7 releases
 
 Named value imports from the `ai` package root and their aliases are supported. Relative ESM named imports resolve exact TypeScript paths plus `.js` to `.ts` or `.tsx` and `.mjs` to `.mts`. Relationship closure is independent: a dynamic relationship does not erase another relationship proved from the same configuration.
 
@@ -45,6 +46,8 @@ The package exports only `vercelAiSdkAdapter`. It has no default export, configu
 ## Evidence
 
 The verified targets may emit `runtime-package`, `language`, `agent-definition`, `runtime-pattern`, `instruction-loader`, `schema`, and `tool-registration` evidence. Schema details identify the `agent-input`, `agent-output`, `tool-input`, or `tool-output` role. Tool runtime names come from exact supported tools-map keys.
+
+Function-tool registration evidence reports `declaredDeferredLoading` as `absent`, `enabled`, `disabled`, or `unknown`. It does not establish turn-time availability. A declared `toolSearch()` tool can coexist with a registered function tool without becoming that tool's manifest registration identity.
 
 Evidence is source-grounded, references existing regular files, and contains no repository contents, instructions, descriptions, credentials, model identifiers, tool arguments, provider configuration, request or response payloads, or model output.
 

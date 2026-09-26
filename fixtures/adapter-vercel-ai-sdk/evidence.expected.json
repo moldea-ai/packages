@@ -192,7 +192,11 @@
     "agentId": "summary",
     "capabilityId": "find-order",
     "capabilityKind": "tool",
-    "details": { "targetId": "typescript-generate-stream-text-7", "toolType": "function" },
+    "details": {
+      "declaredDeferredLoading": "absent",
+      "targetId": "typescript-generate-stream-text-7",
+      "toolType": "function"
+    },
     "kind": "tool-registration",
     "references": [
       { "path": "/src/agents.ts" },
@@ -208,7 +212,11 @@
     "agentId": "support",
     "capabilityId": "find-order",
     "capabilityKind": "tool",
-    "details": { "targetId": "typescript-tool-loop-agent-7", "toolType": "function" },
+    "details": {
+      "declaredDeferredLoading": "absent",
+      "targetId": "typescript-tool-loop-agent-7",
+      "toolType": "function"
+    },
     "kind": "tool-registration",
     "references": [
       { "path": "/src/agents.ts" },

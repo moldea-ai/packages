@@ -46,6 +46,21 @@ export type {
 // inspection session
 export { createInspectionSession } from './inspection-session/index.js';
 
+// AI SDK function-tool shape
+export {
+  classifyAiSdkDeferredLoading,
+  classifyAiSdkFunctionToolShape,
+  type IAiSdkDeferredLoading,
+  type IAiSdkFunctionToolShape,
+} from './ai-sdk-tool-shape/index.js';
+
+// version behavior
+export {
+  classifyVersionBehavior,
+  type IVersionBehavior,
+  type IVersionBehaviorDeclaration,
+} from './version-behavior/index.js';
+
 // package discovery
 export {
   createPackageManifestCandidatePaths,

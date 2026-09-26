@@ -160,6 +160,7 @@ export type IVercelAiSdkOutputSchemaRelationship =
 // supported root tool(...) declaration
 export interface IVercelAiSdkFunctionTool {
   readonly declaration: ts.VariableDeclaration;
+  readonly deferLoading: IVercelAiSdkRelationship;
   readonly execute: IVercelAiSdkRelationship;
   readonly inputSchema: IVercelAiSdkRelationship;
   readonly object: ts.ObjectLiteralExpression;

@@ -84,6 +84,9 @@ export const REQUIRED_CASE_IDS: string[] = [
   'claude-query',
   'claude-core-prompt-controls',
   'cloudflare-agents',
+  'cloudflare-think-session-context',
+  'cloudflare-think-configured-context',
+  'cloudflare-think-ambiguous-context',
   'eve-filesystem',
   'google-generate-content',
   'google-mixed-generation',
@@ -95,6 +98,7 @@ export const REQUIRED_CASE_IDS: string[] = [
   'openai-parse-output',
   'openai-agent-handoffs',
   'vercel-agent-and-stream',
+  'vercel-deferred-tool',
   'claude-preset',
   'claude-inherited-tools',
   'langgraph-inline',
@@ -1019,6 +1023,44 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           agentId: 'support',
         },
       },
+      {
+        caseId: 'cloudflare-think-session-context',
+        source: {
+          path: '/src/agents.ts',
+          contains:
+            "session.withContext('soul', { provider: { get: () => loadSupportInstruction() } })",
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'support',
+        },
+      },
+      {
+        caseId: 'cloudflare-think-configured-context',
+        source: {
+          path: '/src/agents.ts',
+          contains:
+            "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'support',
+        },
+      },
+      {
+        caseId: 'cloudflare-think-ambiguous-context',
+        source: {
+          path: '/src/agents.ts',
+          contains: 'configureContext()',
+        },
+        witness: {
+          kind: 'absence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'support',
+        },
+      },
     ],
     'closed-think-tools-map': [
       {
@@ -1032,6 +1074,26 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           kind: 'evidence',
           evidenceKind: 'tool-registration',
           agentId: 'support',
+        },
+      },
+      {
+        caseId: 'cloudflare-think-configured-context',
+        source: { path: '/src/tools.ts', contains: 'deferLoading: true' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: { declaredDeferredLoading: 'enabled' },
+        },
+      },
+      {
+        caseId: 'cloudflare-think-configured-context',
+        source: { path: '/src/tools.ts', contains: 'searchTool = toolSearch()' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: { declaredDeferredLoading: 'enabled' },
         },
       },
     ],
@@ -2161,6 +2223,16 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           agentId: 'support',
         },
       },
+      {
+        caseId: 'vercel-deferred-tool',
+        source: { path: '/src/agents.ts', contains: 'search: toolSearch()' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: { declaredDeferredLoading: 'enabled' },
+        },
+      },
     ],
     'direct-function-tool-bindings': [
       {
@@ -2173,6 +2245,16 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           kind: 'evidence',
           evidenceKind: 'tool-registration',
           agentId: 'support',
+        },
+      },
+      {
+        caseId: 'vercel-deferred-tool',
+        source: { path: '/src/tools.ts', contains: 'deferLoading: true' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: { declaredDeferredLoading: 'enabled' },
         },
       },
       {

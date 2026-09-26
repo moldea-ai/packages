@@ -127,6 +127,73 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     files: CLOUDFLARE_AGENTS_FILES,
   },
   {
+    id: 'cloudflare-think-session-context',
+    adapter: cloudflareAgentsAdapter,
+    title: 'A Think session context on the older runtime',
+    description: 'The direct session block preserves instruction wiring with Think 0.17.',
+    files: overrideFiles(CLOUDFLARE_AGENTS_FILES, {
+      '/package.json': source(CLOUDFLARE_AGENTS_FILES, '/package.json')
+        .replace('^0.16.0', '0.17.0')
+        .replace('^0.21.0', '0.21.0'),
+      '/src/agents.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/agents.ts').replace(
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "configureSession(session) { return session.withContext('soul', { provider: { get: () => loadSupportInstruction() } }); }",
+      ),
+    }),
+  },
+  {
+    id: 'cloudflare-think-configured-context',
+    adapter: cloudflareAgentsAdapter,
+    title: 'Configured Think context and deferred tool declaration',
+    description:
+      'Think 0.18 reads configureContext. The registered tool declares deferral alongside toolSearch; inspection does not prove turn-time availability.',
+    files: overrideFiles(CLOUDFLARE_AGENTS_FILES, {
+      '/package.json': source(CLOUDFLARE_AGENTS_FILES, '/package.json')
+        .replace('^0.16.0', '0.18.0')
+        .replace('^0.21.0', '0.23.0')
+        .replace('^7.0.0', '7.0.116'),
+      '/src/agents.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/agents.ts')
+        .replace(
+          'getSystemPrompt() { return loadSupportInstruction(); }',
+          "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+        )
+        .replace(
+          'import { findOrderTool, summaryHandoffTool }',
+          'import { findOrderTool, searchTool, summaryHandoffTool }',
+        )
+        .replace(
+          'find_order: findOrderTool, summarize: summaryHandoffTool',
+          'find_order: findOrderTool, search: searchTool, summarize: summaryHandoffTool',
+        ),
+      '/src/tools.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/tools.ts')
+        .replace("import { tool } from 'ai';", "import { tool, toolSearch } from 'ai';")
+        .replace(
+          'inputSchema: FindOrderInputSchema,',
+          'inputSchema: FindOrderInputSchema, deferLoading: true,',
+        )
+        .replace(
+          'export const summaryHandoffTool',
+          'export const searchTool = toolSearch();\nexport const summaryHandoffTool',
+        ),
+    }),
+  },
+  {
+    id: 'cloudflare-think-ambiguous-context',
+    adapter: cloudflareAgentsAdapter,
+    title: 'A Think declaration spanning the context boundary',
+    description:
+      'Only the instruction conclusion remains unverified; independent tools and output bindings still produce evidence.',
+    files: overrideFiles(CLOUDFLARE_AGENTS_FILES, {
+      '/package.json': source(CLOUDFLARE_AGENTS_FILES, '/package.json')
+        .replace('^0.16.0', '>=0.17.0')
+        .replace('^0.21.0', '>=0.23.0'),
+      '/src/agents.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/agents.ts').replace(
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+      ),
+    }),
+  },
+  {
     id: 'eve-filesystem',
     adapter: eveAdapter,
     title: 'The filesystem describes the agent',
@@ -254,6 +321,29 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     description:
       'Inspect ToolLoopAgent call options, instruction loaders, object output, and function-tool connections.',
     files: VERCEL_AI_SDK_FILES,
+  },
+  {
+    id: 'vercel-deferred-tool',
+    adapter: vercelAiSdkAdapter,
+    title: 'A deferred AI SDK function tool',
+    description:
+      'The function tool remains registered with its implementation and schemas; its declared deferral does not prove turn-time availability.',
+    files: overrideFiles(VERCEL_AI_SDK_FILES, {
+      '/package.json': source(VERCEL_AI_SDK_FILES, '/package.json').replace('^7.0.66', '7.0.116'),
+      '/src/tools.ts': source(VERCEL_AI_SDK_FILES, '/src/tools.ts').replace(
+        'inputSchema: FindOrderInputSchema,',
+        'inputSchema: FindOrderInputSchema, deferLoading: true,',
+      ),
+      '/src/agents.ts': source(VERCEL_AI_SDK_FILES, '/src/agents.ts')
+        .replace(
+          'generateText, Output, streamText, ToolLoopAgent',
+          'generateText, Output, streamText, toolSearch, ToolLoopAgent',
+        )
+        .replaceAll(
+          'tools: { find_order: findOrderTool }',
+          'tools: { find_order: findOrderTool, search: toolSearch() }',
+        ),
+    }),
   },
   {
     id: 'claude-preset',

@@ -18,7 +18,7 @@ beforeAll(async () => {
 });
 
 test('executes all ten adapters and matches every complete evidence record and diagnostic', () => {
-  expect(examples).toHaveLength(34);
+  expect(examples).toHaveLength(38);
   expect(new Set(examples.map(({ packageName }) => packageName)).size).toBe(10);
   for (const { id, result } of examples) {
     const expected = RUNTIME_EXPECTED_RESULTS[id];

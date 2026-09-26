@@ -5,7 +5,10 @@ export { analyzeCloudflareAgentsSource } from './source-analysis.js';
 export { getCloudflareAgentsClassDefinition } from './class-definitions.js';
 
 // Think instructions, channels, and tools
-export { getCloudflareAgentsThinkSystemPrompt } from './think-instructions.js';
+export {
+  getCloudflareAgentsThinkContextSources,
+  getCloudflareAgentsThinkSystemPrompt,
+} from './think-instructions.js';
 export { getCloudflareAgentsThinkSessionInstructions } from './session-builders.js';
 export { getCloudflareAgentsThinkChannelTools } from './channel-tools.js';
 export { getCloudflareAgentsThinkTools } from './think-tools.js';

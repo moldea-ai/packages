@@ -12,6 +12,8 @@ The targets may emit `runtime-package`, `language`, `agent-definition`, `runtime
 
 `agent-definition` identifies a supported immutable `ToolLoopAgent`. `runtime-pattern` identifies a supported direct `generateText` or `streamText` wrapper. Schema evidence identifies `agent-input`, `agent-output`, `tool-input`, or `tool-output`. Tool registration requires an exact bound function-tool value under a tools-map key matching the manifest tool name.
 
+Tool registration details include `declaredDeferredLoading` (`absent`, `enabled`, `disabled`, or `unknown`). This records the function-tool declaration and does not prove per-turn model availability or search results. An additional `toolSearch()` declaration does not become the registered function-tool identity.
+
 Evidence contains no repository content, instructions, descriptions, credentials, model values, tool arguments, provider payloads, request data, response data, or model output. Missing local evidence is not itself a diagnostic.
 
 ## Diagnostic catalog

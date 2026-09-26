@@ -4,6 +4,26 @@ import type { IUpstreamTarget } from './types.ts';
 export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze([
   {
     companionPackages: ['zod@4.3.6'],
+    family: 'ai-sdk',
+    fixture: 'minimum',
+    integrity:
+      'sha512-wBUyoCYF3GVr+62nelBgR8YbpTSsMZrzFyOOjiwijylNSM2TFCW35C+Pml2vc59/WLMpyhS/LWZ55M+B9DAcSg==',
+    packageName: 'ai',
+    sourceReference: 'https://registry.npmjs.org/ai/7.0.66',
+    version: '7.0.66',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'ai-sdk',
+    fixture: 'current',
+    integrity:
+      'sha512-gmkVGPzTNPcJixBiG9zUvP3gmvwko85dHiKrxFKK0zcVJIIu1FP6YDo3jna+ZrC2twMAsUPLr5htCwZjCINH3Q==',
+    packageName: 'ai',
+    sourceReference: 'https://registry.npmjs.org/ai/7.0.116',
+    version: '7.0.116',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
     family: 'anthropic',
     fixture: 'minimum',
     integrity:
@@ -49,6 +69,39 @@ export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze
     packageName: '@anthropic-ai/claude-agent-sdk',
     sourceReference: 'https://github.com/anthropics/claude-agent-sdk-typescript/tree/v0.3.282',
     version: '0.3.282',
+  },
+  {
+    companionPackages: ['agents@0.21.0', 'ai@7.0.66', 'zod@4.3.6'],
+    family: 'cloudflare-think',
+    fixture: 'minimum',
+    integrity:
+      'sha512-tnfMZSqSz1dhfBx0io/mXMJE2huwJc2kTPAkx55y1bTUQwt9A2uONBmN1FixNsI9DFp1zXJDzcO0juGFKfTyLQ==',
+    packageName: '@cloudflare/think',
+    sourceReference:
+      'https://github.com/cloudflare/agents/releases/tag/%40cloudflare%2Fthink%400.17.0',
+    version: '0.17.0',
+  },
+  {
+    companionPackages: ['agents@0.23.0', 'ai@7.0.66', 'zod@4.3.6'],
+    family: 'cloudflare-think',
+    fixture: 'boundary',
+    integrity:
+      'sha512-eN3gZvO05UPucAaQ9GfIu5iKhMeRKqd+NzxfNdi3rhbAHhsTC3ckxPnXNlBmr8Pg0zcvaJK69KhWPv4AySeexQ==',
+    packageName: '@cloudflare/think',
+    sourceReference:
+      'https://github.com/cloudflare/agents/releases/tag/%40cloudflare%2Fthink%400.18.0',
+    version: '0.18.0',
+  },
+  {
+    companionPackages: ['agents@0.24.0', 'ai@7.0.116', 'zod@4.3.6'],
+    family: 'cloudflare-think',
+    fixture: 'current',
+    integrity:
+      'sha512-7xYaVeQJA4Xnwuo2R5/zhbUjWftvKzVjdsZnOSYjo+BqJ+hbizemW8fCt1QTTP+TDixgXXiOQNlOmyNJXjTYUw==',
+    packageName: '@cloudflare/think',
+    sourceReference:
+      'https://github.com/cloudflare/agents/releases/tag/%40cloudflare%2Fthink%400.19.0',
+    version: '0.19.0',
   },
   {
     companionPackages: [],

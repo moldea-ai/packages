@@ -19,7 +19,7 @@ The current verified targets do not claim support for:
 - arbitrary compiler resolution, `tsconfig` path aliases, directory indexes, package exports, or re-export graphs
 - runtime-generated strings, schema-content validation, provider compatibility, model behavior, or actual tool execution
 
-Package detection uses nearest manifests, not lockfiles or installed `node_modules`. Static dependency ranges are observations; the adapter does not prove which package build executes at runtime.
+Package detection uses nearest manifests, not lockfiles or installed `node_modules`. Static dependency ranges are observations; the adapter does not prove which package build executes at runtime. `deferLoading` evidence describes the declared option only. The adapter does not infer when a deferred tool becomes visible to a model or whether `toolSearch()` discovers it. Older eligible AI SDK 7 releases may not accept that option; use a release that provides it when building a deferred-tool application.
 
 Each invocation sees one declared agent and only the bounded operations Core supplies through `IRuntimeAdapterRepository`. It receives no complete agent collection, project body index, host path, credential, environment variable, network client, or runtime process. It does not execute TypeScript, dynamically import source, load the inspected SDK, or follow source symlinks.
 

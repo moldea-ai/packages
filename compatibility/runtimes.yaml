@@ -373,18 +373,18 @@ adapters:
           - id: think-instruction-methods
             kind: instruction-loader
             support: partial
-            description: Direct loader calls returned by getSystemPrompt or supported closed configureSession chaining.
+            description: Direct getSystemPrompt calls and closed session context blocks are inspected; Think 0.18.0 and newer also support configureContext blocks with later session blocks winning duplicate labels. Spanning version declarations leave only dependent conclusions unverified.
           - id: closed-think-tools-map
             kind: tool
             support: partial
-            description: Repository-local AI SDK function tools and Cloudflare agentTool helpers active in a closed getTools map.
+            description: Repository-local AI SDK function tools and Cloudflare agentTool helpers active in a closed getTools map; a declared deferLoading option is recorded without claiming turn-time availability.
         knownLimitations:
           - Bare Agent classes, factories, indirect subclasses, decorators, executable fields, static blocks, computed members, generators, and non-pass-through constructors are outside the target.
-          - Dynamic session builders, onCompaction interpretation, runtime mutation, channel-provided tool replacement, and open tools maps are outside the target.
+          - Dynamic session builders, onCompaction interpretation, runtime mutation, channel-provided tool replacement, and open tools maps are outside the target. Older eligible AI SDK 7 versions may not accept deferLoading.
           - Agent input and output schemas are not supported for Think.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-think-0-16-ai-sdk-7/'
-        lastVerifiedAt: '2026-09-01'
+        lastVerifiedAt: '2026-09-25'
       - id: typescript-ai-chat-agent-0-10-ai-sdk-7
         kind: package
         language: typescript
@@ -444,15 +444,15 @@ adapters:
           - id: ai-chat-structured-output-and-tools
             kind: tool
             support: partial
-            description: Output.object agent schemas, repository-local AI SDK function tools, and Cloudflare agentTool helpers in closed generation-request tools maps.
+            description: Output.object agent schemas, repository-local AI SDK function tools, and Cloudflare agentTool helpers in closed generation-request tools maps; declared deferLoading does not establish turn-time availability.
         knownLimitations:
           - Nested or indirect generation, request variables, prepareStep instruction interpretation, and generation functions other than generateText and streamText are outside the target.
           - Output variants other than Output.object and all agent input schemas are outside the target.
           - Dynamic, provider, MCP-generated, or inline tools without exact repository registration identities are outside the target.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-ai-chat-agent-0-10-ai-sdk-7/'
-        lastVerifiedAt: '2026-09-01'
-    lastVerifiedAt: '2026-09-01'
+        lastVerifiedAt: '2026-09-25'
+    lastVerifiedAt: '2026-09-25'
   custom:
     implementation:
       kind: built-in
@@ -1366,7 +1366,7 @@ adapters:
           - id: closed-tools-map
             kind: tool
             support: partial
-            description: Closed object-map registration supports repository-local function tools created through tool.
+            description: Closed object-map registration supports repository-local function tools created through tool, including declared deferLoading and an additional toolSearch declaration, without asserting per-turn availability.
           - id: direct-function-tool-bindings
             kind: tool
             support: partial
@@ -1392,10 +1392,10 @@ adapters:
           - The target does not infer providers, models, routing targets, handoffs, or subagent control transfer.
           - Only Output.object establishes an agent output-schema relationship.
           - prepareCall and prepareStep function bodies are not interpreted; prepareCall therefore leaves instruction, tool, and output-schema wiring unresolved.
-          - Lockfiles and installed package versions are not inspected.
+          - Lockfiles and installed package versions are not inspected. Older eligible AI SDK 7 versions may not accept deferLoading.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-tool-loop-agent-7/'
-        lastVerifiedAt: '2026-09-01'
+        lastVerifiedAt: '2026-09-25'
       - id: typescript-generate-stream-text-7
         kind: package
         language: typescript
@@ -1457,7 +1457,7 @@ adapters:
           - id: closed-tools-map
             kind: tool
             support: partial
-            description: Closed object-map registration supports repository-local function tools created through tool.
+            description: Closed object-map registration supports repository-local function tools created through tool, including declared deferLoading and an additional toolSearch declaration, without asserting per-turn availability.
           - id: direct-function-tool-bindings
             kind: tool
             support: partial
@@ -1480,8 +1480,8 @@ adapters:
           - The target does not infer providers, models, routing targets, handoffs, or subagent control transfer.
           - Only Output.object establishes an agent output-schema relationship.
           - prepareStep function bodies are not interpreted.
-          - Lockfiles and installed package versions are not inspected.
+          - Lockfiles and installed package versions are not inspected. Older eligible AI SDK 7 versions may not accept deferLoading.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-generate-stream-text-7/'
-        lastVerifiedAt: '2026-09-01'
-    lastVerifiedAt: '2026-09-01'
+        lastVerifiedAt: '2026-09-25'
+    lastVerifiedAt: '2026-09-25'

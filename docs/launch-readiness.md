@@ -1,6 +1,6 @@
 # Package launch readiness
 
-This report records implementation and verification for the [approved launch plan](../coding-agent-planning/1790360458_adapter-launch-readiness/plan.md). A package is not declared production ready merely because its version or compatibility range has been updated. Milestones 4–9 and the final combined consumer matrix remain pending.
+This report records implementation and verification for the [approved launch plan](../coding-agent-planning/1790360458_adapter-launch-readiness/plan.md). A package is not declared production ready merely because its version or compatibility range has been updated. Milestones 5–9 and the final combined consumer matrix remain pending.
 
 ## Milestone 1: diagnostic contract and resource baseline
 
@@ -73,24 +73,40 @@ The website catalog now has 137 executed cases. Its Claude example covers `/core
 
 The extra source recognition uses the existing single source parse and bounded inspection. The two Claude upstream consumers add two serial disposable installations to the maintenance check and no inspection-time dependency. Milestone 8 still owns the representative full-workflow resource measurement and the complete package audit.
 
+## Milestone 4: Think behavior and deferred AI SDK tools
+
+The shared static analyzer now owns one AI SDK function-tool shape classifier and one known-version-boundary classifier. Cloudflare and Vercel consume the same closed `tool({ ... })` shape. Their tool-registration evidence records the declared `deferLoading` option as `absent`, `enabled`, `disabled`, or `unknown`; it does not assert tool availability or search results on a model turn. `toolSearch()` can coexist in a supported tools map without becoming a manifest-bound function-tool registration. The older eligible AI SDK 7 floor does not accept `deferLoading`, while the current pinned release does, so source evidence is deliberately separate from installed-runtime capability.
+
+Cloudflare interprets supported `configureContext()` blocks from Think 0.18.0 and merges them before supported `configureSession().withContext(...)` blocks. The later Session block wins for a repeated static label. A direct `getSystemPrompt()` binding remains independent configured-source evidence even when runtime context selection may suppress that fallback on a turn. A custom `withCachedPrompt(provider)` getter counts only with a closed inert setter; no-argument `withCachedPrompt()` gives no loader proof. When all observed Think declarations establish one side of the 0.18.0 boundary, that behavior is used. A declaration spanning the boundary leaves only a conclusion that differs between the two interpretations unverified and emits a scoped warning. Confirmed wiring defects remain errors. Eligible version ranges and coordinated Moldea package versions are unchanged.
+
+The upstream compatibility check now covers 13 exact consumers, including Think 0.17.0, 0.18.0, and 0.19.0 with companion `agents` releases, plus AI SDK 7.0.66 and 7.0.116. Each disposable consumer uses an integrity-pinned package and type-checks against the real SDK declarations. The stable-latest probe covered six current targets on September 25, 2026. These are source and type compatibility checks, not live Cloudflare or model execution. The website catalog contains 141 executed cases, with older, newer, and spanning Think declarations and a deferred Vercel function tool. Its displayed outcomes come from Core and the adapters.
+
+### Verification recorded for Milestone 4
+
+- Shared analyzer unit tests passed: 107 tests. Cloudflare unit and integration tests passed: 31 and 42 tests. Vercel unit and integration tests passed: 25 and 33 tests.
+- The packed CLI suite passed three tests, including the Core-to-CLI version-warning path. Website integration passed 132 tests. `pnpm upstream:check` passed all 13 pinned consumers; `pnpm upstream:check:latest` passed six stable-latest consumers.
+- `pnpm test` passed the complete workspace unit, integration, and end-to-end phases, including 211 Chromium website tests at narrow widths and in both themes. `pnpm website:check` passed its documentation, unit, Astro type, lint, production build, and 132 integration checks. `pnpm typecheck` and `pnpm lint` each passed 33 root/workspace tasks. The changed package files passed targeted Prettier checking; `pnpm compatibility:check` passed the 15-package build and matrix synchronization. Both affected platform specifications passed targeted formatting after synchronization.
+
+The classifier and context merge work inside an existing bounded inspection and add no model calls, provider requests, or token use. The expanded upstream check performs 13 serial disposable installations as maintenance work, not per inspection. Website examples are generated during the site build; selecting one example does not execute the entire catalog in a visitor's browser. Milestone 8 will repeat the complete-workflow resource measurements after the remaining adapters change.
+
 ## Package audit status
 
-| Public package            | Current launch evidence                                                              | Remaining owner    |
-| ------------------------- | ------------------------------------------------------------------------------------ | ------------------ |
-| Repository                | Existing contract used by calibration; full audit pending                            | Milestone 8        |
-| Repository FS             | Full filesystem and OS audit pending                                                 | Milestone 8        |
-| Core                      | Severity contract and regression suite passed; full audit pending                    | Milestone 8        |
-| CLI                       | Schema 5 and packed warning/error suite passed; full audit pending                   | Milestone 8        |
-| Anthropic adapter         | Direct method family, effective options, output-schema and pinned SDK checks passed  | Milestones 1 and 2 |
-| OpenAI adapter            | Direct method family, effective options, output-schema and pinned SDK checks passed  | Milestones 1 and 2 |
-| Google Gen AI adapter     | Direct generate/stream source checks and pinned SDK typing passed                    | Milestones 1 and 2 |
-| Claude Agent SDK adapter  | Root/core imports, prompt controls, and pinned SDK checks passed; full audit pending | Milestones 3 and 8 |
-| Cloudflare Agents adapter | Severity contract; Think and deferred-tool checks pending                            | Milestones 1 and 4 |
-| Vercel AI SDK adapter     | Severity contract; deferred-tool checks pending                                      | Milestones 1 and 4 |
-| Eve adapter               | Severity contract; nested/workspace checks pending                                   | Milestones 1 and 5 |
-| LangGraph adapter         | Severity contract; interrupt/tracing checks pending                                  | Milestones 1 and 6 |
-| LangChain adapter         | Severity contract; full advertised-surface audit pending                             | Milestones 1 and 6 |
-| OpenAI Agents SDK adapter | Severity contract; full advertised-surface audit pending                             | Milestones 1 and 6 |
-| Website UI                | Real consumer and visual audit pending                                               | Milestone 7        |
+| Public package            | Current launch evidence                                                                     | Remaining owner    |
+| ------------------------- | ------------------------------------------------------------------------------------------- | ------------------ |
+| Repository                | Existing contract used by calibration; full audit pending                                   | Milestone 8        |
+| Repository FS             | Full filesystem and OS audit pending                                                        | Milestone 8        |
+| Core                      | Severity contract and regression suite passed; full audit pending                           | Milestone 8        |
+| CLI                       | Schema 5 and packed warning/error suite passed; full audit pending                          | Milestone 8        |
+| Anthropic adapter         | Direct method family, effective options, output-schema and pinned SDK checks passed         | Milestones 1 and 2 |
+| OpenAI adapter            | Direct method family, effective options, output-schema and pinned SDK checks passed         | Milestones 1 and 2 |
+| Google Gen AI adapter     | Direct generate/stream source checks and pinned SDK typing passed                           | Milestones 1 and 2 |
+| Claude Agent SDK adapter  | Root/core imports, prompt controls, and pinned SDK checks passed; full audit pending        | Milestones 3 and 8 |
+| Cloudflare Agents adapter | Think boundary, context merge, deferred-tool and upstream checks passed; full audit pending | Milestones 4 and 8 |
+| Vercel AI SDK adapter     | Shared deferred-tool recognition and upstream AI SDK typing passed; full audit pending      | Milestones 4 and 8 |
+| Eve adapter               | Severity contract; nested/workspace checks pending                                          | Milestones 1 and 5 |
+| LangGraph adapter         | Severity contract; interrupt/tracing checks pending                                         | Milestones 1 and 6 |
+| LangChain adapter         | Severity contract; full advertised-surface audit pending                                    | Milestones 1 and 6 |
+| OpenAI Agents SDK adapter | Severity contract; full advertised-surface audit pending                                    | Milestones 1 and 6 |
+| Website UI                | Real consumer and visual audit pending                                                      | Milestone 7        |
 
 The packages website is an application consumer, not a sixteenth public package. Its schema 5 examples are updated in Milestone 1; its full examples, visual, accessibility, and artifact checks belong to Milestone 7. Final release propagation and a coherent launch verdict belong to Milestone 9.

@@ -645,6 +645,73 @@ describe('published CLI package and executable', () => {
         status: 'invalid',
       });
 
+      const thinkRepositoryDirectory = path.join(testDirectory, 'think-warning-repository');
+      const thinkFixture = JSON.parse(
+        readFileSync(
+          new URL('../../../../fixtures/adapter-cloudflare-agents/cases.json', import.meta.url),
+          'utf8',
+        ),
+      ) as {
+        readonly manifest: string;
+        readonly entries: readonly { readonly path: string; readonly text: string }[];
+      };
+      mkdirSync(thinkRepositoryDirectory);
+      execFileSync('git', ['init', '--quiet'], {
+        cwd: thinkRepositoryDirectory,
+        env: gitEnvironment,
+      });
+      for (const entry of [
+        { path: '/moldea/moldea.yaml', text: thinkFixture.manifest },
+        ...thinkFixture.entries,
+      ]) {
+        const entryPath = path.join(thinkRepositoryDirectory, entry.path.slice(1));
+        mkdirSync(path.dirname(entryPath), { recursive: true });
+        writeFileSync(
+          entryPath,
+          entry.path === '/package.json'
+            ? entry.text.replace('^0.16.0', '>=0.17.0')
+            : entry.path === '/src/agents.ts'
+              ? entry.text.replace(
+                  'getSystemPrompt() { return loadSupportInstruction(); }',
+                  "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+                )
+              : entry.text,
+          'utf8',
+        );
+      }
+      execFileSync('git', ['add', '--all'], {
+        cwd: thinkRepositoryDirectory,
+        env: gitEnvironment,
+      });
+      const thinkValidation = spawnSync(
+        process.execPath,
+        [installedExecutablePath, 'validate', '--json'],
+        { cwd: thinkRepositoryDirectory, encoding: 'utf8', env: gitEnvironment },
+      );
+      expect(thinkValidation.status).toBe(0);
+      expect(JSON.parse(thinkValidation.stdout)).toMatchObject({
+        result: {
+          errorCount: 0,
+          warningCount: 1,
+          page: {
+            records: [
+              {
+                code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+                details: {
+                  boundaryVersion: '0.18.0',
+                  declaredRange: '>=0.17.0',
+                  packageName: '@cloudflare/think',
+                  reason: 'version-dependent-behavior',
+                  relationship: 'instruction-loader',
+                },
+                severity: 'warning',
+              },
+            ],
+          },
+        },
+        status: 'valid',
+      });
+
       const topLevelHelp = runPackageManager(
         packageManagerEntrypoint,
         ['exec', 'moldea', '--help'],

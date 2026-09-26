@@ -1,5 +1,6 @@
 import type ts from 'typescript';
 
+import { classifyAiSdkDeferredLoading } from '@moldea.ai/adapter-static-analysis';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
@@ -8,7 +9,11 @@ import type {
 } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 
-import { CLOUDFLARE_AGENTS_ADAPTER_ID } from '../constants/index.js';
+import {
+  CLOUDFLARE_AGENTS_ADAPTER_ID,
+  CLOUDFLARE_THINK_CONTEXT_BOUNDARY_VERSION,
+  CLOUDFLARE_THINK_PACKAGE_NAME,
+} from '../constants/index.js';
 import type {
   ICloudflareAgentsAdapterDiagnosticCode,
   ICloudflareAgentsInspectionSession,
@@ -22,6 +27,7 @@ import {
 } from '../source-analysis/index.js';
 import {
   addCloudflareAgentsDiagnostic,
+  addCloudflareAgentsWarning,
   createCloudflareAgentsEvidence,
   hasCloudflareAgentsSymbol,
 } from './common.js';
@@ -31,7 +37,10 @@ import {
   resolveCloudflareAgentsToolMap,
   type ICloudflareAgentsResolvedToolMap,
 } from './resolution.js';
-import type { ICloudflareAgentsInspectedAgent } from './types.js';
+import type {
+  ICloudflareAgentsInspectedAgent,
+  ICloudflareAgentsThinkInstructions,
+} from './types.js';
 import type { ICloudflareAgentsScopedAgent } from './types.js';
 
 const inspectBinding = async (
@@ -87,6 +96,127 @@ const inspectBinding = async (
       source: CLOUDFLARE_AGENTS_ADAPTER_ID,
     }),
   );
+};
+
+const classifyThinkInstructionVersion = (
+  sources: ICloudflareAgentsThinkInstructions,
+  analysis: ICloudflareAgentsSourceAnalysis,
+  reference: IRepositoryReference,
+  behavior: 'before' | 'after',
+): boolean | null => {
+  const systemPrompt = classifyCloudflareAgentsInstructionLoader(
+    sources.systemPrompt,
+    analysis,
+    reference,
+  );
+
+  if (systemPrompt === true) {
+    return true;
+  }
+
+  // An unresolved Session override can replace an earlier configured context block.
+  if (sources.session.kind === 'unresolved') {
+    return null;
+  }
+
+  const contexts = new Map(
+    [
+      ...(behavior === 'after' && sources.context.kind === 'closed'
+        ? sources.context.contexts
+        : []),
+      ...sources.session.contexts,
+    ].map(({ label, relationship }) => [label, relationship] as const),
+  );
+  const relationships = [...contexts.values()];
+
+  if (sources.session.cachedPrompt.kind !== 'absent') {
+    relationships.push(sources.session.cachedPrompt);
+  }
+
+  const results = relationships.map((relationship) =>
+    classifyCloudflareAgentsInstructionLoader(relationship, analysis, reference),
+  );
+
+  if (results.includes(true)) {
+    return true;
+  }
+
+  if (
+    systemPrompt === null ||
+    results.includes(null) ||
+    (behavior === 'after' && sources.context.kind === 'unresolved')
+  ) {
+    return null;
+  }
+
+  return false;
+};
+
+const inspectThinkInstructionLoader = async (
+  session: ICloudflareAgentsInspectionSession,
+  inspected: ICloudflareAgentsInspectedAgent,
+  sources: ICloudflareAgentsThinkInstructions,
+  reference: IRepositoryReference,
+  evidence: IRuntimeAdapterEvidence[],
+  diagnostics: IAdapterDiagnostic[],
+): Promise<void> => {
+  const boundAnalysis = await hasCloudflareAgentsSymbol(
+    session,
+    reference,
+    diagnostics,
+    inspected.agent.id,
+    'CLOUDFLARE_AGENTS_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND',
+  );
+
+  if (boundAnalysis === null) {
+    return;
+  }
+
+  const before = classifyThinkInstructionVersion(sources, inspected.analysis, reference, 'before');
+  const after = classifyThinkInstructionVersion(sources, inspected.analysis, reference, 'after');
+  const result =
+    sources.package.thinkBehavior === 'before'
+      ? before
+      : sources.package.thinkBehavior === 'after'
+        ? after
+        : before === after
+          ? before
+          : null;
+
+  if (result === true) {
+    evidence.push(
+      createCloudflareAgentsEvidence({
+        agentId: inspected.agent.id,
+        capabilityId: null,
+        capabilityKind: null,
+        details: {},
+        kind: 'instruction-loader',
+        references: [reference],
+        runtimeName: reference.symbol ?? null,
+        source: CLOUDFLARE_AGENTS_ADAPTER_ID,
+      }),
+    );
+  } else if (result === false) {
+    addCloudflareAgentsDiagnostic(
+      diagnostics,
+      'CLOUDFLARE_AGENTS_INSTRUCTION_LOADER_NOT_WIRED',
+      reference.path,
+      inspected.agent.id,
+    );
+  } else if (sources.package.thinkBehavior === null && before !== after) {
+    addCloudflareAgentsWarning(diagnostics, inspected.analysis.path, inspected.agent.id, {
+      boundaryVersion: CLOUDFLARE_THINK_CONTEXT_BOUNDARY_VERSION,
+      declaredRange: sources.package.declaredThinkRange,
+      packageName: CLOUDFLARE_THINK_PACKAGE_NAME,
+      reason: 'version-dependent-behavior',
+      relationship: 'instruction-loader',
+    });
+  } else {
+    addCloudflareAgentsWarning(diagnostics, inspected.analysis.path, inspected.agent.id, {
+      reason: 'dynamic-source-pattern',
+      relationship: 'instruction-loader',
+    });
+  }
 };
 
 const inspectToolReference = async (
@@ -291,7 +421,14 @@ const inspectTools = async (
           agentId: inspected.agent.id,
           capabilityId,
           capabilityKind: 'tool',
-          details: { toolName: matchedEntry.name },
+          details: {
+            declaredDeferredLoading: classifyAiSdkDeferredLoading(
+              functionTool.deferLoading.kind === 'present'
+                ? functionTool.deferLoading.expression
+                : null,
+            ),
+            toolName: matchedEntry.name,
+          },
           kind: 'tool-registration',
           references: [tool.registration, tool.implementation],
           runtimeName: matchedEntry.name,
@@ -335,18 +472,29 @@ export const inspectCloudflareAgentsRelationships = async (
     const bindings = inspected.agent.declaration.bindings;
 
     if (bindings?.instructionLoader !== undefined) {
-      await inspectBinding(
-        session,
-        inspected.agent,
-        inspected.instructions,
-        inspected.analysis,
-        bindings.instructionLoader,
-        'CLOUDFLARE_AGENTS_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND',
-        'CLOUDFLARE_AGENTS_INSTRUCTION_LOADER_NOT_WIRED',
-        'instruction-loader',
-        evidence,
-        diagnostics,
-      );
+      if (inspected.thinkInstructions === null) {
+        await inspectBinding(
+          session,
+          inspected.agent,
+          inspected.instructions,
+          inspected.analysis,
+          bindings.instructionLoader,
+          'CLOUDFLARE_AGENTS_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND',
+          'CLOUDFLARE_AGENTS_INSTRUCTION_LOADER_NOT_WIRED',
+          'instruction-loader',
+          evidence,
+          diagnostics,
+        );
+      } else {
+        await inspectThinkInstructionLoader(
+          session,
+          inspected,
+          inspected.thinkInstructions,
+          bindings.instructionLoader,
+          evidence,
+          diagnostics,
+        );
+      }
     }
 
     if (bindings?.outputSchema !== undefined) {

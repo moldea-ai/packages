@@ -1,79 +1,56 @@
 import ts from 'typescript';
 
-import {
-  getClosedObjectProperties,
-  getDirectCall,
-  getStaticString,
-  unwrapExpression,
-} from '@moldea.ai/adapter-static-analysis';
+import { getStaticString, unwrapExpression } from '@moldea.ai/adapter-static-analysis';
 
 import type {
   ICloudflareAgentsClassDefinition,
+  ICloudflareAgentsContextInstruction,
   ICloudflareAgentsRelationship,
+  ICloudflareAgentsThinkSessionSources,
 } from '../contracts/index.js';
 import { getCloudflareAgentsMethod } from './methods.js';
+import {
+  getCloudflareAgentsThinkCachedPromptLoader,
+  getCloudflareAgentsThinkContextLoader,
+  isCloudflareAgentsThinkContextOptionsClosed,
+} from './think-instructions.js';
 
-const mergeInstruction = (
-  current: ICloudflareAgentsRelationship,
-  expression: ts.Expression,
-): ICloudflareAgentsRelationship =>
-  current.kind === 'absent'
-    ? Object.freeze({ expression, kind: 'present' })
-    : Object.freeze({ kind: 'unresolved' });
+const isSupportedCompactAfter = (call: ts.CallExpression): boolean => {
+  const argument = call.arguments[0];
 
-const getProviderLoader = (expression: ts.Expression): ts.Expression | null => {
-  const candidate = unwrapExpression(expression);
-
-  if (!ts.isObjectLiteralExpression(candidate)) {
-    return null;
+  if (call.arguments.length !== 1 || argument === undefined) {
+    return false;
   }
 
-  const properties = getClosedObjectProperties(candidate);
-
-  if (properties === null || !properties.has('get')) {
-    return null;
-  }
-
-  const getter = unwrapExpression(properties.get('get') as ts.Expression);
-
-  if (ts.isIdentifier(getter)) {
-    return ts.factory.createCallExpression(getter, undefined, []);
-  }
-
-  if (ts.isArrowFunction(getter) || ts.isFunctionExpression(getter)) {
-    if (ts.isBlock(getter.body)) {
-      if (getter.body.statements.length !== 1) {
-        return null;
-      }
-
-      const statement = getter.body.statements[0];
-      return statement !== undefined &&
-        ts.isReturnStatement(statement) &&
-        statement.expression !== undefined
-        ? statement.expression
-        : null;
-    }
-
-    return getter.body;
-  }
-
-  return null;
+  const candidate = unwrapExpression(argument);
+  return (
+    ts.isNumericLiteral(candidate) &&
+    Number.isSafeInteger(Number(candidate.text)) &&
+    Number(candidate.text) >= 0
+  );
 };
 
-/** Extracts an exact Think session-builder instruction source from supported chaining. */
+/** Extracts the closed Think session context chain and older cached-prompt candidate. */
 export const getCloudflareAgentsThinkSessionInstructions = (
   definition: ICloudflareAgentsClassDefinition,
-): ICloudflareAgentsRelationship => {
+): ICloudflareAgentsThinkSessionSources => {
   const method = getCloudflareAgentsMethod(definition.methods, 'configureSession', 1);
 
-  if (method === null || method.body.statements.length !== 1) {
-    return Object.freeze({ kind: 'absent' });
+  if (method === null) {
+    return definition.methods.has('configureSession')
+      ? Object.freeze({ kind: 'unresolved' })
+      : Object.freeze({
+          cachedPrompt: Object.freeze({ kind: 'absent' }),
+          contexts: Object.freeze([]),
+          kind: 'closed',
+        });
   }
 
   const statement = method.body.statements[0];
   const parameter = method.declaration.parameters[0]?.name;
 
   if (
+    method.body.statements.length !== 1 ||
     statement === undefined ||
     !ts.isReturnStatement(statement) ||
     statement.expression === undefined ||
@@ -84,7 +61,9 @@ export const getCloudflareAgentsThinkSessionInstructions = (
   }
 
   let expression = unwrapExpression(statement.expression);
-  let instructions: ICloudflareAgentsRelationship = { kind: 'absent' };
+  let cachedPrompt: ICloudflareAgentsRelationship = { kind: 'absent' };
+  let hasCachedPrompt = false;
+  const reversedContexts: ICloudflareAgentsContextInstruction[] = [];
 
   while (ts.isCallExpression(expression)) {
     const callee = unwrapExpression(expression.expression);
@@ -95,56 +74,46 @@ export const getCloudflareAgentsThinkSessionInstructions = (
 
     const methodName = callee.name.text;
 
-    if (methodName === 'withInstructions') {
-      const argument = expression.arguments[0];
+    if (methodName === 'withContext') {
+      const label = getStaticString(expression.arguments[0]);
 
       if (
-        expression.arguments.length !== 1 ||
-        argument === undefined ||
-        getDirectCall(argument) === null
+        (expression.arguments.length !== 1 && expression.arguments.length !== 2) ||
+        label === null ||
+        label.length === 0 ||
+        !isCloudflareAgentsThinkContextOptionsClosed(expression.arguments[1], 'session')
       ) {
         return Object.freeze({ kind: 'unresolved' });
       }
-      instructions = mergeInstruction(instructions, argument);
-    } else if (methodName === 'withContext') {
-      const argument = expression.arguments[0];
-      const loader = argument === undefined ? null : getProviderLoader(argument);
 
-      if (expression.arguments.length !== 1 || loader === null || getDirectCall(loader) === null) {
-        return Object.freeze({ kind: 'unresolved' });
-      }
-      instructions = mergeInstruction(instructions, loader);
+      reversedContexts.push(
+        Object.freeze({
+          label,
+          relationship: getCloudflareAgentsThinkContextLoader(expression.arguments[1]),
+        }),
+      );
     } else if (methodName === 'withCachedPrompt') {
       if (expression.arguments.length > 1) {
         return Object.freeze({ kind: 'unresolved' });
       }
 
-      const argument = expression.arguments[0];
-
-      if (argument !== undefined) {
-        const loader = getProviderLoader(argument);
-
-        if (loader === null || getDirectCall(loader) === null) {
-          return Object.freeze({ kind: 'unresolved' });
-        }
-        instructions = mergeInstruction(instructions, loader);
-      }
+      const provider = expression.arguments[0];
+      cachedPrompt = hasCachedPrompt
+        ? { kind: 'unresolved' }
+        : provider === undefined
+          ? { kind: 'absent' }
+          : getCloudflareAgentsThinkCachedPromptLoader(provider);
+      hasCachedPrompt = true;
     } else if (methodName === 'forSession') {
       if (expression.arguments.length !== 1 || getStaticString(expression.arguments[0]) === null) {
         return Object.freeze({ kind: 'unresolved' });
       }
     } else if (methodName === 'compactAfter') {
-      const argument = expression.arguments[0];
-
-      if (
-        expression.arguments.length !== 1 ||
-        argument === undefined ||
-        !ts.isNumericLiteral(unwrapExpression(argument)) ||
-        !Number.isSafeInteger(Number(unwrapExpression(argument).getText())) ||
-        Number(unwrapExpression(argument).getText()) < 0
-      ) {
+      if (!isSupportedCompactAfter(expression)) {
         return Object.freeze({ kind: 'unresolved' });
       }
+    } else if (methodName === 'onCompaction') {
+      return Object.freeze({ kind: 'unresolved' });
     } else {
       return Object.freeze({ kind: 'unresolved' });
     }
@@ -153,6 +122,10 @@ export const getCloudflareAgentsThinkSessionInstructions = (
   }
 
   return ts.isIdentifier(expression) && expression.text === parameter.text
-    ? Object.freeze(instructions)
+    ? Object.freeze({
+        cachedPrompt: Object.freeze(cachedPrompt),
+        contexts: Object.freeze(reversedContexts.reverse()),
+        kind: 'closed',
+      })
     : Object.freeze({ kind: 'unresolved' });
 };

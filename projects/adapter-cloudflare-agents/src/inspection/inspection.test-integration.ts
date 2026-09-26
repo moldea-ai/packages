@@ -140,6 +140,323 @@ describe('cloudflareAgentsAdapter Core integration', () => {
     expect(result.valid).toBe(true);
   });
 
+  test.each([
+    ['0.17.0', 'error'],
+    ['0.18.0', 'evidence'],
+    ['>=0.17.0', 'warning'],
+  ] as const)('classifies configureContext with Think %s as %s', async (version, expected) => {
+    const packageEntry = getFixtureEntry('"@cloudflare/think"');
+    const agentEntry = getFixtureEntry('class SupportAgent');
+    const result = await inspect({
+      [packageEntry.path]: replaceFixtureText(packageEntry.text, '^0.16.0', version),
+      [agentEntry.path]: replaceFixtureText(
+        agentEntry.text,
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+      ),
+    });
+    const instructionEvidence = result.evidence.filter(
+      ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
+    );
+    const instructionDiagnostics = result.diagnostics.filter(
+      ({ entity }) => entity?.agentId === 'support',
+    );
+
+    if (expected === 'evidence') {
+      expect(result.valid).toBe(true);
+      expect(instructionEvidence).toHaveLength(1);
+      expect(instructionDiagnostics).toStrictEqual([]);
+    } else if (expected === 'warning') {
+      expect(result.valid).toBe(true);
+      expect(instructionEvidence).toHaveLength(0);
+      expect(instructionDiagnostics).toMatchObject([
+        {
+          code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+          details: {
+            boundaryVersion: '0.18.0',
+            declaredRange: '>=0.17.0',
+            packageName: '@cloudflare/think',
+            reason: 'version-dependent-behavior',
+            relationship: 'instruction-loader',
+          },
+          severity: 'warning',
+        },
+      ]);
+      expect(
+        result.evidence.filter(
+          ({ agentId, kind }) => agentId === 'support' && kind === 'tool-registration',
+        ),
+      ).toHaveLength(1);
+    } else {
+      expect(result.valid).toBe(false);
+      expect(instructionEvidence).toHaveLength(0);
+      expect(instructionDiagnostics.map(({ code }) => code)).toContain(
+        'CLOUDFLARE_AGENTS_INSTRUCTION_LOADER_NOT_WIRED',
+      );
+    }
+  });
+
+  test.each(['0.17.0', '0.18.0', '>=0.17.0'])(
+    'retains the shared withContext loader with Think %s',
+    async (version) => {
+      const packageEntry = getFixtureEntry('"@cloudflare/think"');
+      const agentEntry = getFixtureEntry('class SupportAgent');
+      const result = await inspect({
+        [packageEntry.path]: replaceFixtureText(packageEntry.text, '^0.16.0', version),
+        [agentEntry.path]: replaceFixtureText(
+          agentEntry.text,
+          'getSystemPrompt() { return loadSupportInstruction(); }',
+          "configureSession(session) { return session.withContext('soul', { provider: { get: () => loadSupportInstruction() } }); }",
+        ),
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.diagnostics).toStrictEqual([]);
+      expect(
+        result.evidence.filter(
+          ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
+        ),
+      ).toHaveLength(1);
+    },
+  );
+
+  test('does not infer Think behavior from a non-SemVer declaration', async () => {
+    const packageEntry = getFixtureEntry('"@cloudflare/think"');
+    const agentEntry = getFixtureEntry('class SupportAgent');
+    const result = await inspect({
+      [packageEntry.path]: replaceFixtureText(packageEntry.text, '^0.16.0', 'latest'),
+      [agentEntry.path]: replaceFixtureText(
+        agentEntry.text,
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+      ),
+    });
+
+    expect(
+      result.evidence.some(
+        ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
+      ),
+    ).toBe(false);
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { declaredRange: null, reason: 'version-dependent-behavior' },
+        severity: 'warning',
+      },
+    ]);
+  });
+
+  test('retains prerelease ineligibility before relationship interpretation', async () => {
+    const packageEntry = getFixtureEntry('"@cloudflare/think"');
+    const result = await inspect({
+      [packageEntry.path]: replaceFixtureText(packageEntry.text, '^0.16.0', '0.18.0-rc.1'),
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'CLOUDFLARE_AGENTS_RUNTIME_VERSION_UNSUPPORTED',
+        details: { declaredRange: '0.18.0-rc.1' },
+        severity: 'error',
+      },
+    ]);
+  });
+
+  test('does not infer Think behavior from conflicting declarations', async () => {
+    const packageEntry = getFixtureEntry('"@cloudflare/think"');
+    const agentEntry = getFixtureEntry('class SupportAgent');
+    const manifest = JSON.parse(packageEntry.text) as { dependencies: Record<string, string> };
+    manifest.dependencies['@cloudflare/think'] = '0.17.0';
+    const result = await inspect({
+      [packageEntry.path]: JSON.stringify({
+        ...manifest,
+        devDependencies: { '@cloudflare/think': '0.18.0' },
+      }),
+      [agentEntry.path]: replaceFixtureText(
+        agentEntry.text,
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+      ),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.warningCount).toBe(1);
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { declaredRange: null, reason: 'version-dependent-behavior' },
+      },
+    ]);
+  });
+
+  test('uses the later session context for a duplicate label', async () => {
+    const packageEntry = getFixtureEntry('"@cloudflare/think"');
+    const agentEntry = getFixtureEntry('class SupportAgent');
+    const result = await inspect({
+      [packageEntry.path]: replaceFixtureText(packageEntry.text, '^0.16.0', '0.18.0'),
+      [agentEntry.path]: replaceFixtureText(
+        agentEntry.text,
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; } configureSession(session) { return session.withContext('soul', { provider: { get: () => loadSummaryInstruction() } }); }",
+      ),
+    });
+
+    expect(result.valid).toBe(false);
+    expect(
+      result.evidence.filter(
+        ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
+      ),
+    ).toHaveLength(0);
+    expect(result.diagnostics.map(({ code }) => code)).toContain(
+      'CLOUDFLARE_AGENTS_INSTRUCTION_LOADER_NOT_WIRED',
+    );
+  });
+
+  test('retains configured getSystemPrompt evidence with a default-backed context block', async () => {
+    const packageEntry = getFixtureEntry('"@cloudflare/think"');
+    const agentEntry = getFixtureEntry('class SupportAgent');
+    const result = await inspect({
+      [packageEntry.path]: replaceFixtureText(packageEntry.text, '^0.16.0', '0.18.0'),
+      [agentEntry.path]: replaceFixtureText(
+        agentEntry.text,
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "getSystemPrompt() { return loadSupportInstruction(); } configureContext() { return [{ label: 'soul' }]; }",
+      ),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.evidence.filter(
+        ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
+      ),
+    ).toHaveLength(1);
+  });
+
+  test('retains configured getSystemPrompt evidence when a Session callback is unresolved', async () => {
+    const agentEntry = getFixtureEntry('class SupportAgent');
+    const result = await inspect({
+      [agentEntry.path]: replaceFixtureText(
+        agentEntry.text,
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        'getSystemPrompt() { return loadSupportInstruction(); } configureSession(session) { return session.onCompaction(() => loadSummaryInstruction()); }',
+      ),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.evidence.filter(
+        ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
+      ),
+    ).toHaveLength(1);
+  });
+
+  test('does not credit configured context when an unresolved Session can replace it', async () => {
+    const packageEntry = getFixtureEntry('"@cloudflare/think"');
+    const agentEntry = getFixtureEntry('class SupportAgent');
+    const result = await inspect({
+      [packageEntry.path]: replaceFixtureText(packageEntry.text, '^0.16.0', '0.18.0'),
+      [agentEntry.path]: replaceFixtureText(
+        agentEntry.text,
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; } configureSession(session) { return session.onCompaction(() => loadSummaryInstruction()); }",
+      ),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(
+      result.evidence.some(
+        ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
+      ),
+    ).toBe(false);
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+        severity: 'warning',
+      },
+    ]);
+  });
+
+  test('retains a closed Session context when prompt-store selection repeats', async () => {
+    const agentEntry = getFixtureEntry('class SupportAgent');
+    const result = await inspect({
+      [agentEntry.path]: replaceFixtureText(
+        agentEntry.text,
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "configureSession(session) { return session.withCachedPrompt().withContext('soul', { provider: { get: () => loadSupportInstruction() } }).withCachedPrompt(); }",
+      ),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.evidence.filter(
+        ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
+      ),
+    ).toHaveLength(1);
+  });
+
+  test.each([
+    ['inert setter', '{ get: () => loadSupportInstruction(), set: async (prompt) => {} }', true],
+    ['direct getter reference', '{ get: loadSupportInstruction, set: async (prompt) => {} }', true],
+    [
+      'mutating setter',
+      '{ get: () => loadSupportInstruction(), set: async (prompt) => { state.prompt = prompt; } }',
+      false,
+    ],
+  ] as const)(
+    'classifies a custom prompt store with %s',
+    async (_description, provider, isWired) => {
+      const agentEntry = getFixtureEntry('class SupportAgent');
+      const result = await inspect({
+        [agentEntry.path]: replaceFixtureText(
+          agentEntry.text,
+          'getSystemPrompt() { return loadSupportInstruction(); }',
+          `configureSession(session) { return session.withCachedPrompt(${provider}); }`,
+        ),
+      });
+
+      expect(result.valid).toBe(true);
+      expect(
+        result.evidence.some(
+          ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
+        ),
+      ).toBe(isWired);
+      expect(
+        result.diagnostics.some(
+          ({ code }) => code === 'CLOUDFLARE_AGENTS_INSTRUCTION_LOADER_NOT_WIRED',
+        ),
+      ).toBe(false);
+    },
+  );
+
+  test.each([
+    ['true', 'enabled'],
+    ['false', 'disabled'],
+    ['deferLoading', 'unknown'],
+  ] as const)('reports declared deferred loading %s as %s', async (option, expected) => {
+    const toolEntry = getFixtureEntry('export const findOrderTool');
+    const result = await inspect({
+      [toolEntry.path]: replaceFixtureText(
+        toolEntry.text,
+        'inputSchema: FindOrderInputSchema,',
+        `inputSchema: FindOrderInputSchema, deferLoading: ${option},`,
+      ),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.evidence
+        .filter(
+          ({ kind, capabilityId }) => kind === 'tool-registration' && capabilityId === 'find-order',
+        )
+        .map(({ details }) => details['declaredDeferredLoading']),
+    ).toStrictEqual([expected, expected]);
+  });
+
   test('produces deterministic evidence for reversed entries and concurrent inspections', async () => {
     const reversed = await createCore({ adapters: [cloudflareAgentsAdapter] }).validateProject({
       repository: createMemoryRepositoryReader([...createEntries()].reverse()),
