@@ -21,7 +21,9 @@ const { repositoryFormatRoute, result } = Astro.props;
 const output = JSON.stringify(
   {
     valid: result.valid,
-    diagnostics: result.diagnostics.map(({ code, path }) => ({ code, path })),
+    errorCount: result.errorCount,
+    warningCount: result.warningCount,
+    diagnostics: result.diagnostics.map(({ code, path, severity }) => ({ code, path, severity })),
   },
   null,
   2,
@@ -164,8 +166,8 @@ const canonicalFiles = [
           role="region"
           aria-label="Core validation result excerpt"><code>{output}</code></pre>
         <p class="mt-4 text-xs leading-6 text-current/80">
-          Validation excerpt from the moved-file example. Precise diagnostics for your tools to act
-          on.
+          This is an excerpt from the moved-file example. The full result also includes
+          formatVersion, summary, source, evidence, and complete diagnostic records.
         </p>
       </article>
     </div>

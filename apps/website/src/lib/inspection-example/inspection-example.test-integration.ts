@@ -8,6 +8,11 @@ test('generates reproducible pass, fail, pass excerpts from real Core checks', a
   const states = await createInspectionExample();
 
   expect(states.map(({ result }) => result.valid)).toStrictEqual([true, false, true]);
+  expect(states.map(({ result }) => [result.errorCount, result.warningCount])).toStrictEqual([
+    [0, 0],
+    [1, 0],
+    [0, 0],
+  ]);
   expect(states.map(({ declaredPath, sourcePath }) => [declaredPath, sourcePath])).toStrictEqual([
     ['/src/refund-policy.ts', '/src/refund-policy.ts'],
     ['/src/refund-policy.ts', '/src/payments/refund-policy.ts'],
@@ -39,7 +44,12 @@ test('does not mistake a resolved path for a semantic check of source behavior',
 
   const states = await createInspectionExample(snapshots);
 
-  expect(states[0].result).toStrictEqual({ valid: true, diagnostics: [] });
+  expect(states[0].result).toStrictEqual({
+    valid: true,
+    errorCount: 0,
+    warningCount: 0,
+    diagnostics: [],
+  });
 });
 
 test.each(['connected', 'broken', 'repaired'])(

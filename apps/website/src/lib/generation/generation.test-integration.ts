@@ -492,7 +492,7 @@ describe('createSearchRecords', () => {
       );
     }
     expect(JSON.stringify(capabilityRecords)).not.toContain('export async function');
-    expect(JSON.stringify(capabilityRecords)).not.toContain('evidenceExcerpt');
+    expect(JSON.stringify(capabilityRecords)).not.toContain('boundaryVersion');
   });
   test('publishes one combined runtime directory and keeps the JSON handoff', () => {
     const model = getCurrentWebsiteModel();

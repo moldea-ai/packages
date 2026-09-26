@@ -18,7 +18,7 @@ import {
   CliContentResult,
   type ICliEnvelope,
 } from './types.ts';
-import { parseCliExecution } from './validations.ts';
+import { assertCliResultExcerpt, parseCliExecution } from './validations.ts';
 
 const cliManifestSchema = z.object({
   name: z.literal('@moldea.ai/cli'),
@@ -105,7 +105,11 @@ const resolveCliBin = async (
   return executable;
 };
 
-/** Builds a safe command excerpt without the disposable host path or opaque cursor. */
+/**
+ * Builds a safe command excerpt without the disposable host path or opaque cursor.
+ * @throws
+ * - A CLI result excerpt does not match the executed response.
+ */
 const commandCase = (
   id: string,
   title: string,
@@ -114,34 +118,48 @@ const commandCase = (
   envelope: ICliEnvelope,
   exitStatus: number,
   facts: Record<string, ICapabilityFact>,
-): ICapabilityCase => ({
-  id,
-  groupId: 'command-line',
-  title,
-  description,
-  operation: envelope.command,
-  packageName: '@moldea.ai/cli',
-  limitation:
-    'Executed against a synthetic Git working tree. The command does not run its application code.',
-  sourcePaths: [
-    'projects/cli/docs/commands.md',
-    'projects/cli/docs/output-and-operations.md',
-    'projects/cli/docs/working-tree.md',
-  ],
-  files: [],
-  result: {
-    kind: 'cli',
-    command,
-    exitStatus,
-    schemaVersion: envelope.schemaVersion,
-    status: envelope.status,
-    facts,
-  },
-});
+  resultExcerpt: ICapabilityFact,
+): ICapabilityCase => {
+  assertCliResultExcerpt(envelope.result, resultExcerpt);
+  return {
+    id,
+    groupId: 'command-line',
+    title,
+    description,
+    operation: envelope.command,
+    packageName: '@moldea.ai/cli',
+    limitation:
+      'Executed against a synthetic Git working tree. The command does not run its application code.',
+    sourcePaths: [
+      'projects/cli/docs/commands.md',
+      'projects/cli/docs/output-and-operations.md',
+      'projects/cli/docs/working-tree.md',
+    ],
+    files: [],
+    result: {
+      kind: 'cli',
+      command,
+      exitStatus,
+      schemaVersion: envelope.schemaVersion,
+      status: envelope.status,
+      facts,
+      envelopeExcerpt: {
+        cliVersion: envelope.cliVersion,
+        command: envelope.command,
+        error: envelope.error,
+        result: resultExcerpt,
+        schemaVersion: envelope.schemaVersion,
+        status: envelope.status,
+      },
+    },
+  };
+};
 
 /**
  * Executes the declared CLI bin in an isolated Git fixture and verifies its read-only behavior.
  * @returns Validated schema 5 excerpts with real exit statuses and no host-specific identities.
+ * @throws
+ * - A CLI result excerpt does not match the executed response.
  */
 export const createCliExamples = async (
   repositoryRoot: string,
@@ -220,6 +238,13 @@ export const createCliExamples = async (
           errorCount: validationResult.errorCount ?? 0,
           warningCount: validationResult.warningCount ?? 0,
         },
+        {
+          valid: validationResult.valid,
+          diagnosticCount: validationResult.diagnosticCount ?? 0,
+          errorCount: validationResult.errorCount ?? 0,
+          warningCount: validationResult.warningCount ?? 0,
+          page: { records: [] },
+        },
       ),
     );
     const inspection = await run(['inspect']);
@@ -246,6 +271,11 @@ export const createCliExamples = async (
           paths,
           counts: inspectionResult.counts ?? {},
           hasContinuation: inspectionResult.page.cursor !== null,
+        },
+        {
+          valid: inspectionResult.valid,
+          counts: inspectionResult.counts ?? {},
+          page: { records: paths.map((path) => ({ path })) },
         },
       ),
     );
@@ -286,6 +316,18 @@ export const createCliExamples = async (
                 : [{ ...record.match, owner: { ...record.match.owner } }],
             ),
           },
+          {
+            valid: result.valid,
+            relevant: result.relevant ?? false,
+            counts: result.counts ?? {},
+            page: {
+              records: result.page.records.flatMap((record) =>
+                record.kind !== 'match' || record.match === undefined
+                  ? []
+                  : [{ kind: record.kind, match: record.match }],
+              ),
+            },
+          },
         ),
       );
     }
@@ -308,6 +350,7 @@ export const createCliExamples = async (
           chunk: { ...contentResult.chunk },
           hasContinuation: contentResult.cursor !== null,
         },
+        { asset: contentResult.asset, chunk: contentResult.chunk },
       ),
     );
     const chunks: ICapabilityFact[] = [];
@@ -346,6 +389,7 @@ export const createCliExamples = async (
     );
     assertCapabilityFacts(chunks.length > 1, true);
     if (firstEnvelope === undefined) throw new Error('A CLI capability content page is missing.');
+    const firstContentResult = CliContentResult.parse(firstEnvelope.result);
     examples.push(
       commandCase(
         'cli-content-continuation',
@@ -355,6 +399,13 @@ export const createCliExamples = async (
         firstEnvelope,
         0,
         { chunks },
+        {
+          asset: firstContentResult.asset,
+          chunk: {
+            byteStart: firstContentResult.chunk.byteStart,
+            byteEnd: firstContentResult.chunk.byteEnd,
+          },
+        },
       ),
     );
     const refused = await run(['content', '--path', '/src/returns/policy.ts']);
@@ -368,6 +419,7 @@ export const createCliExamples = async (
         refused.envelope,
         refused.exitStatus,
         { error: refused.envelope.error === null ? null : { ...refused.envelope.error } },
+        null,
       ),
     );
     const composition = await run(['composition']);
@@ -400,6 +452,13 @@ export const createCliExamples = async (
         composition.envelope,
         composition.exitStatus,
         { ...compositionResult },
+        {
+          adapters: compositionResult.adapters.slice(0, 2),
+          packages: compositionResult.packages.slice(0, 2),
+          minimumGitVersion: compositionResult.minimumGitVersion,
+          repositoryFormatVersions: compositionResult.repositoryFormatVersions,
+          supportedNodeRange: compositionResult.supportedNodeRange,
+        },
       ),
     );
     assertCapabilityFacts(await captureFixtureState(workspace.directory), before);
@@ -446,6 +505,27 @@ export const createCliExamples = async (
           path: path ?? null,
           pointer: pointer ?? null,
         })),
+      },
+      {
+        valid: invalidResult.valid,
+        diagnosticCount: invalidResult.diagnosticCount ?? 0,
+        errorCount: invalidResult.errorCount ?? 0,
+        warningCount: invalidResult.warningCount ?? 0,
+        page: {
+          records: invalidResult.page.records.flatMap((record) =>
+            record.kind === 'diagnostic'
+              ? [
+                  {
+                    kind: record.kind,
+                    code: record.code,
+                    path: record.path,
+                    pointer: record.pointer,
+                    severity: record.severity,
+                  },
+                ]
+              : [],
+          ),
+        },
       },
     );
     invalidCase.files = [
@@ -510,6 +590,15 @@ export const createCliExamples = async (
           errorCount: warningResult.errorCount ?? 0,
           warningCount: warningResult.warningCount ?? 0,
           diagnostics: [diagnostic],
+        },
+        {
+          valid: warningResult.valid,
+          diagnosticCount: warningResult.diagnosticCount ?? 0,
+          errorCount: warningResult.errorCount ?? 0,
+          warningCount: warningResult.warningCount ?? 0,
+          page: {
+            records: [{ kind: warningRecord.kind, ...diagnostic }],
+          },
         },
       ),
     );

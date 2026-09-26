@@ -23,7 +23,14 @@ const example: ICapabilityCase = {
   operation: 'validateProject',
   sourcePaths: [],
   files: [],
-  result: { kind: 'adapter', valid: true, diagnostics: [], evidence: [] },
+  result: {
+    kind: 'adapter',
+    valid: true,
+    errorCount: 0,
+    warningCount: 0,
+    diagnostics: [],
+    evidence: [],
+  },
 };
 const absence: IRuntimePatternProof = {
   caseId: example.id,

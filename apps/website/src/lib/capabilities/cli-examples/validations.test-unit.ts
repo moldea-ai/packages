@@ -1,8 +1,10 @@
 // @vitest-environment node
 import { expect, test } from 'vitest';
 
+import type { ICapabilityFact } from '../index.ts';
+
 import { CliCollectionResult } from './types.ts';
-import { parseCliExecution } from './validations.ts';
+import { assertCliResultExcerpt, parseCliExecution } from './validations.ts';
 
 const envelope = {
   cliVersion: '9.0.0',
@@ -12,6 +14,26 @@ const envelope = {
   error: null,
   result: { valid: true },
 };
+
+test('accepts only true fields and prefix records from an executed CLI result', () => {
+  const result = { valid: true, page: { records: [{ kind: 'diagnostic', code: 'A' }] } };
+  expect(() =>
+    assertCliResultExcerpt(result, {
+      valid: true,
+      page: { records: [{ kind: 'diagnostic' }] },
+    }),
+  ).not.toThrow();
+  const invalidExcerpts: ICapabilityFact[] = [
+    { valid: true, diagnostics: [] },
+    { valid: true, page: { records: [{ code: 'B' }] } },
+    { valid: true, page: { records: [{ code: 'A' }, { code: 'B' }] } },
+  ];
+  for (const excerpt of invalidExcerpts) {
+    expect(() => assertCliResultExcerpt(result, excerpt)).toThrow(
+      'does not match the executed response',
+    );
+  }
+});
 
 test.each([
   ['valid', 0, false],

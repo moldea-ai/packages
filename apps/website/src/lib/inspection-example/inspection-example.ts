@@ -43,7 +43,7 @@ export const createInspectionExample = async (
       0,
       'path',
     ]);
-    const { valid } = validation;
+    const { valid, errorCount, warningCount } = validation;
     // compare diagnostic content, independent of Core's null-prototype detail records
     const diagnostics = structuredClone(validation.diagnostics);
     const expectedDiagnostics =
@@ -66,6 +66,8 @@ export const createInspectionExample = async (
     if (
       typeof declaredPath !== 'string' ||
       valid !== (snapshot.id !== 'broken') ||
+      errorCount !== (snapshot.id === 'broken' ? 1 : 0) ||
+      warningCount !== 0 ||
       !isDeepStrictEqual(diagnostics, expectedDiagnostics)
     ) {
       throw new Error(
@@ -75,6 +77,8 @@ export const createInspectionExample = async (
 
     const result = {
       valid,
+      errorCount,
+      warningCount,
       diagnostics: diagnostics.map(({ code, message, path, pointer, details, severity }) => ({
         code,
         message,

@@ -136,7 +136,14 @@ for (const width of [320, 1440]) {
         if (width < 640) await expect(icon).toBeHidden();
         else await expect(icon).toHaveCSS('width', '40px');
         await expect(resultSummary.locator('[data-status-badge]')).toHaveCount(0);
-        const excerptLabel = dialog.getByText('Executed result excerpt', { exact: true });
+        const resultKind = model.capabilities.cases.find((example) => example.id === id)?.result
+          .kind;
+        const excerptLabel = dialog.getByText(
+          resultKind === 'reader' || resultKind === 'inspection'
+            ? 'Selected execution facts'
+            : 'Executed result excerpt',
+          { exact: true },
+        );
         const excerptRow = excerptLabel.locator('xpath=..');
         const badge = excerptRow.locator('[data-status-badge]');
         await expect(badge).toHaveCount(1);
@@ -195,7 +202,15 @@ for (const width of [320, 1440]) {
       await expect(
         runtimeDialog.getByRole('heading', { name: 'Instruction and tool connections found' }),
       ).toBeVisible();
-      await expect(runtimeDialog).toContainText('evidenceExcerpt');
+      const runtimeExcerpt = JSON.parse(
+        (await runtimeDialog.locator('pre').textContent()) ?? '',
+      ) as unknown;
+      expect(runtimeExcerpt).toMatchObject({
+        valid: true,
+        errorCount: 0,
+        warningCount: 0,
+        evidence: expect.any(Array),
+      });
       const analysis = await new AxeBuilder({ page }).include('dialog[open]').analyze();
       expect(
         analysis.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious'),
@@ -306,29 +321,35 @@ test('shows a successful schema 5 warning result with bounded version details', 
   const dialog = page.getByRole('dialog', { name: '1 runtime relationship unverified' });
   const excerpt = JSON.parse((await dialog.locator('pre').textContent()) ?? '') as unknown;
   expect(excerpt).toMatchObject({
+    cliVersion: '9.0.0',
+    command: 'validate',
+    error: null,
     schemaVersion: 5,
     status: 'valid',
-    exitStatus: 0,
     result: {
       valid: true,
       diagnosticCount: 1,
       errorCount: 0,
       warningCount: 1,
-      diagnostics: [
-        {
-          code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
-          severity: 'warning',
-          details: {
-            relationship: 'instruction-loader',
-            reason: 'version-dependent-behavior',
-            packageName: '@cloudflare/think',
-            declaredRange: '>=0.17.0',
-            boundaryVersion: '0.18.0',
+      page: {
+        records: [
+          {
+            kind: 'diagnostic',
+            code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+            severity: 'warning',
+            details: {
+              relationship: 'instruction-loader',
+              reason: 'version-dependent-behavior',
+              packageName: '@cloudflare/think',
+              declaredRange: '>=0.17.0',
+              boundaryVersion: '0.18.0',
+            },
           },
-        },
-      ],
+        ],
+      },
     },
   });
+  expect(excerpt).not.toHaveProperty('exitStatus');
 });
 
 test('keeps empty file previews and capability summaries free of extra dividers', async ({

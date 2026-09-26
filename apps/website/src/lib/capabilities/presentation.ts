@@ -160,29 +160,28 @@ export const getCapabilityOutcome = (
 
 /** Selects a bounded result excerpt without inventing or changing public-result facts. */
 export const getCapabilityResultExcerpt = (result: ICapabilityResult): unknown => {
-  if (result.kind === 'validation') return { valid: result.valid, diagnostics: result.diagnostics };
+  if (result.kind === 'validation')
+    return {
+      valid: result.valid,
+      ...(result.errorCount === undefined
+        ? {}
+        : { errorCount: result.errorCount, warningCount: result.warningCount }),
+      diagnostics: result.diagnostics,
+    };
   if (result.kind === 'adapter')
     return {
       valid: result.valid,
+      errorCount: result.errorCount,
+      warningCount: result.warningCount,
       diagnostics: result.diagnostics,
-      evidenceCount: result.evidence.length,
-      evidenceExcerpt: result.evidence
-        .slice(0, 4)
-        .map(({ kind, agentId, runtimeName, references }) => ({
-          kind,
-          agentId,
-          runtimeName,
-          references,
-        })),
+      evidence: result.evidence.slice(0, 4).map(({ kind, agentId, runtimeName, references }) => ({
+        kind,
+        agentId,
+        runtimeName,
+        references,
+      })),
     };
-  return result.kind === 'cli'
-    ? {
-        schemaVersion: result.schemaVersion,
-        status: result.status,
-        exitStatus: result.exitStatus,
-        result: result.facts,
-      }
-    : result.facts;
+  return result.kind === 'cli' ? result.envelopeExcerpt : result.facts;
 };
 
 /**

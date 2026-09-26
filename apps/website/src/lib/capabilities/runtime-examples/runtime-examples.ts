@@ -56,6 +56,8 @@ export const createRuntimeExamples = async (
       result: {
         kind: 'adapter',
         valid: result.valid,
+        errorCount: result.errorCount,
+        warningCount: result.warningCount,
         diagnostics: projectDiagnostics(result.diagnostics),
         evidence: projectEvidence(result.evidence),
       },

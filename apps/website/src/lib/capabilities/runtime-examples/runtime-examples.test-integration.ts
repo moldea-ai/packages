@@ -26,6 +26,8 @@ test('executes all ten adapters and matches every complete evidence record and d
     expect(result).toStrictEqual({
       kind: 'adapter',
       valid: expected?.valid,
+      errorCount: expected?.diagnostics.filter(({ severity }) => severity === 'error').length,
+      warningCount: expected?.diagnostics.filter(({ severity }) => severity === 'warning').length,
       diagnostics: expected?.diagnostics,
       evidence: expected?.evidence,
     });

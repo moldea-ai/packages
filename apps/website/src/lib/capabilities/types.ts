@@ -24,10 +24,18 @@ export type ICapabilityFact =
 
 // result excerpts remain distinct from the complete public package contracts
 export type ICapabilityResult =
-  | { kind: 'validation'; valid: boolean; diagnostics: IDiagnostic[] }
+  | {
+      kind: 'validation';
+      valid: boolean;
+      errorCount?: number;
+      warningCount?: number;
+      diagnostics: IDiagnostic[];
+    }
   | {
       kind: 'adapter';
       valid: boolean;
+      errorCount: number;
+      warningCount: number;
       diagnostics: IDiagnostic[];
       evidence: IRuntimeAdapterEvidence[];
     }
@@ -40,6 +48,14 @@ export type ICapabilityResult =
       schemaVersion: 5;
       status: 'valid' | 'invalid' | 'error';
       facts: Record<string, ICapabilityFact>;
+      envelopeExcerpt: {
+        cliVersion: string;
+        command: string;
+        error: ICapabilityFact;
+        result: ICapabilityFact;
+        schemaVersion: 5;
+        status: 'valid' | 'invalid' | 'error';
+      };
     };
 
 // a visible excerpt always points to the exact synthetic input that was executed

@@ -25,6 +25,18 @@ const example: ICapabilityCase = {
   result: { kind: 'validation', valid: true, diagnostics: [] },
 };
 const catalog: Pick<ICapabilities, 'runtimeTargets'> = { runtimeTargets: [] };
+const noDiagnostics = { errorCount: 0, warningCount: 0 };
+const cliEnvelopeExcerpt = (
+  status: Extract<ICapabilityResult, { kind: 'cli' }>['status'],
+  command: string,
+) => ({
+  cliVersion: '9.0.0',
+  command,
+  error: null,
+  result: {},
+  schemaVersion: 5 as const,
+  status,
+});
 
 test('resolves selected illustrations in section order independently of case order', () => {
   const groups = CAPABILITY_GROUPS;
@@ -89,6 +101,8 @@ describe('getCapabilityOutcome', () => {
     const result: ICapabilityResult = {
       kind: 'adapter',
       valid: true,
+      errorCount: 0,
+      warningCount: 1,
       diagnostics: [
         {
           code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
@@ -124,6 +138,7 @@ describe('getCapabilityOutcome', () => {
             exitStatus: 0,
             command: 'moldea validate --json',
             facts: { warningCount: 1 },
+            envelopeExcerpt: cliEnvelopeExcerpt('valid', 'validate'),
           },
         },
         catalog,
@@ -138,7 +153,11 @@ describe('getCapabilityOutcome', () => {
   test.each([
     [{ kind: 'validation', valid: true, diagnostics: [] }, 'Valid', 'success'],
     [{ kind: 'validation', valid: false, diagnostics: [] }, 'Invalid', 'danger'],
-    [{ kind: 'adapter', valid: true, diagnostics: [], evidence: [] }, 'Inspected', 'info'],
+    [
+      { kind: 'adapter', valid: true, ...noDiagnostics, diagnostics: [], evidence: [] },
+      'Inspected',
+      'info',
+    ],
     [{ kind: 'reader', facts: { code: 'SNAPSHOT_CHANGED' } }, 'Refused', 'warning'],
     [{ kind: 'inspection', facts: { code: 'RESOURCE_LIMIT_EXCEEDED' } }, 'Refused', 'warning'],
     [{ kind: 'inspection', facts: { valid: true, relevant: false } }, 'Returned', 'info'],
@@ -150,6 +169,7 @@ describe('getCapabilityOutcome', () => {
         exitStatus: 0,
         command: 'moldea inspect --json',
         facts: {},
+        envelopeExcerpt: cliEnvelopeExcerpt('valid', 'inspect'),
       },
       'Completed',
       'info',
@@ -162,6 +182,7 @@ describe('getCapabilityOutcome', () => {
         exitStatus: 1,
         command: 'moldea validate --json',
         facts: {},
+        envelopeExcerpt: cliEnvelopeExcerpt('invalid', 'validate'),
       },
       'Invalid',
       'danger',
@@ -174,6 +195,7 @@ describe('getCapabilityOutcome', () => {
         exitStatus: 3,
         command: 'moldea content --json',
         facts: {},
+        envelopeExcerpt: cliEnvelopeExcerpt('error', 'content'),
       },
       'Refused',
       'warning',
@@ -224,7 +246,10 @@ describe('getCapabilityOutcome', () => {
     };
     expect(
       getCapabilityOutcome(
-        { ...example, result: { kind: 'adapter', valid: true, diagnostics: [], evidence: [] } },
+        {
+          ...example,
+          result: { kind: 'adapter', valid: true, ...noDiagnostics, diagnostics: [], evidence: [] },
+        },
         withAbsence,
       ),
     ).toMatchObject({ label: 'Not established', tone: 'warning' });
@@ -233,14 +258,24 @@ describe('getCapabilityOutcome', () => {
         {
           ...example,
           id: 'different',
-          result: { kind: 'adapter', valid: true, diagnostics: [], evidence: [] },
+          result: { kind: 'adapter', valid: true, ...noDiagnostics, diagnostics: [], evidence: [] },
         },
         withAbsence,
       ).label,
     ).toBe('Inspected');
     expect(
       getCapabilityOutcome(
-        { ...example, result: { kind: 'adapter', valid: false, diagnostics: [], evidence: [] } },
+        {
+          ...example,
+          result: {
+            kind: 'adapter',
+            valid: false,
+            errorCount: 1,
+            warningCount: 0,
+            diagnostics: [],
+            evidence: [],
+          },
+        },
         withAbsence,
       ).label,
     ).toBe('Invalid');
@@ -249,7 +284,7 @@ describe('getCapabilityOutcome', () => {
         {
           ...example,
           id: 'vercel-dynamic-preparation',
-          result: { kind: 'adapter', valid: true, diagnostics: [], evidence: [] },
+          result: { kind: 'adapter', valid: true, ...noDiagnostics, diagnostics: [], evidence: [] },
         },
         catalog,
       ).label,
@@ -261,6 +296,7 @@ test('selects bounded evidence without mutating the recorded result', () => {
   const result: Extract<ICapabilityResult, { kind: 'adapter' }> = {
     kind: 'adapter',
     valid: true,
+    ...noDiagnostics,
     diagnostics: [],
     evidence: Array.from({ length: 8 }, (_, index) => ({
       source: 'custom',
@@ -276,16 +312,14 @@ test('selects bounded evidence without mutating the recorded result', () => {
   const before = structuredClone(result);
   expect(getCapabilityResultExcerpt(result)).toStrictEqual({
     valid: true,
+    ...noDiagnostics,
     diagnostics: [],
-    evidenceCount: 8,
-    evidenceExcerpt: result.evidence
-      .slice(0, 4)
-      .map(({ kind, agentId, runtimeName, references }) => ({
-        kind,
-        agentId,
-        runtimeName,
-        references,
-      })),
+    evidence: result.evidence.slice(0, 4).map(({ kind, agentId, runtimeName, references }) => ({
+      kind,
+      agentId,
+      runtimeName,
+      references,
+    })),
   });
   expect(result).toStrictEqual(before);
   expect(getCapabilityResultExcerpt({ kind: 'reader', facts: { code: 'ABORTED' } })).toStrictEqual({

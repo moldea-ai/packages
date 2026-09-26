@@ -67,6 +67,9 @@ export const createCoreExamples = async (
       result: {
         kind: 'validation',
         valid: result.valid,
+        ...('errorCount' in result
+          ? { errorCount: result.errorCount, warningCount: result.warningCount }
+          : {}),
         diagnostics: projectDiagnostics(result.diagnostics),
       },
     });
