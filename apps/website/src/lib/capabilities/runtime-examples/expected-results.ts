@@ -9546,8 +9546,112 @@ const deriveVercelDeferredResult = (): IRuntimeExpectedResult => {
   };
 };
 
+const deriveLangGraphResumeResult = (): IRuntimeExpectedResult => {
+  const base = getBaseResult('langgraph-workflows');
+  return {
+    ...base,
+    evidence: base.evidence
+      .map((entry) => {
+        if (entry.kind === 'runtime-package') {
+          const declaredRange =
+            entry.runtimeName === '@langchain/langgraph' ? '~1.4.18' : '~1.2.12';
+          return { ...entry, details: { ...entry.details, declaredRange } };
+        }
+
+        return entry.agentId === 'functional' &&
+          entry.kind === 'runtime-pattern' &&
+          entry.details['patternId'] === 'functional-interrupt'
+          ? {
+              ...entry,
+              details: {
+                ...entry.details,
+                interruptForm: 'two-argument',
+                responseSchemaRole: 'resume-value',
+              },
+            }
+          : entry;
+      })
+      .sort((left, right) => {
+        if (left.agentId !== 'functional' || right.agentId !== 'functional') return 0;
+        if (
+          left.details['patternId'] === 'functional-interrupt' &&
+          right.details['patternId'] === 'functional-final-state'
+        )
+          return -1;
+        if (
+          left.details['patternId'] === 'functional-final-state' &&
+          right.details['patternId'] === 'functional-interrupt'
+        )
+          return 1;
+        return 0;
+      }),
+  };
+};
+
+const deriveLangChainMiddlewareWarningResult = (): IRuntimeExpectedResult => {
+  const base = getBaseResult('langchain-create-agent');
+  const relationships = ['agent-output-schema', 'instruction-loader', 'tool-registration'] as const;
+  return {
+    ...base,
+    diagnostics: relationships.map((relationship) => ({
+      code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason: 'dynamic-source-pattern', relationship },
+      entity: {
+        adapterId: 'langchain',
+        agentId: 'support',
+        ...(relationship === 'tool-registration'
+          ? { capabilityId: 'find-order', capabilityKind: 'tool' as const }
+          : {}),
+      },
+      message: 'The declared runtime relationship could not be verified.',
+      path: '/src/agent.ts',
+      pointer: null,
+      range: null,
+      severity: 'warning',
+      source: 'langchain',
+    })),
+    evidence: base.evidence.filter(
+      (entry) =>
+        entry.kind !== 'instruction-loader' &&
+        entry.kind !== 'tool-registration' &&
+        !(entry.kind === 'schema' && entry.capabilityId === null),
+    ),
+  };
+};
+
+const deriveOpenAiAgentsSdkRoutingWarningResult = (): IRuntimeExpectedResult => {
+  const base = getBaseResult('openai-agent-handoffs');
+  return {
+    ...base,
+    diagnostics: [
+      {
+        code: 'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { reason: 'dynamic-source-pattern', relationship: 'routing-description' },
+        entity: { adapterId: 'openai-agents-sdk', agentId: 'billing' },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/agents.ts',
+        pointer: null,
+        range: {
+          end: { column: 54, line: 15, offset: 543 },
+          start: { column: 42, line: 15, offset: 531 },
+        },
+        severity: 'warning',
+        source: 'openai-agents-sdk',
+      },
+    ],
+    evidence: base.evidence.map((entry) =>
+      entry.kind === 'handoff-registration' && entry.details['registrationKind'] === 'handoff'
+        ? { ...entry, details: { ...entry.details, routingDescriptionSource: 'unresolved' } }
+        : entry,
+    ),
+  };
+};
+
 export const RUNTIME_EXPECTED_RESULTS: Record<string, IRuntimeExpectedResult> = {
   ...BASE_RUNTIME_EXPECTED_RESULTS,
+  'langgraph-resume-schema': deriveLangGraphResumeResult(),
+  'langchain-middleware-warning': deriveLangChainMiddlewareWarningResult(),
+  'openai-agents-sdk-routing-warning': deriveOpenAiAgentsSdkRoutingWarningResult(),
   'cloudflare-think-session-context': deriveCloudflareThinkResult({
     thinkRange: '0.17.0',
     agentsRange: '0.21.0',

@@ -11,6 +11,7 @@ import {
 } from '../source-analysis/index.js';
 import {
   addLangChainDiagnostic,
+  addLangChainUnverifiedRelationship,
   analyzeLangChainBoundReference,
   createLangChainEvidence,
   locateLangChainNode,
@@ -57,9 +58,18 @@ export const inspectLangChainOutputSchema = async (
   if (
     schema.kind !== 'present-supported' ||
     schema.expression === undefined ||
-    !isLangChainSingleSchemaInitializer(schema.expression, schemaAnalysis) ||
-    inspected.middlewareState !== 'inactive'
+    !isLangChainSingleSchemaInitializer(schema.expression, schemaAnalysis)
   ) {
+    return;
+  }
+
+  if (inspected.middlewareState !== 'inactive') {
+    addLangChainUnverifiedRelationship(
+      diagnostics,
+      'agent-output-schema',
+      inspected.analysis.path,
+      inspected.agent.id,
+    );
     return;
   }
 

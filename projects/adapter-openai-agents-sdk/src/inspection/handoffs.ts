@@ -28,6 +28,7 @@ import {
 } from '../source-analysis/index.js';
 import {
   addOpenAiAgentsSdkDiagnostic,
+  addOpenAiAgentsSdkUnverifiedRelationship,
   createOpenAiAgentsSdkEvidence,
   isOpenAiAgentsSdkMachineString,
   locateOpenAiAgentsSdkNode,
@@ -331,6 +332,15 @@ export const inspectOpenAiAgentsSdkHandoffs = async (
         mappedAgent,
         diagnostics,
       );
+      if (routingDescriptionSource === 'unresolved') {
+        addOpenAiAgentsSdkUnverifiedRelationship(
+          diagnostics,
+          'routing-description',
+          analysis.path,
+          locateOpenAiAgentsSdkNode(analysis, registration.target),
+          mappedAgent.id,
+        );
+      }
     }
 
     evidence.push(

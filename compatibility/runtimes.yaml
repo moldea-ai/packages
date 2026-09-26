@@ -903,7 +903,7 @@ adapters:
         knownLimitations:
           - Only TypeScript ESM source and documented direct relative imports are interpreted.
           - Only directly exported package-root createAgent definitions are recognized.
-          - Non-empty or unresolved middleware suppresses prompt, tool-registration, and output-schema relationship conclusions.
+          - Non-empty or unresolved middleware suppresses prompt, tool-registration, and output-schema relationship conclusions. A recognized candidate affecting a declared relationship receives a scoped warning.
           - Developer-authored and statically resolved multi-format arrays are not mapped to the single canonical agent output-schema binding; a single-schema toolStrategy call remains supported despite its array-shaped helper return.
           - The target does not infer agent input schemas from stateSchema or contextSchema.
           - The target does not interpret headless tools, provider tools, server tools, toolkits, MCP tools, or tool output schemas.
@@ -1061,7 +1061,7 @@ adapters:
           - id: functional-interrupt
             kind: runtime
             support: partial
-            description: An exact one-argument direct package-root interrupt call in the entrypoint body produces human-in-the-loop runtime-pattern evidence without interpreting approval semantics.
+            description: A direct package-root interrupt call in the entrypoint body produces human-in-the-loop runtime-pattern evidence in its one-argument form, or with a direct closed options object containing only an optional responseSchema when all observed LangGraph declarations are at or after 1.4.16. A present responseSchema describes the resume value, never agent input or output.
           - id: functional-previous-state
             kind: runtime
             support: partial
@@ -1098,7 +1098,7 @@ adapters:
           - Ordinary JavaScript control flow is not reconstructed as a graph topology.
           - TypeScript input and output types do not establish executable schema relationships.
           - Tasks do not become manifest tools, skills, or handoffs merely because they are exported or invoked.
-          - Interrupt payloads, checkpoint behavior, replay determinism, idempotency, and human-approval semantics are not validated.
+          - Interrupt payloads, resume-schema contents, checkpoint behavior, replay determinism, idempotency, and human-approval semantics are not validated. Indirect, open, or malformed second-argument options produce no interrupt-pattern evidence; independently proved functional patterns remain available.
           - Lockfiles and installed package versions are not inspected.
         qualificationEvidence:
           url: 'https://skill.moldea.ai/evidence/qualification/langgraph/typescript-functional-api-1-4/'
@@ -1291,7 +1291,7 @@ adapters:
           - id: dynamic-routing-description
             kind: routing
             support: ambiguous
-            description: Runtime-generated or transformed handoff descriptions and description overrides remain unestablished.
+            description: Runtime-generated or transformed handoff descriptions and description overrides remain unestablished; a recognized dynamic candidate affecting a registered target's routing description receives a scoped warning.
           - id: agents-as-tools
             kind: routing
             support: unsupported

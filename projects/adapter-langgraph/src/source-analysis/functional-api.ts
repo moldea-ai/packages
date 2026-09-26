@@ -295,14 +295,46 @@ const inspectFunctionalPatterns = async (
           functionAnalysis.imports.interruptNames,
           functionAnalysis,
         ) &&
-        call.arguments.length === 1 &&
         hasLangGraphTypeArgumentCount(call, 1, 2)
       ) {
-        patterns.push(
-          createPattern(LANGGRAPH_PATTERN_IDS.FunctionalInterrupt, entrypointAnalysis.path, null, {
-            apiKind: 'functional',
-          }),
-        );
+        if (call.arguments.length === 1) {
+          patterns.push(
+            createPattern(
+              LANGGRAPH_PATTERN_IDS.FunctionalInterrupt,
+              entrypointAnalysis.path,
+              null,
+              {
+                apiKind: 'functional',
+              },
+            ),
+          );
+        } else if (call.arguments.length === 2) {
+          const options = unwrapExpression(call.arguments[1] as ts.Expression);
+          const properties = ts.isObjectLiteralExpression(options)
+            ? getClosedObjectProperties(options)
+            : null;
+
+          if (
+            properties !== null &&
+            [...properties.keys()].every((name) => name === 'responseSchema')
+          ) {
+            patterns.push(
+              createPattern(
+                LANGGRAPH_PATTERN_IDS.FunctionalInterrupt,
+                entrypointAnalysis.path,
+                null,
+                {
+                  apiKind: 'functional',
+                  interruptForm: 'two-argument',
+                  ...(properties.has('responseSchema')
+                    ? { responseSchemaRole: 'resume-value' }
+                    : {}),
+                },
+              ),
+            );
+          }
+        }
+
         continue;
       }
 

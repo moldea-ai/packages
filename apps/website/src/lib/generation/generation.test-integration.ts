@@ -604,7 +604,7 @@ test('keeps Website UI documentation out of every public discovery surface', () 
 test('keeps display metadata separate from canonical compatibility and model generation deterministic', async () => {
   const model = getCurrentWebsiteModel();
   expect(model).toStrictEqual(await createWebsiteModel());
-  expect(model.capabilities.cases).toHaveLength(145);
+  expect(model.capabilities.cases).toHaveLength(148);
   expect(model.capabilities.runtimeTargets).toHaveLength(14);
   expect(model.routes).toContain('/capabilities/');
   expect(model.inspectionExample.map(({ result }) => result.valid)).toStrictEqual([

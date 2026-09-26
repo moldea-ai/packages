@@ -204,6 +204,56 @@ export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze
     version: '2.24.0',
   },
   {
+    companionPackages: ['@langchain/core@1.2.8', 'zod@4.3.6'],
+    family: 'langchain',
+    fixture: 'minimum',
+    integrity:
+      'sha512-267IPLnoCtyMbIl1ABedQHlJDUqboW7dUWYCQS0HXjUvQnUaYV+l7OIXaQnJUaodS+fDtk774Oo03n1NLHrPFA==',
+    packageName: 'langchain',
+    sourceReference: 'https://registry.npmjs.org/langchain/1.5.9',
+    version: '1.5.9',
+  },
+  {
+    companionPackages: ['@langchain/core@1.2.12', 'zod@4.3.6'],
+    family: 'langchain',
+    fixture: 'current',
+    integrity:
+      'sha512-cWNsKiRLyv0NN1e9IR+0CUyS4cBn1LSJ7OhqTa0RQGK735cb4l1+wd4/lQJz4imJ4sojOl+VfHw6kKZwWFNYlQ==',
+    packageName: 'langchain',
+    sourceReference: 'https://registry.npmjs.org/langchain/1.5.12',
+    version: '1.5.12',
+  },
+  {
+    companionPackages: ['@langchain/core@1.2.9', 'zod@4.3.6'],
+    family: 'langgraph',
+    fixture: 'minimum',
+    integrity:
+      'sha512-63iH/igH5Fh5fHqmWp09YYWaDKKB9v4RCmYNJBrnQ224rFRbjebgyYW6o5RCczN5FZxIhQj+xT51rrNmG0zi5A==',
+    packageName: '@langchain/langgraph',
+    sourceReference: 'https://registry.npmjs.org/@langchain%2Flanggraph/1.4.12',
+    version: '1.4.12',
+  },
+  {
+    companionPackages: ['@langchain/core@1.2.12', 'zod@4.3.6'],
+    family: 'langgraph',
+    fixture: 'boundary',
+    integrity:
+      'sha512-jwD/V5mJwCMyGH+Rg/3I2RACJKuaM0ZRRDaNMOSsu7+juw9tSH55Vc7zCKwsxjhHCf0EcGEdLbG7ex/BxbypjQ==',
+    packageName: '@langchain/langgraph',
+    sourceReference: 'https://registry.npmjs.org/@langchain%2Flanggraph/1.4.16',
+    version: '1.4.16',
+  },
+  {
+    companionPackages: ['@langchain/core@1.2.12', 'zod@4.3.6'],
+    family: 'langgraph',
+    fixture: 'current',
+    integrity:
+      'sha512-yrMMJ9hk2NVMD2xU2WoVrgFawAU6s/RzEl/dX9BhlyxZHazo1wHY35z4K2BIBzTUh4z3giCzrUoqRAqW2CWpWg==',
+    packageName: '@langchain/langgraph',
+    sourceReference: 'https://registry.npmjs.org/@langchain%2Flanggraph/1.4.18',
+    version: '1.4.18',
+  },
+  {
     companionPackages: ['zod@4.3.6'],
     family: 'openai',
     fixture: 'minimum',
@@ -222,5 +272,25 @@ export const PINNED_UPSTREAM_TARGETS: readonly IUpstreamTarget[] = Object.freeze
     packageName: 'openai',
     sourceReference: 'https://github.com/openai/openai-node/tree/v7.23.0',
     version: '7.23.0',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'openai-agents-sdk',
+    fixture: 'minimum',
+    integrity:
+      'sha512-L1ROwfXhoqiLCwtOp1E2tEluK2GRmq/LsQyoRGGFN/BjYYbyNMtLn6afuaULEIOdFC6treHdNtiEQaCt5I6rdg==',
+    packageName: '@openai/agents',
+    sourceReference: 'https://registry.npmjs.org/@openai%2Fagents/0.16.1',
+    version: '0.16.1',
+  },
+  {
+    companionPackages: ['zod@4.3.6'],
+    family: 'openai-agents-sdk',
+    fixture: 'current',
+    integrity:
+      'sha512-i0dIeN8PsqLfEgfMLrmpcJPvgltY2fUxr2+CftBCvX6g1GgWdoiCKpbf+labmJJPqwidN7HfXkgBszM2CHg/IA==',
+    packageName: '@openai/agents',
+    sourceReference: 'https://registry.npmjs.org/@openai%2Fagents/0.18.0',
+    version: '0.18.0',
   },
 ]);

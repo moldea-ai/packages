@@ -296,12 +296,47 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     }),
   },
   {
+    id: 'langchain-middleware-warning',
+    adapter: langChainAdapter,
+    title: 'Middleware leaves declared relationships unverified',
+    description:
+      'A recognized middleware expression keeps the agent definition and independent tool schema evidence, while declared prompt, output, and registration relationships receive warnings.',
+    files: overrideFiles(LANGCHAIN_FILES, {
+      '/src/agent.ts': source(LANGCHAIN_FILES, '/src/agent.ts')
+        .replace(
+          'const MIDDLEWARE = [];',
+          'const MIDDLEWARE = [];\nconst getMiddleware = () => MIDDLEWARE;',
+        )
+        .replace('middleware: MIDDLEWARE', 'middleware: getMiddleware()'),
+    }),
+  },
+  {
     id: 'langgraph-workflows',
     adapter: langGraphAdapter,
     title: 'A graph and a functional workflow',
     description:
       'Inspect graph nodes, edges, schemas, compile identity, tasks, interrupts, and saved-state calls.',
     files: LANGGRAPH_FILES,
+  },
+  {
+    id: 'langgraph-resume-schema',
+    adapter: langGraphAdapter,
+    title: 'A functional interrupt with a resume schema',
+    description:
+      'The response schema describes the value supplied when this workflow resumes; it does not establish an agent input or output binding.',
+    files: overrideFiles(LANGGRAPH_FILES, {
+      '/package.json':
+        '{"dependencies":{"@langchain/core":"~1.2.12","@langchain/langgraph":"~1.4.18","zod":"4.3.6"}}',
+      '/src/functional.ts': source(LANGGRAPH_FILES, '/src/functional.ts')
+        .replace(
+          "import { entrypoint, getPreviousState, interrupt, task } from '@langchain/langgraph';",
+          "import { entrypoint, getPreviousState, interrupt, task } from '@langchain/langgraph';\nimport { z } from 'zod';\nconst ResumeSchema = z.object({ approved: z.boolean() });",
+        )
+        .replace(
+          'interrupt({ prepared });',
+          'interrupt({ prepared }, { responseSchema: ResumeSchema });',
+        ),
+    }),
   },
   {
     id: 'openai-responses',
@@ -347,6 +382,24 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     description:
       'Inspect Agent construction, Agent.create, the closed tool list, direct and configured handoffs, and routing descriptions.',
     files: OPENAI_AGENTS_SDK_FILES,
+  },
+  {
+    id: 'openai-agents-sdk-routing-warning',
+    adapter: openAiAgentsSdkAdapter,
+    title: 'A handoff with a dynamic routing description',
+    description:
+      'The handoff remains observable, while its declared target routing description receives a warning because the effective override is dynamic.',
+    files: overrideFiles(OPENAI_AGENTS_SDK_FILES, {
+      '/src/agents.ts': source(OPENAI_AGENTS_SDK_FILES, '/src/agents.ts')
+        .replace(
+          'const configuredBillingHandoff = handoff(',
+          'const createRoutingDescription = () => billingRoutingDescription;\nconst configuredBillingHandoff = handoff(',
+        )
+        .replace(
+          'toolDescriptionOverride: billingRoutingDescription,',
+          'toolDescriptionOverride: createRoutingDescription(),',
+        ),
+    }),
   },
   {
     id: 'vercel-agent-and-stream',

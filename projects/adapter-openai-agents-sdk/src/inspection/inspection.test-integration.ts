@@ -261,7 +261,16 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
     expect(mismatch.diagnostics.map(({ code }) => code)).toContain(
       'OPENAI_AGENTS_SDK_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED',
     );
-    expect(dynamic.diagnostics).toStrictEqual([]);
+    expect([dynamic.valid, dynamic.errorCount, dynamic.warningCount]).toStrictEqual([true, 0, 1]);
+    expect(dynamic.diagnostics).toMatchObject([
+      {
+        code: 'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { reason: 'dynamic-source-pattern', relationship: 'routing-description' },
+        entity: { adapterId: 'openai-agents-sdk', agentId: 'billing' },
+        path: '/src/agents.ts',
+        severity: 'warning',
+      },
+    ]);
     expect(dynamic.evidence.filter(({ kind }) => kind === 'handoff-registration')).toHaveLength(2);
     expect(emptyOverride.diagnostics).toStrictEqual([]);
     expect(
@@ -270,6 +279,34 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
           kind === 'handoff-registration' && details['registrationKind'] === 'handoff',
       ),
     ).toMatchObject({ details: { routingDescriptionSource: 'target' } });
+  });
+
+  test('keeps separate dynamic routing registrations visible as separate warnings', async () => {
+    const agents = getFixtureText('/src/agents.ts')
+      .replace(
+        'const configuredBillingHandoff = handoff(',
+        'const createRoutingDescription = () => billingRoutingDescription;\nconst configuredBillingHandoff = handoff(',
+      )
+      .replace(
+        'toolDescriptionOverride: billingRoutingDescription,',
+        'toolDescriptionOverride: createRoutingDescription(),',
+      )
+      .replace(
+        'const triageHandoffs = [billingAgent, configuredBillingHandoff];',
+        "const alternateBillingHandoff = handoff(billingAgent, { toolNameOverride: 'alternate_billing', toolDescriptionOverride: createRoutingDescription() });\nconst triageHandoffs = [billingAgent, configuredBillingHandoff, alternateBillingHandoff];",
+      );
+    const result = await inspect({ '/src/agents.ts': agents });
+    const warnings = result.diagnostics.filter(
+      ({ code }) => code === 'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+    );
+
+    expect([result.valid, result.errorCount, result.warningCount]).toStrictEqual([true, 0, 2]);
+    expect(warnings).toHaveLength(2);
+    expect(warnings.map(({ details }) => details)).toMatchObject([
+      { reason: 'dynamic-source-pattern', relationship: 'routing-description' },
+      { reason: 'dynamic-source-pattern', relationship: 'routing-description' },
+    ]);
+    expect(new Set(warnings.map(({ range }) => JSON.stringify(range))).size).toBe(2);
   });
 
   test.each([

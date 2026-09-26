@@ -14,4 +14,6 @@ Functional API tasks are durable workflow units, not automatically model-visible
 
 The adapter does not validate LangGraph runtime acceptance, schema semantics, reducer correctness, checkpoint serialization, task idempotency, interrupt safety, provider compatibility, routing intent, graph reachability, or runtime execution.
 
+Node `tracePolicy` and `omitPayload` are not advertised: the reviewed published LangGraph `1.4.15` and `1.4.18` packages do not contain those fields despite a changelog entry. The adapter does not interpret node tracing behavior.
+
 Each invocation sees one declared agent and bounded logical repository operations, not a complete agent collection or project body index.

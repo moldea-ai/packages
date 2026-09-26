@@ -19,7 +19,7 @@ const core = createCore({ adapters: [langChainAdapter] });
 
 ## Verified target
 
-Version `3.0.3` supports Repository Format `1`, `@moldea.ai/core ^4.0.0`, and declared ranges that intersect `langchain >=1.5.9` with companion `@langchain/core >=1.2.8`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution. The target recognizes:
+Version `4.0.0` supports Repository Format `1`, `@moldea.ai/core ^5.0.0`, and declared ranges that intersect `langchain >=1.5.9` with companion `@langchain/core >=1.2.8`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution. The target recognizes:
 
 - directly exported package-root `createAgent(...)` definitions
 - direct instruction-loader calls and `SystemMessage` construction

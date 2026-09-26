@@ -30,6 +30,7 @@ import {
 import {
   addLangChainDiagnostic,
   addLangChainSourceFailureDiagnostic,
+  addLangChainUnverifiedRelationship,
   analyzeLangChainBoundReference,
   compareLangChainStrings,
   createLangChainEvidence,
@@ -621,7 +622,18 @@ export const inspectLangChainTools = async (
           ? metadata.runtimeName
           : null;
 
-      if (inspected.middlewareState !== 'inactive' || runtimeName === null) {
+      if (runtimeName === null) {
+        continue;
+      }
+
+      if (inspected.middlewareState !== 'inactive') {
+        addLangChainUnverifiedRelationship(
+          diagnostics,
+          'tool-registration',
+          inspected.analysis.path,
+          inspected.agent.id,
+          capabilityId,
+        );
         continue;
       }
 

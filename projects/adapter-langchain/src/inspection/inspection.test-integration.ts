@@ -80,6 +80,42 @@ const getFixtureText = (path: string): string => {
   return text;
 };
 
+const expectMiddlewareWarnings = (result: Awaited<ReturnType<typeof inspect>>): void => {
+  expect([result.valid, result.errorCount, result.warningCount]).toStrictEqual([true, 0, 3]);
+  expect(
+    result.diagnostics.map(({ code, details, entity, severity }) => ({
+      code,
+      details,
+      entity,
+      severity,
+    })),
+  ).toMatchObject([
+    {
+      code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason: 'dynamic-source-pattern', relationship: 'agent-output-schema' },
+      entity: { adapterId: 'langchain', agentId: 'support' },
+      severity: 'warning',
+    },
+    {
+      code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+      entity: { adapterId: 'langchain', agentId: 'support' },
+      severity: 'warning',
+    },
+    {
+      code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
+      entity: {
+        adapterId: 'langchain',
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+      },
+      severity: 'warning',
+    },
+  ]);
+};
+
 describe('langChainAdapter Core integration', () => {
   test('keeps the complete stable diagnostic catalog synchronized', () => {
     expect(
@@ -235,7 +271,7 @@ describe('langChainAdapter Core integration', () => {
     });
     const middlewareSensitiveKinds = new Set(['instruction-loader', 'tool-registration']);
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expectMiddlewareWarnings(result);
     expect(
       result.evidence.filter(
         ({ kind, details }) =>
@@ -417,7 +453,7 @@ describe('langChainAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expectMiddlewareWarnings(result);
     expect(result.evidence.some(({ kind }) => kind === 'agent-definition')).toBe(true);
     expect(
       result.evidence.some(
@@ -514,7 +550,7 @@ describe('langChainAdapter Core integration', () => {
       '/src/agent.ts': `${getFixtureText('/src/agent.ts')}supportAgent.invoke = replacement;\n`,
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expectMiddlewareWarnings(result);
     expect(result.evidence.some(({ kind }) => kind === 'language')).toBe(true);
     expect(result.evidence.some(({ kind }) => kind === 'agent-definition')).toBe(true);
     expect(
@@ -545,7 +581,7 @@ describe('langChainAdapter Core integration', () => {
       '/src/agent.ts': `${agentSource}supportAgent.invoke = replacement;\n`,
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expectMiddlewareWarnings(result);
     expect(
       result.evidence.some(
         ({ capabilityId, details }) =>
@@ -567,7 +603,7 @@ describe('langChainAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expectMiddlewareWarnings(result);
     expect(result.evidence.some(({ kind }) => kind === 'agent-definition')).toBe(true);
     expect(
       result.evidence.some(

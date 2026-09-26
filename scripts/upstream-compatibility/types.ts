@@ -8,6 +8,9 @@ export interface IUpstreamTarget {
     | 'cloudflare-think'
     | 'eve'
     | 'google-genai'
+    | 'langchain'
+    | 'langgraph'
+    | 'openai-agents-sdk'
     | 'openai';
   readonly fixture:
     | 'minimum'

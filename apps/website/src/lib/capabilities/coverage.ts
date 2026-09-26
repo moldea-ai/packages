@@ -97,10 +97,13 @@ export const REQUIRED_CASE_IDS: string[] = [
   'langchain-create-agent',
   'langchain-direct-schema',
   'langchain-tool-strategy',
+  'langchain-middleware-warning',
   'langgraph-workflows',
+  'langgraph-resume-schema',
   'openai-responses',
   'openai-parse-output',
   'openai-agent-handoffs',
+  'openai-agents-sdk-routing-warning',
   'vercel-agent-and-stream',
   'vercel-deferred-tool',
   'claude-preset',
@@ -1937,6 +1940,23 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
       },
     ],
     'functional-interrupt': [
+      {
+        caseId: 'langgraph-resume-schema',
+        source: {
+          path: '/src/functional.ts',
+          contains: 'interrupt({ prepared }, { responseSchema: ResumeSchema })',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'runtime-pattern',
+          agentId: 'functional',
+          details: {
+            interruptForm: 'two-argument',
+            patternId: 'functional-interrupt',
+            responseSchemaRole: 'resume-value',
+          },
+        },
+      },
       {
         caseId: 'langgraph-workflows',
         source: {

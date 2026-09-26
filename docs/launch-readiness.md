@@ -1,6 +1,6 @@
 # Package launch readiness
 
-This report records implementation and verification for the [approved launch plan](../coding-agent-planning/1790360458_adapter-launch-readiness/plan.md). A package is not declared production ready merely because its version or compatibility range has been updated. Milestones 6–9 and the final combined consumer matrix remain pending.
+This report records implementation and verification for the [approved launch plan](../coding-agent-planning/1790360458_adapter-launch-readiness/plan.md). A package is not declared production ready merely because its version or compatibility range has been updated. Milestones 7–9 and the final combined consumer matrix remain pending.
 
 ## Milestone 1: diagnostic contract and resource baseline
 
@@ -103,24 +103,41 @@ The real Eve compiler established the narrower workflow directive rule: a top-le
 
 The broad fixture demonstrates bounded output paging and correct direct edges, but its full 404 KiB output could consume substantial tokens if copied into a coding-agent prompt. Consumers should request relevant `scope` or `content` and only the necessary result pages. The measurement has no model calls and does not yield an exact token count. Milestone 8 owns the final resource envelope and concurrency assessment.
 
+## Milestone 6: LangGraph and remaining adapter verification
+
+The LangGraph Functional API adapter now recognizes a direct two-argument `interrupt(value, options)` when the options are a closed object containing only an optional `responseSchema` and every observed LangGraph declaration is wholly at or after `1.4.16`. The existing one-argument form remains available from the `1.4.12` target minimum. A present response schema describes the value supplied on resume; it produces runtime-pattern detail, never agent input or output schema evidence. An older or spanning range, indirect or malformed options, a shadowed call, or an unsupported arity cannot establish that newer pattern. Independent graph, task, previous-state, and schema relationships remain available.
+
+The planned node `tracePolicy` and `omitPayload` classification is deferred by the developer-approved amendment. Although the LangGraph changelog lists these fields in `1.4.15`, the reviewed published `1.4.15` and `1.4.18` runtime and declaration artifacts do not expose them. Advertising a static pattern now would make an unsupported claim. This is an explicit limitation, not a partial implementation path.
+
+The LangChain audit checked the published `createAgent`, instruction, normal tool, middleware, and structured-output strategy surfaces at `1.5.9` with `@langchain/core 1.2.8` and at `1.5.12` with `@langchain/core 1.2.12`. The OpenAI Agents SDK audit checked published `Agent`, function-tool, output-schema, handoff, and routing-description surfaces at `0.16.1` and `0.18.0`. No additional source form or public adapter export was justified. The audits did expose warning gaps: recognized active or unresolved LangChain middleware now warns only for affected declared prompt, output-schema, and tool-registration relationships after their local symbols are established; a dynamic effective OpenAI Agents handoff description warns for the registered target. These warnings retain independent evidence and do not turn uncertainty into a confirmed wiring error.
+
+Seven integrity-pinned disposable upstream consumers extend the compatibility harness to 28 exact targets, including the LangGraph minimum, the `1.4.16` interrupt boundary, and current LangGraph, LangChain, and OpenAI Agents SDK releases. They type-check real package declarations without model calls, provider requests, or an API key. The website catalog has 148 executed cases, including resume-schema and scoped-warning witnesses. Each case compares the complete Core result with a reviewed expected result before it can be published. The added three website cases increase finite build-time work; they do not execute in a visitor's browser. Milestone 8 will measure the final aggregate inspection and output cost, including warnings in larger repositories.
+
+### Verification recorded for Milestone 6
+
+- LangGraph unit and integration suites passed: 18 and 61 tests. LangChain unit and integration suites passed: 31 and 63 tests. OpenAI Agents SDK unit and integration suites passed: 54 and 90 tests.
+- `pnpm upstream:check` passed all 28 integrity-pinned targets; `pnpm upstream:check:latest` type-checked all 10 current stable targets without provider calls. `pnpm test` passed all workspace unit, integration, and end-to-end tasks, including the packed CLI consumer and 211 Chromium website cases. The LangGraph integration suite was rerun successfully after tightening a test assertion without changing production behavior.
+- `pnpm compatibility:generate`, `pnpm compatibility:check`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm build`, and `pnpm website:check` passed. The website check included 82 unit tests, 132 integration tests, clean Astro diagnostics, and an 89-page build. The initial website fixture failures were stale expected ordering and counts; package evidence was compared before changing those expectations.
+- The three synchronized platform specifications passed the repository-local `moldea validate` command with zero diagnostics. Platform `pnpm docs:moldea:check` fails on its unchanged Anthropic specification because the checker still expects Core `4` after the documented Core `5` migration. This pre-existing checker mismatch remains for the final cross-repository documentation gate in Milestone 9; it does not indicate a Milestone 6 adapter or specification validation failure.
+
 ## Package audit status
 
-| Public package            | Current launch evidence                                                                                  | Remaining owner    |
-| ------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------ |
-| Repository                | Existing contract used by calibration; full audit pending                                                | Milestone 8        |
-| Repository FS             | Full filesystem and OS audit pending                                                                     | Milestone 8        |
-| Core                      | Severity contract and regression suite passed; full audit pending                                        | Milestone 8        |
-| CLI                       | Schema 5 and packed warning/error suite passed; full audit pending                                       | Milestone 8        |
-| Anthropic adapter         | Direct method family, effective options, output-schema and pinned SDK checks passed                      | Milestones 1 and 2 |
-| OpenAI adapter            | Direct method family, effective options, output-schema and pinned SDK checks passed                      | Milestones 1 and 2 |
-| Google Gen AI adapter     | Direct generate/stream source checks and pinned SDK typing passed                                        | Milestones 1 and 2 |
-| Claude Agent SDK adapter  | Root/core imports, prompt controls, and pinned SDK checks passed; full audit pending                     | Milestones 3 and 8 |
-| Cloudflare Agents adapter | Think boundary, context merge, deferred-tool and upstream checks passed; full audit pending              | Milestones 4 and 8 |
-| Vercel AI SDK adapter     | Shared deferred-tool recognition and upstream AI SDK typing passed; full audit pending                   | Milestones 4 and 8 |
-| Eve adapter               | Nested/workspace, workflow, exposure, defaults, exclusion and compiler checks passed; full audit pending | Milestones 5 and 8 |
-| LangGraph adapter         | Severity contract; interrupt/tracing checks pending                                                      | Milestones 1 and 6 |
-| LangChain adapter         | Severity contract; full advertised-surface audit pending                                                 | Milestones 1 and 6 |
-| OpenAI Agents SDK adapter | Severity contract; full advertised-surface audit pending                                                 | Milestones 1 and 6 |
-| Website UI                | Real consumer and visual audit pending                                                                   | Milestone 7        |
+| Public package            | Current launch evidence                                                                                        | Remaining owner    |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------ |
+| Repository                | Existing contract used by calibration; full audit pending                                                      | Milestone 8        |
+| Repository FS             | Full filesystem and OS audit pending                                                                           | Milestone 8        |
+| Core                      | Severity contract and regression suite passed; full audit pending                                              | Milestone 8        |
+| CLI                       | Schema 5 and packed warning/error suite passed; full audit pending                                             | Milestone 8        |
+| Anthropic adapter         | Direct method family, effective options, output-schema and pinned SDK checks passed                            | Milestones 1 and 2 |
+| OpenAI adapter            | Direct method family, effective options, output-schema and pinned SDK checks passed                            | Milestones 1 and 2 |
+| Google Gen AI adapter     | Direct generate/stream source checks and pinned SDK typing passed                                              | Milestones 1 and 2 |
+| Claude Agent SDK adapter  | Root/core imports, prompt controls, and pinned SDK checks passed; full audit pending                           | Milestones 3 and 8 |
+| Cloudflare Agents adapter | Think boundary, context merge, deferred-tool and upstream checks passed; full audit pending                    | Milestones 4 and 8 |
+| Vercel AI SDK adapter     | Shared deferred-tool recognition and upstream AI SDK typing passed; full audit pending                         | Milestones 4 and 8 |
+| Eve adapter               | Nested/workspace, workflow, exposure, defaults, exclusion and compiler checks passed; full audit pending       | Milestones 5 and 8 |
+| LangGraph adapter         | Resume-schema interrupt boundary and pinned SDK checks passed; node tracing deferred pending published support | Milestones 1 and 6 |
+| LangChain adapter         | Advertised surface audited at minimum/current releases; scoped middleware warnings and pinned checks passed    | Milestones 1 and 6 |
+| OpenAI Agents SDK adapter | Advertised surface audited at minimum/current releases; scoped routing warning and pinned checks passed        | Milestones 1 and 6 |
+| Website UI                | Real consumer and visual audit pending                                                                         | Milestone 7        |
 
 The packages website is an application consumer, not a sixteenth public package. Its schema 5 examples are updated in Milestone 1; its full examples, visual, accessibility, and artifact checks belong to Milestone 7. Final release propagation and a coherent launch verdict belong to Milestone 9.

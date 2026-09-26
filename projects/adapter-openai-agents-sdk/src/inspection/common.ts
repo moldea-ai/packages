@@ -1,7 +1,11 @@
 import type ts from 'typescript';
 
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterEvidence, ISourceRange } from '@moldea.ai/core';
+import type {
+  IRuntimeAdapterEvidence,
+  ISourceRange,
+  IUnverifiedRelationship,
+} from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 import type { IRepositoryPath } from '@moldea.ai/repository';
@@ -96,6 +100,26 @@ export const addOpenAiAgentsSdkDiagnostic = (
       code,
       details,
       entity: createEntity(agentId, capabilityId),
+      path,
+      pointer: null,
+      range,
+    }),
+  );
+};
+
+/** Reports one declared relationship obscured by a recognized source candidate. */
+export const addOpenAiAgentsSdkUnverifiedRelationship = (
+  diagnostics: IAdapterDiagnostic[],
+  relationship: IUnverifiedRelationship,
+  path: IRepositoryPath,
+  range: ISourceRange,
+  agentId: string,
+): void => {
+  diagnostics.push(
+    createOpenAiAgentsSdkDiagnostic({
+      code: 'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason: 'dynamic-source-pattern', relationship },
+      entity: createEntity(agentId),
       path,
       pointer: null,
       range,

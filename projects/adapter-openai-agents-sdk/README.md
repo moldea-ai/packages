@@ -8,10 +8,10 @@ The package implements the official `openai-agents-sdk` runtime adapter for `@mo
 
 ## Supported target
 
-Version `3.0.2` supports:
+Version `4.0.0` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^4.0.0`
+- `@moldea.ai/core ^5.0.0`
 - TypeScript ESM source
 - npm `@openai/agents >=0.16.1`
 - directly exported `const` agents constructed through `new Agent({ ... })` or `Agent.create({ ... })`

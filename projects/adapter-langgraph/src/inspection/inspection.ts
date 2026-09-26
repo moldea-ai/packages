@@ -1,4 +1,7 @@
-import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
+import {
+  classifyVersionBehavior,
+  isSupportedTypeScriptSourcePath,
+} from '@moldea.ai/adapter-static-analysis';
 import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
@@ -9,6 +12,8 @@ import type {
 import {
   LANGGRAPH_ADAPTER_ID,
   LANGGRAPH_FUNCTIONAL_API_TARGET_ID,
+  LANGGRAPH_INTERRUPT_RESPONSE_SCHEMA_BOUNDARY_VERSION,
+  LANGGRAPH_PACKAGE_NAME,
   LANGGRAPH_STATE_GRAPH_TARGET_ID,
 } from '../constants/index.js';
 import type {
@@ -63,8 +68,13 @@ const emitPatterns = (
   targetId: string,
   patterns: readonly ILangGraphRuntimePattern[],
   evidence: IRuntimeAdapterEvidence[],
+  canVerifyTwoArgumentInterrupt: boolean,
 ): void => {
   for (const pattern of patterns) {
+    if (pattern.details['interruptForm'] === 'two-argument' && !canVerifyTwoArgumentInterrupt) {
+      continue;
+    }
+
     evidence.push(
       createLangGraphEvidence({
         agentId,
@@ -239,7 +249,26 @@ const inspectAgent = async (
     }),
   );
 
-  emitPatterns(agent.id, definition.targetId, definition.definition.patterns, evidence);
+  const packageDiscovery = await session.discoverPackage(runtimeAgent.path);
+  const langGraphDeclarations =
+    packageDiscovery.kind === 'observed'
+      ? (packageDiscovery.observation.packages.find(
+          ({ packageName }) => packageName === LANGGRAPH_PACKAGE_NAME,
+        )?.declarations ?? [])
+      : [];
+  const canVerifyTwoArgumentInterrupt =
+    classifyVersionBehavior(
+      langGraphDeclarations,
+      LANGGRAPH_INTERRUPT_RESPONSE_SCHEMA_BOUNDARY_VERSION,
+    ) === 'after';
+
+  emitPatterns(
+    agent.id,
+    definition.targetId,
+    definition.definition.patterns,
+    evidence,
+    canVerifyTwoArgumentInterrupt,
+  );
 
   if (definition.targetId === LANGGRAPH_STATE_GRAPH_TARGET_ID) {
     await inspectLangGraphSchema(
