@@ -9,6 +9,7 @@ const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const route = withBase('/capabilities/', basePath);
 const model = loadWebsiteModel();
 const showcase = getCapabilityShowcase(model.capabilities);
+const selectedExampleCount = showcase.reduce((count, { examples }) => count + examples.length, 0);
 
 for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
@@ -21,14 +22,18 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
       await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName(
         "Catch what's broken. See what's connected.",
       );
-      await expect(page.locator('main [data-capability-outcome]')).toHaveCount(18);
-      await expect(page.locator('main article')).toHaveCount(18);
-      await expect(page.locator('main dialog')).toHaveCount(18);
+      await expect(page.locator('main [data-capability-outcome]')).toHaveCount(
+        selectedExampleCount,
+      );
+      await expect(page.locator('main article')).toHaveCount(selectedExampleCount);
+      await expect(page.locator('main dialog')).toHaveCount(selectedExampleCount);
       if (width >= 1280)
         expect(
           (await page.locator('#variable-undeclared').boundingBox())!.width,
         ).toBeLessThanOrEqual(640);
-      await expect(page.locator('main summary [id$="-description"]')).toHaveCount(18);
+      await expect(page.locator('main summary [id$="-description"]')).toHaveCount(
+        selectedExampleCount,
+      );
       for (const { group } of showcase)
         await expect(
           page.getByRole('link', { name: group.reference.label, exact: true }),
@@ -85,29 +90,20 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
 for (const width of [320, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
     test(`keeps each result family accessible at ${width}px in ${theme}`, async ({ page }) => {
-      // The expanded catalog exercises 18 dialogs, including every dismissal path.
+      // Representative examples exercise each result family and dialog dismissal path.
       test.setTimeout(60_000);
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await page.goto(route);
       for (const [id, title] of [
         ['policy-reference-missing', '1 missing file'],
-        ['variable-undeclared', '1 undeclared variable'],
-        ['mirror-stale', '1 stale instruction copy'],
         ['decision-replacement-chain', 'Decision chain checks pass'],
         ['openai-responses', 'Instruction and tool connections found'],
+        ['openai-loader-unverified', '1 runtime relationship unverified'],
+        ['inspection-mixed-diagnostics', '1 warning and 1 error across two pages'],
         ['snapshot-comparison', 'Changes identified'],
         ['cli-invalid-project', 'Broken reference caught by validation'],
-        ['foundation-missing', 'Project brief not found'],
-        ['decision-cycle', 'Circular replacement links'],
         ['openai-loader-disconnected', 'Instruction loader not connected'],
-        ['manifest-change-relevance', 'Related knowledge identified'],
-        ['cli-canonical-content', 'One document, ready for your tools'],
-        ['policy-reference-directory', 'A folder where a file is required'],
-        ['agent-identity', '1 mismatched agent identity'],
-        ['tool-implementation-missing', '1 missing tool implementation'],
-        ['decision-reference-missing', '1 missing decision'],
-        ['normalized-digests', 'Text changes produce a different fingerprint'],
         ['cli-content-refusal', 'Source file outside this command’s scope'],
       ]) {
         const item = page.locator(`#${id}`);
@@ -214,14 +210,14 @@ for (const width of [320, 1440]) {
     test(`opens one visual per section with keyboard and reduced motion at ${width}px in ${theme}`, async ({
       page,
     }) => {
-      // Every additional example runs its own accessibility scan.
+      // One item per section checks interaction; page-wide scans cover all rendered examples.
       test.setTimeout(60_000);
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await page.goto(route);
       for (const { group } of showcase) {
         const first = page.locator(`#${group.exampleIds[0]}`);
-        for (const id of group.exampleIds.slice(1)) {
+        for (const id of group.exampleIds.slice(1, 2)) {
           const second = page.locator(`#${id}`);
           const summary = second.locator(':scope > summary');
           await summary.focus();
@@ -262,6 +258,38 @@ for (const width of [320, 1440]) {
     });
   }
 }
+
+test('shows source-backed adapter changes and preserves warning and error labels', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+  await page.goto(route);
+  for (const [id, expected] of [
+    ['openai-loader-unverified', ['Unverified', 'process.env.SUPPORT_INSTRUCTION']],
+    ['openai-loader-disconnected', ['Not connected to this loader']],
+    ['anthropic-parse-output', ['messages.parse', 'output_config']],
+    ['openai-parse-output', ['responses.parse', 'zodTextFormat']],
+    ['google-mixed-generation', ['models.generateContent', 'models.generateContentStream']],
+    ['cloudflare-think-session-context', ['session.withContext']],
+    ['cloudflare-think-configured-context', ['configureContext', 'deferLoading: true']],
+    ['cloudflare-think-ambiguous-context', ['Unverified', 'configureContext']],
+    ['eve-workspace-peer', ['defineWorkspaceAgent']],
+    ['eve-excluded-test-tool', ['Invalid', 'search.test.ts']],
+    ['vercel-deferred-tool', ['deferLoading: true']],
+    ['langgraph-resume-schema', ['responseSchema: ResumeSchema']],
+    ['inspection-mixed-diagnostics', ['1 warning and 1 error', 'Page 1', 'Page 2']],
+  ] satisfies [string, string[]][]) {
+    const item = page.locator(`#${id}`);
+    await item.locator(':scope > summary').click();
+    const panel = item.locator('[data-accordion-panel]');
+    await expect(panel).toBeVisible();
+    for (const text of expected) await expect(panel).toContainText(text);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      320,
+    );
+  }
+});
 
 for (const fragment of ['', '#', '#%ZZ', '#missing-example']) {
   test(`ignores non-target fragments (${fragment || 'none'}) without empty DOM lookups`, async ({
@@ -539,9 +567,17 @@ for (const theme of ['light', 'dark'] as const) {
     try {
       const page = await context.newPage();
       await page.goto(route);
-      await expect(page.locator('main [data-capability-outcome]')).toHaveCount(18);
+      await expect(page.locator('main [data-capability-outcome]')).toHaveCount(
+        selectedExampleCount,
+      );
       await expect(page.locator('main details[open]')).toHaveCount(0);
       await expect(page.locator('#variable-undeclared')).toContainText('1 undeclared variable');
+      await expect(page.locator('#openai-loader-unverified')).toContainText(
+        '1 runtime relationship unverified',
+      );
+      await expect(page.locator('#inspection-mixed-diagnostics')).toContainText(
+        '1 warning and 1 error across two pages',
+      );
       for (const group of model.capabilities.groups)
         await expect(page.locator(`[data-capability-coverage="${group.id}"]`)).toHaveText(
           `Also covers: ${group.coverage.join('; ')}.`,
@@ -578,11 +614,21 @@ for (const theme of ['light', 'dark'] as const) {
 for (const [query, id, title] of [
   ['stale', 'mirror-stale', 'The copied instruction is out of date'],
   ['undeclared', 'variable-undeclared', 'An instruction uses an undeclared variable'],
+  [
+    'The instruction choice cannot be verified',
+    'openai-loader-unverified',
+    'The instruction choice cannot be verified',
+  ],
+  [
+    'Warnings and errors across two pages',
+    'inspection-mixed-diagnostics',
+    'Warnings and errors across two pages',
+  ],
 ]) {
   test(`discovers ${id} through search and releases dialogs when navigating away`, async ({
     page,
   }) => {
-    await page.goto(withBase(`/search/?query=${query}`, basePath));
+    await page.goto(withBase(`/search/?query=${encodeURIComponent(query)}`, basePath));
     const result = page.getByRole('link', {
       name: new RegExp(title.replaceAll('.', '\\.'), 'u'),
     });

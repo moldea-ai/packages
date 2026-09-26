@@ -1,0 +1,68 @@
+---
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+
+import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
+
+// both pages and their totals come from one executed Core inspection
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+if (example.result.kind !== 'inspection')
+  throw new Error('Mixed diagnostic illustration requires inspection facts.');
+const { counts } = example.result.facts;
+if (
+  !counts ||
+  typeof counts !== 'object' ||
+  Array.isArray(counts) ||
+  counts.diagnostics !== 2 ||
+  counts.errors !== 1 ||
+  counts.warnings !== 1
+)
+  throw new Error('Mixed diagnostic illustration requires complete inspection counts.');
+const pages = getCapabilityFactRows(example.result.facts.pages);
+if (pages.length !== 2) throw new Error('Mixed diagnostic illustration requires two pages.');
+const entries = pages.map((page, index) => {
+  const [record] = getCapabilityFactRows(page.records);
+  if (
+    !record ||
+    typeof record.code !== 'string' ||
+    (record.severity !== 'warning' && record.severity !== 'error') ||
+    page.hasContinuation !== (index === 0)
+  )
+    throw new Error('Mixed diagnostic illustration requires a paginated diagnostic.');
+  return { page: index + 1, code: record.code, severity: record.severity };
+});
+---
+
+<div
+  class="min-w-0 space-y-3"
+  role="group"
+  aria-label="Paginated inspection diagnostics"
+>
+  <p class="text-sm leading-6">
+    Complete inspection: <strong>{counts.diagnostics} diagnostics</strong>, {counts.warnings} warning
+    and {counts.errors} error.
+  </p>
+  <ol
+    class="divide-y rounded-lg border px-3"
+    aria-label="Diagnostic pages"
+  >
+    {
+      entries.map((entry) => (
+        <li class="flex min-w-0 flex-wrap items-center gap-2 py-3 text-xs">
+          <span class="font-medium">Page {entry.page}</span>
+          <StatusBadge
+            label={entry.severity === 'warning' ? 'Unverified' : 'Confirmed error'}
+            tone={entry.severity === 'warning' ? 'warning' : 'danger'}
+            size="sm"
+          />
+          <code class="inline-code break-all">{entry.code}</code>
+        </li>
+      ))
+    }
+  </ol>
+  <p class="text-xs leading-5 text-muted-foreground">
+    Each page retains the complete inspection counts.
+  </p>
+</div>

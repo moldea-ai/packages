@@ -46,6 +46,65 @@ const operationCase = (
   result: { kind: 'inspection', facts },
 });
 
+/** Shows that every diagnostic page keeps complete counts while preserving each severity. */
+const createMixedDiagnosticExample = async (): Promise<ICapabilityCase> => {
+  const runtime = RUNTIME_EXAMPLES.find(({ id }) => id === 'openai-loader-unverified');
+  if (runtime === undefined) throw new Error('The mixed diagnostic fixture is missing.');
+  const files = runtime.files.map((entry) =>
+    entry.path === '/src/agent.ts' && entry.type === 'file' && typeof entry.content === 'string'
+      ? { ...entry, content: entry.content.replace('tools: [registeredFindOrder]', 'tools: []') }
+      : entry,
+  );
+  const inspection = await createCore({ adapters: [runtime.adapter] }).createProjectInspection({
+    repository: createMemoryRepositoryReader(files),
+  });
+  const first = inspection.readPage({ view: 'diagnostics', maxItems: 1 });
+  if (first.page.nextCursor === null) throw new Error('A diagnostic continuation is missing.');
+  const second = inspection.readPage({
+    view: 'diagnostics',
+    maxItems: 1,
+    cursor: first.page.nextCursor,
+  });
+  const pages = [first, second].map((page) => ({
+    records: page.page.records.map(({ item }) => {
+      if (item.kind !== 'diagnostic') throw new Error('A diagnostic page contains another record.');
+      return { code: item.diagnostic.code, severity: item.diagnostic.severity };
+    }),
+    hasContinuation: page.page.nextCursor !== null,
+  }));
+  assertCapabilityFacts(first.counts, second.counts);
+  assertCapabilityFacts(first.inspectionDigest, second.inspectionDigest);
+  assertCapabilityFacts(
+    [first.counts.diagnostics, first.counts.errors, first.counts.warnings],
+    [2, 1, 1],
+  );
+  assertCapabilityFacts(pages, [
+    {
+      records: [{ code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED', severity: 'warning' }],
+      hasContinuation: true,
+    },
+    {
+      records: [{ code: 'OPENAI_TOOL_REGISTRATION_NOT_WIRED', severity: 'error' }],
+      hasContinuation: false,
+    },
+  ]);
+
+  return operationCase(
+    'inspection-mixed-diagnostics',
+    'createProjectInspection',
+    'Warnings and errors across two pages',
+    'Each bounded page reports the same complete counts, while a dynamic instruction stays a warning and a missing tool registration is an error.',
+    {
+      counts: {
+        diagnostics: first.counts.diagnostics,
+        errors: first.counts.errors,
+        warnings: first.counts.warnings,
+      },
+      pages,
+    },
+  );
+};
+
 /**
  * Exercises normalization, identity, bounded inspection, canonical content, and change relevance.
  * @returns Actual selected facts from the public Core operations.
@@ -175,6 +234,7 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
       ),
     );
   }
+  examples.push(await createMixedDiagnosticExample());
 
   const content = 'Café returns\n';
   const contentByteLength = new TextEncoder().encode(content).byteLength;

@@ -717,6 +717,19 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     })),
   },
   {
+    id: 'openai-loader-unverified',
+    adapter: openAiAdapter,
+    title: 'The instruction choice cannot be verified',
+    description:
+      'An environment-controlled fallback may use the declared loader, so inspection warns without claiming a connection or a defect.',
+    files: overrideFiles(OPENAI_FILES, {
+      '/src/agent.ts': source(OPENAI_FILES, '/src/agent.ts').replace(
+        'instructions: readInstruction(),',
+        'instructions: process.env.SUPPORT_INSTRUCTION ?? readInstruction(),',
+      ),
+    }),
+  },
+  {
     id: 'openai-loader-disconnected',
     adapter: openAiAdapter,
     title: 'The instruction file exists, but is not connected',

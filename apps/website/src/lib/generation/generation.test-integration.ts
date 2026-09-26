@@ -453,7 +453,7 @@ describe('createSearchRecords', () => {
     const showcase = getCapabilityShowcase(model.capabilities);
     expect(showcase).toHaveLength(6);
     const examples = showcase.flatMap((section) => section.examples);
-    expect(examples).toHaveLength(18);
+    expect(examples).toHaveLength(30);
     expect(
       showcase.find(({ group }) => group.id === 'agents')?.examples.map(({ id }) => id),
     ).toStrictEqual([
@@ -484,7 +484,7 @@ describe('createSearchRecords', () => {
     const capabilityRecords = model.searchRecords.filter(({ route }) =>
       route.startsWith('/capabilities/'),
     );
-    expect(capabilityRecords).toHaveLength(25);
+    expect(capabilityRecords).toHaveLength(37);
     for (const example of model.capabilities.cases) {
       if (examples.some((entry) => entry.id === example.id)) continue;
       expect(capabilityRecords.some(({ route }) => route === `/capabilities/#${example.id}`)).toBe(
@@ -604,7 +604,7 @@ test('keeps Website UI documentation out of every public discovery surface', () 
 test('keeps display metadata separate from canonical compatibility and model generation deterministic', async () => {
   const model = getCurrentWebsiteModel();
   expect(model).toStrictEqual(await createWebsiteModel());
-  expect(model.capabilities.cases).toHaveLength(148);
+  expect(model.capabilities.cases).toHaveLength(150);
   expect(model.capabilities.runtimeTargets).toHaveLength(14);
   expect(model.routes).toContain('/capabilities/');
   expect(model.inspectionExample.map(({ result }) => result.valid)).toStrictEqual([

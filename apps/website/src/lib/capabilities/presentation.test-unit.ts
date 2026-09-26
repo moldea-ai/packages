@@ -65,6 +65,26 @@ test('resolves selected illustrations in section order independently of case ord
 });
 
 describe('getCapabilityOutcome', () => {
+  test('keeps a paginated warning distinct from a confirmed error', () => {
+    expect(
+      getCapabilityOutcome(
+        {
+          ...example,
+          id: 'inspection-mixed-diagnostics',
+          result: {
+            kind: 'inspection',
+            facts: { counts: { diagnostics: 2, errors: 1, warnings: 1 } },
+          },
+        },
+        catalog,
+      ),
+    ).toMatchObject({
+      title: '1 warning and 1 error across two pages',
+      label: 'Mixed results',
+      tone: 'danger',
+    });
+  });
+
   test('shows a valid runtime result with an unverified relationship as a warning', () => {
     const result: ICapabilityResult = {
       kind: 'adapter',

@@ -18,7 +18,7 @@ beforeAll(async () => {
 });
 
 test('executes all ten adapters and matches every complete evidence record and diagnostic', () => {
-  expect(examples).toHaveLength(45);
+  expect(examples).toHaveLength(46);
   expect(new Set(examples.map(({ packageName }) => packageName)).size).toBe(10);
   for (const { id, result } of examples) {
     const expected = RUNTIME_EXPECTED_RESULTS[id];
@@ -30,6 +30,31 @@ test('executes all ten adapters and matches every complete evidence record and d
       evidence: expected?.evidence,
     });
   }
+});
+
+test('distinguishes an unverified instruction from a confirmed broken connection', () => {
+  const unverified = examples.find(({ id }) => id === 'openai-loader-unverified')?.result;
+  const disconnected = examples.find(({ id }) => id === 'openai-loader-disconnected')?.result;
+  expect(unverified?.kind).toBe('adapter');
+  expect(disconnected?.kind).toBe('adapter');
+  if (unverified?.kind !== 'adapter' || disconnected?.kind !== 'adapter') return;
+
+  expect(unverified.valid).toBe(true);
+  expect(unverified.diagnostics).toMatchObject([
+    {
+      code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { relationship: 'instruction-loader' },
+      severity: 'warning',
+    },
+  ]);
+  expect(unverified.evidence.some(({ kind }) => kind === 'instruction-loader')).toBe(false);
+  expect(unverified.evidence.some(({ kind }) => kind === 'tool-registration')).toBe(true);
+
+  expect(disconnected.valid).toBe(false);
+  expect(disconnected.diagnostics).toMatchObject([
+    { code: 'OPENAI_INSTRUCTION_LOADER_NOT_WIRED', severity: 'error' },
+  ]);
+  expect(disconnected.evidence.some(({ kind }) => kind === 'instruction-loader')).toBe(false);
 });
 
 test('rejects a removed declared relationship even if remaining diagnostics are unchanged', async () => {

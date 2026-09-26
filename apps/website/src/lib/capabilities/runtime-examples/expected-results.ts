@@ -9647,11 +9647,33 @@ const deriveOpenAiAgentsSdkRoutingWarningResult = (): IRuntimeExpectedResult => 
   };
 };
 
+const deriveOpenAiLoaderUnverifiedResult = (): IRuntimeExpectedResult => {
+  const base = getBaseResult('openai-responses');
+  return {
+    ...base,
+    diagnostics: [
+      {
+        code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+        entity: { adapterId: 'openai', agentId: 'support' },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/agent.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'openai',
+      },
+    ],
+    evidence: base.evidence.filter(({ kind }) => kind !== 'instruction-loader'),
+  };
+};
+
 export const RUNTIME_EXPECTED_RESULTS: Record<string, IRuntimeExpectedResult> = {
   ...BASE_RUNTIME_EXPECTED_RESULTS,
   'langgraph-resume-schema': deriveLangGraphResumeResult(),
   'langchain-middleware-warning': deriveLangChainMiddlewareWarningResult(),
   'openai-agents-sdk-routing-warning': deriveOpenAiAgentsSdkRoutingWarningResult(),
+  'openai-loader-unverified': deriveOpenAiLoaderUnverifiedResult(),
   'cloudflare-think-session-context': deriveCloudflareThinkResult({
     thinkRange: '0.17.0',
     agentsRange: '0.21.0',

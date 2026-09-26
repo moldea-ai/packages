@@ -128,6 +128,13 @@ export const getCapabilityOutcome = (
       label: 'Refused',
       tone: 'warning',
     };
+  if (example.id === 'inspection-mixed-diagnostics')
+    return {
+      title: '1 warning and 1 error across two pages',
+      description,
+      label: 'Mixed results',
+      tone: 'danger',
+    };
   return {
     title:
       example.id === 'snapshot-comparison'

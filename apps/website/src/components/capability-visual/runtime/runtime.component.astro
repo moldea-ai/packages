@@ -3,12 +3,21 @@ import { Unlink } from '@lucide/astro';
 import { parse } from 'yaml';
 import { z } from 'zod';
 
+import CodeBlock from '@moldea.ai/website-ui/code-block';
 import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
 
 import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
 
-// show actual evidence references instead of repeating the adapter support inventory
+// selected patterns need a source excerpt that shows the behavior being discussed
+const FEATURED_SOURCE_PATHS: Record<string, string> = {
+  'eve-excluded-test-tool': '/agent/tools/search.test.ts',
+  'eve-workspace-peer': '/agents/support/agent/subagents/research.ts',
+  'langgraph-resume-schema': '/src/functional.ts',
+  'vercel-deferred-tool': '/src/tools.ts',
+};
+
 interface Props {
   example: ICapabilityCase;
 }
@@ -16,7 +25,13 @@ const { example } = Astro.props;
 if (example.result.kind !== 'adapter')
   throw new Error('Runtime illustration requires an adapter result.');
 const { evidence, diagnostics } = example.result;
-const disconnected = diagnostics.find(({ code }) => code === 'OPENAI_INSTRUCTION_LOADER_NOT_WIRED');
+const isOpenAiConnectionExample =
+  example.id === 'openai-responses' || example.id === 'openai-loader-disconnected';
+
+// retain the exact declared-loader illustration for the two original OpenAI stories
+const disconnected = isOpenAiConnectionExample
+  ? diagnostics.find(({ code }) => code === 'OPENAI_INSTRUCTION_LOADER_NOT_WIRED')
+  : undefined;
 const LoaderManifest = z.object({
   agents: z.record(
     z.string(),
@@ -34,86 +49,178 @@ const loader =
     : undefined;
 if (disconnected && (!loader || !example.files.some(({ path }) => path === loader.path)))
   throw new Error('Disconnected runtime illustration requires its declared loader file.');
-const source = disconnected
-  ? example.files.find(({ path }) => path === disconnected.path)
-  : undefined;
-const instructionLine = source?.content
-  .split('\n')
+const instructionLine = example.files
+  .find(({ path }) => path === disconnected?.path)
+  ?.content.split('\n')
   .find((line) => line.trim().startsWith('instructions:'))
   ?.trim();
 if (disconnected && !instructionLine)
   throw new Error('Disconnected runtime illustration requires the request instruction.');
-const request = evidence.find(({ kind }) => kind === 'runtime-pattern');
-if (!request?.runtimeName || !request.references[0])
+const request = isOpenAiConnectionExample
+  ? evidence.find(({ kind }) => kind === 'runtime-pattern')
+  : undefined;
+if (isOpenAiConnectionExample && (!request?.runtimeName || !request.references[0]))
   throw new Error('Runtime illustration requires a request reference.');
-const connections = [
-  { kind: 'instruction-loader', label: 'Instruction loader' },
-  { kind: 'tool-registration', label: 'Order lookup tool' },
-]
-  .filter(() => !disconnected)
-  .map(({ kind, label }) => {
-    const record = evidence.find((entry) => entry.kind === kind);
-    const reference = record?.references.at(-1);
-    if (!record?.runtimeName || !reference)
-      throw new Error(`Runtime illustration requires ${kind} evidence.`);
-    return { label, name: record.runtimeName, path: reference.path };
-  });
+const connections = isOpenAiConnectionExample
+  ? [
+      { kind: 'instruction-loader', label: 'Instruction loader' },
+      { kind: 'tool-registration', label: 'Order lookup tool' },
+    ]
+      .filter(() => !disconnected)
+      .map(({ kind, label }) => {
+        const record = evidence.find((entry) => entry.kind === kind);
+        const reference = record?.references.at(-1);
+        if (!record?.runtimeName || !reference)
+          throw new Error(`Runtime illustration requires ${kind} evidence.`);
+        return { label, name: record.runtimeName, path: reference.path };
+      })
+  : [];
+
+// other runtime examples show one real source excerpt and its actual inspection outcome
+const diagnostic = diagnostics.find(({ severity }) => severity === 'error') ?? diagnostics[0];
+const sourcePath =
+  FEATURED_SOURCE_PATHS[example.id] ??
+  diagnostic?.path ??
+  evidence.flatMap(({ references }) => references).find(({ path }) => /\.[cm]?tsx?$/u.test(path))
+    ?.path;
+const sourceFile =
+  example.files.find(
+    ({ path, representation }) => path === sourcePath && representation === 'source',
+  ) ??
+  example.files.find(
+    ({ path, representation }) => representation === 'source' && /\.[cm]?tsx?$/u.test(path),
+  );
+const companionFile =
+  example.id === 'cloudflare-think-configured-context'
+    ? example.files.find(({ path }) => path === '/src/tools.ts')
+    : undefined;
+if (!isOpenAiConnectionExample && sourceFile === undefined)
+  throw new Error('Runtime illustration requires an executed source excerpt.');
+if (example.id === 'cloudflare-think-configured-context' && companionFile === undefined)
+  throw new Error('Configured Think illustration requires its deferred tool source.');
+const tone = diagnostic?.severity === 'error' ? 'danger' : diagnostic ? 'warning' : 'info';
+const status =
+  diagnostic?.severity === 'error' ? 'Invalid' : diagnostic ? 'Unverified' : 'Inspected';
+const generationMethods =
+  example.id === 'google-mixed-generation'
+    ? evidence
+        .filter(({ kind, runtimeName }) => kind === 'runtime-pattern' && Boolean(runtimeName))
+        .map(({ runtimeName }) => runtimeName)
+    : [];
 ---
 
-<div
-  class="min-w-0"
-  role="group"
-  aria-label="Connections found in the OpenAI source"
->
-  <FilePreview
-    path={request.references[0].path.slice(1)}
-    label={disconnected ? 'Request uses hard-coded text' : 'OpenAI request'}
-  >
-    <p class="p-4 text-sm leading-7">
-      <code class="inline-code break-words"
-        >{disconnected ? instructionLine : request.runtimeName}</code
+{
+  isOpenAiConnectionExample ? (
+    <div
+      class="min-w-0"
+      role="group"
+      aria-label="Connections found in the OpenAI source"
+    >
+      <FilePreview
+        path={request?.references[0]?.path.slice(1) ?? ''}
+        label={disconnected ? 'Request uses hard-coded text' : 'OpenAI request'}
       >
-    </p>
-  </FilePreview>
-  {
-    !disconnected && (
-      <ul class="ml-3 space-y-3 border-l-2 border-info/40 pt-3 pl-4">
-        {connections.map((connection) => (
-          <li>
-            <FilePreview
-              path={connection.path.slice(1)}
-              label={connection.label}
-            >
-              <p class="p-3 text-xs">
-                <code class="inline-code">{connection.name}</code>
-              </p>
-            </FilePreview>
-          </li>
-        ))}
-      </ul>
-    )
-  }
-  {
-    loader && (
-      <>
-        <ConnectionLabel tone="danger">
-          <Unlink
-            slot="icon"
-            class="size-4"
-            aria-hidden="true"
+        <p class="p-4 text-sm leading-7">
+          <code class="inline-code break-words">
+            {disconnected ? instructionLine : request?.runtimeName}
+          </code>
+        </p>
+      </FilePreview>
+      {!disconnected && (
+        <ul class="ml-3 space-y-3 border-l-2 border-info/40 pt-3 pl-4">
+          {connections.map((connection) => (
+            <li>
+              <FilePreview
+                path={connection.path.slice(1)}
+                label={connection.label}
+              >
+                <p class="p-3 text-xs">
+                  <code class="inline-code">{connection.name}</code>
+                </p>
+              </FilePreview>
+            </li>
+          ))}
+        </ul>
+      )}
+      {loader && (
+        <>
+          <ConnectionLabel tone="danger">
+            <Unlink
+              slot="icon"
+              class="size-4"
+              aria-hidden="true"
+            />
+            Not connected to this loader
+          </ConnectionLabel>
+          <FilePreview
+            path={loader.path.slice(1)}
+            label="Declared instruction loader"
+            tone="danger"
+          >
+            <p class="p-4 text-sm">
+              <code class="inline-code">{loader.symbol}</code>
+            </p>
+          </FilePreview>
+        </>
+      )}
+    </div>
+  ) : sourceFile ? (
+    <div
+      class="min-w-0"
+      role="group"
+      aria-label={`${example.title} source and result`}
+    >
+      <FilePreview
+        path={sourceFile.path.slice(1)}
+        label="Inspected source"
+        tone={tone}
+      >
+        <div class="p-3">
+          <CodeBlock
+            source={sourceFile.content}
+            language={sourceFile.language}
+            variant="plain"
+            copyable={false}
+            ariaLabel={`Source excerpt for ${example.title}`}
           />
-          Not connected to this loader
-        </ConnectionLabel>
-        <FilePreview
-          path={loader.path.slice(1)}
-          label="Declared instruction loader"
-          tone="danger"
-        >
-          <p class="p-4 text-sm">
-            <code class="inline-code">{loader.symbol}</code>
-          </p>
-        </FilePreview>
-      </>
-    )
-  }
-</div>
+        </div>
+      </FilePreview>
+      {companionFile && (
+        <div class="mt-3">
+          <FilePreview
+            path={companionFile.path.slice(1)}
+            label="Registered tools"
+          >
+            <div class="p-3">
+              <CodeBlock
+                source={companionFile.content}
+                language={companionFile.language}
+                variant="plain"
+                copyable={false}
+                ariaLabel="Source excerpt for configured Think tools"
+              />
+            </div>
+          </FilePreview>
+        </div>
+      )}
+      {sourceFile.isExcerpt && (
+        <p class="mt-2 text-xs text-muted-foreground">
+          Showing the first 16 lines of the executed source.
+        </p>
+      )}
+      {generationMethods.length > 0 && (
+        <p class="mt-2 text-xs leading-5 text-muted-foreground">
+          Observed source methods: {generationMethods.join(', ')}.
+        </p>
+      )}
+      <div class="mt-3 flex flex-wrap items-start gap-2 text-xs leading-5">
+        <StatusBadge
+          label={status}
+          tone={tone}
+          size="sm"
+        />
+        {diagnostic && <p class="min-w-0 flex-1 text-muted-foreground">{diagnostic.message}</p>}
+      </div>
+    </div>
+  ) : null
+}
