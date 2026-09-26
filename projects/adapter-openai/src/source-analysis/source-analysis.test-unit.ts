@@ -39,6 +39,63 @@ const findResponses = (source: string, symbol = 'agent') => {
   return { analysis, responses: analyzeOpenAiResponses(analysis, runtime.body) };
 };
 
+describe('OpenAI effective request bodies', () => {
+  test('recognizes named imports and mixed create, parse, and stream calls', () => {
+    const { analysis, responses } = findResponses(
+      [
+        "import { OpenAI as OpenAIClient } from 'openai';",
+        'const client = new OpenAIClient();',
+        'export const agent = () => {',
+        '  client.responses.create({ instructions: loadSystem() });',
+        '  client.responses.parse({ tools: [tool] });',
+        '  return client.responses.stream({ instructions: loadSystem(), tools: [tool] });',
+        '};',
+      ].join('\n'),
+    );
+
+    expect(analysis.clientNames).toStrictEqual(new Set(['client']));
+    expect(responses.hasAmbiguousCandidate).toBe(false);
+    expect(
+      responses.requests.map(({ methodName, instructions, tools }) => ({
+        methodName,
+        instructions: instructions.kind,
+        tools: tools.kind,
+      })),
+    ).toStrictEqual([
+      { methodName: 'create', instructions: 'present', tools: 'absent' },
+      { methodName: 'parse', instructions: 'absent', tools: 'present' },
+      { methodName: 'stream', instructions: 'present', tools: 'present' },
+    ]);
+  });
+
+  test.each([
+    ['transport only', '{ timeout: 1000 }', 'present', 'present'],
+    [
+      'static body replacement',
+      '{ body: { instructions: otherSystem(), tools: [] } }',
+      'present',
+      'present',
+    ],
+    ['dynamic body replacement', '{ body: replacement }', 'unresolved', 'unresolved'],
+    ['dynamic options', 'options', 'unresolved', 'unresolved'],
+  ])('%s options affect effective relationships', (_description, options, instructions, tools) => {
+    const { responses } = findResponses(
+      [
+        "import OpenAI from 'openai';",
+        'const client = new OpenAI();',
+        `export const agent = () => client.responses.create({ instructions: loadSystem(), tools: [tool] }, ${options});`,
+      ].join('\n'),
+    );
+
+    expect(
+      responses.requests.map((request) => ({
+        instructions: request.instructions.kind,
+        tools: request.tools.kind,
+      })),
+    ).toStrictEqual([{ instructions, tools }]);
+  });
+});
+
 describe('analyzeOpenAiSource', () => {
   test('indexes aliases, module clients, exports, and closed Responses requests', () => {
     const { analysis, responses } = findResponses(

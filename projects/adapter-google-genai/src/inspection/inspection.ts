@@ -9,10 +9,7 @@ import type {
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
 
-import {
-  GOOGLE_GENAI_ADAPTER_ID,
-  GOOGLE_GENAI_GENERATE_CONTENT_RUNTIME_NAME,
-} from '../constants/index.js';
+import { GOOGLE_GENAI_ADAPTER_ID } from '../constants/index.js';
 import type { IGoogleGenAiInspectionSession } from '../contracts/index.js';
 import { analyzeGoogleGenAiGenerateContent } from '../source-analysis/index.js';
 import {
@@ -100,18 +97,22 @@ const inspectAgent = async (
     return;
   }
 
-  evidence.push(
-    createGoogleGenAiEvidence({
-      agentId: agent.id,
-      capabilityId: null,
-      capabilityKind: null,
-      details: { api: 'models' },
-      kind: 'runtime-pattern',
-      references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
-      runtimeName: GOOGLE_GENAI_GENERATE_CONTENT_RUNTIME_NAME,
-      source: GOOGLE_GENAI_ADAPTER_ID,
-    }),
-  );
+  for (const methodName of [
+    ...new Set(generateContent.requests.map((request) => request.methodName)),
+  ].sort()) {
+    evidence.push(
+      createGoogleGenAiEvidence({
+        agentId: agent.id,
+        capabilityId: null,
+        capabilityKind: null,
+        details: { api: 'models' },
+        kind: 'runtime-pattern',
+        references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
+        runtimeName: `models.${methodName}`,
+        source: GOOGLE_GENAI_ADAPTER_ID,
+      }),
+    );
+  }
 
   await inspectGoogleGenAiRelationships(
     session,

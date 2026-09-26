@@ -6,19 +6,19 @@ import { MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES } from './constants.js';
 import type { IMoldeaCliCompositionStateInput } from './types.js';
 
 const PACKAGE_VERSIONS = {
-  '@moldea.ai/adapter-anthropic': '4.0.0',
-  '@moldea.ai/adapter-claude-agent-sdk': '3.0.0',
-  '@moldea.ai/adapter-cloudflare-agents': '3.0.0',
-  '@moldea.ai/adapter-eve': '3.0.0',
-  '@moldea.ai/adapter-google-genai': '3.0.0',
-  '@moldea.ai/adapter-langchain': '3.0.0',
-  '@moldea.ai/adapter-langgraph': '3.0.0',
-  '@moldea.ai/adapter-openai': '4.0.0',
-  '@moldea.ai/adapter-openai-agents-sdk': '3.0.0',
-  '@moldea.ai/adapter-vercel-ai-sdk': '3.0.0',
-  '@moldea.ai/core': '4.0.1',
+  '@moldea.ai/adapter-anthropic': '5.0.0',
+  '@moldea.ai/adapter-claude-agent-sdk': '4.0.0',
+  '@moldea.ai/adapter-cloudflare-agents': '4.0.0',
+  '@moldea.ai/adapter-eve': '4.0.0',
+  '@moldea.ai/adapter-google-genai': '4.0.0',
+  '@moldea.ai/adapter-langchain': '4.0.0',
+  '@moldea.ai/adapter-langgraph': '4.0.0',
+  '@moldea.ai/adapter-openai': '5.0.0',
+  '@moldea.ai/adapter-openai-agents-sdk': '4.0.0',
+  '@moldea.ai/adapter-vercel-ai-sdk': '4.0.0',
+  '@moldea.ai/core': '5.0.0',
   '@moldea.ai/repository': '2.0.0',
-  '@moldea.ai/repository-fs': '2.0.1',
+  '@moldea.ai/repository-fs': '2.0.2',
 } as const;
 
 // exact installed package metadata used by composition tests
@@ -33,7 +33,7 @@ export const INSTALLED_PACKAGE_METADATA: IMoldeaCliPackageMetadata = Object.free
   ),
   installedPackageVersions: Object.freeze({ ...PACKAGE_VERSIONS }),
   supportedNodeRange: '>=22.11.0',
-  version: '8.0.0',
+  version: '9.0.0',
 });
 
 /** Creates one minimal runtime adapter for composition tests. */
@@ -62,6 +62,6 @@ export const createTestCompositionState = (): IMoldeaCliCompositionStateInput =>
   ],
   coreSupportedRepositoryFormatVersions: [1],
   minimumGitVersion: '2.30.0',
-  outputSchemaVersion: 4,
+  outputSchemaVersion: 5,
   packageMetadata: INSTALLED_PACKAGE_METADATA,
 });

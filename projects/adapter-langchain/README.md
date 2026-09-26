@@ -19,7 +19,7 @@ const core = createCore({ adapters: [langChainAdapter] });
 
 ## Verified target
 
-Version `3.0.3` supports Repository Format `1`, `@moldea.ai/core ^4.0.0`, and declared ranges that intersect `langchain >=1.5.9` with companion `@langchain/core >=1.2.8`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution. The target recognizes:
+Version `4.0.0` supports Repository Format `1`, `@moldea.ai/core ^5.0.0`, and declared ranges that intersect `langchain >=1.5.9` with companion `@langchain/core >=1.2.8`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution. The target recognizes:
 
 - directly exported package-root `createAgent(...)` definitions
 - direct instruction-loader calls and `SystemMessage` construction
@@ -43,3 +43,9 @@ These guides are included in the installed package. Open only the page relevant 
 - [Verified target](docs/verified-target.md)
 - [Evidence and diagnostics](docs/evidence-and-diagnostics.md)
 - [Limitations](docs/limitations.md)
+
+## Diagnostics
+
+`LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+
+`LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified.

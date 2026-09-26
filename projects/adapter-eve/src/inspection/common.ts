@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
 import type { IRuntimeAdapterEvidence, ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
@@ -43,7 +43,7 @@ const createEntity = (agentId: string, capabilityKind?: 'skill' | 'tool', capabi
 /** Appends one stable package-owned Eve diagnostic. */
 export const addEveDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: IEveAdapterDiagnosticCode,
+  code: Exclude<IEveAdapterDiagnosticCode, 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,
@@ -59,6 +59,27 @@ export const addEveDiagnostic = (
       path,
       pointer: null,
       range,
+    }),
+  );
+};
+
+/** Appends one scoped warning when an Eve relationship cannot be established. */
+export const addEveWarning = (
+  diagnostics: IAdapterDiagnostic[],
+  path: IRepositoryPath,
+  agentId: string,
+  details: IAdapterWarningDiagnostic['details'],
+  capabilityKind?: 'skill' | 'tool',
+  capabilityId?: string,
+): void => {
+  diagnostics.push(
+    createEveDiagnostic({
+      code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details,
+      entity: createEntity(agentId, capabilityKind, capabilityId),
+      path,
+      pointer: null,
+      range: null,
     }),
   );
 };

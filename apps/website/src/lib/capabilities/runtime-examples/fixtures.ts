@@ -13,7 +13,7 @@ import type { IMemoryRepositoryEntry } from '@moldea.ai/repository/memory';
 import { ANTHROPIC_FILES } from './anthropic.ts';
 import { CLAUDE_AGENT_SDK_FILES } from './claude-agent-sdk.ts';
 import { CLOUDFLARE_AGENTS_FILES } from './cloudflare-agents.ts';
-import { EVE_FILES } from './eve.ts';
+import { EVE_CURRENT_FILES, EVE_FILES } from './eve.ts';
 import { GOOGLE_GENAI_FILES } from './google-genai.ts';
 import { LANGCHAIN_FILES } from './langchain.ts';
 import { LANGGRAPH_FILES } from './langgraph.ts';
@@ -59,12 +59,64 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     files: ANTHROPIC_FILES,
   },
   {
+    id: 'anthropic-parse-output',
+    adapter: anthropicAdapter,
+    title: 'A parsed Messages request with a bound output schema',
+    description:
+      'The direct output format and transport-only options preserve the instruction and tool relationships.',
+    files: overrideFiles(ANTHROPIC_FILES, {
+      '/moldea/moldea.yaml': source(ANTHROPIC_FILES, '/moldea/moldea.yaml').replace(
+        '      instructionLoader:',
+        '      outputSchema:\n        path: /src/contracts.ts\n        symbol: SupportOutput\n      instructionLoader:',
+      ),
+      '/src/contracts.ts': `${source(ANTHROPIC_FILES, '/src/contracts.ts')}\nexport const SupportOutput = { type: 'object', properties: { answer: { type: 'string' } }, required: ['answer'], additionalProperties: false } as const;\n`,
+      '/src/agent.ts': source(ANTHROPIC_FILES, '/src/agent.ts')
+        .replace('import { FindOrderInput }', 'import { FindOrderInput, SupportOutput }')
+        .replace('client.messages.create({', 'client.messages.parse({')
+        .replace(
+          '    tools: [registeredFindOrder],',
+          "    tools: [registeredFindOrder],\n    output_config: { format: { type: 'json_schema', schema: SupportOutput } },",
+        )
+        .replace('  });', '  }, { timeout: 1000 });'),
+    }),
+  },
+  {
     id: 'claude-query',
     adapter: claudeAgentSdkAdapter,
     title: 'A query that can delegate',
     description:
       'Inspect the programmatic subagent, routing description, query output, and mounted MCP tool.',
     files: CLAUDE_AGENT_SDK_FILES,
+  },
+  {
+    id: 'claude-core-prompt-controls',
+    adapter: claudeAgentSdkAdapter,
+    title: 'A Claude core query with explicit prompt controls',
+    description:
+      'The custom prompt snapshot, verbatim delivery, and subagent file setting preserve direct instruction, handoff, and tool relationships.',
+    files: overrideFiles(CLAUDE_AGENT_SDK_FILES, {
+      '/package.json': source(CLAUDE_AGENT_SDK_FILES, '/package.json').replace(
+        '"^0.3.234"',
+        '">=0.3.282"',
+      ),
+      '/src/agents.ts': source(CLAUDE_AGENT_SDK_FILES, '/src/agents.ts').replace(
+        '  prompt: loadBillingInstruction(),',
+        '  prompt: loadBillingInstruction(),\n  omitClaudeMd: true,',
+      ),
+      '/src/runtime.ts': source(CLAUDE_AGENT_SDK_FILES, '/src/runtime.ts')
+        .replace(
+          "import { query } from '@anthropic-ai/claude-agent-sdk';",
+          "import { query } from '@anthropic-ai/claude-agent-sdk/core';",
+        )
+        .replace(
+          'systemPrompt: await loadTriageInstruction(),',
+          "systemPrompt: { type: 'custom', prompt: await loadTriageInstruction(), snapshot: false },\n      verbatimPrompts: true,",
+        ),
+      '/src/tools.ts': source(CLAUDE_AGENT_SDK_FILES, '/src/tools.ts').replace(
+        "from '@anthropic-ai/claude-agent-sdk'",
+        "from '@anthropic-ai/claude-agent-sdk/core'",
+      ),
+    }),
   },
   {
     id: 'cloudflare-agents',
@@ -75,12 +127,113 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     files: CLOUDFLARE_AGENTS_FILES,
   },
   {
+    id: 'cloudflare-think-session-context',
+    adapter: cloudflareAgentsAdapter,
+    title: 'A Think session context on the older runtime',
+    description: 'The direct session block preserves instruction wiring with Think 0.17.',
+    files: overrideFiles(CLOUDFLARE_AGENTS_FILES, {
+      '/package.json': source(CLOUDFLARE_AGENTS_FILES, '/package.json')
+        .replace('^0.16.0', '0.17.0')
+        .replace('^0.21.0', '0.21.0'),
+      '/src/agents.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/agents.ts').replace(
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "configureSession(session) { return session.withContext('soul', { provider: { get: () => loadSupportInstruction() } }); }",
+      ),
+    }),
+  },
+  {
+    id: 'cloudflare-think-configured-context',
+    adapter: cloudflareAgentsAdapter,
+    title: 'Configured Think context and deferred tool declaration',
+    description:
+      'Think 0.18 reads configureContext. The registered tool declares deferral alongside toolSearch; inspection does not prove turn-time availability.',
+    files: overrideFiles(CLOUDFLARE_AGENTS_FILES, {
+      '/package.json': source(CLOUDFLARE_AGENTS_FILES, '/package.json')
+        .replace('^0.16.0', '0.18.0')
+        .replace('^0.21.0', '0.23.0')
+        .replace('^7.0.0', '7.0.116'),
+      '/src/agents.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/agents.ts')
+        .replace(
+          'getSystemPrompt() { return loadSupportInstruction(); }',
+          "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+        )
+        .replace(
+          'import { findOrderTool, summaryHandoffTool }',
+          'import { findOrderTool, searchTool, summaryHandoffTool }',
+        )
+        .replace(
+          'find_order: findOrderTool, summarize: summaryHandoffTool',
+          'find_order: findOrderTool, search: searchTool, summarize: summaryHandoffTool',
+        ),
+      '/src/tools.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/tools.ts')
+        .replace("import { tool } from 'ai';", "import { tool, toolSearch } from 'ai';")
+        .replace(
+          'inputSchema: FindOrderInputSchema,',
+          'inputSchema: FindOrderInputSchema, deferLoading: true,',
+        )
+        .replace(
+          'export const summaryHandoffTool',
+          'export const searchTool = toolSearch();\nexport const summaryHandoffTool',
+        ),
+    }),
+  },
+  {
+    id: 'cloudflare-think-ambiguous-context',
+    adapter: cloudflareAgentsAdapter,
+    title: 'A Think declaration spanning the context boundary',
+    description:
+      'Only the instruction conclusion remains unverified; independent tools and output bindings still produce evidence.',
+    files: overrideFiles(CLOUDFLARE_AGENTS_FILES, {
+      '/package.json': source(CLOUDFLARE_AGENTS_FILES, '/package.json')
+        .replace('^0.16.0', '>=0.17.0')
+        .replace('^0.21.0', '>=0.23.0'),
+      '/src/agents.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/agents.ts').replace(
+        'getSystemPrompt() { return loadSupportInstruction(); }',
+        "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+      ),
+    }),
+  },
+  {
     id: 'eve-filesystem',
     adapter: eveAdapter,
     title: 'The filesystem describes the agent',
     description:
       'Inspect the nested agent, instruction loader, tool, TypeScript skill, and directory-local subagent.',
-    files: EVE_FILES,
+    files: EVE_CURRENT_FILES,
+  },
+  {
+    id: 'eve-workflow-tool',
+    adapter: eveAdapter,
+    title: 'A declared workflow tool',
+    description:
+      'The source establishes a workflow executor and its declared background and subagent exposure settings.',
+    files: overrideFiles(EVE_FILES, {
+      '/package.json': '{"name":"@acme/support-app","dependencies":{"eve":"0.66.3"}}',
+      '/agent/implementations.ts':
+        "export async function searchKnowledge() { 'use workflow'; return { matches: [] }; }\n",
+      '/agent/tools/search.ts': source(EVE_FILES, '/agent/tools/search.ts')
+        .replace('defineTool', 'defineWorkflowTool')
+        .replace('defineTool(', 'defineWorkflowTool(')
+        .replace(
+          'execute: searchKnowledge',
+          "availableInSubagents: false, execution: 'background', execute: searchKnowledge",
+        ),
+    }),
+  },
+  {
+    id: 'eve-excluded-test-tool',
+    adapter: eveAdapter,
+    title: 'Test modules stay outside the tool registry',
+    description: 'Eve 0.66.2 excludes a declared test module from filesystem tool registration.',
+    files: overrideFiles(EVE_FILES, {
+      '/package.json': '{"name":"@acme/support-app","dependencies":{"eve":"0.66.2"}}',
+      '/moldea/moldea.yaml': eveManifest.replaceAll(
+        '/agent/tools/search.ts',
+        '/agent/tools/search.test.ts',
+      ),
+      '/agent/tools/search.ts': null,
+      '/agent/tools/search.test.ts': source(EVE_FILES, '/agent/tools/search.ts'),
+    }),
   },
   {
     id: 'google-generate-content',
@@ -89,6 +242,24 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     description:
       'Inspect the system instruction and closed function declarations with their parameter schemas.',
     files: GOOGLE_GENAI_FILES,
+  },
+  {
+    id: 'google-mixed-generation',
+    adapter: googleGenAiAdapter,
+    title: 'Generate content and stream from the same agent',
+    description:
+      'Both direct model methods retain the declared instruction and function relationships.',
+    files: overrideFiles(GOOGLE_GENAI_FILES, {
+      '/src/agent.ts': source(GOOGLE_GENAI_FILES, '/src/agent.ts')
+        .replace(
+          'export const supportAgent = async () =>\n  client.models.generateContent(',
+          'export const supportAgent = async () => {\n  const initial = client.models.generateContent(',
+        )
+        .replace(
+          '  });\n',
+          "  });\n  const streamed = client.models.generateContentStream({ model: 'gemini-2.5-flash', contents: 'Help the customer.', config: { systemInstruction: await readInstruction(), tools: [{ functionDeclarations: [registeredFindOrder] }] } });\n  return [initial, streamed];\n};\n",
+        ),
+    }),
   },
   {
     id: 'langchain-create-agent',
@@ -125,12 +296,47 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     }),
   },
   {
+    id: 'langchain-middleware-warning',
+    adapter: langChainAdapter,
+    title: 'Middleware leaves declared relationships unverified',
+    description:
+      'A recognized middleware expression keeps the agent definition and independent tool schema evidence, while declared prompt, output, and registration relationships receive warnings.',
+    files: overrideFiles(LANGCHAIN_FILES, {
+      '/src/agent.ts': source(LANGCHAIN_FILES, '/src/agent.ts')
+        .replace(
+          'const MIDDLEWARE = [];',
+          'const MIDDLEWARE = [];\nconst getMiddleware = () => MIDDLEWARE;',
+        )
+        .replace('middleware: MIDDLEWARE', 'middleware: getMiddleware()'),
+    }),
+  },
+  {
     id: 'langgraph-workflows',
     adapter: langGraphAdapter,
     title: 'A graph and a functional workflow',
     description:
       'Inspect graph nodes, edges, schemas, compile identity, tasks, interrupts, and saved-state calls.',
     files: LANGGRAPH_FILES,
+  },
+  {
+    id: 'langgraph-resume-schema',
+    adapter: langGraphAdapter,
+    title: 'A functional interrupt with a resume schema',
+    description:
+      'The response schema describes the value supplied when this workflow resumes; it does not establish an agent input or output binding.',
+    files: overrideFiles(LANGGRAPH_FILES, {
+      '/package.json':
+        '{"dependencies":{"@langchain/core":"~1.2.12","@langchain/langgraph":"~1.4.18","zod":"4.3.6"}}',
+      '/src/functional.ts': source(LANGGRAPH_FILES, '/src/functional.ts')
+        .replace(
+          "import { entrypoint, getPreviousState, interrupt, task } from '@langchain/langgraph';",
+          "import { entrypoint, getPreviousState, interrupt, task } from '@langchain/langgraph';\nimport { z } from 'zod';\nconst ResumeSchema = z.object({ approved: z.boolean() });",
+        )
+        .replace(
+          'interrupt({ prepared });',
+          'interrupt({ prepared }, { responseSchema: ResumeSchema });',
+        ),
+    }),
   },
   {
     id: 'openai-responses',
@@ -141,6 +347,35 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     files: OPENAI_FILES,
   },
   {
+    id: 'openai-parse-output',
+    adapter: openAiAdapter,
+    title: 'A parsed Responses request with a bound output schema',
+    description:
+      'The direct Zod helper and effective options body retain the instruction, output, and tool bindings.',
+    files: overrideFiles(OPENAI_FILES, {
+      '/package.json': source(OPENAI_FILES, '/package.json').replace(
+        '"openai": "^7.4.0"',
+        '"openai": "^7.4.0",\n    "zod": "^4.3.6"',
+      ),
+      '/moldea/moldea.yaml': source(OPENAI_FILES, '/moldea/moldea.yaml').replace(
+        '      instructionLoader:',
+        '      outputSchema:\n        path: /src/contracts.ts\n        symbol: SupportOutput\n      instructionLoader:',
+      ),
+      '/src/contracts.ts': `import { z } from 'zod';\n\n${source(OPENAI_FILES, '/src/contracts.ts')}\nexport const SupportOutput = z.object({ answer: z.string() });\n`,
+      '/src/agent.ts': source(OPENAI_FILES, '/src/agent.ts')
+        .replace(
+          "import OpenAIClient from 'openai';",
+          "import { OpenAI as OpenAIClient } from 'openai';\nimport { zodTextFormat } from 'openai/helpers/zod';",
+        )
+        .replace('import { FindOrderInput }', 'import { FindOrderInput, SupportOutput }')
+        .replace('client.responses.create({', 'client.responses.parse({')
+        .replace(
+          '  });',
+          "  }, { body: { model: 'gpt-5', input: 'Help the customer.', instructions: readInstruction(), tools: [registeredFindOrder], text: { format: zodTextFormat(SupportOutput, 'support') } } });",
+        ),
+    }),
+  },
+  {
     id: 'openai-agent-handoffs',
     adapter: openAiAgentsSdkAdapter,
     title: 'An agent with two explicit handoff forms',
@@ -149,12 +384,53 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     files: OPENAI_AGENTS_SDK_FILES,
   },
   {
+    id: 'openai-agents-sdk-routing-warning',
+    adapter: openAiAgentsSdkAdapter,
+    title: 'A handoff with a dynamic routing description',
+    description:
+      'The handoff remains observable, while its declared target routing description receives a warning because the effective override is dynamic.',
+    files: overrideFiles(OPENAI_AGENTS_SDK_FILES, {
+      '/src/agents.ts': source(OPENAI_AGENTS_SDK_FILES, '/src/agents.ts')
+        .replace(
+          'const configuredBillingHandoff = handoff(',
+          'const createRoutingDescription = () => billingRoutingDescription;\nconst configuredBillingHandoff = handoff(',
+        )
+        .replace(
+          'toolDescriptionOverride: billingRoutingDescription,',
+          'toolDescriptionOverride: createRoutingDescription(),',
+        ),
+    }),
+  },
+  {
     id: 'vercel-agent-and-stream',
     adapter: vercelAiSdkAdapter,
     title: 'An agent and a direct text stream',
     description:
       'Inspect ToolLoopAgent call options, instruction loaders, object output, and function-tool connections.',
     files: VERCEL_AI_SDK_FILES,
+  },
+  {
+    id: 'vercel-deferred-tool',
+    adapter: vercelAiSdkAdapter,
+    title: 'A deferred AI SDK function tool',
+    description:
+      'The function tool remains registered with its implementation and schemas; its declared deferral does not prove turn-time availability.',
+    files: overrideFiles(VERCEL_AI_SDK_FILES, {
+      '/package.json': source(VERCEL_AI_SDK_FILES, '/package.json').replace('^7.0.66', '7.0.116'),
+      '/src/tools.ts': source(VERCEL_AI_SDK_FILES, '/src/tools.ts').replace(
+        'inputSchema: FindOrderInputSchema,',
+        'inputSchema: FindOrderInputSchema, deferLoading: true,',
+      ),
+      '/src/agents.ts': source(VERCEL_AI_SDK_FILES, '/src/agents.ts')
+        .replace(
+          'generateText, Output, streamText, ToolLoopAgent',
+          'generateText, Output, streamText, toolSearch, ToolLoopAgent',
+        )
+        .replaceAll(
+          'tools: { find_order: findOrderTool }',
+          'tools: { find_order: findOrderTool, search: toolSearch() }',
+        ),
+    }),
   },
   {
     id: 'claude-preset',
@@ -258,6 +534,51 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
         ? { content: entry.content.replaceAll('/agent/', '/') }
         : {}),
     })),
+  },
+  {
+    id: 'eve-workspace-peer',
+    adapter: eveAdapter,
+    title: 'A workspace agent delegates to a registered peer',
+    description:
+      'The workspace reference resolves only through the declared research agent and preserves the local summary edge.',
+    files: [
+      ...EVE_FILES.map((entry) => ({
+        ...entry,
+        path: entry.path.replace(/^\/agent\//u, '/agents/support/agent/'),
+        ...(entry.type === 'file' && typeof entry.content === 'string'
+          ? {
+              content:
+                entry.path === '/package.json'
+                  ? '{"name":"@acme/support-app","dependencies":{"eve":"0.66.3"}}'
+                  : entry.path === '/moldea/moldea.yaml'
+                    ? `${entry.content.replaceAll('/agent/', '/agents/support/agent/')}  research:\n    runtime:\n      id: eve\n    bindings:\n      runtimeAgent:\n        path: /agents/research/agent/agent.ts\n        symbol: default\n`
+                    : entry.content,
+            }
+          : {}),
+      })),
+      {
+        path: '/agents/support/agent/subagents/research.ts',
+        type: 'file',
+        content:
+          "import { defineWorkspaceAgent } from 'eve'; export default defineWorkspaceAgent({ name: 'research' });\n",
+      },
+      {
+        path: '/agents/research/agent/agent.ts',
+        type: 'file',
+        content:
+          "import { defineAgent } from 'eve'; export default defineAgent({ description: 'Researches support requests.', model: 'provider/model' });\n",
+      },
+      {
+        path: '/moldea/agents/research/description.md',
+        type: 'file',
+        content: 'Researches support requests.\n',
+      },
+      {
+        path: '/moldea/agents/research/instruction.md',
+        type: 'file',
+        content: 'You are the `research` agent.\n',
+      },
+    ],
   },
   {
     id: 'eve-markdown-instruction',
@@ -368,14 +689,45 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
     adapter: eveAdapter,
     title: 'A subagent collides with a framework tool',
     description:
-      'The static namespace prevents claiming a handoff named glob. This does not establish turn-time tool availability.',
+      'The static namespace prevents claiming a handoff named bash. This does not establish turn-time tool availability.',
     files: EVE_FILES.map((entry) => ({
       ...entry,
-      path: entry.path.replaceAll('summary', 'glob'),
+      path: entry.path.replaceAll('summary', 'bash'),
       ...(entry.type === 'file' && typeof entry.content === 'string'
-        ? { content: entry.content.replaceAll('summary', 'glob') }
+        ? { content: entry.content.replaceAll('summary', 'bash') }
         : {}),
     })),
+  },
+  {
+    id: 'eve-removed-default',
+    adapter: eveAdapter,
+    title: 'A removed default frees its subagent name',
+    description: 'At Eve 0.65.0, todo no longer occupies the default tool namespace.',
+    files: EVE_FILES.map((entry) => ({
+      ...entry,
+      path: entry.path.replaceAll('summary', 'todo'),
+      ...(entry.type === 'file' && typeof entry.content === 'string'
+        ? {
+            content:
+              entry.path === '/package.json'
+                ? '{"name":"@acme/support-app","dependencies":{"eve":"0.65.0"}}'
+                : entry.content.replaceAll('summary', 'todo'),
+          }
+        : {}),
+    })),
+  },
+  {
+    id: 'openai-loader-unverified',
+    adapter: openAiAdapter,
+    title: 'The instruction choice cannot be verified',
+    description:
+      'An environment-controlled fallback may use the declared loader, so inspection warns without claiming a connection or a defect.',
+    files: overrideFiles(OPENAI_FILES, {
+      '/src/agent.ts': source(OPENAI_FILES, '/src/agent.ts').replace(
+        'instructions: readInstruction(),',
+        'instructions: process.env.SUPPORT_INSTRUCTION ?? readInstruction(),',
+      ),
+    }),
   },
   {
     id: 'openai-loader-disconnected',

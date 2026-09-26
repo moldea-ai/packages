@@ -105,10 +105,12 @@ export const validateRuntimeWitness = (
     return;
   }
   assertCapabilityFacts(
-    matching.some((entry) =>
-      Object.entries(witness.details ?? {}).every(
-        ([key, expected]) => entry.details[key] === expected,
-      ),
+    matching.some(
+      (entry) =>
+        (witness.runtimeName === undefined || entry.runtimeName === witness.runtimeName) &&
+        Object.entries(witness.details ?? {}).every(
+          ([key, expected]) => entry.details[key] === expected,
+        ),
     ),
     true,
   );
@@ -176,20 +178,20 @@ export const validateCapabilities = (
     const result = example.result;
     if (
       (result.kind === 'validation' || result.kind === 'adapter') &&
-      result.valid !== (result.diagnostics.length === 0)
+      result.valid !== result.diagnostics.every(({ severity }) => severity !== 'error')
     ) {
-      throw new Error('A capability result is classified incorrectly.');
+      throw new Error(`Capability result ${example.id} is classified incorrectly.`);
     }
     if (
       result.kind === 'cli' &&
-      (result.schemaVersion !== 4 ||
+      (result.schemaVersion !== 5 ||
         (result.status === 'valid'
           ? result.exitStatus !== 0
           : result.status === 'invalid'
             ? result.exitStatus !== 1
             : result.status !== 'error' || (result.exitStatus !== 2 && result.exitStatus !== 3)))
     ) {
-      throw new Error('A capability result is classified incorrectly.');
+      throw new Error(`Capability result ${example.id} is classified incorrectly.`);
     }
   }
   for (const [operation, caseIds] of Object.entries(catalog.coreOperations)) {

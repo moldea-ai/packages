@@ -19,6 +19,8 @@ The canonical Runtime Compatibility Matrix defines technical targets `typescript
 - direct tool implementation, input-schema, and output-schema bindings
 - closed own-property tools maps whose keys establish tool runtime names
 
+Function-tool evidence records the declared `deferLoading` option as `absent`, `enabled`, `disabled`, or `unknown`. The option is accepted by newer AI SDK 7 releases, while the `7.0.66` floor does not establish it. A `toolSearch()` declaration can coexist with the function tool. Registration evidence does not establish per-turn model availability or search results.
+
 Bindings must remain lexically visible at each matched use. Supported relative named imports resolve an exact TypeScript path, `.js` to `.ts` or `.tsx`, and `.mjs` to `.mts`. Re-exports, directory indexes, path aliases, CommonJS, and package-export resolution are outside the targets.
 
 ## ToolLoopAgent

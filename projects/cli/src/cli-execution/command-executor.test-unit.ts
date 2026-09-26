@@ -44,11 +44,13 @@ const PROJECT_SUMMARY = Object.freeze({
 });
 const VALIDATION_RESULT = Object.freeze({
   diagnostics: Object.freeze([]),
+  errorCount: 0,
   evidence: Object.freeze([]),
   formatVersion: 1,
   source: SOURCE,
   summary: PROJECT_SUMMARY,
   valid: true,
+  warningCount: 0,
 }) satisfies IProjectValidationResult;
 
 const createInspectionResult = (nextCursor: string | null): IProjectInspectionPageResult =>
@@ -56,8 +58,10 @@ const createInspectionResult = (nextCursor: string | null): IProjectInspectionPa
     counts: Object.freeze({
       ...PROJECT_SUMMARY.counts,
       diagnostics: 0,
+      errors: 0,
       evidence: 0,
       metadata: 2,
+      warnings: 0,
     }),
     formatVersion: 1,
     inspectionDigest: `sha256:${'3'.repeat(64)}`,
@@ -132,7 +136,7 @@ const createCommandInput = (
     dependencies: Object.freeze({}),
     installedPackageVersions: Object.freeze({}),
     supportedNodeRange: '>=22.11.0',
-    version: '8.0.0',
+    version: '9.0.0',
   },
 });
 
@@ -186,7 +190,7 @@ describe('createMoldeaCliCommandExecutor', () => {
     const envelope = JSON.parse(result.stdout) as Record<string, unknown>;
 
     expect(result.exitCode).toBe(0);
-    expect(envelope).toMatchObject({ command: 'validate', schemaVersion: 4, status: 'valid' });
+    expect(envelope).toMatchObject({ command: 'validate', schemaVersion: 5, status: 'valid' });
     expect(result.stdout).not.toContain('content');
     expect(coreInspection).toHaveBeenCalledWith({
       command: 'validate',
@@ -197,7 +201,7 @@ describe('createMoldeaCliCommandExecutor', () => {
 
   test('continues inspect from the Core cursor carried by the CLI cursor', async () => {
     const snapshot = createCompletedSnapshotExecutor();
-    const coreCursor = 'core4:all:1:memory%3Acommand';
+    const coreCursor = 'core5:all:1:memory%3Acommand';
     const coreInspection = vi
       .fn<IMoldeaCliCoreInspectionExecutor>()
       .mockResolvedValueOnce(createInspectionResult(coreCursor))
@@ -254,7 +258,7 @@ describe('createMoldeaCliCommandExecutor', () => {
     expect(JSON.parse(result.stdout)).toMatchObject({
       command: 'scope',
       result: { relevant: false, valid: true },
-      schemaVersion: 4,
+      schemaVersion: 5,
     });
     expect(snapshot.selectionPaths).toStrictEqual([MOLDEA_MANIFEST_PATH]);
     expect(coreInspection).not.toHaveBeenCalled();
@@ -292,7 +296,7 @@ describe('createMoldeaCliCommandExecutor', () => {
         asset: { path: '/moldea/project.md', totalBytes: 10 },
         chunk: { byteEnd: 10, byteStart: 0, content: '# Project\n' },
       },
-      schemaVersion: 4,
+      schemaVersion: 5,
     });
     expect(snapshot.selectionPaths).toStrictEqual([parseRepositoryPath('/moldea/project.md')]);
     expect(projectContent).toHaveBeenCalledWith(
@@ -319,7 +323,7 @@ describe('createMoldeaCliCommandExecutor', () => {
     expect(JSON.parse(result.stdout)).toMatchObject({
       error: { code: 'GIT_NOT_FOUND' },
       result: null,
-      schemaVersion: 4,
+      schemaVersion: 5,
       status: 'error',
     });
   });

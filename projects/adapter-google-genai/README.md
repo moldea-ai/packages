@@ -8,14 +8,14 @@ The package implements the official `google-genai` runtime adapter for `@moldea.
 
 ## Supported target
 
-Version `3.0.2` supports:
+Version `4.1.0` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^4.0.0`
+- `@moldea.ai/core ^5.0.0`
 - TypeScript ESM source
 - npm `@google/genai >=2.17.1`
 - a named runtime value import of `GoogleGenAI` and a module-local `const` client
-- a bound exported runtime-agent function containing direct `client.models.generateContent({ ... })` calls
+- a bound exported runtime-agent function containing direct `client.models.generateContent({ ... })` or `generateContentStream({ ... })` calls
 - direct instruction-loader wiring through `config.systemInstruction`
 - closed inline or immutable module-local tool, tool-container, function-declaration, and registration values through `config.tools[].functionDeclarations`
 - direct input-schema wiring through `parametersJsonSchema`
@@ -43,6 +43,10 @@ The local CLI bundles active official adapters automatically. Applications compo
 The package exports only `googleGenAiAdapter`. It has no default export, mutable configuration, factory, parser, diagnostic registry, SDK facade, or cross-inspection state.
 
 ## Evidence and diagnostics
+
+`GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+
+`GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified.
 
 The verified target may emit `runtime-package`, `language`, `runtime-pattern`, `instruction-loader`, `tool-registration`, and `schema` evidence. Evidence is source-grounded and never contains repository source, instructions, schemas, credentials, client configuration, provider payloads, or model output.
 

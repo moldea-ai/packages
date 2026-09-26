@@ -1,34 +1,17 @@
 import ts from 'typescript';
 
-import { isModuleBindingVisible, unwrapExpression } from '@moldea.ai/adapter-static-analysis';
+import {
+  classifyAiSdkFunctionToolShape,
+  isModuleBindingVisible,
+  unwrapExpression,
+} from '@moldea.ai/adapter-static-analysis';
 
 import type {
   ICloudflareAgentsFunctionTool,
+  ICloudflareAgentsRelationship,
   ICloudflareAgentsSourceAnalysis,
 } from '../contracts/index.js';
-import {
-  analyzeCloudflareAgentsObjectRelationships,
-  getCloudflareAgentsPropertyName,
-} from './bindings.js';
-
-const TOLERATED_PROPERTY_NAMES = new Set([
-  'contextSchema',
-  'description',
-  'execute',
-  'inputExamples',
-  'inputSchema',
-  'metadata',
-  'needsApproval',
-  'onInputAvailable',
-  'onInputDelta',
-  'onInputStart',
-  'outputSchema',
-  'providerOptions',
-  'strict',
-  'title',
-  'toModelOutput',
-  'type',
-]);
+import { analyzeCloudflareAgentsObjectRelationships } from './bindings.js';
 
 /** Classifies one direct AI SDK function-tool declaration. */
 export const getCloudflareAgentsFunctionTool = (
@@ -57,22 +40,9 @@ export const getCloudflareAgentsFunctionTool = (
     return null;
   }
 
-  const names = new Set<string>();
+  const shape = classifyAiSdkFunctionToolShape(object);
 
-  for (const property of object.properties) {
-    if (ts.isSpreadAssignment(property) || ts.isComputedPropertyName(property.name)) {
-      return null;
-    }
-
-    const name = getCloudflareAgentsPropertyName(property.name);
-
-    if (name === null || !TOLERATED_PROPERTY_NAMES.has(name) || names.has(name)) {
-      return null;
-    }
-    names.add(name);
-  }
-
-  if (!names.has('inputSchema')) {
+  if (shape === null) {
     return null;
   }
 
@@ -81,6 +51,10 @@ export const getCloudflareAgentsFunctionTool = (
     'inputSchema',
     'outputSchema',
   ] as const);
+  const deferLoading: ICloudflareAgentsRelationship =
+    shape.deferLoading === null
+      ? { kind: 'absent' }
+      : { expression: shape.deferLoading, kind: 'present' };
 
-  return Object.freeze({ declaration, ...relationships });
+  return Object.freeze({ declaration, deferLoading, ...relationships });
 };

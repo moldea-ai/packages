@@ -39,6 +39,63 @@ const findMessages = (source: string, symbol = 'agent') => {
   return { analysis, messages: analyzeAnthropicMessages(analysis, runtime.body) };
 };
 
+describe('Anthropic effective request bodies', () => {
+  test('recognizes create, parse, and stream in one runtime body', () => {
+    const { messages } = findMessages(
+      [
+        "import Anthropic from '@anthropic-ai/sdk';",
+        'const client = new Anthropic();',
+        'export const agent = () => {',
+        '  client.messages.create({ system: loadSystem() });',
+        '  client.messages.parse({ tools: [tool] });',
+        '  return client.messages.stream({ system: loadSystem(), tools: [tool] });',
+        '};',
+      ].join('\n'),
+    );
+
+    expect(messages.hasAmbiguousCandidate).toBe(false);
+    expect(
+      messages.requests.map(({ methodName, system, tools }) => ({
+        methodName,
+        system: system.kind,
+        tools: tools.kind,
+      })),
+    ).toStrictEqual([
+      { methodName: 'create', system: 'present', tools: 'absent' },
+      { methodName: 'parse', system: 'absent', tools: 'present' },
+      { methodName: 'stream', system: 'present', tools: 'present' },
+    ]);
+  });
+
+  test.each([
+    ['transport only', '{ timeout: 1000 }', 'present', 'present'],
+    [
+      'static body replacement',
+      '{ body: { system: otherSystem(), tools: [] } }',
+      'present',
+      'present',
+    ],
+    ['dynamic body replacement', '{ body: replacement }', 'unresolved', 'unresolved'],
+    ['dynamic options', 'options', 'unresolved', 'unresolved'],
+    ['spread after a body', '{ body: {}, ...options }', 'unresolved', 'unresolved'],
+  ])('%s options affect only proven relationships', (_description, options, system, tools) => {
+    const { messages } = findMessages(
+      [
+        "import Anthropic from '@anthropic-ai/sdk';",
+        'const client = new Anthropic();',
+        `export const agent = () => client.messages.create({ system: loadSystem(), tools: [tool] }, ${options});`,
+      ].join('\n'),
+    );
+
+    expect(
+      messages.requests.map((request) => ({
+        system: request.system.kind,
+        tools: request.tools.kind,
+      })),
+    ).toStrictEqual([{ system, tools }]);
+  });
+});
+
 describe('analyzeAnthropicSource', () => {
   test('indexes aliases, module clients, exports, and closed Messages requests', () => {
     const { analysis, messages } = findMessages(
@@ -182,16 +239,12 @@ describe('analyzeAnthropicSource', () => {
     expect(analysis.clientNames).toStrictEqual(new Set());
   });
 
-  test.each([
-    ['messages stream helper', 'client.messages.stream({})'],
-    ['beta Messages API', 'client.beta.messages.create({})'],
-    ['parse helper', 'client.messages.parse({})'],
-  ])('does not recognize the unsupported %s', (_description, expression) => {
+  test('does not recognize the beta Messages API', () => {
     const analysis = analyze(
       [
         "import Anthropic from '@anthropic-ai/sdk';",
         'const client = new Anthropic();',
-        `export const agent = () => ${expression};`,
+        'export const agent = () => client.beta.messages.create({});',
       ].join('\n'),
     );
     const runtime = getRuntimeExport(analysis, 'agent');

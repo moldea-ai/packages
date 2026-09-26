@@ -3,10 +3,13 @@ import ts from 'typescript';
 import type { IEveHelperImports } from '../contracts/index.js';
 
 const HELPER_IMPORTS = Object.freeze({
-  eve: Object.freeze({ defineAgent: 'defineAgent' }),
+  eve: Object.freeze({ defineAgent: 'defineAgent', defineWorkspaceAgent: 'defineWorkspaceAgent' }),
   'eve/instructions': Object.freeze({ defineInstructions: 'defineInstructions' }),
   'eve/skills': Object.freeze({ defineSkill: 'defineSkill' }),
-  'eve/tools': Object.freeze({ defineTool: 'defineTool' }),
+  'eve/tools': Object.freeze({
+    defineTool: 'defineTool',
+    defineWorkflowTool: 'defineWorkflowTool',
+  }),
 } as const);
 
 /** Indexes exact Eve helper runtime imports by lexical local binding. */
@@ -15,7 +18,16 @@ export const indexEveHelperImports = (sourceFile: ts.SourceFile): IEveHelperImpo
   const defineInstructions = new Set<string>();
   const defineSkill = new Set<string>();
   const defineTool = new Set<string>();
-  const sets = { defineAgent, defineInstructions, defineSkill, defineTool };
+  const defineWorkflowTool = new Set<string>();
+  const defineWorkspaceAgent = new Set<string>();
+  const sets = {
+    defineAgent,
+    defineInstructions,
+    defineSkill,
+    defineTool,
+    defineWorkflowTool,
+    defineWorkspaceAgent,
+  };
 
   for (const statement of sourceFile.statements) {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
@@ -43,5 +55,12 @@ export const indexEveHelperImports = (sourceFile: ts.SourceFile): IEveHelperImpo
     }
   }
 
-  return Object.freeze({ defineAgent, defineInstructions, defineSkill, defineTool });
+  return Object.freeze({
+    defineAgent,
+    defineInstructions,
+    defineSkill,
+    defineTool,
+    defineWorkflowTool,
+    defineWorkspaceAgent,
+  });
 };

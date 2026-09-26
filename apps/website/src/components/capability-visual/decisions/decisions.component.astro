@@ -12,10 +12,13 @@ interface Props {
 }
 const { example } = Astro.props;
 const isCycle = example.id === 'decision-cycle';
-const missingDecisionId =
+const referenceDiagnostic =
   example.result.kind === 'validation'
     ? example.result.diagnostics.find(({ code }) => code === 'MOLDEA_DECISION_REFERENCE_MISSING')
-        ?.details.referencedDecisionId
+    : undefined;
+const missingDecisionId =
+  referenceDiagnostic?.severity === 'error'
+    ? referenceDiagnostic.details.referencedDecisionId
     : undefined;
 const files = example.files.filter(({ path }) => path.startsWith('/moldea/decisions/'));
 const nodes = files.map((file) => ({

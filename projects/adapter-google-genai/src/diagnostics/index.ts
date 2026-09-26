@@ -8,34 +8,78 @@ import type {
 
 // stable Google Gen AI adapter diagnostic code and message catalog
 export const GOOGLE_GENAI_ADAPTER_DIAGNOSTICS = Object.freeze({
-  GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED:
-    'The detected Google Gen AI function-declaration collection exceeds the supported SDK declaration limit.',
-  GOOGLE_GENAI_INSTRUCTION_LOADER_NOT_WIRED:
-    'The declared instruction loader is not wired to the detected Google Gen AI generate-content configuration.',
-  GOOGLE_GENAI_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND:
-    'The declared instruction-loader symbol was not found.',
-  GOOGLE_GENAI_PACKAGE_MANIFEST_INVALID:
-    'The owning package manifest is invalid for Google Gen AI dependency detection.',
-  GOOGLE_GENAI_RUNTIME_AGENT_SYMBOL_NOT_FOUND: 'The declared runtime-agent symbol was not found.',
-  GOOGLE_GENAI_SDK_VERSION_UNSUPPORTED:
-    'The observed Google Gen AI SDK dependency range is disjoint from the supported range.',
-  GOOGLE_GENAI_SOURCE_SYNTAX_INVALID:
-    'The referenced Google Gen AI source file contains invalid TypeScript syntax.',
-  GOOGLE_GENAI_SOURCE_TEXT_INVALID:
-    'The referenced Google Gen AI source file is not valid normalized text.',
-  GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED:
-    "The declared tool input schema is not wired to the detected function declaration's parameters JSON schema.",
-  GOOGLE_GENAI_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND:
-    'The declared tool input-schema symbol was not found.',
-  GOOGLE_GENAI_TOOL_NAME_INVALID:
-    'The detected Google Gen AI function name violates the supported SDK declaration limit.',
-  GOOGLE_GENAI_TOOL_NAME_MISMATCH:
-    'The declared tool name does not match the detected Google Gen AI function name.',
-  GOOGLE_GENAI_TOOL_REGISTRATION_NOT_WIRED:
-    'The declared tool registration is not wired to the detected Google Gen AI function-declaration collection.',
-  GOOGLE_GENAI_TOOL_REGISTRATION_SYMBOL_NOT_FOUND:
-    'The declared tool-registration symbol was not found.',
-} as const satisfies Readonly<Record<IGoogleGenAiAdapterDiagnosticCode, string>>);
+  GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED: {
+    message:
+      'The detected Google Gen AI function-declaration collection exceeds the supported SDK declaration limit.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_INSTRUCTION_LOADER_NOT_WIRED: {
+    message:
+      'The declared instruction loader is not wired to the detected Google Gen AI generate-content configuration.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND: {
+    message: 'The declared instruction-loader symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_PACKAGE_MANIFEST_INVALID: {
+    message: 'The owning package manifest is invalid for Google Gen AI dependency detection.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_RUNTIME_AGENT_SYMBOL_NOT_FOUND: {
+    message: 'The declared runtime-agent symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_SDK_VERSION_UNSUPPORTED: {
+    message:
+      'The observed Google Gen AI SDK dependency range is disjoint from the supported range.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_SOURCE_SYNTAX_INVALID: {
+    message: 'The referenced Google Gen AI source file contains invalid TypeScript syntax.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_SOURCE_TEXT_INVALID: {
+    message: 'The referenced Google Gen AI source file is not valid normalized text.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED: {
+    message:
+      "The declared tool input schema is not wired to the detected function declaration's parameters JSON schema.",
+    severity: 'error',
+  },
+  GOOGLE_GENAI_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool input-schema symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_TOOL_NAME_INVALID: {
+    message:
+      'The detected Google Gen AI function name violates the supported SDK declaration limit.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_TOOL_NAME_MISMATCH: {
+    message: 'The declared tool name does not match the detected Google Gen AI function name.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_TOOL_REGISTRATION_NOT_WIRED: {
+    message:
+      'The declared tool registration is not wired to the detected Google Gen AI function-declaration collection.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_TOOL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool-registration symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED: {
+    message: 'The declared runtime relationship could not be verified.',
+    severity: 'warning',
+  },
+} as const satisfies Readonly<
+  Record<
+    IGoogleGenAiAdapterDiagnosticCode,
+    { readonly message: string; readonly severity: 'error' | 'warning' }
+  >
+>);
 
 /**
  * Creates one frozen, safely namespaced Google Gen AI adapter diagnostic.
@@ -44,11 +88,32 @@ export const GOOGLE_GENAI_ADAPTER_DIAGNOSTICS = Object.freeze({
  */
 export const createGoogleGenAiDiagnostic = (
   input: IGoogleGenAiDiagnosticInput,
-): IAdapterDiagnostic =>
-  Object.freeze({
+): IAdapterDiagnostic => {
+  if (input.code === 'GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED') {
+    const definition = GOOGLE_GENAI_ADAPTER_DIAGNOSTICS[input.code];
+    const details = Object.freeze({ ...input.details });
+    const entity = input.entity === null ? null : Object.freeze({ ...input.entity });
+
+    return Object.freeze({
+      ...input,
+      details,
+      entity,
+      message: definition.message,
+      severity: definition.severity,
+      source: GOOGLE_GENAI_ADAPTER_ID,
+    });
+  }
+
+  const definition = GOOGLE_GENAI_ADAPTER_DIAGNOSTICS[input.code];
+  const details = Object.freeze({ ...input.details });
+  const entity = input.entity === null ? null : Object.freeze({ ...input.entity });
+
+  return Object.freeze({
     ...input,
-    details: Object.freeze({ ...input.details }),
-    entity: input.entity === null ? null : Object.freeze({ ...input.entity }),
-    message: GOOGLE_GENAI_ADAPTER_DIAGNOSTICS[input.code],
+    details,
+    entity,
+    message: definition.message,
+    severity: definition.severity,
     source: GOOGLE_GENAI_ADAPTER_ID,
   });
+};

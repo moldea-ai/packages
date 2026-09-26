@@ -10,7 +10,9 @@ Read this example before searching adapter implementation for binding syntax. It
 
 ## How the bindings connect
 
-Use `symbol: default` for directly default-exported Eve agents and tools. The `instructionLoader` points to the exact `instructions.md` path without a symbol; `mirrors` makes that file an exact copy of the owner's canonical instruction. `outputSchema` binds the exported schema used by `defineAgent`. A subagent's static `description` must match its canonical `handoff-description.md` (or canonical description when no handoff description exists). Register the child agent itself, not a synthetic handoff tool. Do not attach package or compiler files to every agent mechanically.
+This example pins Eve `0.66.3`, the last verified release that accepts `defineAgent.outputSchema`. The `outputSchema` binding below names that older agent-definition property; Eve `0.67.0` removes it. For newer Eve, omit both the agent property and its manifest binding. Tool output schemas are independent and remain supported.
+
+Use `symbol: default` for directly default-exported Eve agents and tools. The `instructionLoader` points to the exact `instructions.md` path without a symbol; `mirrors` makes that file an exact copy of the owner's canonical instruction. A subagent's static `description` must match its canonical `handoff-description.md` (or canonical description when no handoff description exists). Register the child agent itself, not a synthetic handoff tool. Do not attach package or compiler files to every agent mechanically.
 
 Paths below are repository-root-relative logical paths. Keep the canonical instructions as the policy source. General manifest semantics belong to the [Repository Format specification](https://packages.moldea.ai/repository-format/). Use the other local guides for the full supported boundary and limitations; this example does not expand them.
 
@@ -72,7 +74,7 @@ agents:
 {
   "name": "binding-example",
   "dependencies": {
-    "eve": "^0.39.1",
+    "eve": "0.66.3",
     "zod": "4.6.4"
   },
   "private": true,
@@ -197,3 +199,9 @@ Summarize the supplied support request without inventing facts.
 ## What the check establishes
 
 The integration check reads these exact file blocks, requires positive adapter evidence for the documented relationships, and rejects a broken runtime binding. It does not prove that instructions are followed, that every SDK version accepts these forms, or that the application is ready for production. Continue using the installed adapter diagnostics for your actual source.
+
+## Newer Eve forms
+
+For a workspace, bind each root to its exact `agents/<name>/agent/agent.ts` path. A workspace parent's `subagents/<slot>.ts` can directly export `defineWorkspaceAgent({ name: '<peer>' })` from Eve `0.54.3`; declare the peer in the same manifest at `agents/<peer>/agent/agent.ts`. Each parent may also register immediate directory-backed local children. `defaultTools: false` is available from Eve `0.52.2`; `tool: false` on a child or workspace reference is available from Eve `0.59.1` and suppresses model-visible handoff evidence while preserving its callable declaration.
+
+From Eve `0.52.0`, a directly exported `defineWorkflowTool(...)` can be bound like the `search` tool above when its executor is a top-level async function declaration or the definition's direct async `execute` method beginning with `use workflow`. This inspection establishes static registration and declared background execution, not durable workflow behavior. From Eve `0.61.0`, the tool may declare `availableInSubagents` explicitly. Keep test/spec files and `__tests__` paths out of runtime bindings for Eve `0.66.2` and later. See the Verified target guide for version-sensitive default-tool names and supported source shapes.

@@ -2,6 +2,7 @@ import ts from 'typescript';
 
 import {
   analyzeModuleValueMutations,
+  classifyAiSdkFunctionToolShape,
   isModuleBindingVisible,
   unwrapExpression,
 } from '@moldea.ai/adapter-static-analysis';
@@ -12,27 +13,9 @@ import type {
   IVercelAiSdkRelationship,
   IVercelAiSdkSourceAnalysis,
 } from '../contracts/index.js';
-import { analyzeVercelAiSdkObjectRelationships, getVercelAiSdkPropertyName } from './bindings.js';
+import { analyzeVercelAiSdkObjectRelationships } from './bindings.js';
 
 const RELATIONSHIP_NAMES = ['execute', 'inputSchema', 'outputSchema'] as const;
-const TOLERATED_PROPERTY_NAMES = new Set([
-  'contextSchema',
-  'description',
-  'execute',
-  'inputExamples',
-  'inputSchema',
-  'metadata',
-  'needsApproval',
-  'onInputAvailable',
-  'onInputDelta',
-  'onInputStart',
-  'outputSchema',
-  'providerOptions',
-  'strict',
-  'title',
-  'toModelOutput',
-  'type',
-]);
 
 const getFunctionToolObject = (
   initializer: ts.Expression,
@@ -58,49 +41,6 @@ const getFunctionToolObject = (
   return ts.isObjectLiteralExpression(object) ? object : null;
 };
 
-const isSupportedFunctionToolShape = (object: ts.ObjectLiteralExpression): boolean => {
-  const names = new Set<string>();
-  let hasInputSchema = false;
-
-  for (const property of object.properties) {
-    if (ts.isSpreadAssignment(property) || ts.isComputedPropertyName(property.name)) {
-      return false;
-    }
-
-    const name = getVercelAiSdkPropertyName(property.name);
-
-    if (name === null || !TOLERATED_PROPERTY_NAMES.has(name) || names.has(name)) {
-      return false;
-    }
-
-    names.add(name);
-
-    if (name === 'inputSchema') {
-      if (!ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property)) {
-        return false;
-      }
-      hasInputSchema = true;
-    }
-
-    if (name === 'type') {
-      if (!ts.isPropertyAssignment(property)) {
-        return false;
-      }
-
-      const type = unwrapExpression(property.initializer);
-
-      if (
-        (!ts.isStringLiteral(type) && !ts.isNoSubstitutionTemplateLiteral(type)) ||
-        type.text !== 'function'
-      ) {
-        return false;
-      }
-    }
-  }
-
-  return hasInputSchema;
-};
-
 /** Classifies one directly exported repository-local function tool. */
 export const getVercelAiSdkFunctionTool = (
   analysis: IVercelAiSdkSourceAnalysis,
@@ -123,7 +63,9 @@ export const getVercelAiSdkFunctionTool = (
 
   const object = getFunctionToolObject(exported.declaration.initializer, analysis);
 
-  if (object === null || !isSupportedFunctionToolShape(object)) {
+  const shape = object === null ? null : classifyAiSdkFunctionToolShape(object);
+
+  if (object === null || shape === null) {
     return Object.freeze({ declaration: exported.declaration, kind: 'present-unsupported' });
   }
 
@@ -140,8 +82,14 @@ export const getVercelAiSdkFunctionTool = (
 
   const relationship = (name: (typeof RELATIONSHIP_NAMES)[number]): IVercelAiSdkRelationship =>
     mutations.mutatedMembers.has(name) ? { kind: 'unresolved' } : relationships[name];
+  const deferLoading: IVercelAiSdkRelationship = mutations.mutatedMembers.has('deferLoading')
+    ? { kind: 'unresolved' }
+    : shape.deferLoading === null
+      ? { kind: 'absent' }
+      : { expression: shape.deferLoading, kind: 'present' };
   const tool: IVercelAiSdkFunctionTool = Object.freeze({
     declaration: exported.declaration,
+    deferLoading,
     execute: relationship('execute'),
     inputSchema: relationship('inputSchema'),
     object,

@@ -8,26 +8,26 @@ For target runtime packages, eligible versions begin at the verified minimum. La
 
 | Adapter ID          | Owning package                         | Implementation | Distribution | Implementation range | Status      | Runtime guidance | Verified targets |
 | ------------------- | -------------------------------------- | -------------- | ------------ | -------------------- | ----------- | ---------------- | ---------------: |
-| `anthropic`         | `@moldea.ai/adapter-anthropic`         | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
-| `claude-agent-sdk`  | `@moldea.ai/adapter-claude-agent-sdk`  | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `1` |
-| `cloudflare-agents` | `@moldea.ai/adapter-cloudflare-agents` | `package`      | `public`     | `^3.0.0`             | `available` | `recommended`    |              `2` |
+| `anthropic`         | `@moldea.ai/adapter-anthropic`         | `package`      | `public`     | `^5.0.0`             | `available` | `optional`       |              `1` |
+| `claude-agent-sdk`  | `@moldea.ai/adapter-claude-agent-sdk`  | `package`      | `public`     | `^4.1.0`             | `available` | `optional`       |              `1` |
+| `cloudflare-agents` | `@moldea.ai/adapter-cloudflare-agents` | `package`      | `public`     | `^4.0.0`             | `available` | `recommended`    |              `2` |
 | `custom`            | `@moldea.ai/core`                      | `built-in`     | `public`     | Not available        | `available` | `required`       |              `1` |
-| `eve`               | `@moldea.ai/adapter-eve`               | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `1` |
-| `google-genai`      | `@moldea.ai/adapter-google-genai`      | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `1` |
-| `langchain`         | `@moldea.ai/adapter-langchain`         | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `1` |
-| `langgraph`         | `@moldea.ai/adapter-langgraph`         | `package`      | `public`     | `^3.0.0`             | `available` | `recommended`    |              `2` |
-| `openai`            | `@moldea.ai/adapter-openai`            | `package`      | `public`     | `^4.0.0`             | `available` | `recommended`    |              `1` |
-| `openai-agents-sdk` | `@moldea.ai/adapter-openai-agents-sdk` | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `1` |
-| `vercel-ai-sdk`     | `@moldea.ai/adapter-vercel-ai-sdk`     | `package`      | `public`     | `^3.0.0`             | `available` | `optional`       |              `2` |
+| `eve`               | `@moldea.ai/adapter-eve`               | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
+| `google-genai`      | `@moldea.ai/adapter-google-genai`      | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
+| `langchain`         | `@moldea.ai/adapter-langchain`         | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
+| `langgraph`         | `@moldea.ai/adapter-langgraph`         | `package`      | `public`     | `^4.0.0`             | `available` | `recommended`    |              `2` |
+| `openai`            | `@moldea.ai/adapter-openai`            | `package`      | `public`     | `^5.0.0`             | `available` | `recommended`    |              `1` |
+| `openai-agents-sdk` | `@moldea.ai/adapter-openai-agents-sdk` | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `1` |
+| `vercel-ai-sdk`     | `@moldea.ai/adapter-vercel-ai-sdk`     | `package`      | `public`     | `^4.0.0`             | `available` | `optional`       |              `2` |
 
 ## Adapter: `anthropic`
 
 - Owning package: `@moldea.ai/adapter-anthropic`
-- Implementation range: `^4.0.0`
+- Implementation range: `^5.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers or unsupported indirect integration patterns.
 
@@ -36,7 +36,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/anthropic/typescript-messages-api-0-117/)
 
 | Ecosystem | Package             | Role      | Eligible versions |
@@ -48,20 +48,23 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 | Subject              | Relationship | Symbol |
 | -------------------- | ------------ | ------ |
 | `runtime-agent`      | `full`       | `full` |
+| `output-schema`      | `full`       | `full` |
 | `instruction-loader` | `full`       | `full` |
 | `tool-registration`  | `full`       | `full` |
 | `tool-input-schema`  | `full`       | `full` |
 
 #### Patterns
 
-| Kind                 | Pattern                        | Support       | Description                                                                                                        | Notes         |
-| -------------------- | ------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------ | ------------- |
-| `instruction-loader` | `direct-system-loader`         | `full`        | A directly bound instruction loader supplies the top-level system request property.                                | Not available |
-| `runtime`            | `direct-messages-create`       | `full`        | Direct Anthropic Messages API invocation through a module-local client in a directly exported TypeScript function. | Not available |
-| `runtime`            | `dynamic-request-construction` | `ambiguous`   | Dynamically assembled Messages requests cannot be mapped reliably without semantic analysis.                       | Not available |
-| `schema`             | `direct-tool-input-schema`     | `full`        | A bound tool input schema is referenced directly through the client tool input_schema property.                    | Not available |
-| `tool`               | `closed-client-tool-array`     | `full`        | Closed inline or immutable module-local arrays contain statically declared Anthropic client tools.                 | Not available |
-| `tool`               | `provider-server-tools`        | `unsupported` | Anthropic provider or server tools are outside the initial client-tool target.                                     | Not available |
+| Kind                 | Pattern                          | Support       | Description                                                                                                                               | Notes         |
+| -------------------- | -------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `instruction-loader` | `direct-system-loader`           | `full`        | A directly bound instruction loader supplies the top-level system request property.                                                       | Not available |
+| `runtime`            | `direct-messages-request-family` | `full`        | Direct Anthropic messages.create, parse, and stream requests through a module-local client in a directly exported TypeScript function.    | Not available |
+| `runtime`            | `dynamic-request-construction`   | `ambiguous`   | Dynamically assembled Messages requests cannot be mapped reliably without semantic analysis.                                              | Not available |
+| `runtime`            | `effective-messages-options`     | `full`        | A static second-argument body replaces the first request body; transport-only options leave canonical relationships unchanged.            | Not available |
+| `schema`             | `direct-output-schema`           | `full`        | A bound agent output schema is referenced through output_config.format as direct JSON Schema or a direct zodOutputFormat helper argument. | Not available |
+| `schema`             | `direct-tool-input-schema`       | `full`        | A bound tool input schema is referenced directly through the client tool input_schema property.                                           | Not available |
+| `tool`               | `closed-client-tool-array`       | `full`        | Closed inline or immutable module-local arrays contain statically declared Anthropic client tools.                                        | Not available |
+| `tool`               | `provider-server-tools`          | `unsupported` | Anthropic provider or server tools are outside the initial client-tool target.                                                            | Not available |
 
 #### Provider limits
 
@@ -72,18 +75,18 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 #### Known limitations
 
 - Arbitrary compiler resolution, path aliases, directory indexes, package exports, and re-export graphs are not resolved.
-- Beta resources, client.messages.stream, parse helpers, and tool-runner abstractions are not interpreted; an exact stream property on direct messages.create requests is tolerated, but its semantics are not validated.
+- Beta resources, tool-runner abstractions, and provider execution are not interpreted; direct stream calls establish source wiring without validating streaming lifecycle behavior.
 - Client-tool input-schema contents, including the provider-required top-level type object, are not validated; the target establishes only direct schema wiring.
-- Source forms outside the verified TypeScript ESM target, dynamic factories, mutable requests, provider tools, output schemas, runtime variables, and handoffs are outside the initial target.
+- Source forms outside the verified TypeScript ESM target, dynamic factories, mutable requests, provider tools, agent input schemas, runtime variables, and handoffs are outside the target.
 
 ## Adapter: `claude-agent-sdk`
 
 - Owning package: `@moldea.ai/adapter-claude-agent-sdk`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.1.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers, main-thread agent selection, tool aliases, string-array prompts, filesystem-defined agents, dynamic agent construction, observer behavior, external MCP configuration, or other unsupported indirect integration patterns.
 
@@ -92,7 +95,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/claude-agent-sdk/typescript-query-subagents-0-3/)
 
 | Ecosystem | Package                          | Role      | Eligible versions |
@@ -116,11 +119,11 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 | -------------------- | --------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
 | `agent`              | `dynamic-agent-definition`              | `ambiguous`   | Runtime-generated, factory-produced, conditional, spread-based, or mutated programmatic agent definitions remain unestablished.                                                                                                                                                                                                                                | Not available |
 | `agent`              | `filesystem-subagents`                  | `unsupported` | Subagents defined through .claude/agents files are outside the initial repository-owned programmatic target.                                                                                                                                                                                                                                                   | Not available |
-| `agent`              | `programmatic-agent-definition`         | `full`        | A directly exported immutable object-literal AgentDefinition supplies independently analyzable prompt, routing-description, and tool-restriction relationships.                                                                                                                                                                                                | Not available |
+| `agent`              | `programmatic-agent-definition`         | `full`        | A directly exported immutable object-literal AgentDefinition supplies independently analyzable prompt, routing-description, and tool-restriction relationships; omitClaudeMd does not establish canonical prompt content.                                                                                                                                      | Not available |
 | `agent`              | `query-main-thread-agent-selection`     | `unsupported` | Query-level agent selection can apply another definition's prompt and tool restrictions to the main thread and keeps affected instruction, delegation, and tool relationships unresolved.                                                                                                                                                                      | Not available |
 | `instruction-loader` | `experimental-critical-system-reminder` | `unsupported` | AgentDefinition criticalSystemReminder_EXPERIMENTAL is additional model-facing content and is not interpreted as canonical subagent instruction wiring.                                                                                                                                                                                                        | Not available |
-| `instruction-loader` | `query-custom-system-prompt`            | `full`        | A query-wrapper agent wires the declared instruction loader through a direct custom systemPrompt call.                                                                                                                                                                                                                                                         | Not available |
-| `instruction-loader` | `query-preset-append`                   | `full`        | A query-wrapper agent uses the claude_code system-prompt preset and appends the declared canonical instruction loader directly.                                                                                                                                                                                                                                | Not available |
+| `instruction-loader` | `query-custom-system-prompt`            | `full`        | A query-wrapper agent wires the declared instruction loader through a direct systemPrompt call or a typed custom prompt object, independent of snapshot and verbatim delivery controls.                                                                                                                                                                        | Not available |
+| `instruction-loader` | `query-preset-append`                   | `full`        | A query-wrapper agent uses the claude_code system-prompt preset and appends the declared canonical instruction loader directly, independent of snapshot timing.                                                                                                                                                                                                | Not available |
 | `instruction-loader` | `query-system-prompt-block-array`       | `unsupported` | String-array system prompts and dynamic prompt-cache boundaries do not establish canonical query-wrapper instruction-loader wiring in the initial target.                                                                                                                                                                                                      | Not available |
 | `instruction-loader` | `sdk-mcp-server-instructions`           | `unsupported` | createSdkMcpServer instructions may coexist with supported tool relationships but are not canonical agent instruction-loader evidence or semantically validated content.                                                                                                                                                                                       | Not available |
 | `routing`            | `built-in-subagents`                    | `unsupported` | The built-in general-purpose subagent and runtime Agent tool decisions are not mapped to registered moldea agents.                                                                                                                                                                                                                                             | Not available |
@@ -131,7 +134,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 | `routing`            | `observer-agent-fields`                 | `unsupported` | AgentDefinition observer and observerMessage semantics do not create ordinary moldea agent, handoff, routing-description, or instruction-loader relationships in the initial target.                                                                                                                                                                           | Not available |
 | `routing`            | `query-agent-delegation-availability`   | `full`        | Supported closed query tools and static bare disallowedTools patterns, including complete-name * globs, classify query-configured Agent availability; dynamic, scoped, legacy-alias, and unsupported non-* forms remain ambiguous.                                                                                                                             | Not available |
 | `routing`            | `query-built-in-tools-preset`           | `unsupported` | The claude_code tools preset is not expanded to establish built-in Agent availability in the initial target.                                                                                                                                                                                                                                                   | Not available |
-| `runtime`            | `direct-query-wrapper`                  | `full`        | A directly exported TypeScript function contains one or more direct query calls in its own lexical body.                                                                                                                                                                                                                                                       | Not available |
+| `runtime`            | `direct-query-wrapper`                  | `full`        | A directly exported TypeScript function contains direct query calls from the SDK root or, from SDK 0.3.282, its core entry point in its own lexical body.                                                                                                                                                                                                      | Not available |
 | `runtime`            | `dynamic-query-options`                 | `ambiguous`   | Query inputs or options assembled through variables, factories, spreads, mutation, or arbitrary wrappers cannot be mapped reliably without semantic analysis.                                                                                                                                                                                                  | Not available |
 | `runtime`            | `skills-plugins-and-hooks`              | `unsupported` | Skills, plugins, hooks, settings, CLAUDE.md loading, and other filesystem features are outside the initial deterministic relationship target.                                                                                                                                                                                                                  | Not available |
 | `schema`             | `query-json-schema-output`              | `full`        | A query-wrapper agent wires a bound output schema through outputFormat with the json_schema type.                                                                                                                                                                                                                                                              | Not available |
@@ -158,21 +161,23 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Query and subagent tool-registration evidence requires an available relationship-local state after supported exact-name, server-selector, and complete-name * glob deny analysis. Dynamic or unsupported restrictions that could match the tool remain unresolved and produce neither optimistic evidence nor a false negative diagnostic.
 - Query wrappers require a directly exported function and direct query calls with object-literal input and options forms.
 - Query-level agent selection, toolAliases, string-array system prompts, and built-in-tool preset expansion remain outside the initial target and keep only the relationships they can change unresolved.
+- Root imports are available at the verified minimum; the reviewed /core entry point starts at SDK 0.3.282. A broad dependency declaration alone does not prove an installed version provides /core.
 - Routing-description validation supports only static inline, immutable module-local, and directly imported static strings in an active delegation context; loaders, file reads, transformations, and runtime-generated values remain unresolved.
 - SDK MCP tool support is limited to repository-local tool and createSdkMcpServer definitions mounted through query-level mcpServers maps.
 - The fully qualified manifest tool name is derived from the canonical query mcpServers key and tool name; the createSdkMcpServer name does not replace that key.
 - Tool input and query output schema contents are not validated; the target establishes only direct schema wiring.
 - Tool output schemas, agent input schemas, external MCP tools, resources, prompts, skills, plugins, hooks, sessions, permission approval, sandboxing, workflows, model selection, and provider behavior are not interpreted.
 - createSdkMcpServer instructions are tolerated but are not canonical instruction-loader evidence or semantically validated model-facing content.
+- verbatimPrompts, typed system-prompt snapshot controls, and AgentDefinition.omitClaudeMd do not establish prompt delivery, snapshot timing, or ambient-file content; direct canonical bindings remain independently inspectable.
 
 ## Adapter: `cloudflare-agents`
 
 - Owning package: `@moldea.ai/adapter-cloudflare-agents`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `recommended`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Project-local guidance should document Cloudflare bindings, Durable Object wiring, and deployment-specific behavior outside the verified static source boundary.
 
@@ -181,7 +186,7 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-ai-chat-agent-0-10-ai-sdk-7/)
 
 | Ecosystem | Package               | Role        | Eligible versions |
@@ -204,11 +209,11 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 
 #### Patterns
 
-| Kind      | Pattern                                 | Support   | Description                                                                                                                                    | Notes         |
-| --------- | --------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `agent`   | `directly-exported-ai-chat-agent-class` | `partial` | Directly exported TypeScript classes extending an exact named AIChatAgent import with the supported onChatMessage signature.                   | Not available |
-| `runtime` | `direct-ai-sdk-generation`              | `partial` | Direct generateText or streamText calls in the onChatMessage method's own lexical body.                                                        | Not available |
-| `tool`    | `ai-chat-structured-output-and-tools`   | `partial` | Output.object agent schemas, repository-local AI SDK function tools, and Cloudflare agentTool helpers in closed generation-request tools maps. | Not available |
+| Kind      | Pattern                                 | Support   | Description                                                                                                                                                                                                     | Notes         |
+| --------- | --------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `agent`   | `directly-exported-ai-chat-agent-class` | `partial` | Directly exported TypeScript classes extending an exact named AIChatAgent import with the supported onChatMessage signature.                                                                                    | Not available |
+| `runtime` | `direct-ai-sdk-generation`              | `partial` | Direct generateText or streamText calls in the onChatMessage method's own lexical body.                                                                                                                         | Not available |
+| `tool`    | `ai-chat-structured-output-and-tools`   | `partial` | Output.object agent schemas, repository-local AI SDK function tools, and Cloudflare agentTool helpers in closed generation-request tools maps; declared deferLoading does not establish turn-time availability. | Not available |
 
 #### Known limitations
 
@@ -221,7 +226,7 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/cloudflare-agents/typescript-think-0-16-ai-sdk-7/)
 
 | Ecosystem | Package             | Role        | Eligible versions |
@@ -243,24 +248,24 @@ Runtime guidance notes: Project-local guidance should document Cloudflare bindin
 
 #### Patterns
 
-| Kind                 | Pattern                         | Support   | Description                                                                                                  | Notes         |
-| -------------------- | ------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------ | ------------- |
-| `agent`              | `directly-exported-think-class` | `partial` | Directly exported TypeScript classes extending an exact named Think import with closed class initialization. | Not available |
-| `instruction-loader` | `think-instruction-methods`     | `partial` | Direct loader calls returned by getSystemPrompt or supported closed configureSession chaining.               | Not available |
-| `tool`               | `closed-think-tools-map`        | `partial` | Repository-local AI SDK function tools and Cloudflare agentTool helpers active in a closed getTools map.     | Not available |
+| Kind                 | Pattern                         | Support   | Description                                                                                                                                                                                                                                                              | Notes         |
+| -------------------- | ------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| `agent`              | `directly-exported-think-class` | `partial` | Directly exported TypeScript classes extending an exact named Think import with closed class initialization.                                                                                                                                                             | Not available |
+| `instruction-loader` | `think-instruction-methods`     | `partial` | Direct getSystemPrompt calls and closed session context blocks are inspected; Think 0.18.0 and newer also support configureContext blocks with later session blocks winning duplicate labels. Spanning version declarations leave only dependent conclusions unverified. | Not available |
+| `tool`               | `closed-think-tools-map`        | `partial` | Repository-local AI SDK function tools and Cloudflare agentTool helpers active in a closed getTools map; a declared deferLoading option is recorded without claiming turn-time availability.                                                                             | Not available |
 
 #### Known limitations
 
 - Agent input and output schemas are not supported for Think.
 - Bare Agent classes, factories, indirect subclasses, decorators, executable fields, static blocks, computed members, generators, and non-pass-through constructors are outside the target.
-- Dynamic session builders, onCompaction interpretation, runtime mutation, channel-provided tool replacement, and open tools maps are outside the target.
+- Dynamic session builders, onCompaction interpretation, runtime mutation, channel-provided tool replacement, and open tools maps are outside the target. Older eligible AI SDK 7 versions may not accept deferLoading.
 
 ## Adapter: `custom`
 
 - Owning package: `@moldea.ai/core`
 - Implementation range: Not available
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `required`
 - Last verified: `2026-09-01`
 
@@ -283,11 +288,11 @@ Runtime guidance notes: Project-local guidance defines the custom runtime integr
 ## Adapter: `eve`
 
 - Owning package: `@moldea.ai/adapter-eve`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-26`
 
 Runtime guidance notes: Project-local guidance is needed only for unsupported dynamic capabilities, extensions, remote agents, non-canonical or composed instructions, positive single-file subagent analysis, Markdown skill registration, framework-tool overrides, or other repository-specific Eve patterns outside the verified static filesystem target.
 
@@ -296,7 +301,7 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `handoff-registration`, `instruction-loader`, `language`, `runtime-package`, `schema`, `skill-registration`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-26`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/eve/typescript-filesystem-agent-0-39/)
 
 | Ecosystem | Package | Role      | Eligible versions |
@@ -308,7 +313,7 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 | Subject                | Relationship | Symbol    |
 | ---------------------- | ------------ | --------- |
 | `runtime-agent`        | `full`       | `partial` |
-| `output-schema`        | `full`       | `full`    |
+| `output-schema`        | `partial`    | `partial` |
 | `instruction-loader`   | `partial`    | `partial` |
 | `tool-implementation`  | `full`       | `partial` |
 | `tool-registration`    | `full`       | `partial` |
@@ -319,30 +324,36 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 
 #### Patterns
 
-| Kind                 | Pattern                                   | Support       | Description                                                                                                                                                                                                                                                                                                                                                                 | Notes         |
-| -------------------- | ----------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `agent`              | `flat-root-agent`                         | `full`        | An uncollided bound package-root agent.ts directly default-exports one defineAgent configuration using the positive key subset and a supported static model string.                                                                                                                                                                                                         | Not available |
-| `agent`              | `nested-root-agent`                       | `full`        | An uncollided bound package-relative agent/agent.ts directly default-exports one defineAgent configuration using the positive key subset and a supported static model string.                                                                                                                                                                                               | Not available |
-| `instruction-loader` | `case-varied-markdown-instruction`        | `partial`     | Case-varied instructions.md and system.md candidates participate in Eve precedence and collision analysis but do not produce positive complete-instruction evidence.                                                                                                                                                                                                        | Not available |
-| `instruction-loader` | `directory-instruction-composition`       | `ambiguous`   | Root-plus-directory, directory-only, multiple-entry, user-role, or dynamic instruction composition is outside the complete initial instruction target.                                                                                                                                                                                                                      | Not available |
-| `instruction-loader` | `exact-lowercase-markdown-instruction`    | `full`        | One uncollided exact-lowercase root instructions.md file is the exclusive modern Eve system-instruction slot and is identified by the declared instruction relationship.                                                                                                                                                                                                    | Not available |
-| `instruction-loader` | `exclusive-typescript-instruction-loader` | `full`        | One uncollided root instructions.ts directly default-exports exact-shape defineInstructions whose system content comes from the declared loader call.                                                                                                                                                                                                                       | Not available |
-| `instruction-loader` | `legacy-system-instruction`               | `partial`     | Deprecated system.* fallback is recognized to suppress false absence conclusions but does not produce positive canonical instruction evidence.                                                                                                                                                                                                                              | Not available |
-| `routing`            | `directory-local-subagent`                | `full`        | A unique direct subagents/<name>/agent.ts package registers one immediate local subagent only when both parent and target use the positive static agent-definition subset, the target has a statically proved non-empty string description, and the mapping and runtime tool namespace are unambiguous; an omitted or exact empty description produces no handoff evidence. | Not available |
-| `routing`            | `effective-routing-description`           | `full`        | A supported non-empty static local-subagent description is compared with the canonical handoff description when present and the canonical agent-description fallback otherwise; an omitted or exact empty value is classified as missing and suppresses handoff evidence.                                                                                                   | Not available |
-| `routing`            | `local-subagent-tool-namespace`           | `full`        | Static local subagents produce handoff evidence only when their names are unique among the supported static candidates and do not collide with mechanically established prepared authored, active framework, or reserved load_skill tool names; unresolved same-name static candidates suppress the claim.                                                                  | Not available |
-| `routing`            | `remote-agents`                           | `unsupported` | Remote Eve subagents, remote authentication, URLs, and cross-repository target identity are outside the initial target.                                                                                                                                                                                                                                                     | Not available |
-| `routing`            | `single-file-local-subagent`              | `partial`     | Single-file subagent candidates participate in name and namespace preflight but do not produce positive agent-definition or handoff-registration evidence in the initial target.                                                                                                                                                                                            | Not available |
-| `runtime`            | `dynamic-capabilities`                    | `ambiguous`   | Dynamic or non-string model definitions and runtime-resolved agents, instructions, tools, and skills cannot be mapped to one static effective surface by the initial target.                                                                                                                                                                                                | Not available |
-| `runtime`            | `extension-contributions`                 | `unsupported` | Extension-mounted agents, tools, skills, connections, hooks, and namespaced overrides are outside positive target interpretation.                                                                                                                                                                                                                                           | Not available |
-| `runtime`            | `filesystem-slot-collisions`              | `ambiguous`   | Competing Eve-authored agent, instruction, tool, skill, or local-subagent sources and root contributions using an observably claimed mounted-extension namespace prefix prevent the initial target from selecting one effective source unless the focused target defines a deterministic collision diagnostic.                                                              | Not available |
-| `skill`              | `flat-markdown-skill`                     | `partial`     | A direct skills/<name>.md file may establish an implementation-path relationship, but Markdown acceptance and Eve registration are not claimed by the initial target.                                                                                                                                                                                                       | Not available |
-| `skill`              | `packaged-skill`                          | `partial`     | A direct skills/<name>/SKILL.md file may establish an implementation-path relationship, but frontmatter acceptance, sibling resources, and Eve registration are not claimed by the initial target.                                                                                                                                                                          | Not available |
-| `skill`              | `typescript-skill`                        | `full`        | An uncollided direct skills/<name>.ts module default-exports one exact closed static-string defineSkill package and may establish registration.                                                                                                                                                                                                                             | Not available |
-| `tool`               | `connections-and-framework-tools`         | `partial`     | Connection-provided, provider-managed, framework opt-in, disabled, and Workflow tools are not exposed as manifest capabilities. The target models the prepared static framework namespace needed for registration evidence but makes no turn-time dynamic-tool availability claim.                                                                                          | Not available |
-| `tool`               | `flattened-tool-runtime-name`             | `full`        | Eve tool runtime names are derived by removing the authored extension and replacing relative path separators beneath tools/ with hyphens.                                                                                                                                                                                                                                   | Not available |
-| `tool`               | `recursive-filesystem-tool`               | `full`        | An uncollided direct or nested tools/**/*.ts module with valid path segments and one unique non-reserved flattened name default-exports one registration-eligible defineTool configuration with supported implementation and schema relationships.                                                                                                                          | Not available |
-| `tool`               | `tool-runtime-name-collision`             | `full`        | Distinct authored tool paths that flatten to one runtime name are diagnosed and do not produce effective registration evidence.                                                                                                                                                                                                                                             | Not available |
+| Kind                 | Pattern                                   | Support       | Description                                                                                                                                                                                                                                                                                                                                                                   | Notes         |
+| -------------------- | ----------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `agent`              | `flat-root-agent`                         | `full`        | An uncollided bound package-root agent.ts directly default-exports one defineAgent configuration using the positive key subset and a supported static model string.                                                                                                                                                                                                           | Not available |
+| `agent`              | `nested-root-agent`                       | `full`        | An uncollided bound package-relative agent/agent.ts directly default-exports one defineAgent configuration using the positive key subset and a supported static model string.                                                                                                                                                                                                 | Not available |
+| `agent`              | `workspace-root-agent`                    | `full`        | An exact bound agents/<name>/agent/agent.ts workspace root directly default-exports the supported static defineAgent subset; local children are resolved from each registered immediate parent.                                                                                                                                                                               | Not available |
+| `instruction-loader` | `case-varied-markdown-instruction`        | `partial`     | Case-varied instructions.md and system.md candidates participate in Eve precedence and collision analysis but do not produce positive complete-instruction evidence.                                                                                                                                                                                                          | Not available |
+| `instruction-loader` | `directory-instruction-composition`       | `ambiguous`   | Root-plus-directory, directory-only, multiple-entry, user-role, or dynamic instruction composition is outside the complete initial instruction target.                                                                                                                                                                                                                        | Not available |
+| `instruction-loader` | `exact-lowercase-markdown-instruction`    | `full`        | One uncollided exact-lowercase root instructions.md file is the exclusive modern Eve system-instruction slot and is identified by the declared instruction relationship.                                                                                                                                                                                                      | Not available |
+| `instruction-loader` | `exclusive-typescript-instruction-loader` | `full`        | One uncollided root instructions.ts directly default-exports exact-shape defineInstructions whose system content comes from the declared loader call.                                                                                                                                                                                                                         | Not available |
+| `instruction-loader` | `legacy-system-instruction`               | `partial`     | Deprecated system.* fallback is recognized to suppress false absence conclusions but does not produce positive canonical instruction evidence.                                                                                                                                                                                                                                | Not available |
+| `routing`            | `directory-local-subagent`                | `full`        | A unique direct subagents/<name>/agent.ts package registers one immediate local subagent under a flat, nested, or workspace parent only when both definitions use the positive static subset, the target has a statically proved non-empty description, and the mapping and runtime tool namespace are unambiguous; each registered child may in turn own immediate children. | Not available |
+| `routing`            | `effective-routing-description`           | `full`        | A supported non-empty static local-subagent description is compared with the canonical handoff description when present and the canonical agent-description fallback otherwise; an omitted or exact empty value is classified as missing and suppresses handoff evidence.                                                                                                     | Not available |
+| `routing`            | `local-subagent-tool-namespace`           | `full`        | Static local subagents produce model-visible handoff evidence only when their names are unique among supported static candidates and do not collide with prepared authored or active framework tool names; defaultTools false removes default collisions and unresolved same-name candidates suppress the claim.                                                              | Not available |
+| `routing`            | `remote-agents`                           | `unsupported` | Remote network agents, authentication, URLs, and cross-repository target identity remain outside the target; exact same-workspace peers are covered by workspace-subagent-reference.                                                                                                                                                                                          | Not available |
+| `routing`            | `single-file-local-subagent`              | `partial`     | Single-file subagent candidates participate in name and namespace preflight but do not produce positive agent-definition or handoff-registration evidence in the initial target.                                                                                                                                                                                              | Not available |
+| `routing`            | `versioned-default-tool-namespace`        | `full`        | Eve 0.52.2 introduces defaultTools and task_cancel; Eve 0.59.1 introduces the subagent tool option; Eve 0.65.0 removes todo and ask_question defaults. The adapter applies the known side of each declared-version boundary and leaves only an affected spanning conclusion unverified.                                                                                       | Not available |
+| `routing`            | `workspace-subagent-reference`            | `full`        | From Eve 0.54.3, a direct workspace-parent defineWorkspaceAgent reference resolves only to an exact manifest-registered agents/<name>/agent/agent.ts peer; from Eve 0.59.1, tool false keeps the peer callable without asserting a model-visible handoff.                                                                                                                     | Not available |
+| `runtime`            | `dynamic-capabilities`                    | `ambiguous`   | Dynamic or non-string model definitions and runtime-resolved agents, instructions, tools, and skills cannot be mapped to one static effective surface by the initial target.                                                                                                                                                                                                  | Not available |
+| `runtime`            | `extension-contributions`                 | `unsupported` | Extension-mounted agents, tools, skills, connections, hooks, and namespaced overrides are outside positive target interpretation.                                                                                                                                                                                                                                             | Not available |
+| `runtime`            | `filesystem-slot-collisions`              | `ambiguous`   | Competing Eve-authored agent, instruction, tool, skill, or local-subagent sources and root contributions using an observably claimed mounted-extension namespace prefix prevent the initial target from selecting one effective source unless the focused target defines a deterministic collision diagnostic.                                                                | Not available |
+| `skill`              | `flat-markdown-skill`                     | `partial`     | A direct skills/<name>.md file may establish an implementation-path relationship, but Markdown acceptance and Eve registration are not claimed by the initial target.                                                                                                                                                                                                         | Not available |
+| `skill`              | `packaged-skill`                          | `partial`     | A direct skills/<name>/SKILL.md file may establish an implementation-path relationship, but frontmatter acceptance, sibling resources, and Eve registration are not claimed by the initial target.                                                                                                                                                                            | Not available |
+| `skill`              | `typescript-skill`                        | `full`        | An uncollided direct skills/<name>.ts module default-exports one exact closed static-string defineSkill package and may establish registration.                                                                                                                                                                                                                               | Not available |
+| `tool`               | `connections-and-framework-tools`         | `partial`     | Connection-provided, provider-managed, framework opt-in, and disabled tools are not exposed as manifest capabilities. Supported direct Workflow tool declarations are statically recognized, but durable execution and turn-time availability are not claimed.                                                                                                                | Not available |
+| `tool`               | `flattened-tool-runtime-name`             | `full`        | Eve tool runtime names are derived by removing the authored extension and replacing relative path separators beneath tools/ with hyphens.                                                                                                                                                                                                                                     | Not available |
+| `tool`               | `recursive-filesystem-tool`               | `full`        | An uncollided direct or nested tools/**/*.ts module with valid path segments and one unique non-reserved flattened name default-exports one registration-eligible defineTool configuration with supported implementation and schema relationships.                                                                                                                            | Not available |
+| `tool`               | `subagent-tool-exposure`                  | `partial`     | From Eve 0.61.0, an explicit availableInSubagents option is interpreted on a direct supported tool declaration; older versions reject it and spanning declarations leave registration unverified.                                                                                                                                                                             | Not available |
+| `tool`               | `test-source-exclusion`                   | `full`        | Eve 0.66.2 excludes tool and subagent test/spec modules and **tests** paths from discovery; earlier supported versions retain their previous interpretation and spanning declarations leave affected registration unverified.                                                                                                                                                 | Not available |
+| `tool`               | `tool-runtime-name-collision`             | `full`        | Distinct authored tool paths that flatten to one runtime name are diagnosed and do not produce effective registration evidence.                                                                                                                                                                                                                                               | Not available |
+| `tool`               | `workflow-tool-declaration`               | `partial`     | From Eve 0.52.0, a direct defineWorkflowTool declaration with a top-level async function or direct async execute method marked use workflow establishes static registration and declared background execution; subagent exposure is interpreted from Eve 0.61.0, while durable execution and turn-time availability are not verified.                                         | Not available |
 
 #### Provider limits
 
@@ -355,14 +366,14 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 
 - Agent output, tool input, and tool output schema contents are not validated; the target establishes only direct binding relationships.
 - Complete positive instruction evidence requires one exclusive exact-lowercase modern Markdown or exact-shape TypeScript system source. Eve directory composition, case-varied Markdown, unsupported module extensions, deprecated system.* fallback, the deprecated markdown definition branch, user-role entries, and dynamic instruction sources remain outside positive target evidence.
-- Dynamic capabilities, remote agents, extensions, connections, channels, schedules, hooks, sandboxes, approvals, auth, state, sessions, compaction, task orchestration, and runtime-variable providers are not interpreted.
+- Dynamic capabilities, remote network agents, extensions, connections, channels, schedules, hooks, sandboxes, approvals, auth, state, sessions, compaction, task orchestration, and runtime-variable providers are not interpreted.
 - Eve 0.39.x requires Node.js 24 or newer for the inspected application runtime. The adapter records but does not validate that application prerequisite and may itself run on another adapter-supported Node.js line.
 - Extension declarations and contributions are not interpreted. Observable extension mount names participate only in conservative namespace-prefix preflight so root contributions cannot receive false registration evidence under a prefix Eve reserves for a mounted extension.
 - Flat and packaged Markdown skill paths may establish implementation-path relationships, but the target emits no Markdown skill-registration evidence because it does not reproduce Eve frontmatter acceptance and collision resolution.
 - Only direct TypeScript default exports, exact Eve helper imports, and limited relative named-import resolution are supported; path aliases, package exports, directory indexes, CommonJS, re-exports, wrappers, and arbitrary compiler resolution remain unresolved.
-- Positive agent-definition evidence requires the closed defineAgent object to use only model, optional description, and optional outputSchema, with a supported static model string. Every other verified Eve agent option remains present-unsupported until a future target validates its nested runtime shape; dynamic models and sibling overrides therefore cannot produce optimistic evidence.
-- Recursive static tools are supported. Static prepared-name effects from supported authored tools, framework defaults, and unresolved same-name override candidates participate in registration preflight; dynamic, extension, connection, provider, disable-sentinel, and Workflow execution semantics otherwise remain outside the target.
-- The adapter analyzes only a root or directory-backed local subagent with an exact bound static agent.ts; a configuration-free Eve root or single-file local subagent produces no positive target-specific definition or handoff evidence.
+- Positive agent-definition evidence requires the closed defineAgent object to use model plus optional description, defaultTools, and tool, with a supported static model string and version-eligible options. Directly bound agent outputSchema is supported only before Eve 0.67.0; authored or bound agent schemas on newer declarations are confirmed feature errors, while spanning declarations leave dependent evidence unverified. Tool outputSchema remains supported. Every other verified Eve agent option remains present-unsupported until a future target validates its nested runtime shape; dynamic models and sibling overrides therefore cannot produce optimistic evidence.
+- Recursive static tools and direct Workflow tool declarations are supported. Static prepared-name effects from authored tools, versioned framework defaults, and unresolved same-name override candidates participate in registration preflight; dynamic, extension, connection, provider, disable-sentinel, and durable Workflow execution semantics remain outside the target.
+- The adapter analyzes exact bound static agent.ts roots in flat, nested, and workspace layouts plus directory-backed local descendants; a configuration-free Eve root or single-file local subagent produces no positive target-specific definition or handoff evidence.
 - The adapter parses only .ts authored modules. It inspects .cts, .mts, .cjs, .mjs, .ts, and .js entry names only to prevent false positive evidence when an Eve filesystem slot or local-subagent identity is collided.
 - Tool and skill descriptions are required to be statically provable strings for positive registration evidence but are not compared byte for byte with manifest capability descriptions; semantic alignment remains with the skill, evaluate, and PR Assurance.
 - Tool approval and toModelOutput behavior is not interpreted beyond the static value shape required to avoid false registration claims.
@@ -371,11 +382,11 @@ Runtime guidance notes: Project-local guidance is needed only for unsupported dy
 ## Adapter: `google-genai`
 
 - Owning package: `@moldea.ai/adapter-google-genai`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers or unsupported indirect integration patterns.
 
@@ -384,7 +395,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/google-genai/typescript-models-generate-content-2/)
 
 | Ecosystem | Package         | Role      | Eligible versions |
@@ -402,17 +413,17 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 
 #### Patterns
 
-| Kind                 | Pattern                             | Support       | Description                                                                                                                             | Notes         |
-| -------------------- | ----------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `instruction-loader` | `direct-config-system-instruction`  | `full`        | A directly bound instruction loader supplies config.systemInstruction in a closed generate-content request.                             | Not available |
-| `runtime`            | `direct-models-generate-content`    | `full`        | Direct Google Gen AI models.generateContent invocation through a module-local client in a directly exported TypeScript function.        | Not available |
-| `runtime`            | `dynamic-request-or-config`         | `ambiguous`   | Dynamically assembled requests or configuration cannot be mapped reliably without semantic analysis.                                    | Not available |
-| `runtime`            | `streaming-chat-live-interactions`  | `unsupported` | Streaming generation, chat sessions, live sessions, and Interactions API calls are outside the initial direct generate-content target.  | Not available |
-| `schema`             | `alternative-parameters-schema`     | `unsupported` | FunctionDeclaration.parameters and its OpenAPI-style Schema representation are outside the initial JSON-schema target.                  | Not available |
-| `schema`             | `direct-parameters-json-schema`     | `full`        | A bound tool input schema is referenced directly through the function declaration parametersJsonSchema property.                        | Not available |
-| `tool`               | `callable-and-mcp-tools`            | `unsupported` | Callable tools, MCP conversion helpers, and automatic tool execution are outside the initial static function-declaration target.        | Not available |
-| `tool`               | `closed-function-declaration-tools` | `full`        | Closed inline or immutable module-local collections expose statically declared functions through config.tools and functionDeclarations. | Not available |
-| `tool`               | `provider-server-tools`             | `unsupported` | Google-hosted or provider/server tools do not establish version 1 repository-local manifest tool relationships.                         | Not available |
+| Kind                 | Pattern                             | Support       | Description                                                                                                                                              | Notes         |
+| -------------------- | ----------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `instruction-loader` | `direct-config-system-instruction`  | `full`        | A directly bound instruction loader supplies config.systemInstruction in a closed generate-content request.                                              | Not available |
+| `runtime`            | `chat-live-interactions`            | `unsupported` | Chat sessions, live sessions, and Interactions API calls are outside the direct generate-content target.                                                 | Not available |
+| `runtime`            | `direct-models-generate-content`    | `full`        | Direct Google Gen AI models.generateContent and generateContentStream requests through a module-local client in a directly exported TypeScript function. | Not available |
+| `runtime`            | `dynamic-request-or-config`         | `ambiguous`   | Dynamically assembled requests or configuration cannot be mapped reliably without semantic analysis.                                                     | Not available |
+| `schema`             | `alternative-parameters-schema`     | `unsupported` | FunctionDeclaration.parameters and its OpenAPI-style Schema representation are outside the initial JSON-schema target.                                   | Not available |
+| `schema`             | `direct-parameters-json-schema`     | `full`        | A bound tool input schema is referenced directly through the function declaration parametersJsonSchema property.                                         | Not available |
+| `tool`               | `callable-and-mcp-tools`            | `unsupported` | Callable tools, MCP conversion helpers, and automatic tool execution are outside the initial static function-declaration target.                         | Not available |
+| `tool`               | `closed-function-declaration-tools` | `full`        | Closed inline or immutable module-local collections expose statically declared functions through config.tools and functionDeclarations.                  | Not available |
+| `tool`               | `provider-server-tools`             | `unsupported` | Google-hosted or provider/server tools do not establish version 1 repository-local manifest tool relationships.                                          | Not available |
 
 #### Provider limits
 
@@ -427,16 +438,16 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Arbitrary compiler resolution, path aliases, directory indexes, package exports, subpath imports, and re-export graphs are not resolved.
 - Backend-specific function-name restrictions are not validated; the published function-name rules cover only the version-matched SDK declaration contract.
 - Constructor configuration, provider backend, API version, authentication mode, model selection, request contents, and response handling are not interpreted.
-- Dynamic configuration, callable tools, MCP helpers, provider/server tools, automatic function execution, streaming, chats, live sessions, and Interactions API calls are outside the initial target.
+- Dynamic configuration, callable tools, MCP helpers, provider/server tools, automatic function execution, chats, live sessions, and Interactions API calls are outside the target; streaming lifecycle behavior is not inferred from generateContentStream source calls.
 - Function input-schema contents, including top-level object shape and parameter-name restrictions, are not validated; the target establishes only direct parametersJsonSchema wiring.
 - Source forms outside the verified TypeScript ESM target, legacy @google/generative-ai, alternative parameters schemas, output schemas, runtime variables, and handoffs are outside the initial target.
 
 ## Adapter: `langchain`
 
 - Owning package: `@moldea.ai/adapter-langchain`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
 - Last verified: `2026-09-01`
 
@@ -490,7 +501,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Developer-authored and statically resolved multi-format arrays are not mapped to the single canonical agent output-schema binding; a single-schema toolStrategy call remains supported despite its array-shaped helper return.
 - Direct LangGraph applications remain outside this adapter target.
 - Lockfiles and installed package versions are not inspected.
-- Non-empty or unresolved middleware suppresses prompt, tool-registration, and output-schema relationship conclusions.
+- Non-empty or unresolved middleware suppresses prompt, tool-registration, and output-schema relationship conclusions. A recognized candidate affecting a declared relationship receives a scoped warning.
 - Only TypeScript ESM source and documented direct relative imports are interpreted.
 - Only directly exported package-root createAgent definitions are recognized.
 - The target does not infer agent input schemas from stateSchema or contextSchema.
@@ -500,9 +511,9 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 ## Adapter: `langgraph`
 
 - Owning package: `@moldea.ai/adapter-langgraph`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `recommended`
 - Last verified: `2026-09-01`
 
@@ -529,24 +540,24 @@ Runtime guidance notes: Project-local guidance is recommended for prompt ownersh
 
 #### Patterns
 
-| Kind      | Pattern                        | Support       | Description                                                                                                                                                                                                                                                                                                                                                     | Notes         |
-| --------- | ------------------------------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `agent`   | `direct-functional-entrypoint` | `full`        | A directly exported TypeScript const initialized through the package-root entrypoint helper with a supported static string name or direct closed options object literal and a supported workflow function is recognized as the runtime-agent definition; the name is copied into runtimeName only when it satisfies the evidence-safe runtime-identity grammar. | Not available |
-| `routing` | `functional-routing`           | `unsupported` | Entrypoint control flow and task calls do not establish source-to-target agent handoffs.                                                                                                                                                                                                                                                                        | Not available |
-| `runtime` | `direct-functional-tasks`      | `partial`     | Direct local or relative-import package-root task declarations with supported non-generator functions produce positive task-pattern evidence when the non-generic returned task proxy is called directly, non-optionally, without explicit type arguments, from the entrypoint lexical body.                                                                    | Not available |
-| `runtime` | `functional-control-flow`      | `ambiguous`   | Ordinary branches, loops, callbacks, helper calls, and dynamic task selection are not reconstructed as a static graph.                                                                                                                                                                                                                                          | Not available |
-| `runtime` | `functional-final-state`       | `partial`     | An exact one-argument direct entrypoint.final call with a closed value/save object produces saved-state separation evidence without inferring input, output, or persistent-state schemas.                                                                                                                                                                       | Not available |
-| `runtime` | `functional-interrupt`         | `partial`     | An exact one-argument direct package-root interrupt call in the entrypoint body produces human-in-the-loop runtime-pattern evidence without interpreting approval semantics.                                                                                                                                                                                    | Not available |
-| `runtime` | `functional-previous-state`    | `partial`     | An exact zero-argument direct getPreviousState call produces persistence-related runtime-pattern evidence without inferring a schema.                                                                                                                                                                                                                           | Not available |
-| `schema`  | `functional-agent-schemas`     | `unsupported` | TypeScript parameter and return types are not treated as executable Repository Format agent schema bindings.                                                                                                                                                                                                                                                    | Not available |
-| `tool`    | `functional-task-capabilities` | `unsupported` | Functional API tasks do not establish model-visible manifest tool relationships in the initial target.                                                                                                                                                                                                                                                          | Not available |
+| Kind      | Pattern                        | Support       | Description                                                                                                                                                                                                                                                                                                                                                                    | Notes         |
+| --------- | ------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| `agent`   | `direct-functional-entrypoint` | `full`        | A directly exported TypeScript const initialized through the package-root entrypoint helper with a supported static string name or direct closed options object literal and a supported workflow function is recognized as the runtime-agent definition; the name is copied into runtimeName only when it satisfies the evidence-safe runtime-identity grammar.                | Not available |
+| `routing` | `functional-routing`           | `unsupported` | Entrypoint control flow and task calls do not establish source-to-target agent handoffs.                                                                                                                                                                                                                                                                                       | Not available |
+| `runtime` | `direct-functional-tasks`      | `partial`     | Direct local or relative-import package-root task declarations with supported non-generator functions produce positive task-pattern evidence when the non-generic returned task proxy is called directly, non-optionally, without explicit type arguments, from the entrypoint lexical body.                                                                                   | Not available |
+| `runtime` | `functional-control-flow`      | `ambiguous`   | Ordinary branches, loops, callbacks, helper calls, and dynamic task selection are not reconstructed as a static graph.                                                                                                                                                                                                                                                         | Not available |
+| `runtime` | `functional-final-state`       | `partial`     | An exact one-argument direct entrypoint.final call with a closed value/save object produces saved-state separation evidence without inferring input, output, or persistent-state schemas.                                                                                                                                                                                      | Not available |
+| `runtime` | `functional-interrupt`         | `partial`     | A direct package-root interrupt call in the entrypoint body produces human-in-the-loop runtime-pattern evidence in its one-argument form, or with a direct closed options object containing only an optional responseSchema when all observed LangGraph declarations are at or after 1.4.16. A present responseSchema describes the resume value, never agent input or output. | Not available |
+| `runtime` | `functional-previous-state`    | `partial`     | An exact zero-argument direct getPreviousState call produces persistence-related runtime-pattern evidence without inferring a schema.                                                                                                                                                                                                                                          | Not available |
+| `schema`  | `functional-agent-schemas`     | `unsupported` | TypeScript parameter and return types are not treated as executable Repository Format agent schema bindings.                                                                                                                                                                                                                                                                   | Not available |
+| `tool`    | `functional-task-capabilities` | `unsupported` | Functional API tasks do not establish model-visible manifest tool relationships in the initial target.                                                                                                                                                                                                                                                                         | Not available |
 
 #### Known limitations
 
 - Entrypoint and task declarations require exactly two explicit type arguments when a list is present. Interrupt accepts one or two, getPreviousState accepts exactly one, and entrypoint.final accepts exactly two; another count produces no applicable target or optional evidence. Returned task proxies are non-generic, and final-state options must be a closed direct value/save object literal.
 - Entrypoint and task names outside the evidence-safe runtime-identity grammar may still establish supported relationships but are omitted from runtimeName and name-detail fields.
 - Entrypoint and task options are interpreted only when authored as direct closed object literals in the corresponding helper call; indirect options bindings and expressions are unsupported.
-- Interrupt payloads, checkpoint behavior, replay determinism, idempotency, and human-approval semantics are not validated.
+- Interrupt payloads, resume-schema contents, checkpoint behavior, replay determinism, idempotency, and human-approval semantics are not validated. Indirect, open, or malformed second-argument options produce no interrupt-pattern evidence; independently proved functional patterns remain available.
 - Lockfiles and installed package versions are not inspected.
 - Nested callback, nested helper, and transitive task-call graphs are not followed.
 - Only TypeScript ESM source and documented direct relative imports are interpreted.
@@ -620,11 +631,11 @@ Runtime guidance notes: Project-local guidance is recommended for prompt ownersh
 ## Adapter: `openai`
 
 - Owning package: `@moldea.ai/adapter-openai`
-- Implementation range: `^4.0.0`
+- Implementation range: `^5.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `recommended`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Document project-specific model selection, tool execution, streaming, retry, and error behavior that static inspection cannot establish.
 
@@ -633,7 +644,7 @@ Runtime guidance notes: Document project-specific model selection, tool executio
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/openai/typescript-responses-api-7/)
 
 | Ecosystem | Package  | Role      | Eligible versions |
@@ -645,34 +656,37 @@ Runtime guidance notes: Document project-specific model selection, tool executio
 | Subject              | Relationship | Symbol |
 | -------------------- | ------------ | ------ |
 | `runtime-agent`      | `full`       | `full` |
+| `output-schema`      | `full`       | `full` |
 | `instruction-loader` | `full`       | `full` |
 | `tool-registration`  | `full`       | `full` |
 | `tool-input-schema`  | `full`       | `full` |
 
 #### Patterns
 
-| Kind                 | Pattern                          | Support     | Description                                                                                                                                                             | Notes         |
-| -------------------- | -------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `instruction-loader` | `direct-instruction-loader`      | `full`      | A bound loader is called directly, optionally through await, by a Responses request instructions property.                                                              | Not available |
-| `runtime`            | `chat-completions`               | `ambiguous` | Chat Completions usage is outside this target and is not rejected merely because Responses is preferred.                                                                | Not available |
-| `runtime`            | `direct-responses-runtime-agent` | `full`      | A bound exported TypeScript function uses a module-local OpenAI client for one or more direct Responses API object-literal requests with relationship-specific closure. | Not available |
-| `runtime`            | `dynamic-source-indirection`     | `ambiguous` | Factories, relationship-affecting computed properties and spreads, mutable arrays, and indirect request values remain unresolved.                                       | Not available |
-| `schema`             | `direct-tool-input-schema`       | `full`      | A bound tool input schema is referenced directly by function-tool parameters.                                                                                           | Not available |
-| `tool`               | `static-function-tools`          | `full`      | Bound static OpenAI function-tool objects with the supported exact fields are included in a closed inline or immutable module-local Responses tools array.              | Not available |
+| Kind                 | Pattern                          | Support     | Description                                                                                                                                                                       | Notes         |
+| -------------------- | -------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `instruction-loader` | `direct-instruction-loader`      | `full`      | A bound loader is called directly, optionally through await, by a Responses request instructions property.                                                                        | Not available |
+| `runtime`            | `chat-completions`               | `ambiguous` | Chat Completions usage is outside this target and is not rejected merely because Responses is preferred.                                                                          | Not available |
+| `runtime`            | `direct-responses-runtime-agent` | `full`      | A bound exported TypeScript function uses a module-local OpenAI client for direct responses.create, parse, and stream object-literal requests with relationship-specific closure. | Not available |
+| `runtime`            | `dynamic-source-indirection`     | `ambiguous` | Factories, relationship-affecting computed properties and spreads, mutable arrays, and indirect request values remain unresolved.                                                 | Not available |
+| `runtime`            | `effective-responses-options`    | `full`      | A static second-argument body replaces the first request body; transport-only options leave canonical relationships unchanged.                                                    | Not available |
+| `schema`             | `direct-output-schema`           | `full`      | A bound agent output schema is referenced through text.format as direct JSON Schema or a direct zodTextFormat helper argument.                                                    | Not available |
+| `schema`             | `direct-tool-input-schema`       | `full`      | A bound tool input schema is referenced directly by function-tool parameters.                                                                                                     | Not available |
+| `tool`               | `static-function-tools`          | `full`      | Bound static OpenAI function-tool objects with the supported exact fields are included in a closed inline or immutable module-local Responses tools array.                        | Not available |
 
 #### Known limitations
 
-- Agent input and output schemas, tool implementations and output schemas, skills, variables, and runtime-native routing do not produce evidence.
-- Only TypeScript ESM files with supported direct default and relative named imports are interpreted.
+- Agent input schemas, tool implementations and output schemas, skills, variables, and runtime-native routing do not produce evidence.
+- Only TypeScript ESM files with supported direct default or named OpenAI imports, selected direct helper imports, and relative named imports are interpreted.
 - Package versions are classified from nearest package manifests; lockfiles and installed node_modules are not inspected.
-- Source forms outside the verified TypeScript ESM target, Realtime, Assistants, Agents SDK, streaming semantics, and provider-hosted configuration are not interpreted.
+- Source forms outside the verified TypeScript ESM target, Realtime, Assistants, Agents SDK, streaming lifecycle semantics, and provider-hosted configuration are not interpreted.
 
 ## Adapter: `openai-agents-sdk`
 
 - Owning package: `@moldea.ai/adapter-openai-agents-sdk`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
 - Last verified: `2026-09-01`
 
@@ -704,23 +718,23 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 
 #### Patterns
 
-| Kind                 | Pattern                             | Support       | Description                                                                                                                                         | Notes         |
-| -------------------- | ----------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `agent`              | `agent-create-construction`         | `full`        | A directly exported TypeScript const constructs an Agent through Agent.create with one closed object-literal configuration.                         | Not available |
-| `agent`              | `direct-agent-construction`         | `full`        | A directly exported TypeScript const constructs an Agent through new Agent with one closed object-literal configuration.                            | Not available |
-| `agent`              | `dynamic-agent-configuration`       | `ambiguous`   | Dynamically assembled Agent configurations cannot be mapped reliably without semantic analysis.                                                     | Not available |
-| `agent`              | `realtime-and-sandbox-agents`       | `unsupported` | Realtime and sandbox agent abstractions are outside the initial Agent target.                                                                       | Not available |
-| `instruction-loader` | `direct-instruction-loader`         | `full`        | A declared instruction loader is used by direct call, direct reference, or one supported single-return dynamic-instruction wrapper.                 | Not available |
-| `routing`            | `agents-as-tools`                   | `unsupported` | Agent-as-tool delegation retains manager control and is not interpreted as a handoff by the initial target.                                         | Not available |
-| `routing`            | `configured-handoff-helper`         | `full`        | A source Agent registers a supported target through handoff with optional closed name and description overrides.                                    | Not available |
-| `routing`            | `direct-agent-handoff`              | `full`        | A source Agent registers a supported target Agent directly in its closed handoffs collection.                                                       | Not available |
-| `routing`            | `dynamic-routing-description`       | `ambiguous`   | Runtime-generated or transformed handoff descriptions and description overrides remain unestablished.                                               | Not available |
-| `routing`            | `effective-routing-description`     | `full`        | Target handoffDescription uses the canonical handoff description when present and the canonical agent-description fallback otherwise.               | Not available |
-| `routing`            | `registration-description-override` | `full`        | A non-empty static toolDescriptionOverride is authoritative for its handoff registration and must use the target effective routing description.     | Not available |
-| `schema`             | `direct-agent-output-schema`        | `full`        | A bound agent output schema is referenced directly through outputType.                                                                              | Not available |
-| `tool`               | `closed-agent-tool-array`           | `full`        | Closed inline or immutable module-local arrays register supported function tools on an Agent.                                                       | Not available |
-| `tool`               | `closed-function-tool`              | `full`        | A directly exported function tool uses the root tool helper, an explicit normalized static name, direct implementation, and direct schema bindings. | Not available |
-| `tool`               | `hosted-and-mcp-tools`              | `unsupported` | Hosted, MCP-generated, namespaced, and tool-search tools are outside the initial repository-local function-tool target.                             | Not available |
+| Kind                 | Pattern                             | Support       | Description                                                                                                                                                                                                         | Notes         |
+| -------------------- | ----------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `agent`              | `agent-create-construction`         | `full`        | A directly exported TypeScript const constructs an Agent through Agent.create with one closed object-literal configuration.                                                                                         | Not available |
+| `agent`              | `direct-agent-construction`         | `full`        | A directly exported TypeScript const constructs an Agent through new Agent with one closed object-literal configuration.                                                                                            | Not available |
+| `agent`              | `dynamic-agent-configuration`       | `ambiguous`   | Dynamically assembled Agent configurations cannot be mapped reliably without semantic analysis.                                                                                                                     | Not available |
+| `agent`              | `realtime-and-sandbox-agents`       | `unsupported` | Realtime and sandbox agent abstractions are outside the initial Agent target.                                                                                                                                       | Not available |
+| `instruction-loader` | `direct-instruction-loader`         | `full`        | A declared instruction loader is used by direct call, direct reference, or one supported single-return dynamic-instruction wrapper.                                                                                 | Not available |
+| `routing`            | `agents-as-tools`                   | `unsupported` | Agent-as-tool delegation retains manager control and is not interpreted as a handoff by the initial target.                                                                                                         | Not available |
+| `routing`            | `configured-handoff-helper`         | `full`        | A source Agent registers a supported target through handoff with optional closed name and description overrides.                                                                                                    | Not available |
+| `routing`            | `direct-agent-handoff`              | `full`        | A source Agent registers a supported target Agent directly in its closed handoffs collection.                                                                                                                       | Not available |
+| `routing`            | `dynamic-routing-description`       | `ambiguous`   | Runtime-generated or transformed handoff descriptions and description overrides remain unestablished; a recognized dynamic candidate affecting a registered target's routing description receives a scoped warning. | Not available |
+| `routing`            | `effective-routing-description`     | `full`        | Target handoffDescription uses the canonical handoff description when present and the canonical agent-description fallback otherwise.                                                                               | Not available |
+| `routing`            | `registration-description-override` | `full`        | A non-empty static toolDescriptionOverride is authoritative for its handoff registration and must use the target effective routing description.                                                                     | Not available |
+| `schema`             | `direct-agent-output-schema`        | `full`        | A bound agent output schema is referenced directly through outputType.                                                                                                                                              | Not available |
+| `tool`               | `closed-agent-tool-array`           | `full`        | Closed inline or immutable module-local arrays register supported function tools on an Agent.                                                                                                                       | Not available |
+| `tool`               | `closed-function-tool`              | `full`        | A directly exported function tool uses the root tool helper, an explicit normalized static name, direct implementation, and direct schema bindings.                                                                 | Not available |
+| `tool`               | `hosted-and-mcp-tools`              | `unsupported` | Hosted, MCP-generated, namespaced, and tool-search tools are outside the initial repository-local function-tool target.                                                                                             | Not available |
 
 #### Known limitations
 
@@ -735,11 +749,11 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 ## Adapter: `vercel-ai-sdk`
 
 - Owning package: `@moldea.ai/adapter-vercel-ai-sdk`
-- Implementation range: `^3.0.0`
+- Implementation range: `^4.0.0`
 - Supported repository-format versions: `1`
-- Compatible Core range: `^4.0.0`
+- Compatible Core range: `^5.0.0`
 - Runtime guidance: `optional`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 
 Runtime guidance notes: Project-local guidance is needed only for repository-specific wrappers or unsupported dynamic integration patterns.
 
@@ -748,7 +762,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `instruction-loader`, `language`, `runtime-package`, `runtime-pattern`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-generate-stream-text-7/)
 
 | Ecosystem | Package | Role      | Eligible versions |
@@ -769,22 +783,22 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 
 #### Patterns
 
-| Kind                 | Pattern                                | Support       | Description                                                                                                             | Notes         |
-| -------------------- | -------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `agent`              | `direct-generate-text-wrapper`         | `full`        | A directly exported function containing a direct generateText object-literal call is recognized as the runtime pattern. | Not available |
-| `agent`              | `direct-stream-text-wrapper`           | `full`        | A directly exported function containing a direct streamText object-literal call is recognized as the runtime pattern.   | Not available |
-| `instruction-loader` | `direct-generation-instruction-loader` | `partial`     | Direct loader calls are supported when prepareStep cannot replace the instructions.                                     | Not available |
-| `instruction-loader` | `instructions-system-precedence`       | `full`        | instructions is authoritative and deprecated system is used only through the supported absence fallback.                | Not available |
-| `instruction-loader` | `prepare-step-instruction-overrides`   | `ambiguous`   | prepareStep may replace per-step instructions and is not interpreted by the initial target.                             | Not available |
-| `runtime`            | `indirect-generation-wrapper`          | `unsupported` | Calls routed through arbitrary wrappers, factories, callbacks, or request builders are outside the initial target.      | Not available |
-| `schema`             | `direct-agent-input-schema`            | `unsupported` | The initial direct-generation target publishes no agent input-schema relationship.                                      | Not available |
-| `schema`             | `object-output-schema`                 | `partial`     | Direct Output.object schema binding establishes the agent output-schema relationship.                                   | Not available |
-| `tool`               | `closed-tools-map`                     | `partial`     | Closed object-map registration supports repository-local function tools created through tool.                           | Not available |
-| `tool`               | `direct-function-tool-bindings`        | `partial`     | Direct execute, inputSchema, and outputSchema bindings are interpreted without executing the tool.                      | Not available |
+| Kind                 | Pattern                                | Support       | Description                                                                                                                                                                                                      | Notes         |
+| -------------------- | -------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `agent`              | `direct-generate-text-wrapper`         | `full`        | A directly exported function containing a direct generateText object-literal call is recognized as the runtime pattern.                                                                                          | Not available |
+| `agent`              | `direct-stream-text-wrapper`           | `full`        | A directly exported function containing a direct streamText object-literal call is recognized as the runtime pattern.                                                                                            | Not available |
+| `instruction-loader` | `direct-generation-instruction-loader` | `partial`     | Direct loader calls are supported when prepareStep cannot replace the instructions.                                                                                                                              | Not available |
+| `instruction-loader` | `instructions-system-precedence`       | `full`        | instructions is authoritative and deprecated system is used only through the supported absence fallback.                                                                                                         | Not available |
+| `instruction-loader` | `prepare-step-instruction-overrides`   | `ambiguous`   | prepareStep may replace per-step instructions and is not interpreted by the initial target.                                                                                                                      | Not available |
+| `runtime`            | `indirect-generation-wrapper`          | `unsupported` | Calls routed through arbitrary wrappers, factories, callbacks, or request builders are outside the initial target.                                                                                               | Not available |
+| `schema`             | `direct-agent-input-schema`            | `unsupported` | The initial direct-generation target publishes no agent input-schema relationship.                                                                                                                               | Not available |
+| `schema`             | `object-output-schema`                 | `partial`     | Direct Output.object schema binding establishes the agent output-schema relationship.                                                                                                                            | Not available |
+| `tool`               | `closed-tools-map`                     | `partial`     | Closed object-map registration supports repository-local function tools created through tool, including declared deferLoading and an additional toolSearch declaration, without asserting per-turn availability. | Not available |
+| `tool`               | `direct-function-tool-bindings`        | `partial`     | Direct execute, inputSchema, and outputSchema bindings are interpreted without executing the tool.                                                                                                               | Not available |
 
 #### Known limitations
 
-- Lockfiles and installed package versions are not inspected.
+- Lockfiles and installed package versions are not inspected. Older eligible AI SDK 7 versions may not accept deferLoading.
 - Only Output.object establishes an agent output-schema relationship.
 - Only TypeScript ESM source and documented direct relative imports are interpreted.
 - Only direct generateText and streamText calls in the bound function's own lexical body are interpreted.
@@ -796,7 +810,7 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 - Kind: `package`
 - Language: `typescript`
 - Evidence kinds: `agent-definition`, `instruction-loader`, `language`, `runtime-package`, `schema`, `tool-registration`
-- Last verified: `2026-09-01`
+- Last verified: `2026-09-25`
 - Qualification evidence: [View profile and results](https://skill.moldea.ai/evidence/qualification/vercel-ai-sdk/typescript-tool-loop-agent-7/)
 
 | Ecosystem | Package | Role      | Eligible versions |
@@ -818,22 +832,22 @@ Runtime guidance notes: Project-local guidance is needed only for repository-spe
 
 #### Patterns
 
-| Kind                 | Pattern                               | Support       | Description                                                                                                                           | Notes         |
-| -------------------- | ------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `agent`              | `direct-tool-loop-agent-construction` | `full`        | Directly exported ToolLoopAgent construction through one closed object-literal settings value.                                        | Not available |
-| `agent`              | `prepare-call-overrides`              | `ambiguous`   | prepareCall may replace instructions and tools or omit the construction-time output, and is not interpreted by the initial target.    | Not available |
-| `agent`              | `workflow-agent`                      | `unsupported` | WorkflowAgent and @ai-sdk/workflow are outside the initial target.                                                                    | Not available |
-| `instruction-loader` | `direct-agent-instruction-loader`     | `partial`     | Direct loader calls in instructions are supported when prepareCall and prepareStep cannot replace them.                               | Not available |
-| `instruction-loader` | `prepare-step-instruction-overrides`  | `ambiguous`   | prepareStep may replace per-step instructions and is not interpreted by the initial target.                                           | Not available |
-| `routing`            | `subagent-handoff-inference`          | `unsupported` | A function tool that calls another agent does not establish a target or handoff relationship in the initial target.                   | Not available |
-| `schema`             | `call-options-input-schema`           | `full`        | Direct callOptionsSchema binding establishes the agent input-schema relationship.                                                     | Not available |
-| `schema`             | `object-output-schema`                | `partial`     | Direct Output.object schema binding establishes the agent output-schema relationship when no uninterpreted prepareCall can remove it. | Not available |
-| `tool`               | `closed-tools-map`                    | `partial`     | Closed object-map registration supports repository-local function tools created through tool.                                         | Not available |
-| `tool`               | `direct-function-tool-bindings`       | `partial`     | Direct execute, inputSchema, and outputSchema bindings are interpreted without executing the tool.                                    | Not available |
+| Kind                 | Pattern                               | Support       | Description                                                                                                                                                                                                      | Notes         |
+| -------------------- | ------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `agent`              | `direct-tool-loop-agent-construction` | `full`        | Directly exported ToolLoopAgent construction through one closed object-literal settings value.                                                                                                                   | Not available |
+| `agent`              | `prepare-call-overrides`              | `ambiguous`   | prepareCall may replace instructions and tools or omit the construction-time output, and is not interpreted by the initial target.                                                                               | Not available |
+| `agent`              | `workflow-agent`                      | `unsupported` | WorkflowAgent and @ai-sdk/workflow are outside the initial target.                                                                                                                                               | Not available |
+| `instruction-loader` | `direct-agent-instruction-loader`     | `partial`     | Direct loader calls in instructions are supported when prepareCall and prepareStep cannot replace them.                                                                                                          | Not available |
+| `instruction-loader` | `prepare-step-instruction-overrides`  | `ambiguous`   | prepareStep may replace per-step instructions and is not interpreted by the initial target.                                                                                                                      | Not available |
+| `routing`            | `subagent-handoff-inference`          | `unsupported` | A function tool that calls another agent does not establish a target or handoff relationship in the initial target.                                                                                              | Not available |
+| `schema`             | `call-options-input-schema`           | `full`        | Direct callOptionsSchema binding establishes the agent input-schema relationship.                                                                                                                                | Not available |
+| `schema`             | `object-output-schema`                | `partial`     | Direct Output.object schema binding establishes the agent output-schema relationship when no uninterpreted prepareCall can remove it.                                                                            | Not available |
+| `tool`               | `closed-tools-map`                    | `partial`     | Closed object-map registration supports repository-local function tools created through tool, including declared deferLoading and an additional toolSearch declaration, without asserting per-turn availability. | Not available |
+| `tool`               | `direct-function-tool-bindings`       | `partial`     | Direct execute, inputSchema, and outputSchema bindings are interpreted without executing the tool.                                                                                                               | Not available |
 
 #### Known limitations
 
-- Lockfiles and installed package versions are not inspected.
+- Lockfiles and installed package versions are not inspected. Older eligible AI SDK 7 versions may not accept deferLoading.
 - Only Output.object establishes an agent output-schema relationship.
 - Only TypeScript ESM source and documented direct relative imports are interpreted.
 - The target does not infer providers, models, routing targets, handoffs, or subagent control transfer.

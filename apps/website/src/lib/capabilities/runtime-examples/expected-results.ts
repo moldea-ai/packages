@@ -1,7 +1,7 @@
 import type { IDiagnostic, IRuntimeAdapterEvidence } from '@moldea.ai/core';
 
 // complete reviewed results; manifest identity pins declarations even when evidence is intentionally absent
-export const RUNTIME_EXPECTED_RESULTS: Record<
+const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   string,
   {
     valid: boolean;
@@ -131,6 +131,147 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
       },
     ],
     manifestDigest: 'sha256:9b1b91e86f651188117f35779da3cf38dafc30e626120acfb6cf1e54e26628e9',
+  },
+  'anthropic-parse-output': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          requestProperty: 'system',
+        },
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/instructions.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: null,
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          compatibility: 'supported',
+          declaredRange: '^0.117.1',
+          dependencyKind: 'dependencies',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: '@anthropic-ai/sdk',
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          api: 'messages',
+        },
+        kind: 'runtime-pattern',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: 'messages.parse',
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          requestProperty: 'output_config.format',
+          schemaRole: 'output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/contracts.ts',
+            symbol: 'SupportOutput',
+          },
+        ],
+        runtimeName: 'SupportOutput',
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          requestProperty: 'input_schema',
+          schemaRole: 'input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'FindOrderInput',
+          },
+          {
+            path: '/src/find-order.ts',
+          },
+        ],
+        runtimeName: 'FindOrderInput',
+        source: 'anthropic',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          toolType: 'client',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/find-order.ts',
+            symbol: 'findOrderTool',
+          },
+        ],
+        runtimeName: 'find_order',
+        source: 'anthropic',
+      },
+    ],
+    manifestDigest: 'sha256:d9e77821b672e87488d844bf55e4bbbc5b6eaa06905374cd1f636bbc10a6dd51',
   },
   'claude-query': {
     valid: true,
@@ -277,6 +418,300 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         details: {
           compatibility: 'supported',
           declaredRange: '^0.3.234',
+          dependencyKind: 'dependencies',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: '@anthropic-ai/claude-agent-sdk',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          call: 'query',
+          patternId: 'direct-query-wrapper',
+        },
+        kind: 'runtime-pattern',
+        references: [
+          {
+            path: '/src/runtime.ts',
+            symbol: 'triageAgent',
+          },
+        ],
+        runtimeName: 'triageAgent',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'billing',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          role: 'tool-input',
+          schemaKind: 'sdk-tool-input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'FindOrderInputSchema',
+          },
+          {
+            path: '/src/tools.ts',
+          },
+        ],
+        runtimeName: 'FindOrderInputSchema',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          role: 'agent-output',
+          schemaKind: 'json-schema',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'TriageOutputSchema',
+          },
+          {
+            path: '/src/runtime.ts',
+          },
+        ],
+        runtimeName: 'TriageOutputSchema',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          role: 'tool-input',
+          schemaKind: 'sdk-tool-input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'FindOrderInputSchema',
+          },
+          {
+            path: '/src/tools.ts',
+          },
+        ],
+        runtimeName: 'FindOrderInputSchema',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'billing',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          availabilitySource: 'explicit-subagent-tools',
+          registrationKind: 'sdk-mcp-tool',
+          serverKey: 'support',
+          underlyingToolName: 'find_order',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/src/find-order.ts',
+            symbol: 'findOrder',
+          },
+          {
+            path: '/src/runtime.ts',
+          },
+          {
+            path: '/src/tools.ts',
+            symbol: 'findOrderTool',
+          },
+        ],
+        runtimeName: 'mcp__support__find_order',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          availabilitySource: 'query',
+          registrationKind: 'sdk-mcp-tool',
+          serverKey: 'support',
+          underlyingToolName: 'find_order',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/src/find-order.ts',
+            symbol: 'findOrder',
+          },
+          {
+            path: '/src/runtime.ts',
+          },
+          {
+            path: '/src/tools.ts',
+            symbol: 'findOrderTool',
+          },
+        ],
+        runtimeName: 'mcp__support__find_order',
+        source: 'claude-agent-sdk',
+      },
+    ],
+    manifestDigest: 'sha256:b8fbde1a7799082e7ad95bd4b74b4530de771e2b26e4b968d17d1a2264966260',
+  },
+  'claude-core-prompt-controls': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'billing',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          patternId: 'programmatic-agent-definition',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/src/agents.ts',
+            symbol: 'billingAgent',
+          },
+        ],
+        runtimeName: 'billingAgent',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          delegationAvailabilitySource: 'explicit-built-in-tools',
+          delegationTool: 'Agent',
+          registrationKind: 'programmatic-subagent',
+          registrationScope: 'query-session',
+          targetAgentId: 'billing',
+          targetRuntimeName: 'billing',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/src/agents.ts',
+            symbol: 'billingAgent',
+          },
+          {
+            path: '/src/runtime.ts',
+          },
+        ],
+        runtimeName: 'billing',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'billing',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          role: 'subagent-prompt',
+        },
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/src/agents.ts',
+          },
+          {
+            path: '/src/instructions.ts',
+            symbol: 'loadBillingInstruction',
+          },
+        ],
+        runtimeName: 'loadBillingInstruction',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          role: 'query-custom-prompt',
+        },
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/src/instructions.ts',
+            symbol: 'loadTriageInstruction',
+          },
+          {
+            path: '/src/runtime.ts',
+          },
+        ],
+        runtimeName: 'loadTriageInstruction',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'billing',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/src/agents.ts',
+            symbol: 'billingAgent',
+          },
+        ],
+        runtimeName: null,
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/src/runtime.ts',
+            symbol: 'triageAgent',
+          },
+        ],
+        runtimeName: null,
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'billing',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          compatibility: 'supported',
+          declaredRange: '>=0.3.282',
+          dependencyKind: 'dependencies',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: '@anthropic-ai/claude-agent-sdk',
+        source: 'claude-agent-sdk',
+      },
+      {
+        agentId: 'triage',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          compatibility: 'supported',
+          declaredRange: '>=0.3.282',
           dependencyKind: 'dependencies',
         },
         kind: 'runtime-package',
@@ -771,6 +1206,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           toolName: 'find_order',
         },
         kind: 'tool-registration',
@@ -792,6 +1228,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           toolName: 'find_order',
         },
         kind: 'tool-registration',
@@ -934,7 +1371,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: null,
         capabilityKind: null,
         details: {
-          declaredRange: '^0.39.1',
+          declaredRange: '0.67.0',
           dependencyKind: 'dependencies',
           packageClassification: 'supported',
           targetId: 'typescript-filesystem-agent-0-39',
@@ -953,7 +1390,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: null,
         capabilityKind: null,
         details: {
-          declaredRange: '^0.39.1',
+          declaredRange: '0.67.0',
           dependencyKind: 'dependencies',
           packageClassification: 'supported',
           targetId: 'typescript-filesystem-agent-0-39',
@@ -965,23 +1402,6 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
           },
         ],
         runtimeName: null,
-        source: 'eve',
-      },
-      {
-        agentId: 'support',
-        capabilityId: null,
-        capabilityKind: null,
-        details: {
-          schemaRole: 'agent-output',
-        },
-        kind: 'schema',
-        references: [
-          {
-            path: '/agent/contracts.ts',
-            symbol: 'SupportOutputSchema',
-          },
-        ],
-        runtimeName: 'SupportOutputSchema',
         source: 'eve',
       },
       {
@@ -1057,7 +1477,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         source: 'eve',
       },
     ],
-    manifestDigest: 'sha256:57c6acbd72e25c90e7cb04c126f069abff050b56cc5ba117ea0ce1fd6dc8e421',
+    manifestDigest: 'sha256:9aea9f84d28e07bf896fec1721662e4ff8b7ee098da05733b1725ba43104bf05',
   },
   'google-generate-content': {
     valid: true,
@@ -1133,6 +1553,143 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
           },
         ],
         runtimeName: 'models.generateContent',
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          requestProperty: 'parametersJsonSchema',
+          schemaRole: 'input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'FindOrderInput',
+          },
+          {
+            path: '/src/find-order.ts',
+          },
+        ],
+        runtimeName: 'FindOrderInput',
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          toolType: 'function-declaration',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/find-order.ts',
+            symbol: 'findOrderDeclaration',
+          },
+        ],
+        runtimeName: 'find_order',
+        source: 'google-genai',
+      },
+    ],
+    manifestDigest: 'sha256:7a7801f5eee21d5b1ce17232bde3918ce2e62eb376467aa4c25de51607db9a31',
+  },
+  'google-mixed-generation': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          requestProperty: 'config.systemInstruction',
+        },
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/instructions.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: null,
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          compatibility: 'supported',
+          declaredRange: '^2.17.1',
+          dependencyKind: 'dependencies',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: '@google/genai',
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          api: 'models',
+        },
+        kind: 'runtime-pattern',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: 'models.generateContent',
+        source: 'google-genai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          api: 'models',
+        },
+        kind: 'runtime-pattern',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: 'models.generateContentStream',
         source: 'google-genai',
       },
       {
@@ -2250,6 +2807,147 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
     ],
     manifestDigest: 'sha256:a2f1308a6155dedf12282c0f09b308472e74b620490c721eb0135f55c694b32a',
   },
+  'openai-parse-output': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          requestProperty: 'instructions',
+        },
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/instructions.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: null,
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          compatibility: 'supported',
+          declaredRange: '^7.4.0',
+          dependencyKind: 'dependencies',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: 'openai',
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          api: 'responses',
+        },
+        kind: 'runtime-pattern',
+        references: [
+          {
+            path: '/src/agent.ts',
+            symbol: 'supportAgent',
+          },
+        ],
+        runtimeName: 'responses.parse',
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          requestProperty: 'text.format',
+          schemaRole: 'output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/contracts.ts',
+            symbol: 'SupportOutput',
+          },
+        ],
+        runtimeName: 'SupportOutput',
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          requestProperty: 'parameters',
+          schemaRole: 'input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/src/contracts.ts',
+            symbol: 'FindOrderInput',
+          },
+          {
+            path: '/src/find-order.ts',
+          },
+        ],
+        runtimeName: 'FindOrderInput',
+        source: 'openai',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+        details: {
+          toolType: 'function',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/src/agent.ts',
+          },
+          {
+            path: '/src/find-order.ts',
+            symbol: 'findOrderTool',
+          },
+        ],
+        runtimeName: 'find_order',
+        source: 'openai',
+      },
+    ],
+    manifestDigest: 'sha256:35bb4ddb27e075ec4b2c2f51d4df984543740ca606ea760f13716efbcc658575',
+  },
   'openai-agent-handoffs': {
     valid: true,
     diagnostics: [],
@@ -2816,6 +3514,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-generate-stream-text-7',
           toolType: 'function',
         },
@@ -2849,6 +3548,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-tool-loop-agent-7',
           toolType: 'function',
         },
@@ -4163,6 +4863,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-generate-stream-text-7',
           toolType: 'function',
         },
@@ -4196,6 +4897,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-tool-loop-agent-7',
           toolType: 'function',
         },
@@ -4529,6 +5231,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-generate-stream-text-7',
           toolType: 'function',
         },
@@ -4562,6 +5265,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-tool-loop-agent-7',
           toolType: 'function',
         },
@@ -4895,6 +5599,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-generate-stream-text-7',
           toolType: 'function',
         },
@@ -4928,6 +5633,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-tool-loop-agent-7',
           toolType: 'function',
         },
@@ -5220,6 +5926,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         capabilityId: 'find-order',
         capabilityKind: 'tool',
         details: {
+          declaredDeferredLoading: 'absent',
           targetId: 'typescript-generate-stream-text-7',
           toolType: 'function',
         },
@@ -6476,6 +7183,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         path: '/agent/tools/orders-search.ts',
         pointer: null,
         range: null,
+        severity: 'error',
         source: 'eve',
       },
     ],
@@ -7342,35 +8050,36 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
           collisionKind: 'runtime-tool',
         },
         entity: {
-          agentId: 'glob',
+          agentId: 'bash',
           adapterId: 'eve',
         },
-        message: 'The Eve tool and local subagent use the same runtime tool name.',
-        path: '/agent/subagents/glob/agent.ts',
+        message: 'The Eve tool and subagent use the same runtime tool name.',
+        path: '/agent/subagents/bash/agent.ts',
         pointer: null,
         range: null,
+        severity: 'error',
         source: 'eve',
       },
     ],
     evidence: [
       {
-        agentId: 'glob',
+        agentId: 'bash',
         capabilityId: null,
         capabilityKind: null,
         details: {
           agentKind: 'local-subagent',
-          agentRoot: '/agent/subagents/glob',
+          agentRoot: '/agent/subagents/bash',
           layout: 'nested',
           targetId: 'typescript-filesystem-agent-0-39',
         },
         kind: 'agent-definition',
         references: [
           {
-            path: '/agent/subagents/glob/agent.ts',
+            path: '/agent/subagents/bash/agent.ts',
             symbol: 'default',
           },
         ],
-        runtimeName: 'glob',
+        runtimeName: 'bash',
         source: 'eve',
       },
       {
@@ -7409,7 +8118,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         source: 'eve',
       },
       {
-        agentId: 'glob',
+        agentId: 'bash',
         capabilityId: null,
         capabilityKind: null,
         details: {
@@ -7418,7 +8127,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'language',
         references: [
           {
-            path: '/agent/subagents/glob/agent.ts',
+            path: '/agent/subagents/bash/agent.ts',
             symbol: 'default',
           },
         ],
@@ -7443,7 +8152,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         source: 'eve',
       },
       {
-        agentId: 'glob',
+        agentId: 'bash',
         capabilityId: null,
         capabilityKind: null,
         details: {
@@ -7570,7 +8279,1046 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
         source: 'eve',
       },
     ],
-    manifestDigest: 'sha256:2ae04b86367f7f0871cee1d672e358e3dd789ff297a249049dca0b57e0b9b336',
+    manifestDigest: 'sha256:c1b30507802bf0f414ef0c2358fc4fb7ae82591246f61f5938f1fe0f381d5345',
+  },
+  'eve-workflow-tool': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'local-subagent',
+          agentRoot: '/agent/subagents/summary',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'root',
+          agentRoot: '/agent',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'support-app',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          registrationKind: 'local-subagent-package',
+          routingDescriptionSource: 'handoff-description',
+          routingDescriptionWired: true,
+          targetAgentId: 'summary',
+          targetRuntimeName: 'summary',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {},
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/agent/loaders.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.3',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.3',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          schemaRole: 'agent-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SupportOutputSchema',
+          },
+        ],
+        runtimeName: 'SupportOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SearchInputSchema',
+          },
+        ],
+        runtimeName: 'SearchInputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SearchOutputSchema',
+          },
+        ],
+        runtimeName: 'SearchOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'analyze',
+        capabilityKind: 'skill',
+        details: {
+          registrationKind: 'typescript',
+        },
+        kind: 'skill-registration',
+        references: [
+          {
+            path: '/agent/skills/analyze.ts',
+          },
+        ],
+        runtimeName: 'analyze',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          declaredAvailableInSubagents: 'disabled',
+          declaredExecution: 'background',
+          implementationKind: 'bound-function',
+          pathDepth: 1,
+          registrationKind: 'filesystem-workflow-tool',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/agent/implementations.ts',
+            symbol: 'searchKnowledge',
+          },
+          {
+            path: '/agent/tools/search.ts',
+          },
+        ],
+        runtimeName: 'search',
+        source: 'eve',
+      },
+    ],
+    manifestDigest: 'sha256:57c6acbd72e25c90e7cb04c126f069abff050b56cc5ba117ea0ce1fd6dc8e421',
+  },
+  'eve-excluded-test-tool': {
+    valid: false,
+    diagnostics: [
+      {
+        code: 'EVE_TOOL_REGISTRATION_NOT_WIRED',
+        details: {},
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'search',
+          adapterId: 'eve',
+        },
+        message: 'The declared tool registration is not wired to the owning Eve agent.',
+        path: '/agent/tools/search.test.ts',
+        pointer: null,
+        range: null,
+        severity: 'error',
+        source: 'eve',
+      },
+    ],
+    evidence: [
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'local-subagent',
+          agentRoot: '/agent/subagents/summary',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'root',
+          agentRoot: '/agent',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'support-app',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          registrationKind: 'local-subagent-package',
+          routingDescriptionSource: 'handoff-description',
+          routingDescriptionWired: true,
+          targetAgentId: 'summary',
+          targetRuntimeName: 'summary',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {},
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/agent/loaders.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.2',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.2',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          schemaRole: 'agent-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SupportOutputSchema',
+          },
+        ],
+        runtimeName: 'SupportOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'analyze',
+        capabilityKind: 'skill',
+        details: {
+          registrationKind: 'typescript',
+        },
+        kind: 'skill-registration',
+        references: [
+          {
+            path: '/agent/skills/analyze.ts',
+          },
+        ],
+        runtimeName: 'analyze',
+        source: 'eve',
+      },
+    ],
+    manifestDigest: 'sha256:47872c749ceeb809d2b623236fa481aba57da5e5b42de8f1141e20bd6f910a94',
+  },
+  'eve-workspace-peer': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'research',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'workspace',
+          agentRoot: '/agents/research/agent',
+          layout: 'workspace',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agents/research/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'research',
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'local-subagent',
+          agentRoot: '/agents/support/agent/subagents/summary',
+          layout: 'workspace',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agents/support/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'workspace',
+          agentRoot: '/agents/support/agent',
+          layout: 'workspace',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agents/support/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'support',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          registrationKind: 'workspace-subagent',
+          routingDescriptionSource: 'agent-description',
+          routingDescriptionWired: true,
+          targetAgentId: 'research',
+          targetRuntimeName: 'research',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/agents/research/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agents/support/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agents/support/agent/subagents/research.ts',
+          },
+        ],
+        runtimeName: 'research',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          registrationKind: 'local-subagent-package',
+          routingDescriptionSource: 'handoff-description',
+          routingDescriptionWired: true,
+          targetAgentId: 'summary',
+          targetRuntimeName: 'summary',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/agents/support/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agents/support/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'summary',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {},
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/agents/support/agent/loaders.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'eve',
+      },
+      {
+        agentId: 'research',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agents/research/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agents/support/agent/subagents/summary/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agents/support/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'research',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.3',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'summary',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.3',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.66.3',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          schemaRole: 'agent-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agents/support/agent/contracts.ts',
+            symbol: 'SupportOutputSchema',
+          },
+        ],
+        runtimeName: 'SupportOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agents/support/agent/contracts.ts',
+            symbol: 'SearchInputSchema',
+          },
+        ],
+        runtimeName: 'SearchInputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agents/support/agent/contracts.ts',
+            symbol: 'SearchOutputSchema',
+          },
+        ],
+        runtimeName: 'SearchOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'analyze',
+        capabilityKind: 'skill',
+        details: {
+          registrationKind: 'typescript',
+        },
+        kind: 'skill-registration',
+        references: [
+          {
+            path: '/agents/support/agent/skills/analyze.ts',
+          },
+        ],
+        runtimeName: 'analyze',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          implementationKind: 'bound-function',
+          pathDepth: 1,
+          registrationKind: 'filesystem-tool',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/agents/support/agent/implementations.ts',
+            symbol: 'searchKnowledge',
+          },
+          {
+            path: '/agents/support/agent/tools/search.ts',
+          },
+        ],
+        runtimeName: 'search',
+        source: 'eve',
+      },
+    ],
+    manifestDigest: 'sha256:983c82c02abd13a0e20c7e2e9bc3d13ce9ff3f94bfa7ea9e6a2526b036cd3f33',
+  },
+  'eve-removed-default': {
+    valid: true,
+    diagnostics: [],
+    evidence: [
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'root',
+          agentRoot: '/agent',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'support-app',
+        source: 'eve',
+      },
+      {
+        agentId: 'todo',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          agentKind: 'local-subagent',
+          agentRoot: '/agent/subagents/todo',
+          layout: 'nested',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'agent-definition',
+        references: [
+          {
+            path: '/agent/subagents/todo/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'todo',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          registrationKind: 'local-subagent-package',
+          routingDescriptionSource: 'handoff-description',
+          routingDescriptionWired: true,
+          targetAgentId: 'todo',
+          targetRuntimeName: 'todo',
+        },
+        kind: 'handoff-registration',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+          {
+            path: '/agent/subagents/todo/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: 'todo',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {},
+        kind: 'instruction-loader',
+        references: [
+          {
+            path: '/agent/loaders.ts',
+            symbol: 'loadInstruction',
+          },
+        ],
+        runtimeName: 'loadInstruction',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'todo',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          language: 'typescript',
+        },
+        kind: 'language',
+        references: [
+          {
+            path: '/agent/subagents/todo/agent.ts',
+            symbol: 'default',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.65.0',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'todo',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          declaredRange: '0.65.0',
+          dependencyKind: 'dependencies',
+          packageClassification: 'supported',
+          targetId: 'typescript-filesystem-agent-0-39',
+        },
+        kind: 'runtime-package',
+        references: [
+          {
+            path: '/package.json',
+          },
+        ],
+        runtimeName: null,
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: null,
+        capabilityKind: null,
+        details: {
+          schemaRole: 'agent-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SupportOutputSchema',
+          },
+        ],
+        runtimeName: 'SupportOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-input',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SearchInputSchema',
+          },
+        ],
+        runtimeName: 'SearchInputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          schemaRole: 'tool-output',
+        },
+        kind: 'schema',
+        references: [
+          {
+            path: '/agent/contracts.ts',
+            symbol: 'SearchOutputSchema',
+          },
+        ],
+        runtimeName: 'SearchOutputSchema',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'analyze',
+        capabilityKind: 'skill',
+        details: {
+          registrationKind: 'typescript',
+        },
+        kind: 'skill-registration',
+        references: [
+          {
+            path: '/agent/skills/analyze.ts',
+          },
+        ],
+        runtimeName: 'analyze',
+        source: 'eve',
+      },
+      {
+        agentId: 'support',
+        capabilityId: 'search',
+        capabilityKind: 'tool',
+        details: {
+          implementationKind: 'bound-function',
+          pathDepth: 1,
+          registrationKind: 'filesystem-tool',
+        },
+        kind: 'tool-registration',
+        references: [
+          {
+            path: '/agent/implementations.ts',
+            symbol: 'searchKnowledge',
+          },
+          {
+            path: '/agent/tools/search.ts',
+          },
+        ],
+        runtimeName: 'search',
+        source: 'eve',
+      },
+    ],
+    manifestDigest: 'sha256:e2c228719dc7034baf43c45688307ba49150b20780532bfa769ca877fb153a21',
   },
   'openai-loader-disconnected': {
     valid: false,
@@ -7597,6 +9345,7 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
             offset: 372,
           },
         },
+        severity: 'error',
         source: 'openai',
       },
     ],
@@ -7697,4 +9446,231 @@ export const RUNTIME_EXPECTED_RESULTS: Record<
     ],
     manifestDigest: 'sha256:a2f1308a6155dedf12282c0f09b308472e74b620490c721eb0135f55c694b32a',
   },
+};
+
+type IRuntimeExpectedResult = (typeof BASE_RUNTIME_EXPECTED_RESULTS)[string];
+
+const getBaseResult = (id: string): IRuntimeExpectedResult => {
+  const result = BASE_RUNTIME_EXPECTED_RESULTS[id];
+  if (result === undefined) throw new Error(`The ${id} runtime result is required.`);
+  return result;
+};
+
+const deriveCloudflareThinkResult = (options: {
+  thinkRange: string;
+  agentsRange: string;
+  aiRange?: string;
+  hasDeferredTool?: boolean;
+  isVersionAmbiguous?: boolean;
+}): IRuntimeExpectedResult => {
+  const base = getBaseResult('cloudflare-agents');
+  return {
+    ...base,
+    diagnostics: options.isVersionAmbiguous
+      ? [
+          {
+            code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+            details: {
+              boundaryVersion: '0.18.0',
+              declaredRange: options.thinkRange,
+              packageName: '@cloudflare/think',
+              reason: 'version-dependent-behavior',
+              relationship: 'instruction-loader',
+            },
+            entity: { adapterId: 'cloudflare-agents', agentId: 'support' },
+            message: 'The declared runtime relationship could not be verified.',
+            path: '/src/agents.ts',
+            pointer: null,
+            range: null,
+            severity: 'warning',
+            source: 'cloudflare-agents',
+          },
+        ]
+      : [],
+    evidence: base.evidence.flatMap((entry) => {
+      if (
+        options.isVersionAmbiguous &&
+        entry.agentId === 'support' &&
+        entry.kind === 'instruction-loader'
+      ) {
+        return [];
+      }
+      if (entry.kind === 'runtime-package') {
+        const declaredRange =
+          entry.runtimeName === '@cloudflare/think'
+            ? options.thinkRange
+            : entry.runtimeName === 'agents'
+              ? options.agentsRange
+              : entry.runtimeName === 'ai'
+                ? options.aiRange
+                : undefined;
+        return declaredRange === undefined
+          ? [entry]
+          : [{ ...entry, details: { ...entry.details, declaredRange } }];
+      }
+      return entry.kind === 'tool-registration' && options.hasDeferredTool
+        ? [{ ...entry, details: { ...entry.details, declaredDeferredLoading: 'enabled' } }]
+        : [entry];
+    }),
+  };
+};
+
+const deriveVercelDeferredResult = (): IRuntimeExpectedResult => {
+  const base = getBaseResult('vercel-agent-and-stream');
+  return {
+    ...base,
+    evidence: base.evidence.map((entry) =>
+      entry.kind === 'runtime-package'
+        ? { ...entry, details: { ...entry.details, declaredRange: '7.0.116' } }
+        : entry.kind === 'tool-registration'
+          ? { ...entry, details: { ...entry.details, declaredDeferredLoading: 'enabled' } }
+          : entry,
+    ),
+  };
+};
+
+const deriveLangGraphResumeResult = (): IRuntimeExpectedResult => {
+  const base = getBaseResult('langgraph-workflows');
+  return {
+    ...base,
+    evidence: base.evidence
+      .map((entry) => {
+        if (entry.kind === 'runtime-package') {
+          const declaredRange =
+            entry.runtimeName === '@langchain/langgraph' ? '~1.4.18' : '~1.2.12';
+          return { ...entry, details: { ...entry.details, declaredRange } };
+        }
+
+        return entry.agentId === 'functional' &&
+          entry.kind === 'runtime-pattern' &&
+          entry.details['patternId'] === 'functional-interrupt'
+          ? {
+              ...entry,
+              details: {
+                ...entry.details,
+                interruptForm: 'two-argument',
+                responseSchemaRole: 'resume-value',
+              },
+            }
+          : entry;
+      })
+      .sort((left, right) => {
+        if (left.agentId !== 'functional' || right.agentId !== 'functional') return 0;
+        if (
+          left.details['patternId'] === 'functional-interrupt' &&
+          right.details['patternId'] === 'functional-final-state'
+        )
+          return -1;
+        if (
+          left.details['patternId'] === 'functional-final-state' &&
+          right.details['patternId'] === 'functional-interrupt'
+        )
+          return 1;
+        return 0;
+      }),
+  };
+};
+
+const deriveLangChainMiddlewareWarningResult = (): IRuntimeExpectedResult => {
+  const base = getBaseResult('langchain-create-agent');
+  const relationships = ['agent-output-schema', 'instruction-loader', 'tool-registration'] as const;
+  return {
+    ...base,
+    diagnostics: relationships.map((relationship) => ({
+      code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason: 'dynamic-source-pattern', relationship },
+      entity: {
+        adapterId: 'langchain',
+        agentId: 'support',
+        ...(relationship === 'tool-registration'
+          ? { capabilityId: 'find-order', capabilityKind: 'tool' as const }
+          : {}),
+      },
+      message: 'The declared runtime relationship could not be verified.',
+      path: '/src/agent.ts',
+      pointer: null,
+      range: null,
+      severity: 'warning',
+      source: 'langchain',
+    })),
+    evidence: base.evidence.filter(
+      (entry) =>
+        entry.kind !== 'instruction-loader' &&
+        entry.kind !== 'tool-registration' &&
+        !(entry.kind === 'schema' && entry.capabilityId === null),
+    ),
+  };
+};
+
+const deriveOpenAiAgentsSdkRoutingWarningResult = (): IRuntimeExpectedResult => {
+  const base = getBaseResult('openai-agent-handoffs');
+  return {
+    ...base,
+    diagnostics: [
+      {
+        code: 'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { reason: 'dynamic-source-pattern', relationship: 'routing-description' },
+        entity: { adapterId: 'openai-agents-sdk', agentId: 'billing' },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/agents.ts',
+        pointer: null,
+        range: {
+          end: { column: 54, line: 15, offset: 543 },
+          start: { column: 42, line: 15, offset: 531 },
+        },
+        severity: 'warning',
+        source: 'openai-agents-sdk',
+      },
+    ],
+    evidence: base.evidence.map((entry) =>
+      entry.kind === 'handoff-registration' && entry.details['registrationKind'] === 'handoff'
+        ? { ...entry, details: { ...entry.details, routingDescriptionSource: 'unresolved' } }
+        : entry,
+    ),
+  };
+};
+
+const deriveOpenAiLoaderUnverifiedResult = (): IRuntimeExpectedResult => {
+  const base = getBaseResult('openai-responses');
+  return {
+    ...base,
+    diagnostics: [
+      {
+        code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+        entity: { adapterId: 'openai', agentId: 'support' },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/agent.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'openai',
+      },
+    ],
+    evidence: base.evidence.filter(({ kind }) => kind !== 'instruction-loader'),
+  };
+};
+
+export const RUNTIME_EXPECTED_RESULTS: Record<string, IRuntimeExpectedResult> = {
+  ...BASE_RUNTIME_EXPECTED_RESULTS,
+  'langgraph-resume-schema': deriveLangGraphResumeResult(),
+  'langchain-middleware-warning': deriveLangChainMiddlewareWarningResult(),
+  'openai-agents-sdk-routing-warning': deriveOpenAiAgentsSdkRoutingWarningResult(),
+  'openai-loader-unverified': deriveOpenAiLoaderUnverifiedResult(),
+  'cloudflare-think-session-context': deriveCloudflareThinkResult({
+    thinkRange: '0.17.0',
+    agentsRange: '0.21.0',
+  }),
+  'cloudflare-think-configured-context': deriveCloudflareThinkResult({
+    thinkRange: '0.18.0',
+    agentsRange: '0.23.0',
+    aiRange: '7.0.116',
+    hasDeferredTool: true,
+  }),
+  'cloudflare-think-ambiguous-context': deriveCloudflareThinkResult({
+    thinkRange: '>=0.17.0',
+    agentsRange: '>=0.23.0',
+    isVersionAmbiguous: true,
+  }),
+  'vercel-deferred-tool': deriveVercelDeferredResult(),
 };

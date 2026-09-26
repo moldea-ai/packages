@@ -28,5 +28,8 @@ The adapter may emit `runtime-package`, `language`, `agent-definition`, `instruc
 | `LANGCHAIN_TOOL_REGISTRATION_NOT_WIRED`          | The declared tool registration is not available to the detected LangChain agent.                         |
 | `LANGCHAIN_TOOL_NAME_MISMATCH`                   | The declared tool name does not match the detected LangChain tool name.                                  |
 | `LANGCHAIN_TOOL_INPUT_SCHEMA_NOT_WIRED`          | The declared tool input schema is not wired to the detected LangChain function tool.                     |
+| `LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED`      | The declared runtime relationship could not be verified.                                                 |
 
 Diagnostics never include source snippets, descriptions, instructions, schema contents, credentials, URLs, host paths, package declarations that are not valid SemVer ranges, or raw TypeScript diagnostic messages.
+
+`LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.

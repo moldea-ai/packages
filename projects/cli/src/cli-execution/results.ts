@@ -117,11 +117,13 @@ export const createMoldeaCliValidateExecutionResult = (
   const projection = createMoldeaCliValidateProjection(inspection);
   const createResult = (page: IMoldeaCliValidateResult['page']): IMoldeaCliValidateResult => ({
     diagnosticCount: projection.diagnostics.length,
+    errorCount: projection.errorCount,
     formatVersion: projection.formatVersion,
     page,
     snapshotDigest: projection.snapshotDigest,
     source: projection.source,
     valid: projection.valid,
+    warningCount: projection.warningCount,
   });
   const page = createMoldeaCliOutputPage({
     command: 'validate',

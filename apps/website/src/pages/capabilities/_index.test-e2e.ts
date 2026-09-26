@@ -9,6 +9,7 @@ const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const route = withBase('/capabilities/', basePath);
 const model = loadWebsiteModel();
 const showcase = getCapabilityShowcase(model.capabilities);
+const selectedExampleCount = showcase.reduce((count, { examples }) => count + examples.length, 0);
 
 for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
@@ -21,14 +22,18 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
       await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName(
         "Catch what's broken. See what's connected.",
       );
-      await expect(page.locator('main [data-capability-outcome]')).toHaveCount(18);
-      await expect(page.locator('main article')).toHaveCount(18);
-      await expect(page.locator('main dialog')).toHaveCount(18);
+      await expect(page.locator('main [data-capability-outcome]')).toHaveCount(
+        selectedExampleCount,
+      );
+      await expect(page.locator('main article')).toHaveCount(selectedExampleCount);
+      await expect(page.locator('main dialog')).toHaveCount(selectedExampleCount);
       if (width >= 1280)
         expect(
           (await page.locator('#variable-undeclared').boundingBox())!.width,
         ).toBeLessThanOrEqual(640);
-      await expect(page.locator('main summary [id$="-description"]')).toHaveCount(18);
+      await expect(page.locator('main summary [id$="-description"]')).toHaveCount(
+        selectedExampleCount,
+      );
       for (const { group } of showcase)
         await expect(
           page.getByRole('link', { name: group.reference.label, exact: true }),
@@ -85,29 +90,21 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
 for (const width of [320, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
     test(`keeps each result family accessible at ${width}px in ${theme}`, async ({ page }) => {
-      // The expanded catalog exercises 18 dialogs, including every dismissal path.
+      // Representative examples exercise each result family and dialog dismissal path.
       test.setTimeout(60_000);
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await page.goto(route);
       for (const [id, title] of [
         ['policy-reference-missing', '1 missing file'],
-        ['variable-undeclared', '1 undeclared variable'],
-        ['mirror-stale', '1 stale instruction copy'],
         ['decision-replacement-chain', 'Decision chain checks pass'],
         ['openai-responses', 'Instruction and tool connections found'],
+        ['openai-loader-unverified', '1 runtime relationship unverified'],
+        ['inspection-mixed-diagnostics', '1 warning and 1 error across two pages'],
         ['snapshot-comparison', 'Changes identified'],
         ['cli-invalid-project', 'Broken reference caught by validation'],
-        ['foundation-missing', 'Project brief not found'],
-        ['decision-cycle', 'Circular replacement links'],
+        ['cli-version-warning', '1 runtime relationship unverified'],
         ['openai-loader-disconnected', 'Instruction loader not connected'],
-        ['manifest-change-relevance', 'Related knowledge identified'],
-        ['cli-canonical-content', 'One document, ready for your tools'],
-        ['policy-reference-directory', 'A folder where a file is required'],
-        ['agent-identity', '1 mismatched agent identity'],
-        ['tool-implementation-missing', '1 missing tool implementation'],
-        ['decision-reference-missing', '1 missing decision'],
-        ['normalized-digests', 'Text changes produce a different fingerprint'],
         ['cli-content-refusal', 'Source file outside this command’s scope'],
       ]) {
         const item = page.locator(`#${id}`);
@@ -139,7 +136,14 @@ for (const width of [320, 1440]) {
         if (width < 640) await expect(icon).toBeHidden();
         else await expect(icon).toHaveCSS('width', '40px');
         await expect(resultSummary.locator('[data-status-badge]')).toHaveCount(0);
-        const excerptLabel = dialog.getByText('Executed result excerpt', { exact: true });
+        const resultKind = model.capabilities.cases.find((example) => example.id === id)?.result
+          .kind;
+        const excerptLabel = dialog.getByText(
+          resultKind === 'reader' || resultKind === 'inspection'
+            ? 'Selected execution facts'
+            : 'Executed result excerpt',
+          { exact: true },
+        );
         const excerptRow = excerptLabel.locator('xpath=..');
         const badge = excerptRow.locator('[data-status-badge]');
         await expect(badge).toHaveCount(1);
@@ -198,7 +202,15 @@ for (const width of [320, 1440]) {
       await expect(
         runtimeDialog.getByRole('heading', { name: 'Instruction and tool connections found' }),
       ).toBeVisible();
-      await expect(runtimeDialog).toContainText('evidenceExcerpt');
+      const runtimeExcerpt = JSON.parse(
+        (await runtimeDialog.locator('pre').textContent()) ?? '',
+      ) as unknown;
+      expect(runtimeExcerpt).toMatchObject({
+        valid: true,
+        errorCount: 0,
+        warningCount: 0,
+        evidence: expect.any(Array),
+      });
       const analysis = await new AxeBuilder({ page }).include('dialog[open]').analyze();
       expect(
         analysis.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious'),
@@ -214,14 +226,18 @@ for (const width of [320, 1440]) {
     test(`opens one visual per section with keyboard and reduced motion at ${width}px in ${theme}`, async ({
       page,
     }) => {
-      // Every additional example runs its own accessibility scan.
+      // One item per section checks interaction; page-wide scans cover all rendered examples.
       test.setTimeout(60_000);
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await page.goto(route);
       for (const { group } of showcase) {
         const first = page.locator(`#${group.exampleIds[0]}`);
-        for (const id of group.exampleIds.slice(1)) {
+        const firstSummary = first.locator(':scope > summary');
+        await firstSummary.focus();
+        await page.keyboard.press('Enter');
+        await expect(first.locator('[data-accordion-panel]')).toBeVisible();
+        for (const id of group.exampleIds.slice(1, 2)) {
           const second = page.locator(`#${id}`);
           const summary = second.locator(':scope > summary');
           await summary.focus();
@@ -239,7 +255,7 @@ for (const width of [320, 1440]) {
             .not.toBe(background);
           await page.keyboard.press('Enter');
           await expect(second.locator('[data-accordion-panel]')).toBeVisible();
-          await expect(first.locator('[data-accordion-panel]')).toBeHidden();
+          await expect(first.locator('[data-accordion-panel]')).toBeVisible();
           await expect(summary).toBeFocused();
           await expect(second.locator('[data-accordion-panel]')).toHaveCSS(
             'animation-name',
@@ -256,12 +272,123 @@ for (const width of [320, 1440]) {
           ).toStrictEqual([]);
           await page.keyboard.press('Space');
           await expect(second.locator('[data-accordion-panel]')).toBeHidden();
+          await expect(first.locator('[data-accordion-panel]')).toBeVisible();
+          await firstSummary.click();
           await expect(page.locator(`#${group.id} details[open]`)).toHaveCount(0);
         }
       }
     });
   }
 }
+
+test('shows source-backed adapter changes and preserves warning and error labels', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+  await page.goto(route);
+  for (const [id, expected] of [
+    ['openai-loader-unverified', ['Unverified', 'process.env.SUPPORT_INSTRUCTION']],
+    ['openai-loader-disconnected', ['Not connected to this loader']],
+    ['anthropic-parse-output', ['messages.parse', 'output_config']],
+    ['openai-parse-output', ['responses.parse', 'zodTextFormat']],
+    ['google-mixed-generation', ['models.generateContent', 'models.generateContentStream']],
+    ['cloudflare-think-session-context', ['session.withContext']],
+    ['cloudflare-think-configured-context', ['configureContext', 'deferLoading: true']],
+    ['cloudflare-think-ambiguous-context', ['Unverified', 'configureContext']],
+    ['eve-workspace-peer', ['defineWorkspaceAgent']],
+    ['eve-excluded-test-tool', ['Invalid', 'search.test.ts']],
+    ['vercel-deferred-tool', ['deferLoading: true']],
+    ['langgraph-resume-schema', ['responseSchema: ResumeSchema']],
+    ['inspection-mixed-diagnostics', ['1 warning and 1 error', 'Page 1', 'Page 2']],
+  ] satisfies [string, string[]][]) {
+    const item = page.locator(`#${id}`);
+    await item.locator(':scope > summary').click();
+    const panel = item.locator('[data-accordion-panel]');
+    await expect(panel).toBeVisible();
+    for (const text of expected) await expect(panel).toContainText(text);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      320,
+    );
+  }
+});
+
+test('shows a successful schema 5 warning result with bounded version details', async ({
+  page,
+}) => {
+  await page.goto(route);
+  const item = page.locator('#cli-version-warning');
+  await item.locator(':scope > summary').click();
+  await expect(item.locator('[data-accordion-panel]')).toContainText(
+    'Validation completed with a warning',
+  );
+  await expect(item.locator('[data-accordion-panel]')).toContainText('Exit 0');
+  await item.getByRole('button', { name: /^View result:/u }).click();
+  const dialog = page.getByRole('dialog', { name: '1 runtime relationship unverified' });
+  const excerpt = JSON.parse((await dialog.locator('pre').textContent()) ?? '') as unknown;
+  expect(excerpt).toMatchObject({
+    cliVersion: '9.0.0',
+    command: 'validate',
+    error: null,
+    schemaVersion: 5,
+    status: 'valid',
+    result: {
+      valid: true,
+      diagnosticCount: 1,
+      errorCount: 0,
+      warningCount: 1,
+      page: {
+        records: [
+          {
+            kind: 'diagnostic',
+            code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+            severity: 'warning',
+            details: {
+              relationship: 'instruction-loader',
+              reason: 'version-dependent-behavior',
+              packageName: '@cloudflare/think',
+              declaredRange: '>=0.17.0',
+              boundaryVersion: '0.18.0',
+            },
+          },
+        ],
+      },
+    },
+  });
+  expect(excerpt).not.toHaveProperty('exitStatus');
+});
+
+test('keeps empty file previews and capability summaries free of extra dividers', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto(route);
+  for (const id of [
+    'foundation-missing',
+    'tool-implementation-missing',
+    'manifest-change-relevance',
+  ]) {
+    const item = page.locator(`#${id}`);
+    await item.locator(':scope > summary').click();
+    await expect(item.locator('[data-file-preview-header]').last()).toHaveCSS(
+      'border-bottom-width',
+      '0px',
+    );
+    await expect(item.locator('article > div').last()).toHaveCSS('border-top-width', '0px');
+  }
+  for (const id of ['foundation-missing', 'manifest-change-relevance']) {
+    await expect(page.locator(`#${id} [data-file-preview-header]`).first()).toHaveCSS(
+      'border-bottom-width',
+      '0px',
+    );
+  }
+  const withBody = page.locator('#policy-reference-missing');
+  await withBody.locator(':scope > summary').click();
+  await expect(withBody.locator('[data-file-preview-header]').first()).toHaveCSS(
+    'border-bottom-width',
+    '1px',
+  );
+});
 
 for (const fragment of ['', '#', '#%ZZ', '#missing-example']) {
   test(`ignores non-target fragments (${fragment || 'none'}) without empty DOM lookups`, async ({
@@ -539,9 +666,17 @@ for (const theme of ['light', 'dark'] as const) {
     try {
       const page = await context.newPage();
       await page.goto(route);
-      await expect(page.locator('main [data-capability-outcome]')).toHaveCount(18);
+      await expect(page.locator('main [data-capability-outcome]')).toHaveCount(
+        selectedExampleCount,
+      );
       await expect(page.locator('main details[open]')).toHaveCount(0);
       await expect(page.locator('#variable-undeclared')).toContainText('1 undeclared variable');
+      await expect(page.locator('#openai-loader-unverified')).toContainText(
+        '1 runtime relationship unverified',
+      );
+      await expect(page.locator('#inspection-mixed-diagnostics')).toContainText(
+        '1 warning and 1 error across two pages',
+      );
       for (const group of model.capabilities.groups)
         await expect(page.locator(`[data-capability-coverage="${group.id}"]`)).toHaveText(
           `Also covers: ${group.coverage.join('; ')}.`,
@@ -549,6 +684,9 @@ for (const theme of ['light', 'dark'] as const) {
       await page.locator('#mirror-stale > summary').click();
       await expect(page.locator('#mirror-stale [data-accordion-panel]')).toBeVisible();
       await expect(page.locator('#variable-undeclared [data-accordion-panel]')).toBeHidden();
+      await page.locator('#variable-undeclared > summary').click();
+      await expect(page.locator('#mirror-stale [data-accordion-panel]')).toBeVisible();
+      await expect(page.locator('#variable-undeclared [data-accordion-panel]')).toBeVisible();
       await expect(page.getByRole('button', { name: /^View result:/u })).toHaveCount(0);
       await page.locator('#decision-replacement-chain > summary').press('Enter');
       await expect(
@@ -578,11 +716,21 @@ for (const theme of ['light', 'dark'] as const) {
 for (const [query, id, title] of [
   ['stale', 'mirror-stale', 'The copied instruction is out of date'],
   ['undeclared', 'variable-undeclared', 'An instruction uses an undeclared variable'],
+  [
+    'The instruction choice cannot be verified',
+    'openai-loader-unverified',
+    'The instruction choice cannot be verified',
+  ],
+  [
+    'Warnings and errors across two pages',
+    'inspection-mixed-diagnostics',
+    'Warnings and errors across two pages',
+  ],
 ]) {
   test(`discovers ${id} through search and releases dialogs when navigating away`, async ({
     page,
   }) => {
-    await page.goto(withBase(`/search/?query=${query}`, basePath));
+    await page.goto(withBase(`/search/?query=${encodeURIComponent(query)}`, basePath));
     const result = page.getByRole('link', {
       name: new RegExp(title.replaceAll('.', '\\.'), 'u'),
     });

@@ -27,10 +27,12 @@ import type {
 } from '../contracts/index.js';
 import {
   addAnthropicDiagnostic,
+  addAnthropicUnverifiedRelationship,
   analyzeAnthropicBoundReference,
   compareAnthropicStrings,
   createAnthropicEvidence,
 } from './common.js';
+import { inspectAnthropicOutputSchema } from './output-schema.js';
 
 interface IAnthropicRegistrationInspection {
   readonly capabilityId: string;
@@ -381,6 +383,13 @@ const inspectInstructionLoader = async (
   }
 
   if (loader.kind === 'present-unsupported') {
+    addAnthropicUnverifiedRelationship(
+      diagnostics,
+      'instruction-loader',
+      'unsupported-source-pattern',
+      reference.path,
+      agent.id,
+    );
     return;
   }
 
@@ -414,6 +423,14 @@ const inspectInstructionLoader = async (
       runtimeAnalysis.path,
       agent.id,
       getExpressionRange(runtimeAnalysis, relationship.expression),
+    );
+  } else {
+    addAnthropicUnverifiedRelationship(
+      diagnostics,
+      'instruction-loader',
+      'dynamic-source-pattern',
+      runtimeAnalysis.path,
+      agent.id,
     );
   }
 };
@@ -482,6 +499,18 @@ const inspectToolRelationships = async (
       continue;
     }
 
+    if (relationship.kind === 'ambiguous') {
+      addAnthropicUnverifiedRelationship(
+        diagnostics,
+        'tool-registration',
+        'dynamic-source-pattern',
+        runtimeAnalysis.path,
+        agent.id,
+        registration.capabilityId,
+      );
+      continue;
+    }
+
     if (relationship.kind === 'present' && registration.isNameMatch && registration.isNameValid) {
       evidence.push(
         createAnthropicEvidence({
@@ -520,5 +549,13 @@ export const inspectAnthropicRelationships = async (
   diagnostics: IAdapterDiagnostic[],
 ): Promise<void> => {
   await inspectInstructionLoader(session, agent, runtimeAnalysis, messages, evidence, diagnostics);
+  await inspectAnthropicOutputSchema(
+    session,
+    agent,
+    runtimeAnalysis,
+    messages,
+    evidence,
+    diagnostics,
+  );
   await inspectToolRelationships(session, agent, runtimeAnalysis, messages, evidence, diagnostics);
 };

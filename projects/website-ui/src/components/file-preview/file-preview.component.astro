@@ -15,6 +15,9 @@ const { path, label, tone = 'neutral' } = Astro.props;
 const filenameStart = path.lastIndexOf('/');
 const directory = filenameStart < 0 ? '' : path.slice(0, filenameStart);
 const filename = filenameStart < 0 ? path : path.slice(filenameStart);
+// conditional children can register a slot without rendering content
+const body = Astro.slots.has('default') ? await Astro.slots.render('default') : '';
+const hasBody = body.trim().length > 0;
 const toneClasses = {
   danger: 'border-destructive/40 bg-destructive/10',
   info: 'border-info/40 bg-info/10',
@@ -29,7 +32,7 @@ const toneClasses = {
   data-file-preview
 >
   <div
-    class:list={['flex items-center gap-3 border-b px-3 py-3', toneClasses[tone]]}
+    class:list={['flex items-center gap-3 px-3 py-3', hasBody && 'border-b', toneClasses[tone]]}
     data-file-preview-header
   >
     <span
@@ -57,5 +60,5 @@ const toneClasses = {
     </div>
     <slot name="status" />
   </div>
-  <slot />
+  <Fragment set:html={body} />
 </div>

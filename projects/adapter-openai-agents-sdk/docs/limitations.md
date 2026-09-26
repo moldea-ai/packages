@@ -20,6 +20,8 @@ The current verified target does not claim support for:
 
 Package detection uses nearest manifests, not lockfiles or installed `node_modules`. Static dependency ranges are observations; the adapter does not prove which package build executes at runtime.
 
+A dynamic handoff routing description for a registered target produces a scoped warning. The registration remains observable, but the adapter does not claim that its routing description matches the canonical target description.
+
 Each invocation sees one declared agent, exact same-runtime binding resolution, and only the bounded operations Core supplies through `IRuntimeAdapterRepository`. It receives no complete agent collection, project body index, host path, OpenAI credential, environment variable, network client, or runtime process. It does not execute TypeScript, dynamically import source, load the inspected SDK, or follow source symlinks. These constraints preserve deterministic, source-grounded behavior while deliberately leaving dynamic runtime semantics unresolved.
 
 The [Runtime Compatibility Matrix](https://packages.moldea.ai/compatibility/) remains authoritative. A focused specification or future design does not broaden this page until the canonical matrix and released implementation do.

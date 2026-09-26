@@ -10,13 +10,13 @@ order: 20
 
 ## Verified range reads
 
-The reader observes file metadata, opens the file without following symlinks where supported, verifies identity before reading, fills only the bounded range, and verifies identity again before returning. Missing, redirected, truncated, replaced, oversized, or otherwise changed files fail without returning partial bytes.
+The reader observes the selected root and path ancestors, opens the file without following the final symlink where supported, verifies file identity before reading, fills only the bounded range, and verifies identity again before returning. Detected missing, redirected, truncated, replaced, oversized, or otherwise changed files fail without returning partial bytes. Hostile concurrent replacement between path-based checks and opens remains outside the containment guarantee.
 
 Every successful result includes the page offset, total file length, completion state, next offset, and reader snapshot. Returned buffers are detached from cache storage and other caller results.
 
 ## Bounded LRU cache
 
-Only complete verified ranges enter the cache. The cache key contains path, offset, and range size. Reading a cached page refreshes its recency. Before retaining a new page, the reader evicts the oldest pages until total retained bytes fit `maxCachedBytes`. A single page larger than the cache budget is returned but not retained.
+Only complete, nonempty verified ranges enter the cache. The cache key contains path, offset, and range size. Reading a cached page refreshes its recency. Before retaining a new page, the reader evicts the oldest pages until total retained bytes fit `maxCachedBytes` and no more than 4,096 pages remain. A single page larger than the cache budget is returned but not retained.
 
 ## Operation gate
 

@@ -1,6 +1,7 @@
 import ts from 'typescript';
 
 import {
+  classifyAiSdkDeferredLoading,
   getCallableExportState,
   getConstExport,
   isModuleBindingVisible,
@@ -707,7 +708,18 @@ const inspectToolRegistration = (
         agentId: inspected.agent.id,
         capabilityId,
         capabilityKind: 'tool',
-        details: { targetId: getTargetId(inspected), toolType: 'function' },
+        details: {
+          declaredDeferredLoading:
+            registration.tool.deferLoading.kind === 'unresolved'
+              ? 'unknown'
+              : classifyAiSdkDeferredLoading(
+                  registration.tool.deferLoading.kind === 'present'
+                    ? registration.tool.deferLoading.expression
+                    : null,
+                ),
+          targetId: getTargetId(inspected),
+          toolType: 'function',
+        },
         kind: 'tool-registration',
         references,
         runtimeName: isVercelAiSdkMachineString(declaration.name) ? declaration.name : null,

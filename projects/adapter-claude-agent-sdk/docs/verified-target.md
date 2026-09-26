@@ -12,10 +12,10 @@ The canonical Runtime Compatibility Matrix defines the technical target `typescr
 
 - TypeScript ESM `.ts`, `.tsx`, and `.mts` files
 - a nearest owning package manifest declaring npm `@anthropic-ai/claude-agent-sdk >=0.3.234`
-- named value imports from the package root, including aliases
+- named value imports from the package root, including aliases, and from `/core` in SDK 0.3.282 onward
 - directly exported function declarations, arrow functions, or function expressions containing direct `query(...)` calls in their own lexical body
 - directly exported immutable object-literal programmatic `AgentDefinition` values
-- direct or awaited instruction-loader calls through query `systemPrompt`, `claude_code` preset `append`, and subagent `prompt`
+- direct or awaited instruction-loader calls through query `systemPrompt`, typed custom `prompt`, `claude_code` preset `append`, and subagent `prompt`
 - query JSON Schema output through the exact `outputFormat` shape
 - directly exported positional `tool(...)` declarations with direct implementation and input-schema bindings
 - module-local `createSdkMcpServer(...)` declarations with closed tool arrays
@@ -26,6 +26,8 @@ The canonical Runtime Compatibility Matrix defines the technical target `typescr
 - exact `AgentDefinition.description` comparison with the target's effective handoff description
 
 Bindings must remain lexically visible at each matched use. Supported relative named imports resolve an exact TypeScript path, `.js` to `.ts` or `.tsx`, and `.mjs` to `.mts`. Re-exports, directory indexes, path aliases, CommonJS, and package-export resolution are outside the target.
+
+The analyzer preserves canonical source wiring when query `verbatimPrompts`, a typed system-prompt `snapshot` value, or subagent `omitClaudeMd` appears. It does not infer prompt delivery, snapshot timing, ambient-file contents, or model behavior from those options. A declaration that allows versions before 0.3.282 does not itself prove `/core` exists in the installed SDK.
 
 ## Relationship closure
 

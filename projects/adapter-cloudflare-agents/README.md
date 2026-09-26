@@ -8,17 +8,17 @@ The package implements the official `cloudflare-agents` runtime adapter for `@mo
 
 ## Supported targets
 
-Version `3.0.2` supports:
+Version `4.0.0` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^4.0.0`
+- `@moldea.ai/core ^5.0.0`
 - TypeScript ESM `.ts`, `.tsx`, and `.mts` source
 - `@cloudflare/think >=0.16.0`, `agents >=0.21.0`, and `ai >=7.0.0`
 - `@cloudflare/ai-chat >=0.10.2`, `agents >=0.21.0`, and `ai >=7.0.0`
 - directly exported classes extending an exact named `Think` or `AIChatAgent` import
-- Think instructions through `getSystemPrompt` and supported `configureSession` chains
+- Think instructions through `getSystemPrompt`, supported `configureSession` chains, and `configureContext` from Think 0.18.0
 - AIChatAgent instructions and structured output through direct `generateText` or `streamText` requests
-- AI SDK function tools, closed tools maps, and Cloudflare `agentTool` handoffs
+- AI SDK function tools, closed tools maps, and Cloudflare `agentTool` handoffs, including the declared `deferLoading` option in newer AI SDK 7 releases
 
 Named value imports and aliases are supported. Default imports, namespace imports, re-export graphs, runtime mutation, and dynamic class or tools-map forms remain outside the verified boundary. The Runtime Compatibility Matrix is authoritative for exact versions, evidence, binding support, patterns, and known limitations.
 
@@ -41,9 +41,13 @@ The package exports only `cloudflareAgentsAdapter`. It has no default export, co
 
 The verified targets may emit `runtime-package`, `language`, `agent-definition`, `runtime-pattern`, `instruction-loader`, `schema`, `tool-registration`, and `handoff-registration` evidence. AIChatAgent direct generation emits `runtime-pattern`; Think does not. Schema details identify the `agent-output`, `tool-input`, or `tool-output` role.
 
+Function-tool registration evidence reports `declaredDeferredLoading` as `absent`, `enabled`, `disabled`, or `unknown`. It describes the source declaration, not whether that tool is available to the model on a particular turn. Think declarations spanning 0.18.0 leave an instruction conclusion unverified only when the older and newer context rules produce different results; confirmed wiring defects remain errors.
+
 Evidence is source-grounded, references existing repository files, and contains no repository contents, instructions, descriptions, credentials, model identifiers, tool arguments, provider configuration, request or response payloads, or model output.
 
 ## Diagnostics
+
+`CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
 
 | Code                                                      | Stable message                                                                                                           |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -68,6 +72,7 @@ Evidence is source-grounded, references existing repository files, and contains 
 | `CLOUDFLARE_AGENTS_HANDOFF_TARGET_AMBIGUOUS`              | The detected Cloudflare agent-tool target maps to more than one registered agent.                                        |
 | `CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_MISSING`   | The detected Cloudflare agent-tool routing description is missing.                                                       |
 | `CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED` | The detected Cloudflare agent-tool routing description is not wired to the target agent's effective routing description. |
+| `CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED`       | The declared runtime relationship could not be verified.                                                                 |
 
 ## Documentation
 

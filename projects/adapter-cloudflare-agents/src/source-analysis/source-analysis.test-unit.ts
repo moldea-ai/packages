@@ -9,6 +9,7 @@ import {
   getCloudflareAgentsAiChatRequests,
   getCloudflareAgentsClassDefinition,
   getCloudflareAgentsThinkChannelTools,
+  getCloudflareAgentsThinkContextSources,
   getCloudflareAgentsThinkSessionInstructions,
   getCloudflareAgentsThinkSystemPrompt,
   getCloudflareAgentsThinkTools,
@@ -48,13 +49,35 @@ describe('Cloudflare Agents source analysis', () => {
     }
   });
 
+  test('keeps unsupported instruction override signatures unresolved', () => {
+    const analysis = analyze(
+      [
+        "import { Think } from '@cloudflare/think';",
+        'export class Agent extends Think {',
+        '  getSystemPrompt(unexpected) { return load(); }',
+        '  configureContext(unexpected) { return []; }',
+        '  configureSession() { return this.session; }',
+        '}',
+      ].join('\n'),
+    );
+    const result = getCloudflareAgentsClassDefinition(analysis, 'Agent');
+
+    if (result.kind !== 'present-supported') {
+      throw new TypeError('The Think fixture must be supported.');
+    }
+
+    expect(getCloudflareAgentsThinkSystemPrompt(result.definition).kind).toBe('unresolved');
+    expect(getCloudflareAgentsThinkContextSources(result.definition).kind).toBe('unresolved');
+    expect(getCloudflareAgentsThinkSessionInstructions(result.definition).kind).toBe('unresolved');
+  });
+
   test('recognizes the closed Think session-builder chain', () => {
     const analysis = analyze(
       [
         "import { Think } from '@cloudflare/think';",
         'export class Agent extends Think {',
         '  configureSession(session) {',
-        "    return session.forSession('support').withInstructions(load()).compactAfter(8);",
+        "    return session.forSession('support').withContext('soul', { provider: { get: () => load() } }).compactAfter(8);",
         '  }',
         '}',
       ].join('\n'),
@@ -65,7 +88,62 @@ describe('Cloudflare Agents source analysis', () => {
       throw new TypeError('The Think fixture must be supported.');
     }
 
-    expect(getCloudflareAgentsThinkSessionInstructions(result.definition).kind).toBe('present');
+    expect(getCloudflareAgentsThinkSessionInstructions(result.definition)).toMatchObject({
+      contexts: [{ label: 'soul', relationship: { kind: 'present' } }],
+      kind: 'closed',
+    });
+  });
+
+  test.each([
+    ['inert custom prompt store', '{ get: () => load(), set: async (prompt) => {} }', 'present'],
+    ['provider without a setter', '{ get: () => load() }', 'unresolved'],
+    [
+      'provider with a mutating setter',
+      '{ get: () => load(), set: async (prompt) => { state.prompt = prompt; } }',
+      'unresolved',
+    ],
+    [
+      'provider with init',
+      '{ get: () => load(), set: async (prompt) => {}, init: () => {} }',
+      'unresolved',
+    ],
+  ])('classifies %s conservatively', (_description, provider, expectedKind) => {
+    const analysis = analyze(
+      [
+        "import { Think } from '@cloudflare/think';",
+        'export class Agent extends Think {',
+        `  configureSession(session) { return session.withCachedPrompt(${provider}); }`,
+        '}',
+      ].join('\n'),
+    );
+    const result = getCloudflareAgentsClassDefinition(analysis, 'Agent');
+
+    if (result.kind !== 'present-supported') {
+      throw new TypeError('The Think fixture must be supported.');
+    }
+
+    expect(getCloudflareAgentsThinkSessionInstructions(result.definition)).toMatchObject({
+      cachedPrompt: { kind: expectedKind },
+      kind: 'closed',
+    });
+  });
+
+  test('keeps retained onCompaction callbacks unresolved', () => {
+    const analysis = analyze(
+      [
+        "import { Think } from '@cloudflare/think';",
+        'export class Agent extends Think {',
+        '  configureSession(session) { return session.onCompaction(() => load()); }',
+        '}',
+      ].join('\n'),
+    );
+    const result = getCloudflareAgentsClassDefinition(analysis, 'Agent');
+
+    if (result.kind !== 'present-supported') {
+      throw new TypeError('The Think fixture must be supported.');
+    }
+
+    expect(getCloudflareAgentsThinkSessionInstructions(result.definition).kind).toBe('unresolved');
   });
 
   test('treats a malformed compactAfter call as unresolved', () => {
@@ -87,6 +165,86 @@ describe('Cloudflare Agents source analysis', () => {
 
     expect(getCloudflareAgentsThinkSessionInstructions(result.definition).kind).toBe('unresolved');
   });
+
+  test('retains configureContext and session context blocks in declared order', () => {
+    const analysis = analyze(
+      [
+        "import { Think } from '@cloudflare/think';",
+        'export class Agent extends Think {',
+        "  configureContext() { return [{ label: 'soul', provider: { get: () => loadFirst() } }, { label: 'memory' }]; }",
+        "  configureSession(session) { return session.withContext('memory', { provider: { get: () => loadSecond() } }); }",
+        '}',
+      ].join('\n'),
+    );
+    const result = getCloudflareAgentsClassDefinition(analysis, 'Agent');
+
+    if (result.kind !== 'present-supported') {
+      throw new TypeError('The Think context fixture must be supported.');
+    }
+
+    expect(getCloudflareAgentsThinkContextSources(result.definition)).toMatchObject({
+      contexts: [
+        { label: 'soul', relationship: { kind: 'present' } },
+        { label: 'memory', relationship: { kind: 'absent' } },
+      ],
+      kind: 'closed',
+    });
+    expect(getCloudflareAgentsThinkSessionInstructions(result.definition)).toMatchObject({
+      contexts: [{ label: 'memory', relationship: { kind: 'present' } }],
+      kind: 'closed',
+    });
+  });
+
+  test.each([
+    [
+      'configured context',
+      "configureContext() { return [{ label: 'soul', provider: { get: () => load() }, extra: mutate() }]; }",
+      'context',
+      'unresolved',
+    ],
+    [
+      'session context',
+      "configureSession(session) { return session.withContext('soul', { provider: { get: () => load() }, extra: mutate() }); }",
+      'session',
+      'unresolved',
+    ],
+    [
+      'provider with init',
+      "configureContext() { return [{ label: 'soul', provider: { get: () => load(), init: () => mutate() } }]; }",
+      'context',
+      'closed',
+    ],
+  ] as const)(
+    'leaves unsupported %s source unresolved',
+    (_description, method, owner, expectedKind) => {
+      const analysis = analyze(
+        [
+          "import { Think } from '@cloudflare/think';",
+          `export class Agent extends Think { ${method} }`,
+        ].join('\n'),
+      );
+      const result = getCloudflareAgentsClassDefinition(analysis, 'Agent');
+
+      if (result.kind !== 'present-supported') {
+        throw new TypeError('The Think fixture must be supported.');
+      }
+
+      if (owner === 'context') {
+        const context = getCloudflareAgentsThinkContextSources(result.definition);
+        expect(context.kind).toBe(expectedKind);
+
+        if (expectedKind === 'closed') {
+          expect(context).toMatchObject({
+            contexts: [{ relationship: { kind: 'unresolved' } }],
+          });
+        }
+      } else {
+        expect(getCloudflareAgentsThinkSessionInstructions(result.definition).kind).toBe(
+          expectedKind,
+        );
+      }
+    },
+  );
 
   test.each([
     [

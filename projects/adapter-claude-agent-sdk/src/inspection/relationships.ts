@@ -79,6 +79,9 @@ const getInstructionRole = (relationship: IClaudeAgentSdkRelationship): string =
   }
 
   const properties = getClosedObjectProperties(candidate);
+  if (properties !== null && getStaticString(properties.get('type') ?? candidate) === 'custom') {
+    return 'query-custom-prompt';
+  }
   return properties !== null &&
     getStaticString(properties.get('type') ?? candidate) === 'preset' &&
     getStaticString(properties.get('preset') ?? candidate) === 'claude_code'

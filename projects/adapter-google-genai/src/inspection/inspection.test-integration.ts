@@ -124,10 +124,35 @@ const createDistinctFunctionCollectionSources = (
 };
 
 describe('googleGenAiAdapter Core integration', () => {
+  test('reports the streaming method identity while preserving established relationships', async () => {
+    const source = fixture.entries.find(({ path }) => path === '/src/agent.ts')?.text;
+
+    if (source === undefined) {
+      throw new TypeError('The runtime source fixture is required.');
+    }
+
+    const result = await inspect({
+      '/src/agent.ts': source.replace(
+        'client.models.generateContent(',
+        'client.models.generateContentStream(',
+      ),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.evidence
+        .filter(({ kind }) => kind === 'runtime-pattern')
+        .map(({ runtimeName }) => runtimeName),
+    ).toStrictEqual(['models.generateContentStream']);
+    expect(result.evidence.map(({ kind }) => kind)).toContain('instruction-loader');
+    expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
+  });
+
   test('keeps the diagnostic catalog synchronized with its conformance golden', () => {
     expect(
       Object.entries(GOOGLE_GENAI_ADAPTER_DIAGNOSTICS)
-        .map(([code, message]) => ({ code, message }))
+        .map(([code, definition]) => ({ code, ...definition }))
         .sort((left, right) => (left.code < right.code ? -1 : left.code > right.code ? 1 : 0)),
     ).toStrictEqual(expectedDiagnostics);
   });

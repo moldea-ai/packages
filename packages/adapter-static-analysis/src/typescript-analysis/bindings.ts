@@ -71,7 +71,8 @@ export const indexImports = (
     }
 
     if (
-      !moduleSpecifier.startsWith('.') ||
+      (!moduleSpecifier.startsWith('.') &&
+        !config.namedHelperModuleSpecifiers?.includes(moduleSpecifier)) ||
       importClause?.namedBindings === undefined ||
       !ts.isNamedImports(importClause.namedBindings)
     ) {

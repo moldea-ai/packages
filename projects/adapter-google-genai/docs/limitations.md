@@ -10,7 +10,7 @@ The current target does not claim support for:
 
 - JavaScript, Python, CommonJS, or non-ESM source
 - legacy `@google/generative-ai`
-- `generateContentStream`, chats, live sessions, or the Interactions API
+- chats, live sessions, or the Interactions API; direct `generateContentStream` source calls do not validate streaming lifecycle behavior
 - callable tools, MCP conversion, automatic function execution, or provider/server tool relationships
 - configuration or clients returned by factories
 - arbitrary compiler resolution, path aliases, package exports, directory indexes, or re-export graphs

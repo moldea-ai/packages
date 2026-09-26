@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
 import type { ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
@@ -19,7 +19,8 @@ export type IGoogleGenAiAdapterDiagnosticCode =
   | 'GOOGLE_GENAI_TOOL_NAME_MISMATCH'
   | 'GOOGLE_GENAI_TOOL_NAME_INVALID'
   | 'GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED'
-  | 'GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED';
+  | 'GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED'
+  | 'GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
 // normalized repository text and scalar source lookup
 export interface IGoogleGenAiSourceLocator {
@@ -104,6 +105,7 @@ export type IGoogleGenAiRequestRelationship =
 
 export interface IGoogleGenAiGenerateContentRequest {
   readonly config: IGoogleGenAiRequestRelationship;
+  readonly methodName: string;
   readonly object: ts.ObjectLiteralExpression;
   readonly systemInstruction: IGoogleGenAiRequestRelationship;
   readonly tools: IGoogleGenAiRequestRelationship;
@@ -123,6 +125,13 @@ export interface IGoogleGenAiInspectionSession {
 }
 
 // complete input used to construct one safe adapter diagnostic
-export type IGoogleGenAiDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: IGoogleGenAiAdapterDiagnosticCode;
-};
+export type IGoogleGenAiDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<
+        IGoogleGenAiAdapterDiagnosticCode,
+        'GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED'
+      >;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });

@@ -26,5 +26,8 @@ The target may emit `runtime-package`, `language`, `runtime-pattern`, `instructi
 | `GOOGLE_GENAI_TOOL_NAME_INVALID`                   | The detected Google Gen AI function name violates the supported SDK declaration limit.                     |
 | `GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED`         | The declared tool input schema is not wired to the detected function declaration's parameters JSON schema. |
 | `GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED` | The detected Google Gen AI function-declaration collection exceeds the supported SDK declaration limit.    |
+| `GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED`     | The declared runtime relationship could not be verified.                                                   |
 
 Invalid text or syntax suppresses derived symbol and relationship diagnostics for that source. Missing symbols suppress their derived wiring diagnostics. Unsupported or dynamic requests, configurations, collections, containers, registrations, or schema values suppress negative relationship diagnostics when they could contain the declared relationship. Independently proved package, name, and collection-limit diagnostics remain observable.
+
+`GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.

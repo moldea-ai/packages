@@ -171,6 +171,7 @@ const createAdapterHarness = (options: IAdapterHarnessOptions = {}): IAdapterHar
                   path: auditPath,
                   pointer: null,
                   range: null,
+                  severity: 'error',
                   source: 'anthropic',
                 },
               ]
@@ -197,6 +198,7 @@ const createAdapterHarness = (options: IAdapterHarnessOptions = {}): IAdapterHar
                 path: null,
                 pointer: null,
                 range: null,
+                severity: 'error',
                 source: 'openai',
               },
             ]

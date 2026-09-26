@@ -64,11 +64,50 @@ const inspectEntries = async (entries: readonly IMemoryRepositoryEntry[]) =>
 const inspect = async (replacements: Readonly<Record<string, IFixtureReplacement>> = {}) =>
   inspectEntries(createEntries(replacements));
 
+const inspectOutputSchema = async (
+  format: string,
+  options?: string,
+  helperImport = '',
+  outputSchema = "export const OutputSchema = { type: 'object' } as const;",
+) => {
+  const agent = fixture.entries.find(({ path }) => path === '/src/agent.ts')?.text;
+  const contracts = fixture.entries.find(({ path }) => path === '/src/contracts.ts')?.text;
+
+  if (agent === undefined || contracts === undefined) {
+    throw new TypeError('The output-schema fixture requires agent and contract sources.');
+  }
+
+  const runtime = agent
+    .replace(
+      "import OpenAIClient from 'openai';",
+      `import OpenAIClient from 'openai';\n${helperImport}`,
+    )
+    .replace('  client.responses.create({', '  client.responses.parse({')
+    .replace(
+      "import { FindOrderInput } from './contracts.js';",
+      "import { FindOrderInput, OutputSchema } from './contracts.js';",
+    )
+    .replace(
+      '    tools: [registeredFindOrder],',
+      `    tools: [registeredFindOrder],\n    text: { format: ${format} },`,
+    )
+    .replace('  });', `  }${options === undefined ? '' : `, ${options}`});`);
+
+  return inspect({
+    '/moldea/moldea.yaml': fixture.manifest.replace(
+      '    tools:',
+      '      outputSchema:\n        path: /src/contracts.ts\n        symbol: OutputSchema\n    tools:',
+    ),
+    '/src/agent.ts': runtime,
+    '/src/contracts.ts': `${contracts}\n${outputSchema}\n`,
+  });
+};
+
 const createNullPrototypeRecord = <Value extends object>(value: Value): Value =>
   Object.assign(Object.create(null) as Value, value);
 
 const createExpectedDiagnostic = (
-  code: keyof typeof OPENAI_ADAPTER_DIAGNOSTICS,
+  code: Exclude<keyof typeof OPENAI_ADAPTER_DIAGNOSTICS, 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: string,
   range: IAdapterDiagnostic['range'],
   capabilityId?: string,
@@ -80,7 +119,8 @@ const createExpectedDiagnostic = (
     ...(capabilityId === undefined ? {} : { capabilityId, capabilityKind: 'tool' as const }),
     adapterId: 'openai',
   }),
-  message: OPENAI_ADAPTER_DIAGNOSTICS[code],
+  message: OPENAI_ADAPTER_DIAGNOSTICS[code].message,
+  severity: 'error',
   path: parseRepositoryPath(path),
   pointer: null,
   range,
@@ -88,10 +128,132 @@ const createExpectedDiagnostic = (
 });
 
 describe('openAiAdapter Core integration', () => {
+  test('reports the stable stream method without losing direct relationships', async () => {
+    const source = fixture.entries.find(({ path }) => path === '/src/agent.ts')?.text;
+
+    if (source === undefined) {
+      throw new TypeError('The runtime source fixture is required.');
+    }
+
+    const result = await inspect({
+      '/src/agent.ts': source.replace('client.responses.create(', 'client.responses.stream('),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.evidence
+        .filter(({ kind }) => kind === 'runtime-pattern')
+        .map(({ runtimeName }) => runtimeName),
+    ).toStrictEqual(['responses.stream']);
+    expect(result.evidence.map(({ kind }) => kind)).toContain('instruction-loader');
+    expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
+  });
+
+  test('establishes direct output-schema identity through the effective text format', async () => {
+    const result = await inspectOutputSchema(
+      "{ type: 'json_schema', name: 'answer', schema: OutputSchema }",
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.evidence).toContainEqual(
+      expect.objectContaining({
+        kind: 'schema',
+        details: { requestProperty: 'text.format', schemaRole: 'output' },
+      }),
+    );
+  });
+
+  test('traces a direct zodTextFormat helper to its exact bound schema', async () => {
+    const result = await inspectOutputSchema(
+      "zodTextFormat(OutputSchema, 'answer')",
+      undefined,
+      "import { zodTextFormat } from 'openai/helpers/zod';",
+      "import { z } from 'zod';\nexport const OutputSchema = z.object({ answer: z.string() });",
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.evidence).toContainEqual(
+      expect.objectContaining({
+        kind: 'schema',
+        details: { requestProperty: 'text.format', schemaRole: 'output' },
+      }),
+    );
+  });
+
+  test('keeps transformed or non-SDK output helpers unverified', async () => {
+    const transformed = await inspectOutputSchema(
+      "wrap(zodTextFormat(OutputSchema, 'answer'))",
+      undefined,
+      "import { zodTextFormat } from 'openai/helpers/zod';",
+    );
+    const unrelated = await inspectOutputSchema(
+      "zodTextFormat(OutputSchema, 'answer')",
+      undefined,
+      "import { zodTextFormat } from './local.js';",
+    );
+
+    for (const result of [transformed, unrelated]) {
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+          details: { reason: 'dynamic-source-pattern', relationship: 'agent-output-schema' },
+          severity: 'warning',
+        }),
+      );
+      expect(
+        result.evidence.some(
+          ({ kind, details }) => kind === 'schema' && details['schemaRole'] === 'output',
+        ),
+      ).toBe(false);
+    }
+  });
+
+  test('diagnoses a missing bound output-schema symbol', async () => {
+    const result = await inspectOutputSchema(
+      "{ type: 'json_schema', schema: OutputSchema }",
+      undefined,
+      '',
+      '',
+    );
+
+    expect(result.diagnostics.map(({ code }) => code)).toContain(
+      'OPENAI_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND',
+    );
+  });
+
+  test('rejects a statically replaced output schema and warns for a dynamic body', async () => {
+    const replaced = await inspectOutputSchema(
+      "{ type: 'json_schema', name: 'answer', schema: OutputSchema }",
+      "{ body: { text: { format: { type: 'json_schema', name: 'answer', schema: {} } } } }",
+    );
+    const dynamic = await inspectOutputSchema(
+      "{ type: 'json_schema', name: 'answer', schema: OutputSchema }",
+      '{ body: replacement }',
+    );
+
+    expect(replaced.diagnostics.map(({ code }) => code)).toContain(
+      'OPENAI_OUTPUT_SCHEMA_NOT_WIRED',
+    );
+    expect(dynamic.diagnostics).toContainEqual(
+      expect.objectContaining({
+        details: { reason: 'dynamic-source-pattern', relationship: 'agent-output-schema' },
+        severity: 'warning',
+      }),
+    );
+    expect(
+      dynamic.evidence.some(
+        ({ kind, details }) => kind === 'schema' && details['schemaRole'] === 'output',
+      ),
+    ).toBe(false);
+  });
+
   test('keeps the diagnostic catalog synchronized with its conformance golden', () => {
     expect(
       Object.entries(OPENAI_ADAPTER_DIAGNOSTICS)
-        .map(([code, message]) => ({ code, message }))
+        .map(([code, definition]) => ({ code, ...definition }))
         .sort((left, right) => (left.code < right.code ? -1 : left.code > right.code ? 1 : 0)),
     ).toStrictEqual(expectedDiagnostics);
   });
@@ -355,8 +517,13 @@ describe('openAiAdapter Core integration', () => {
 
     expect(result.valid).toBe(false);
     expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
+      'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
       'OPENAI_INSTRUCTION_LOADER_NOT_WIRED',
     ]);
+    expect(result.diagnostics[0]).toMatchObject({
+      details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+      severity: 'warning',
+    });
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual([
       'language',
       'runtime-package',
@@ -505,7 +672,15 @@ describe('openAiAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.diagnostics.map(({ code, details, severity }) => ({ code, details, severity })),
+    ).toStrictEqual([
+      {
+        code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
@@ -625,7 +800,19 @@ describe('openAiAdapter Core integration', () => {
       'OPENAI_INSTRUCTION_LOADER_NOT_WIRED',
       'OPENAI_TOOL_REGISTRATION_NOT_WIRED',
     ]);
-    expect(ambiguousResult.diagnostics).toStrictEqual([]);
+    expect(ambiguousResult.valid).toBe(true);
+    expect(
+      ambiguousResult.diagnostics.map(({ details, severity }) => ({ details, severity })),
+    ).toStrictEqual([
+      {
+        details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+        severity: 'warning',
+      },
+      {
+        details: { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
+        severity: 'warning',
+      },
+    ]);
   });
 
   test('suppresses negative relationship diagnostics for an aliased Responses candidate', async () => {
@@ -646,7 +833,18 @@ describe('openAiAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.diagnostics.map(({ details, severity }) => ({ details, severity })),
+    ).toStrictEqual([
+      {
+        details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+        severity: 'warning',
+      },
+      {
+        details: { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.valid).toBe(true);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
@@ -669,7 +867,14 @@ describe('openAiAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.diagnostics.map(({ details, severity }) => ({ details, severity })),
+    ).toStrictEqual([
+      {
+        details: { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.valid).toBe(true);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });

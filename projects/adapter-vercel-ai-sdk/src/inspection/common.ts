@@ -72,7 +72,7 @@ const createEntity = (agentId: string, capabilityId?: string) =>
 /** Appends one stable package-owned diagnostic. */
 export const addVercelAiSdkDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: IVercelAiSdkAdapterDiagnosticCode,
+  code: Exclude<IVercelAiSdkAdapterDiagnosticCode, 'VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,

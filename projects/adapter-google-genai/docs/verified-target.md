@@ -14,7 +14,7 @@ The canonical Runtime Compatibility Matrix defines technical target `typescript-
 - named runtime value imports of `GoogleGenAI` from `@google/genai`
 - the nearest owning manifest declaring `@google/genai >=2.17.1`
 - a module-local `const` client constructed directly with `new GoogleGenAI(...)`
-- a directly exported runtime-agent function containing exact non-computed `client.models.generateContent({ ... })` calls
+- a directly exported runtime-agent function containing exact non-computed `client.models.generateContent({ ... })` or `generateContentStream({ ... })` calls
 - one exact object-literal request argument
 
 `config` is resolved only as a direct object literal. `systemInstruction` and `tools` are classified independently inside it. Positive evidence is existential across supported calls; a negative wiring diagnostic requires every candidate to prove the relationship absent with no dynamic or unsupported candidate that could contain it.

@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
 import type { ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 export type ICloudflareAgentsTargetId =
@@ -28,7 +28,8 @@ export type ICloudflareAgentsAdapterDiagnosticCode =
   | 'CLOUDFLARE_AGENTS_TOOL_OUTPUT_SCHEMA_NOT_WIRED'
   | 'CLOUDFLARE_AGENTS_HANDOFF_TARGET_AMBIGUOUS'
   | 'CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_MISSING'
-  | 'CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED';
+  | 'CLOUDFLARE_AGENTS_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED'
+  | 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
 export type ICloudflareAgentsPackageCompatibility = 'ambiguous' | 'supported' | 'unsupported';
 
@@ -108,6 +109,27 @@ export type ICloudflareAgentsRelationship =
   | { readonly expression: ts.Expression; readonly kind: 'present' }
   | { readonly kind: 'unresolved' };
 
+// one statically named Think context block and its canonical loader candidate
+export interface ICloudflareAgentsContextInstruction {
+  readonly label: string;
+  readonly relationship: ICloudflareAgentsRelationship;
+}
+
+export type ICloudflareAgentsThinkContextSources =
+  | { readonly kind: 'unresolved' }
+  | {
+      readonly contexts: readonly ICloudflareAgentsContextInstruction[];
+      readonly kind: 'closed';
+    };
+
+export type ICloudflareAgentsThinkSessionSources =
+  | { readonly kind: 'unresolved' }
+  | {
+      readonly cachedPrompt: ICloudflareAgentsRelationship;
+      readonly contexts: readonly ICloudflareAgentsContextInstruction[];
+      readonly kind: 'closed';
+    };
+
 export interface ICloudflareAgentsMethod {
   readonly body: ts.Block;
   readonly declaration: ts.MethodDeclaration;
@@ -138,6 +160,7 @@ export interface ICloudflareAgentsGenerationRequest {
 
 export interface ICloudflareAgentsFunctionTool {
   readonly declaration: ts.VariableDeclaration;
+  readonly deferLoading: ICloudflareAgentsRelationship;
   readonly execute: ICloudflareAgentsRelationship;
   readonly inputSchema: ICloudflareAgentsRelationship;
   readonly outputSchema: ICloudflareAgentsRelationship;
@@ -169,6 +192,13 @@ export interface ICloudflareAgentsInspectionSession {
   getEntry(path: IRepositoryPath): Promise<IRepositoryEntry | null>;
 }
 
-export type ICloudflareAgentsDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: ICloudflareAgentsAdapterDiagnosticCode;
-};
+export type ICloudflareAgentsDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<
+        ICloudflareAgentsAdapterDiagnosticCode,
+        'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
+      >;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });

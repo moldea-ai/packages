@@ -6,9 +6,9 @@ order: 30
 
 # Diagnostics
 
-Diagnostics describe repository content that Core successfully inspected and found invalid. Operational exceptions instead mean that configuration was invalid or inspection could not be completed reliably.
+Diagnostics describe repository findings from a completed inspection. Errors mark invalid structure or confirmed runtime contradictions; warnings identify declared runtime relationships whose recognized source could not establish either proof or a failure. Operational exceptions mean that configuration was invalid or inspection could not be completed reliably.
 
-Every diagnostic has a stable `source` and `code`, a human message, a logical path or `null`, optional JSON Pointer and scalar-based normalized source range, optional entity identity, and JSON-safe details. Consumers should branch on `source` and `code`, not message text.
+Every diagnostic has required `severity`, stable `source` and `code`, a human message, a logical path or `null`, optional JSON Pointer and scalar-based normalized source range, optional entity identity, and JSON-safe details. Consumers should branch on severity, source, and code, not message text. Structural diagnostics are errors. A result is valid when it has no errors, even if warnings remain; complete `errorCount` and `warningCount` values accompany validation, and every prepared-inspection page carries `counts.errors` and `counts.warnings` for the complete result.
 
 ## Diagnostic catalog
 
@@ -38,7 +38,7 @@ Mirror path validity, presence, type, and digest coherence use `MOLDEA_MIRROR_*`
 
 Core normalizes diagnostics into deterministic order using their source location and identity fields rather than discovery or adapter completion timing. `maxDiagnostics` bounds raw diagnostic production; exceeding it raises `RESOURCE_LIMIT_EXCEEDED` instead of silently truncating the invalid state.
 
-Adapter diagnostics use the same normalized shape but retain the adapter ID as `source` and adapter-owned string codes. Their exact catalogs belong to the adapter packages, such as the [Anthropic adapter diagnostics](/adapters/anthropic/evidence-and-diagnostics/) and [OpenAI adapter diagnostics](/adapters/openai/evidence-and-diagnostics/).
+Adapter diagnostics use the same normalized shape but retain the adapter ID as `source` and adapter-owned string codes. `*_RUNTIME_RELATIONSHIP_UNVERIFIED` is reserved for a warning about one declared relationship. Its closed details identify the relationship and either an unsupported or dynamic source reason, or safe dependency-range context for a known behavior boundary. Core validates that payload but leaves SDK interpretation to the adapter. Other adapter codes are errors. Their exact catalogs belong to the adapter packages, such as the [Anthropic adapter diagnostics](/adapters/anthropic/evidence-and-diagnostics/) and [OpenAI adapter diagnostics](/adapters/openai/evidence-and-diagnostics/).
 
 ## Operational exceptions
 

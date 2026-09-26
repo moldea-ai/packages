@@ -12,6 +12,7 @@ export {
 
 // functions and static values
 export {
+  classifyEveWorkflowExecutor,
   isEveFunctionDeclaration,
   isEveFunctionValue,
   isEveResolvedFunctionValue,

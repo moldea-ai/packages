@@ -14,17 +14,18 @@ The canonical Runtime Compatibility Matrix defines the technical target as `type
 - default or named `Anthropic` value imports from `@anthropic-ai/sdk`, including aliases
 - a nearest owning package manifest declaring `@anthropic-ai/sdk >=0.117.1`
 - a module-local Anthropic client created directly with a supported constructor binding
-- a directly exported runtime-agent function with direct `client.messages.create({ ... })` calls
-- one request argument or a second ignored request-options argument
+- a directly exported runtime-agent function with direct `client.messages.create({ ... })`, `parse({ ... })`, or `stream({ ... })` calls
+- one request argument or a second options argument; a static `body` replaces the first request body, while transport-only options leave it unchanged
 - direct instruction-loader wiring through `system`, optionally awaited
 - closed inline or immutable module-local client-tool arrays through `tools`
 - direct tool input-schema wiring through `input_schema`
+- direct agent output-schema wiring through `output_config.format.schema` or the first argument of directly imported `zodOutputFormat`
 
 Bindings must remain lexically visible at each matched use. Parameters or local declarations that shadow the client, loader, registration, or input schema do not establish evidence.
 
 ## Messages request analysis
 
-Each supported call is analyzed independently. `system` and `tools` have separate closure, and an exact `stream` property is ignored. Exact shorthand relationship properties are treated as direct identifier values. Computed relationship properties, spreads, duplicate effective properties, methods, getters, or setters leave only the affected relationship unresolved.
+Each supported call is analyzed independently. `system`, `tools`, and `output_config` have separate closure, and an exact `stream` property is ignored. Exact shorthand relationship properties are treated as direct identifier values. Computed relationship properties, spreads, duplicate effective properties, methods, getters, or setters leave only the affected relationship unresolved. An unresolved options `body` leaves dependent relationships unverified.
 
 Positive evidence is existential across supported calls. A negative wiring diagnostic requires every relevant supported call to prove the relationship absent with no unresolved candidate.
 

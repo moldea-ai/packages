@@ -10,7 +10,7 @@ Read this example before searching adapter implementation for binding syntax. It
 
 ## How the bindings connect
 
-The exported `supportAgent` function binds the Messages request. `system` calls the named canonical loader; `input_schema` points to the declared tool input. This target does not inspect agent output schemas, tool output schemas, or handoffs. The application must dispatch tool calls and return their results; declaring a tool does not execute it.
+The exported `supportAgent` function binds the Messages request. `system` calls the named canonical loader; `input_schema` points to the declared tool input. This example does not declare an agent output schema. The adapter can also inspect a direct `output_config.format` binding. Tool output schemas and handoffs remain outside this target. The application must dispatch tool calls and return their results; declaring a tool does not execute it.
 
 Paths below are repository-root-relative logical paths. Keep the canonical instructions as the policy source. General manifest semantics belong to the [Repository Format specification](https://packages.moldea.ai/repository-format/). Use the other local guides for the full supported boundary and limitations; this example does not expand them.
 

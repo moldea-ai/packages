@@ -2,7 +2,7 @@ import type ts from 'typescript';
 
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
 import type { IRuntimeAdapterEvidence, ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
@@ -44,7 +44,10 @@ const createEntity = (agentId: string, capabilityId?: string) =>
 /** Appends one stable package-owned diagnostic. */
 export const addCloudflareAgentsDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: ICloudflareAgentsAdapterDiagnosticCode,
+  code: Exclude<
+    ICloudflareAgentsAdapterDiagnosticCode,
+    'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,
@@ -59,6 +62,25 @@ export const addCloudflareAgentsDiagnostic = (
       path,
       pointer: null,
       range,
+    }),
+  );
+};
+
+/** Appends one scoped warning without asserting a failed runtime relationship. */
+export const addCloudflareAgentsWarning = (
+  diagnostics: IAdapterDiagnostic[],
+  path: IRepositoryPath,
+  agentId: string,
+  details: IAdapterWarningDiagnostic['details'],
+): void => {
+  diagnostics.push(
+    createCloudflareAgentsDiagnostic({
+      code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details,
+      entity: createEntity(agentId),
+      path,
+      pointer: null,
+      range: null,
     }),
   );
 };
@@ -117,7 +139,10 @@ export const hasCloudflareAgentsSymbol = async (
   reference: IRepositoryReference,
   diagnostics: IAdapterDiagnostic[],
   agentId: string,
-  missingCode: ICloudflareAgentsAdapterDiagnosticCode,
+  missingCode: Exclude<
+    ICloudflareAgentsAdapterDiagnosticCode,
+    'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
   capabilityId?: string,
 ): Promise<ICloudflareAgentsSourceAnalysis | null> => {
   const analysis = await analyzeCloudflareAgentsBoundReference(

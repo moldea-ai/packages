@@ -11,9 +11,30 @@ beforeAll(async () => {
 });
 
 test('keeps normalization, digests, three inspection views, content, and scope repeatable', async () => {
-  expect(examples).toHaveLength(9);
+  expect(examples).toHaveLength(10);
   expect(await createCoreInspectionExamples()).toStrictEqual(examples);
   expect(examples.every(({ result }) => result.kind === 'inspection')).toBe(true);
+});
+
+test('keeps complete warning and error counts on both diagnostic pages', () => {
+  const result = examples.find(({ id }) => id === 'inspection-mixed-diagnostics')?.result;
+  expect(result).toStrictEqual({
+    kind: 'inspection',
+    facts: {
+      counts: { diagnostics: 2, errors: 1, warnings: 1 },
+      pages: [
+        {
+          records: [{ code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED', severity: 'warning' }],
+          hasContinuation: true,
+        },
+        {
+          records: [{ code: 'OPENAI_TOOL_REGISTRATION_NOT_WIRED', severity: 'error' }],
+          hasContinuation: false,
+        },
+      ],
+    },
+  });
+  expect(JSON.stringify(result)).not.toMatch(/"(?:nextCursor|snapshotIdentity)":/u);
 });
 
 test.each([

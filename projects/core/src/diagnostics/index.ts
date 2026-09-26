@@ -26,6 +26,36 @@ export interface IDiagnosticEntity {
 
 export type IDiagnosticDetails = Readonly<Record<string, string | number | boolean | null>>;
 
+// relationships that a runtime adapter can identify without claiming proof
+export type IUnverifiedRelationship =
+  | 'runtime-agent'
+  | 'instruction-loader'
+  | 'agent-input-schema'
+  | 'agent-output-schema'
+  | 'tool-implementation'
+  | 'tool-registration'
+  | 'tool-input-schema'
+  | 'tool-output-schema'
+  | 'skill-implementation'
+  | 'skill-registration'
+  | 'handoff-registration'
+  | 'routing-description'
+  | 'variable-provider';
+
+// closed, source-safe context for one unverified declared relationship
+export type IUnverifiedRelationshipDetails =
+  | {
+      readonly relationship: IUnverifiedRelationship;
+      readonly reason: 'unsupported-source-pattern' | 'dynamic-source-pattern';
+    }
+  | {
+      readonly relationship: IUnverifiedRelationship;
+      readonly reason: 'version-dependent-behavior';
+      readonly packageName: string;
+      readonly declaredRange: string | null;
+      readonly boundaryVersion: string;
+    };
+
 // closed repository-format version 1 structural diagnostic catalog
 export type ICoreDiagnosticCode =
   | 'MOLDEA_MANIFEST_MISSING'
@@ -114,6 +144,7 @@ export type ICoreDiagnosticCode =
 // Core-owned and adapter-owned diagnostic shapes
 export interface ICoreDiagnostic {
   readonly source: 'core';
+  readonly severity: 'error';
   readonly code: ICoreDiagnosticCode;
   readonly message: string;
   readonly path: IRepositoryPath | null;
@@ -123,7 +154,7 @@ export interface ICoreDiagnostic {
   readonly details: IDiagnosticDetails;
 }
 
-export interface IAdapterDiagnostic {
+interface IAdapterDiagnosticBase {
   readonly source: string;
   readonly code: string;
   readonly message: string;
@@ -131,7 +162,18 @@ export interface IAdapterDiagnostic {
   readonly pointer: string | null;
   readonly range: ISourceRange | null;
   readonly entity: IDiagnosticEntity | null;
+}
+
+export interface IAdapterErrorDiagnostic extends IAdapterDiagnosticBase {
+  readonly severity: 'error';
   readonly details: IDiagnosticDetails;
 }
+
+export interface IAdapterWarningDiagnostic extends IAdapterDiagnosticBase {
+  readonly severity: 'warning';
+  readonly details: IUnverifiedRelationshipDetails;
+}
+
+export type IAdapterDiagnostic = IAdapterErrorDiagnostic | IAdapterWarningDiagnostic;
 
 export type IDiagnostic = ICoreDiagnostic | IAdapterDiagnostic;

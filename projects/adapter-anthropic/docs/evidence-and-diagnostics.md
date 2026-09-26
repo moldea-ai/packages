@@ -22,16 +22,21 @@ Evidence contains no repository content, instructions, system prompts, credentia
 | `ANTHROPIC_SOURCE_SYNTAX_INVALID`               | The referenced Anthropic source file contains invalid TypeScript syntax.                        |
 | `ANTHROPIC_RUNTIME_AGENT_SYMBOL_NOT_FOUND`      | The declared runtime-agent symbol was not found.                                                |
 | `ANTHROPIC_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND` | The declared instruction-loader symbol was not found.                                           |
+| `ANTHROPIC_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND`      | The declared agent output-schema symbol was not found.                                          |
 | `ANTHROPIC_TOOL_REGISTRATION_SYMBOL_NOT_FOUND`  | The declared tool-registration symbol was not found.                                            |
 | `ANTHROPIC_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND`  | The declared tool input-schema symbol was not found.                                            |
 | `ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED`        | The declared instruction loader is not wired to the detected Anthropic Messages API call.       |
+| `ANTHROPIC_OUTPUT_SCHEMA_NOT_WIRED`             | The declared agent output schema is not wired to the detected Messages output format.           |
 | `ANTHROPIC_TOOL_REGISTRATION_NOT_WIRED`         | The declared tool registration is not wired to the detected Anthropic Messages API call.        |
 | `ANTHROPIC_TOOL_NAME_MISMATCH`                  | The declared tool name does not match the detected Anthropic client-tool name.                  |
 | `ANTHROPIC_TOOL_NAME_INVALID`                   | The detected Anthropic client-tool name violates the supported provider limit.                  |
 | `ANTHROPIC_TOOL_INPUT_SCHEMA_NOT_WIRED`         | The declared tool input schema is not wired to the detected Anthropic client-tool input schema. |
+| `ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED`     | The declared runtime relationship could not be verified.                                        |
 
 Diagnostics use Core's adapter shape, preserve logical source locations, identify the scoped agent or tool when applicable, and remain deterministically ordered. Dynamic or indirect patterns yield partial or no evidence instead of guessed failures.
 
 ## Package detection
 
 Detection stops at the nearest existing `package.json` owning each runtime-agent source. Dependency declarations across `dependencies`, `optionalDependencies`, `peerDependencies`, and `devDependencies` are considered collectively. A collectively disjoint range produces the unsupported-version diagnostic; an ambiguous range remains observational evidence. Invalid UTF-8 or NUL in the owning manifest produces only `ANTHROPIC_PACKAGE_MANIFEST_INVALID`; `ANTHROPIC_SOURCE_TEXT_INVALID` is reserved for referenced TypeScript source files.
+
+`ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.

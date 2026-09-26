@@ -10,7 +10,7 @@ Read this example before searching adapter implementation for binding syntax. It
 
 ## How the bindings connect
 
-The exported `supportAgent` function binds the Responses request. `instructions` calls the named canonical loader; the tool's `parameters` points to the declared input schema. This target does not inspect agent output schemas, tool output schemas, or handoffs. The application must dispatch function calls and return their results, as described in [OpenAI's function-calling guide](https://developers.openai.com/api/docs/guides/function-calling/).
+The exported `supportAgent` function binds the Responses request. `instructions` calls the named canonical loader; the tool's `parameters` points to the declared input schema. This example does not declare an agent output schema. The adapter can also inspect a direct `text.format` binding. Tool output schemas and handoffs remain outside this target. The application must dispatch function calls and return their results, as described in [OpenAI's function-calling guide](https://developers.openai.com/api/docs/guides/function-calling/).
 
 Paths below are repository-root-relative logical paths. Keep the canonical instructions as the policy source. General manifest semantics belong to the [Repository Format specification](https://packages.moldea.ai/repository-format/). Use the other local guides for the full supported boundary and limitations; this example does not expand them.
 

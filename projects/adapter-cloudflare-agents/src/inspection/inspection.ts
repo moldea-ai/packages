@@ -18,6 +18,7 @@ import {
   getCloudflareAgentsAiChatRequests,
   getCloudflareAgentsClassDefinition,
   getCloudflareAgentsThinkChannelTools,
+  getCloudflareAgentsThinkContextSources,
   getCloudflareAgentsThinkSessionInstructions,
   getCloudflareAgentsThinkSystemPrompt,
   getCloudflareAgentsThinkTools,
@@ -112,7 +113,7 @@ const inspectAgent = async (
     return null;
   }
 
-  const isTargetSupported = await inspectCloudflareAgentsPackage(
+  const inspectedPackage = await inspectCloudflareAgentsPackage(
     session,
     runtimeAgent.path,
     targetId,
@@ -121,7 +122,7 @@ const inspectAgent = async (
     agent.id,
   );
 
-  if (!isTargetSupported) {
+  if (inspectedPackage === null) {
     return null;
   }
 
@@ -153,6 +154,7 @@ const inspectAgent = async (
         instructions: Object.freeze({ kind: 'absent' }),
         output: Object.freeze({ kind: 'absent' }),
         requests,
+        thinkInstructions: null,
         tools: Object.freeze([]),
       });
     }
@@ -177,6 +179,7 @@ const inspectAgent = async (
       instructions: combineRelationships(requests.map(({ instructions }) => instructions)),
       output: combineRelationships(requests.map(({ output }) => output)),
       requests,
+      thinkInstructions: null,
       tools: Object.freeze(requests.map(({ tools }) => tools)),
     });
   }
@@ -190,12 +193,15 @@ const inspectAgent = async (
     agent,
     analysis,
     definition: classResult.definition,
-    instructions: combineRelationships([
-      getCloudflareAgentsThinkSystemPrompt(classResult.definition),
-      getCloudflareAgentsThinkSessionInstructions(classResult.definition),
-    ]),
+    instructions: Object.freeze({ kind: 'absent' }),
     output: Object.freeze({ kind: 'absent' }),
     requests: Object.freeze([]),
+    thinkInstructions: Object.freeze({
+      context: getCloudflareAgentsThinkContextSources(classResult.definition),
+      package: inspectedPackage,
+      session: getCloudflareAgentsThinkSessionInstructions(classResult.definition),
+      systemPrompt: getCloudflareAgentsThinkSystemPrompt(classResult.definition),
+    }),
     tools: Object.freeze([thinkTools]),
   });
 };

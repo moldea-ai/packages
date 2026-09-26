@@ -12,7 +12,8 @@
     "path": null,
     "pointer": null,
     "range": null,
-    "source": "openai"
+    "source": "openai",
+    "severity": "error"
   },
   {
     "code": "ANTHROPIC_TOOL_REGISTRATION_MISSING",
@@ -28,6 +29,7 @@
     "path": "/src/audit.ts",
     "pointer": null,
     "range": null,
-    "source": "anthropic"
+    "source": "anthropic",
+    "severity": "error"
   }
 ]

@@ -9,6 +9,7 @@ import type { ICapabilityCase, ICapabilityFact } from '../index.ts';
 import { withFixtureWorkspace } from '../fixture-workspace/index.ts';
 import { assertCapabilityFacts } from '../index.ts';
 import { projectFile } from '../index.ts';
+import { RUNTIME_EXAMPLES } from '../runtime-examples/index.ts';
 
 import { CLI_FIXTURE_FILES } from './constants.ts';
 import {
@@ -17,7 +18,7 @@ import {
   CliContentResult,
   type ICliEnvelope,
 } from './types.ts';
-import { parseCliExecution } from './validations.ts';
+import { assertCliResultExcerpt, parseCliExecution } from './validations.ts';
 
 const cliManifestSchema = z.object({
   name: z.literal('@moldea.ai/cli'),
@@ -104,7 +105,11 @@ const resolveCliBin = async (
   return executable;
 };
 
-/** Builds a safe command excerpt without the disposable host path or opaque cursor. */
+/**
+ * Builds a safe command excerpt without the disposable host path or opaque cursor.
+ * @throws
+ * - A CLI result excerpt does not match the executed response.
+ */
 const commandCase = (
   id: string,
   title: string,
@@ -113,34 +118,48 @@ const commandCase = (
   envelope: ICliEnvelope,
   exitStatus: number,
   facts: Record<string, ICapabilityFact>,
-): ICapabilityCase => ({
-  id,
-  groupId: 'command-line',
-  title,
-  description,
-  operation: envelope.command,
-  packageName: '@moldea.ai/cli',
-  limitation:
-    'Executed against a synthetic Git working tree. The command does not run its application code.',
-  sourcePaths: [
-    'projects/cli/docs/commands.md',
-    'projects/cli/docs/output-and-operations.md',
-    'projects/cli/docs/working-tree.md',
-  ],
-  files: [],
-  result: {
-    kind: 'cli',
-    command,
-    exitStatus,
-    schemaVersion: envelope.schemaVersion,
-    status: envelope.status,
-    facts,
-  },
-});
+  resultExcerpt: ICapabilityFact,
+): ICapabilityCase => {
+  assertCliResultExcerpt(envelope.result, resultExcerpt);
+  return {
+    id,
+    groupId: 'command-line',
+    title,
+    description,
+    operation: envelope.command,
+    packageName: '@moldea.ai/cli',
+    limitation:
+      'Executed against a synthetic Git working tree. The command does not run its application code.',
+    sourcePaths: [
+      'projects/cli/docs/commands.md',
+      'projects/cli/docs/output-and-operations.md',
+      'projects/cli/docs/working-tree.md',
+    ],
+    files: [],
+    result: {
+      kind: 'cli',
+      command,
+      exitStatus,
+      schemaVersion: envelope.schemaVersion,
+      status: envelope.status,
+      facts,
+      envelopeExcerpt: {
+        cliVersion: envelope.cliVersion,
+        command: envelope.command,
+        error: envelope.error,
+        result: resultExcerpt,
+        schemaVersion: envelope.schemaVersion,
+        status: envelope.status,
+      },
+    },
+  };
+};
 
 /**
  * Executes the declared CLI bin in an isolated Git fixture and verifies its read-only behavior.
- * @returns Validated schema 4 excerpts with real exit statuses and no host-specific identities.
+ * @returns Validated schema 5 excerpts with real exit statuses and no host-specific identities.
+ * @throws
+ * - A CLI result excerpt does not match the executed response.
  */
 export const createCliExamples = async (
   repositoryRoot: string,
@@ -196,8 +215,14 @@ export const createCliExamples = async (
     const validation = await run(['validate']);
     const validationResult = CliCollectionResult.parse(validation.envelope.result);
     assertCapabilityFacts(
-      [validationResult.valid, validationResult.diagnosticCount, validationResult.page.records],
-      [true, 0, []],
+      [
+        validationResult.valid,
+        validationResult.diagnosticCount,
+        validationResult.errorCount,
+        validationResult.warningCount,
+        validationResult.page.records,
+      ],
+      [true, 0, 0, 0, []],
     );
     examples.push(
       commandCase(
@@ -207,13 +232,25 @@ export const createCliExamples = async (
         'moldea validate --json',
         validation.envelope,
         validation.exitStatus,
-        { valid: validationResult.valid, diagnosticCount: validationResult.diagnosticCount ?? 0 },
+        {
+          valid: validationResult.valid,
+          diagnosticCount: validationResult.diagnosticCount ?? 0,
+          errorCount: validationResult.errorCount ?? 0,
+          warningCount: validationResult.warningCount ?? 0,
+        },
+        {
+          valid: validationResult.valid,
+          diagnosticCount: validationResult.diagnosticCount ?? 0,
+          errorCount: validationResult.errorCount ?? 0,
+          warningCount: validationResult.warningCount ?? 0,
+          page: { records: [] },
+        },
       ),
     );
     const inspection = await run(['inspect']);
     const inspectionResult = CliCollectionResult.parse(inspection.envelope.result);
     const paths = inspectionResult.page.records.flatMap(({ path }) =>
-      path === undefined ? [] : [path],
+      typeof path === 'string' ? [path] : [],
     );
     assertCapabilityFacts(paths, [
       '/moldea/context/long-policy.md',
@@ -234,6 +271,11 @@ export const createCliExamples = async (
           paths,
           counts: inspectionResult.counts ?? {},
           hasContinuation: inspectionResult.page.cursor !== null,
+        },
+        {
+          valid: inspectionResult.valid,
+          counts: inspectionResult.counts ?? {},
+          page: { records: paths.map((path) => ({ path })) },
         },
       ),
     );
@@ -268,9 +310,23 @@ export const createCliExamples = async (
           {
             relevant: result.relevant ?? false,
             counts: result.counts ?? {},
-            matches: result.page.records.flatMap(({ match }) =>
-              match === undefined ? [] : [{ ...match, owner: { ...match.owner } }],
+            matches: result.page.records.flatMap((record) =>
+              record.kind !== 'match' || record.match === undefined
+                ? []
+                : [{ ...record.match, owner: { ...record.match.owner } }],
             ),
+          },
+          {
+            valid: result.valid,
+            relevant: result.relevant ?? false,
+            counts: result.counts ?? {},
+            page: {
+              records: result.page.records.flatMap((record) =>
+                record.kind !== 'match' || record.match === undefined
+                  ? []
+                  : [{ kind: record.kind, match: record.match }],
+              ),
+            },
           },
         ),
       );
@@ -294,6 +350,7 @@ export const createCliExamples = async (
           chunk: { ...contentResult.chunk },
           hasContinuation: contentResult.cursor !== null,
         },
+        { asset: contentResult.asset, chunk: contentResult.chunk },
       ),
     );
     const chunks: ICapabilityFact[] = [];
@@ -332,6 +389,7 @@ export const createCliExamples = async (
     );
     assertCapabilityFacts(chunks.length > 1, true);
     if (firstEnvelope === undefined) throw new Error('A CLI capability content page is missing.');
+    const firstContentResult = CliContentResult.parse(firstEnvelope.result);
     examples.push(
       commandCase(
         'cli-content-continuation',
@@ -341,6 +399,13 @@ export const createCliExamples = async (
         firstEnvelope,
         0,
         { chunks },
+        {
+          asset: firstContentResult.asset,
+          chunk: {
+            byteStart: firstContentResult.chunk.byteStart,
+            byteEnd: firstContentResult.chunk.byteEnd,
+          },
+        },
       ),
     );
     const refused = await run(['content', '--path', '/src/returns/policy.ts']);
@@ -354,6 +419,7 @@ export const createCliExamples = async (
         refused.envelope,
         refused.exitStatus,
         { error: refused.envelope.error === null ? null : { ...refused.envelope.error } },
+        null,
       ),
     );
     const composition = await run(['composition']);
@@ -386,6 +452,13 @@ export const createCliExamples = async (
         composition.envelope,
         composition.exitStatus,
         { ...compositionResult },
+        {
+          adapters: compositionResult.adapters.slice(0, 2),
+          packages: compositionResult.packages.slice(0, 2),
+          minimumGitVersion: compositionResult.minimumGitVersion,
+          repositoryFormatVersions: compositionResult.repositoryFormatVersions,
+          supportedNodeRange: compositionResult.supportedNodeRange,
+        },
       ),
     );
     assertCapabilityFacts(await captureFixtureState(workspace.directory), before);
@@ -396,8 +469,14 @@ export const createCliExamples = async (
     const invalid = await run(['validate']);
     const invalidResult = CliCollectionResult.parse(invalid.envelope.result);
     assertCapabilityFacts(
-      [invalid.exitStatus, invalidResult.valid, invalidResult.diagnosticCount],
-      [1, false, 1],
+      [
+        invalid.exitStatus,
+        invalidResult.valid,
+        invalidResult.diagnosticCount,
+        invalidResult.errorCount,
+        invalidResult.warningCount,
+      ],
+      [1, false, 1, 1, 0],
     );
     assertCapabilityFacts(
       invalidResult.page.records.map(({ code, path, pointer }) => ({ code, path, pointer })),
@@ -419,11 +498,34 @@ export const createCliExamples = async (
       {
         valid: invalidResult.valid,
         diagnosticCount: invalidResult.diagnosticCount ?? 0,
+        errorCount: invalidResult.errorCount ?? 0,
+        warningCount: invalidResult.warningCount ?? 0,
         diagnostics: invalidResult.page.records.map(({ code, path, pointer }) => ({
           code: code ?? null,
           path: path ?? null,
           pointer: pointer ?? null,
         })),
+      },
+      {
+        valid: invalidResult.valid,
+        diagnosticCount: invalidResult.diagnosticCount ?? 0,
+        errorCount: invalidResult.errorCount ?? 0,
+        warningCount: invalidResult.warningCount ?? 0,
+        page: {
+          records: invalidResult.page.records.flatMap((record) =>
+            record.kind === 'diagnostic'
+              ? [
+                  {
+                    kind: record.kind,
+                    code: record.code,
+                    path: record.path,
+                    pointer: record.pointer,
+                    severity: record.severity,
+                  },
+                ]
+              : [],
+          ),
+        },
       },
     );
     invalidCase.files = [
@@ -431,6 +533,76 @@ export const createCliExamples = async (
     ].filter((file) => file !== null);
     examples.push(invalidCase);
     assertCapabilityFacts(await captureFixtureState(workspace.directory), beforeInvalid);
+
+    const warningRuntime = RUNTIME_EXAMPLES.find(
+      ({ id }) => id === 'cloudflare-think-ambiguous-context',
+    );
+    if (warningRuntime === undefined) throw new Error('The CLI warning fixture is missing.');
+    for (const entry of warningRuntime.files) {
+      if (entry.type !== 'file' || typeof entry.content !== 'string')
+        throw new Error('The CLI warning fixture contains a non-file entry.');
+      await workspace.write({ path: entry.path, content: entry.content });
+    }
+    const beforeWarning = await captureFixtureState(workspace.directory);
+    const warning = await run(['validate']);
+    const warningResult = CliCollectionResult.parse(warning.envelope.result);
+    assertCapabilityFacts(
+      [
+        warning.exitStatus,
+        warningResult.valid,
+        warningResult.diagnosticCount,
+        warningResult.errorCount,
+        warningResult.warningCount,
+      ],
+      [0, true, 1, 0, 1],
+    );
+    assertCapabilityFacts(warningResult.page.records.length, 1);
+    const [warningRecord] = warningResult.page.records;
+    if (warningRecord?.kind !== 'diagnostic' || warningRecord.severity !== 'warning')
+      throw new Error('The CLI warning fixture did not produce a warning diagnostic.');
+    const diagnostic = {
+      code: warningRecord.code,
+      severity: warningRecord.severity,
+      details: warningRecord.details,
+    };
+    assertCapabilityFacts(diagnostic, {
+      code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      severity: 'warning',
+      details: {
+        relationship: 'instruction-loader',
+        reason: 'version-dependent-behavior',
+        packageName: '@cloudflare/think',
+        declaredRange: '>=0.17.0',
+        boundaryVersion: '0.18.0',
+      },
+    });
+    examples.push(
+      commandCase(
+        'cli-version-warning',
+        'A version range leaves one connection unverified',
+        'The declared Think range spans two instruction APIs. Validation reports a warning and exits successfully without claiming the loader is connected.',
+        'moldea validate --json',
+        warning.envelope,
+        warning.exitStatus,
+        {
+          valid: warningResult.valid,
+          diagnosticCount: warningResult.diagnosticCount ?? 0,
+          errorCount: warningResult.errorCount ?? 0,
+          warningCount: warningResult.warningCount ?? 0,
+          diagnostics: [diagnostic],
+        },
+        {
+          valid: warningResult.valid,
+          diagnosticCount: warningResult.diagnosticCount ?? 0,
+          errorCount: warningResult.errorCount ?? 0,
+          warningCount: warningResult.warningCount ?? 0,
+          page: {
+            records: [{ kind: warningRecord.kind, ...diagnostic }],
+          },
+        },
+      ),
+    );
+    assertCapabilityFacts(await captureFixtureState(workspace.directory), beforeWarning);
     return examples;
   });
 };

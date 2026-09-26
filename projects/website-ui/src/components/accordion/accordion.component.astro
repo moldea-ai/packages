@@ -2,17 +2,17 @@
 import { ChevronDown } from '@lucide/astro';
 import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
 
-// sibling items share a document-unique group name; at most one may be initially open
+// an optional document-unique group name makes sibling items mutually exclusive
 export interface Props {
   id: string;
-  group: string;
+  group?: string;
   title: string;
   description?: string;
   isOpen?: boolean;
 }
 const { id, group, title, description, isOpen = false } = Astro.props;
-if (!id.trim() || !group.trim() || !title.trim())
-  throw new Error('Accordion requires an ID, group, and title.');
+if (!id.trim() || !title.trim() || (group !== undefined && !group.trim()))
+  throw new Error('Accordion requires an ID, title, and a non-empty group when provided.');
 ---
 
 <details

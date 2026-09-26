@@ -83,7 +83,7 @@ describe('langGraphAdapter Core integration', () => {
   test('keeps the complete stable diagnostic catalog synchronized', () => {
     expect(
       Object.entries(LANGGRAPH_ADAPTER_DIAGNOSTICS)
-        .map(([code, message]) => ({ code, message }))
+        .map(([code, definition]) => ({ code, ...definition }))
         .sort((left, right) => (left.code < right.code ? -1 : left.code > right.code ? 1 : 0)),
     ).toStrictEqual(expectedDiagnostics);
   });
@@ -365,6 +365,161 @@ describe('langGraphAdapter Core integration', () => {
           agentId === 'functional' && details['patternId'] === 'functional-interrupt',
       ),
     ).toBe(false);
+  });
+
+  test('recognizes a direct resume schema only with a newer LangGraph declaration', async () => {
+    const result = await inspect({
+      '/package.json':
+        '{"dependencies":{"@langchain/core":"~1.2.12","@langchain/langgraph":"~1.4.18"}}',
+      '/src/functional.ts': getFixtureText('/src/functional.ts')
+        .replace(
+          'const prepare = task',
+          "const ResumeSchema = { type: 'object' };\nconst prepare = task",
+        )
+        .replace(
+          'interrupt({ prepared });',
+          'interrupt({ prepared }, { responseSchema: ResumeSchema });',
+        ),
+    });
+
+    expect(result.diagnostics).toStrictEqual([]);
+    const interrupt = result.evidence.find(
+      ({ agentId, details, kind }) =>
+        agentId === 'functional' &&
+        kind === 'runtime-pattern' &&
+        details['patternId'] === 'functional-interrupt',
+    );
+    expect(structuredClone(interrupt?.details)).toStrictEqual({
+      apiKind: 'functional',
+      interruptForm: 'two-argument',
+      patternId: 'functional-interrupt',
+      responseSchemaRole: 'resume-value',
+      targetId: 'typescript-functional-api-1-4',
+    });
+    expect(
+      result.evidence.some(({ agentId, kind }) => agentId === 'functional' && kind === 'schema'),
+    ).toBe(false);
+  });
+
+  test('recognizes closed empty interrupt options without claiming a resume schema', async () => {
+    const result = await inspect({
+      '/package.json':
+        '{"dependencies":{"@langchain/core":"~1.2.12","@langchain/langgraph":"~1.4.18"}}',
+      '/src/functional.ts': getFixtureText('/src/functional.ts').replace(
+        'interrupt({ prepared });',
+        'interrupt({ prepared }, {});',
+      ),
+    });
+
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      structuredClone(
+        result.evidence.find(
+          ({ agentId, details }) =>
+            agentId === 'functional' && details['patternId'] === 'functional-interrupt',
+        )?.details,
+      ),
+    ).toStrictEqual({
+      apiKind: 'functional',
+      interruptForm: 'two-argument',
+      patternId: 'functional-interrupt',
+      targetId: 'typescript-functional-api-1-4',
+    });
+  });
+
+  test('recognizes an aliased two-argument interrupt but ignores a shadowed import', async () => {
+    const packageManifest =
+      '{"dependencies":{"@langchain/core":"~1.2.12","@langchain/langgraph":"~1.4.18"}}';
+    const aliasedSource = getFixtureText('/src/functional.ts')
+      .replace('getPreviousState, interrupt, task', 'getPreviousState, interrupt as pause, task')
+      .replace(
+        'interrupt({ prepared });',
+        "pause({ prepared }, { responseSchema: { type: 'string' } });",
+      );
+    const aliased = await inspect({
+      '/package.json': packageManifest,
+      '/src/functional.ts': aliasedSource,
+    });
+    const shadowed = await inspect({
+      '/package.json': packageManifest,
+      '/src/functional.ts': getFixtureText('/src/functional.ts').replace(
+        'interrupt({ prepared });',
+        "const interrupt = (value: unknown, options: unknown) => value;\n  interrupt({ prepared }, { responseSchema: { type: 'string' } });",
+      ),
+    });
+
+    expect(
+      aliased.evidence.some(
+        ({ agentId, details }) =>
+          agentId === 'functional' && details['interruptForm'] === 'two-argument',
+      ),
+    ).toBe(true);
+    expect(
+      shadowed.evidence.some(
+        ({ agentId, details }) =>
+          agentId === 'functional' && details['patternId'] === 'functional-interrupt',
+      ),
+    ).toBe(false);
+  });
+
+  test.each(['~1.4.12', '>=1.4.12'])(
+    'does not prove the newer interrupt form for %s',
+    async (declaredRange) => {
+      const result = await inspect({
+        '/package.json': JSON.stringify({
+          dependencies: {
+            '@langchain/core': '~1.2.12',
+            '@langchain/langgraph': declaredRange,
+          },
+        }),
+        '/src/functional.ts': getFixtureText('/src/functional.ts').replace(
+          'interrupt({ prepared });',
+          "interrupt({ prepared }, { responseSchema: { type: 'string' } });",
+        ),
+      });
+
+      expect(result.diagnostics).toStrictEqual([]);
+      expect(
+        result.evidence.some(
+          ({ agentId, details }) =>
+            agentId === 'functional' && details['patternId'] === 'functional-interrupt',
+        ),
+      ).toBe(false);
+      expect(
+        result.evidence.some(
+          ({ agentId, details }) =>
+            agentId === 'functional' && details['patternId'] === 'functional-previous-state',
+        ),
+      ).toBe(true);
+    },
+  );
+
+  test.each([
+    ['dynamic', 'resumeOptions'],
+    ['malformed', '5'],
+    ['extra property', "{ responseSchema: { type: 'string' }, unsupported: true }"],
+  ])('keeps %s interrupt options unverified', async (_description, options) => {
+    const result = await inspect({
+      '/package.json':
+        '{"dependencies":{"@langchain/core":"~1.2.12","@langchain/langgraph":"~1.4.18"}}',
+      '/src/functional.ts': getFixtureText('/src/functional.ts').replace(
+        'interrupt({ prepared });',
+        `interrupt({ prepared }, ${options});`,
+      ),
+    });
+
+    expect(
+      result.evidence.some(
+        ({ agentId, details }) =>
+          agentId === 'functional' && details['patternId'] === 'functional-interrupt',
+      ),
+    ).toBe(false);
+    expect(
+      result.evidence.some(
+        ({ agentId, details }) =>
+          agentId === 'functional' && details['patternId'] === 'functional-previous-state',
+      ),
+    ).toBe(true);
   });
 
   test('recognizes an inline fluent StateGraph builder', async () => {

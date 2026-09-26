@@ -137,6 +137,8 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
       const trigger = root.querySelector<HTMLButtonElement>(':scope > [data-dialog-trigger]');
       const dialog = root.querySelector<HTMLDialogElement>(':scope > dialog');
       if (trigger === null || dialog === null || typeof dialog.showModal !== 'function') continue;
+      const body = dialog.querySelector<HTMLElement>(':scope > div');
+      if (body === null) continue;
 
       let closeRequest: symbol | undefined;
       /**
@@ -157,6 +159,7 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
         closeRequest = undefined;
         delete dialog.dataset['closing'];
         dialog.showModal();
+        body.scrollTop = 0;
       });
       dialog.addEventListener('cancel', (event) => {
         event.preventDefault();

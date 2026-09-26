@@ -7,6 +7,7 @@ import type {
   IProjectValidationInput,
   IProjectValidationResult,
 } from '../contracts/index.js';
+import { countDiagnosticsBySeverity } from '../diagnostic-utilities/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
@@ -129,11 +130,14 @@ export const validateProjectState = async (
   );
 
   if (universal.project === null) {
+    const counts = countDiagnosticsBySeverity(universal.diagnostics);
+
     return freezeRecursively({
       project: null,
       resourceUsage: session.getResourceUsage(),
       result: {
         diagnostics: universal.diagnostics,
+        ...counts,
         evidence: [],
         formatVersion: universal.formatVersion,
         source: validatedInput.repository.snapshot,
@@ -152,11 +156,14 @@ export const validateProjectState = async (
   );
 
   if (availabilityDiagnostics.length > 0) {
+    const counts = countDiagnosticsBySeverity(availabilityDiagnostics);
+
     return freezeRecursively({
       project: universal.project,
       resourceUsage: session.getResourceUsage(),
       result: {
         diagnostics: availabilityDiagnostics,
+        ...counts,
         evidence: [],
         formatVersion: universal.formatVersion,
         source: validatedInput.repository.snapshot,
@@ -172,13 +179,15 @@ export const validateProjectState = async (
     operationOptions,
     validatedInput.signal,
   );
-  const valid = adapterInspection.diagnostics.length === 0;
+  const counts = countDiagnosticsBySeverity(adapterInspection.diagnostics);
+  const valid = counts.errorCount === 0;
 
   return freezeRecursively({
     project: universal.project,
     resourceUsage: session.getResourceUsage(),
     result: {
       diagnostics: adapterInspection.diagnostics,
+      ...counts,
       evidence: adapterInspection.evidence,
       formatVersion: universal.formatVersion,
       source: validatedInput.repository.snapshot,

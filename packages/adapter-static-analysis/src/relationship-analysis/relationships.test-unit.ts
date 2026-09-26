@@ -23,7 +23,7 @@ const SOURCE_CONFIG = {
   },
   requestConfig: {
     acceptedArgumentCounts: [1],
-    methodName: 'create',
+    methodNames: ['create'],
     relationshipNames: ['instructions', 'tools'],
     resourceName: 'messages',
     toolRelationshipName: 'tools',

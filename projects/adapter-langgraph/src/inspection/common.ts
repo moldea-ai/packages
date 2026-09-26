@@ -77,7 +77,7 @@ const createEntity = (agentId: string) =>
 /** Appends one stable package-owned diagnostic. */
 export const addLangGraphDiagnostic = (
   diagnostics: IAdapterDiagnostic[],
-  code: ILangGraphAdapterDiagnosticCode,
+  code: Exclude<ILangGraphAdapterDiagnosticCode, 'LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,

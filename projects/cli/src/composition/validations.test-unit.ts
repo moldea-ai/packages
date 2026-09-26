@@ -39,7 +39,7 @@ describe('isMoldeaCliCompositionStateValid', () => {
       'an invalid JSON schema version',
       (state: IMoldeaCliCompositionStateInput): IMoldeaCliCompositionStateInput => ({
         ...state,
-        outputSchemaVersion: 1 as 4,
+        outputSchemaVersion: 1 as 5,
       }),
     ],
   ])('rejects %s', (_description, mutate) => {
@@ -60,8 +60,8 @@ describe('isMoldeaCliCompositionStateValid', () => {
   });
 
   test.each([
-    ['a future breaking major', '5.0.0'],
-    ['a prerelease', '4.0.0-rc.1'],
+    ['a future breaking major', '6.0.0'],
+    ['a prerelease', '5.0.0-rc.1'],
   ])('rejects %s for a first-party package', (_description, version) => {
     const state = createTestCompositionState();
 
@@ -89,7 +89,7 @@ describe('isMoldeaCliCompositionStateValid', () => {
           ...state.packageMetadata,
           installedPackageVersions: {
             ...(state.packageMetadata.installedPackageVersions ?? {}),
-            '@moldea.ai/core': '4.9.9',
+            '@moldea.ai/core': '5.9.9',
           },
         },
       }),

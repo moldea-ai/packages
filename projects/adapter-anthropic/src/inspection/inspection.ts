@@ -9,7 +9,7 @@ import type {
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
 
-import { ANTHROPIC_ADAPTER_ID, ANTHROPIC_MESSAGES_RUNTIME_NAME } from '../constants/index.js';
+import { ANTHROPIC_ADAPTER_ID } from '../constants/index.js';
 import type { IAnthropicInspectionSession } from '../contracts/index.js';
 import { analyzeAnthropicMessages } from '../source-analysis/index.js';
 import {
@@ -93,18 +93,22 @@ const inspectAgent = async (
     return;
   }
 
-  evidence.push(
-    createAnthropicEvidence({
-      agentId: agent.id,
-      capabilityId: null,
-      capabilityKind: null,
-      details: { api: 'messages' },
-      kind: 'runtime-pattern',
-      references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
-      runtimeName: ANTHROPIC_MESSAGES_RUNTIME_NAME,
-      source: ANTHROPIC_ADAPTER_ID,
-    }),
-  );
+  for (const methodName of [
+    ...new Set(messages.requests.map((request) => request.methodName)),
+  ].sort()) {
+    evidence.push(
+      createAnthropicEvidence({
+        agentId: agent.id,
+        capabilityId: null,
+        capabilityKind: null,
+        details: { api: 'messages' },
+        kind: 'runtime-pattern',
+        references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
+        runtimeName: `messages.${methodName}`,
+        source: ANTHROPIC_ADAPTER_ID,
+      }),
+    );
+  }
 
   await inspectAnthropicRelationships(session, agent, analysis, messages, evidence, diagnostics);
 };

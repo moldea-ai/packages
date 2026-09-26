@@ -16,6 +16,12 @@
     scroll-behavior: smooth;
   }
 
+  @media (min-width: 40rem) {
+    html {
+      scrollbar-gutter: stable;
+    }
+  }
+
   html.dark {
     color-scheme: dark;
   }

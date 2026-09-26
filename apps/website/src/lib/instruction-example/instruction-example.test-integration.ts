@@ -11,6 +11,7 @@ test('derives the hero from the real instruction, manifest, and Core diagnostic'
   expect(example.instructionPath).toBe('/moldea/agents/support/instruction.md');
   expect(example.implementationPath).toBe(INSTRUCTION_SNAPSHOT.implementationPath);
   expect(example.result.valid).toBe(false);
+  expect([example.result.errorCount, example.result.warningCount]).toStrictEqual([1, 0]);
   expect(example.result.diagnostics).toStrictEqual([
     {
       code: 'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
@@ -20,6 +21,7 @@ test('derives the hero from the real instruction, manifest, and Core diagnostic'
       entity: { agentId: 'support', capabilityKind: 'tool', capabilityId: 'get-delivery-status' },
       details: { reason: 'missing', referencedPath: '/src/orders/tracking.ts' },
       range: null,
+      severity: 'error',
       source: 'core',
     },
   ]);

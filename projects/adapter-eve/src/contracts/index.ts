@@ -5,10 +5,13 @@ import type {
   IStaticAnalysisPackageCompatibility,
   IStaticAnalysisPackageDeclaration,
   IStaticAnalysisSourceResult,
+  IVersionBehavior,
 } from '@moldea.ai/adapter-static-analysis';
 import type { ISourceRange } from '@moldea.ai/core';
 import type {
   IAdapterDiagnostic,
+  IAdapterErrorDiagnostic,
+  IAdapterWarningDiagnostic,
   IIndexedAgent,
   IRuntimeAdapterEvidence,
   IRuntimeAdapterRepository,
@@ -18,6 +21,7 @@ import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 export type IEveAdapterDiagnosticCode =
   | 'EVE_PACKAGE_MANIFEST_INVALID'
   | 'EVE_SDK_VERSION_UNSUPPORTED'
+  | 'EVE_SDK_FEATURE_UNAVAILABLE'
   | 'EVE_SOURCE_TEXT_INVALID'
   | 'EVE_SOURCE_SYNTAX_INVALID'
   | 'EVE_RUNTIME_AGENT_SYMBOL_NOT_FOUND'
@@ -34,6 +38,7 @@ export type IEveAdapterDiagnosticCode =
   | 'EVE_AGENT_OUTPUT_SCHEMA_NOT_WIRED'
   | 'EVE_TOOL_IMPLEMENTATION_NOT_WIRED'
   | 'EVE_TOOL_REGISTRATION_NOT_WIRED'
+  | 'EVE_WORKFLOW_EXECUTOR_NOT_WIRED'
   | 'EVE_TOOL_NAME_INVALID'
   | 'EVE_TOOL_NAME_RESERVED'
   | 'EVE_TOOL_RUNTIME_NAME_COLLISION'
@@ -43,20 +48,40 @@ export type IEveAdapterDiagnosticCode =
   | 'EVE_SKILL_IMPLEMENTATION_NOT_WIRED'
   | 'EVE_SKILL_REGISTRATION_NOT_WIRED'
   | 'EVE_SKILL_NAME_MISMATCH'
+  | 'EVE_SUBAGENT_REGISTRATION_NOT_WIRED'
   | 'EVE_TOOL_SUBAGENT_NAME_COLLISION'
   | 'EVE_SUBAGENT_PARENT_AMBIGUOUS'
   | 'EVE_ROUTING_DESCRIPTION_MISSING'
-  | 'EVE_ROUTING_DESCRIPTION_NOT_WIRED';
+  | 'EVE_ROUTING_DESCRIPTION_NOT_WIRED'
+  | 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
-export type IEveDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: IEveAdapterDiagnosticCode;
-};
+export type IEveDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<IEveAdapterDiagnosticCode, 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED'>;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });
 
 export interface IEvePackageObservation {
   readonly compatibility: IStaticAnalysisPackageCompatibility;
   readonly declarations: readonly IStaticAnalysisPackageDeclaration[];
   readonly manifestPackageName: string | null;
   readonly path: IRepositoryPath;
+}
+
+export interface IEveInspectedPackage {
+  readonly agentOutputSchemaBehavior: IVersionBehavior | null;
+  readonly availableInSubagentsBehavior: IVersionBehavior | null;
+  readonly declaredRange: string | null;
+  readonly defaultToolBehavior: IVersionBehavior | null;
+  readonly defaultToolsOptionBehavior: IVersionBehavior | null;
+  readonly observation: IEvePackageObservation;
+  readonly subagentModelVisibilityBehavior: IVersionBehavior | null;
+  readonly taskCancelBehavior: IVersionBehavior | null;
+  readonly testExclusionBehavior: IVersionBehavior | null;
+  readonly workflowToolBehavior: IVersionBehavior | null;
+  readonly workspaceAgentBehavior: IVersionBehavior | null;
 }
 
 export type IEvePackageDiscoveryResult =
@@ -69,6 +94,8 @@ export interface IEveHelperImports {
   readonly defineInstructions: ReadonlySet<string>;
   readonly defineSkill: ReadonlySet<string>;
   readonly defineTool: ReadonlySet<string>;
+  readonly defineWorkflowTool: ReadonlySet<string>;
+  readonly defineWorkspaceAgent: ReadonlySet<string>;
 }
 
 export interface IEveSourceAnalysis extends IStaticAnalysisModuleValueSource {
@@ -82,7 +109,8 @@ export type IEveSourceAnalysisResult =
   | Exclude<IStaticAnalysisSourceResult, { readonly kind: 'valid' }>
   | { readonly analysis: IEveSourceAnalysis; readonly kind: 'valid' };
 
-export type IEveDefinitionKind = 'agent' | 'instructions' | 'skill' | 'tool';
+export type IEveDefinitionKind =
+  'agent' | 'instructions' | 'skill' | 'tool' | 'workflow-tool' | 'workspace-agent';
 
 export type IEveDefinitionResult =
   | { readonly hasDefaultExport: false; readonly kind: 'absent' }
@@ -96,9 +124,9 @@ export type IEveDefinitionResult =
     };
 
 export interface IEveAgentRoot {
-  readonly agentKind: 'local-subagent' | 'root';
+  readonly agentKind: 'local-subagent' | 'root' | 'workspace';
   readonly agentRoot: IRepositoryPath;
-  readonly layout: 'flat' | 'nested';
+  readonly layout: 'flat' | 'nested' | 'workspace';
   readonly parentRoot: IRepositoryPath | null;
   readonly runtimeName: string | null;
 }
@@ -107,6 +135,7 @@ export interface IEveToolCandidate {
   readonly isCollidedSlot: boolean;
   readonly isExtensionReserved: boolean;
   readonly isSupportedSource: boolean;
+  readonly isTestSource: boolean;
   readonly path: IRepositoryPath;
   readonly relativePath: string;
   readonly runtimeName: string;
@@ -122,8 +151,11 @@ export interface IEveSkillCandidate {
 
 export interface IEveSubagentCandidate {
   readonly agentPath: IRepositoryPath;
-  readonly isDirectoryBacked: boolean;
+  readonly isCollidedSlot: boolean;
   readonly isExtensionReserved: boolean;
+  readonly isSupportedSource: boolean;
+  readonly isTestSource: boolean;
+  readonly kind: 'directory' | 'file';
   readonly runtimeName: string;
 }
 
@@ -154,14 +186,24 @@ export interface IEveInspectionSession {
 export interface IEveAgentDefinition {
   readonly agent: IEveScopedAgent;
   readonly analysis: IEveSourceAnalysis;
+  readonly defaultTools: boolean | null;
   readonly definition: Extract<IEveDefinitionResult, { readonly kind: 'present-supported' }>;
-  readonly packageObservation: IEvePackageObservation;
+  readonly inspectedPackage: IEveInspectedPackage;
+  readonly isModelVisible: boolean | null;
   readonly root: IEveAgentRoot;
   readonly rootIndex: IEveAgentRootIndex;
   readonly routingDescription:
     | { readonly kind: 'absent'; readonly range: ISourceRange | null }
     | { readonly kind: 'supported'; readonly range: ISourceRange; readonly value: string }
     | { readonly kind: 'unsupported'; readonly range: ISourceRange };
+}
+
+export interface IEveWorkspaceSubagentRegistration {
+  readonly candidate: IEveSubagentCandidate;
+  readonly descriptionOverride: string | null;
+  readonly isModelVisible: boolean;
+  readonly parent: IEveAgentDefinition;
+  readonly target: IEveAgentDefinition;
 }
 
 export interface IEveInspectionState {

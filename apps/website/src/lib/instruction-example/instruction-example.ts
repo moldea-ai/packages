@@ -60,6 +60,8 @@ export const createInstructionExample = async (
 
   if (
     validation.valid ||
+    validation.errorCount !== 1 ||
+    validation.warningCount !== 0 ||
     !isDeepStrictEqual(diagnostics, [
       {
         code: 'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
@@ -69,6 +71,7 @@ export const createInstructionExample = async (
         entity: { agentId: 'support', capabilityKind: 'tool', capabilityId: 'get-delivery-status' },
         details: { reason: 'missing', referencedPath: '/src/orders/tracking.ts' },
         range: null,
+        severity: 'error',
         source: 'core',
       },
     ])
@@ -80,6 +83,11 @@ export const createInstructionExample = async (
     instructionPath,
     instruction: snapshot.instruction,
     implementationPath: snapshot.implementationPath,
-    result: { valid: validation.valid, diagnostics },
+    result: {
+      valid: validation.valid,
+      errorCount: validation.errorCount,
+      warningCount: validation.warningCount,
+      diagnostics,
+    },
   };
 };

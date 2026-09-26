@@ -14,7 +14,7 @@ const SOURCE_CONFIG: IStaticAnalysisSourceConfig = {
   },
   requestConfig: {
     acceptedArgumentCounts: [1, 2],
-    methodName: 'create',
+    methodNames: ['create', 'parse', 'stream'],
     relationshipNames: ['system', 'tools'],
     resourceName: 'messages',
     toolRelationshipName: 'tools',
@@ -91,6 +91,70 @@ describe('static provider requests', () => {
       { system: 'present', tools: 'present' },
       { system: 'unresolved', tools: 'present' },
     ]);
+  });
+
+  test('preserves mixed method calls and options in one request traversal', () => {
+    const result = analyzeRequests(
+      [
+        "import Client from 'provider';",
+        'const client = new Client();',
+        'export const agent = () => {',
+        '  client.messages.create({ system: loadSystem() });',
+        '  client.messages.parse({ tools: [tool] }, { timeout: 1000 });',
+        '  return client.messages.stream({ system: loadSystem(), tools: [tool] });',
+        '};',
+      ].join('\n'),
+    );
+
+    expect(result.hasAmbiguousCandidate).toBe(false);
+    expect(
+      result.requests.map(({ call, methodName, object, options }) => ({
+        methodName,
+        callText: call.expression.getText(),
+        objectText: object.getText(),
+        optionsText: options?.getText() ?? null,
+      })),
+    ).toStrictEqual([
+      {
+        methodName: 'create',
+        callText: 'client.messages.create',
+        objectText: '{ system: loadSystem() }',
+        optionsText: null,
+      },
+      {
+        methodName: 'parse',
+        callText: 'client.messages.parse',
+        objectText: '{ tools: [tool] }',
+        optionsText: '{ timeout: 1000 }',
+      },
+      {
+        methodName: 'stream',
+        callText: 'client.messages.stream',
+        objectText: '{ system: loadSystem(), tools: [tool] }',
+        optionsText: null,
+      },
+    ]);
+  });
+
+  test('keeps a module tool array safe when a direct options body replaces the request', () => {
+    const result = analyzeSource(
+      '/src/agent.ts',
+      new TextEncoder().encode(
+        [
+          "import Client from 'provider';",
+          'const client = new Client();',
+          'const tools = [tool];',
+          'export const agent = () => client.messages.parse({}, { body: { tools } });',
+        ].join('\n'),
+      ),
+      SOURCE_CONFIG,
+    );
+
+    if (result.kind !== 'valid') {
+      throw new TypeError('The request fixture must contain valid source.');
+    }
+
+    expect(result.analysis.safeModuleArrayNames.has('tools')).toBe(true);
   });
 
   test('recognizes shorthand relationship properties as direct identifier values', () => {

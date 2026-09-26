@@ -16,6 +16,11 @@ const CLAUDE_AGENT_SDK_IMPORT_CONFIG = Object.freeze({
   supportsDefaultConstructorImport: false,
 });
 
+const CLAUDE_AGENT_SDK_IMPORT_SOURCES = new Set([
+  CLAUDE_AGENT_SDK_PACKAGE_NAME,
+  `${CLAUDE_AGENT_SDK_PACKAGE_NAME}/core`,
+]);
+
 const indexClaudeAgentSdkImports = (sourceFile: ts.SourceFile): IClaudeAgentSdkImports => {
   const createSdkMcpServerNames = new Set<string>();
   const queryNames = new Set<string>();
@@ -25,7 +30,7 @@ const indexClaudeAgentSdkImports = (sourceFile: ts.SourceFile): IClaudeAgentSdkI
     if (
       !ts.isImportDeclaration(statement) ||
       !ts.isStringLiteral(statement.moduleSpecifier) ||
-      statement.moduleSpecifier.text !== CLAUDE_AGENT_SDK_PACKAGE_NAME ||
+      !CLAUDE_AGENT_SDK_IMPORT_SOURCES.has(statement.moduleSpecifier.text) ||
       statement.importClause?.isTypeOnly === true ||
       statement.importClause?.namedBindings === undefined ||
       !ts.isNamedImports(statement.importClause.namedBindings)

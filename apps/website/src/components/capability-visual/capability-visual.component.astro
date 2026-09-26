@@ -4,6 +4,7 @@ import { CapabilityAgents } from './agents/index.ts';
 import { CapabilityCommand } from './command/index.ts';
 import { CapabilityDecisions } from './decisions/index.ts';
 import { CapabilityFiles } from './files/index.ts';
+import { CapabilityMixedDiagnostics } from './mixed-diagnostics/index.ts';
 import { CapabilityDigests } from './digests/index.ts';
 import { CapabilityRecords } from './records/index.ts';
 import { CapabilityRuntime } from './runtime/index.ts';
@@ -23,6 +24,8 @@ const { example } = Astro.props;
     <CapabilityAgents {example} />
   ) : example.groupId === 'decisions' ? (
     <CapabilityDecisions {example} />
+  ) : example.id === 'inspection-mixed-diagnostics' ? (
+    <CapabilityMixedDiagnostics {example} />
   ) : example.result.kind === 'adapter' ? (
     <CapabilityRuntime {example} />
   ) : example.result.kind === 'reader' ? (

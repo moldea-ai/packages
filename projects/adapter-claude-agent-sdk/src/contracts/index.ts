@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
 import type { ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
@@ -25,7 +25,8 @@ export type IClaudeAgentSdkAdapterDiagnosticCode =
   | 'CLAUDE_AGENT_SDK_TOOL_INPUT_SCHEMA_NOT_WIRED'
   | 'CLAUDE_AGENT_SDK_HANDOFF_TARGET_AMBIGUOUS'
   | 'CLAUDE_AGENT_SDK_HANDOFF_ROUTING_DESCRIPTION_MISSING'
-  | 'CLAUDE_AGENT_SDK_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED';
+  | 'CLAUDE_AGENT_SDK_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED'
+  | 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
 export type IClaudeAgentSdkPackageCompatibility = 'ambiguous' | 'supported' | 'unsupported';
 
@@ -198,6 +199,13 @@ export interface IClaudeAgentSdkInspectionSession {
 }
 
 // complete input used to construct one safe adapter diagnostic
-export type IClaudeAgentSdkDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: IClaudeAgentSdkAdapterDiagnosticCode;
-};
+export type IClaudeAgentSdkDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<
+        IClaudeAgentSdkAdapterDiagnosticCode,
+        'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED'
+      >;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });

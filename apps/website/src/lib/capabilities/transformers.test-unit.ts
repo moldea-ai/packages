@@ -9,6 +9,7 @@ import { projectDiagnostics, projectEntry, projectEvidence, projectFile } from '
 test('drops additive process fields from diagnostics, positions, and entities', () => {
   const expected: IDiagnostic = {
     code: 'MOLDEA_VARIABLE_UNDECLARED',
+    severity: 'error',
     source: 'core',
     message: 'The agent instruction references an undeclared runtime variable.',
     path: parseRepositoryPath('/moldea/agents/support/instruction.md'),

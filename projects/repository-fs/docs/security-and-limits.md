@@ -6,7 +6,7 @@ order: 30
 
 # Security and operational limits
 
-Filesystem names and content are untrusted. The reader validates closed option and cursor contracts, copies caller-owned configuration, follows no descendant symlink, executes no file, and exposes no host path through `IRepositoryReader` or its exceptions.
+Filesystem names and content are untrusted. The reader validates closed option and cursor contracts, copies caller-owned configuration, rejects stable descendant symlinks during traversal, executes no file, and exposes no host path through `IRepositoryReader` or its exceptions. Its path-based checks require a selected tree trusted against hostile concurrent directory replacement; they do not provide containment against a process racing those checks and opens.
 
 ## Resource limits
 
@@ -21,6 +21,8 @@ Filesystem names and content are untrusted. The reader validates closed option a
 | `maxReadBytes`            |  `1048576` bytes | File bytes returned by one range request                      |
 
 Configured values must be positive safe integers. Limits are independent so large repositories remain usable through continuation while individual scans, pages, reads, queues, and retained memory stay bounded. A breach fails with `RESOURCE_LIMIT_EXCEEDED` and reports the named dimension, limit, and observed request or count.
+
+The file-page cache also retains at most 4,096 nonempty pages, independently of `maxCachedBytes`; empty ranges are returned without caching.
 
 ## Error mapping
 

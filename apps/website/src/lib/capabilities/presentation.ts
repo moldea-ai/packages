@@ -59,6 +59,15 @@ export const getCapabilityOutcome = (
         tone: 'danger',
       };
     }
+    const warningCount = result.diagnostics.filter(({ severity }) => severity === 'warning').length;
+    if (warningCount > 0) {
+      return {
+        title: `${warningCount} runtime relationship${warningCount === 1 ? '' : 's'} unverified`,
+        description,
+        label: 'Warnings',
+        tone: 'warning',
+      };
+    }
     const hasAbsentEvidence =
       result.kind === 'adapter' &&
       (catalog.runtimeTargets.some(({ patterns }) =>
@@ -98,6 +107,14 @@ export const getCapabilityOutcome = (
         };
   }
   if (result.kind === 'cli') {
+    const warningCount = result.facts.warningCount;
+    if (result.status === 'valid' && typeof warningCount === 'number' && warningCount > 0)
+      return {
+        title: `${warningCount} runtime relationship${warningCount === 1 ? '' : 's'} unverified`,
+        description,
+        label: 'Warnings',
+        tone: 'warning',
+      };
     return {
       title:
         COMMAND_TITLES[example.id] ??
@@ -119,6 +136,13 @@ export const getCapabilityOutcome = (
       label: 'Refused',
       tone: 'warning',
     };
+  if (example.id === 'inspection-mixed-diagnostics')
+    return {
+      title: '1 warning and 1 error across two pages',
+      description,
+      label: 'Mixed results',
+      tone: 'danger',
+    };
   return {
     title:
       example.id === 'snapshot-comparison'
@@ -136,29 +160,28 @@ export const getCapabilityOutcome = (
 
 /** Selects a bounded result excerpt without inventing or changing public-result facts. */
 export const getCapabilityResultExcerpt = (result: ICapabilityResult): unknown => {
-  if (result.kind === 'validation') return { valid: result.valid, diagnostics: result.diagnostics };
+  if (result.kind === 'validation')
+    return {
+      valid: result.valid,
+      ...(result.errorCount === undefined
+        ? {}
+        : { errorCount: result.errorCount, warningCount: result.warningCount }),
+      diagnostics: result.diagnostics,
+    };
   if (result.kind === 'adapter')
     return {
       valid: result.valid,
+      errorCount: result.errorCount,
+      warningCount: result.warningCount,
       diagnostics: result.diagnostics,
-      evidenceCount: result.evidence.length,
-      evidenceExcerpt: result.evidence
-        .slice(0, 4)
-        .map(({ kind, agentId, runtimeName, references }) => ({
-          kind,
-          agentId,
-          runtimeName,
-          references,
-        })),
+      evidence: result.evidence.slice(0, 4).map(({ kind, agentId, runtimeName, references }) => ({
+        kind,
+        agentId,
+        runtimeName,
+        references,
+      })),
     };
-  return result.kind === 'cli'
-    ? {
-        schemaVersion: result.schemaVersion,
-        status: result.status,
-        exitStatus: result.exitStatus,
-        result: result.facts,
-      }
-    : result.facts;
+  return result.kind === 'cli' ? result.envelopeExcerpt : result.facts;
 };
 
 /**

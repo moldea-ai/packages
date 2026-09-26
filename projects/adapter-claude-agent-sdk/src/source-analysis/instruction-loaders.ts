@@ -56,7 +56,7 @@ const classifyPreset = (
   if (
     properties === null ||
     [...properties.keys()].some(
-      (name) => !['append', 'excludeDynamicSections', 'preset', 'type'].includes(name),
+      (name) => !['append', 'excludeDynamicSections', 'preset', 'snapshot', 'type'].includes(name),
     ) ||
     getStaticString(properties.get('type') ?? candidate) !== 'preset' ||
     getStaticString(properties.get('preset') ?? candidate) !== 'claude_code'
@@ -68,19 +68,44 @@ const classifyPreset = (
   return append === undefined ? false : classifyCall(append, analysis, reference);
 };
 
+const classifyCustom = (
+  expression: ts.Expression,
+  analysis: IClaudeAgentSdkSourceAnalysis,
+  reference: IRepositoryReference,
+): boolean | null => {
+  const candidate = unwrapExpression(expression);
+
+  if (!ts.isObjectLiteralExpression(candidate)) {
+    return null;
+  }
+
+  const properties = getClosedObjectProperties(candidate);
+
+  if (
+    properties === null ||
+    [...properties.keys()].some((name) => !['prompt', 'snapshot', 'type'].includes(name)) ||
+    getStaticString(properties.get('type') ?? candidate) !== 'custom'
+  ) {
+    return null;
+  }
+
+  const prompt = properties.get('prompt');
+  return prompt === undefined ? false : classifyCall(prompt, analysis, reference);
+};
+
 /**
  * Classifies a direct loader call used by a canonical Claude prompt relationship.
  * @param relationship The systemPrompt or AgentDefinition.prompt relationship.
  * @param analysis The source containing the relationship.
  * @param reference The exact declared instruction-loader binding.
- * @param supportsPreset Whether the query-level claude_code preset is allowed.
+ * @param supportsQueryPromptObjects Whether typed query prompt objects are allowed.
  * @returns `true` for wired, `false` for provably unwired, or `null` when unresolved.
  */
 export const classifyClaudeAgentSdkInstructionLoader = (
   relationship: IClaudeAgentSdkRelationship,
   analysis: IClaudeAgentSdkSourceAnalysis,
   reference: IRepositoryReference,
-  supportsPreset: boolean,
+  supportsQueryPromptObjects: boolean,
 ): boolean | null => {
   if (relationship.kind === 'absent') {
     return false;
@@ -102,11 +127,17 @@ export const classifyClaudeAgentSdkInstructionLoader = (
     return directCall;
   }
 
-  if (supportsPreset) {
+  if (supportsQueryPromptObjects) {
     const preset = classifyPreset(candidate, analysis, reference);
 
     if (preset !== null) {
       return preset;
+    }
+
+    const custom = classifyCustom(candidate, analysis, reference);
+
+    if (custom !== null) {
+      return custom;
     }
   }
 

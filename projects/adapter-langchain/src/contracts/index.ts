@@ -1,7 +1,11 @@
 import type ts from 'typescript';
 
 import type { ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic, IIndexedAgent } from '@moldea.ai/core/adapter';
+import type {
+  IAdapterErrorDiagnostic,
+  IAdapterWarningDiagnostic,
+  IIndexedAgent,
+} from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 export type ILangChainAdapterDiagnosticCode =
@@ -20,11 +24,19 @@ export type ILangChainAdapterDiagnosticCode =
   | 'LANGCHAIN_TOOL_IMPLEMENTATION_NOT_WIRED'
   | 'LANGCHAIN_TOOL_REGISTRATION_NOT_WIRED'
   | 'LANGCHAIN_TOOL_NAME_MISMATCH'
-  | 'LANGCHAIN_TOOL_INPUT_SCHEMA_NOT_WIRED';
+  | 'LANGCHAIN_TOOL_INPUT_SCHEMA_NOT_WIRED'
+  | 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
-export type ILangChainDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: ILangChainAdapterDiagnosticCode;
-};
+export type ILangChainDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<
+        ILangChainAdapterDiagnosticCode,
+        'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED'
+      >;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });
 
 export type ILangChainTargetPackageClassification =
   'absent' | 'ambiguous' | 'incomplete' | 'supported' | 'unsupported';

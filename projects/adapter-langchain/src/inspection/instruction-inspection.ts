@@ -18,6 +18,7 @@ import type {
 import { classifyLangChainLoaderCall } from '../source-analysis/index.js';
 import {
   addLangChainDiagnostic,
+  addLangChainUnverifiedRelationship,
   analyzeLangChainBoundReference,
   createLangChainEvidence,
   locateLangChainNode,
@@ -100,7 +101,17 @@ export const inspectLangChainInstruction = async (
     return;
   }
 
-  if (loader.kind !== 'present-supported' || inspected.middlewareState !== 'inactive') {
+  if (loader.kind !== 'present-supported') {
+    return;
+  }
+
+  if (inspected.middlewareState !== 'inactive') {
+    addLangChainUnverifiedRelationship(
+      diagnostics,
+      'instruction-loader',
+      inspected.analysis.path,
+      inspected.agent.id,
+    );
     return;
   }
 

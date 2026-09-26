@@ -162,6 +162,8 @@ export interface IProjectValidationSummary {
 
 export interface IProjectValidationResult {
   readonly valid: boolean;
+  readonly errorCount: number;
+  readonly warningCount: number;
   readonly formatVersion: IRepositoryFormatVersion | null;
   readonly summary: IProjectValidationSummary | null;
   readonly source: IRepositorySnapshot;
@@ -171,6 +173,8 @@ export interface IProjectValidationResult {
 
 export interface IProjectInspectionCounts extends IProjectSummaryCounts {
   readonly diagnostics: number;
+  readonly errors: number;
+  readonly warnings: number;
   readonly evidence: number;
   readonly metadata: number;
 }

@@ -14,9 +14,17 @@ beforeAll(async () => {
 test('executes every authored Core case with its complete reviewed diagnostics', () => {
   expect(examples.map(({ id }) => id)).toStrictEqual(CORE_EXAMPLES.map(({ id }) => id));
   for (const example of examples) {
+    const expected = CORE_EXPECTED_RESULTS[example.id];
     expect(example.result).toStrictEqual({
       kind: 'validation',
-      ...CORE_EXPECTED_RESULTS[example.id],
+      ...expected,
+      ...(example.operation === 'validateProject'
+        ? {
+            errorCount: expected.diagnostics.filter(({ severity }) => severity === 'error').length,
+            warningCount: expected.diagnostics.filter(({ severity }) => severity === 'warning')
+              .length,
+          }
+        : {}),
     });
   }
 });

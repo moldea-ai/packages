@@ -41,7 +41,7 @@ interface ICoreOperationExceptionOptionsBase {
   readonly cause?: unknown;
 }
 
-// complete resource-refusal metadata required by Core 4
+// complete resource-refusal metadata required by Core 5
 export type ICoreResourceLimitNextAction = 'reduce-input-or-increase-limit';
 
 export type ICoreOperationExceptionOptions = ICoreOperationExceptionOptionsBase &

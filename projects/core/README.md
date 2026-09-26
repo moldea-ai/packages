@@ -4,12 +4,12 @@
 
 Source-neutral, deterministic, content-safe interpretation of the `moldea` repository format.
 
-Version 4 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. It performs no filesystem, Git, or network access independently. Project validation returns content-free summaries, diagnostics, evidence, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
+Version 5 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. It performs no filesystem, Git, or network access independently. Project validation returns content-free summaries, diagnostics, evidence, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
 
 ## Install
 
 ```bash
-pnpm add @moldea.ai/core@4 @moldea.ai/repository@2
+pnpm add @moldea.ai/core@5 @moldea.ai/repository@2
 ```
 
 ## Public entry points
@@ -76,6 +76,8 @@ The prepared inspection retains only its content-free records, summary, source i
 Universal validation must succeed before adapters run. Core invokes a configured package adapter once for each matching agent, in deterministic adapter and agent order. Each invocation receives only that agent, a bounded reader, a shared cancellation signal, and an exact same-runtime `resolveAgent(reference)` function for bindings that genuinely require another agent. It never receives the complete agent collection.
 
 Adapter evidence and diagnostics are validated, normalized, deduplicated, sorted, and limited before exposure. An unexpected adapter failure or invalid output rejects the complete operation with `ADAPTER_EXECUTION_FAILED`.
+
+Every diagnostic has a required `severity`. Structural and confirmed adapter failures are errors. An adapter may identify a specific declared relationship whose recognized source is unverified with a warning carrying closed, source-safe context. Validation remains valid when it has warnings but no errors; `errorCount` and `warningCount` describe the complete result. Prepared inspection reports the same totals on every page as `counts.errors` and `counts.warnings`. A warning establishes neither the relationship nor a wiring failure.
 
 ## Resource and trust boundaries
 

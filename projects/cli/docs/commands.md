@@ -19,7 +19,7 @@ Top-level and command help, `moldea --version`, strict option parsing, and deter
 
 ## `validate`
 
-Validates the complete selected repository through Core and active runtime adapters. Human and JSON output contain ordered diagnostics but deliberately omit the project index, canonical content, and adapter evidence. Zero diagnostics produce `valid`; any diagnostics produce `invalid`.
+Validates the complete selected repository through Core and active runtime adapters. Human and JSON output contain ordered diagnostics but deliberately omit the project index, canonical content, and adapter evidence. Zero errors produce `valid`, including warning-only results; confirmed errors produce `invalid`. Every JSON page includes complete error and warning counts.
 
 ## `inspect`
 

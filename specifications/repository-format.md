@@ -1157,7 +1157,7 @@ The absence of `handoff-description.md` is therefore not, by itself, missing rou
 
 Runtime adapters may deterministically inspect runtime-native routing registrations, wrappers, target references, and routing-facing target metadata. They may return routing evidence and diagnostics through the Runtime Adapter Contract, including evidence that an agent is exposed as a target or that supported routing-facing metadata is absent, stale, oversized, or not wired to the effective routing description.
 
-An adapter emits a routing-description diagnostic only when a supported deterministic pattern mechanically proves the incorrect relationship. Dynamic or unsupported routing-description wiring remains unestablished rather than being reported as incorrect.
+An adapter emits a routing-description error only when a supported deterministic pattern mechanically proves the incorrect relationship. A recognized source candidate that leaves a declared routing-description relationship unverified may instead produce a scoped warning under the Runtime Adapter Contract. Absence of local evidence alone does not produce a warning.
 
 The skill and coding agent combine adapter evidence, project-local runtime guidance, implementation code, agent instructions, canonical descriptions, and developer direction to create or maintain routing behavior. The repository format does not infer or persist routing relationships on their behalf.
 
@@ -1479,7 +1479,7 @@ Every repository-format diagnostic must be specific enough for a developer or co
 
 A diagnostic should identify, when applicable:
 
-- stable machine-readable error code
+- stable machine-readable diagnostic code and severity
 - manifest property or canonical asset
 - repository path
 - agent or capability ID

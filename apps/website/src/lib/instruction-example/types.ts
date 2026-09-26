@@ -12,5 +12,5 @@ export interface IInstructionExample {
   instructionPath: string;
   instruction: string;
   implementationPath: string;
-  result: { valid: boolean; diagnostics: IDiagnostic[] };
+  result: { valid: boolean; errorCount: number; warningCount: number; diagnostics: IDiagnostic[] };
 }

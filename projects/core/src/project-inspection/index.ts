@@ -41,7 +41,7 @@ interface IPreparedProjectInspectionInput {
   readonly valid: boolean;
 }
 
-const CURSOR_PREFIX = 'core4';
+const CURSOR_PREFIX = 'core5';
 const PREPARED_FIXED_BYTES = 512;
 const PREPARED_ITEM_FIXED_BYTES = 64;
 const PREPARED_TEXT_BYTE_MULTIPLIER = 2;
@@ -180,7 +180,7 @@ const decodeCursor = (
   }
 
   const match =
-    /^core4:(all|diagnostics|evidence|metadata):([^:]+):(sha256:[0-9a-f]{64}):(sha256:[0-9a-f]{64})$/u.exec(
+    /^core5:(all|diagnostics|evidence|metadata):([^:]+):(sha256:[0-9a-f]{64}):(sha256:[0-9a-f]{64})$/u.exec(
       cursor,
     );
 
@@ -297,11 +297,13 @@ const estimatePreparedProjectInspection = (
     context: baseCounts.context,
     decisions: baseCounts.decisions,
     diagnostics: baseCounts.diagnostics,
+    errors: baseCounts.errors,
     evidence: baseCounts.evidence,
     metadata: metadataCount,
     mirrors: baseCounts.mirrors,
     runtimes: baseCounts.runtimes,
     unresolved: baseCounts.unresolved,
+    warnings: baseCounts.warnings,
   };
   bytes = addRetainedBytes(
     bytes,
@@ -332,7 +334,7 @@ const createInspectionDigest = (
 ): string =>
   createIdentity(
     (function* (): IterableIterator<string> {
-      yield 'core4-prepared-inspection';
+      yield 'core5-prepared-inspection';
       yield serializeDeterministically({ counts, formatVersion, summary, valid });
 
       for (const { key } of items) {
@@ -472,10 +474,12 @@ export const createProjectInspection = async (
     context: state.result.summary?.counts.context ?? 0,
     decisions: state.result.summary?.counts.decisions ?? 0,
     diagnostics: state.result.diagnostics.length,
+    errors: state.result.errorCount,
     evidence: state.result.evidence.length,
     mirrors: state.result.summary?.counts.mirrors ?? 0,
     runtimes: state.result.summary?.counts.runtimes ?? 0,
     unresolved: state.result.summary?.counts.unresolved ?? 0,
+    warnings: state.result.warningCount,
   };
   const estimate = estimatePreparedProjectInspection(
     state,

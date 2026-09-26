@@ -41,7 +41,8 @@ export const CLAUDE_AGENT_SDK_FILES: IMemoryRepositoryEntry[] = [
   {
     path: '/package.json',
     type: 'file',
-    content: '{\n  "dependencies": {\n    "@anthropic-ai/claude-agent-sdk": "^0.3.234"\n  }\n}\n',
+    content:
+      '{\n  "dependencies": {\n    "@anthropic-ai/claude-agent-sdk": "^0.3.234",\n    "zod": "4.3.6"\n  }\n}\n',
   },
   {
     path: '/src/agents.ts',
@@ -53,13 +54,13 @@ export const CLAUDE_AGENT_SDK_FILES: IMemoryRepositoryEntry[] = [
     path: '/src/contracts.ts',
     type: 'file',
     content:
-      "export const TriageOutputSchema = { type: 'object' } as const;\nexport const FindOrderInputSchema = { type: 'object' } as const;\n",
+      "import { z } from 'zod';\n\nexport const TriageOutputSchema = { type: 'object' } as const;\nexport const FindOrderInputSchema = { orderId: z.string() };\n",
   },
   {
     path: '/src/find-order.ts',
     type: 'file',
     content:
-      'export const findOrder = async (input: { orderId: string }) => ({ orderId: input.orderId });\n',
+      "export const findOrder = async (input: { orderId: string }) => ({ content: [{ type: 'text' as const, text: input.orderId }] });\n",
   },
   {
     path: '/src/instructions.ts',

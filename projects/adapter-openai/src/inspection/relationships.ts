@@ -28,10 +28,12 @@ import type {
 } from '../contracts/index.js';
 import {
   addOpenAiDiagnostic,
+  addOpenAiUnverifiedRelationship,
   analyzeOpenAiBoundReference,
   compareOpenAiStrings,
   createOpenAiEvidence,
 } from './common.js';
+import { inspectOpenAiOutputSchema } from './output-schema.js';
 
 interface IOpenAiRegistrationInspection {
   readonly capabilityId: string;
@@ -360,6 +362,13 @@ const inspectInstructionLoader = async (
   }
 
   if (loader.kind === 'present-unsupported') {
+    addOpenAiUnverifiedRelationship(
+      diagnostics,
+      'instruction-loader',
+      'unsupported-source-pattern',
+      reference.path,
+      agent.id,
+    );
     return;
   }
 
@@ -393,6 +402,14 @@ const inspectInstructionLoader = async (
       runtimeAnalysis.path,
       agent.id,
       getExpressionRange(runtimeAnalysis, relationship.expression),
+    );
+  } else {
+    addOpenAiUnverifiedRelationship(
+      diagnostics,
+      'instruction-loader',
+      'dynamic-source-pattern',
+      runtimeAnalysis.path,
+      agent.id,
     );
   }
 };
@@ -458,6 +475,18 @@ const inspectToolRelationships = async (
       continue;
     }
 
+    if (relationship.kind === 'ambiguous') {
+      addOpenAiUnverifiedRelationship(
+        diagnostics,
+        'tool-registration',
+        'dynamic-source-pattern',
+        runtimeAnalysis.path,
+        agent.id,
+        registration.capabilityId,
+      );
+      continue;
+    }
+
     if (relationship.kind === 'present' && registration.isNameMatch) {
       evidence.push(
         createOpenAiEvidence({
@@ -496,5 +525,13 @@ export const inspectOpenAiRelationships = async (
   diagnostics: IAdapterDiagnostic[],
 ): Promise<void> => {
   await inspectInstructionLoader(session, agent, runtimeAnalysis, responses, evidence, diagnostics);
+  await inspectOpenAiOutputSchema(
+    session,
+    agent,
+    runtimeAnalysis,
+    responses,
+    evidence,
+    diagnostics,
+  );
   await inspectToolRelationships(session, agent, runtimeAnalysis, responses, evidence, diagnostics);
 };

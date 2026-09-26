@@ -1,5 +1,7 @@
 import { intersects, subset, validRange } from 'semver';
 
+import { classifyVersionBehavior, type IVersionBehavior } from '@moldea.ai/adapter-static-analysis';
+
 import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
@@ -14,7 +16,9 @@ import {
   CLOUDFLARE_AI_CHAT_SUPPORTED_RANGE,
   CLOUDFLARE_AI_CHAT_TARGET_ID,
   CLOUDFLARE_THINK_PACKAGE_NAME,
+  CLOUDFLARE_THINK_CONTEXT_BOUNDARY_VERSION,
   CLOUDFLARE_THINK_SUPPORTED_RANGE,
+  CLOUDFLARE_THINK_TARGET_ID,
 } from '../constants/index.js';
 import type {
   ICloudflareAgentsInspectionSession,
@@ -66,6 +70,12 @@ const getTargetPackages = (
     { packageName: AI_SDK_PACKAGE_NAME, supportedRange: AI_SDK_SUPPORTED_RANGE },
   ]);
 
+// version evidence is retained separately from package eligibility
+export interface ICloudflareAgentsPackageInspection {
+  readonly declaredThinkRange: string | null;
+  readonly thinkBehavior: IVersionBehavior | null;
+}
+
 /** Inspects exact package declarations and gates one verified target. */
 export const inspectCloudflareAgentsPackage = async (
   session: ICloudflareAgentsInspectionSession,
@@ -74,11 +84,11 @@ export const inspectCloudflareAgentsPackage = async (
   evidence: IRuntimeAdapterEvidence[],
   diagnostics: IAdapterDiagnostic[],
   agentId: string,
-): Promise<boolean> => {
+): Promise<ICloudflareAgentsPackageInspection | null> => {
   const discovery = await session.discoverPackage(sourcePath);
 
   if (discovery.kind === 'absent') {
-    return false;
+    return null;
   }
 
   if (discovery.kind === 'invalid') {
@@ -88,14 +98,14 @@ export const inspectCloudflareAgentsPackage = async (
       discovery.path,
       agentId,
     );
-    return false;
+    return null;
   }
 
   for (const targetPackage of getTargetPackages(targetId)) {
     const declarations = discovery.observation.declarations.get(targetPackage.packageName);
 
     if (declarations === undefined || declarations.length === 0) {
-      return false;
+      return null;
     }
 
     for (const declaration of declarations) {
@@ -115,7 +125,7 @@ export const inspectCloudflareAgentsPackage = async (
             targetId,
           },
         );
-        return false;
+        return null;
       }
 
       evidence.push(
@@ -138,5 +148,20 @@ export const inspectCloudflareAgentsPackage = async (
     }
   }
 
-  return true;
+  const thinkDeclarations =
+    discovery.observation.declarations.get(CLOUDFLARE_THINK_PACKAGE_NAME) ?? [];
+
+  return Object.freeze({
+    declaredThinkRange:
+      targetId === CLOUDFLARE_THINK_TARGET_ID && thinkDeclarations.length === 1
+        ? validRange(thinkDeclarations[0]?.declaredRange ?? '', {
+            includePrerelease: false,
+            loose: false,
+          })
+        : null,
+    thinkBehavior:
+      targetId === CLOUDFLARE_THINK_TARGET_ID
+        ? classifyVersionBehavior(thinkDeclarations, CLOUDFLARE_THINK_CONTEXT_BOUNDARY_VERSION)
+        : null,
+  });
 };

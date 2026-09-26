@@ -80,17 +80,32 @@ export const REQUIRED_CASE_IDS: string[] = [
   'decision-relationship-accepted',
   'decision-relationship-proposed',
   'anthropic-messages',
+  'anthropic-parse-output',
   'claude-query',
+  'claude-core-prompt-controls',
   'cloudflare-agents',
+  'cloudflare-think-session-context',
+  'cloudflare-think-configured-context',
+  'cloudflare-think-ambiguous-context',
   'eve-filesystem',
+  'eve-workflow-tool',
+  'eve-excluded-test-tool',
+  'eve-workspace-peer',
+  'eve-removed-default',
   'google-generate-content',
+  'google-mixed-generation',
   'langchain-create-agent',
   'langchain-direct-schema',
   'langchain-tool-strategy',
+  'langchain-middleware-warning',
   'langgraph-workflows',
+  'langgraph-resume-schema',
   'openai-responses',
+  'openai-parse-output',
   'openai-agent-handoffs',
+  'openai-agents-sdk-routing-warning',
   'vercel-agent-and-stream',
+  'vercel-deferred-tool',
   'claude-preset',
   'claude-inherited-tools',
   'langgraph-inline',
@@ -108,11 +123,13 @@ export const REQUIRED_CASE_IDS: string[] = [
   'eve-packaged-skill',
   'eve-single-file-subagent',
   'eve-framework-namespace',
+  'openai-loader-unverified',
   'openai-loader-disconnected',
   'text-normalization',
   'normalized-digests',
   'inspection-metadata',
   'inspection-diagnostics',
+  'inspection-mixed-diagnostics',
   'inspection-evidence',
   'canonical-content-pages',
   'canonical-content-refusal',
@@ -137,6 +154,7 @@ export const REQUIRED_CASE_IDS: string[] = [
   'cli-content-refusal',
   'cli-composition',
   'cli-invalid-project',
+  'cli-version-warning',
 ];
 
 // each public Core operation has a real executable example
@@ -146,7 +164,12 @@ export const CORE_OPERATION_COVERAGE: Record<ICoreOperation, string[]> = {
   parseManifest: ['manifest-valid', 'manifest-malformed', 'manifest-duplicate-key'],
   parseDecision: ['decision-valid', 'decision-filename', 'decision-frontmatter-invalid'],
   validateProject: ['agent-valid', 'policy-reference-missing', 'decision-replacement-chain'],
-  createProjectInspection: ['inspection-metadata', 'inspection-diagnostics', 'inspection-evidence'],
+  createProjectInspection: [
+    'inspection-metadata',
+    'inspection-diagnostics',
+    'inspection-mixed-diagnostics',
+    'inspection-evidence',
+  ],
   readCanonicalContentPage: [
     'canonical-content-pages',
     'canonical-content-refusal',
@@ -654,7 +677,7 @@ export const CORE_DIAGNOSTIC_COVERAGE: Record<ICoreDiagnosticCode, IDiagnosticCo
 // exact matrix keys and source/result witnesses for every full or partial pattern
 export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatternProof[]>> = {
   'anthropic/typescript-messages-api-0-117': {
-    'direct-messages-create': [
+    'direct-messages-request-family': [
       {
         caseId: 'anthropic-messages',
         source: {
@@ -665,6 +688,17 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           kind: 'evidence',
           evidenceKind: 'runtime-pattern',
           agentId: 'support',
+          runtimeName: 'messages.create',
+        },
+      },
+      {
+        caseId: 'anthropic-parse-output',
+        source: { path: '/src/agent.ts', contains: 'client.messages.parse({' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'runtime-pattern',
+          agentId: 'support',
+          runtimeName: 'messages.parse',
         },
       },
     ],
@@ -713,6 +747,32 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
         },
       },
     ],
+    'direct-output-schema': [
+      {
+        caseId: 'anthropic-parse-output',
+        source: {
+          path: '/src/agent.ts',
+          contains: "output_config: { format: { type: 'json_schema', schema: SupportOutput } }",
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'schema',
+          agentId: 'support',
+          details: { requestProperty: 'output_config.format', schemaRole: 'output' },
+        },
+      },
+    ],
+    'effective-messages-options': [
+      {
+        caseId: 'anthropic-parse-output',
+        source: { path: '/src/agent.ts', contains: 'timeout: 1000' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'support',
+        },
+      },
+    ],
   },
   'claude-agent-sdk/typescript-query-subagents-0-3': {
     'direct-query-wrapper': [
@@ -731,6 +791,19 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           },
         },
       },
+      {
+        caseId: 'claude-core-prompt-controls',
+        source: {
+          path: '/src/runtime.ts',
+          contains: "from '@anthropic-ai/claude-agent-sdk/core'",
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'runtime-pattern',
+          agentId: 'triage',
+          details: { patternId: 'direct-query-wrapper' },
+        },
+      },
     ],
     'query-custom-system-prompt': [
       {
@@ -746,6 +819,20 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           details: {
             role: 'query-system-prompt',
           },
+        },
+      },
+      {
+        caseId: 'claude-core-prompt-controls',
+        source: {
+          path: '/src/runtime.ts',
+          contains:
+            "systemPrompt: { type: 'custom', prompt: await loadTriageInstruction(), snapshot: false }",
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'triage',
+          details: { role: 'query-custom-prompt' },
         },
       },
     ],
@@ -772,6 +859,18 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
         source: {
           path: '/src/agents.ts',
           contains: 'export const billingAgent = {',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'agent-definition',
+          agentId: 'billing',
+        },
+      },
+      {
+        caseId: 'claude-core-prompt-controls',
+        source: {
+          path: '/src/agents.ts',
+          contains: 'omitClaudeMd: true',
         },
         witness: {
           kind: 'evidence',
@@ -939,6 +1038,44 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           agentId: 'support',
         },
       },
+      {
+        caseId: 'cloudflare-think-session-context',
+        source: {
+          path: '/src/agents.ts',
+          contains:
+            "session.withContext('soul', { provider: { get: () => loadSupportInstruction() } })",
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'support',
+        },
+      },
+      {
+        caseId: 'cloudflare-think-configured-context',
+        source: {
+          path: '/src/agents.ts',
+          contains:
+            "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'support',
+        },
+      },
+      {
+        caseId: 'cloudflare-think-ambiguous-context',
+        source: {
+          path: '/src/agents.ts',
+          contains: 'configureContext()',
+        },
+        witness: {
+          kind: 'absence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'support',
+        },
+      },
     ],
     'closed-think-tools-map': [
       {
@@ -952,6 +1089,26 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           kind: 'evidence',
           evidenceKind: 'tool-registration',
           agentId: 'support',
+        },
+      },
+      {
+        caseId: 'cloudflare-think-configured-context',
+        source: { path: '/src/tools.ts', contains: 'deferLoading: true' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: { declaredDeferredLoading: 'enabled' },
+        },
+      },
+      {
+        caseId: 'cloudflare-think-configured-context',
+        source: { path: '/src/tools.ts', contains: 'searchTool = toolSearch()' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: { declaredDeferredLoading: 'enabled' },
         },
       },
     ],
@@ -1033,6 +1190,95 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
     ],
   },
   'eve/typescript-filesystem-agent-0-39': {
+    'workspace-root-agent': [
+      {
+        caseId: 'eve-workspace-peer',
+        source: {
+          path: '/agents/support/agent/agent.ts',
+          contains: 'export default defineAgent(',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'agent-definition',
+          agentId: 'support',
+          details: { agentKind: 'workspace', layout: 'workspace' },
+        },
+      },
+    ],
+    'workspace-subagent-reference': [
+      {
+        caseId: 'eve-workspace-peer',
+        source: {
+          path: '/agents/support/agent/subagents/research.ts',
+          contains: 'defineWorkspaceAgent(',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'handoff-registration',
+          agentId: 'support',
+          details: { registrationKind: 'workspace-subagent', targetAgentId: 'research' },
+        },
+      },
+    ],
+    'workflow-tool-declaration': [
+      {
+        caseId: 'eve-workflow-tool',
+        source: {
+          path: '/agent/tools/search.ts',
+          contains: 'defineWorkflowTool(',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: {
+            declaredAvailableInSubagents: 'disabled',
+            declaredExecution: 'background',
+            registrationKind: 'filesystem-workflow-tool',
+          },
+        },
+      },
+    ],
+    'subagent-tool-exposure': [
+      {
+        caseId: 'eve-workflow-tool',
+        source: {
+          path: '/agent/tools/search.ts',
+          contains: 'availableInSubagents: false',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: { declaredAvailableInSubagents: 'disabled' },
+        },
+      },
+    ],
+    'versioned-default-tool-namespace': [
+      {
+        caseId: 'eve-removed-default',
+        source: {
+          path: '/agent/subagents/todo/agent.ts',
+          contains: 'defineAgent(',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'handoff-registration',
+          agentId: 'support',
+          details: { targetAgentId: 'todo' },
+        },
+      },
+    ],
+    'test-source-exclusion': [
+      {
+        caseId: 'eve-excluded-test-tool',
+        source: {
+          path: '/agent/tools/search.test.ts',
+          contains: 'defineTool(',
+        },
+        witness: { kind: 'diagnostic', code: 'EVE_TOOL_REGISTRATION_NOT_WIRED' },
+      },
+    ],
     'nested-root-agent': [
       {
         caseId: 'eve-filesystem',
@@ -1236,7 +1482,7 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
       {
         caseId: 'eve-framework-namespace',
         source: {
-          path: '/agent/subagents/glob/agent.ts',
+          path: '/agent/subagents/bash/agent.ts',
           contains: 'defineAgent(',
         },
         witness: {
@@ -1306,7 +1552,7 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
       {
         caseId: 'eve-framework-namespace',
         source: {
-          path: '/agent/subagents/glob/agent.ts',
+          path: '/agent/subagents/bash/agent.ts',
           contains: 'defineAgent(',
         },
         witness: {
@@ -1328,6 +1574,17 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           kind: 'evidence',
           evidenceKind: 'runtime-pattern',
           agentId: 'support',
+          runtimeName: 'models.generateContent',
+        },
+      },
+      {
+        caseId: 'google-mixed-generation',
+        source: { path: '/src/agent.ts', contains: 'client.models.generateContentStream({' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'runtime-pattern',
+          agentId: 'support',
+          runtimeName: 'models.generateContentStream',
         },
       },
     ],
@@ -1692,6 +1949,23 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
     ],
     'functional-interrupt': [
       {
+        caseId: 'langgraph-resume-schema',
+        source: {
+          path: '/src/functional.ts',
+          contains: 'interrupt({ prepared }, { responseSchema: ResumeSchema })',
+        },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'runtime-pattern',
+          agentId: 'functional',
+          details: {
+            interruptForm: 'two-argument',
+            patternId: 'functional-interrupt',
+            responseSchemaRole: 'resume-value',
+          },
+        },
+      },
+      {
         caseId: 'langgraph-workflows',
         source: {
           path: '/src/functional.ts',
@@ -1754,6 +2028,17 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           kind: 'evidence',
           evidenceKind: 'runtime-pattern',
           agentId: 'support',
+          runtimeName: 'responses.create',
+        },
+      },
+      {
+        caseId: 'openai-parse-output',
+        source: { path: '/src/agent.ts', contains: 'client.responses.parse({' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'runtime-pattern',
+          agentId: 'support',
+          runtimeName: 'responses.parse',
         },
       },
     ],
@@ -1799,6 +2084,29 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           details: {
             schemaRole: 'input',
           },
+        },
+      },
+    ],
+    'direct-output-schema': [
+      {
+        caseId: 'openai-parse-output',
+        source: { path: '/src/agent.ts', contains: "zodTextFormat(SupportOutput, 'support')" },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'schema',
+          agentId: 'support',
+          details: { requestProperty: 'text.format', schemaRole: 'output' },
+        },
+      },
+    ],
+    'effective-responses-options': [
+      {
+        caseId: 'openai-parse-output',
+        source: { path: '/src/agent.ts', contains: 'body: {' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'instruction-loader',
+          agentId: 'support',
         },
       },
     ],
@@ -2036,6 +2344,16 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           agentId: 'support',
         },
       },
+      {
+        caseId: 'vercel-deferred-tool',
+        source: { path: '/src/agents.ts', contains: 'search: toolSearch()' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: { declaredDeferredLoading: 'enabled' },
+        },
+      },
     ],
     'direct-function-tool-bindings': [
       {
@@ -2048,6 +2366,16 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
           kind: 'evidence',
           evidenceKind: 'tool-registration',
           agentId: 'support',
+        },
+      },
+      {
+        caseId: 'vercel-deferred-tool',
+        source: { path: '/src/tools.ts', contains: 'deferLoading: true' },
+        witness: {
+          kind: 'evidence',
+          evidenceKind: 'tool-registration',
+          agentId: 'support',
+          details: { declaredDeferredLoading: 'enabled' },
         },
       },
       {

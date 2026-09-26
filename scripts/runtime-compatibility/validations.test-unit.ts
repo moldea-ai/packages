@@ -15,7 +15,7 @@ import { parseRuntimeCompatibilityMatrix } from './validations.ts';
 const repositoryRoot = new URL('../../', import.meta.url);
 let canonicalSource = '';
 let canonicalMatrix: IRuntimeCompatibilityMatrix;
-let repositoryReadme = '';
+let projectBlueprint = '';
 
 const cloneCanonicalMatrix = (): IRuntimeCompatibilityMatrix => structuredClone(canonicalMatrix);
 
@@ -69,9 +69,9 @@ const expectIssue = (source: string, expectedMessage: string): void => {
 };
 
 beforeAll(async () => {
-  [canonicalSource, repositoryReadme] = await Promise.all([
+  [canonicalSource, projectBlueprint] = await Promise.all([
     readFile(new URL(RUNTIME_COMPATIBILITY_SOURCE_PATH, repositoryRoot), 'utf8'),
-    readFile(new URL('README.md', repositoryRoot), 'utf8'),
+    readFile(new URL('docs/project-blueprint.md', repositoryRoot), 'utf8'),
   ]);
   canonicalMatrix = parse(canonicalSource) as IRuntimeCompatibilityMatrix;
 });
@@ -90,9 +90,9 @@ describe('runtime compatibility matrix validation', () => {
       );
       for (const [adapterId, packageName] of Object.entries(OFFICIAL_RUNTIME_ADAPTER_PACKAGES)) {
         if (adapterId !== 'custom') {
-          expect(repositoryReadme).toContain(`| \`adapter-${adapterId}\``);
+          expect(projectBlueprint).toContain(`| \`adapter-${adapterId}\``);
         }
-        expect(repositoryReadme).toContain(`\`${packageName}\``);
+        expect(projectBlueprint).toContain(`\`${packageName}\``);
       }
     }
   });

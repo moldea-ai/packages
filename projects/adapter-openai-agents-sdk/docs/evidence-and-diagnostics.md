@@ -41,9 +41,12 @@ Evidence contains no repository content, instructions, descriptions, credentials
 | `OPENAI_AGENTS_SDK_HANDOFF_TARGET_AMBIGUOUS`              | A target runtime binding maps to multiple registered agents.                             |
 | `OPENAI_AGENTS_SDK_HANDOFF_ROUTING_DESCRIPTION_MISSING`   | A proved handoff registration has no effective canonical routing description.            |
 | `OPENAI_AGENTS_SDK_HANDOFF_ROUTING_DESCRIPTION_NOT_WIRED` | A proved handoff uses routing text that differs from its target's effective description. |
+| `OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED`       | The declared runtime relationship could not be verified.                                 |
 
 Diagnostics use Core's shared adapter shape, preserve logical source locations, and remain deterministically ordered. Dynamic or indirect patterns yield partial or no evidence rather than guessed failures. Core validates adapter output and applies all-or-nothing inspection semantics.
 
 ## Package detection
 
 Detection stops at the nearest existing `package.json` owning each runtime-agent source. Supported dependency fields are considered collectively. A collectively disjoint range produces the unsupported-version diagnostic without package evidence; an ambiguous range remains evidence rather than being promoted to verified support. Invalid UTF-8 or NUL in the owning manifest produces only `OPENAI_AGENTS_SDK_PACKAGE_MANIFEST_INVALID`; source text failures remain source diagnostics.
+
+`OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.

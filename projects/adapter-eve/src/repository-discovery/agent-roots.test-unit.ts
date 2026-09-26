@@ -16,6 +16,22 @@ describe('resolveEveAgentRoot', () => {
     ['/agent.ts', '/', 'flat', 'root', null, 'support-app'],
     ['/agent/agent.ts', '/agent', 'nested', 'root', null, 'support-app'],
     [
+      '/agents/research/agent/agent.ts',
+      '/agents/research/agent',
+      'workspace',
+      'workspace',
+      null,
+      'research',
+    ],
+    [
+      '/agents/research/agent/subagents/deep/agent.ts',
+      '/agents/research/agent/subagents/deep',
+      'workspace',
+      'local-subagent',
+      '/agents/research/agent',
+      'deep',
+    ],
+    [
       '/agent/subagents/research/agent.ts',
       '/agent/subagents/research',
       'nested',

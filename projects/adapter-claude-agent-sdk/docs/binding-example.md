@@ -12,6 +12,8 @@ Read this example before searching adapter implementation for binding syntax. It
 
 Bind the query function and each exported programmatic subagent object separately. Query `systemPrompt` and child `prompt` call their canonical loaders. Query `outputFormat.schema` binds the JSON Schema constant. `tools: ['Agent']` enables delegation; child `description` matches its canonical handoff description. MCP tool names use the query server key (`mcp__support__find_order`), not the server's display name. `tool` takes a Zod property map, whereas `outputFormat` takes JSON Schema. This target does not establish tool output-schema evidence.
 
+In SDK 0.3.282 and later, the named helpers can also come from `@anthropic-ai/claude-agent-sdk/core`. A typed custom prompt such as `systemPrompt: { type: 'custom', prompt: await loadTriageInstruction(), snapshot: false }` retains the same direct loader binding. `verbatimPrompts` controls prompt delivery, while `omitClaudeMd` controls subagent ambient-file loading; neither proves or replaces the canonical instruction binding.
+
 Paths below are repository-root-relative logical paths. Keep the canonical instructions as the policy source. General manifest semantics belong to the [Repository Format specification](https://packages.moldea.ai/repository-format/). Use the other local guides for the full supported boundary and limitations; this example does not expand them.
 
 ## Files

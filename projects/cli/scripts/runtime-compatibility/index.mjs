@@ -274,7 +274,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(
       compositionEnvelope.cliVersion === cliVersion &&
         compositionEnvelope.command === 'composition' &&
-        compositionEnvelope.schemaVersion === 4,
+        compositionEnvelope.schemaVersion === 5,
       'The composition envelope is invalid.',
     );
     assertRuntimeInvariant(
@@ -421,11 +421,11 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(inspectResult.status === 0, 'The installed CLI inspection failed.');
     assertRuntimeInvariant(inspectResult.stderr === '', 'The inspection command wrote stderr.');
     assertRuntimeInvariant(
-      inspectEnvelope.schemaVersion === 4 &&
+      inspectEnvelope.schemaVersion === 5 &&
         inspectEnvelope.result?.project?.project?.path === '/moldea/project.md' &&
         !inspectResult.stdout.includes('# Project') &&
         !inspectResult.stdout.includes('"content"'),
-      'Inspection did not preserve the content-free schema 4 contract.',
+      'Inspection did not preserve the content-free schema 5 contract.',
     );
     assertRuntimeInvariant(
       JSON.stringify(
@@ -443,14 +443,14 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(
       scopeResult.status === 0 &&
         scopeResult.stderr === '' &&
-        scopeEnvelope.schemaVersion === 4 &&
+        scopeEnvelope.schemaVersion === 5 &&
         scopeEnvelope.result?.relevant === true,
       'The installed CLI scope command failed.',
     );
     assertRuntimeInvariant(
       contentResult.status === 0 &&
         contentResult.stderr === '' &&
-        contentEnvelope.schemaVersion === 4 &&
+        contentEnvelope.schemaVersion === 5 &&
         contentEnvelope.result?.asset?.path === '/moldea/project.md' &&
         contentEnvelope.result?.chunk?.content === '# Project\n',
       'The installed CLI content command failed.',

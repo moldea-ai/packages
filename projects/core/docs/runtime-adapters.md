@@ -39,6 +39,8 @@ The context never includes a complete agent list or project body index. `resolve
 
 Evidence records source-grounded runtime observations without repository content, secrets, model input, tool arguments, or provider payloads. Core validates evidence and diagnostics against the current agent and any exact resolved agents, applies operation-wide limits before normalization, then deduplicates, sorts, and freezes retained output.
 
+Adapter diagnostics require `severity`. Confirmed violations are errors; a recognized but unresolved declared relationship can use its adapter's reserved unverified-relationship warning with closed safe context. A warning neither proves runtime wiring nor makes the project invalid. Core rejects malformed severity, warning code, message, subject, source path, or details as `ADAPTER_EXECUTION_FAILED`. Raw diagnostics count against `maxDiagnostics` before deduplication.
+
 A thrown adapter error or malformed result becomes `ADAPTER_EXECUTION_FAILED`. Partial output from that invocation is not exposed. Repository path, source, cancellation, snapshot, and resource failures propagate through their typed boundaries.
 
 The [Runtime Compatibility Matrix](/compatibility/) defines approved adapter IDs, implementation state, evidence kinds, binding support, supported patterns, provider limits, and verification dates.

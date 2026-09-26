@@ -2,7 +2,6 @@ import type { IRepositoryFormatVersion } from '@moldea.ai/core/format';
 
 // immutable adapter and verified-target identity
 export const OPENAI_ADAPTER_ID = 'openai';
-export const OPENAI_RESPONSES_RUNTIME_NAME = 'responses.create';
 export const OPENAI_SDK_PACKAGE_NAME = 'openai';
 export const OPENAI_SDK_SUPPORTED_RANGE = '>=7.4.0';
 export const OPENAI_SUPPORTED_REPOSITORY_FORMAT_VERSIONS = Object.freeze([

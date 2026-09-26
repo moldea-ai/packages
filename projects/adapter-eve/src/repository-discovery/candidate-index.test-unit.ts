@@ -45,10 +45,31 @@ describe('createEveAgentRootIndex', () => {
     expect(index.subagentCandidates).toStrictEqual([
       {
         agentPath: '/agent/subagents/summary/agent.ts',
-        isDirectoryBacked: true,
+        isCollidedSlot: false,
         isExtensionReserved: false,
+        isSupportedSource: true,
+        isTestSource: false,
+        kind: 'directory',
         runtimeName: 'summary',
       },
     ]);
+  });
+
+  test('marks test and spec modules and __tests__ descendants without dropping older candidates', () => {
+    const index = createEveAgentRootIndex('/agent' as never, [
+      entry('/agent/tools/search.test.ts'),
+      entry('/agent/tools/search.spec.mts'),
+      entry('/agent/tools/__tests__/nested.ts'),
+      entry('/agent/tools/search.ts'),
+      entry('/agent/subagents/research.test.ts'),
+    ]);
+
+    expect(index.toolCandidates.map(({ isTestSource }) => isTestSource)).toStrictEqual([
+      true,
+      true,
+      true,
+      false,
+    ]);
+    expect(index.subagentCandidates).toMatchObject([{ isTestSource: true }]);
   });
 });

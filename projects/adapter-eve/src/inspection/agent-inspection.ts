@@ -3,7 +3,14 @@ import ts from 'typescript';
 import type { IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 
-import { EVE_ADAPTER_ID, EVE_TARGET_ID } from '../constants/index.js';
+import {
+  EVE_ADAPTER_ID,
+  EVE_AGENT_OUTPUT_SCHEMA_REMOVAL_VERSION,
+  EVE_DEFAULT_TOOLS_OPTION_BOUNDARY_VERSION,
+  EVE_SUBAGENT_MODEL_VISIBILITY_BOUNDARY_VERSION,
+  EVE_TARGET_ID,
+  EVE_TEST_EXCLUSION_BOUNDARY_VERSION,
+} from '../constants/index.js';
 import type {
   IEveAgentDefinition,
   IEveInspectionSession,
@@ -18,13 +25,38 @@ import {
 import {
   addEveDiagnostic,
   addEveSourceFailureDiagnostic,
+  addEveWarning,
   createEveEvidence,
   locateEveNode,
 } from './common.js';
 import { inspectEvePackage } from './package-inspection.js';
 import { classifyEveBoundExpression } from './relationships.js';
 
-const POSITIVE_AGENT_KEYS = new Set(['description', 'model', 'outputSchema']);
+const POSITIVE_AGENT_KEYS = new Set([
+  'defaultTools',
+  'description',
+  'model',
+  'outputSchema',
+  'tool',
+]);
+
+const getStaticBoolean = (
+  definition: Extract<ReturnType<typeof getEveDefinition>, { readonly kind: 'present-supported' }>,
+  name: 'defaultTools' | 'tool',
+): boolean | null => {
+  const property = definition.properties.get(name);
+
+  if (property === undefined) {
+    return true;
+  }
+
+  const expression = getEvePropertyExpression(definition.properties, name);
+  return expression?.kind === ts.SyntaxKind.TrueKeyword
+    ? true
+    : expression?.kind === ts.SyntaxKind.FalseKeyword
+      ? false
+      : null;
+};
 
 /** Inspects one exact manifest-bound Eve agent definition and its output schema. */
 export const inspectEveAgent = async (
@@ -39,7 +71,7 @@ export const inspectEveAgent = async (
     return null;
   }
 
-  const packageObservation = await inspectEvePackage(
+  const inspectedPackage = await inspectEvePackage(
     session,
     agent,
     runtimeAgent.path,
@@ -47,14 +79,37 @@ export const inspectEveAgent = async (
     diagnostics,
   );
 
-  if (packageObservation === null) {
+  if (inspectedPackage === null) {
     return null;
   }
 
-  const root = resolveEveAgentRoot(runtimeAgent.path, packageObservation);
+  const root = resolveEveAgentRoot(runtimeAgent.path, inspectedPackage.observation);
 
   if (root === null) {
     return null;
+  }
+
+  if (root.agentKind === 'local-subagent' && runtimeAgent.path.split('/').includes('__tests__')) {
+    if (inspectedPackage.testExclusionBehavior === 'after') {
+      addEveDiagnostic(
+        diagnostics,
+        'EVE_SUBAGENT_REGISTRATION_NOT_WIRED',
+        runtimeAgent.path,
+        agent.id,
+      );
+      return null;
+    }
+
+    if (inspectedPackage.testExclusionBehavior === null) {
+      addEveWarning(diagnostics, runtimeAgent.path, agent.id, {
+        boundaryVersion: EVE_TEST_EXCLUSION_BOUNDARY_VERSION,
+        declaredRange: inspectedPackage.declaredRange,
+        packageName: 'eve',
+        reason: 'version-dependent-behavior',
+        relationship: 'runtime-agent',
+      });
+      return null;
+    }
   }
 
   const rootIndex = await session.indexAgentRoot(root.agentRoot);
@@ -105,8 +160,40 @@ export const inspectEveAgent = async (
     return null;
   }
 
+  if (definition.kind !== 'present-supported') {
+    return null;
+  }
+
+  const outputSchema = agent.declaration.bindings?.outputSchema;
+
+  if (definition.properties.has('outputSchema') || outputSchema !== undefined) {
+    if (inspectedPackage.agentOutputSchemaBehavior === 'after') {
+      addEveDiagnostic(
+        diagnostics,
+        'EVE_SDK_FEATURE_UNAVAILABLE',
+        runtimeAgent.path,
+        agent.id,
+        null,
+        undefined,
+        undefined,
+        { feature: 'agent-output-schema' },
+      );
+      return null;
+    }
+
+    if (inspectedPackage.agentOutputSchemaBehavior === null) {
+      addEveWarning(diagnostics, runtimeAgent.path, agent.id, {
+        boundaryVersion: EVE_AGENT_OUTPUT_SCHEMA_REMOVAL_VERSION,
+        declaredRange: inspectedPackage.declaredRange,
+        packageName: 'eve',
+        reason: 'version-dependent-behavior',
+        relationship: outputSchema === undefined ? 'runtime-agent' : 'agent-output-schema',
+      });
+      return null;
+    }
+  }
+
   if (
-    definition.kind !== 'present-supported' ||
     [...definition.properties].some(
       ([key, property]) => !POSITIVE_AGENT_KEYS.has(key) || !ts.isPropertyAssignment(property),
     )
@@ -121,6 +208,50 @@ export const inspectEveAgent = async (
     (await resolveEveStaticString(session, result.analysis, model)).kind !== 'supported'
   ) {
     return null;
+  }
+
+  for (const option of [
+    {
+      behavior: inspectedPackage.defaultToolsOptionBehavior,
+      boundaryVersion: EVE_DEFAULT_TOOLS_OPTION_BOUNDARY_VERSION,
+      feature: 'default-tools-option',
+      name: 'defaultTools',
+    },
+    {
+      behavior: inspectedPackage.subagentModelVisibilityBehavior,
+      boundaryVersion: EVE_SUBAGENT_MODEL_VISIBILITY_BOUNDARY_VERSION,
+      feature: 'subagent-model-visibility',
+      name: 'tool',
+    },
+  ]) {
+    if (!definition.properties.has(option.name)) {
+      continue;
+    }
+
+    if (option.behavior === 'before') {
+      addEveDiagnostic(
+        diagnostics,
+        'EVE_SDK_FEATURE_UNAVAILABLE',
+        runtimeAgent.path,
+        agent.id,
+        null,
+        undefined,
+        undefined,
+        { feature: option.feature },
+      );
+      return null;
+    }
+
+    if (option.behavior === null) {
+      addEveWarning(diagnostics, runtimeAgent.path, agent.id, {
+        boundaryVersion: option.boundaryVersion,
+        declaredRange: inspectedPackage.declaredRange,
+        packageName: 'eve',
+        reason: 'version-dependent-behavior',
+        relationship: 'runtime-agent',
+      });
+      return null;
+    }
   }
 
   evidence.push(
@@ -140,8 +271,6 @@ export const inspectEveAgent = async (
       source: EVE_ADAPTER_ID,
     }),
   );
-
-  const outputSchema = agent.declaration.bindings?.outputSchema;
 
   if (outputSchema !== undefined && outputSchema.symbol !== undefined) {
     const schemaSource = await session.analyzeSource(outputSchema.path);
@@ -212,8 +341,10 @@ export const inspectEveAgent = async (
   return Object.freeze({
     agent,
     analysis: result.analysis,
+    defaultTools: getStaticBoolean(definition, 'defaultTools'),
     definition,
-    packageObservation,
+    inspectedPackage,
+    isModelVisible: getStaticBoolean(definition, 'tool'),
     root,
     rootIndex,
     routingDescription,

@@ -79,7 +79,7 @@ describe('CLI inspection presentation through Core and the memory repository rea
     const inspection = await inspectCompleteProject();
     const execution = createMoldeaCliInspectExecutionResult(
       inspection,
-      '8.0.0',
+      '9.0.0',
       true,
       null,
       65_536,
@@ -94,7 +94,7 @@ describe('CLI inspection presentation through Core and the memory repository rea
 
     expect(execution.exitCode).toBe(0);
     expect(Buffer.byteLength(execution.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
-    expect(envelope.schemaVersion).toBe(4);
+    expect(envelope.schemaVersion).toBe(5);
     expect(envelope.result.counts).toMatchObject({ agents: 2, context: 2, decisions: 1 });
     expect(envelope.result.page.records.map(({ kind }) => kind)).toContain('metadata');
     expect(execution.stdout).not.toContain('Universal project.');

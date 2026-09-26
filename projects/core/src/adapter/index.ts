@@ -170,7 +170,13 @@ export interface IRuntimeAdapterResult {
 }
 
 // adapter diagnostic contract
-export type { IAdapterDiagnostic } from '../diagnostics/index.js';
+export type {
+  IAdapterDiagnostic,
+  IAdapterErrorDiagnostic,
+  IAdapterWarningDiagnostic,
+  IUnverifiedRelationship,
+  IUnverifiedRelationshipDetails,
+} from '../diagnostics/index.js';
 
 // adapter-only canonical composition contracts
 export type {

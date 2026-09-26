@@ -26,9 +26,11 @@ import {
 } from '../diagnostic-utilities/index.js';
 import type {
   IAdapterDiagnostic,
+  IAdapterWarningDiagnostic,
   IDiagnosticEntity,
   ISourcePosition,
   ISourceRange,
+  IUnverifiedRelationship,
 } from '../diagnostics/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 import {
@@ -79,6 +81,7 @@ const EVIDENCE_KEYS = new Set([
 ]);
 const DIAGNOSTIC_KEYS = new Set([
   'source',
+  'severity',
   'code',
   'message',
   'path',
@@ -89,6 +92,35 @@ const DIAGNOSTIC_KEYS = new Set([
 ]);
 const ADAPTER_RESULT_KEYS = new Set(['evidence', 'diagnostics']);
 const ADAPTER_CODE_PATTERN = /^[A-Z][A-Z0-9_]*$/u;
+const UNVERIFIED_MESSAGE = 'The declared runtime relationship could not be verified.';
+const UNVERIFIED_RELATIONSHIPS = new Set<IUnverifiedRelationship>([
+  'runtime-agent',
+  'instruction-loader',
+  'agent-input-schema',
+  'agent-output-schema',
+  'tool-implementation',
+  'tool-registration',
+  'tool-input-schema',
+  'tool-output-schema',
+  'skill-implementation',
+  'skill-registration',
+  'handoff-registration',
+  'routing-description',
+  'variable-provider',
+]);
+const SIMPLE_WARNING_KEYS = new Set(['relationship', 'reason']);
+const VERSION_WARNING_KEYS = new Set([
+  'relationship',
+  'reason',
+  'packageName',
+  'declaredRange',
+  'boundaryVersion',
+]);
+const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/u;
+const BOUNDARY_VERSION_PATTERN = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/u;
+const VERSION_TOKEN =
+  '(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?';
+const RANGE_COMPARATOR_PATTERN = new RegExp(`^(?:<=|>=|<|>|=)?${VERSION_TOKEN}$`, 'u');
 
 // normalized output retained after one adapter result passes Core validation
 export interface IValidatedRuntimeAdapterResult {
@@ -167,7 +199,15 @@ const hasOnlyKeys = (
   candidate: Readonly<Record<string, unknown>>,
   keys: ReadonlySet<string>,
 ): boolean => {
-  return Reflect.ownKeys(candidate).every((key) => typeof key === 'string' && keys.has(key));
+  return Reflect.ownKeys(candidate).every((key) => {
+    if (typeof key !== 'string' || !keys.has(key)) {
+      return false;
+    }
+
+    const descriptor = Object.getOwnPropertyDescriptor(candidate, key);
+
+    return descriptor !== undefined && descriptor.enumerable && 'value' in descriptor;
+  });
 };
 
 const isSafeString = (candidate: unknown): candidate is string => {
@@ -346,6 +386,147 @@ const normalizeEntity = (
   return normalizeDiagnosticEntity(entity);
 };
 
+/** Checks only the safe wire grammar; adapters own SemVer meaning and normalization. */
+const isNormalizedRangeWire = (candidate: string): boolean => {
+  if (candidate === '*') {
+    return true;
+  }
+
+  return candidate.split(' || ').every((set) => {
+    const comparators = set.split(' ');
+
+    return (
+      comparators.length > 0 && comparators.every((part) => RANGE_COMPARATOR_PATTERN.test(part))
+    );
+  });
+};
+
+const isValidWarningSubject = (
+  relationship: IUnverifiedRelationship,
+  entity: IDiagnosticEntity | null,
+  context: IAdapterValidationState,
+): boolean => {
+  if (entity?.agentId === undefined || entity.decisionId !== undefined) {
+    return false;
+  }
+
+  const agent = context.agentsById.get(entity.agentId);
+
+  if (agent === undefined) {
+    return false;
+  }
+
+  if (relationship === 'variable-provider') {
+    return (
+      entity.capabilityKind === undefined &&
+      entity.capabilityId === undefined &&
+      entity.variableId !== undefined &&
+      agent.declaration.bindings?.variableProviders?.[entity.variableId] !== undefined
+    );
+  }
+
+  if (entity.variableId !== undefined) {
+    return false;
+  }
+
+  if (relationship.startsWith('tool-')) {
+    if (entity.capabilityKind !== 'tool' || entity.capabilityId === undefined) {
+      return false;
+    }
+
+    const tool = agent.declaration.tools?.[entity.capabilityId];
+
+    return (
+      tool !== undefined &&
+      (relationship !== 'tool-input-schema' || tool.inputSchema !== undefined) &&
+      (relationship !== 'tool-output-schema' || tool.outputSchema !== undefined)
+    );
+  }
+
+  if (relationship.startsWith('skill-')) {
+    return (
+      entity.capabilityKind === 'skill' &&
+      entity.capabilityId !== undefined &&
+      agent.declaration.skills?.[entity.capabilityId] !== undefined
+    );
+  }
+
+  if (entity.capabilityKind !== undefined || entity.capabilityId !== undefined) {
+    return false;
+  }
+
+  if (relationship === 'runtime-agent') {
+    return agent.declaration.bindings?.runtimeAgent !== undefined;
+  }
+
+  if (relationship === 'instruction-loader') {
+    return agent.declaration.bindings?.instructionLoader !== undefined;
+  }
+
+  if (relationship === 'agent-input-schema') {
+    return agent.declaration.bindings?.inputSchema !== undefined;
+  }
+
+  if (relationship === 'agent-output-schema') {
+    return agent.declaration.bindings?.outputSchema !== undefined;
+  }
+
+  return relationship === 'handoff-registration' || relationship === 'routing-description';
+};
+
+const normalizeWarningDetails = (
+  candidate: unknown,
+  entity: IDiagnosticEntity | null,
+  context: IAdapterValidationState,
+): IAdapterWarningDiagnostic['details'] => {
+  const details = normalizeDetails(candidate, context.adapterId);
+  const relationship = details['relationship'];
+  const reason = details['reason'];
+
+  if (
+    typeof relationship !== 'string' ||
+    !UNVERIFIED_RELATIONSHIPS.has(relationship as IUnverifiedRelationship) ||
+    !isValidWarningSubject(relationship as IUnverifiedRelationship, entity, context)
+  ) {
+    return invalidAdapterResult(context.adapterId);
+  }
+
+  if (reason === 'unsupported-source-pattern' || reason === 'dynamic-source-pattern') {
+    if (!hasOnlyKeys(details, SIMPLE_WARNING_KEYS)) {
+      return invalidAdapterResult(context.adapterId);
+    }
+
+    return freezeRecursively({ relationship: relationship as IUnverifiedRelationship, reason });
+  }
+
+  if (reason !== 'version-dependent-behavior' || !hasOnlyKeys(details, VERSION_WARNING_KEYS)) {
+    return invalidAdapterResult(context.adapterId);
+  }
+
+  const packageName = details['packageName'];
+  const declaredRange = details['declaredRange'];
+  const boundaryVersion = details['boundaryVersion'];
+
+  if (
+    typeof packageName !== 'string' ||
+    !PACKAGE_NAME_PATTERN.test(packageName) ||
+    (declaredRange !== null &&
+      (typeof declaredRange !== 'string' || !isNormalizedRangeWire(declaredRange))) ||
+    typeof boundaryVersion !== 'string' ||
+    !BOUNDARY_VERSION_PATTERN.test(boundaryVersion)
+  ) {
+    return invalidAdapterResult(context.adapterId);
+  }
+
+  return freezeRecursively({
+    boundaryVersion,
+    declaredRange,
+    packageName,
+    reason,
+    relationship: relationship as IUnverifiedRelationship,
+  });
+};
+
 const normalizeReference = (candidate: unknown, adapterId: string): IRepositoryReference => {
   if (!isRecord(candidate) || !hasOnlyKeys(candidate, REFERENCE_KEYS)) {
     return invalidAdapterResult(adapterId);
@@ -487,11 +668,13 @@ const normalizeDiagnostic = (
   }
 
   const source = candidate['source'];
+  const severity = candidate['severity'];
   const code = candidate['code'];
   const message = candidate['message'];
   const pathCandidate = candidate['path'];
   const pointer = candidate['pointer'];
   const namespace = `${context.adapterId.toUpperCase().replaceAll('-', '_')}_`;
+  const isUnverified = code === `${namespace}RUNTIME_RELATIONSHIP_UNVERIFIED`;
 
   if (
     source !== context.adapterId ||
@@ -499,6 +682,9 @@ const normalizeDiagnostic = (
     !ADAPTER_CODE_PATTERN.test(code) ||
     !code.startsWith(namespace) ||
     code.length === namespace.length ||
+    (isUnverified
+      ? severity !== 'warning' || message !== UNVERIFIED_MESSAGE
+      : severity !== 'error') ||
     !isSafeString(message) ||
     message.length === 0 ||
     (pathCandidate !== null &&
@@ -510,19 +696,39 @@ const normalizeDiagnostic = (
 
   const path = pathCandidate === null ? null : parseRepositoryPath(pathCandidate);
   const range = normalizeRange(candidate['range'], context.adapterId);
+  const entity = normalizeEntity(candidate['entity'], context);
 
   if (path === null && (pointer !== null || range !== null)) {
     return invalidAdapterResult(context.adapterId);
   }
 
+  if (isUnverified) {
+    if (path === null) {
+      return invalidAdapterResult(context.adapterId);
+    }
+
+    return freezeRecursively({
+      code,
+      details: normalizeWarningDetails(candidate['details'], entity, context),
+      entity,
+      message,
+      path,
+      pointer,
+      range,
+      severity: 'warning' as const,
+      source,
+    });
+  }
+
   return freezeRecursively({
     code,
     details: normalizeDetails(candidate['details'], context.adapterId),
-    entity: normalizeEntity(candidate['entity'], context),
+    entity,
     message,
     path,
     pointer,
     range,
+    severity: 'error' as const,
     source,
   });
 };

@@ -10,6 +10,33 @@ import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 
 const homepage = withBase('/', process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 
+test('locks background scrolling without changing the document width', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 740 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(homepage);
+  await page.addStyleTag({
+    content: 'html { overflow-y: scroll; } html::-webkit-scrollbar { width: 16px; }',
+  });
+  const measure = () =>
+    page.evaluate(() => ({
+      bodyWidth: document.body.getBoundingClientRect().width,
+      gutter: getComputedStyle(document.documentElement).scrollbarGutter,
+      scrollY: window.scrollY,
+    }));
+  const before = await measure();
+  expect(before.gutter).toBe('stable');
+  await page.getByRole('button', { name: 'View result: Hero example', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: '1 broken reference', exact: true })).toBeVisible();
+  const during = await measure();
+  expect(during.bodyWidth).toBe(before.bodyWidth);
+  await page.mouse.move(8, 400);
+  await page.mouse.wheel(0, 400);
+  expect((await measure()).scrollY).toBe(during.scrollY);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  expect((await measure()).bodyWidth).toBe(before.bodyWidth);
+});
+
 test('supports public dialog customization without overriding modal behavior', async ({ page }) => {
   // Exercise consumer props through Astro compilation without publishing a fixture route.
   test.setTimeout(60_000);
@@ -149,5 +176,30 @@ for (const theme of ['light', 'dark'] as const) {
       ratio: 1,
     });
     expect(await body.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+
+    await dialog.getByRole('button', { name: 'Close Core result' }).click();
+    await expect(dialog).not.toBeVisible();
+    await page.getByRole('button', { name: 'View result: Hero example', exact: true }).click();
+    await expect(dialog).toBeVisible();
+    expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
+
+    await body.hover();
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await page.getByRole('button', { name: 'View result: Hero example', exact: true }).click();
+    await expect(dialog).toBeVisible();
+    expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await body.hover();
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await dialog.getByRole('button', { name: 'Close Core result' }).click();
+    await expect(dialog).not.toBeVisible();
+    await page.getByRole('button', { name: 'View result: Hero example', exact: true }).click();
+    await expect(dialog).toBeVisible();
+    expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
   });
 }

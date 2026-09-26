@@ -86,7 +86,7 @@ describe('vercelAiSdkAdapter Core integration', () => {
   test('keeps the diagnostic catalog synchronized with its conformance golden', () => {
     expect(
       Object.entries(VERCEL_AI_SDK_ADAPTER_DIAGNOSTICS)
-        .map(([code, message]) => ({ code, message }))
+        .map(([code, definition]) => ({ code, ...definition }))
         .sort((left, right) => (left.code < right.code ? -1 : left.code > right.code ? 1 : 0)),
     ).toStrictEqual(expectedDiagnostics);
   });
@@ -105,6 +105,29 @@ describe('vercelAiSdkAdapter Core integration', () => {
 
     expect(result.diagnostics).toStrictEqual([]);
     expect(result.valid).toBe(true);
+  });
+
+  test.each([
+    ['true', 'enabled'],
+    ['false', 'disabled'],
+    ['deferLoading', 'unknown'],
+  ] as const)('reports declared deferred loading %s as %s', async (option, expected) => {
+    const result = await inspect({
+      '/src/tools.ts': getFixtureText('/src/tools.ts').replace(
+        'inputSchema: FindOrderInputSchema,',
+        `inputSchema: FindOrderInputSchema, deferLoading: ${option},`,
+      ),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.evidence
+        .filter(
+          ({ kind, capabilityId }) => kind === 'tool-registration' && capabilityId === 'find-order',
+        )
+        .map(({ details }) => details['declaredDeferredLoading']),
+    ).toStrictEqual([expected, expected]);
   });
 
   test('produces deterministic evidence for reversed entries and concurrent inspections', async () => {

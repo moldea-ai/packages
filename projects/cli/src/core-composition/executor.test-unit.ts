@@ -26,11 +26,13 @@ const RESOURCE_LIMITS = Object.freeze({
 const SOURCE = Object.freeze({ id: 'memory:test', sourceKind: 'memory' });
 const VALIDATION_RESULT = Object.freeze({
   diagnostics: Object.freeze([]),
+  errorCount: 0,
   evidence: Object.freeze([]),
   formatVersion: null,
   source: SOURCE,
   summary: null,
   valid: false,
+  warningCount: 0,
 }) satisfies IProjectValidationResult;
 const INSPECTION_RESULT = Object.freeze({
   counts: Object.freeze({
@@ -38,8 +40,10 @@ const INSPECTION_RESULT = Object.freeze({
     context: 0,
     decisions: 0,
     diagnostics: 0,
+    errors: 0,
     evidence: 0,
     metadata: 0,
+    warnings: 0,
     mirrors: 0,
     runtimes: 0,
     unresolved: 0,
@@ -160,7 +164,7 @@ describe('createMoldeaCliCoreInspectionExecutor', () => {
     await expect(
       executeInspection({
         command: 'inspect',
-        cursor: 'core4:all:1:memory%3Atest',
+        cursor: 'core5:all:1:memory%3Atest',
         repository: reader,
         resourceLimits: RESOURCE_LIMITS,
       }),
@@ -169,7 +173,7 @@ describe('createMoldeaCliCoreInspectionExecutor', () => {
       repository: reader,
     });
     expect(PROJECT_INSPECTION.readPage).toHaveBeenCalledWith({
-      cursor: 'core4:all:1:memory%3Atest',
+      cursor: 'core5:all:1:memory%3Atest',
       maxItems: 128,
       view: 'all',
     });

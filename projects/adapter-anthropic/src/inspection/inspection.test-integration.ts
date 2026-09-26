@@ -67,11 +67,53 @@ const inspectEntries = async (entries: readonly IMemoryRepositoryEntry[]) =>
 const inspect = async (replacements: Readonly<Record<string, IFixtureReplacement>> = {}) =>
   inspectEntries(createEntries(replacements));
 
+const inspectOutputSchema = async (
+  format: string,
+  options?: string,
+  helperImport = '',
+  outputSchema = "export const OutputSchema = { type: 'object' } as const;",
+) => {
+  const agent = fixture.entries.find(({ path }) => path === '/src/agent.ts')?.text;
+  const contracts = fixture.entries.find(({ path }) => path === '/src/contracts.ts')?.text;
+
+  if (agent === undefined || contracts === undefined) {
+    throw new TypeError('The output-schema fixture requires agent and contract sources.');
+  }
+
+  const runtime = agent
+    .replace(
+      "import AnthropicClient from '@anthropic-ai/sdk';",
+      `import AnthropicClient from '@anthropic-ai/sdk';\n${helperImport}`,
+    )
+    .replace('  client.messages.create({', '  client.messages.parse({')
+    .replace(
+      "import { FindOrderInput } from './contracts.js';",
+      "import { FindOrderInput, OutputSchema } from './contracts.js';",
+    )
+    .replace(
+      '    tools: [registeredFindOrder],',
+      `    tools: [registeredFindOrder],\n    output_config: { format: ${format} },`,
+    )
+    .replace('  });', `  }${options === undefined ? '' : `, ${options}`});`);
+
+  return inspect({
+    '/moldea/moldea.yaml': fixture.manifest.replace(
+      '    tools:',
+      '      outputSchema:\n        path: /src/contracts.ts\n        symbol: OutputSchema\n    tools:',
+    ),
+    '/src/agent.ts': runtime,
+    '/src/contracts.ts': `${contracts}\n${outputSchema}\n`,
+  });
+};
+
 const createNullPrototypeRecord = <Value extends object>(value: Value): Value =>
   Object.assign(Object.create(null) as Value, value);
 
 const createExpectedDiagnostic = (
-  code: keyof typeof ANTHROPIC_ADAPTER_DIAGNOSTICS,
+  code: Exclude<
+    keyof typeof ANTHROPIC_ADAPTER_DIAGNOSTICS,
+    'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED'
+  >,
   path: string,
   range: IAdapterDiagnostic['range'],
   capabilityId?: string,
@@ -83,7 +125,8 @@ const createExpectedDiagnostic = (
     ...(capabilityId === undefined ? {} : { capabilityId, capabilityKind: 'tool' as const }),
     adapterId: 'anthropic',
   }),
-  message: ANTHROPIC_ADAPTER_DIAGNOSTICS[code],
+  message: ANTHROPIC_ADAPTER_DIAGNOSTICS[code].message,
+  severity: 'error',
   path: parseRepositoryPath(path),
   pointer: null,
   range,
@@ -91,10 +134,130 @@ const createExpectedDiagnostic = (
 });
 
 describe('anthropicAdapter Core integration', () => {
+  test('reports the stable stream method without losing direct relationships', async () => {
+    const source = fixture.entries.find(({ path }) => path === '/src/agent.ts')?.text;
+
+    if (source === undefined) {
+      throw new TypeError('The runtime source fixture is required.');
+    }
+
+    const result = await inspect({
+      '/src/agent.ts': source.replace('client.messages.create(', 'client.messages.stream('),
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(
+      result.evidence
+        .filter(({ kind }) => kind === 'runtime-pattern')
+        .map(({ runtimeName }) => runtimeName),
+    ).toStrictEqual(['messages.stream']);
+    expect(result.evidence.map(({ kind }) => kind)).toContain('instruction-loader');
+    expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
+  });
+
+  test('establishes direct output-schema identity through the effective output format', async () => {
+    const result = await inspectOutputSchema("{ type: 'json_schema', schema: OutputSchema }");
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.evidence).toContainEqual(
+      expect.objectContaining({
+        kind: 'schema',
+        details: { requestProperty: 'output_config.format', schemaRole: 'output' },
+      }),
+    );
+  });
+
+  test('traces a direct zodOutputFormat helper to its exact bound schema', async () => {
+    const result = await inspectOutputSchema(
+      'zodOutputFormat(OutputSchema)',
+      undefined,
+      "import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';",
+      "import { z } from 'zod';\nexport const OutputSchema = z.object({ answer: z.string() });",
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.evidence).toContainEqual(
+      expect.objectContaining({
+        kind: 'schema',
+        details: { requestProperty: 'output_config.format', schemaRole: 'output' },
+      }),
+    );
+  });
+
+  test('keeps transformed or non-SDK output helpers unverified', async () => {
+    const transformed = await inspectOutputSchema(
+      'wrap(zodOutputFormat(OutputSchema))',
+      undefined,
+      "import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';",
+    );
+    const unrelated = await inspectOutputSchema(
+      'zodOutputFormat(OutputSchema)',
+      undefined,
+      "import { zodOutputFormat } from './local.js';",
+    );
+
+    for (const result of [transformed, unrelated]) {
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+          details: { reason: 'dynamic-source-pattern', relationship: 'agent-output-schema' },
+          severity: 'warning',
+        }),
+      );
+      expect(
+        result.evidence.some(
+          ({ kind, details }) => kind === 'schema' && details['schemaRole'] === 'output',
+        ),
+      ).toBe(false);
+    }
+  });
+
+  test('diagnoses a missing bound output-schema symbol', async () => {
+    const result = await inspectOutputSchema(
+      "{ type: 'json_schema', schema: OutputSchema }",
+      undefined,
+      '',
+      '',
+    );
+
+    expect(result.diagnostics.map(({ code }) => code)).toContain(
+      'ANTHROPIC_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND',
+    );
+  });
+
+  test('rejects a statically replaced output schema and warns for a dynamic body', async () => {
+    const replaced = await inspectOutputSchema(
+      "{ type: 'json_schema', schema: OutputSchema }",
+      "{ body: { output_config: { format: { type: 'json_schema', schema: {} } } } }",
+    );
+    const dynamic = await inspectOutputSchema(
+      "{ type: 'json_schema', schema: OutputSchema }",
+      '{ body: replacement }',
+    );
+
+    expect(replaced.diagnostics.map(({ code }) => code)).toContain(
+      'ANTHROPIC_OUTPUT_SCHEMA_NOT_WIRED',
+    );
+    expect(dynamic.diagnostics).toContainEqual(
+      expect.objectContaining({
+        details: { reason: 'dynamic-source-pattern', relationship: 'agent-output-schema' },
+        severity: 'warning',
+      }),
+    );
+    expect(
+      dynamic.evidence.some(
+        ({ kind, details }) => kind === 'schema' && details['schemaRole'] === 'output',
+      ),
+    ).toBe(false);
+  });
+
   test('keeps the diagnostic catalog synchronized with its conformance golden', () => {
     expect(
       Object.entries(ANTHROPIC_ADAPTER_DIAGNOSTICS)
-        .map(([code, message]) => ({ code, message }))
+        .map(([code, definition]) => ({ code, ...definition }))
         .sort((left, right) => (left.code < right.code ? -1 : left.code > right.code ? 1 : 0)),
     ).toStrictEqual(expectedDiagnostics);
   });
@@ -360,8 +523,13 @@ describe('anthropicAdapter Core integration', () => {
 
     expect(result.valid).toBe(false);
     expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
+      'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
       'ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED',
     ]);
+    expect(result.diagnostics[0]).toMatchObject({
+      details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+      severity: 'warning',
+    });
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual([
       'language',
       'runtime-package',
@@ -632,7 +800,13 @@ describe('anthropicAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+    ]);
+    expect(result).toMatchObject({ errorCount: 0, warningCount: 1 });
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
@@ -751,7 +925,12 @@ describe('anthropicAdapter Core integration', () => {
     ]);
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });
 
@@ -789,7 +968,17 @@ describe('anthropicAdapter Core integration', () => {
       'ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED',
       'ANTHROPIC_TOOL_REGISTRATION_NOT_WIRED',
     ]);
-    expect(ambiguousResult.diagnostics).toStrictEqual([]);
+    expect(ambiguousResult.diagnostics).toMatchObject([
+      {
+        details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+      {
+        details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+    ]);
+    expect(ambiguousResult.valid).toBe(true);
   });
 
   test('suppresses negative relationship diagnostics for an aliased Messages candidate', async () => {
@@ -810,7 +999,16 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+      {
+        details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.valid).toBe(true);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
@@ -833,7 +1031,12 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      },
+    ]);
     expect(result.valid).toBe(true);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });

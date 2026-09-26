@@ -12,7 +12,7 @@ The current verified target does not claim support for:
 - indirect query wrappers, query input variables, nested callback calls, or unstable session APIs
 - filesystem-defined agents, built-in agents, observer agents, or dynamically assembled definitions
 - query main-thread `agent` selection or `toolAliases` interpretation
-- string-array system prompts, CLAUDE.md, settings, hooks, plugins, skills, or prompt transformations
+- string-array system prompts, CLAUDE.md contents, settings, hooks, plugins, skills, or prompt transformations
 - programmatic-subagent output schemas or manifest tool output schemas
 - per-agent MCP server configuration
 - external stdio, SSE, HTTP, remote, proxy, plugin, provider-hosted, or built-in tools
@@ -21,6 +21,8 @@ The current verified target does not claim support for:
 - runtime-generated strings, SDK key normalization, schema-content validation, permission evaluation, or provider behavior
 
 Package detection uses nearest manifests, not lockfiles or installed `node_modules`. Static dependency ranges are observations; the adapter does not prove which package build executes at runtime.
+
+`verbatimPrompts`, `systemPrompt.snapshot`, and `AgentDefinition.omitClaudeMd` are recognized as independent controls, not evidence of canonical instruction content or actual prompt delivery. `/core` exists in the reviewed SDK 0.3.282 package; source analysis does not establish its availability in every version allowed by a broad dependency declaration.
 
 Each invocation sees one declared agent, exact same-runtime binding resolution, and only the bounded operations Core supplies through `IRuntimeAdapterRepository`. It receives no complete agent collection, project body index, host path, Anthropic credential, environment variable, network client, or runtime process. It does not execute TypeScript, dynamically import source, load the inspected SDK, or follow source symlinks.
 

@@ -1,7 +1,7 @@
 import type ts from 'typescript';
 
 import type { ISourceRange } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
@@ -17,7 +17,10 @@ export type IOpenAiAdapterDiagnosticCode =
   | 'OPENAI_INSTRUCTION_LOADER_NOT_WIRED'
   | 'OPENAI_TOOL_REGISTRATION_NOT_WIRED'
   | 'OPENAI_TOOL_NAME_MISMATCH'
-  | 'OPENAI_TOOL_INPUT_SCHEMA_NOT_WIRED';
+  | 'OPENAI_TOOL_INPUT_SCHEMA_NOT_WIRED'
+  | 'OPENAI_OUTPUT_SCHEMA_NOT_WIRED'
+  | 'OPENAI_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED';
 
 // normalized repository text and scalar source lookup
 export interface IOpenAiSourceLocator {
@@ -98,7 +101,9 @@ export type IOpenAiRequestRelationship =
 
 export interface IOpenAiResponsesRequest {
   readonly instructions: IOpenAiRequestRelationship;
+  readonly methodName: string;
   readonly object: ts.ObjectLiteralExpression;
+  readonly text: IOpenAiRequestRelationship;
   readonly tools: IOpenAiRequestRelationship;
 }
 
@@ -116,6 +121,13 @@ export interface IOpenAiInspectionSession {
 }
 
 // complete input used to construct one safe adapter diagnostic
-export type IOpenAiDiagnosticInput = Omit<IAdapterDiagnostic, 'message' | 'source'> & {
-  readonly code: IOpenAiAdapterDiagnosticCode;
-};
+export type IOpenAiDiagnosticInput =
+  | (Omit<IAdapterErrorDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: Exclude<
+        IOpenAiAdapterDiagnosticCode,
+        'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED'
+      >;
+    })
+  | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
+      readonly code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED';
+    });

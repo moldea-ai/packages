@@ -36,8 +36,13 @@ test('distinguishes required repository files from optional project knowledge', 
   await expect(output).toBeVisible();
   expect(JSON.parse(await output.innerText())).toStrictEqual({
     valid: false,
-    diagnostics: [{ code: 'MOLDEA_REFERENCE_MISSING', path: '/moldea/moldea.yaml' }],
+    errorCount: 1,
+    warningCount: 0,
+    diagnostics: [
+      { code: 'MOLDEA_REFERENCE_MISSING', path: '/moldea/moldea.yaml', severity: 'error' },
+    ],
   });
+  await expect(overview).toContainText('The full result also includes formatVersion');
 });
 
 test('visually separates the repository architecture from the example in both themes', async ({
