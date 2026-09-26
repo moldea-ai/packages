@@ -68,6 +68,73 @@ export const readOptionalGitFile = (
   return readGitFile(repositoryRoot, commit, filePath);
 };
 
+/** Lists workspace manifests at the package-directory depth in one committed tree. */
+export const listGitWorkspaceManifestPaths = (repositoryRoot: URL, commit: string): string[] => {
+  requireCommit(commit);
+
+  const result = spawnSync(
+    'git',
+    ['ls-tree', '-r', '-z', '--name-only', commit, '--', 'apps', 'packages', 'projects'],
+    { cwd: repositoryRoot, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 },
+  );
+
+  if (result.status !== 0) {
+    throw new Error(`The ${commit} workspace manifests could not be listed safely.`);
+  }
+
+  return result.stdout
+    .split('\0')
+    .filter((filePath) =>
+      /^(?:apps|packages|projects)\/(?!_archive\/|_archives\/|_backup\/|_backups\/)[^/]+\/package\.json$/u.test(
+        filePath,
+      ),
+    );
+};
+
+/** Detects changes to shared library-build inputs while excluding tests and prose. */
+export const hasGitLibraryBuildConfigChanges = (
+  repositoryRoot: URL,
+  baseCommit: string,
+  currentCommit: string,
+): boolean => {
+  requireCommit(baseCommit);
+  requireCommit(currentCommit);
+
+  const result = spawnSync(
+    'git',
+    [
+      'diff',
+      '--no-renames',
+      '--name-only',
+      '-z',
+      baseCommit,
+      currentCommit,
+      '--',
+      'configs/vite',
+      'configs/typescript',
+    ],
+    { cwd: repositoryRoot, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 },
+  );
+
+  if (result.status !== 0) {
+    throw new Error('The shared library-build configuration changes could not be resolved safely.');
+  }
+
+  return result.stdout.split('\0').some((filePath) => {
+    if (!/\.(?:cjs|js|json|mjs|ts)$/u.test(filePath)) {
+      return false;
+    }
+
+    const segments = filePath.split('/');
+
+    return (
+      !segments.some((segment) =>
+        ['_archive', '_archives', '_backup', '_backups', 'docs'].includes(segment),
+      ) && !/\.test-(?:unit|integration|e2e|bench|fixtures)\./u.test(filePath)
+    );
+  });
+};
+
 /**
  * Checks whether one project has an npm release-relevant change between exact Git commits.
  * @param repositoryRoot The repository containing both commits.

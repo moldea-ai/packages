@@ -18,7 +18,7 @@ const PACKAGE_VERSIONS = {
   '@moldea.ai/adapter-vercel-ai-sdk': '4.0.0',
   '@moldea.ai/core': '5.0.0',
   '@moldea.ai/repository': '2.0.0',
-  '@moldea.ai/repository-fs': '2.0.1',
+  '@moldea.ai/repository-fs': '2.0.2',
 } as const;
 
 // exact installed package metadata used by composition tests

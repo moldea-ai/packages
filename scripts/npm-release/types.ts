@@ -34,6 +34,14 @@ export interface INpmReleaseProjectChange {
   previousVersion: string | null;
 }
 
+// one package and its local workspace inputs in a committed release snapshot
+export interface INpmReleaseWorkspacePackageState {
+  directory: string;
+  isPrivate: boolean;
+  name: string;
+  workspaceDependencies: readonly string[];
+}
+
 // untrusted workflow trigger, package-change, and registry state used to select releases
 export interface INpmReleaseWorkflowPlanSources {
   eventName: string;

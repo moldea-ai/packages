@@ -37,7 +37,7 @@ const INSTALLED_PACKAGE_METADATA = Object.freeze({
     '@moldea.ai/adapter-vercel-ai-sdk': '4.0.0',
     '@moldea.ai/core': '5.0.0',
     '@moldea.ai/repository': '2.0.0',
-    '@moldea.ai/repository-fs': '2.0.1',
+    '@moldea.ai/repository-fs': '2.0.2',
   }),
   supportedNodeRange: '>=22.11.0',
   version: '9.0.0',

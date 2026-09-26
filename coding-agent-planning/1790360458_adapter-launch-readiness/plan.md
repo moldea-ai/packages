@@ -4,12 +4,13 @@
 
 Prepare all fifteen public packages and the packages website for launch, so the next skill version can consume accurate, stable, resource-bounded package contracts.
 
-This plan incorporates the reviewed agent conversation, repository investigation, upstream research, plan challenge, specification reinspection, and the developer's subsequent decisions. Milestones 1–7 have been implemented and pushed. This revision records the Repository FS containment finding and the developer's choice to require a tree trusted against hostile concurrent mutation. The remaining implementation includes package work and the explicitly listed documentation-only changes in the sibling `platform` repository. The developer separately authorized signed repository pushes after each completed and reviewed milestone. Npm publication, deployment, platform application changes, and the next skill implementation remain outside that authorization.
+This plan incorporates the reviewed agent conversation, repository investigation, upstream research, plan challenge, specification reinspection, and the developer's subsequent decisions. Milestones 1–8 have been implemented, reviewed, and pushed. This revision adds the developer-approved correction for Eve 0.67.0, which removed `defineAgent.outputSchema`. Milestone 9 release work is partly implemented but uncommitted. The remaining implementation includes package work and the explicitly listed documentation-only changes in the sibling `platform` repository. The developer separately authorized signed repository pushes after each completed and reviewed milestone. Npm publication, deployment, platform application changes, and the next skill implementation remain outside that authorization.
 
 ### Agreed requirements
 
 - Update the existing ten adapter families for the concrete capabilities and corrections below. Preserve support for their existing eligible older SDK implementations.
 - Preserve independent package versioning, compatible-major Moldea dependencies, and the current minimum-only upstream SDK eligibility ranges. A new upstream release, by itself, must not invalidate an installation or produce a warning.
+- Interpret the confirmed Eve 0.67.0 removal of agent-definition output schemas by declared-version range. Retain older supported Eve forms; never claim an agent schema is wired when the eligible SDK has removed that field.
 - Introduce native diagnostic severity: errors fail completed validation; warnings communicate a specific unverified relationship without failing validation. Operational failures remain failures.
 - Use one authoritative implementation. Remove superseded Moldea paths as they are replaced; retain older SDK source patterns because they remain supported product behavior.
 - Keep the architecture simple. Extend existing owners and shared primitives; avoid a runtime compatibility engine, repository execution, global agent enumeration, or a new Core orchestration model.
@@ -33,16 +34,16 @@ This plan incorporates the reviewed agent conversation, repository investigation
 
 ## Inspected baseline and evidence
 
-The initial inspection used packages commit `dca170b4a21f21df5cdcbbdb25ae0971ed3c0bd8` before implementation. The root README, blueprint, development and release guides, affected contracts, adapter implementations, CLI projections, website generators, package manifests, test configuration, and release-selection code grounded the original plan. The current packages `HEAD` is `85ce54cb2ac0a1321ad5dcd59dc3b7b1557227f4` after Milestone 7. Milestone 8 package changes are uncommitted. The sibling platform worktree contains concurrent unrelated agent changes; its original clean baseline is no longer its current state.
+The initial inspection used packages commit `dca170b4a21f21df5cdcbbdb25ae0971ed3c0bd8` before implementation. The root README, blueprint, development and release guides, affected contracts, adapter implementations, CLI projections, website generators, package manifests, test configuration, and release-selection code grounded the original plan. The current packages `HEAD` is `9e7ec9ae011acbedf471f9fb7c2c36d437c90cbf` after Milestone 8. Milestone 9 package changes are uncommitted. The sibling platform live worktree contains concurrent unrelated agent changes; documentation work uses an isolated platform worktree instead.
 
-The original specification reinspection used the then-clean sibling `platform` worktree at commit `554f2d27cebab0b24809fb4fd723b28a2165a3e0`. Its ownership edits established platform ownership of specifications. Current packages now implement Core 5, CLI schema 5, and severity-aware diagnostics. The platform Repository FS specification still promises unconditional native containment and no-follow behavior; this revision explicitly synchronizes that contract. The earlier plan challenge is superseded by this revision.
+The original specification reinspection used the then-clean sibling `platform` worktree at commit `554f2d27cebab0b24809fb4fd723b28a2165a3e0`. Its ownership edits established platform ownership of specifications. Current packages implement Core 5, CLI schema 5, and severity-aware diagnostics. The platform Repository FS specification was synchronized with its trusted-tree boundary and pushed as `113f5f74b9170e90880bed3de7df6c3c760affc5`. The isolated platform worktree is now based on `b19e2d6740e9b82aff0e621dffe21977b7fb50ae` and has an uncommitted Repository FS version update to match the package's pending `2.0.2` release. The earlier plan challenge is superseded by this revision.
 
 ### Implementation state at this revision
 
-- Milestones 1–7 are completed and pushed through packages commit `85ce54cb2ac0a1321ad5dcd59dc3b7b1557227f4`. Their coordinated versions, adapter changes, warning contract, website examples, and directly affected specifications remain completed work, not a request to reimplement them.
-- Milestone 8 has uncommitted Repository FS root/ancestor rechecks, a bounded file-page cache, real-filesystem and packed-CLI regressions, resource calibration, the fifteen-package audit report, and directly affected package documentation. A built-package probe had returned bytes outside the selected root after stable symlink replacement. The new checks reject stable replacement, but Node's path-based operations cannot prove containment against a hostile concurrent swap between checks and opens.
-- Linux package suites, root integration, resource measurement, typecheck, lint, formatting, build, docs, and compatibility checks have passed for the affected state. Current-change macOS and Windows evidence is still required. The platform Repository FS specification has not yet been synchronized. Neither the Milestone 8 changes nor the current revision has been committed or pushed.
-- Milestone 9 release-selection propagation, final artifact/consumer matrix, final upstream recheck, and launch verdict remain unimplemented. Previously completed milestones do not establish these final gates.
+- Milestones 1–8 are completed and pushed through packages commit `9e7ec9ae011acbedf471f9fb7c2c36d437c90cbf`. Milestone 8 closed the stable Repository FS root/ancestor replacement and page-cache growth defects, completed the fifteen-package audit and resource calibration, exercised the packed CLI, and synchronized the platform trusted-tree specification. These changes remain completed work, not a request to reimplement them.
+- Milestone 9 currently has uncommitted release-selector graph/config changes and focused integration tests; `docs/npm-releases.md` synchronization; a Repository FS `2.0.2` bump and affected test fixtures; and an isolated platform specification version edit. The root release tests, root typecheck/lint, and targeted formatting have passed for those inputs. Final artifact/consumer gates, current-commit CI, release check, documentation verdict, and pushes remain pending.
+- The exact Eve 0.67.0 npm tarball changelog says `outputSchema` was removed from `defineAgent`, `defineRemoteAgent`, `defineWorkspaceAgent`, and related definitions. Its shipped TypeScript declaration omits `PublicAgentDefinitionBase.outputSchema`, while Eve 0.66.3 includes it. The current Eve adapter still accepts the key and emits `agent-output` schema evidence when bound, so a 0.67.0 project can receive false positive proof. This is a confirmed launch defect, not a reason to raise the minimum or cap the upstream range.
+- `pnpm upstream:check` and `pnpm upstream:check:latest` passed for the September 26 pinned and latest inputs, including Eve 0.67.0 in the latest check. Their compiler scenarios do not exercise this agent-definition property. Current-change macOS and Windows evidence is still required.
 
 Development uses Node.js 24.15.0, pnpm 11.9.0, TypeScript 6.0.3, Vitest 4.1.10, Vite 8.2.1, and semver 7.8.5. The website uses Astro 7.2.2, Tailwind CSS 4.3.3, Zod 4.3.6, and Playwright 1.62.1. These tooling versions are not upgrade targets.
 
@@ -65,26 +66,38 @@ The ten existing adapters gained the reviewed Anthropic/OpenAI request-method an
 
 The packages website and Website UI now consume JSON schema 5 and show executable warning, error, and representative new-capability examples. Generated content and browser checks are recorded in the launch report. No separate `website-ui-package.md` is required. The next skill and hosted platform applications have not migrated. Do not redo these completed changes absent a demonstrated final-gate regression.
 
+### Eve 0.67.0 output-schema correction
+
+The shipped Eve 0.66.3 TypeScript declaration accepts `defineAgent({ outputSchema })`; 0.67.0 removes that field, and its changelog directs callers to request structured output per turn through the session API or `ctx.agent()`. The adapter inspects definitions rather than running them, so the smallest correction is one known boundary at `0.67.0` in its existing version classifier. Applying that known behavior to later eligible releases is an operational interpretation, not verification of every future release; a future contrary SDK change requires a new review. This correction does not add a general runtime compatibility engine, a new diagnostic code, or a new eligibility ceiling. Tool `defineTool.outputSchema` is a separate supported relationship and must remain intact.
+
+Update `projects/adapter-eve/src/constants/index.ts`, `contracts/index.ts`, `inspection/package-inspection.ts`, and `inspection/agent-inspection.ts` to classify the agent-definition field from the owning package's declared Eve ranges before emitting `agent-definition` or `agent-output` evidence. For a declaration confined below 0.67.0, keep current supported source and binding behavior. For a declaration wholly at or above 0.67.0, an authored closed `defineAgent.outputSchema` property or declared agent `outputSchema` binding is a confirmed unavailable feature: emit the existing `EVE_SDK_FEATURE_UNAVAILABLE` error with a precise feature identifier, and emit neither agent-definition nor agent-output evidence derived from that invalid definition. For a declaration spanning the boundary, emit the existing nonblocking `EVE_RUNTIME_RELATIONSHIP_UNVERIFIED` warning only when that property or binding is relevant; withhold the affected agent-definition, agent-output, and dependent conclusions. A version declaration alone produces no warning. A supported 0.67.0 definition without that property or binding retains ordinary positive evidence. Unknown source shapes remain present-unsupported rather than guessed. Preserve the existing source-local error/warning cascade behavior and safe details.
+
+Use the colocated `projects/adapter-eve/src/inspection/inspection.test-integration.ts` public Core boundary to cover exact 0.66.3, 0.67.0, a spanning range, minimum-only range, authored property with and without manifest binding, binding without the source property, no-schema 0.67.0 definitions, dependent handoff/routing evidence, and unaffected tool output schemas. Update diagnostic-catalog fixtures only if an existing code/message contract changes; none is planned. Add an integrity-pinned 0.67.0 boundary in `scripts/upstream-compatibility/targets.ts` and update `eve-scenarios.ts` or its existing fixture owner to prove the real new SDK accepts the current form and rejects the old field, while the pinned 0.66.3 case continues to accept the older form. Run these checks without a provider call.
+
+Synchronize `projects/adapter-eve/README.md`, `docs/verified-target.md`, `docs/evidence-and-diagnostics.md`, and `docs/binding-example.md`; keep the latter's `^0.39.1` older-version example explicit. Update the Eve technical entry in `compatibility/runtimes.yaml`, regenerate `docs/runtime-compatibility.md` and affected website compatibility presentation, and update `../platform/moldea/context/adapter-eve-package.md` in the isolated platform worktree. The public website Eve example in `apps/website/src/lib/capabilities/runtime-examples/eve.ts` should demonstrate current 0.67.0 agent syntax without the removed agent schema field while retaining tool output-schema evidence; update its exact executed witness and presentation text. Preserve an older pinned example in package docs so both behaviors remain discoverable. Do not change the global Repository Format's optional schema binding contract, other adapters, or the next skill for this runtime-specific correction.
+
 ### Upstream reference snapshot
 
-The npm latest versions were rechecked on 2026-09-25. They are test baselines, not runtime ceilings.
+The npm latest versions were rechecked on 2026-09-26. They are test baselines, not runtime ceilings.
 
 | Adapter family    | Retained minimum eligibility                                 | Reviewed current baseline                              |
 | ----------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
 | Anthropic         | `@anthropic-ai/sdk >=0.117.1`                                | 0.128.0                                                |
-| Claude Agent SDK  | `>=0.3.234`                                                  | 0.3.282                                                |
-| Cloudflare Agents | Think >=0.16.0; AIChat >=0.10.2; agents >=0.21.0; ai >=7.0.0 | Think 0.19.0; AIChat 0.12.0; agents 0.24.0; ai 7.0.114 |
-| Eve               | `>=0.39.1`                                                   | 0.66.3                                                 |
+| Claude Agent SDK  | `>=0.3.234`                                                  | 0.3.283                                                |
+| Cloudflare Agents | Think >=0.16.0; AIChat >=0.10.2; agents >=0.21.0; ai >=7.0.0 | Think 0.19.0; AIChat 0.12.0; agents 0.24.0; ai 7.0.116 |
+| Eve               | `>=0.39.1`                                                   | 0.67.0                                                 |
 | Google Gen AI     | `>=2.17.1`                                                   | 2.24.0                                                 |
 | LangChain         | langchain >=1.5.9; core >=1.2.8                              | 1.5.12; core 1.2.12                                    |
 | LangGraph         | langgraph >=1.4.12; core >=1.2.9                             | 1.4.18; core 1.2.12                                    |
 | OpenAI            | `openai >=7.4.0`                                             | 7.23.0                                                 |
 | OpenAI Agents SDK | `>=0.16.1`                                                   | 0.18.0                                                 |
-| Vercel AI SDK     | `ai >=7.0.66`                                                | 7.0.114                                                |
+| Vercel AI SDK     | `ai >=7.0.66`                                                | 7.0.116                                                |
 
-Relevant primary references include [Anthropic Messages source](https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/sdk-v0.128.0/src/resources/messages/messages.ts), [OpenAI Responses source](https://raw.githubusercontent.com/openai/openai-node/v7.23.0/src/resources/responses/responses.ts), [Google Models reference](https://googleapis.github.io/js-genai/release_docs/classes/models.Models.html), and the provider-specific sources cited with the work below. Capture immutable package versions and source references in test provenance; moving upstream documentation is not a reproducible test input.
+Relevant primary references include [Anthropic Messages source](https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/sdk-v0.128.0/src/resources/messages/messages.ts), [OpenAI Responses source](https://raw.githubusercontent.com/openai/openai-node/v7.23.0/src/resources/responses/responses.ts), [Google Models reference](https://googleapis.github.io/js-genai/release_docs/classes/models.Models.html), and the [exact Eve 0.67.0 npm archive](https://registry.npmjs.org/eve/-/eve-0.67.0.tgz) containing the shipped changelog and declarations. Capture immutable package versions and source references in test provenance; moving upstream documentation is not a reproducible test input.
 
-## Production verification for the other public packages
+## Completed production verification for the other public packages
+
+The following Milestone 8 audits and corrections are complete. Their package-level evidence is recorded in `docs/launch-readiness.md`; the combined packed-consumer and operating-system gates remain in the final milestone.
 
 ### Repository
 
@@ -128,7 +141,7 @@ Synchronize the following existing files in `../platform/moldea/context/` as doc
 | `adapter-google-genai-package.md`      | Common warning contract and version, streaming generation, and corresponding supported/excluded patterns                                                                                            |
 | `adapter-claude-agent-sdk-package.md`  | Common warning contract and version, `/core` imports, prompt controls, and retained query-local relationships                                                                                       |
 | `adapter-cloudflare-agents-package.md` | Common warning contract and version, known cached-prompt boundary, `configureContext`, precedence, and deferred tools                                                                               |
-| `adapter-eve-package.md`               | Common warning contract and version, nested/workspace discovery, registration/exposure, defaults, and version-sensitive exclusions                                                                  |
+| `adapter-eve-package.md`               | Common warning contract and version, nested/workspace discovery, registration/exposure, defaults, version-sensitive exclusions, and the Eve 0.67.0 agent output-schema removal                      |
 | `adapter-vercel-ai-sdk-package.md`     | Common warning contract and version, deferred tools, and limits on availability claims                                                                                                              |
 | `adapter-langgraph-package.md`         | Common warning contract and version, two-argument interrupts, resume schemas, and additive node options                                                                                             |
 | `adapter-langchain-package.md`         | Common warning contract and version; further behavioral text only for verified in-scope corrections                                                                                                 |
@@ -139,7 +152,7 @@ Update affected diagnostic catalogs, examples, conformance requirements, and exc
 
 Apply the corresponding narrow routing-diagnostic clarification to `packages/specifications/repository-format.md`, preserving unrelated differences between the documents. Repository Format remains version 1. Synchronize package-owned READMEs/docs, generated references, compatibility YAML, and website consumers with these same contracts.
 
-The platform `runtime-compatibility-matrix.md` already expresses the agreed minimum-only eligibility policy and requires no planned policy or schema change. Update technical entries in `packages/compatibility/runtimes.yaml` and regenerate their presentations. The Repository FS correction now requires the `repository-fs-package.md` synchronization listed above. The Repository specification still needs a change only if another in-scope correction changes its documented contract. Do not create `website-ui-package.md`.
+The platform `runtime-compatibility-matrix.md` already expresses the agreed minimum-only eligibility policy and requires no planned policy or schema change. Update technical entries in `packages/compatibility/runtimes.yaml` and regenerate their presentations. The Repository FS correction is already reflected in `repository-fs-package.md`; only its pending 2.0.2 version reference remains to be committed. The Repository specification still needs a change only if another in-scope correction changes its documented contract. Do not create `website-ui-package.md`.
 
 Keep `agent-skill.md`, `context-gathering.md`, and skill implementation changes in the subsequent skill work. The final handoff must identify schema-4 consumption, severity-aware interpretation, and stale package-version references that the next skill revision must address. Do not imply that the existing skill or hosted platform has migrated.
 
@@ -157,7 +170,7 @@ Byte budgets are not token guarantees. Report cumulative serialized bytes and co
 
 ### Measurements and corrections
 
-The implemented `scripts/resource-calibration/calibration.ts`, colocated integration coverage, reusable synthetic fixture construction, and `pnpm resource:measure` establish the baseline. The remaining audit records measured V8 heap separately from Core logical retention and compares cumulative CLI continuation work.
+The implemented `scripts/resource-calibration/calibration.ts`, colocated integration coverage, reusable synthetic fixture construction, and `pnpm resource:measure` establish the baseline. The completed audit recorded measured V8 heap separately from Core logical retention and compared cumulative CLI continuation work.
 
 Measure complete workflows on ordinary, many-agent/shared-source, broad-tool, deeply nested Eve, dense-warning/error, large-source, and multi-page repositories. Record elapsed time, peak process memory, reader calls/bytes, parser invocations, emitted records, cumulative output bytes, and snapshot attempts. Use repeated samples and fixed inputs; timing results are evidence, not brittle correctness assertions. Obtain detailed counts through fixture-local instrumentation at existing reader and parser boundaries; do not add a public instrumentation API solely for these tests.
 
@@ -176,7 +189,7 @@ Retain the stateless CLI and operation-local caches. A fresh CLI continuation cu
 
 Do not add persistent or cross-operation caching without evidence and a separately approved design covering snapshot identity, ownership, capacity, invalidation, and failure behavior. If representative launch workloads cannot complete within the documented envelope, readiness is blocked; present the measurements and revise the affected design instead of masking the problem with larger limits.
 
-Record results, supported workload assumptions, and material remaining costs in `docs/launch-readiness.md`. Do not claim unlimited scalability.
+Milestone 8 recorded results, supported workload assumptions, and material remaining costs in `docs/launch-readiness.md`. The final report must retain these limits and must not claim unlimited scalability.
 
 ## Release propagation and package versions
 
@@ -198,13 +211,13 @@ Extend `scripts/npm-release/{project-changes,git,types}.ts` and colocated tests 
 
 The required diagnostic field and changed result semantics are breaking package contracts under the existing release policy.
 
-| Package                               | Coordinated version                                                                                  |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Core                                  | 5.0.0                                                                                                |
-| CLI                                   | 9.0.0, implementing JSON schema 5 only                                                               |
-| Anthropic and OpenAI adapters         | 5.0.0                                                                                                |
-| Other eight adapters                  | 4.0.0                                                                                                |
-| Repository, Repository FS, Website UI | Keep current versions unless their shipped implementation or documentation changes require a release |
+| Package                               | Coordinated version                                                                                |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Core                                  | 5.0.0                                                                                              |
+| CLI                                   | 9.0.0, implementing JSON schema 5 only                                                             |
+| Anthropic and OpenAI adapters         | 5.0.0                                                                                              |
+| Other eight adapters                  | 4.0.0                                                                                              |
+| Repository, Repository FS, Website UI | Keep independent versions; Repository FS now requires 2.0.2 for its shipped Milestone 8 correction |
 
 Update adapters to `workspace:^5.0.0` for Core. Update CLI and website dependency declarations to the new compatible majors. Preserve compatible-major updates within the new contract; this is not lockstep versioning or an exact-patch installation policy.
 
@@ -225,9 +238,10 @@ These are strategic steps, not independently authorized milestones.
 3. **Completed: extend shared parsing and version interpretation.** The method family, call/options preservation, and known-boundary classifier were implemented; consumers migrated and the superseded private configuration removed.
 4. **Completed: correct and extend adapters.** The adapter scope above has focused tests, current/minimum SDK evidence, package docs, matching platform adapter specifications, and runtime-pattern witnesses.
 5. **Completed: website examples and presentation.** Authoritative content and selected public examples were regenerated and verified with browser/accessibility and artifact checks.
-6. **In progress: close resource and package-readiness gaps.** Finish the representative aggregate measurements and all fifteen package audits, review the demonstrated local corrections, and synchronize the Repository FS platform specification with the accepted trusted-tree contract. Run current-change Linux filesystem and packed-CLI checks; record macOS/Windows as pending the pushed CI run in step 8. Do not mask material envelope failures with larger limits or persistent caching.
-7. **Complete release propagation and coordinated versions.** Verify private bundled changes, manifests, lockfile, compatible-major dependencies, packed artifacts, documentation, and release-selection checks.
-8. **Run the complete launch gates and report readiness.** Run the pushed-current-commit macOS/Windows CI matrix and the final combined consumer checks, record exact results and limitations, confirm completed specification synchronization, inspect both repositories' scoped diffs, and produce the next-skill handoff. Stop with a reviewable implementation; do not publish or deploy.
+6. **Completed: close resource and package-readiness gaps.** Milestone 8 finished the representative aggregate measurements and fifteen package audits, corrected Repository FS stable replacement and cache growth, and synchronized its platform trusted-tree specification. Current-change macOS/Windows evidence remains the final step 9 gate.
+7. **In progress: complete release propagation and coordinated versions.** Finish the private bundled-input graph, shared build-config selection, manifest/version updates, packed-artifact comparison, and release-selection checks already started in Milestone 9.
+8. **Correct the Eve 0.67.0 boundary.** Implement the version-sensitive agent output-schema interpretation with focused Core and exact SDK tests. Synchronize the Eve package docs, technical matrix/generated presentation, latest-facing website witness, and isolated platform specification before final release gates. Keep tool schema support and older Eve examples.
+9. **Run the complete launch gates and report readiness.** Run the pushed-current-commit macOS/Windows CI matrix and the final combined consumer checks, record exact results and limitations, confirm completed specification synchronization, inspect both repositories' scoped diffs, and produce the next-skill handoff. Stop with a reviewable implementation; do not publish or deploy.
 
 Keep required tests, exports, error documentation, examples, and documentation with their implementation step. A step is not complete while its public contract is inconsistently represented.
 
@@ -243,8 +257,10 @@ pnpm test:root:integration
 pnpm --filter @moldea.ai/adapter-static-analysis test
 pnpm --filter @moldea.ai/core test
 pnpm --filter @moldea.ai/cli test
+pnpm --filter @moldea.ai/adapter-eve test
 pnpm --filter @moldea.ai/website-ui test
 pnpm upstream:check
+pnpm upstream:check:latest
 pnpm resource:measure
 ```
 
@@ -275,6 +291,7 @@ Validate the complete fifteen-tarball inventory, exports/types, runtime dependen
 - All ten adapters satisfy their retained advertised behavior and the explicitly added capabilities.
 - Every confirmed defect has a regression test through the meaningful boundary.
 - Older/newer support and known semantic differences are distinguished without new runtime version ceilings.
+- Eve 0.66.3 can still prove directly wired agent output schemas; Eve 0.67.0 cannot emit that proof, and mixed declarations remain explicitly unverified only when the removed relationship matters. Eve tool output schemas and no-schema agent definitions retain their valid evidence.
 - Warnings are actionable, nonblocking, bounded, and visible through Core, CLI, and website examples; errors and operational failures remain effective.
 - No uncertain relationship is simultaneously presented as verified.
 - All fifteen packages have passing applicable regression, type, artifact, and consumer checks, with no unresolved material correctness or verification finding.
@@ -287,7 +304,7 @@ Validate the complete fifteen-tarball inventory, exports/types, runtime dependen
 
 ## Risks, handoffs, and limits of the result
 
-- Upstream releases may occur during implementation. Recheck latest versions at final verification; report additional relevant changes explicitly instead of silently expanding scope or narrowing eligibility.
+- Upstream releases may occur during implementation. Recheck latest versions at final verification; report additional relevant changes explicitly instead of silently expanding scope or narrowing eligibility. The documented Eve 0.67.0 boundary is the one additional developer-approved correction in this revision.
 - Static analysis establishes bounded source relationships. It does not prove model behavior, runtime execution, provider acceptance, or compatibility with every future release.
 - Warnings intentionally allow work to continue with a named unverified conclusion. The next skill must preserve that distinction and seek targeted evidence when its task depends on it.
 - Core logical retained-byte limits are not a process-RSS guarantee. Resource calibration must examine parser and object overhead as well as repository bytes.
@@ -300,6 +317,6 @@ Validate the complete fifteen-tarball inventory, exports/types, runtime dependen
 
 ## Approval required
 
-Approve this revised remaining scope: complete the Milestone 8 Repository FS, Repository, Core, CLI, resource, and fifteen-package audit; synchronize the Repository FS platform specification with the accepted trusted-tree requirement and cache cap; then complete Milestone 9 release-selection propagation, the pushed-current-commit operating-system evidence, final artifact and consumer matrix, upstream recheck, documentation synchronization, and a truthful launch verdict. Milestones 1–7 remain completed work. The earlier milestone breakdown is invalidated and must be regenerated from this revision before milestone-scoped implementation resumes.
+Approve this revised remaining scope: preserve completed Milestones 1–8; finish Milestone 9 release-selection propagation; correct the confirmed Eve 0.67.0 agent output-schema boundary with focused tests and synchronized package, website, compatibility, and platform documentation; then complete the pushed-current-commit operating-system evidence, final artifact and consumer matrix, upstream recheck, and truthful launch verdict. The earlier milestone breakdown is invalidated and must be regenerated from this revision before milestone-scoped implementation resumes.
 
 The developer's prior signed repository-push authorization remains subject to completion and review of each approved milestone. This revision does not authorize npm publication, website deployment, platform application changes, unrelated cross-repository changes, a new Website UI specification, or the next skill implementation.
