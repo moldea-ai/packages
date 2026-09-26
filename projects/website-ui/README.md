@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.10.0
+pnpm add @moldea.ai/website-ui@1.10.1
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -212,7 +212,7 @@ Markdown and literal code renderers apply this policy through `styles.css`. Rend
 
 ### Optional detail dialogs
 
-`Dialog` defaults to a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. The shared root stylesheet reserves a stable desktop scrollbar gutter so modal scroll locking does not shift the page; mobile retains its full viewport width. Opening takes 300ms with a fade and small slide, plus a subtle desktop scale. Closing takes 200ms on desktop and 300ms on mobile; native modality and background scroll locking remain active through the exit. Reduced motion skips animations. Escape and the close control dismiss it and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
+`Dialog` defaults to a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. The shared root stylesheet reserves a stable desktop scrollbar gutter so modal scroll locking does not shift the page; mobile retains its full viewport width. The scrolling body starts at the top each time the dialog opens. Opening takes 300ms with a fade and small slide, plus a subtle desktop scale. Closing takes 200ms on desktop and 300ms on mobile; native modality and background scroll locking remain active through the exit. Reduced motion skips animations. Escape and the close control dismiss it and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
 
 ```astro
 ---
