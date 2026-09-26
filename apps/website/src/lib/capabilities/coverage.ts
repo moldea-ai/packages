@@ -154,6 +154,7 @@ export const REQUIRED_CASE_IDS: string[] = [
   'cli-content-refusal',
   'cli-composition',
   'cli-invalid-project',
+  'cli-version-warning',
 ];
 
 // each public Core operation has a real executable example

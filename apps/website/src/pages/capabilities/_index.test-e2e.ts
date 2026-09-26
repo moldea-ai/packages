@@ -103,6 +103,7 @@ for (const width of [320, 1440]) {
         ['inspection-mixed-diagnostics', '1 warning and 1 error across two pages'],
         ['snapshot-comparison', 'Changes identified'],
         ['cli-invalid-project', 'Broken reference caught by validation'],
+        ['cli-version-warning', '1 runtime relationship unverified'],
         ['openai-loader-disconnected', 'Instruction loader not connected'],
         ['cli-content-refusal', 'Source file outside this command’s scope'],
       ]) {
@@ -289,6 +290,71 @@ test('shows source-backed adapter changes and preserves warning and error labels
       320,
     );
   }
+});
+
+test('shows a successful schema 5 warning result with bounded version details', async ({
+  page,
+}) => {
+  await page.goto(route);
+  const item = page.locator('#cli-version-warning');
+  await item.locator(':scope > summary').click();
+  await expect(item.locator('[data-accordion-panel]')).toContainText(
+    'Validation completed with a warning',
+  );
+  await expect(item.locator('[data-accordion-panel]')).toContainText('Exit 0');
+  await item.getByRole('button', { name: /^View result:/u }).click();
+  const dialog = page.getByRole('dialog', { name: '1 runtime relationship unverified' });
+  const excerpt = JSON.parse((await dialog.locator('pre').textContent()) ?? '') as unknown;
+  expect(excerpt).toMatchObject({
+    schemaVersion: 5,
+    status: 'valid',
+    exitStatus: 0,
+    result: {
+      valid: true,
+      diagnosticCount: 1,
+      errorCount: 0,
+      warningCount: 1,
+      diagnostics: [
+        {
+          code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+          severity: 'warning',
+          details: {
+            relationship: 'instruction-loader',
+            reason: 'version-dependent-behavior',
+            packageName: '@cloudflare/think',
+            declaredRange: '>=0.17.0',
+            boundaryVersion: '0.18.0',
+          },
+        },
+      ],
+    },
+  });
+});
+
+test('keeps empty file previews and capability summaries free of extra dividers', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto(route);
+  for (const id of [
+    'foundation-missing',
+    'tool-implementation-missing',
+    'manifest-change-relevance',
+  ]) {
+    const item = page.locator(`#${id}`);
+    await item.locator(':scope > summary').click();
+    await expect(item.locator('[data-file-preview-header]').last()).toHaveCSS(
+      'border-bottom-width',
+      '0px',
+    );
+    await expect(item.locator('article > div').last()).toHaveCSS('border-top-width', '0px');
+  }
+  const withBody = page.locator('#policy-reference-missing');
+  await withBody.locator(':scope > summary').click();
+  await expect(withBody.locator('[data-file-preview-header]').first()).toHaveCSS(
+    'border-bottom-width',
+    '1px',
+  );
 });
 
 for (const fragment of ['', '#', '#%ZZ', '#missing-example']) {

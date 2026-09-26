@@ -17,6 +17,10 @@ interface Props {
 const { example } = Astro.props;
 if (example.result.kind !== 'cli') throw new Error('Command illustration requires a CLI result.');
 const result = example.result;
+const hasWarnings =
+  result.status === 'valid' &&
+  typeof result.facts.warningCount === 'number' &&
+  result.facts.warningCount > 0;
 const { asset, chunk } = result.facts;
 const content =
   chunk && typeof chunk === 'object' && !Array.isArray(chunk) ? chunk.content : undefined;
@@ -99,11 +103,13 @@ const missingPath =
         aria-hidden="true"
       /><StatusBadge
         label={`Exit ${result.exitStatus}`}
-        tone={result.status === 'invalid'
-          ? 'danger'
-          : result.status === 'error'
-            ? 'warning'
-            : 'info'}
+        tone={hasWarnings
+          ? 'warning'
+          : result.status === 'invalid'
+            ? 'danger'
+            : result.status === 'error'
+              ? 'warning'
+              : 'info'}
         size="sm"
       /><span class="text-muted-foreground"
         >{
@@ -111,7 +117,9 @@ const missingPath =
             ? 'Validation failed'
             : result.status === 'error'
               ? 'Source code is not a knowledge document'
-              : 'Document returned as JSON'
+              : hasWarnings
+                ? 'Validation completed with a warning'
+                : 'Document returned as JSON'
         }</span
       >
     </div>

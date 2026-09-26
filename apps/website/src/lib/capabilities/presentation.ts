@@ -107,6 +107,14 @@ export const getCapabilityOutcome = (
         };
   }
   if (result.kind === 'cli') {
+    const warningCount = result.facts.warningCount;
+    if (result.status === 'valid' && typeof warningCount === 'number' && warningCount > 0)
+      return {
+        title: `${warningCount} runtime relationship${warningCount === 1 ? '' : 's'} unverified`,
+        description,
+        label: 'Warnings',
+        tone: 'warning',
+      };
     return {
       title:
         COMMAND_TITLES[example.id] ??

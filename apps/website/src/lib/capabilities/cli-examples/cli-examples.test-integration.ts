@@ -18,7 +18,7 @@ beforeAll(async () => {
 });
 
 test('executes every public command with actual schema 5 status and process outcomes', () => {
-  expect(examples).toHaveLength(9);
+  expect(examples).toHaveLength(10);
   expect(
     examples.map(({ result }) =>
       result.kind === 'cli' ? [result.schemaVersion, result.status, result.exitStatus] : null,
@@ -33,7 +33,36 @@ test('executes every public command with actual schema 5 status and process outc
     [5, 'error', 3],
     [5, 'valid', 0],
     [5, 'invalid', 1],
+    [5, 'valid', 0],
   ]);
+});
+
+test('publishes the executed schema 5 version warning without a false failure', () => {
+  expect(examples.find(({ id }) => id === 'cli-version-warning')?.result).toMatchObject({
+    kind: 'cli',
+    schemaVersion: 5,
+    status: 'valid',
+    exitStatus: 0,
+    facts: {
+      valid: true,
+      diagnosticCount: 1,
+      errorCount: 0,
+      warningCount: 1,
+      diagnostics: [
+        {
+          code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+          severity: 'warning',
+          details: {
+            relationship: 'instruction-loader',
+            reason: 'version-dependent-behavior',
+            packageName: '@cloudflare/think',
+            declaredRange: '>=0.17.0',
+            boundaryVersion: '0.18.0',
+          },
+        },
+      ],
+    },
+  });
 });
 
 test('exercises both changed-path inputs and Git selection without exposing document bodies', () => {

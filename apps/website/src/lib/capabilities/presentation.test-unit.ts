@@ -112,6 +112,29 @@ describe('getCapabilityOutcome', () => {
     });
   });
 
+  test('shows a successful CLI warning without labelling it fully verified', () => {
+    expect(
+      getCapabilityOutcome(
+        {
+          ...example,
+          result: {
+            kind: 'cli',
+            status: 'valid',
+            schemaVersion: 5,
+            exitStatus: 0,
+            command: 'moldea validate --json',
+            facts: { warningCount: 1 },
+          },
+        },
+        catalog,
+      ),
+    ).toMatchObject({
+      label: 'Warnings',
+      title: '1 runtime relationship unverified',
+      tone: 'warning',
+    });
+  });
+
   test.each([
     [{ kind: 'validation', valid: true, diagnostics: [] }, 'Valid', 'success'],
     [{ kind: 'validation', valid: false, diagnostics: [] }, 'Invalid', 'danger'],

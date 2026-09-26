@@ -106,7 +106,12 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
       'JSON output and exit codes',
       'installed packages and adapters',
     ],
-    exampleIds: ['cli-invalid-project', 'cli-canonical-content', 'cli-content-refusal'],
+    exampleIds: [
+      'cli-invalid-project',
+      'cli-version-warning',
+      'cli-canonical-content',
+      'cli-content-refusal',
+    ],
     reference: { route: '/packages/cli/commands/', label: 'Explore CLI commands' },
   },
 ];

@@ -23,7 +23,7 @@ beforeAll(async () => {
 
 test('accounts for every release-owned operation, diagnostic, target, and inspected pattern', () => {
   const catalog = model.capabilities;
-  expect(catalog.cases).toHaveLength(150);
+  expect(catalog.cases).toHaveLength(151);
   expect(Object.keys(catalog.coreOperations)).toHaveLength(8);
   expect(Object.keys(catalog.diagnostics)).toHaveLength(82);
   expect(catalog.runtimeTargets).toHaveLength(14);

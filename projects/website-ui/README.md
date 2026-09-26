@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.9.1
+pnpm add @moldea.ai/website-ui@1.9.2
 ```
 
 The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -162,7 +162,7 @@ Native disclosure and group exclusivity work without JavaScript. JavaScript reve
 
 `ConnectionLabel` places a short relationship label between visual examples. Its default slot accepts text and inline markup; the optional `icon` slot takes a decorative 16px icon. `tone` is `neutral` by default or `danger` for a broken connection. It owns spacing, icon alignment, and narrow-screen wrapping, not the meaning of a connection.
 
-`FilePreview` receives `path`, optional `label`, and optional `tone`. Its header preserves an identifiable filename while truncating the directory prefix; the complete path remains selectable and readable by assistive technology without hover. Long filenames can wrap within the header. The default slot owns the body, `icon` replaces the default file icon, and `status` accepts a consumer-owned badge. This component does not parse files, choose excerpts, or define result semantics.
+`FilePreview` receives `path`, optional `label`, and optional `tone`. Its header preserves an identifiable filename while truncating the directory prefix; the complete path remains selectable and readable by assistive technology without hover. Long filenames can wrap within the header. The default slot owns the body; a divider appears only when that body is present. `icon` replaces the default file icon, and `status` accepts a consumer-owned badge. This component does not parse files, choose excerpts, or define result semantics.
 
 `ResultSummary` receives `title`, `description`, optional `tone`, `headingId`, `as` (`p`, `h2`, or `h3`), `hideIconOnMobile`, and `ariaLabel`. Defaults are a paragraph heading, neutral tone, visible icon, and “Result” group label. The optional `icon` slot renders inside a 40px badge; supply a 20px decorative icon. The `status` slot sits beside the heading, outside its accessible name. Titles use 14px type and descriptions 12px, both with 20px line height. Both components use the `danger`, `info`, `neutral`, `success`, and `warning` semantic tones.
 
@@ -212,7 +212,7 @@ Markdown and literal code renderers apply this policy through `styles.css`. Rend
 
 ### Optional detail dialogs
 
-`Dialog` defaults to a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. Opening takes 300ms with a fade and small slide, plus a subtle desktop scale. Closing takes 200ms on desktop and 300ms on mobile; native modality and background scroll locking remain active through the exit. Reduced motion skips animations. Escape and the close control dismiss it and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
+`Dialog` defaults to a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. The shared root stylesheet reserves a stable desktop scrollbar gutter so modal scroll locking does not shift the page; mobile retains its full viewport width. Opening takes 300ms with a fade and small slide, plus a subtle desktop scale. Closing takes 200ms on desktop and 300ms on mobile; native modality and background scroll locking remain active through the exit. Reduced motion skips animations. Escape and the close control dismiss it and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
 
 ```astro
 ---

@@ -9,6 +9,7 @@ import type { ICapabilityCase, ICapabilityFact } from '../index.ts';
 import { withFixtureWorkspace } from '../fixture-workspace/index.ts';
 import { assertCapabilityFacts } from '../index.ts';
 import { projectFile } from '../index.ts';
+import { RUNTIME_EXAMPLES } from '../runtime-examples/index.ts';
 
 import { CLI_FIXTURE_FILES } from './constants.ts';
 import {
@@ -452,6 +453,67 @@ export const createCliExamples = async (
     ].filter((file) => file !== null);
     examples.push(invalidCase);
     assertCapabilityFacts(await captureFixtureState(workspace.directory), beforeInvalid);
+
+    const warningRuntime = RUNTIME_EXAMPLES.find(
+      ({ id }) => id === 'cloudflare-think-ambiguous-context',
+    );
+    if (warningRuntime === undefined) throw new Error('The CLI warning fixture is missing.');
+    for (const entry of warningRuntime.files) {
+      if (entry.type !== 'file' || typeof entry.content !== 'string')
+        throw new Error('The CLI warning fixture contains a non-file entry.');
+      await workspace.write({ path: entry.path, content: entry.content });
+    }
+    const beforeWarning = await captureFixtureState(workspace.directory);
+    const warning = await run(['validate']);
+    const warningResult = CliCollectionResult.parse(warning.envelope.result);
+    assertCapabilityFacts(
+      [
+        warning.exitStatus,
+        warningResult.valid,
+        warningResult.diagnosticCount,
+        warningResult.errorCount,
+        warningResult.warningCount,
+      ],
+      [0, true, 1, 0, 1],
+    );
+    assertCapabilityFacts(warningResult.page.records.length, 1);
+    const [warningRecord] = warningResult.page.records;
+    if (warningRecord?.kind !== 'diagnostic' || warningRecord.severity !== 'warning')
+      throw new Error('The CLI warning fixture did not produce a warning diagnostic.');
+    const diagnostic = {
+      code: warningRecord.code,
+      severity: warningRecord.severity,
+      details: warningRecord.details,
+    };
+    assertCapabilityFacts(diagnostic, {
+      code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      severity: 'warning',
+      details: {
+        relationship: 'instruction-loader',
+        reason: 'version-dependent-behavior',
+        packageName: '@cloudflare/think',
+        declaredRange: '>=0.17.0',
+        boundaryVersion: '0.18.0',
+      },
+    });
+    examples.push(
+      commandCase(
+        'cli-version-warning',
+        'A version range leaves one connection unverified',
+        'The declared Think range spans two instruction APIs. Validation reports a warning and exits successfully without claiming the loader is connected.',
+        'moldea validate --json',
+        warning.envelope,
+        warning.exitStatus,
+        {
+          valid: warningResult.valid,
+          diagnosticCount: warningResult.diagnosticCount ?? 0,
+          errorCount: warningResult.errorCount ?? 0,
+          warningCount: warningResult.warningCount ?? 0,
+          diagnostics: [diagnostic],
+        },
+      ),
+    );
+    assertCapabilityFacts(await captureFixtureState(workspace.directory), beforeWarning);
     return examples;
   });
 };

@@ -15,6 +15,7 @@ const { path, label, tone = 'neutral' } = Astro.props;
 const filenameStart = path.lastIndexOf('/');
 const directory = filenameStart < 0 ? '' : path.slice(0, filenameStart);
 const filename = filenameStart < 0 ? path : path.slice(filenameStart);
+const hasBody = Astro.slots.has('default');
 const toneClasses = {
   danger: 'border-destructive/40 bg-destructive/10',
   info: 'border-info/40 bg-info/10',
@@ -29,7 +30,7 @@ const toneClasses = {
   data-file-preview
 >
   <div
-    class:list={['flex items-center gap-3 border-b px-3 py-3', toneClasses[tone]]}
+    class:list={['flex items-center gap-3 px-3 py-3', hasBody && 'border-b', toneClasses[tone]]}
     data-file-preview-header
   >
     <span
