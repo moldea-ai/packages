@@ -7,10 +7,10 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.10.1
+pnpm add @moldea.ai/website-ui@1.10.2
 ```
 
-The package currently supports Astro `7.2.2` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
+The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
 
 ```css
 @import '@moldea.ai/website-ui/styles.css';
