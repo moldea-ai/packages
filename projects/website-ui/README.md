@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.10.2
+pnpm add @moldea.ai/website-ui@1.11.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -168,7 +168,7 @@ Native disclosure, independent opening, and optional group exclusivity work with
 
 For a dialog heading, compose `ResultSummary` in Dialog's `heading` slot, set `as="h2"` and `headingId` to `${id}-title`, keep `title` equal to Dialog's title, and use `hideIconOnMobile`. Consumer-owned status badges can use `size="sm"`. Neither component depends on Core, runs checks, or maps domain statuses. Derive their props with Astro's `ComponentProps` through the documented public subpaths.
 
-`StatusBadge` defaults to `size="md"`. Use `size="sm"` for secondary status beside compact headings: a 20px minimum height, tighter padding, and lighter 10px lettering. Both sizes retain the same semantic colors and wrapping behavior.
+`StatusBadge` defaults to `size="md"`. Use `size="sm"` for secondary status beside compact headings: a 20px minimum height, tighter padding, and lighter 10px lettering. Badge labels stay on one line so short values such as “Exit 3” remain intact in tight flex rows. Use `truncate` when a longer label must fit a constrained width. Both sizes retain the same semantic colors.
 
 `InlineBrandText` renders standalone product names as semantic inline code. Its default `badge` variant includes the code background and padding; `compact` omits them. Both variants scale with surrounding text and use normal letter spacing so display headings do not compress the monospace token.
 
@@ -212,7 +212,7 @@ Markdown and literal code renderers apply this policy through `styles.css`. Rend
 
 ### Optional detail dialogs
 
-`Dialog` defaults to a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. The shared root stylesheet reserves a stable desktop scrollbar gutter so modal scroll locking does not shift the page; mobile retains its full viewport width. The scrolling body starts at the top each time the dialog opens. Opening takes 300ms with a fade and small slide, plus a subtle desktop scale. Closing takes 200ms on desktop and 300ms on mobile; native modality and background scroll locking remain active through the exit. Reduced motion skips animations. Escape and the close control dismiss it and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
+`Dialog` defaults to a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. The shared root stylesheet reserves a stable desktop scrollbar gutter so modal scroll locking does not shift the page; mobile retains its full viewport width. The scrolling body starts at the top each time the dialog opens. On mobile, the backdrop is transparent and the opaque page scales from 96% to full size over 300ms. Where supported, closing captures the dialog before revealing the returning page with the same scale and no text cross-fade. The old dialog snapshot is hidden so its text cannot show through translucent sticky headers. Named content snapshots from Astro navigation are folded into the root during that return so they cannot overlap the site header. Browsers without View Transitions and reduced-motion users dismiss immediately. Desktop retains its fade-and-slide entrance and 200ms exit. Escape and the close control dismiss the modal and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
 
 ```astro
 ---
@@ -239,6 +239,8 @@ Use these typed props to customize presentation without replacing the shared con
 
 - `triggerVariant`: `outline` (default), `primary`, `secondary`, `ghost`, or `link`, using the corresponding `ActionButton` variant.
 - `triggerSize`: `compact` (default) preserves the existing result-card button; `sm`, `md`, and `lg` use standard text-button sizes. `icon` and `icon-xs` use compact icon buttons with a default expand icon; a decorative `trigger-icon` slot can replace it. `triggerLabel` remains the accessible fallback and tooltip; use `triggerAriaLabel` when the surrounding context requires a more specific name.
+- `triggerClass` adds consumer-owned layout classes to the trigger; a `trigger` slot supplies custom non-interactive text or badges inside text triggers while `triggerLabel` remains the fallback.
+- `fallbackOpen` renders the same dialog body inline before enhancement for pages that must remain readable without JavaScript. Such pages must supply their own inline fallback styling and hide the open fallback before the first paint when JavaScript is available; initialization closes it before enabling the trigger.
 - `size`: `medium` (default) caps desktop width at 42rem; `large` uses the platform's 64rem cap for wider evidence. Both retain the viewport gutter, full-screen mobile layout, fixed header, scrolling body, and the same focus and dismissal behavior.
 
 For example, add `size="large" triggerVariant="primary" triggerSize="lg"` to the example above. Import the component through `@moldea.ai/website-ui/dialog`; consumers can derive its props with Astro's `ComponentProps<typeof Dialog>`.

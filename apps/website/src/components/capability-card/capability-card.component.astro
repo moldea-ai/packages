@@ -1,6 +1,7 @@
 ---
 import { CircleAlert, ScanLine } from '@lucide/astro';
 import ResultSummary from '@moldea.ai/website-ui/result-summary';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import {
   getCapabilityOutcome,
   type ICapabilities,
@@ -20,11 +21,13 @@ const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAle
 ---
 
 <article
-  class="flex min-w-0 flex-col gap-4"
+  class="flex min-w-0 flex-col gap-4 sm:gap-6"
   aria-labelledby={`${example.id}-title`}
 >
   <CapabilityVisual {example} />
-  <div class="flex flex-wrap items-center justify-between gap-3">
+  <div
+    class="-mx-4 flex flex-col gap-3 border-t px-4 pt-4 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6"
+  >
     <ResultSummary
       title={outcome.title}
       description=""
@@ -34,10 +37,28 @@ const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAle
         slot="icon"
         class="size-5"
       />
+      <span
+        slot="status"
+        data-capability-fallback-status
+      >
+        <StatusBadge
+          label={outcome.label}
+          tone={outcome.tone}
+          size="sm"
+        />
+      </span>
     </ResultSummary>
-    <CapabilityResult
-      {example}
-      {catalog}
-    />
+    <div class="w-full sm:w-auto">
+      <CapabilityResult
+        {example}
+        {catalog}
+      />
+    </div>
   </div>
 </article>
+
+<style>
+  :global(html[data-capabilities-enhanced] [data-capability-fallback-status]) {
+    display: none;
+  }
+</style>

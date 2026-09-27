@@ -5,6 +5,48 @@
 @source './components/**/*.{astro,ts}';
 @source './markdown/**/*.ts';
 
+/* Keep router-owned snapshots inside the root and hide the old dialog behind translucent headers. */
+@media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
+  html[data-website-ui-dialog-return] body * {
+    view-transition-name: none !important;
+  }
+
+  html[data-website-ui-dialog-return]::view-transition-group(root) {
+    animation: none;
+  }
+
+  html[data-website-ui-dialog-return]::view-transition-image-pair(root) {
+    isolation: isolate;
+  }
+
+  html[data-website-ui-dialog-return]::view-transition-old(root),
+  html[data-website-ui-dialog-return]::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+    opacity: 1;
+  }
+
+  html[data-website-ui-dialog-return]::view-transition-old(root) {
+    z-index: 0;
+    opacity: 0;
+  }
+
+  html[data-website-ui-dialog-return]::view-transition-new(root) {
+    z-index: 1;
+    transform-origin: center;
+    animation: website-ui-dialog-return 300ms ease-out both;
+  }
+}
+
+@keyframes website-ui-dialog-return {
+  from {
+    transform: scale(0.96);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
 @layer base {
   * {
     @apply border-border;

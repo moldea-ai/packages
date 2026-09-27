@@ -175,6 +175,7 @@ const structuredWebsiteJson = structuredWebsite
     }
     <title>{pageTitle}</title>
     <ThemeBootstrap storageKey="moldea-website-theme" />
+    <slot name="head" />
     {
       structuredWebsite && (
         <script

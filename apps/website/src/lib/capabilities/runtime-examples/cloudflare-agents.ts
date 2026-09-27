@@ -64,13 +64,54 @@ export const CLOUDFLARE_AGENTS_FILES: IMemoryRepositoryEntry[] = [
   {
     path: '/src/tools.ts',
     type: 'file',
-    content:
-      "import { agentTool } from 'agents/agent-tools';\nimport { tool } from 'ai';\nimport { SummaryAgent } from './agents.js';\nimport { FindOrderInputSchema, FindOrderOutputSchema } from './contracts.js';\nimport { findOrder } from './implementations.js';\nexport const findOrderTool = tool({ inputSchema: FindOrderInputSchema, outputSchema: FindOrderOutputSchema, execute: findOrder });\nexport const summaryHandoffTool = agentTool(SummaryAgent, { description: 'Summarizes a support request.' });\n",
+    content: `import { agentTool } from 'agents/agent-tools';
+import { tool } from 'ai';
+import { SummaryAgent } from './agents.js';
+import { FindOrderInputSchema, FindOrderOutputSchema } from './contracts.js';
+import { findOrder } from './implementations.js';
+
+export const findOrderTool = tool({
+  inputSchema: FindOrderInputSchema,
+  outputSchema: FindOrderOutputSchema,
+  execute: findOrder,
+});
+export const summaryHandoffTool = agentTool(SummaryAgent, {
+  description: 'Summarizes a support request.',
+});
+`,
   },
   {
     path: '/src/agents.ts',
     type: 'file',
-    content:
-      "import { AIChatAgent } from '@cloudflare/ai-chat';\nimport { Think } from '@cloudflare/think';\nimport { Output, streamText } from 'ai';\nimport { SummaryOutputSchema } from './contracts.js';\nimport { loadSummaryInstruction, loadSupportInstruction } from './instructions.js';\nimport { findOrderTool, summaryHandoffTool } from './tools.js';\nexport class SupportAgent extends Think { getSystemPrompt() { return loadSupportInstruction(); } getTools() { return { find_order: findOrderTool, summarize: summaryHandoffTool }; } }\nexport class SummaryAgent extends AIChatAgent { onChatMessage(onFinish, options?) { return streamText({ instructions: loadSummaryInstruction(), output: Output.object({ schema: SummaryOutputSchema }), tools: { find_order: findOrderTool } }); } }\n",
+    content: `import { AIChatAgent } from '@cloudflare/ai-chat';
+import { Think } from '@cloudflare/think';
+import { Output, streamText } from 'ai';
+import { SummaryOutputSchema } from './contracts.js';
+import { loadSummaryInstruction, loadSupportInstruction } from './instructions.js';
+import { findOrderTool, summaryHandoffTool } from './tools.js';
+
+export class SupportAgent extends Think {
+  getSystemPrompt() {
+    return loadSupportInstruction();
+  }
+
+  getTools() {
+    return {
+      find_order: findOrderTool,
+      summarize: summaryHandoffTool,
+    };
+  }
+}
+
+export class SummaryAgent extends AIChatAgent {
+  onChatMessage(onFinish, options?) {
+    return streamText({
+      instructions: loadSummaryInstruction(),
+      output: Output.object({ schema: SummaryOutputSchema }),
+      tools: { find_order: findOrderTool },
+    });
+  }
+}
+`,
   },
 ];

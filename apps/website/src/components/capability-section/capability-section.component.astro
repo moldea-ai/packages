@@ -1,17 +1,14 @@
 ---
 import { ArrowUpRight } from '@lucide/astro';
-import Accordion from '@moldea.ai/website-ui/accordion';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
-import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import { withBase } from '@moldea.ai/website-ui/site';
 
-import {
-  getCapabilityOutcome,
-  type ICapabilities,
-  type ICapabilityCase,
-  type ICapabilityGroup,
+import type {
+  ICapabilities,
+  ICapabilityCase,
+  ICapabilityGroup,
 } from '../../lib/capabilities/index.ts';
-import { CapabilityCard } from '../capability-card/index.ts';
+import { CapabilityExample } from '../capability-example/index.ts';
 
 // every section keeps its explanation, illustrations, and secondary coverage in the same order
 interface Props {
@@ -50,33 +47,16 @@ const { catalog, group, examples, position } = Astro.props;
     </a>
   </header>
   <div class="min-w-0">
-    <div class="grid min-w-0 gap-3">
+    <div class="grid min-w-0 gap-2">
       {
-        examples.map((example, index) => {
-          const outcome = getCapabilityOutcome(example, catalog);
-          return (
-            <Accordion
-              id={example.id}
-              title={example.title}
-              description={`Example ${index + 1} of ${examples.length}`}
-            >
-              <span
-                slot="status"
-                data-capability-outcome={example.id}
-              >
-                <StatusBadge
-                  label={outcome.label}
-                  tone={outcome.tone}
-                  size="sm"
-                />
-              </span>
-              <CapabilityCard
-                {example}
-                {catalog}
-              />
-            </Accordion>
-          );
-        })
+        examples.map((example, index) => (
+          <CapabilityExample
+            {example}
+            {catalog}
+            position={index + 1}
+            total={examples.length}
+          />
+        ))
       }
     </div>
     <p

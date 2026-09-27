@@ -90,6 +90,22 @@ const sourceFile =
   example.files.find(
     ({ path, representation }) => representation === 'source' && /\.[cm]?tsx?$/u.test(path),
   );
+const sourceLines = sourceFile?.content.split('\n') ?? [];
+const startMarker = example.id === 'langgraph-resume-schema' ? 'const ResumeSchema' : 'export ';
+const markerIndex = sourceLines.findIndex((line) => line.startsWith(startMarker));
+const excerptStart = markerIndex < 0 ? 0 : markerIndex;
+const isThinkExample = example.id.startsWith('cloudflare-think-');
+const closingIndex = sourceLines.findIndex(
+  (line, index) =>
+    index > excerptStart && (isThinkExample ? line === '}' : line.startsWith('void ')),
+);
+const excerptEnd = Math.min(
+  excerptStart + 16,
+  closingIndex < 0 ? sourceLines.length : closingIndex + (isThinkExample ? 1 : 0),
+);
+const sourceExcerpt = sourceLines.slice(excerptStart, excerptEnd).join('\n').trimEnd();
+const hasOmittedSource =
+  excerptStart > 0 || sourceLines.length > excerptEnd || sourceFile?.isExcerpt;
 const companionFile =
   example.id === 'cloudflare-think-configured-context'
     ? example.files.find(({ path }) => path === '/src/tools.ts')
@@ -99,8 +115,6 @@ if (!isOpenAiConnectionExample && sourceFile === undefined)
 if (example.id === 'cloudflare-think-configured-context' && companionFile === undefined)
   throw new Error('Configured Think illustration requires its deferred tool source.');
 const tone = diagnostic?.severity === 'error' ? 'danger' : diagnostic ? 'warning' : 'info';
-const status =
-  diagnostic?.severity === 'error' ? 'Invalid' : diagnostic ? 'Unverified' : 'Inspected';
 const generationMethods =
   example.id === 'google-mixed-generation'
     ? evidence
@@ -177,7 +191,7 @@ const generationMethods =
       >
         <div class="p-3">
           <CodeBlock
-            source={sourceFile.content}
+            source={sourceExcerpt}
             language={sourceFile.language}
             variant="plain"
             copyable={false}
@@ -203,9 +217,9 @@ const generationMethods =
           </FilePreview>
         </div>
       )}
-      {sourceFile.isExcerpt && (
+      {hasOmittedSource && (
         <p class="mt-2 text-xs text-muted-foreground">
-          Showing the first 16 lines of the executed source.
+          Showing selected lines of the executed source.
         </p>
       )}
       {generationMethods.length > 0 && (
@@ -213,14 +227,16 @@ const generationMethods =
           Observed source methods: {generationMethods.join(', ')}.
         </p>
       )}
-      <div class="mt-3 flex flex-wrap items-start gap-2 text-xs leading-5">
-        <StatusBadge
-          label={status}
-          tone={tone}
-          size="sm"
-        />
-        {diagnostic && <p class="min-w-0 flex-1 text-muted-foreground">{diagnostic.message}</p>}
-      </div>
+      {diagnostic && (
+        <div class="mt-3 flex flex-wrap items-start gap-2 text-xs leading-5">
+          <StatusBadge
+            label={diagnostic.severity === 'error' ? 'Invalid' : 'Unverified'}
+            tone={tone}
+            size="sm"
+          />
+          <p class="min-w-0 flex-1 text-muted-foreground">{diagnostic.message}</p>
+        </div>
+      )}
     </div>
   ) : null
 }

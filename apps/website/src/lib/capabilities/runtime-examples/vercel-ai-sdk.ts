@@ -58,8 +58,16 @@ export const VERCEL_AI_SDK_FILES: IMemoryRepositoryEntry[] = [
   {
     path: '/src/tools.ts',
     type: 'file',
-    content:
-      "import { tool } from 'ai';\nimport { FindOrderInputSchema, FindOrderOutputSchema } from './contracts.js';\nimport { findOrder } from './implementations.js';\nexport const findOrderTool = tool({ inputSchema: FindOrderInputSchema, outputSchema: FindOrderOutputSchema, execute: findOrder });\n",
+    content: `import { tool } from 'ai';
+import { FindOrderInputSchema, FindOrderOutputSchema } from './contracts.js';
+import { findOrder } from './implementations.js';
+
+export const findOrderTool = tool({
+  inputSchema: FindOrderInputSchema,
+  outputSchema: FindOrderOutputSchema,
+  execute: findOrder,
+});
+`,
   },
   {
     path: '/src/agents.ts',

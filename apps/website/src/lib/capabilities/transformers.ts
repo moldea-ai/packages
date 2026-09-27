@@ -110,7 +110,10 @@ export const projectEntry = ({ path, type, byteLength }: IRepositoryEntry) => ({
 });
 
 /** Selects a bounded, explicitly labelled excerpt from the executed synthetic file. */
-export const projectFile = (entry: IMemoryRepositoryEntry): ICapabilityFile | null => {
+export const projectFile = (
+  entry: IMemoryRepositoryEntry,
+  options: { maxLines?: number } = {},
+): ICapabilityFile | null => {
   if (entry.type !== 'file') return null;
   if (typeof entry.content !== 'string') {
     return {
@@ -138,11 +141,12 @@ export const projectFile = (entry: IMemoryRepositoryEntry): ICapabilityFile | nu
         ? 'typescript'
         : 'markdown';
   const lines = entry.content.split('\n');
+  const maxLines = options.maxLines ?? 16;
   return {
     path: entry.path,
     language,
-    content: lines.slice(0, 16).join('\n'),
-    isExcerpt: lines.length > 16,
+    content: lines.slice(0, maxLines).join('\n'),
+    isExcerpt: lines.length > maxLines,
     representation: 'source',
   };
 };

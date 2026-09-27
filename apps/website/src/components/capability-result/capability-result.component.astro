@@ -22,13 +22,17 @@ const { example, catalog } = Astro.props;
 const id = `result-${example.id}`;
 const outcome = getCapabilityOutcome(example, catalog);
 const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAlert : ScanLine;
+const resultSource = JSON.stringify(getCapabilityResultExcerpt(example.result), null, 2);
+const hasLongResultLine = resultSource.split('\n').some((line) => line.length > 80);
 ---
 
 <Dialog
   {id}
   title={outcome.title}
+  size={hasLongResultLine ? 'large' : 'medium'}
   triggerLabel="View result"
   triggerAriaLabel={`View result: ${example.title}`}
+  triggerClass="w-full sm:w-auto"
   closeLabel="Close capability result"
   isOverlayCloseEnabled
 >
@@ -75,7 +79,7 @@ const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAle
         />
       </div>
       <CodeBlock
-        source={JSON.stringify(getCapabilityResultExcerpt(example.result), null, 2)}
+        source={resultSource}
         language="json"
         copyable={false}
       />

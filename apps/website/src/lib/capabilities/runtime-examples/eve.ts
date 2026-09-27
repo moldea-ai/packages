@@ -74,8 +74,17 @@ export const EVE_FILES: IMemoryRepositoryEntry[] = [
   {
     path: '/agent/tools/search.ts',
     type: 'file',
-    content:
-      "import { defineTool } from 'eve/tools';\nimport { SearchInputSchema, SearchOutputSchema } from '../contracts.js';\nimport { searchKnowledge } from '../implementations.js';\nexport default defineTool({ description: 'Searches the knowledge base.', inputSchema: SearchInputSchema, outputSchema: SearchOutputSchema, execute: searchKnowledge });\n",
+    content: `import { defineTool } from 'eve/tools';
+import { SearchInputSchema, SearchOutputSchema } from '../contracts.js';
+import { searchKnowledge } from '../implementations.js';
+
+export default defineTool({
+  description: 'Searches the knowledge base.',
+  inputSchema: SearchInputSchema,
+  outputSchema: SearchOutputSchema,
+  execute: searchKnowledge,
+});
+`,
   },
   {
     path: '/agent/skills/analyze.ts',

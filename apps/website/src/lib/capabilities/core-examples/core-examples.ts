@@ -63,7 +63,7 @@ export const createCoreExamples = async (
       packageName: '@moldea.ai/core',
       limitation: 'A structural result does not establish application behavior or answer quality.',
       sourcePaths: ['projects/core/docs/diagnostics.md', 'specifications/repository-format.md'],
-      files: entries.map(projectFile).filter((file) => file !== null),
+      files: entries.map((entry) => projectFile(entry)).filter((file) => file !== null),
       result: {
         kind: 'validation',
         valid: result.valid,

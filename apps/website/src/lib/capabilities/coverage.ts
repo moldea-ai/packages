@@ -1030,7 +1030,7 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
         caseId: 'cloudflare-agents',
         source: {
           path: '/src/agents.ts',
-          contains: 'getSystemPrompt() { return loadSupportInstruction(); }',
+          contains: 'getSystemPrompt() {\n    return loadSupportInstruction();\n  }',
         },
         witness: {
           kind: 'evidence',
@@ -1043,7 +1043,7 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
         source: {
           path: '/src/agents.ts',
           contains:
-            "session.withContext('soul', { provider: { get: () => loadSupportInstruction() } })",
+            "session.withContext('soul', {\n      provider: { get: () => loadSupportInstruction() },",
         },
         witness: {
           kind: 'evidence',
@@ -1056,7 +1056,7 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
         source: {
           path: '/src/agents.ts',
           contains:
-            "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+            "configureContext() {\n    return [{\n      label: 'soul',\n      provider: { get: () => loadSupportInstruction() },",
         },
         witness: {
           kind: 'evidence',
@@ -1083,7 +1083,7 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
         source: {
           path: '/src/agents.ts',
           contains:
-            'getTools() { return { find_order: findOrderTool, summarize: summaryHandoffTool }; }',
+            'getTools() {\n    return {\n      find_order: findOrderTool,\n      summarize: summaryHandoffTool,',
         },
         witness: {
           kind: 'evidence',

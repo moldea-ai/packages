@@ -725,7 +725,7 @@ ${'long-line-'.repeat(32)}
 
   await page.goto(toPublicPath('/capabilities/'));
   expect(
-    await page.locator('details:not([open]) pre[data-code-copy-enhanced="true"]').count(),
+    await page.locator('dialog:not([open]) pre[data-code-copy-enhanced="true"]').count(),
   ).toBeGreaterThan(0);
 });
 
