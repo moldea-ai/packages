@@ -149,6 +149,7 @@ export interface IProjectSummaryCounts {
   readonly decisions: number;
   readonly mirrors: number;
   readonly runtimes: number;
+  // all project- and agent-owned requirements, regardless of effect
   readonly unresolved: number;
 }
 

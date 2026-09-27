@@ -1,6 +1,6 @@
 import type { IMoldeaCliProjectScopeErrorCode } from './types.js';
 
-/** Represents invalid NUL-delimited changed-path input owned by the CLI. */
+/** Represents invalid scope path input owned by the CLI. */
 export class MoldeaCliProjectScopeException extends Error {
   public readonly code: IMoldeaCliProjectScopeErrorCode;
 

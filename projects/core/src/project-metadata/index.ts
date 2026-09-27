@@ -72,7 +72,10 @@ export const createProjectSummary = (project: IMoldeaProjectIndex): IProjectVali
       decisions: project.decisions.length,
       mirrors: project.agents.reduce((count, agent) => count + agent.mirrors.length, 0),
       runtimes: project.runtimes.length,
-      unresolved: Object.keys(project.unresolved).length,
+      unresolved: project.agents.reduce(
+        (count, agent) => count + Object.keys(agent.declaration.unresolved ?? {}).length,
+        Object.keys(project.unresolved).length,
+      ),
     },
     manifestDigest: project.manifest.asset.digest,
     manifestPath: project.manifest.asset.path,

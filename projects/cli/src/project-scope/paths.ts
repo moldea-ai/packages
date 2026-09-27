@@ -6,7 +6,7 @@ import { MoldeaCliProjectScopeException } from './exception.js';
  * @param maxEntries Maximum changed-path records accepted by the operation.
  * @returns Detached path strings in supplied order for Core validation and normalization.
  * @throws
- * - PATH_INPUT_INVALID: The NUL-delimited changed-path input is invalid.
+ * - PATH_INPUT_INVALID: The scope path input is invalid. Use leading-slash repository-logical paths and NUL-delimited UTF-8 on stdin.
  */
 export const parseMoldeaCliScopePathBytes = (
   input: Uint8Array,

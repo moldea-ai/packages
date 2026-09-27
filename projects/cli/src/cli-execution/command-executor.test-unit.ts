@@ -174,6 +174,63 @@ const createCompositionResolver = (): IMoldeaCliCompositionResolver =>
   vi.fn<IMoldeaCliCompositionResolver>().mockReturnValue(VALID_COMPOSITION);
 
 describe('createMoldeaCliCommandExecutor', () => {
+  test.each(
+    [
+      'src/private.ts',
+      '/src/../private.ts',
+      'C:\\private\\file.ts',
+      '//server/share',
+      '/src\\file.ts',
+    ].flatMap((path) => [
+      { path, pathsInput: 'path' as const },
+      { path, pathsInput: 'stdin' as const },
+    ]),
+  )('rejects invalid scope input before repository access %o', async ({ path, pathsInput }) => {
+    const discovery = createDiscovery();
+    const snapshot = vi.fn(() => {
+      throw new Error('Invalid scope input must not execute a repository snapshot.');
+    });
+    const coreInspection = vi.fn<IMoldeaCliCoreInspectionExecutor>();
+    const composition = createCompositionResolver();
+    const scope = vi.fn<IMoldeaCliProjectScopeExecutor>();
+    const executeCommand = createMoldeaCliCommandExecutor(
+      discovery,
+      snapshot,
+      coreInspection,
+      composition,
+      scope,
+    );
+    const result = await executeCommand({
+      ...createCommandInput('scope', { pathsInput, path: pathsInput === 'path' ? path : null }),
+      ...(pathsInput === 'stdin'
+        ? { stdin: new TextEncoder().encode(`/valid.ts\0${path}\0`) }
+        : {}),
+    });
+
+    expect(result.exitCode).toBe(3);
+    expect(JSON.parse(result.stdout)).toStrictEqual({
+      cliVersion: '9.0.0',
+      command: 'scope',
+      schemaVersion: 5,
+      status: 'error',
+      result: null,
+      error: {
+        code: 'PATH_INPUT_INVALID',
+        details: {},
+        path: null,
+        retryable: false,
+        source: 'cli',
+        message:
+          'The scope path input is invalid. Use leading-slash repository-logical paths and NUL-delimited UTF-8 on stdin.',
+      },
+    });
+    expect(discovery).not.toHaveBeenCalled();
+    expect(snapshot).not.toHaveBeenCalled();
+    expect(coreInspection).not.toHaveBeenCalled();
+    expect(composition).not.toHaveBeenCalled();
+    expect(scope).not.toHaveBeenCalled();
+  });
+
   test('validates through a content-free Core result', async () => {
     const snapshot = createCompletedSnapshotExecutor();
     const coreInspection = vi
