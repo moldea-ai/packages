@@ -291,6 +291,12 @@ for (const theme of ['light', 'dark'] as const) {
     ]);
     expect(
       await page.evaluate(
+        () =>
+          getComputedStyle(document.documentElement, '::view-transition-new(root)').transformOrigin,
+      ),
+    ).toMatch(/(?:^| )0(?:px|%)$/u);
+    expect(
+      await page.evaluate(
         () => getComputedStyle(document.documentElement, '::view-transition-old(root)').opacity,
       ),
     ).toBe('0');

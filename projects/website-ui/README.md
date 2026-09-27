@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.11.0
+pnpm add @moldea.ai/website-ui@1.11.1
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -212,7 +212,7 @@ Markdown and literal code renderers apply this policy through `styles.css`. Rend
 
 ### Optional detail dialogs
 
-`Dialog` defaults to a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. The shared root stylesheet reserves a stable desktop scrollbar gutter so modal scroll locking does not shift the page; mobile retains its full viewport width. The scrolling body starts at the top each time the dialog opens. On mobile, the backdrop is transparent and the opaque page scales from 96% to full size over 300ms. Where supported, closing captures the dialog before revealing the returning page with the same scale and no text cross-fade. The old dialog snapshot is hidden so its text cannot show through translucent sticky headers. Named content snapshots from Astro navigation are folded into the root during that return so they cannot overlap the site header. Browsers without View Transitions and reduced-motion users dismiss immediately. Desktop retains its fade-and-slide entrance and 200ms exit. Escape and the close control dismiss the modal and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
+`Dialog` defaults to a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. The shared root stylesheet reserves a stable desktop scrollbar gutter so modal scroll locking does not shift the page; mobile retains its full viewport width. The scrolling body starts at the top each time the dialog opens. On mobile, the backdrop is transparent and the opaque page scales from 96% to full size over 300ms. Where supported, closing captures the dialog before revealing the returning page with the same scale and no text cross-fade. That scale anchors to the top so a sticky site header does not jump vertically. The old dialog snapshot is hidden so its text cannot show through translucent sticky headers. Named content snapshots from Astro navigation are folded into the root during that return so they cannot overlap the site header. Browsers without View Transitions and reduced-motion users dismiss immediately. Desktop retains its fade-and-slide entrance and 200ms exit. Escape and the close control dismiss the modal and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
 
 ```astro
 ---
