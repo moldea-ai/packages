@@ -1,0 +1,160 @@
+---
+import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
+import Dialog from '@moldea.ai/website-ui/dialog';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
+
+import {
+  getCapabilityOutcome,
+  type ICapabilities,
+  type ICapabilityCase,
+} from '../../lib/capabilities/index.ts';
+import { CapabilityCard } from '../capability-card/index.ts';
+
+// a compact example button opens the illustration before its optional result
+interface Props {
+  example: ICapabilityCase;
+  catalog: ICapabilities;
+  position: number;
+  total: number;
+}
+const { example, catalog, position, total } = Astro.props;
+const outcome = getCapabilityOutcome(example, catalog);
+const dialogId = `example-${example.id}`;
+const positionLabel = `Example ${position} of ${total}`;
+---
+
+<div
+  id={example.id}
+  class="min-w-0 scroll-mt-24"
+  data-capability-example
+  data-capability-outcome={example.id}
+>
+  <Dialog
+    id={dialogId}
+    title={example.title}
+    triggerLabel={example.title}
+    triggerAriaLabel={`Open example: ${example.title}`}
+    triggerVariant="outline"
+    triggerSize="md"
+    triggerClass="min-h-12 w-full min-w-0 justify-between gap-3 rounded-lg px-3 py-2 text-left whitespace-normal"
+    size="medium"
+    closeLabel="Close example"
+    fallbackOpen
+    isOverlayCloseEnabled
+  >
+    <span
+      slot="trigger"
+      class="flex min-w-0 flex-1 items-center justify-between gap-3"
+    >
+      <span class="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+        <span class="text-sm leading-6 font-semibold sm:text-base">
+          <InlineBrandText text={example.title} />
+        </span>
+        <span class="text-xs leading-5 text-muted-foreground">{positionLabel}</span>
+      </span>
+      <StatusBadge
+        label={outcome.label}
+        tone={outcome.tone}
+        size="sm"
+      />
+    </span>
+    <div
+      slot="heading"
+      class="min-w-0"
+    >
+      <h2
+        id={`${dialogId}-title`}
+        class="text-lg leading-6 font-semibold break-words"
+      >
+        <InlineBrandText text={example.title} />
+      </h2>
+    </div>
+    <div class="mx-auto max-w-3xl min-w-0">
+      <CapabilityCard
+        {example}
+        {catalog}
+      />
+    </div>
+  </Dialog>
+</div>
+
+<style>
+  /* Without JavaScript, the same example content remains readable in the page flow. */
+  :global(
+    html:not([data-capabilities-enhanced])
+      [data-capability-example]
+      > [data-dialog-root]
+      > dialog[data-dialog-fallback-open]
+  ) {
+    position: static;
+    display: grid;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    overflow: visible;
+    box-shadow: none;
+  }
+
+  :global(
+    html:not([data-capabilities-enhanced])
+      [data-capability-example]
+      > [data-dialog-root]
+      > dialog[data-dialog-fallback-open]
+      > header
+      form
+  ) {
+    display: none;
+  }
+
+  :global(
+    html:not([data-capabilities-enhanced])
+      [data-capability-example]
+      > [data-dialog-root]
+      > dialog[data-dialog-fallback-open]
+      > div
+  ) {
+    overflow: visible;
+  }
+
+  :global(
+    html[data-capabilities-enhanced]
+      [data-capability-example]
+      > [data-dialog-root]
+      > dialog[data-dialog-fallback-open]
+  ) {
+    display: none;
+  }
+</style>
+
+<script>
+  /** Opens hash-linked examples on direct entry and Astro client navigation. */
+  const openLinkedExample = (): void => {
+    let exampleId: string;
+    try {
+      exampleId = decodeURIComponent(window.location.hash.slice(1));
+    } catch {
+      return;
+    }
+    if (!exampleId) return;
+    const example = document.getElementById(exampleId);
+    if (!example?.matches('[data-capability-example]')) return;
+    const trigger = example.querySelector<HTMLButtonElement>(
+      ':scope > [data-dialog-root] > [data-dialog-trigger]',
+    );
+    if (!trigger || trigger.hidden) return;
+    const dialog = example.querySelector<HTMLDialogElement>(':scope > [data-dialog-root] > dialog');
+    if (dialog?.open) return;
+    for (const openDialog of document.querySelectorAll<HTMLDialogElement>(
+      '[data-capability-example] > [data-dialog-root] > dialog:modal',
+    )) {
+      openDialog.close();
+    }
+    trigger.click();
+  };
+
+  openLinkedExample();
+  window.addEventListener('hashchange', openLinkedExample);
+  document.addEventListener('astro:page-load', openLinkedExample);
+</script>

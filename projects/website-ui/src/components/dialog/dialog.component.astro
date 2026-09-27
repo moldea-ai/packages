@@ -14,8 +14,10 @@ export interface Props {
   triggerAriaLabel?: string;
   triggerVariant?: IActionButtonProps['variant'];
   triggerSize?: 'compact' | IActionButtonProps['size'];
+  triggerClass?: string;
   size?: 'medium' | 'large';
   closeLabel?: string;
+  fallbackOpen?: boolean;
   // matches the platform's opt-in dismissal for read-only content
   isOverlayCloseEnabled?: boolean;
 }
@@ -28,8 +30,10 @@ const {
   triggerAriaLabel,
   triggerVariant = 'outline',
   triggerSize = 'compact',
+  triggerClass,
   size = 'medium',
   closeLabel = 'Close dialog',
+  fallbackOpen = false,
   isOverlayCloseEnabled = false,
 } = Astro.props;
 const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
@@ -39,7 +43,10 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
   <ActionButton
     variant={triggerVariant}
     size={triggerSize === 'compact' ? 'sm' : triggerSize}
-    class={triggerSize === 'compact' ? 'py-1 text-xs [hidden]:hidden' : '[hidden]:hidden'}
+    class:list={[
+      triggerSize === 'compact' ? 'py-1 text-xs [hidden]:hidden' : '[hidden]:hidden',
+      triggerClass,
+    ]}
     aria-label={triggerAriaLabel}
     title={isIconTrigger ? triggerLabel : undefined}
     aria-controls={id}
@@ -59,20 +66,22 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
           <span class="sr-only">{triggerLabel}</span>
         </>
       ) : (
-        triggerLabel
+        <slot name="trigger">{triggerLabel}</slot>
       )
     }
   </ActionButton>
   <dialog
     id={id}
     class:list={[
-      'fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden border-0 bg-background p-0 text-foreground outline-none [--dialog-exit-duration:300ms] [--dialog-motion-transform:translateY(0.25rem)] backdrop:bg-black/45 open:grid sm:m-auto sm:h-fit sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:rounded-xl sm:border sm:shadow-raised sm:[--dialog-exit-duration:200ms] sm:[--dialog-motion-transform:translateY(0.5rem)_scale(0.95)] sm:backdrop:backdrop-blur-xs dark:backdrop:bg-black/70',
+      'fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden border-0 bg-background p-0 text-foreground outline-none [--dialog-exit-duration:300ms] [--dialog-motion-transform:translateY(0.25rem)] backdrop:bg-transparent open:grid sm:m-auto sm:h-fit sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:rounded-xl sm:border sm:shadow-raised sm:[--dialog-exit-duration:200ms] sm:[--dialog-motion-transform:translateY(0.5rem)_scale(0.95)] sm:backdrop:bg-black/45 sm:backdrop:backdrop-blur-xs dark:sm:backdrop:bg-black/70',
       size === 'large' ? 'sm:max-w-5xl' : 'sm:max-w-2xl',
     ]}
     aria-labelledby={`${id}-title`}
     aria-describedby={description ? `${id}-description` : undefined}
     data-website-ui-dialog
     data-overlay-close-enabled={isOverlayCloseEnabled ? '' : undefined}
+    data-dialog-fallback-open={fallbackOpen ? '' : undefined}
+    open={fallbackOpen ? true : undefined}
   >
     <header
       class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 border-b pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-4 pl-[max(0.5rem,env(safe-area-inset-left))] sm:grid-cols-[minmax(0,1fr)_auto] sm:px-6 sm:py-4"
@@ -130,6 +139,9 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
 </div>
 
 <script>
+  const activeReturnTransitions = new Set<ViewTransition>();
+  const returnAttribute = 'data-website-ui-dialog-return';
+
   /** Enhances optional detail triggers while native dialogs own modality and keyboard focus. */
   const initializeDialogs = (): void => {
     for (const root of document.querySelectorAll<HTMLElement>('[data-dialog-root]')) {
@@ -141,14 +153,56 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
       if (body === null) continue;
 
       let closeRequest: symbol | undefined;
+      let returnTransition: ViewTransition | undefined;
+      const clearReturnMarker = (): void => {
+        if (document.documentElement.getAttribute(returnAttribute) === dialog.id)
+          document.documentElement.removeAttribute(returnAttribute);
+      };
       /**
-       * Keeps native modality until exit completes; navigation and reopening invalidate old exits.
+       * Captures the opaque mobile modal before revealing the page, or awaits the desktop exit.
        * @returns A promise that resolves after dismissal or invalidation by a newer session.
        */
       const requestClose = async (): Promise<void> => {
         if (!dialog.open || closeRequest !== undefined) return;
         const request = Symbol();
         closeRequest = request;
+        if (window.matchMedia?.('(max-width: 639px)').matches) {
+          if (
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+            typeof document.startViewTransition !== 'function'
+          ) {
+            dialog.close();
+            return;
+          }
+
+          for (const animation of dialog.getAnimations()) animation.finish();
+          document.documentElement.setAttribute(returnAttribute, dialog.id);
+          let transition: ViewTransition;
+          try {
+            transition = document.startViewTransition(() => {
+              if (closeRequest === request && dialog.isConnected && dialog.open) dialog.close();
+            });
+          } catch {
+            clearReturnMarker();
+            dialog.close();
+            return;
+          }
+          returnTransition = transition;
+          activeReturnTransitions.add(transition);
+          await Promise.allSettled([
+            transition.updateCallbackDone,
+            transition.ready,
+            transition.finished,
+          ]);
+          activeReturnTransitions.delete(transition);
+          if (returnTransition === transition) {
+            returnTransition = undefined;
+            if (closeRequest === request && dialog.isConnected && dialog.open) dialog.close();
+            clearReturnMarker();
+          }
+          return;
+        }
+
         dialog.dataset['closing'] = '';
         // cancellation (including reduced-motion changes) must still finish dismissal
         await Promise.allSettled(dialog.getAnimations().map((animation) => animation.finished));
@@ -156,6 +210,9 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
       };
       trigger.addEventListener('click', () => {
         if (dialog.open) return;
+        returnTransition?.skipTransition();
+        returnTransition = undefined;
+        clearReturnMarker();
         closeRequest = undefined;
         delete dialog.dataset['closing'];
         dialog.showModal();
@@ -203,6 +260,10 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
         });
       }
       root.dataset['enhanced'] = 'true';
+      if (dialog.hasAttribute('data-dialog-fallback-open')) {
+        dialog.close();
+        dialog.removeAttribute('data-dialog-fallback-open');
+      }
       trigger.hidden = false;
     }
   };
@@ -210,6 +271,9 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
   initializeDialogs();
   document.addEventListener('astro:page-load', initializeDialogs);
   document.addEventListener('astro:before-swap', () => {
+    for (const transition of activeReturnTransitions) transition.skipTransition();
+    activeReturnTransitions.clear();
+    document.documentElement.removeAttribute(returnAttribute);
     for (const dialog of document.querySelectorAll<HTMLDialogElement>(
       '[data-website-ui-dialog]:modal',
     )) {
@@ -240,6 +304,25 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
 
     dialog[data-closing]:modal::backdrop {
       animation: dialog-backdrop-exit 200ms ease-in both;
+    }
+  }
+
+  @media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
+    dialog:modal {
+      animation: dialog-page-enter 300ms ease-out both;
+    }
+
+    dialog:modal::backdrop {
+      animation: none;
+    }
+  }
+
+  @keyframes dialog-page-enter {
+    from {
+      transform: scale(0.96);
+    }
+    to {
+      transform: scale(1);
     }
   }
 

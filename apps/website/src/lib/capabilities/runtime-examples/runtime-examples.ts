@@ -52,7 +52,9 @@ export const createRuntimeExamples = async (
         `projects/adapter-${definition.adapter.id}/docs/${definition.adapter.id === 'cloudflare-agents' ? 'verified-targets' : 'verified-target'}.md`,
         `projects/adapter-${definition.adapter.id}/docs/limitations.md`,
       ],
-      files: definition.files.map(projectFile).filter((file) => file !== null),
+      files: definition.files
+        .map((file) => projectFile(file, { maxLines: 32 }))
+        .filter((file) => file !== null),
       result: {
         kind: 'adapter',
         valid: result.valid,

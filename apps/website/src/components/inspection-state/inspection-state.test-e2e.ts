@@ -223,12 +223,41 @@ for (const width of [320, 1440]) {
       const enteringOpacity = Number(
         await dialog.evaluate((element) => getComputedStyle(element).opacity),
       );
-      expect(enteringOpacity).toBeGreaterThan(0);
-      expect(enteringOpacity).toBeLessThan(1);
+      if (width < 640) {
+        expect(enteringOpacity).toBe(1);
+      } else {
+        expect(enteringOpacity).toBeGreaterThan(0);
+        expect(enteringOpacity).toBeLessThan(1);
+      }
       await expect(dialog).not.toHaveCSS('transform', 'none');
       await dialog.evaluate((element) => {
         for (const animation of element.getAnimations()) animation.finish();
       });
+
+      if (width < 640) {
+        const returnStarted = page.waitForFunction(() =>
+          document.documentElement.hasAttribute('data-website-ui-dialog-return'),
+        );
+        await Promise.all([
+          returnStarted,
+          dialog.getByRole('button', { name: 'Close Core result' }).click(),
+        ]);
+        expect(
+          await page.evaluate(
+            () => getComputedStyle(document.documentElement, '::view-transition-new(root)').opacity,
+          ),
+        ).toBe('1');
+        expect(
+          await page.evaluate(
+            () => getComputedStyle(document.documentElement, '::view-transition-old(root)').opacity,
+          ),
+        ).toBe('0');
+        await expect(dialog).toHaveCount(0);
+        await expect(page.locator('html')).not.toHaveAttribute('data-website-ui-dialog-return');
+        await expect(trigger).toBeFocused();
+        await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
+        return;
+      }
 
       await dialog.evaluate((element) => {
         element.querySelector<HTMLButtonElement>('button')!.click();
@@ -237,7 +266,7 @@ for (const width of [320, 1440]) {
           animation.currentTime = 100;
         }
       });
-      await expect(dialog).toHaveCSS('animation-duration', width < 640 ? '0.3s' : '0.2s');
+      await expect(dialog).toHaveCSS('animation-duration', '0.2s');
       const exitingOpacity = Number(
         await dialog.evaluate((element) => getComputedStyle(element).opacity),
       );

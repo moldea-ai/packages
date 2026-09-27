@@ -136,8 +136,12 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
         .replace('^0.16.0', '0.17.0')
         .replace('^0.21.0', '0.21.0'),
       '/src/agents.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/agents.ts').replace(
-        'getSystemPrompt() { return loadSupportInstruction(); }',
-        "configureSession(session) { return session.withContext('soul', { provider: { get: () => loadSupportInstruction() } }); }",
+        '  getSystemPrompt() {\n    return loadSupportInstruction();\n  }',
+        `  configureSession(session) {
+    return session.withContext('soul', {
+      provider: { get: () => loadSupportInstruction() },
+    });
+  }`,
       ),
     }),
   },
@@ -154,22 +158,27 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
         .replace('^7.0.0', '7.0.116'),
       '/src/agents.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/agents.ts')
         .replace(
-          'getSystemPrompt() { return loadSupportInstruction(); }',
-          "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+          '  getSystemPrompt() {\n    return loadSupportInstruction();\n  }',
+          `  configureContext() {
+    return [{
+      label: 'soul',
+      provider: { get: () => loadSupportInstruction() },
+    }];
+  }`,
         )
         .replace(
           'import { findOrderTool, summaryHandoffTool }',
           'import { findOrderTool, searchTool, summaryHandoffTool }',
         )
         .replace(
-          'find_order: findOrderTool, summarize: summaryHandoffTool',
-          'find_order: findOrderTool, search: searchTool, summarize: summaryHandoffTool',
+          '      summarize: summaryHandoffTool,',
+          '      search: searchTool,\n      summarize: summaryHandoffTool,',
         ),
       '/src/tools.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/tools.ts')
         .replace("import { tool } from 'ai';", "import { tool, toolSearch } from 'ai';")
         .replace(
           'inputSchema: FindOrderInputSchema,',
-          'inputSchema: FindOrderInputSchema, deferLoading: true,',
+          'inputSchema: FindOrderInputSchema,\n  deferLoading: true,',
         )
         .replace(
           'export const summaryHandoffTool',
@@ -188,8 +197,13 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
         .replace('^0.16.0', '>=0.17.0')
         .replace('^0.21.0', '>=0.23.0'),
       '/src/agents.ts': source(CLOUDFLARE_AGENTS_FILES, '/src/agents.ts').replace(
-        'getSystemPrompt() { return loadSupportInstruction(); }',
-        "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
+        '  getSystemPrompt() {\n    return loadSupportInstruction();\n  }',
+        `  configureContext() {
+    return [{
+      label: 'soul',
+      provider: { get: () => loadSupportInstruction() },
+    }];
+  }`,
       ),
     }),
   },
@@ -256,8 +270,31 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
           'export const supportAgent = async () => {\n  const initial = client.models.generateContent(',
         )
         .replace(
+          '      tools: [\n        {\n          functionDeclarations: [registeredFindOrder],\n        },\n      ],',
+          '      tools: [{ functionDeclarations: [registeredFindOrder] }],',
+        )
+        .replace(
           '  });\n',
-          "  });\n  const streamed = client.models.generateContentStream({ model: 'gemini-2.5-flash', contents: 'Help the customer.', config: { systemInstruction: await readInstruction(), tools: [{ functionDeclarations: [registeredFindOrder] }] } });\n  return [initial, streamed];\n};\n",
+          `  });
+  const streamed = client.models.generateContentStream({
+    model: 'gemini-2.5-flash',
+    contents: 'Help the customer.',
+    config: {
+      systemInstruction: await readInstruction(),
+      tools: [{ functionDeclarations: [registeredFindOrder] }],
+    },
+  });
+  return [initial, streamed];
+};
+`,
+        )
+        .replaceAll(
+          "    model: 'gemini-2.5-flash',\n    contents: 'Help the customer.',",
+          "    model: 'gemini-2.5-flash', contents: 'Help the customer.',",
+        )
+        .replaceAll(
+          '    config: {\n      systemInstruction: await readInstruction(),',
+          '    config: { systemInstruction: await readInstruction(),',
         ),
     }),
   },
@@ -330,11 +367,30 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
       '/src/functional.ts': source(LANGGRAPH_FILES, '/src/functional.ts')
         .replace(
           "import { entrypoint, getPreviousState, interrupt, task } from '@langchain/langgraph';",
-          "import { entrypoint, getPreviousState, interrupt, task } from '@langchain/langgraph';\nimport { z } from 'zod';\nconst ResumeSchema = z.object({ approved: z.boolean() });",
+          `import {
+  entrypoint,
+  getPreviousState,
+  interrupt,
+  task,
+} from '@langchain/langgraph';
+import { z } from 'zod';
+
+const ResumeSchema = z.object({ approved: z.boolean() });`,
         )
         .replace(
-          'interrupt({ prepared });',
-          'interrupt({ prepared }, { responseSchema: ResumeSchema });',
+          "export const supportWorkflow = entrypoint({ name: 'support_workflow' }, async (input: unknown) => {\n  const prepared = await prepare(input);\n  interrupt({ prepared });\n  const previous = getPreviousState<unknown>();\n  return entrypoint.final<unknown, unknown>({ value: prepared, save: previous });\n});",
+          `export const supportWorkflow = entrypoint(
+  { name: 'support_workflow' },
+  async (input: unknown) => {
+    const prepared = await prepare(input);
+    interrupt({ prepared }, { responseSchema: ResumeSchema });
+    const previous = getPreviousState<unknown>();
+    return entrypoint.final<unknown, unknown>({
+      value: prepared,
+      save: previous,
+    });
+  },
+);`,
         ),
     }),
   },
@@ -371,7 +427,15 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
         .replace('client.responses.create({', 'client.responses.parse({')
         .replace(
           '  });',
-          "  }, { body: { model: 'gpt-5', input: 'Help the customer.', instructions: readInstruction(), tools: [registeredFindOrder], text: { format: zodTextFormat(SupportOutput, 'support') } } });",
+          `  }, {
+    body: {
+      model: 'gpt-5',
+      input: 'Help the customer.',
+      instructions: readInstruction(),
+      tools: [registeredFindOrder],
+      text: { format: zodTextFormat(SupportOutput, 'support') },
+    },
+  });`,
         ),
     }),
   },
@@ -419,7 +483,7 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
       '/package.json': source(VERCEL_AI_SDK_FILES, '/package.json').replace('^7.0.66', '7.0.116'),
       '/src/tools.ts': source(VERCEL_AI_SDK_FILES, '/src/tools.ts').replace(
         'inputSchema: FindOrderInputSchema,',
-        'inputSchema: FindOrderInputSchema, deferLoading: true,',
+        'inputSchema: FindOrderInputSchema,\n  deferLoading: true,',
       ),
       '/src/agents.ts': source(VERCEL_AI_SDK_FILES, '/src/agents.ts')
         .replace(
@@ -560,13 +624,13 @@ export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
         path: '/agents/support/agent/subagents/research.ts',
         type: 'file',
         content:
-          "import { defineWorkspaceAgent } from 'eve'; export default defineWorkspaceAgent({ name: 'research' });\n",
+          "import { defineWorkspaceAgent } from 'eve';\n\nexport default defineWorkspaceAgent({\n  name: 'research',\n});\n",
       },
       {
         path: '/agents/research/agent/agent.ts',
         type: 'file',
         content:
-          "import { defineAgent } from 'eve'; export default defineAgent({ description: 'Researches support requests.', model: 'provider/model' });\n",
+          "import { defineAgent } from 'eve';\n\nexport default defineAgent({\n  description: 'Researches support requests.',\n  model: 'provider/model',\n});\n",
       },
       {
         path: '/moldea/agents/research/description.md',
