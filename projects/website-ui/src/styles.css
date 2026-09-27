@@ -33,7 +33,7 @@
 
   html[data-website-ui-dialog-return]::view-transition-new(root) {
     z-index: 1;
-    transform-origin: center;
+    transform-origin: top center;
     animation: website-ui-dialog-return 300ms ease-out both;
   }
 }
