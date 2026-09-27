@@ -98,7 +98,8 @@ export const MOLDEA_CLI_ERROR_DEFINITIONS = Object.freeze({
     source: 'cli',
   }),
   PATH_INPUT_INVALID: Object.freeze({
-    message: 'The NUL-delimited changed-path input is invalid.',
+    message:
+      'The scope path input is invalid. Use leading-slash repository-logical paths and NUL-delimited UTF-8 on stdin.',
     retryable: false,
     source: 'cli',
   }),

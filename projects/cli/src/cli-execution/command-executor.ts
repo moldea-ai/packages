@@ -1,4 +1,5 @@
 import type { IProjectInspectionPageResult, IProjectValidationResult } from '@moldea.ai/core';
+import { isRepositoryPath } from '@moldea.ai/repository';
 
 import { MOLDEA_CLI_COMMANDS } from '../command-line/index.js';
 import type { IMoldeaCliCompositionResolver } from '../composition/index.js';
@@ -134,6 +135,10 @@ export const createMoldeaCliCommandExecutor = (
 
           scopePaths = parseMoldeaCliScopePathBytes(input.stdin, options.resourceLimits.maxEntries);
         } else {
+          return createOperationalErrorResult('PATH_INPUT_INVALID', input);
+        }
+
+        if (scopePaths.some((path) => !isRepositoryPath(path))) {
           return createOperationalErrorResult('PATH_INPUT_INVALID', input);
         }
       }

@@ -34,14 +34,14 @@ Known repository and Core exceptions retain their source, code, retryability, sa
 
 Schema 5 includes these stable CLI-owned contracts:
 
-| Code                      | Stable message                                                      |
-| ------------------------- | ------------------------------------------------------------------- |
-| `CONTENT_INVALID`         | The requested canonical asset is not valid moldea text.             |
-| `CONTENT_PATH_INVALID`    | The content path must identify one canonical moldea text asset.     |
-| `CURSOR_INVALID`          | The continuation cursor is invalid for this request.                |
-| `CURSOR_SNAPSHOT_CHANGED` | The continuation cursor belongs to a different repository snapshot. |
-| `OUTPUT_BUDGET_TOO_SMALL` | The output byte budget cannot contain the next complete result.     |
-| `PATH_INPUT_INVALID`      | The NUL-delimited changed-path input is invalid.                    |
+| Code                      | Stable message                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `CONTENT_INVALID`         | The requested canonical asset is not valid moldea text.                                                       |
+| `CONTENT_PATH_INVALID`    | The content path must identify one canonical moldea text asset.                                               |
+| `CURSOR_INVALID`          | The continuation cursor is invalid for this request.                                                          |
+| `CURSOR_SNAPSHOT_CHANGED` | The continuation cursor belongs to a different repository snapshot.                                           |
+| `OUTPUT_BUDGET_TOO_SMALL` | The output byte budget cannot contain the next complete result.                                               |
+| `PATH_INPUT_INVALID`      | The scope path input is invalid. Use leading-slash repository-logical paths and NUL-delimited UTF-8 on stdin. |
 
 ## Cancellation and read-only guarantees
 

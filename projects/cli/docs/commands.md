@@ -23,11 +23,11 @@ Validates the complete selected repository through Core and active runtime adapt
 
 ## `inspect`
 
-Runs the same full snapshot and inspection path. Human output reports format and complete counts. JSON output contains a deterministic page of allowlisted records, including one independent `agentId` and `runtimeId` assignment per canonical agent. It never includes canonical bodies or arbitrary adapter evidence details.
+Runs the same full snapshot and inspection path. Human output reports format and complete counts. The `unresolved` count includes project-owned and agent-owned requirements of every effect, counting identical IDs separately across owners; these readiness gaps do not themselves make structural validation fail. JSON output contains a deterministic page of allowlisted records, including one independent `agentId` and `runtimeId` assignment per canonical agent. It never includes canonical bodies or arbitrary adapter evidence details.
 
 ## `scope`
 
-Matches changed repository paths to manifest relationships without loading adapters or inspecting project documents. Supply one logical path through `--path`, or pass NUL-delimited UTF-8 paths to `--paths-stdin`. The result includes relevance, complete counts and digests, and paged match or diagnostic records. An empty relationship manifest returns `relevant: false` without scanning the repository.
+Matches changed repository paths to manifest relationships without loading adapters or inspecting project documents. Supply one leading-slash repository-logical path through `--path`, or pass NUL-delimited UTF-8 paths with the same grammar to `--paths-stdin`. Invalid paths return `PATH_INPUT_INVALID` before repository discovery; relative paths are not normalized. The result includes relevance, complete counts and digests, and paged match or diagnostic records. An empty relationship manifest returns `relevant: false` without scanning the repository.
 
 ## `content`
 

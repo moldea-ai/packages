@@ -487,7 +487,7 @@ test('shows a successful schema 5 warning result with bounded version details', 
   const dialog = page.getByRole('dialog', { name: '1 runtime relationship unverified' });
   const excerpt = JSON.parse((await dialog.locator('pre').textContent()) ?? '') as unknown;
   expect(excerpt).toMatchObject({
-    cliVersion: '9.0.0',
+    cliVersion: '9.0.1',
     command: 'validate',
     error: null,
     schemaVersion: 5,

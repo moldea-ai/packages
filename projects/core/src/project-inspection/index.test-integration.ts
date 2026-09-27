@@ -6,6 +6,7 @@ import { parseRepositoryPath } from '@moldea.ai/repository';
 import type { IProjectInspectionPageRecord } from '../contracts/index.js';
 import { createCore } from '../core/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
+import type { IUnresolvedRequirementManifestEntry } from '../format/index.js';
 import {
   createMemoryRepositoryReader,
   overrideCoreTestRepositoryReader,
@@ -26,16 +27,24 @@ const createValidRepository = (projectContent: string) =>
     },
   ]);
 
-const createAgentRepository = (assignments: readonly { agentId: string; runtimeId: string }[]) => {
-  const manifest = [
-    'version: 1',
-    'agents:',
-    ...assignments.flatMap(({ agentId, runtimeId }) => [
-      `  ${agentId}:`,
-      `    runtime: { id: ${runtimeId} }`,
-    ]),
-    '',
-  ].join('\n');
+const createAgentRepository = (
+  assignments: readonly {
+    agentId: string;
+    runtimeId: string;
+    unresolved?: Record<string, IUnresolvedRequirementManifestEntry>;
+  }[],
+  unresolved: Record<string, IUnresolvedRequirementManifestEntry> = {},
+) => {
+  const manifest = JSON.stringify({
+    version: 1,
+    unresolved,
+    agents: Object.fromEntries(
+      assignments.map(({ agentId, runtimeId, unresolved }) => [
+        agentId,
+        { runtime: { id: runtimeId }, unresolved },
+      ]),
+    ),
+  });
   const entries: IMemoryRepositoryEntry[] = [
     {
       content: manifest,
@@ -68,6 +77,59 @@ const createAgentRepository = (assignments: readonly { agentId: string; runtimeI
 };
 
 describe('prepared project inspection', () => {
+  test.each([
+    [0, [], 0],
+    [3, [], 3],
+    [0, [4], 4],
+    [2, [2, 1], 5],
+  ])(
+    'counts requirements across owners (%d, %o) -> %d',
+    async (projectCount, agentCounts, total) => {
+      const createRequirements = (
+        count: number,
+      ): Record<string, IUnresolvedRequirementManifestEntry> =>
+        Object.fromEntries(
+          Array.from({ length: count }, (_, index) => [
+            `requirement-${index}`,
+            {
+              category: 'policy',
+              effect: (['blocking', 'warning', 'informational'] as const)[index % 3]!,
+              description: 'The policy needs an accepted decision.',
+              resolution: 'Record the accepted policy.',
+            },
+          ]),
+        );
+      const repository = createAgentRepository(
+        agentCounts.map((count, index) => ({
+          agentId: `agent-${index}`,
+          runtimeId: 'custom',
+          unresolved: createRequirements(count),
+        })),
+        createRequirements(projectCount),
+      );
+      const core = createCore();
+      const validation = await core.validateProject({ repository });
+      const inspection = await core.createProjectInspection({ repository });
+
+      expect(validation.valid).toBe(true);
+      expect(validation.diagnostics).toStrictEqual([]);
+      expect(validation.summary?.counts.unresolved).toBe(total);
+
+      let cursor: string | undefined;
+      do {
+        const page = inspection.readPage({
+          view: 'all',
+          maxItems: 1,
+          ...(cursor === undefined ? {} : { cursor }),
+        });
+        expect(page.valid).toBe(true);
+        expect(page.counts).toMatchObject({ unresolved: total, errors: 0, warnings: 0 });
+        expect(page.summary).toStrictEqual(validation.summary);
+        cursor = page.page.nextCursor ?? undefined;
+      } while (cursor !== undefined);
+    },
+  );
+
   test('returns content-free pages without another repository operation', async () => {
     const source = createAgentRepository(
       Array.from({ length: 16 }, (_, index) => ({

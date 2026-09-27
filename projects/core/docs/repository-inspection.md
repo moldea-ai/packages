@@ -42,6 +42,8 @@ export const validate = async (repository: IRepositoryReader) => {
 
 The result contains source identity, validity, format version, summary counts and digests, diagnostics, and runtime evidence. Core internally composes canonical discovery, project and context validation, decision graphs, registered-agent assets, mirrors, references, relationships, and configured adapters through one budget-aware reader session.
 
+The `unresolved` summary count includes all project-owned and agent-owned requirements, across every effect. Identical IDs under different owners count separately. Validation and every inspection page report the same complete total. Requirements describe readiness gaps; even blocking requirements do not invalidate a structurally valid project.
+
 Structural repository errors return error diagnostics. Adapters may return scoped warnings for unverified declared runtime relationships without invalidating an otherwise valid project. Reader access failures, snapshot drift, cancellation, resource exhaustion, invalid operation input, and invalid adapter output reject with typed exceptions.
 
 ## Bounded inspection views

@@ -30,7 +30,7 @@ describe('mapMoldeaCliOperationalError', () => {
     [
       new MoldeaCliProjectScopeException('PATH_INPUT_INVALID'),
       'PATH_INPUT_INVALID',
-      'The NUL-delimited changed-path input is invalid.',
+      'The scope path input is invalid. Use leading-slash repository-logical paths and NUL-delimited UTF-8 on stdin.',
     ],
   ] as const)('maps CLI transport failure %s', (error, code, message) => {
     expect(mapMoldeaCliOperationalError(error)).toStrictEqual({
