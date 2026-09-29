@@ -5,10 +5,27 @@
 @source './components/**/*.{astro,ts}';
 @source './markdown/**/*.ts';
 
-/* Keep router-owned snapshots inside the root and hide the old dialog behind translucent headers. */
+/* Keep returning content together, but restore the site header outside its scaling snapshot. */
 @media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
   html[data-website-ui-dialog-return] body * {
     view-transition-name: none !important;
+  }
+
+  /* A nested dialog must keep covering the site header until the final modal closes. */
+  html[data-website-ui-dialog-return]:not(:has([data-website-ui-dialog]:modal))
+    [data-website-ui-site-header] {
+    view-transition-name: website-ui-site-header !important;
+  }
+
+  html[data-website-ui-dialog-return]::view-transition-group(website-ui-site-header) {
+    z-index: 2;
+    animation: none;
+  }
+
+  html[data-website-ui-dialog-return]::view-transition-new(website-ui-site-header) {
+    animation: none;
+    mix-blend-mode: normal;
+    opacity: 1;
   }
 
   html[data-website-ui-dialog-return]::view-transition-group(root) {
