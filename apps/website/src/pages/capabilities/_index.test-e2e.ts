@@ -70,7 +70,7 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
       const variable = await page.locator('#variable-undeclared').boundingBox();
       const mirror = await page.locator('#mirror-stale').boundingBox();
       expect(variable!.y + variable!.height).toBeLessThanOrEqual(mirror!.y);
-      if (width < 1024) await page.getByLabel('Open navigation', { exact: true }).click();
+      if (width < 1024) await page.getByRole('banner').locator('summary').click();
       const nav = page.getByRole('navigation', {
         name: width < 1024 ? 'Mobile navigation' : 'Primary navigation',
         exact: true,
@@ -240,13 +240,33 @@ for (const width of [320, 1440]) {
 }
 
 for (const theme of ['light', 'dark'] as const) {
-  test(`returns from an opaque mobile result dialog without a text fade in ${theme}`, async ({
+  test(`returns from an opaque mobile result dialog with a stationary site header in ${theme}`, async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 375, height: 900 });
+    await page.setViewportSize({ width: 320, height: 640 });
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'no-preference' });
     await page.goto(route);
+    await page.evaluate(() => {
+      const startViewTransition = document.startViewTransition.bind(document);
+      document.startViewTransition = (callback) => {
+        const transition = startViewTransition(callback);
+        void transition.ready.then(() => {
+          for (const animation of document.getAnimations()) {
+            if (
+              animation instanceof CSSAnimation &&
+              animation.animationName === 'website-ui-dialog-return'
+            )
+              animation.pause();
+          }
+        });
+        return transition;
+      };
+    });
     const example = await openExample(page, 'policy-reference-missing');
+    expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
+    const siteHeader = page.getByRole('banner');
+    const headerBounds = await siteHeader.boundingBox();
+    expect(headerBounds?.y).toBe(0);
     const trigger = example.getByRole('button', { name: /^View result:/u });
     await trigger.click();
     const dialog = page.getByRole('dialog', { name: '1 missing file' });
@@ -279,6 +299,19 @@ for (const theme of ['light', 'dark'] as const) {
     ).toBe('0');
     await expect(dialog).not.toBeVisible();
     await expect(example).toBeVisible();
+    await expect(siteHeader).toHaveCSS('view-transition-name', 'none');
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          document.getAnimations().some((animation) => animation.playState === 'paused'),
+        ),
+      )
+      .toBe(true);
+    await page.evaluate(() => {
+      for (const animation of document.getAnimations()) {
+        if (animation.playState === 'paused') animation.finish();
+      }
+    });
     await expect(page.locator('html')).not.toHaveAttribute('data-website-ui-dialog-return');
     await expect(trigger).toBeFocused();
 
@@ -301,6 +334,45 @@ for (const theme of ['light', 'dark'] as const) {
       ),
     ).toBe('0');
     await expect(example).not.toBeVisible();
+    await expect(siteHeader).toHaveCSS('view-transition-name', 'website-ui-site-header');
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          document.getAnimations().some((animation) => animation.playState === 'paused'),
+        ),
+      )
+      .toBe(true);
+    const headerSnapshot = await page.evaluate(() => {
+      const root = document.documentElement;
+      const group = getComputedStyle(root, '::view-transition-group(website-ui-site-header)');
+      const snapshot = getComputedStyle(root, '::view-transition-new(website-ui-site-header)');
+      return {
+        groupAnimation: group.animationName,
+        groupHeight: Number.parseFloat(group.height),
+        groupTransform: group.transform,
+        groupWidth: Number.parseFloat(group.width),
+        snapshotAnimation: snapshot.animationName,
+        snapshotOpacity: snapshot.opacity,
+        snapshotTransform: snapshot.transform,
+        returnSnapshotTransform: getComputedStyle(root, '::view-transition-new(root)').transform,
+      };
+    });
+    expect(headerSnapshot.groupAnimation).toBe('none');
+    expect(headerSnapshot.groupHeight).toBe(headerBounds?.height);
+    expect(headerSnapshot.groupTransform).toBe('matrix(1, 0, 0, 1, 0, 0)');
+    expect(headerSnapshot.groupWidth).toBe(320);
+    expect(headerSnapshot.snapshotAnimation).toBe('none');
+    expect(headerSnapshot.snapshotOpacity).toBe('1');
+    expect(headerSnapshot.snapshotTransform).toBe('none');
+    expect(headerSnapshot.returnSnapshotTransform).not.toBe('none');
+    expect(await siteHeader.boundingBox()).toStrictEqual(headerBounds);
+    await page.evaluate(() => {
+      for (const animation of document.getAnimations()) {
+        if (animation.playState === 'paused') animation.finish();
+      }
+    });
+    await expect(page.locator('html')).not.toHaveAttribute('data-website-ui-dialog-return');
+    await expect(exampleTrigger(page, 'policy-reference-missing')).toBeFocused();
   });
 }
 

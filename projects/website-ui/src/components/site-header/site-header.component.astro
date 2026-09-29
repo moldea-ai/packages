@@ -1,5 +1,5 @@
 ---
-import { ExternalLink, GitBranch, Menu, Search } from '@lucide/astro';
+import { ExternalLink, GitBranch, Menu, Search, X } from '@lucide/astro';
 
 import ActionLink from '../action-link/action-link.component.astro';
 import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
@@ -14,6 +14,7 @@ export interface ISiteHeaderNavigationItem {
 
 export interface Props {
   breakpoint?: 'lg' | 'md';
+  mobileMenuCloseLabel?: string;
   mobileMenuLabel?: string;
   mobileNavigationAriaLabel?: string;
   navigationAriaLabel?: string;
@@ -29,6 +30,7 @@ export interface Props {
 
 const {
   breakpoint = 'md',
+  mobileMenuCloseLabel = 'Close navigation',
   mobileMenuLabel = 'Open navigation',
   mobileNavigationAriaLabel,
   navigationAriaLabel = 'Primary navigation',
@@ -56,6 +58,7 @@ const responsiveClasses = breakpointClasses[breakpoint];
 
 <header
   class="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
+  data-website-ui-site-header
 >
   <div class="page-shell flex min-h-16 items-center justify-between gap-4">
     <slot name="brand" />
@@ -139,10 +142,15 @@ const responsiveClasses = breakpointClasses[breakpoint];
     <details class:list={['group relative', responsiveClasses.mobile]}>
       <summary
         class="flex size-11 list-none items-center justify-center rounded-lg border border-input surface-link bg-background [&::-webkit-details-marker]:hidden"
-        aria-label={mobileMenuLabel}
       >
+        <span class="sr-only group-open:hidden">{mobileMenuLabel}</span>
+        <span class="sr-only hidden group-open:block">{mobileMenuCloseLabel}</span>
         <Menu
-          class="size-5"
+          class="size-5 group-open:hidden"
+          aria-hidden="true"
+        />
+        <X
+          class="hidden size-5 group-open:block"
           aria-hidden="true"
         />
       </summary>

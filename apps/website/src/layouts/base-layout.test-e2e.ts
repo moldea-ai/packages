@@ -121,7 +121,7 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
       await page.emulateMedia({ colorScheme: theme });
       await page.goto(toPublicPath('/repository-format/'));
       const header = page.getByRole('banner');
-      if (width < 1024) await header.getByLabel('Open navigation', { exact: true }).click();
+      if (width < 1024) await header.locator('summary').click();
       const navigation = header.getByRole('navigation', {
         name: width < 1024 ? 'Mobile navigation' : 'Primary navigation',
         exact: true,
@@ -297,7 +297,7 @@ for (const width of [320, 1440]) {
         await expect(link).not.toHaveCSS('box-shadow', 'none');
       }
 
-      if (width < 1024) await page.getByLabel('Open navigation', { exact: true }).click();
+      if (width < 1024) await page.getByRole('banner').locator('summary').click();
       const navigation = page.getByRole('navigation', {
         name: width < 1024 ? 'Mobile navigation' : 'Primary navigation',
         exact: true,
@@ -884,6 +884,52 @@ test('keeps code-copy controls usable across supported widths, themes, and reduc
   }
 });
 
+test('switches the mobile navigation icon and accessible name with and without JavaScript', async ({
+  browser,
+}) => {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    for (const javaScriptEnabled of [true, false]) {
+      const context = await browser.newContext({
+        colorScheme,
+        javaScriptEnabled,
+        reducedMotion: 'reduce',
+        viewport: { height: 740, width: 320 },
+      });
+      try {
+        const page = await context.newPage();
+        await page.goto(toPublicPath('/'));
+        const header = page.getByRole('banner');
+        const navigationButton = header.locator('summary');
+        await expect(navigationButton).toHaveAccessibleName('Open navigation');
+        await expect(navigationButton.locator('svg.lucide-menu')).toBeVisible();
+        await expect(navigationButton.locator('svg.lucide-x')).toBeHidden();
+        await navigationButton.focus();
+        await expect(navigationButton).not.toHaveCSS('box-shadow', 'none');
+        await page.keyboard.press('Enter');
+
+        await expect(navigationButton).toBeFocused();
+        await expect(navigationButton).toHaveAccessibleName('Close navigation');
+        await expect(navigationButton.locator('svg.lucide-menu')).toBeHidden();
+        await expect(navigationButton.locator('svg.lucide-x')).toBeVisible();
+        await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible();
+        if (javaScriptEnabled) {
+          const accessibility = await new AxeBuilder({ page }).include('header').analyze();
+          expect(accessibility.violations).toStrictEqual([]);
+        }
+
+        await page.keyboard.press('Space');
+        await expect(navigationButton).toBeFocused();
+        await expect(navigationButton).toHaveAccessibleName('Open navigation');
+        await expect(navigationButton.locator('svg.lucide-menu')).toBeVisible();
+        await expect(navigationButton.locator('svg.lucide-x')).toBeHidden();
+        await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeHidden();
+      } finally {
+        await context.close();
+      }
+    }
+  }
+});
+
 test('persists an explicit theme and exposes mobile navigation from the keyboard', async ({
   page,
 }) => {
@@ -894,7 +940,7 @@ test('persists an explicit theme and exposes mobile navigation from the keyboard
     page.getByRole('banner').getByLabel('moldea packages home').getByText('packages'),
   ).toBeVisible();
 
-  const navigationButton = page.getByLabel('Open navigation');
+  const navigationButton = page.getByRole('banner').locator('summary');
   await navigationButton.focus();
   await page.keyboard.press('Enter');
   const mobileNavigation = page.getByRole('navigation', { name: 'Mobile navigation' });
@@ -1189,7 +1235,7 @@ test('marks the current desktop and mobile navigation destinations', async ({ pa
 
   await page.setViewportSize({ height: 740, width: 320 });
   await page.goto(toPublicPath('/adapters/openai/api/'));
-  await page.getByLabel('Open navigation').click();
+  await page.getByRole('banner').locator('summary').click();
 
   const mobileNavigation = page.getByRole('navigation', { name: 'Mobile navigation' });
   const activeMobileLink = mobileNavigation.locator('a[aria-current="page"]');
