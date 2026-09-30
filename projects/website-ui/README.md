@@ -308,4 +308,6 @@ pnpm --filter @moldea.ai/website-ui test:integration
 pnpm --filter @moldea.ai/website-ui test
 ```
 
+The packed-consumer integration also checks diff layouts and accessibility in real Chromium. Install Chromium with `pnpm --filter @moldea.ai/website-ui exec playwright install chromium` when it is not already available. The Website UI integration task forwards `PLAYWRIGHT_BROWSERS_PATH` through Turborepo so CI reuses the browsers in its existing Playwright container.
+
 The integration suite verifies the packed public surface and a real Astro consumer fixture. Publishing the package is a separate release operation and is not part of ordinary website development.
