@@ -92,7 +92,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.12.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.12.1' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -274,6 +274,8 @@ describe('published website UI package', () => {
         '    <CodeDiff {...diffProps} />',
         '    <CodeDiff {...diffProps} view="split" ariaLabel="Booking changes split" />',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes" view="split" />',
+        '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes scroll" overflow="scroll" />',
+        '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes split scroll" view="split" overflow="scroll" />',
         '    <CodeDiff oldValue="" newValue={\'<script>literal</script>\'} />',
         '    <CodeDiff patch={"--- a/policy.ts\\n+++ b/policy.ts\\n@@ -8 +8 @@\\n-const hours = getHours(10);\\n+const hours = getHours(14);\\n"} language="typescript" view="split" ariaLabel="Recorded policy change" />',
         '    <CodeDiff patch={"Binary files a/image.png and b/image.png differ\\n"} ariaLabel="Recorded binary change" />',
@@ -405,15 +407,54 @@ describe('published website UI package', () => {
               expect(await diff.locator('[data-diff-unified]:visible').count()).toBeGreaterThan(0);
               expect(await diff.locator('[data-diff-split]:visible').count()).toBe(0);
             }
+            const pageDimensions = await page.evaluate(() => ({
+              width: document.documentElement.clientWidth,
+              scrollWidth: document.documentElement.scrollWidth,
+              regions: Array.from(document.querySelectorAll('[data-code-diff]')).map((node) => ({
+                name: node.getAttribute('aria-label'),
+                width: node.getBoundingClientRect().width,
+                scrollWidth: node.scrollWidth,
+                overflow: getComputedStyle(node).overflowX,
+                childWidth: node.children[0]?.getBoundingClientRect().width,
+              })),
+            }));
             expect(
-              await page.evaluate(
-                () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-              ),
+              pageDimensions.scrollWidth <= pageDimensions.width,
+              JSON.stringify(pageDimensions),
             ).toBe(true);
             for (const element of await page.locator('[data-code-diff]').all()) {
-              expect(await element.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(
-                true,
+              const isScrollable = (await element.getAttribute('data-diff-overflow')) === 'scroll';
+              expect(await element.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(
+                isScrollable,
               );
+              const code = element.locator('[data-diff-line] code:visible').first();
+              if (await code.count()) {
+                expect(await code.evaluate((node) => getComputedStyle(node).whiteSpace)).toBe(
+                  isScrollable ? 'pre' : 'pre-wrap',
+                );
+              }
+              if (isScrollable) {
+                await element.focus();
+                await element.press('ArrowRight');
+                await expect
+                  .poll(() => element.evaluate((node) => node.scrollLeft))
+                  .toBeGreaterThan(0);
+                const rows = element.locator('[data-diff-line]:visible');
+                expect(
+                  await rows.first().evaluate((node) => node.getBoundingClientRect().height),
+                ).toBe(24);
+                const splitRows = element.locator('[data-diff-split]:visible');
+                const hasSplitRows =
+                  (await element.getAttribute('data-code-diff')) === 'split' && width === 1440;
+                expect((await splitRows.count()) > 0).toBe(hasSplitRows);
+                const context = element.locator('summary').first();
+                await context.focus();
+                await context.press('Enter');
+                expect(
+                  await context.evaluate((node) => node.parentElement!.hasAttribute('open')),
+                ).toBe(true);
+                await context.press('Enter');
+              }
             }
             const recorded = page.getByRole('region', {
               name: 'Recorded policy change',
