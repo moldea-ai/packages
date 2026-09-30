@@ -171,6 +171,7 @@ describe('published website UI package', () => {
         "import { defineConfig } from 'astro/config';",
         '',
         'export default defineConfig({',
+        "  build: { inlineStylesheets: 'never' },",
         '  vite: { plugins: [tailwindcss()] },',
         '});',
         '',
@@ -336,7 +337,10 @@ describe('published website UI package', () => {
     expect(fixtureHtml).not.toContain('<script>literal</script>');
     const stylesheetName = readdirSync(path.join(fixtureDirectory, 'dist', '_astro')).find((name) =>
       name.endsWith('.css'),
-    )!;
+    );
+    if (stylesheetName === undefined) {
+      throw new Error('The Astro fixture did not emit its configured external stylesheet.');
+    }
     const stylesheet = readFileSync(
       path.join(fixtureDirectory, 'dist', '_astro', stylesheetName),
       'utf8',
