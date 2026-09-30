@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.11.3
+pnpm add @moldea.ai/website-ui@1.12.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -89,6 +89,8 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/brand-logo`
 - `@moldea.ai/website-ui/breadcrumbs`
 - `@moldea.ai/website-ui/code-block`
+- `@moldea.ai/website-ui/code-diff`
+- `@moldea.ai/website-ui/code-diff-model`
 - `@moldea.ai/website-ui/code-copy-controls`
 - `@moldea.ai/website-ui/connection-label`
 - `@moldea.ai/website-ui/documentation-shell`
@@ -211,6 +213,32 @@ With `CodeCopyControls` mounted, `CodeBlock` is copyable by default. Set `copyab
 The icon-only action follows the compact code header used by the platform UI instead of adding a separate toolbar row. Existing `FilePreview` headers receive the action directly; other eligible blocks receive a language header. The control copies the complete displayed code text, including indentation and blank lines, only after a visitor activates its button. Success is announced after the browser accepts the write and shown by a temporary check icon. When clipboard access is unavailable or denied, the code stays selectable and the button exposes the failure through its title and live status. The button keeps the stable accessible name “Copy code.”
 
 Markdown and literal code renderers apply this policy through `styles.css`. Rendered code blocks are named, keyboard-focusable regions with visible focus indicators. Hand-authored `<pre>` elements use the shared `code-block` class, `tabindex="0"`, `role="region"`, and a descriptive `aria-label`; add `data-code-language="text"` only for plain text. Do not add page-wide wrapping overrides to code, diagnostics, or replay content.
+
+### File changes
+
+`CodeDiff` compares complete `oldValue` and `newValue` strings at build time. It uses the same light/dark syntax themes as `CodeBlock`, subtle removed/added row backgrounds, line numbers, explicit change markers, and accessible row labels. Long lines wrap within the available space. Below 24rem of container width, unified rows use one source-line gutter; wider unified rows show both original and replacement line numbers. No diff engine, highlighter, or component JavaScript is sent to the browser. Supply a descriptive, document-unique `ariaLabel` when rendering several comparisons.
+
+```astro
+---
+import CodeDiff from '@moldea.ai/website-ui/code-diff';
+---
+
+<CodeDiff
+  oldValue="const returnWindowDays = 14;"
+  newValue="const returnWindowDays = 30;"
+  language="typescript"
+  ariaLabel="Return policy changes"
+  view="unified"
+/>
+```
+
+`view` defaults to `unified`, which suits narrow examples and dialogs. Consumers can select `split` for side-by-side before/after rows. Split view adapts to the component's own available width: below 42rem it shows unified rows, even on a wide screen. Consumers own placement and preferred view; the component does not add a view toggle. `beforeLabel` and `afterLabel` default to “Before” and “After”. `variant="plain"` removes the outer border and radius for composition inside `FilePreview`; the comparison header and row backgrounds remain.
+
+By default, three unchanged lines remain beside each change. Distant unchanged lines appear in native, keyboard-accessible disclosures that work without JavaScript or motion. Set `contextLines={Infinity}` to show every line. All source remains in the rendered HTML. CRLF and LF compare equally; a missing final newline is identified. Unsupported languages use plain text. Comparisons exceeding 1024 line edits fall back to a complete replacement, explicitly labelled as a large change, to bound diff search work. Consumers should supply bounded file previews; this component does not fetch or paginate repository contents.
+
+Recorded evidence can pass `patch={unifiedPatch}` instead of `oldValue`/`newValue`. Both views preserve the recorded file names, hunk ranges, line numbers, ordering, and newline annotations. Missing source outside the hunks is never reconstructed. A native “View recorded patch” disclosure retains the complete original patch, including rename, mode, and binary metadata. Patches without parseable text hunks show their raw source directly. `contextLines` applies only to complete-file comparisons; recorded hunks retain all supplied context. Highlighting recorded excerpts cannot recover syntax context outside those excerpts.
+
+The compiled `code-diff-model` boundary exposes `buildCodeDiff`, `buildCodePatch`, and the normalized row contracts for build-time consumers. Highlighting reuses Shiki's singleton language/theme loader; files are highlighted once per version, preserving multiline syntax context. No separate source cache is retained.
 
 ### Optional detail dialogs
 

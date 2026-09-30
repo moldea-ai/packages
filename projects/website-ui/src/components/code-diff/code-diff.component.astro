@@ -1,0 +1,158 @@
+---
+import CodeBlock from '@moldea.ai/website-ui/code-block';
+import { buildCodeDiff, buildCodePatch } from '@moldea.ai/website-ui/code-diff-model';
+
+import CodeDiffRows from './rows/code-diff-rows.component.astro';
+
+// a build-time file comparison; the consumer chooses its placement and preferred layout
+export type Props = (
+  | { oldValue: string; newValue: string; patch?: never }
+  | { patch: string; oldValue?: never; newValue?: never }
+) & {
+  language?: string;
+  view?: 'unified' | 'split';
+  beforeLabel?: string;
+  afterLabel?: string;
+  ariaLabel?: string;
+  contextLines?: number;
+  variant?: 'panel' | 'plain';
+};
+const {
+  oldValue,
+  newValue,
+  patch,
+  language = 'text',
+  view = 'unified',
+  beforeLabel = 'Before',
+  afterLabel = 'After',
+  ariaLabel = 'File changes',
+  contextLines = 3,
+  variant = 'panel',
+} = Astro.props;
+const comparison =
+  patch === undefined
+    ? await buildCodeDiff(oldValue, newValue, language, contextLines)
+    : await buildCodePatch(patch, language);
+const hasChanges =
+  comparison !== null && (comparison.addedCount > 0 || comparison.removedCount > 0);
+---
+
+<div
+  class:list={[
+    '@container/diff min-w-0 overflow-hidden bg-background text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+    variant === 'panel' && 'rounded-lg border border-border',
+  ]}
+  data-code-diff={view}
+  data-code-copy="false"
+  role="region"
+  aria-label={ariaLabel}
+  tabindex="0"
+>
+  <div
+    class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-secondary/50 px-3 py-2.5 text-xs"
+  >
+    <div class="flex flex-wrap gap-x-4 gap-y-1 font-medium">
+      <span class="flex items-center gap-1.5"
+        ><span
+          class="font-mono text-destructive"
+          aria-hidden="true"
+          >−</span
+        >{beforeLabel}</span
+      >
+      <span class="flex items-center gap-1.5"
+        ><span
+          class="font-mono text-(--syntax-string)"
+          aria-hidden="true"
+          >+</span
+        >{afterLabel}</span
+      >
+    </div>
+    <span class="text-muted-foreground">
+      {
+        comparison === null
+          ? 'Recorded patch'
+          : hasChanges
+            ? `${comparison.removedCount} removed, ${comparison.addedCount} added`
+            : 'No changes'
+      }
+    </span>
+  </div>
+  {
+    comparison?.isCoarseComparison && (
+      <p class="border-b border-border px-3 py-2 text-xs text-muted-foreground">
+        Large change: showing the complete replacement.
+      </p>
+    )
+  }
+  {
+    view === 'split' && comparison && (
+      <div class="hidden grid-cols-2 border-b border-border bg-secondary/30 text-xs font-medium @2xl/diff:grid">
+        <>
+          <p class="border-r border-border px-3 py-2">{beforeLabel}</p>
+          <p class="px-3 py-2">{afterLabel}</p>
+        </>
+      </div>
+    )
+  }
+  <div class="py-1">
+    {
+      comparison?.sections.map((section) =>
+        section.isCollapsed ? (
+          <details class="group/context border-y border-border bg-secondary/20">
+            <summary class="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground">
+              Show {section.lines.length} unchanged lines
+            </summary>
+            <CodeDiffRows
+              section={section}
+              view={view}
+            />
+          </details>
+        ) : (
+          <>
+            {section.label && (
+              <p class="border-y border-border bg-secondary/30 px-3 py-2 font-mono text-xs wrap-anywhere text-muted-foreground">
+                <code>{section.label}</code>
+              </p>
+            )}
+            <CodeDiffRows
+              section={section}
+              view={view}
+            />
+          </>
+        ),
+      )
+    }
+  </div>
+  {
+    patch !== undefined &&
+      (comparison ? (
+        <details class="border-t border-border bg-secondary/20">
+          <summary class="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground">
+            View recorded patch
+          </summary>
+          <div class="p-3">
+            <CodeBlock
+              source={patch}
+              language="diff"
+              copyable={false}
+              variant="plain"
+              ariaLabel={`${ariaLabel}: recorded source`}
+            />
+          </div>
+        </details>
+      ) : (
+        <div class="p-3">
+          <p class="mb-3 text-xs text-muted-foreground">
+            Showing recorded source. No readable text hunks were found.
+          </p>
+          <CodeBlock
+            source={patch}
+            language="diff"
+            copyable={false}
+            variant="plain"
+            ariaLabel={`${ariaLabel}: recorded source`}
+          />
+        </div>
+      ))
+  }
+</div>

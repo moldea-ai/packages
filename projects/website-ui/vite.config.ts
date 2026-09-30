@@ -4,6 +4,7 @@ import { createLibraryConfig } from '../../configs/vite/library.config.js';
 
 const libraryConfig = createLibraryConfig({
   entry: {
+    'code-diff': 'src/code-diff/index.ts',
     'evaluation-replay': 'src/evaluation-replay/index.ts',
     index: 'src/index.ts',
     markdown: 'src/markdown/index.ts',
