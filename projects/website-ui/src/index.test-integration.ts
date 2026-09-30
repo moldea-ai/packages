@@ -92,7 +92,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.12.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.13.0' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -105,6 +105,8 @@ describe('published website UI package', () => {
     expect(packedPaths).toContain('dist/evaluation-replay.js');
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/code-diff.js');
+    expect(packedPaths).toContain('dist/code-presentation.js');
+    expect(packedPaths).toContain('dist/code-presentation/index.d.ts');
     expect(packedPaths).toContain('src/components/code-diff/code-diff.component.astro');
     expect(packedPaths).toContain('src/components/code-diff/rows/code-diff-rows.component.astro');
     expect(packedPaths).toContain('src/components/code-diff/line/code-diff-line.component.astro');
@@ -232,7 +234,7 @@ describe('published website UI package', () => {
         "import ThemeBootstrap from '@moldea.ai/website-ui/theme-bootstrap';",
         "import ThemeControl from '@moldea.ai/website-ui/theme-control';",
         "import { buildEvaluationReplayPathTree, type IEvaluationReplayModel } from '@moldea.ai/website-ui/evaluation-replay-model';",
-        "import { renderMarkdownDocument } from '@moldea.ai/website-ui/markdown';",
+        "import { renderMarkdownDocument, renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';",
         "import { withBase } from '@moldea.ai/website-ui/site';",
         "import '../styles.css';",
         '',
@@ -245,7 +247,14 @@ describe('published website UI package', () => {
         'const contextBefore = Array.from({ length: 16 }, (_, index) => `const slot${index} = "${"booking-time-".repeat(16)}";`).join("\\n") + "\\n";',
         'const contextAfter = contextBefore.replace("slot8", "availableSlot8");',
         'const diffProps = { oldValue: "const hours = getHours(10);\\n// Previous hours\\n", newValue: "const hours = getHours(14);\\n// Updated hours\\n", language: "typescript", ariaLabel: "Booking changes", view: "unified", variant: "plain" } satisfies ComponentProps<typeof CodeDiff>;',
-        'const nonCopyableCodeProps = { source: "incomplete result", language: "text", copyable: false } satisfies ComponentProps<typeof CodeBlock>;',
+        'const nonCopyableCodeProps = { source: "incomplete result", language: "text", copyable: false, ariaLabel: "Incomplete result" } satisfies ComponentProps<typeof CodeBlock>;',
+        'const longProse = "Offer available times and send same-day requests to staff. ".repeat(32);',
+        'const longCode = JSON.stringify({ instructions: longProse });',
+        'const fence = String.fromCharCode(96).repeat(3);',
+        'let fenceIndex = 0;',
+        'const fenceHtml = (await renderMarkdownFragment(["markdown", "text", "yaml", "json", ""].map((language) => [fence + language, longProse, fence].join("\\n")).join("\\n\\n"))).replaceAll(\'aria-label="Code block"\', () => `aria-label="Fenced source ${++fenceIndex}"`);',
+        'const mixedPatch = ["--- a/policy.md", "+++ b/policy.md", "@@ -1 +1 @@", "-" + longProse, "+" + longProse + "Ask for approval.", "--- a/service.ts", "+++ b/service.ts", "@@ -1 +1 @@", "-const before = " + longCode + ";", "+const after = " + longCode + ";", ""].join("\\n");',
+        'const unchangedSource = "const approval = true;\\nconst confirmed = false;\\n";',
         'const connectionProps = { tone: "danger" } satisfies ComponentProps<typeof ConnectionLabel>;',
         'const accordionProps = { id: "check-two", group: "fixture-accordion", title: "Second check", isOpen: true } satisfies ComponentProps<typeof Accordion>;',
         'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", hideIconOnMobile: true, ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
@@ -271,9 +280,9 @@ describe('published website UI package', () => {
         '    <section class="relative overflow-hidden"><HeroBackdrop /><h1 class="relative">Consumer hero</h1></section>',
         '    <CodeBlock source={JSON.stringify({ valid: false })} language="json" />',
         '    <CodeBlock {...codeProps} />',
-        '    <CodeDiff {...diffProps} />',
-        '    <CodeDiff {...diffProps} view="split" ariaLabel="Booking changes split" />',
-        '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes" view="split" />',
+        '    <CodeDiff {...diffProps} overflow="wrap" />',
+        '    <CodeDiff {...diffProps} overflow="wrap" view="split" ariaLabel="Booking changes split" />',
+        '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes" view="split" overflow="wrap" />',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes scroll" overflow="scroll" />',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes split scroll" view="split" overflow="scroll" />',
         '    <CodeDiff oldValue="" newValue={\'<script>literal</script>\'} />',
@@ -281,7 +290,26 @@ describe('published website UI package', () => {
         '    <CodeDiff patch={"Binary files a/image.png and b/image.png differ\\n"} ariaLabel="Recorded binary change" />',
 
         '    <CodeBlock {...nonCopyableCodeProps} />',
-        '    <CodeBlock source="Plain text wraps in narrow containers." language="text" />',
+        '    <CodeBlock source="Plain text wraps in narrow containers." language="text" ariaLabel="Plain excerpt" />',
+        '    <section data-wrapping-fixtures>',
+        '      <CodeBlock source={longProse} language="markdown" ariaLabel="Markdown block" />',
+        '      <CodeBlock source={longProse} language="text" ariaLabel="Text block" />',
+        '      <CodeBlock source={longCode} language="json" ariaLabel="JSON block" />',
+        '      <CodeBlock source={"instructions: " + longProse} language="yaml" ariaLabel="YAML block" />',
+        '      <CodeBlock source={longCode} language="json" overflow="wrap" ariaLabel="Wrapped code block" />',
+        '      <CodeBlock source={longProse} language="markdown" overflow="scroll" ariaLabel="Scrolling Markdown block" />',
+        '      <div class="prose-moldea" data-overflow-fences set:html={fenceHtml} />',
+        '      <CodeDiff oldValue={longProse} newValue={longProse + "Ask for approval."} language="markdown" ariaLabel="Markdown diff" />',
+        '      <CodeDiff oldValue={longProse} newValue={longProse + "Ask for approval."} language="text" ariaLabel="Text diff" />',
+        '      <CodeDiff oldValue={longCode} newValue={longCode.replace("instructions", "current")} language="json" ariaLabel="JSON diff" />',
+        '      <CodeDiff oldValue={longProse} newValue={"New " + longProse} language="markdown" overflow="scroll" ariaLabel="Scrolling Markdown diff" />',
+        '      <CodeDiff oldValue={longCode} newValue={longProse + longCode} language="typescript" view="split" overflow="wrap" ariaLabel="Wrapped split diff" />',
+        '      <CodeDiff patch={mixedPatch} ariaLabel="Mixed patch" view="split" />',
+        '      <CodeDiff patch={mixedPatch} overflow="wrap" ariaLabel="Wrapped mixed patch" />',
+        '      <CodeDiff patch={mixedPatch} overflow="scroll" ariaLabel="Scrolling mixed patch" />',
+        '      <FilePreview path="src/policy.ts"><CodeDiff {...diffProps} ariaLabel="Changed edge spacing" variant="plain" /></FilePreview>',
+        '      <FilePreview path="src/policy.ts"><CodeDiff oldValue={unchangedSource} newValue={unchangedSource} language="typescript" ariaLabel="Unchanged edge spacing" variant="plain" /></FilePreview>',
+        '    </section>',
         '    <ConnectionLabel {...connectionProps}><span slot="icon">!</span>Missing from <code class="inline-code">moldea.yaml</code></ConnectionLabel>',
         '    <ConnectionLabel>Linked file</ConnectionLabel>',
         '    <section><h2>Fixture checks</h2><Accordion id="check-one" group="fixture-accordion" title="First check" description="One concise outcome."><StatusBadge slot="status" label="Valid" tone="success" size="sm" /><p>First visual</p></Accordion><Accordion {...accordionProps}><FilePreview path="src/policy.ts" label="Policy"><p>Second visual</p></FilePreview></Accordion></section>',
@@ -358,7 +386,7 @@ describe('published website UI package', () => {
     const browser = await chromium.launch();
     try {
       for (const theme of ['light', 'dark']) {
-        for (const width of [320, 1440]) {
+        for (const width of [320, 768, 1440]) {
           const context = await browser.newContext({
             viewport: { width, height: 900 },
             reducedMotion: 'reduce',
@@ -373,7 +401,15 @@ describe('published website UI package', () => {
               const main = document.createElement('main');
               const heading = document.createElement('h1');
               heading.textContent = 'File comparison examples';
-              main.append(heading, ...document.querySelectorAll('[data-code-diff]'));
+              const examples = Array.from(
+                document.querySelectorAll(
+                  '[data-code-diff], [data-code-block], [data-wrapping-fixtures]',
+                ),
+              ).filter(
+                (element) =>
+                  !element.parentElement?.closest('[data-code-diff], [data-wrapping-fixtures]'),
+              );
+              main.append(heading, ...examples);
               document.body.replaceChildren(main);
             }, theme);
             const diff = page.getByRole('region', { name: 'Availability changes', exact: true });
@@ -424,16 +460,18 @@ describe('published website UI package', () => {
             ).toBe(true);
             for (const element of await page.locator('[data-code-diff]').all()) {
               const isScrollable = (await element.getAttribute('data-diff-overflow')) === 'scroll';
-              expect(await element.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(
-                isScrollable,
+              const hasOverflow = await element.evaluate(
+                (node) => node.scrollWidth > node.clientWidth,
               );
+              if (!isScrollable) expect(hasOverflow).toBe(false);
+              if ((await element.getAttribute('data-diff-overflow')) === 'mixed') continue;
               const code = element.locator('[data-diff-line] code:visible').first();
               if (await code.count()) {
                 expect(await code.evaluate((node) => getComputedStyle(node).whiteSpace)).toBe(
                   isScrollable ? 'pre' : 'pre-wrap',
                 );
               }
-              if (isScrollable) {
+              if (isScrollable && hasOverflow) {
                 await element.focus();
                 await element.press('ArrowRight');
                 await expect
@@ -441,20 +479,136 @@ describe('published website UI package', () => {
                   .toBeGreaterThan(0);
                 const rows = element.locator('[data-diff-line]:visible');
                 expect(
-                  await rows.first().evaluate((node) => node.getBoundingClientRect().height),
-                ).toBe(24);
+                  await rows.first().evaluate((node) => getComputedStyle(node).lineHeight),
+                ).toBe('24px');
                 const splitRows = element.locator('[data-diff-split]:visible');
                 const hasSplitRows =
-                  (await element.getAttribute('data-code-diff')) === 'split' && width === 1440;
+                  (await element.getAttribute('data-code-diff')) === 'split' && width >= 768;
                 expect((await splitRows.count()) > 0).toBe(hasSplitRows);
                 const context = element.locator('summary').first();
-                await context.focus();
-                await context.press('Enter');
-                expect(
-                  await context.evaluate((node) => node.parentElement!.hasAttribute('open')),
-                ).toBe(true);
-                await context.press('Enter');
+                if (await context.count()) {
+                  await context.focus();
+                  await context.press('Enter');
+                  expect(
+                    await context.evaluate((node) => node.parentElement!.hasAttribute('open')),
+                  ).toBe(true);
+                  await context.press('Enter');
+                }
               }
+            }
+            for (const [name, mode] of [
+              ['Markdown block', 'wrap'],
+              ['Text block', 'wrap'],
+              ['JSON block', 'scroll'],
+              ['YAML block', 'scroll'],
+              ['Wrapped code block', 'wrap'],
+              ['Scrolling Markdown block', 'scroll'],
+            ] as const) {
+              const block = page.getByRole('region', { name, exact: true });
+              expect(await block.getAttribute('data-code-overflow')).toBe(mode);
+              expect(await block.evaluate((node) => getComputedStyle(node).whiteSpace)).toBe(
+                mode === 'wrap' ? 'pre-wrap' : 'pre',
+              );
+              expect(await block.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(
+                mode === 'scroll',
+              );
+              await block.focus();
+              expect(await block.evaluate((node) => getComputedStyle(node).boxShadow)).not.toBe(
+                'none',
+              );
+              if (mode === 'scroll') {
+                await block.press('ArrowRight');
+                await expect
+                  .poll(() => block.evaluate((node) => node.scrollLeft))
+                  .toBeGreaterThan(0);
+              }
+            }
+            expect(
+              await page.locator('[data-overflow-fences] pre').evaluateAll((nodes) =>
+                nodes.map((node) => ({
+                  mode: node.getAttribute('data-code-overflow'),
+                  whiteSpace: getComputedStyle(node).whiteSpace,
+                  hasOverflow: node.scrollWidth > node.clientWidth,
+                })),
+              ),
+            ).toStrictEqual([
+              { mode: 'wrap', whiteSpace: 'pre-wrap', hasOverflow: false },
+              { mode: 'wrap', whiteSpace: 'pre-wrap', hasOverflow: false },
+              { mode: 'scroll', whiteSpace: 'pre', hasOverflow: true },
+              { mode: 'scroll', whiteSpace: 'pre', hasOverflow: true },
+              { mode: 'scroll', whiteSpace: 'pre', hasOverflow: true },
+            ]);
+            for (const [name, rowCount] of [
+              ['Changed edge spacing', 4],
+              ['Unchanged edge spacing', 2],
+            ] as const) {
+              const comparison = page.getByRole('region', { name, exact: true });
+              const spacing = await comparison.evaluate((node) => {
+                const rows = Array.from(node.querySelectorAll('[data-diff-line]'));
+                const first = rows[0]!;
+                const last = rows.at(-1)!;
+                return {
+                  height: node.getBoundingClientRect().height,
+                  leadingGap: first.getBoundingClientRect().top - node.getBoundingClientRect().top,
+                  trailingGap:
+                    node.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom,
+                  firstPadding: getComputedStyle(first).paddingTop,
+                  lastPadding: getComputedStyle(last).paddingBottom,
+                };
+              });
+              expect(spacing).toStrictEqual({
+                height: rowCount * 24 + 8,
+                leadingGap: 0,
+                trailingGap: 0,
+                firstPadding: '4px',
+                lastPadding: '4px',
+              });
+            }
+            const mixed = page.getByRole('region', { name: 'Mixed patch', exact: true });
+            expect(await mixed.getAttribute('data-diff-overflow')).toBe('mixed');
+            const markdownGroup = mixed.locator('[data-diff-group-overflow="wrap"]');
+            expect(
+              await markdownGroup.evaluate((node) => node.scrollWidth <= node.clientWidth),
+            ).toBe(true);
+            expect(
+              await markdownGroup
+                .locator('code:visible')
+                .first()
+                .evaluate((node) => getComputedStyle(node).whiteSpace),
+            ).toBe('pre-wrap');
+            const codeGroup = mixed.getByRole('region', {
+              name: 'Mixed patch: scrollable changes 2',
+              exact: true,
+            });
+            expect(await codeGroup.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(
+              true,
+            );
+            await codeGroup.focus();
+            await codeGroup.press('ArrowRight');
+            await expect
+              .poll(() => codeGroup.evaluate((node) => node.scrollLeft))
+              .toBeGreaterThan(0);
+            for (const mode of ['wrap', 'scroll'] as const) {
+              const overridden = page.getByRole('region', {
+                name: mode === 'wrap' ? 'Wrapped mixed patch' : 'Scrolling mixed patch',
+                exact: true,
+              });
+              expect(await overridden.getAttribute('data-diff-overflow')).toBe(mode);
+              expect(await overridden.locator('[data-diff-group-overflow]').count()).toBe(0);
+            }
+            if (width >= 768) {
+              const pairs = await page
+                .getByRole('region', { name: 'Wrapped split diff', exact: true })
+                .locator('[data-diff-split]:visible > div')
+                .evaluateAll((rows) =>
+                  rows.map((row) =>
+                    Array.from(row.children).map(
+                      (cell) => cell.firstElementChild!.getBoundingClientRect().height,
+                    ),
+                  ),
+                );
+              expect(pairs.length).toBeGreaterThan(0);
+              for (const pair of pairs) expect(pair[0]).toBe(pair[1]);
             }
             const recorded = page.getByRole('region', {
               name: 'Recorded policy change',

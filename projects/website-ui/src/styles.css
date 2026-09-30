@@ -313,9 +313,17 @@
     word-break: normal;
   }
 
-  /* Only explicitly identified plain text wraps; unlabelled fences remain lossless. */
-  .code-block[data-code-language='text'],
-  .prose-moldea pre:has(> code:is(.language-text, .language-txt, .language-plaintext)) {
+  /* The renderer resolves defaults; explicit modes also support hand-authored source. */
+  .code-block:is(
+      [data-code-language='text'],
+      [data-code-language='txt'],
+      [data-code-language='plaintext'],
+      [data-code-language='md'],
+      [data-code-language='markdown'],
+      [data-code-language='mdx']
+    ):not([data-code-overflow='scroll']),
+  .code-block[data-code-overflow='wrap'],
+  .prose-moldea pre[data-code-overflow='wrap'] {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }

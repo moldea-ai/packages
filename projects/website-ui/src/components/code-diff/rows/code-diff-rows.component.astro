@@ -1,25 +1,30 @@
 ---
 import type { ICodeDiffSection } from '@moldea.ai/website-ui/code-diff-model';
+import type { ICodeOverflow } from '@moldea.ai/website-ui/code-presentation';
 
 import CodeDiffLine from '../line/code-diff-line.component.astro';
 
 interface Props {
   section: ICodeDiffSection;
   view: 'unified' | 'split';
-  overflow: 'wrap' | 'scroll';
+  overflow: ICodeOverflow;
+  hasLeadingInset?: boolean;
+  hasTrailingInset?: boolean;
 }
-const { section, view, overflow } = Astro.props;
+const { section, view, overflow, hasLeadingInset = false, hasTrailingInset = false } = Astro.props;
 ---
 
 <div
-  class:list={[view === 'split' && '@2xl/diff:hidden']}
+  class:list={[view === 'split' && '@2xl/diff:hidden', section.lines.length === 0 && 'min-h-2']}
   data-diff-unified
 >
   {
-    section.lines.map((line) => (
+    section.lines.map((line, index) => (
       <CodeDiffLine
         line={line}
         overflow={overflow}
+        hasLeadingInset={hasLeadingInset && index === 0}
+        hasTrailingInset={hasTrailingInset && index === section.lines.length - 1}
       />
     ))
   }
@@ -30,13 +35,15 @@ const { section, view, overflow } = Astro.props;
       class="hidden @2xl/diff:block"
       data-diff-split
     >
-      {section.rows.map((row) => (
+      {section.rows.map((row, index) => (
         <div class="grid grid-cols-2">
           <div class="min-w-0 border-r border-border">
             <CodeDiffLine
               line={row.before}
               side="before"
               overflow={overflow}
+              hasLeadingInset={hasLeadingInset && index === 0}
+              hasTrailingInset={hasTrailingInset && index === section.rows.length - 1}
             />
           </div>
           <div class="min-w-0">
@@ -44,6 +51,8 @@ const { section, view, overflow } = Astro.props;
               line={row.after}
               side="after"
               overflow={overflow}
+              hasLeadingInset={hasLeadingInset && index === 0}
+              hasTrailingInset={hasTrailingInset && index === section.rows.length - 1}
             />
           </div>
         </div>

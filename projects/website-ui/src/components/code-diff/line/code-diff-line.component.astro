@@ -1,24 +1,30 @@
 ---
 import type { ICodeDiffLine } from '@moldea.ai/website-ui/code-diff-model';
+import type { ICodeOverflow } from '@moldea.ai/website-ui/code-presentation';
 
 interface Props {
   line?: ICodeDiffLine;
   side?: 'before' | 'after';
-  overflow: 'wrap' | 'scroll';
+  overflow: ICodeOverflow;
+  hasLeadingInset?: boolean;
+  hasTrailingInset?: boolean;
 }
-const { line, side, overflow } = Astro.props;
+const { line, side, overflow, hasLeadingInset = false, hasTrailingInset = false } = Astro.props;
 const kind = line?.kind ?? 'empty';
 ---
 
 <div
   class:list={[
     'grid min-h-6 min-w-0 font-mono text-xs leading-6',
+    side && 'h-full',
     side
       ? 'grid-cols-[2rem_1rem_minmax(0,1fr)]'
       : 'grid-cols-[1.75rem_1rem_minmax(0,1fr)] @sm/diff:grid-cols-[1.75rem_1.75rem_1rem_minmax(0,1fr)]',
     kind === 'removed' && 'bg-destructive/8',
     kind === 'added' && 'bg-(--syntax-string)/8',
     kind === 'empty' && 'bg-secondary/30',
+    hasLeadingInset && 'pt-1',
+    hasTrailingInset && 'pb-1',
   ]}
   data-diff-line={kind}
 >

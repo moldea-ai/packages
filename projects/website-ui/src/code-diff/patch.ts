@@ -85,6 +85,7 @@ export const buildCodePatch = async (
       const fileName = file.newFileName === '/dev/null' ? file.oldFileName : file.newFileName;
       sections.push({
         label: `${fileName ?? 'Recorded excerpt'} · @@ -${hunk.oldStart - (hunk.oldLines === 0 ? 1 : 0)},${hunk.oldLines} +${hunk.newStart - (hunk.newLines === 0 ? 1 : 0)},${hunk.newLines} @@`,
+        ...(fileName === undefined ? {} : { filePath: fileName }),
         isCollapsed: false,
         lines,
         rows: buildSplitRows(lines),
