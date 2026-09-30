@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.11.2
+pnpm add @moldea.ai/website-ui@1.11.3
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -158,7 +158,7 @@ import StatusBadge from '@moldea.ai/website-ui/status-badge';
 
 Required props are `id` and `title`. Optional `group` enables native mutual exclusion; without it, items stay independent. Optional `description` stays visible when closed and supplies the control's accessible description; `isOpen` defaults to `false`. The default slot accepts arbitrary content, including files and dialogs. The optional `status` slot accepts a compact non-interactive status, not another button or link. Consumers can derive props using `ComponentProps<typeof Accordion>` through the public subpath.
 
-Native disclosure, independent opening, and optional group exclusivity work without JavaScript. JavaScript reveals hash-linked items on initial load, hash changes, and Astro client navigation without adding history entries or taking focus. Variable-height panels use a short fade; reduced motion removes it and the chevron transition. Mobile items use a flat surface, while desktop items retain the shared border, radius, colors, and interaction states. The package owns no example content or domain status mapping.
+Native disclosure, independent opening, and optional group exclusivity work without JavaScript. JavaScript reveals hash-linked items on initial load, hash changes, and Astro client navigation without adding history entries or taking focus. Variable-height panels use a short fade; reduced motion removes it and the chevron transition. Every item uses the shared card background, full border, and rounded corners. Mobile summaries and panels have compact 12px horizontal insets; desktop insets remain 20px. Consumers should avoid adding redundant mobile padding inside the default slot. The package owns no example content or domain status mapping.
 
 ### Files and result summaries
 
