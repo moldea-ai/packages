@@ -69,8 +69,8 @@ const getPackageManagerEntrypoint = (): string => {
 
 /** Creates one tracked temporary directory removed after the active test. */
 const createTemporaryDirectory = (): string => {
-  // keep Astro and Vite source identities consistent across temporary-root aliases
-  const directory = realpathSync(mkdtempSync(path.join(tmpdir(), 'moldea-website-ui-')));
+  // native resolution also expands Windows short paths used by CI temporary directories
+  const directory = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'moldea-website-ui-')));
 
   temporaryDirectories.push(directory);
   return directory;
