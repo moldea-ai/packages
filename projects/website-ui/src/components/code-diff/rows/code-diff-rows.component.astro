@@ -1,0 +1,43 @@
+---
+import type { ICodeDiffSection } from '@moldea.ai/website-ui/code-diff-model';
+
+import CodeDiffLine from '../line/code-diff-line.component.astro';
+
+interface Props {
+  section: ICodeDiffSection;
+  view: 'unified' | 'split';
+}
+const { section, view } = Astro.props;
+---
+
+<div
+  class:list={[view === 'split' && '@2xl/diff:hidden']}
+  data-diff-unified
+>
+  {section.lines.map((line) => <CodeDiffLine line={line} />)}
+</div>
+{
+  view === 'split' && (
+    <div
+      class="hidden @2xl/diff:block"
+      data-diff-split
+    >
+      {section.rows.map((row) => (
+        <div class="grid grid-cols-2">
+          <div class="min-w-0 border-r border-border">
+            <CodeDiffLine
+              line={row.before}
+              side="before"
+            />
+          </div>
+          <div class="min-w-0">
+            <CodeDiffLine
+              line={row.after}
+              side="after"
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}

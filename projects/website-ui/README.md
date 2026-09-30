@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.11.3
+pnpm add @moldea.ai/website-ui@1.12.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -89,6 +89,8 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/brand-logo`
 - `@moldea.ai/website-ui/breadcrumbs`
 - `@moldea.ai/website-ui/code-block`
+- `@moldea.ai/website-ui/code-diff`
+- `@moldea.ai/website-ui/code-diff-model`
 - `@moldea.ai/website-ui/code-copy-controls`
 - `@moldea.ai/website-ui/connection-label`
 - `@moldea.ai/website-ui/documentation-shell`
@@ -212,6 +214,32 @@ The icon-only action follows the compact code header used by the platform UI ins
 
 Markdown and literal code renderers apply this policy through `styles.css`. Rendered code blocks are named, keyboard-focusable regions with visible focus indicators. Hand-authored `<pre>` elements use the shared `code-block` class, `tabindex="0"`, `role="region"`, and a descriptive `aria-label`; add `data-code-language="text"` only for plain text. Do not add page-wide wrapping overrides to code, diagnostics, or replay content.
 
+### File changes
+
+`CodeDiff` compares complete `oldValue` and `newValue` strings at build time. It uses the same light/dark syntax themes as `CodeBlock`, subtle removed/added row backgrounds, a theme-aware foreground blend to retain syntax contrast on those tints, line numbers, explicit change markers, and accessible row labels. Long lines wrap within the available space. Below 24rem of container width, unified rows use one source-line gutter; wider unified rows show both original and replacement line numbers. No diff engine, highlighter, or component JavaScript is sent to the browser. Supply a descriptive, document-unique `ariaLabel` when rendering several comparisons.
+
+```astro
+---
+import CodeDiff from '@moldea.ai/website-ui/code-diff';
+---
+
+<CodeDiff
+  oldValue="const returnWindowDays = 14;"
+  newValue="const returnWindowDays = 30;"
+  language="typescript"
+  ariaLabel="Return policy changes"
+  view="unified"
+/>
+```
+
+`view` defaults to `unified`, which suits narrow examples and dialogs. Unified rows start directly with the code, without a legend or change-count summary. Consumers can select `split` for side-by-side before/after rows. Split view adapts to the component's own available width: below 42rem it shows unified rows, even on a wide screen. Consumers own placement and preferred view; the component does not add a view toggle. Split column labels `beforeLabel` and `afterLabel` default to “Before” and “After”. `variant="plain"` removes the outer border and radius for composition inside `FilePreview`; row backgrounds remain.
+
+By default, three unchanged lines remain beside each change. Distant unchanged lines appear in native, keyboard-accessible disclosures that work without JavaScript or motion. Set `contextLines={Infinity}` to show every line. All source remains in the rendered HTML. CRLF and LF compare equally; final-newline metadata stays in the model without adding annotations to the rendered rows. Unsupported languages use plain text. Comparisons exceeding 1024 line edits fall back to a complete replacement, explicitly labelled as a large change, to bound diff search work. Consumers should supply bounded file previews; this component does not fetch or paginate repository contents.
+
+Recorded evidence can pass `patch={unifiedPatch}` instead of `oldValue`/`newValue`. The model preserves recorded file names and hunk ranges; rendered rows retain their line numbers and ordering without Git paths or hunk-coordinate headings. Consumers provide the file or example context around the component. Missing source outside the hunks is never reconstructed. A native “View recorded patch” disclosure retains the complete original patch, including newline, rename, mode, and binary metadata. Patches without parseable text hunks show their raw source directly. `contextLines` applies only to complete-file comparisons; recorded hunks retain all supplied context. Highlighting recorded excerpts cannot recover syntax context outside those excerpts.
+
+The compiled `code-diff-model` boundary exposes `buildCodeDiff`, `buildCodePatch`, and the normalized row contracts for build-time consumers. Highlighting reuses Shiki's singleton language/theme loader; files are highlighted once per version, preserving multiline syntax context. No separate source cache is retained.
+
 ### Optional detail dialogs
 
 `Dialog` defaults to a compact outline trigger, a named native modal, and a slotted scrolling body. It follows the platform's medium dialog: a bordered desktop surface, full-screen mobile layout, fixed header, 28px desktop close control, and 36px mobile back control. The shared root stylesheet reserves a stable desktop scrollbar gutter so modal scroll locking does not shift the page; mobile retains its full viewport width. The scrolling body starts at the top each time the dialog opens. On mobile, the backdrop is transparent and the opaque page scales from 96% to full size over 300ms. Where supported, closing captures the dialog before revealing the returning page with the same scale and no text cross-fade. That scale anchors to the top. When the last modal closes, `SiteHeader` returns immediately in a separate stationary snapshot above the scaling content; it stays covered when another modal remains open. The old dialog snapshot is hidden so its text cannot show through translucent sticky headers. Named content snapshots from Astro navigation are folded into the root during that return so they cannot overlap the site header. Browsers without View Transitions and reduced-motion users dismiss immediately. Desktop retains its fade-and-slide entrance and 200ms exit. Escape and the close control dismiss the modal and return focus to the trigger. Set `isOverlayCloseEnabled` for read-only content to also dismiss on backdrop clicks; dragging between the panel and backdrop does not dismiss it. Astro client navigation dismisses immediately and initializes new triggers.
@@ -279,5 +307,7 @@ pnpm --filter @moldea.ai/website-ui test:unit
 pnpm --filter @moldea.ai/website-ui test:integration
 pnpm --filter @moldea.ai/website-ui test
 ```
+
+The packed-consumer integration also checks diff layouts and accessibility in real Chromium. Install Chromium with `pnpm --filter @moldea.ai/website-ui exec playwright install chromium` when it is not already available. The Website UI integration task forwards `PLAYWRIGHT_BROWSERS_PATH` through Turborepo so CI reuses the browsers in its existing Playwright container.
 
 The integration suite verifies the packed public surface and a real Astro consumer fixture. Publishing the package is a separate release operation and is not part of ordinary website development.

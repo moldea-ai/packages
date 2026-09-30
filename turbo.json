@@ -34,6 +34,11 @@
       "dependsOn": ["build", "^build"],
       "env": ["PLAYWRIGHT_BROWSERS_PATH", "SITE_URL", "BASE_PATH"]
     },
+    "@moldea.ai/website-ui#test:integration": {
+      "dependsOn": ["build", "^test:integration"],
+      "env": ["PLAYWRIGHT_BROWSERS_PATH"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/configs/package-documentation/*.ts"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]

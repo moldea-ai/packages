@@ -1,9 +1,20 @@
 // @vitest-environment node
+/// <reference lib="dom" />
 import { execFileSync, type ExecFileSyncOptionsWithStringEncoding } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
+import { AxeBuilder } from '@axe-core/playwright';
+import { chromium } from '@playwright/test';
 import { extractMessage } from 'error-message-utils';
 import { afterEach, describe, expect, test } from 'vitest';
 
@@ -61,7 +72,8 @@ const createTemporaryDirectory = (): string => {
   const directory = mkdtempSync(path.join(tmpdir(), 'moldea-website-ui-'));
 
   temporaryDirectories.push(directory);
-  return directory;
+  // native resolution also expands Windows short paths used by CI temporary directories
+  return realpathSync.native(directory);
 };
 
 afterEach(() => {
@@ -80,7 +92,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.11.3' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.12.0' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -92,6 +104,10 @@ describe('published website UI package', () => {
     expect(packedPaths).toContain('src/components/hero-backdrop/hero-backdrop.component.astro');
     expect(packedPaths).toContain('dist/evaluation-replay.js');
     expect(packedPaths).toContain('dist/index.js');
+    expect(packedPaths).toContain('dist/code-diff.js');
+    expect(packedPaths).toContain('src/components/code-diff/code-diff.component.astro');
+    expect(packedPaths).toContain('src/components/code-diff/rows/code-diff-rows.component.astro');
+    expect(packedPaths).toContain('src/components/code-diff/line/code-diff-line.component.astro');
     expect(packedPaths).toContain('dist/markdown.js');
     expect(packedPaths).toContain('dist/site/index.d.ts');
     expect(packedPaths).toContain('src/styles.css');
@@ -115,7 +131,7 @@ describe('published website UI package', () => {
     expect(packedPaths.some((filePath) => filePath.startsWith('docs/'))).toBe(false);
   });
 
-  test('installs the real tarball and builds an Astro consumer using every public component', () => {
+  test('installs the real tarball and builds an Astro consumer using every public component', async () => {
     const packageManagerEntrypoint = getPackageManagerEntrypoint();
     const temporaryDirectory = createTemporaryDirectory();
     const packDirectory = path.join(temporaryDirectory, 'pack');
@@ -196,6 +212,7 @@ describe('published website UI package', () => {
         "import ActionLink from '@moldea.ai/website-ui/action-link';",
         "import BrandLogo from '@moldea.ai/website-ui/brand-logo';",
         "import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';",
+        "import CodeDiff from '@moldea.ai/website-ui/code-diff';",
         "import CodeBlock from '@moldea.ai/website-ui/code-block';",
         "import CodeCopyControls from '@moldea.ai/website-ui/code-copy-controls';",
         "import ConnectionLabel from '@moldea.ai/website-ui/connection-label';",
@@ -225,6 +242,9 @@ describe('published website UI package', () => {
         "const navigationItems = [{ href: '/', isActive: true, label: 'moldea Home' }, { href: '/repository-format/', isActive: false, label: 'Repository Format', compactLabel: 'Repo. Format' }] satisfies ComponentProps<typeof SiteHeader>['navigationItems'];",
         'const fileProps = { path: "src/returns/policy.ts", label: "Return policy", tone: "warning" } satisfies ComponentProps<typeof FilePreview>;',
         'const codeProps = { source: "echo order-status", language: "sh", variant: "plain", copyable: true, ariaLabel: "Order status command" } satisfies ComponentProps<typeof CodeBlock>;',
+        'const contextBefore = Array.from({ length: 16 }, (_, index) => `const slot${index} = "${"booking-time-".repeat(16)}";`).join("\\n") + "\\n";',
+        'const contextAfter = contextBefore.replace("slot8", "availableSlot8");',
+        'const diffProps = { oldValue: "const hours = getHours(10);\\n// Previous hours\\n", newValue: "const hours = getHours(14);\\n// Updated hours\\n", language: "typescript", ariaLabel: "Booking changes", view: "unified", variant: "plain" } satisfies ComponentProps<typeof CodeDiff>;',
         'const nonCopyableCodeProps = { source: "incomplete result", language: "text", copyable: false } satisfies ComponentProps<typeof CodeBlock>;',
         'const connectionProps = { tone: "danger" } satisfies ComponentProps<typeof ConnectionLabel>;',
         'const accordionProps = { id: "check-two", group: "fixture-accordion", title: "Second check", isOpen: true } satisfies ComponentProps<typeof Accordion>;',
@@ -251,6 +271,13 @@ describe('published website UI package', () => {
         '    <section class="relative overflow-hidden"><HeroBackdrop /><h1 class="relative">Consumer hero</h1></section>',
         '    <CodeBlock source={JSON.stringify({ valid: false })} language="json" />',
         '    <CodeBlock {...codeProps} />',
+        '    <CodeDiff {...diffProps} />',
+        '    <CodeDiff {...diffProps} view="split" ariaLabel="Booking changes split" />',
+        '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes" view="split" />',
+        '    <CodeDiff oldValue="" newValue={\'<script>literal</script>\'} />',
+        '    <CodeDiff patch={"--- a/policy.ts\\n+++ b/policy.ts\\n@@ -8 +8 @@\\n-const hours = getHours(10);\\n+const hours = getHours(14);\\n"} language="typescript" view="split" ariaLabel="Recorded policy change" />',
+        '    <CodeDiff patch={"Binary files a/image.png and b/image.png differ\\n"} ariaLabel="Recorded binary change" />',
+
         '    <CodeBlock {...nonCopyableCodeProps} />',
         '    <CodeBlock source="Plain text wraps in narrow containers." language="text" />',
         '    <ConnectionLabel {...connectionProps}><span slot="icon">!</span>Missing from <code class="inline-code">moldea.yaml</code></ConnectionLabel>',
@@ -310,6 +337,122 @@ describe('published website UI package', () => {
     );
     const fixtureHtml = readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8');
     expect(fixtureHtml).toContain('Consumer hero');
+    expect(fixtureHtml).toContain('data-code-diff="unified"');
+    expect(fixtureHtml).toContain('data-code-diff="split"');
+    expect(fixtureHtml).toContain('aria-label="Booking changes"');
+    expect(fixtureHtml).not.toContain('1 removed, 1 added');
+    expect(fixtureHtml).toContain('&lt;script&gt;literal&lt;/script&gt;');
+    expect(fixtureHtml).not.toContain('<script>literal</script>');
+    const stylesheetName = readdirSync(path.join(fixtureDirectory, 'dist', '_astro')).find((name) =>
+      name.endsWith('.css'),
+    );
+    if (stylesheetName === undefined) {
+      throw new Error('The Astro fixture did not emit its configured external stylesheet.');
+    }
+    const stylesheet = readFileSync(
+      path.join(fixtureDirectory, 'dist', '_astro', stylesheetName),
+      'utf8',
+    );
+    const browser = await chromium.launch();
+    try {
+      for (const theme of ['light', 'dark']) {
+        for (const width of [320, 1440]) {
+          const context = await browser.newContext({
+            viewport: { width, height: 900 },
+            reducedMotion: 'reduce',
+          });
+          try {
+            const page = await context.newPage();
+            await page.setContent(fixtureHtml.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gu, ''));
+            await page.addStyleTag({ content: stylesheet });
+            await page.evaluate((selectedTheme) => {
+              document.documentElement.className = selectedTheme;
+              document.title = 'Code diff fixture';
+              const main = document.createElement('main');
+              const heading = document.createElement('h1');
+              heading.textContent = 'File comparison examples';
+              main.append(heading, ...document.querySelectorAll('[data-code-diff]'));
+              document.body.replaceChildren(main);
+            }, theme);
+            const diff = page.getByRole('region', { name: 'Availability changes', exact: true });
+            expect(
+              await page.getByRole('region', { name: 'Booking changes', exact: true }).innerText(),
+            ).not.toMatch(/Before|After|removed,|added/u);
+            await diff.focus();
+            expect(await diff.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe(
+              'none',
+            );
+            const summary = diff.locator('summary').first();
+            await summary.focus();
+            await summary.press('Enter');
+            expect(
+              await summary.evaluate((element) => element.parentElement!.hasAttribute('open')),
+            ).toBe(true);
+            await summary.press('Enter');
+            expect(
+              await summary.evaluate((element) => element.parentElement!.hasAttribute('open')),
+            ).toBe(false);
+            if (width === 320) {
+              expect(await diff.locator('[data-diff-unified]:visible').count()).toBeGreaterThan(0);
+              expect(await diff.locator('[data-diff-split]:visible').count()).toBe(0);
+            } else {
+              expect(await diff.locator('[data-diff-unified]:visible').count()).toBe(0);
+              expect(await diff.locator('[data-diff-split]:visible').count()).toBeGreaterThan(0);
+              // container width, rather than the page viewport, controls the fallback
+              await diff.evaluate((element) => {
+                element.style.width = '320px';
+              });
+              expect(await diff.locator('[data-diff-unified]:visible').count()).toBeGreaterThan(0);
+              expect(await diff.locator('[data-diff-split]:visible').count()).toBe(0);
+            }
+            expect(
+              await page.evaluate(
+                () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+              ),
+            ).toBe(true);
+            for (const element of await page.locator('[data-code-diff]').all()) {
+              expect(await element.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(
+                true,
+              );
+            }
+            const recorded = page.getByRole('region', {
+              name: 'Recorded policy change',
+              exact: true,
+            });
+            expect(
+              (await page.locator('[data-diff-line]').allTextContents()).join('\n'),
+            ).not.toContain('No newline at end of file');
+            expect(await recorded.innerText()).not.toMatch(/b\/policy\.ts|@@/u);
+            const raw = recorded.getByText('View recorded patch', { exact: true });
+            await raw.focus();
+            await raw.press('Enter');
+            expect(
+              await recorded
+                .getByRole('region', {
+                  name: 'Recorded policy change: recorded source',
+                  exact: true,
+                })
+                .innerText(),
+            ).toContain('@@ -8 +8 @@');
+            await raw.press('Enter');
+            expect(
+              await page
+                .getByRole('region', {
+                  name: 'Recorded binary change: recorded source',
+                  exact: true,
+                })
+                .innerText(),
+            ).toContain('Binary files a/image.png and b/image.png differ');
+            const accessibility = await new AxeBuilder({ page }).analyze();
+            expect(accessibility.violations).toStrictEqual([]);
+          } finally {
+            await context.close();
+          }
+        }
+      }
+    } finally {
+      await browser.close();
+    }
     expect(fixtureHtml).toContain('language-json');
     expect(fixtureHtml).toContain('language-sh');
     expect(fixtureHtml).toContain('language-text');

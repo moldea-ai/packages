@@ -1,0 +1,81 @@
+---
+import type { ICodeDiffLine } from '@moldea.ai/website-ui/code-diff-model';
+
+interface Props {
+  line?: ICodeDiffLine;
+  side?: 'before' | 'after';
+}
+const { line, side } = Astro.props;
+const kind = line?.kind ?? 'empty';
+---
+
+<div
+  class:list={[
+    'grid min-h-6 min-w-0 font-mono text-xs leading-6',
+    side
+      ? 'grid-cols-[2rem_1rem_minmax(0,1fr)]'
+      : 'grid-cols-[1.75rem_1rem_minmax(0,1fr)] @sm/diff:grid-cols-[1.75rem_1.75rem_1rem_minmax(0,1fr)]',
+    kind === 'removed' && 'bg-destructive/8',
+    kind === 'added' && 'bg-(--syntax-string)/8',
+    kind === 'empty' && 'bg-secondary/30',
+  ]}
+  data-diff-line={kind}
+>
+  {
+    side ? (
+      <span
+        class="text-center text-muted-foreground select-none"
+        aria-hidden="true"
+      >
+        {side === 'before' ? line?.oldNumber : line?.newNumber}
+      </span>
+    ) : (
+      <>
+        <span
+          class="hidden text-center text-muted-foreground select-none @sm/diff:block"
+          aria-hidden="true"
+        >
+          {line?.oldNumber}
+        </span>
+        <span
+          class="text-center text-muted-foreground select-none"
+          aria-hidden="true"
+        >
+          <span class="@sm/diff:hidden">{line?.newNumber ?? line?.oldNumber}</span>
+          <span class="hidden @sm/diff:inline">{line?.newNumber}</span>
+        </span>
+      </>
+    )
+  }
+  <span
+    class:list={[
+      'text-center select-none',
+      kind === 'added' && 'text-(--syntax-string)',
+      kind === 'removed' && 'text-destructive',
+    ]}
+    aria-hidden="true"
+    >{kind === 'added' ? '+' : kind === 'removed' ? '−' : ''}</span
+  >
+  <div class="min-w-0 pr-3">
+    {
+      line && (
+        <>
+          <span class="sr-only">
+            {line.kind === 'added' ? 'Added' : line.kind === 'removed' ? 'Removed' : 'Unchanged'}{' '}
+            line {line.kind === 'removed' || side === 'before' ? line.oldNumber : line.newNumber}:
+          </span>
+          <code class="[overflow-wrap:anywhere] whitespace-pre-wrap">
+            {line.tokens.map((token) => (
+              <span
+                class="text-(--diff-light) dark:text-(--diff-dark)"
+                style={`--diff-light:color-mix(in srgb, ${token.lightColor ?? 'var(--foreground)'} 80%, var(--foreground));--diff-dark:color-mix(in srgb, ${token.darkColor ?? 'var(--foreground)'} 80%, var(--foreground))`}
+              >
+                {token.content}
+              </span>
+            ))}
+          </code>
+        </>
+      )
+    }
+  </div>
+</div>
