@@ -19,11 +19,11 @@ if (!id.trim() || !title.trim() || (group !== undefined && !group.trim()))
   id={id}
   name={group}
   open={isOpen}
-  class="group/accordion min-w-0 scroll-mt-24 border-y sm:rounded-xl sm:border sm:bg-card"
+  class="group/accordion min-w-0 scroll-mt-24 rounded-xl border bg-card"
   data-accordion-item
 >
   <summary
-    class="flex min-h-12 list-none items-center gap-3 px-1 py-4 transition-colors outline-none hover:bg-secondary/60 focus-visible:ring-inset active:bg-secondary motion-reduce:transition-none sm:rounded-xl sm:px-5 [&::-webkit-details-marker]:hidden"
+    class="flex min-h-12 list-none items-center gap-3 rounded-xl px-3 py-3 transition-colors outline-none hover:bg-secondary/60 focus-visible:ring-inset active:bg-secondary motion-reduce:transition-none sm:px-5 sm:py-4 [&::-webkit-details-marker]:hidden"
     aria-labelledby={`${id}-title`}
     aria-describedby={description ? `${id}-description` : undefined}
   >
@@ -51,7 +51,7 @@ if (!id.trim() || !title.trim() || (group !== undefined && !group.trim()))
     />
   </summary>
   <div
-    class="accordion-panel min-w-0 px-1 pt-1 pb-5 sm:px-5"
+    class="accordion-panel min-w-0 px-3 pt-1 pb-4 sm:px-5 sm:pb-5"
     data-accordion-panel
   >
     <slot />
