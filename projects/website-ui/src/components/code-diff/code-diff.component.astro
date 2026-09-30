@@ -11,6 +11,7 @@ export type Props = (
 ) & {
   language?: string;
   view?: 'unified' | 'split';
+  overflow?: 'wrap' | 'scroll';
   beforeLabel?: string;
   afterLabel?: string;
   ariaLabel?: string;
@@ -23,6 +24,7 @@ const {
   patch,
   language = 'text',
   view = 'unified',
+  overflow = 'wrap',
   beforeLabel = 'Before',
   afterLabel = 'After',
   ariaLabel = 'File changes',
@@ -37,10 +39,12 @@ const comparison =
 
 <div
   class:list={[
-    '@container/diff min-w-0 overflow-hidden bg-background text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+    '@container/diff relative min-w-0 bg-background text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+    overflow === 'scroll' ? 'overflow-x-auto' : 'overflow-hidden',
     variant === 'panel' && 'rounded-lg border border-border',
   ]}
   data-code-diff={view}
+  data-diff-overflow={overflow}
   data-code-copy="false"
   role="region"
   aria-label={ariaLabel}
@@ -53,39 +57,43 @@ const comparison =
       </p>
     )
   }
-  {
-    view === 'split' && comparison && (
-      <div class="hidden grid-cols-2 border-b border-border bg-secondary/30 text-xs font-medium @2xl/diff:grid">
-        <>
-          <p class="border-r border-border px-3 py-2">{beforeLabel}</p>
-          <p class="px-3 py-2">{afterLabel}</p>
-        </>
-      </div>
-    )
-  }
-  <div class="py-1">
+  <div class:list={[overflow === 'scroll' && 'w-max min-w-full']}>
     {
-      comparison?.sections.map((section) =>
-        section.isCollapsed ? (
-          <details class="group/context border-y border-border bg-secondary/20">
-            <summary class="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground">
-              Show {section.lines.length} unchanged lines
-            </summary>
-            <CodeDiffRows
-              section={section}
-              view={view}
-            />
-          </details>
-        ) : (
-          <div class:list={[patch !== undefined && 'border-t border-border first:border-t-0']}>
-            <CodeDiffRows
-              section={section}
-              view={view}
-            />
-          </div>
-        ),
+      view === 'split' && comparison && (
+        <div class="hidden grid-cols-2 border-b border-border bg-secondary/30 text-xs font-medium @2xl/diff:grid">
+          <>
+            <p class="border-r border-border px-3 py-2">{beforeLabel}</p>
+            <p class="px-3 py-2">{afterLabel}</p>
+          </>
+        </div>
       )
     }
+    <div class="py-1">
+      {
+        comparison?.sections.map((section) =>
+          section.isCollapsed ? (
+            <details class="group/context border-y border-border bg-secondary/20">
+              <summary class="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground">
+                Show {section.lines.length} unchanged lines
+              </summary>
+              <CodeDiffRows
+                section={section}
+                view={view}
+                overflow={overflow}
+              />
+            </details>
+          ) : (
+            <div class:list={[patch !== undefined && 'border-t border-border first:border-t-0']}>
+              <CodeDiffRows
+                section={section}
+                view={view}
+                overflow={overflow}
+              />
+            </div>
+          ),
+        )
+      }
+    </div>
   </div>
   {
     patch !== undefined &&

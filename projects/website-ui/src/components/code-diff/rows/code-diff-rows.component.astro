@@ -6,15 +6,23 @@ import CodeDiffLine from '../line/code-diff-line.component.astro';
 interface Props {
   section: ICodeDiffSection;
   view: 'unified' | 'split';
+  overflow: 'wrap' | 'scroll';
 }
-const { section, view } = Astro.props;
+const { section, view, overflow } = Astro.props;
 ---
 
 <div
   class:list={[view === 'split' && '@2xl/diff:hidden']}
   data-diff-unified
 >
-  {section.lines.map((line) => <CodeDiffLine line={line} />)}
+  {
+    section.lines.map((line) => (
+      <CodeDiffLine
+        line={line}
+        overflow={overflow}
+      />
+    ))
+  }
 </div>
 {
   view === 'split' && (
@@ -28,12 +36,14 @@ const { section, view } = Astro.props;
             <CodeDiffLine
               line={row.before}
               side="before"
+              overflow={overflow}
             />
           </div>
           <div class="min-w-0">
             <CodeDiffLine
               line={row.after}
               side="after"
+              overflow={overflow}
             />
           </div>
         </div>

@@ -216,7 +216,7 @@ Markdown and literal code renderers apply this policy through `styles.css`. Rend
 
 ### File changes
 
-`CodeDiff` compares complete `oldValue` and `newValue` strings at build time. It uses the same light/dark syntax themes as `CodeBlock`, subtle removed/added row backgrounds, a theme-aware foreground blend to retain syntax contrast on those tints, line numbers, explicit change markers, and accessible row labels. Long lines wrap within the available space. Below 24rem of container width, unified rows use one source-line gutter; wider unified rows show both original and replacement line numbers. No diff engine, highlighter, or component JavaScript is sent to the browser. Supply a descriptive, document-unique `ariaLabel` when rendering several comparisons.
+`CodeDiff` compares complete `oldValue` and `newValue` strings at build time. It uses the same light/dark syntax themes as `CodeBlock`, subtle removed/added row backgrounds, a theme-aware foreground blend to retain syntax contrast on those tints, line numbers, explicit change markers, and accessible row labels. Long lines wrap by default; `overflow="scroll"` preserves source lines with horizontal scrolling inside the focusable comparison. Below 24rem of container width, unified rows use one source-line gutter; wider unified rows show both original and replacement line numbers. No diff engine, highlighter, or component JavaScript is sent to the browser. Supply a descriptive, document-unique `ariaLabel` when rendering several comparisons.
 
 ```astro
 ---
@@ -229,10 +229,13 @@ import CodeDiff from '@moldea.ai/website-ui/code-diff';
   language="typescript"
   ariaLabel="Return policy changes"
   view="unified"
+  overflow="scroll"
 />
 ```
 
 `view` defaults to `unified`, which suits narrow examples and dialogs. Unified rows start directly with the code, without a legend or change-count summary. Consumers can select `split` for side-by-side before/after rows. Split view adapts to the component's own available width: below 42rem it shows unified rows, even on a wide screen. Consumers own placement and preferred view; the component does not add a view toggle. Split column labels `beforeLabel` and `afterLabel` default to “Before” and “After”. `variant="plain"` removes the outer border and radius for composition inside `FilePreview`; row backgrounds remain.
+
+`overflow` defaults to `wrap`. Select `scroll` to preserve indentation and source-line height in code-heavy examples; scrolling stays inside the comparison and supports keyboard input. This choice applies independently to unified and split views, including the narrow-container fallback. Split rows share one horizontal viewport so paired lines stay aligned. Raw recorded patches retain `CodeBlock`'s source-preserving scrolling policy.
 
 By default, three unchanged lines remain beside each change. Distant unchanged lines appear in native, keyboard-accessible disclosures that work without JavaScript or motion. Set `contextLines={Infinity}` to show every line. All source remains in the rendered HTML. CRLF and LF compare equally; final-newline metadata stays in the model without adding annotations to the rendered rows. Unsupported languages use plain text. Comparisons exceeding 1024 line edits fall back to a complete replacement, explicitly labelled as a large change, to bound diff search work. Consumers should supply bounded file previews; this component does not fetch or paginate repository contents.
 

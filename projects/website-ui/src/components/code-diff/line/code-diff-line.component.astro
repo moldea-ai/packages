@@ -4,8 +4,9 @@ import type { ICodeDiffLine } from '@moldea.ai/website-ui/code-diff-model';
 interface Props {
   line?: ICodeDiffLine;
   side?: 'before' | 'after';
+  overflow: 'wrap' | 'scroll';
 }
-const { line, side } = Astro.props;
+const { line, side, overflow } = Astro.props;
 const kind = line?.kind ?? 'empty';
 ---
 
@@ -64,7 +65,13 @@ const kind = line?.kind ?? 'empty';
             {line.kind === 'added' ? 'Added' : line.kind === 'removed' ? 'Removed' : 'Unchanged'}{' '}
             line {line.kind === 'removed' || side === 'before' ? line.oldNumber : line.newNumber}:
           </span>
-          <code class="[overflow-wrap:anywhere] whitespace-pre-wrap">
+          <code
+            class:list={[
+              overflow === 'scroll'
+                ? 'whitespace-pre'
+                : '[overflow-wrap:anywhere] whitespace-pre-wrap',
+            ]}
+          >
             {line.tokens.map((token) => (
               <span
                 class="text-(--diff-light) dark:text-(--diff-dark)"
