@@ -331,7 +331,7 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('data-code-diff="unified"');
     expect(fixtureHtml).toContain('data-code-diff="split"');
     expect(fixtureHtml).toContain('aria-label="Booking changes"');
-    expect(fixtureHtml).toContain('1 removed, 1 added');
+    expect(fixtureHtml).not.toContain('1 removed, 1 added');
     expect(fixtureHtml).toContain('&lt;script&gt;literal&lt;/script&gt;');
     expect(fixtureHtml).not.toContain('<script>literal</script>');
     const stylesheetName = readdirSync(path.join(fixtureDirectory, 'dist', '_astro')).find((name) =>
@@ -363,6 +363,9 @@ describe('published website UI package', () => {
               document.body.replaceChildren(main);
             }, theme);
             const diff = page.getByRole('region', { name: 'Availability changes', exact: true });
+            expect(
+              await page.getByRole('region', { name: 'Booking changes', exact: true }).innerText(),
+            ).not.toMatch(/Before|After|removed,|added/u);
             await diff.focus();
             expect(await diff.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe(
               'none',
@@ -404,7 +407,10 @@ describe('published website UI package', () => {
               name: 'Recorded policy change',
               exact: true,
             });
-            expect(await recorded.innerText()).toContain('b/policy.ts');
+            expect(
+              (await page.locator('[data-diff-line]').allTextContents()).join('\n'),
+            ).not.toContain('No newline at end of file');
+            expect(await recorded.innerText()).not.toMatch(/b\/policy\.ts|@@/u);
             const raw = recorded.getByText('View recorded patch', { exact: true });
             await raw.focus();
             await raw.press('Enter');

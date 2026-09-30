@@ -74,11 +74,6 @@ const kind = line?.kind ?? 'empty';
               </span>
             ))}
           </code>
-          {line.hasNoFinalNewline && (
-            <span class="block font-sans text-[10px] text-muted-foreground italic">
-              No newline at end of file
-            </span>
-          )}
         </>
       )
     }

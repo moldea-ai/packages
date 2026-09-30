@@ -33,8 +33,6 @@ const comparison =
   patch === undefined
     ? await buildCodeDiff(oldValue, newValue, language, contextLines)
     : await buildCodePatch(patch, language);
-const hasChanges =
-  comparison !== null && (comparison.addedCount > 0 || comparison.removedCount > 0);
 ---
 
 <div
@@ -48,35 +46,6 @@ const hasChanges =
   aria-label={ariaLabel}
   tabindex="0"
 >
-  <div
-    class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-secondary/50 px-3 py-2.5 text-xs"
-  >
-    <div class="flex flex-wrap gap-x-4 gap-y-1 font-medium">
-      <span class="flex items-center gap-1.5"
-        ><span
-          class="font-mono text-destructive"
-          aria-hidden="true"
-          >−</span
-        >{beforeLabel}</span
-      >
-      <span class="flex items-center gap-1.5"
-        ><span
-          class="font-mono text-(--syntax-string)"
-          aria-hidden="true"
-          >+</span
-        >{afterLabel}</span
-      >
-    </div>
-    <span class="text-muted-foreground">
-      {
-        comparison === null
-          ? 'Recorded patch'
-          : hasChanges
-            ? `${comparison.removedCount} removed, ${comparison.addedCount} added`
-            : 'No changes'
-      }
-    </span>
-  </div>
   {
     comparison?.isCoarseComparison && (
       <p class="border-b border-border px-3 py-2 text-xs text-muted-foreground">
@@ -108,17 +77,12 @@ const hasChanges =
             />
           </details>
         ) : (
-          <>
-            {section.label && (
-              <p class="border-y border-border bg-secondary/30 px-3 py-2 font-mono text-xs wrap-anywhere text-muted-foreground">
-                <code>{section.label}</code>
-              </p>
-            )}
+          <div class:list={[patch !== undefined && 'border-t border-border first:border-t-0']}>
             <CodeDiffRows
               section={section}
               view={view}
             />
-          </>
+          </div>
         ),
       )
     }
