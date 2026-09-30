@@ -16,16 +16,38 @@ describe('website Markdown rendering', () => {
     expect(html).not.toMatch(/<(?:h1|script|a)\b/u);
   });
 
-  test.each(['json', 'sh', 'text', 'txt', 'plaintext', ''])(
+  test.each(['json', 'sh', 'markdown', 'md', 'text', 'txt', 'plaintext', ''])(
     'renders literal %s source through the shared language and accessibility policy',
     async (language) => {
       const html = await renderCodeBlock('  example\n\n', language);
 
       expect(html).toContain('  example');
       expect(html).toContain('role="region" aria-label="Code block"');
+      expect(html).toContain(
+        `data-code-overflow="${['markdown', 'md', 'text', 'txt', 'plaintext'].includes(language) ? 'wrap' : 'scroll'}"`,
+      );
       if (language) expect(html).toContain(`class="language-${language}"`);
       else expect(html).not.toContain('language-');
       if (language === 'json' || language === 'sh') expect(html).toContain('shiki');
+    },
+  );
+
+  test.each(['wrap', 'scroll'] as const)(
+    'applies the explicit %s override to literal code and Markdown fences',
+    async (overflow) => {
+      const source = 'A long source line with its original indentation.\n';
+      for (const language of ['markdown', 'text', 'yaml', 'json']) {
+        expect(await renderCodeBlock(source, language, 'Source', overflow)).toContain(
+          `data-code-overflow="${overflow}"`,
+        );
+        const markdown = `\`\`\`${language}\n${source}\`\`\``;
+        expect(await renderMarkdownFragment(markdown, { codeOverflow: overflow })).toContain(
+          `data-code-overflow="${overflow}"`,
+        );
+        expect((await renderMarkdownDocument(markdown, { codeOverflow: overflow })).html).toContain(
+          `data-code-overflow="${overflow}"`,
+        );
+      }
     },
   );
 
@@ -99,7 +121,7 @@ describe('website Markdown rendering', () => {
     expect(rendered.html).toContain('projectName');
   });
 
-  test.each(['ts', 'json', 'yaml', 'text', 'txt', 'plaintext', ''])(
+  test.each(['ts', 'json', 'yaml', 'markdown', 'md', 'text', 'txt', 'plaintext', ''])(
     'retains the explicit %s language and exposes keyboard-accessible code regions',
     async (language) => {
       const source = `\`\`\`${language}\n  example\n\`\`\``;
@@ -110,6 +132,9 @@ describe('website Markdown rendering', () => {
         expect(html).toContain('tabindex="0"');
         expect(html.match(/tabindex="0"/gu)).toHaveLength(1);
         expect(html).toContain('role="region" aria-label="Code block"');
+        expect(html).toContain(
+          `data-code-overflow="${['markdown', 'md', 'text', 'txt', 'plaintext'].includes(language) ? 'wrap' : 'scroll'}"`,
+        );
         if (language) expect(html).toContain(`class="language-${language}"`);
         else expect(html).not.toContain('language-');
         expect(html).toContain('  example');

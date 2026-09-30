@@ -8,6 +8,7 @@ import remarkRehype from 'remark-rehype';
 import { unified } from 'unified';
 
 import { withBase } from '../site/index.js';
+import { resolveCodeOverflow, type ICodeOverflow } from '../code-presentation/index.js';
 
 // rendered documentation heading available to navigation surfaces
 export interface IRenderedMarkdownHeading {
@@ -39,6 +40,7 @@ export interface IMarkdownRenderOptions {
   readonly localLinks?: 'prefix' | 'unwrap';
   readonly productNameTreatment?: 'code' | 'none';
   readonly strongLabelBadges?: readonly IMarkdownStrongLabelBadge[];
+  readonly codeOverflow?: ICodeOverflow;
 }
 
 // document-only rendering options
@@ -110,11 +112,16 @@ const escapeHtmlAttribute = (value: string): string =>
     .replaceAll('>', '&gt;');
 
 /** Names code regions and makes their horizontal overflow keyboard-accessible. */
-const markCodeBlocks = (html: string, ariaLabel = 'Code block'): string =>
-  html.replaceAll(/<pre\b([^>]*)>/gu, (_match, attributes: string) => {
-    const focusAttribute = /\btabindex=/u.test(attributes) ? '' : ' tabindex="0"';
-    return `<pre${attributes}${focusAttribute} role="region" aria-label="${escapeHtmlAttribute(ariaLabel)}">`;
-  });
+const markCodeBlocks = (html: string, ariaLabel = 'Code block', overflow?: ICodeOverflow): string =>
+  html.replaceAll(
+    /<pre\b([^>]*)>([\s\S]*?)<\/pre>/gu,
+    (_match, attributes: string, body: string) => {
+      const focusAttribute = /\btabindex=/u.test(attributes) ? '' : ' tabindex="0"';
+      const language = body.match(/<code\b[^>]*\bclass="[^"]*\blanguage-([^\s"]+)/u)?.[1];
+      const mode = resolveCodeOverflow(language, overflow);
+      return `<pre${attributes}${focusAttribute} role="region" aria-label="${escapeHtmlAttribute(ariaLabel)}" data-code-overflow="${escapeHtmlAttribute(mode)}">${body}</pre>`;
+    },
+  );
 
 /** Applies the public product-name treatment outside existing code elements. */
 const renderProductNamesAsCode = (html: string): string => {
@@ -190,7 +197,11 @@ const applyPresentation = (html: string, options: IMarkdownRenderOptions): strin
   const productHtml =
     options.productNameTreatment === 'code' ? renderProductNamesAsCode(badgedHtml) : badgedHtml;
 
-  return markCodeBlocks(wrapTables(markExternalLinks(productHtml)));
+  return markCodeBlocks(
+    wrapTables(markExternalLinks(productHtml)),
+    'Code block',
+    options.codeOverflow,
+  );
 };
 
 /** Extracts stable second- and third-level headings from sanitized document HTML. */
@@ -248,12 +259,14 @@ export const renderMarkdownFragment = async (
  * @param source Code or plain text to display verbatim.
  * @param language Syntax language; omitted languages remain unhighlighted and do not wrap.
  * @param ariaLabel Accessible name for the keyboard-scrollable code region.
+ * @param overflow Optional wrapping/scrolling override; otherwise the language selects the mode.
  * @returns Sanitized, highlighted HTML with a keyboard-accessible code region.
  */
 export const renderCodeBlock = async (
   source: string,
   language = '',
   ariaLabel = 'Code block',
+  overflow?: ICodeOverflow,
 ): Promise<string> => {
   const processor = createMarkdownProcessor(false);
   const rendered = await processor.run({
@@ -261,5 +274,5 @@ export const renderCodeBlock = async (
     children: [{ type: 'code', lang: language || null, value: source }],
   });
 
-  return markCodeBlocks(processor.stringify(rendered), ariaLabel);
+  return markCodeBlocks(processor.stringify(rendered), ariaLabel, overflow);
 };

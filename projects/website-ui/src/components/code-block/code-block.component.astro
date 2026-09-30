@@ -1,5 +1,6 @@
 ---
 import { renderCodeBlock } from '@moldea.ai/website-ui/markdown';
+import type { ICodeOverflow } from '@moldea.ai/website-ui/code-presentation';
 
 // highlighted source, with a panel by default or a flat surface for composition inside another panel
 export interface Props {
@@ -7,10 +8,11 @@ export interface Props {
   copyable?: boolean;
   source: string;
   language?: string;
+  overflow?: ICodeOverflow;
   variant?: 'panel' | 'plain';
 }
-const { ariaLabel, copyable = true, source, language, variant = 'panel' } = Astro.props;
-const html = await renderCodeBlock(source, language, ariaLabel);
+const { ariaLabel, copyable = true, source, language, overflow, variant = 'panel' } = Astro.props;
+const html = await renderCodeBlock(source, language, ariaLabel, overflow);
 ---
 
 <div

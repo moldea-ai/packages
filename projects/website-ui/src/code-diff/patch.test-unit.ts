@@ -28,6 +28,10 @@ test('preserves recorded multi-file hunks, source positions, uneven edits, and n
     'b/src/policy.ts · @@ -10,3 +12,2 @@',
     'b/new.txt · @@ -0,0 +1,1 @@',
   ]);
+  expect(comparison!.sections.map((section) => section.filePath)).toStrictEqual([
+    'b/src/policy.ts',
+    'b/new.txt',
+  ]);
   expect(
     comparison!.sections
       .flatMap((section) => section.lines)
@@ -53,12 +57,14 @@ test('renders deleted files and hunk-only excerpts without inventing missing fil
     '--- a/deleted.txt\n+++ /dev/null\n@@ -20,1 +0,0 @@\n-old\n',
   );
   expect(comparison!.sections[0]!.label).toBe('a/deleted.txt · @@ -20,1 +0,0 @@');
+  expect(comparison!.sections[0]!.filePath).toBe('a/deleted.txt');
   expect(comparison!.sections[0]!.lines).toHaveLength(1);
   const excerpt = await buildCodePatch(
     '@@ -8 +8 @@\n-const day = 0;\n+const day = 1;\n',
     'typescript',
   );
   expect(excerpt!.sections[0]!.label).toBe('Recorded excerpt · @@ -8,1 +8,1 @@');
+  expect(excerpt!.sections[0]!.filePath).toBeUndefined();
   expect(
     excerpt!.sections[0]!.lines[1]!.tokens.some((token) => token.lightColor !== token.darkColor),
   ).toBe(true);

@@ -20,6 +20,7 @@ export interface ICodeDiffRow {
 
 export interface ICodeDiffSection {
   label?: string;
+  filePath?: string;
   isCollapsed: boolean;
   lines: ICodeDiffLine[];
   rows: ICodeDiffRow[];

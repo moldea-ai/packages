@@ -1,6 +1,9 @@
 ---
 import CodeBlock from '@moldea.ai/website-ui/code-block';
 import { buildCodeDiff, buildCodePatch } from '@moldea.ai/website-ui/code-diff-model';
+import type { ICodeDiffSection } from '@moldea.ai/website-ui/code-diff-model';
+import { resolveCodeOverflow } from '@moldea.ai/website-ui/code-presentation';
+import type { ICodeOverflow } from '@moldea.ai/website-ui/code-presentation';
 
 import CodeDiffRows from './rows/code-diff-rows.component.astro';
 
@@ -11,7 +14,7 @@ export type Props = (
 ) & {
   language?: string;
   view?: 'unified' | 'split';
-  overflow?: 'wrap' | 'scroll';
+  overflow?: ICodeOverflow;
   beforeLabel?: string;
   afterLabel?: string;
   ariaLabel?: string;
@@ -22,9 +25,9 @@ const {
   oldValue,
   newValue,
   patch,
-  language = 'text',
+  language,
   view = 'unified',
-  overflow = 'wrap',
+  overflow,
   beforeLabel = 'Before',
   afterLabel = 'After',
   ariaLabel = 'File changes',
@@ -35,16 +38,27 @@ const comparison =
   patch === undefined
     ? await buildCodeDiff(oldValue, newValue, language, contextLines)
     : await buildCodePatch(patch, language);
+const groups: { overflow: ICodeOverflow; sections: ICodeDiffSection[] }[] = [];
+for (const section of comparison?.sections ?? []) {
+  const mode = resolveCodeOverflow(language, overflow, section.filePath);
+  const previous = groups.at(-1);
+  if (previous?.overflow === mode) previous.sections.push(section);
+  else groups.push({ overflow: mode, sections: [section] });
+}
+const hasMixedOverflow = groups.length > 1;
+const renderedOverflow = hasMixedOverflow
+  ? 'mixed'
+  : (groups[0]?.overflow ?? resolveCodeOverflow(language, overflow));
 ---
 
 <div
   class:list={[
     '@container/diff relative min-w-0 bg-background text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
-    overflow === 'scroll' ? 'overflow-x-auto' : 'overflow-hidden',
+    renderedOverflow === 'scroll' ? 'overflow-x-auto' : 'overflow-hidden',
     variant === 'panel' && 'rounded-lg border border-border',
   ]}
   data-code-diff={view}
-  data-diff-overflow={overflow}
+  data-diff-overflow={renderedOverflow}
   data-code-copy="false"
   role="region"
   aria-label={ariaLabel}
@@ -57,44 +71,70 @@ const comparison =
       </p>
     )
   }
-  <div class:list={[overflow === 'scroll' && 'w-max min-w-full']}>
-    {
-      view === 'split' && comparison && (
-        <div class="hidden grid-cols-2 border-b border-border bg-secondary/30 text-xs font-medium @2xl/diff:grid">
-          <>
-            <p class="border-r border-border px-3 py-2">{beforeLabel}</p>
-            <p class="px-3 py-2">{afterLabel}</p>
-          </>
-        </div>
-      )
-    }
-    <div class="py-1">
-      {
-        comparison?.sections.map((section) =>
-          section.isCollapsed ? (
-            <details class="group/context border-y border-border bg-secondary/20">
-              <summary class="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground">
-                Show {section.lines.length} unchanged lines
-              </summary>
-              <CodeDiffRows
-                section={section}
-                view={view}
-                overflow={overflow}
-              />
-            </details>
-          ) : (
-            <div class:list={[patch !== undefined && 'border-t border-border first:border-t-0']}>
-              <CodeDiffRows
-                section={section}
-                view={view}
-                overflow={overflow}
-              />
+  {
+    groups.map((group, groupIndex) => (
+      <div
+        class:list={[
+          hasMixedOverflow &&
+            '@container/diff relative min-w-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+          hasMixedOverflow && (group.overflow === 'scroll' ? 'overflow-x-auto' : 'overflow-hidden'),
+          groupIndex > 0 && 'border-t border-border',
+        ]}
+        data-diff-group-overflow={hasMixedOverflow ? group.overflow : undefined}
+        tabindex={hasMixedOverflow && group.overflow === 'scroll' ? '0' : undefined}
+        role={hasMixedOverflow && group.overflow === 'scroll' ? 'region' : undefined}
+        aria-label={
+          hasMixedOverflow && group.overflow === 'scroll'
+            ? `${ariaLabel}: scrollable changes ${groupIndex + 1}`
+            : undefined
+        }
+      >
+        <div class:list={[group.overflow === 'scroll' && 'w-max min-w-full']}>
+          {view === 'split' && (
+            <div class="hidden grid-cols-2 border-b border-border bg-secondary/30 text-xs font-medium @2xl/diff:grid">
+              <p class="border-r border-border px-3 py-2">{beforeLabel}</p>
+              <p class="px-3 py-2">{afterLabel}</p>
             </div>
-          ),
-        )
-      }
-    </div>
-  </div>
+          )}
+          {group.sections.map((section, sectionIndex) => {
+            const hasLeadingInset = sectionIndex === 0;
+            const hasTrailingInset = sectionIndex === group.sections.length - 1;
+            return section.isCollapsed ? (
+              <details class="group/context border-y border-border bg-secondary/20">
+                <summary
+                  class:list={[
+                    'cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground',
+                    hasLeadingInset && 'pt-3',
+                    hasTrailingInset && 'pb-3 group-open/context:pb-2',
+                  ]}
+                >
+                  Show {section.lines.length} unchanged lines
+                </summary>
+                <CodeDiffRows
+                  section={section}
+                  view={view}
+                  overflow={group.overflow}
+                  hasTrailingInset={hasTrailingInset}
+                />
+              </details>
+            ) : (
+              <div
+                class:list={[patch !== undefined && sectionIndex > 0 && 'border-t border-border']}
+              >
+                <CodeDiffRows
+                  section={section}
+                  view={view}
+                  overflow={group.overflow}
+                  hasLeadingInset={hasLeadingInset}
+                  hasTrailingInset={hasTrailingInset}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    ))
+  }
   {
     patch !== undefined &&
       (comparison ? (
@@ -106,6 +146,7 @@ const comparison =
             <CodeBlock
               source={patch}
               language="diff"
+              overflow={overflow}
               copyable={false}
               variant="plain"
               ariaLabel={`${ariaLabel}: recorded source`}
@@ -120,6 +161,7 @@ const comparison =
           <CodeBlock
             source={patch}
             language="diff"
+            overflow={overflow}
             copyable={false}
             variant="plain"
             ariaLabel={`${ariaLabel}: recorded source`}
