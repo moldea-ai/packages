@@ -68,7 +68,7 @@ const kind = line?.kind ?? 'empty';
             {line.tokens.map((token) => (
               <span
                 class="text-(--diff-light) dark:text-(--diff-dark)"
-                style={`--diff-light:${token.lightColor ?? 'var(--foreground)'};--diff-dark:${token.darkColor ?? 'var(--foreground)'}`}
+                style={`--diff-light:color-mix(in srgb, ${token.lightColor ?? 'var(--foreground)'} 80%, var(--foreground));--diff-dark:color-mix(in srgb, ${token.darkColor ?? 'var(--foreground)'} 80%, var(--foreground))`}
               >
                 {token.content}
               </span>

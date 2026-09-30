@@ -235,7 +235,7 @@ describe('published website UI package', () => {
         'const codeProps = { source: "echo order-status", language: "sh", variant: "plain", copyable: true, ariaLabel: "Order status command" } satisfies ComponentProps<typeof CodeBlock>;',
         'const contextBefore = Array.from({ length: 16 }, (_, index) => `const slot${index} = "${"booking-time-".repeat(16)}";`).join("\\n") + "\\n";',
         'const contextAfter = contextBefore.replace("slot8", "availableSlot8");',
-        'const diffProps = { oldValue: "const hours = 10;\\n", newValue: "const hours = 14;\\n", language: "typescript", ariaLabel: "Booking changes", view: "unified", variant: "plain" } satisfies ComponentProps<typeof CodeDiff>;',
+        'const diffProps = { oldValue: "const hours = getHours(10);\\n// Previous hours\\n", newValue: "const hours = getHours(14);\\n// Updated hours\\n", language: "typescript", ariaLabel: "Booking changes", view: "unified", variant: "plain" } satisfies ComponentProps<typeof CodeDiff>;',
         'const nonCopyableCodeProps = { source: "incomplete result", language: "text", copyable: false } satisfies ComponentProps<typeof CodeBlock>;',
         'const connectionProps = { tone: "danger" } satisfies ComponentProps<typeof ConnectionLabel>;',
         'const accordionProps = { id: "check-two", group: "fixture-accordion", title: "Second check", isOpen: true } satisfies ComponentProps<typeof Accordion>;',
@@ -266,7 +266,7 @@ describe('published website UI package', () => {
         '    <CodeDiff {...diffProps} view="split" ariaLabel="Booking changes split" />',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes" view="split" />',
         '    <CodeDiff oldValue="" newValue={\'<script>literal</script>\'} />',
-        '    <CodeDiff patch={"--- a/policy.ts\\n+++ b/policy.ts\\n@@ -8 +8 @@\\n-const hours = 10;\\n+const hours = 14;\\n"} language="typescript" view="split" ariaLabel="Recorded policy change" />',
+        '    <CodeDiff patch={"--- a/policy.ts\\n+++ b/policy.ts\\n@@ -8 +8 @@\\n-const hours = getHours(10);\\n+const hours = getHours(14);\\n"} language="typescript" view="split" ariaLabel="Recorded policy change" />',
         '    <CodeDiff patch={"Binary files a/image.png and b/image.png differ\\n"} ariaLabel="Recorded binary change" />',
 
         '    <CodeBlock {...nonCopyableCodeProps} />',

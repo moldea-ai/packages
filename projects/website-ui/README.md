@@ -216,7 +216,7 @@ Markdown and literal code renderers apply this policy through `styles.css`. Rend
 
 ### File changes
 
-`CodeDiff` compares complete `oldValue` and `newValue` strings at build time. It uses the same light/dark syntax themes as `CodeBlock`, subtle removed/added row backgrounds, line numbers, explicit change markers, and accessible row labels. Long lines wrap within the available space. Below 24rem of container width, unified rows use one source-line gutter; wider unified rows show both original and replacement line numbers. No diff engine, highlighter, or component JavaScript is sent to the browser. Supply a descriptive, document-unique `ariaLabel` when rendering several comparisons.
+`CodeDiff` compares complete `oldValue` and `newValue` strings at build time. It uses the same light/dark syntax themes as `CodeBlock`, subtle removed/added row backgrounds, a theme-aware foreground blend to retain syntax contrast on those tints, line numbers, explicit change markers, and accessible row labels. Long lines wrap within the available space. Below 24rem of container width, unified rows use one source-line gutter; wider unified rows show both original and replacement line numbers. No diff engine, highlighter, or component JavaScript is sent to the browser. Supply a descriptive, document-unique `ariaLabel` when rendering several comparisons.
 
 ```astro
 ---
