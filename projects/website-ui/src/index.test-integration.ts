@@ -69,11 +69,11 @@ const getPackageManagerEntrypoint = (): string => {
 
 /** Creates one tracked temporary directory removed after the active test. */
 const createTemporaryDirectory = (): string => {
-  // native resolution also expands Windows short paths used by CI temporary directories
-  const directory = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'moldea-website-ui-')));
+  const directory = mkdtempSync(path.join(tmpdir(), 'moldea-website-ui-'));
 
   temporaryDirectories.push(directory);
-  return directory;
+  // native resolution also expands Windows short paths used by CI temporary directories
+  return realpathSync.native(directory);
 };
 
 afterEach(() => {
