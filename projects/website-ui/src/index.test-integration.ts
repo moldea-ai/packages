@@ -1,7 +1,15 @@
 // @vitest-environment node
 /// <reference lib="dom" />
 import { execFileSync, type ExecFileSyncOptionsWithStringEncoding } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -61,7 +69,8 @@ const getPackageManagerEntrypoint = (): string => {
 
 /** Creates one tracked temporary directory removed after the active test. */
 const createTemporaryDirectory = (): string => {
-  const directory = mkdtempSync(path.join(tmpdir(), 'moldea-website-ui-'));
+  // keep Astro and Vite source identities consistent across temporary-root aliases
+  const directory = realpathSync(mkdtempSync(path.join(tmpdir(), 'moldea-website-ui-')));
 
   temporaryDirectories.push(directory);
   return directory;
@@ -171,7 +180,6 @@ describe('published website UI package', () => {
         "import { defineConfig } from 'astro/config';",
         '',
         'export default defineConfig({',
-        "  build: { inlineStylesheets: 'never' },",
         '  vite: { plugins: [tailwindcss()] },',
         '});',
         '',
