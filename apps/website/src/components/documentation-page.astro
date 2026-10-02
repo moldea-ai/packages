@@ -7,6 +7,7 @@ import type { IRenderedMarkdownHeading } from '@moldea.ai/website-ui/markdown';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import type { IPackageDocument, IPublicPackage } from '../lib/model/types.ts';
+import { SITE_GHOST_LINK_CLASS_NAME } from '../lib/site/index.ts';
 
 interface Props {
   allPackages: IPublicPackage[];
@@ -96,11 +97,12 @@ const navigationItems = [
         />
       </ActionLink>
       <ActionLink
+        class={SITE_GHOST_LINK_CLASS_NAME}
         href={packageModel.npmUrl}
         size="md"
         target="_blank"
         rel="noopener noreferrer"
-        variant="outline"
+        variant="ghost"
       >
         npm <ExternalLink
           class="size-3.5"

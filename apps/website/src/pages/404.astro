@@ -4,6 +4,7 @@ import ActionLink from '@moldea.ai/website-ui/action-link';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import BaseLayout from '../layouts/base-layout.astro';
+import { SITE_GHOST_LINK_CLASS_NAME } from '../lib/site/index.ts';
 
 const basePath = import.meta.env.BASE_URL;
 ---
@@ -31,9 +32,10 @@ const basePath = import.meta.env.BASE_URL;
           /> Back to packages
         </ActionLink>
         <ActionLink
+          class={SITE_GHOST_LINK_CLASS_NAME}
           href={withBase('/search/', basePath)}
           size="lg"
-          variant="outline"
+          variant="ghost"
         >
           Search documentation
         </ActionLink>

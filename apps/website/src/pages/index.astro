@@ -12,6 +12,7 @@ import { RepositoryCheckPreview } from '../components/repository-check-preview/i
 import { RepositoryFormatOverview } from '../components/repository-format-overview/index.ts';
 import BaseLayout from '../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../lib/generation/generation.ts';
+import { SITE_GHOST_LINK_CLASS_NAME } from '../lib/site/index.ts';
 
 const model = loadWebsiteModel();
 const toolingPackages = model.packages.filter(({ family }) => family === 'skill-core-tooling');
@@ -79,9 +80,10 @@ const basePath = import.meta.env.BASE_URL;
               /></ActionLink
             >
             <ActionLink
+              class={SITE_GHOST_LINK_CLASS_NAME}
               href={withBase('/getting-started/', basePath)}
               size="lg"
-              variant="outline"
+              variant="ghost"
               >Start using the tools</ActionLink
             >
           </div>
@@ -245,10 +247,11 @@ const basePath = import.meta.env.BASE_URL;
               aria-hidden="true"
             /></ActionLink
           ><ActionLink
+            class={SITE_GHOST_LINK_CLASS_NAME}
             href="https://skill.moldea.ai/"
             target="_blank"
             rel="noopener noreferrer"
-            variant="outline"
+            variant="ghost"
             >Agent Skill <ExternalLink
               class="size-4"
               aria-hidden="true"
