@@ -4,6 +4,8 @@ import ActionLink from '@moldea.ai/website-ui/action-link';
 
 import type { IAdapterPage } from '../lib/model/types.ts';
 import type { IAdapterDiscoveryCopy } from '../lib/discovery-copy/index.ts';
+import { SITE_GHOST_LINK_CLASS_NAME } from '../lib/site/index.ts';
+
 import StatusBadge from './status-badge.astro';
 
 interface Props {
@@ -112,11 +114,11 @@ const { entry } = adapter;
           {target.qualificationEvidence && (
             <ActionLink
               aria-label={`View qualification evidence for ${adapter.id} target ${target.id}`}
-              class="w-fit shrink-0"
+              class={`w-fit shrink-0 ${SITE_GHOST_LINK_CLASS_NAME}`}
               href={target.qualificationEvidence.url}
               target="_blank"
               rel="noopener noreferrer"
-              variant="outline"
+              variant="ghost"
             >
               Qualification evidence
               <ExternalLink

@@ -8,6 +8,7 @@ import { withBase } from '@moldea.ai/website-ui/site';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 
 import type { IRepositoryFormatSpecification } from '../../lib/repository-format-specification/index.ts';
+import { SITE_GHOST_LINK_CLASS_NAME } from '../../lib/site/index.ts';
 
 interface Props {
   rendered: IRenderedMarkdownDocument;
@@ -59,9 +60,10 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Repository Format s
         />
       </ActionLink>
       <ActionLink
+        class={SITE_GHOST_LINK_CLASS_NAME}
         href={withBase('/packages/core/', basePath)}
         size="md"
-        variant="outline"
+        variant="ghost"
       >
         <Braces
           class="size-3.5"
