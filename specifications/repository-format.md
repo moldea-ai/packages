@@ -114,7 +114,8 @@ An **unresolved requirement** is explicit project state describing missing or un
 
 A valid project always contains:
 
-```text
+<!-- prettier-ignore -->
+```yaml
 moldea/
   moldea.yaml
   project.md
@@ -122,7 +123,8 @@ moldea/
 
 The project grows progressively as needed:
 
-```text
+<!-- prettier-ignore -->
+```yaml
 moldea/
   moldea.yaml
   project.md

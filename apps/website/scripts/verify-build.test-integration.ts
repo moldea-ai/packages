@@ -3,6 +3,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DEFAULT_BASE_PATH, normalizeBasePath } from '@moldea.ai/website-ui/site';
 
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 
@@ -59,6 +60,26 @@ describe('production discovery guards', () => {
     replaceArtifactText('llms.txt', 'https://skill.moldea.ai/', 'https://example.com/');
     expect(() => verifyProductionBuild(directory)).toThrow('llms.txt omits');
   });
+  test.skipIf(normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH) !== '/')(
+    'rejects a homepage with stale structured description at a domain root',
+    () => {
+      const html = readFileSync(join(directory, 'index.html'), 'utf8');
+      const structuredSource = /<script type="application\/ld\+json">([^<]+)<\/script>/u.exec(
+        html,
+      )?.[1];
+      expect(structuredSource).toBeDefined();
+      const structuredData = JSON.parse(structuredSource ?? '') as Record<string, unknown>;
+
+      replaceArtifactText(
+        'index.html',
+        structuredSource ?? '',
+        JSON.stringify({ ...structuredData, description: 'A stale project description.' }),
+      );
+      expect(() => verifyProductionBuild(directory)).toThrow(
+        'inconsistent WebSite structured data',
+      );
+    },
+  );
   test('rejects a new-tab link that loses its external-link icon', () => {
     replaceArtifactText('index.html', 'data-external-link-icon', 'data-missing-link-icon');
     expect(() => verifyProductionBuild(directory)).toThrow(

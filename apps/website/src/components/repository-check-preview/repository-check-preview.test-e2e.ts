@@ -74,7 +74,7 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(badges.getByRole('listitem')).toHaveCount(3);
       const heading = hero.getByRole('heading', { level: 1 });
       const badgeBounds = await badges.boundingBox();
-      const eyebrow = hero.getByText('Open-source tools for AI agents', { exact: true });
+      const eyebrow = hero.getByText('Open-source repository tools', { exact: true });
       const eyebrowBounds = await eyebrow.boundingBox();
       const headingBounds = await heading.boundingBox();
       const previewBounds = await preview.boundingBox();

@@ -462,9 +462,10 @@ export const createSearchRecords = (
   recordsByRoute.set('/capabilities/', {
     route: '/capabilities/',
     title: 'Capabilities',
-    description: 'Executable examples of deterministic package capabilities.',
+    description:
+      'Executable examples of project context, structural checks, decisions, and runtime connections.',
     searchText:
-      'Capabilities structure agents decisions runtime wiring repository access command line deterministic checks',
+      'Capabilities project context knowledge structure decisions agents runtime wiring repository access command line deterministic checks',
   });
   for (const group of capabilities.groups) {
     const route = `/capabilities/#${group.id}`;
@@ -515,12 +516,12 @@ export const createLlmsText = (
   const lines = [
     '# moldea packages',
     '',
-    '> The open-source deterministic package foundation that powers moldea, the behavioral integrity layer for AI agents.',
+    '> Open-source CLI and TypeScript packages for project context, decision records, and structural checks in Git.',
     '',
-    'This site documents repository-owned packages and runtime compatibility. Checks validate structure and declared references, not code semantics or agent behavior.',
+    'These tools read project knowledge and validate structure and declared references. Runtime-agent instructions and adapters are optional; checks do not establish code semantics or agent behavior.',
     '',
     `- [${gettingStarted.title}](${gettingStarted.route}): ${gettingStarted.description}`,
-    '- [Capabilities](/capabilities/): Executable examples of structure, agents, decisions, runtime wiring, repository inspection, and CLI operations.',
+    '- [Capabilities](/capabilities/): Executable examples of project context, structure, decisions, optional runtime-agent connections, repository inspection, and CLI operations.',
     '- [moldea Agent Skill](https://skill.moldea.ai/): Repository adoption, installation, workflows, and tutorials.',
     '',
     '## Skill & Core Tooling',

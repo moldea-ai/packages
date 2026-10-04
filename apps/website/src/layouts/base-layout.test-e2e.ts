@@ -398,7 +398,7 @@ for (const width of HEADING_ROLE_WIDTHS) {
 
       const displayTitle = page.getByRole('heading', {
         level: 1,
-        name: 'Keep agent instructions and code connected.',
+        name: 'Structure context. Check connections.',
       });
       const sectionTitle = page.getByRole('heading', {
         level: 2,
@@ -442,7 +442,7 @@ test('publishes unique canonical, social, and structured search metadata', async
   const homeUrl = new URL(toPublicPath('/'), siteUrl).href;
 
   await page.goto(toPublicPath('/'));
-  await expect(page).toHaveTitle(`Keep agent instructions and code connected · ${SITE_NAME}`);
+  await expect(page).toHaveTitle(`Project context and structural checks · ${SITE_NAME}`);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', homeUrl);
   await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', homeUrl);
   await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
@@ -465,6 +465,7 @@ test('publishes unique canonical, social, and structured search metadata', async
       '@type': 'WebSite',
       name: SITE_NAME,
       alternateName: 'packages.moldea.ai',
+      description: await page.locator('meta[name="description"]').getAttribute('content'),
       url: homeUrl,
     });
   } else {
@@ -597,7 +598,10 @@ for (const theme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: theme });
     await page.goto(toPublicPath('/repository-format/'));
     const plainText = page.locator('pre:has(> code.language-text)').first();
-    const yaml = page.locator('pre:has(> code.language-yaml)').first();
+    const yaml = page
+      .getByLabel('Code block', { exact: true })
+      .filter({ has: page.locator('code.language-yaml') })
+      .first();
     await expect(plainText).toHaveCSS('white-space', 'pre-wrap');
     await expect(plainText).toHaveCSS('overflow-wrap', 'anywhere');
     await expect(yaml).toHaveCSS('white-space', 'pre');
@@ -619,7 +623,10 @@ test('copies exact highlighted and literal code across direct and client navigat
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto(toPublicPath('/repository-format/'));
 
-  const highlightedCode = page.locator('pre.shiki:has(> code)').first();
+  const highlightedCode = page
+    .getByLabel('Code block', { exact: true })
+    .filter({ has: page.locator('code.language-text') })
+    .first();
   const highlightedHeader = highlightedCode.locator(
     'xpath=preceding-sibling::*[1][@data-code-copy-header]',
   );

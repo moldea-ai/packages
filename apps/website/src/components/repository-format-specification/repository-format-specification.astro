@@ -1,6 +1,7 @@
 ---
 import { Braces, ExternalLink } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
+import CodeBlock from '@moldea.ai/website-ui/code-block';
 import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import type { IRenderedMarkdownDocument } from '@moldea.ai/website-ui/markdown';
@@ -86,12 +87,11 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Repository Format s
             Minimum repository
           </h2>
         </div>
-        <pre
-          class="overflow-x-auto rounded-lg border bg-code p-4 text-sm leading-6 text-code-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          tabindex="0"
-          aria-label="Minimum Repository Format tree"><code>moldea/
-  moldea.yaml
-  project.md</code></pre>
+        <CodeBlock
+          ariaLabel="Minimum Repository Format tree"
+          language="yaml"
+          source={'moldea/\n  moldea.yaml\n  project.md'}
+        />
       </section>
       <nav
         class="surface-card grid content-start gap-2 p-5"

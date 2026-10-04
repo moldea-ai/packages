@@ -3,7 +3,7 @@ export const DEFAULT_SITE_URL = 'https://packages.moldea.ai';
 export const SITE_NAME = 'moldea packages';
 export const SITE_ALTERNATE_NAME = 'packages.moldea.ai';
 export const SOCIAL_IMAGE_ALT =
-  'moldea packages, open-source behavioral integrity tooling for AI agents';
+  'moldea logo with the tagline: Structure context. Align behavior. Ship with confidence.';
 
 // secondary navigation stays transparent in light mode and retains its dark surface
 export const SITE_GHOST_LINK_CLASS_NAME =

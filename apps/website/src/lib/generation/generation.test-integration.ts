@@ -575,7 +575,7 @@ test('publishes one authored guide across routes, search, and llms with Skill an
   expect(records[0]).toMatchObject({ title: guide.title, description: guide.description });
   expect(records[0].searchText).toContain('Check an adopted repository locally');
   expect(records[0].searchText).toContain('Collaborate in Cloud');
-  expect(guide.markdown).toContain('[moldea Cloud](https://moldea.ai)');
+  expect(guide.markdown).toContain('[`moldea Cloud`](https://moldea.ai)');
   expect(model.llmsText).toContain(`[${guide.title}](${guide.route}): ${guide.description}`);
   expect(model.llmsText).toContain('[moldea Agent Skill](https://skill.moldea.ai/)');
   expect(model.searchRecords.every(({ route }) => route.startsWith('/'))).toBe(true);
