@@ -4,6 +4,48 @@ import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const toPublicPath = (route: string): string => withBase(route, basePath);
 
+for (const width of [320, 1440]) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`matches the specification code-block surface at ${width}px in ${theme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ height: 900, width });
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto(toPublicPath('/repository-format/'));
+
+      const minimumTree = page.getByLabel('Minimum Repository Format tree');
+      const specificationBlock = page
+        .getByLabel('Code block', { exact: true })
+        .filter({ has: page.locator('code.language-yaml') })
+        .first();
+
+      await expect(minimumTree.locator('code')).toHaveText('moldea/\n  moldea.yaml\n  project.md');
+      const minimumRepository = page.getByRole('region', {
+        name: 'Minimum repository',
+        exact: true,
+      });
+      await expect(minimumRepository.getByText('YAML', { exact: true })).toBeVisible();
+      await expect(minimumRepository.getByRole('button', { name: 'Copy code' })).toBeVisible();
+      const repositoryTrees = page.locator('pre').filter({ hasText: /^moldea\//u });
+      await expect(repositoryTrees).toHaveCount(3);
+      for (const tree of await repositoryTrees.all()) {
+        const toolbar = tree.locator('xpath=preceding-sibling::*[1][@data-code-copy-header]');
+        await expect(toolbar.getByText('YAML', { exact: true })).toBeVisible();
+      }
+      await expect(minimumTree).toHaveCSS(
+        'background-color',
+        await specificationBlock.evaluate((element) => getComputedStyle(element).backgroundColor),
+      );
+      await minimumTree.focus();
+      await expect(minimumTree).toBeFocused();
+      await expect(minimumTree).not.toHaveCSS('box-shadow', 'none');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+    });
+  }
+}
+
 test('presents the official contract and its complete property reference', async ({ page }) => {
   await page.setViewportSize({ height: 720, width: 1280 });
   await page.goto(toPublicPath('/repository-format/'));

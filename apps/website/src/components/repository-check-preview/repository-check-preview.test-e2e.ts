@@ -74,18 +74,44 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(badges.getByRole('listitem')).toHaveCount(3);
       const heading = hero.getByRole('heading', { level: 1 });
       const badgeBounds = await badges.boundingBox();
-      const eyebrow = hero.getByText('Open-source tools for AI agents', { exact: true });
+      const eyebrow = hero.getByText('Open-source repository tools', { exact: true });
       const eyebrowBounds = await eyebrow.boundingBox();
       const headingBounds = await heading.boundingBox();
+      const copyBounds = await heading.locator('..').boundingBox();
       const previewBounds = await preview.boundingBox();
+      const heroBounds = await hero.boundingBox();
+      const heroInset = width >= 1024 ? 80 : width >= 640 ? 72 : 56;
+      expect(Math.min(copyBounds!.y, previewBounds!.y) - heroBounds!.y).toBeCloseTo(heroInset, 0);
       expect(badgeBounds!.y + badgeBounds!.height).toBeLessThan(headingBounds!.y);
       // badges belong to the text column, with the same 28px gap used by the Skill hero
       expect(eyebrowBounds!.y - badgeBounds!.y - badgeBounds!.height).toBeCloseTo(28, 0);
       expect(badgeBounds!.x).toBe(headingBounds!.x);
       expect(badgeBounds!.width).toBeLessThanOrEqual(headingBounds!.width);
       if (width >= 1024) {
+        expect(copyBounds!.y + copyBounds!.height / 2).toBeCloseTo(
+          previewBounds!.y + previewBounds!.height / 2,
+          0,
+        );
         expect(previewBounds!.x).toBeGreaterThan(headingBounds!.x + headingBounds!.width);
         await expect(preview).toBeInViewport({ ratio: 1 });
+        for (const titleId of [
+          'inspection-title',
+          'repository-contents-title',
+          'available-adapters-title',
+        ]) {
+          const headerBottoms = await page.locator(`#${titleId}`).evaluate((element) => {
+            const header = element.closest('header');
+            const [titleColumn, descriptionColumn] = header?.children ?? [];
+            if (!titleColumn || !descriptionColumn) return null;
+            return {
+              title: titleColumn.getBoundingClientRect().bottom,
+              description: descriptionColumn.getBoundingClientRect().bottom,
+            };
+          });
+          expect(headerBottoms).not.toBeNull();
+          if (!headerBottoms) return;
+          expect(headerBottoms.title).toBeCloseTo(headerBottoms.description, 0);
+        }
       } else {
         expect(previewBounds!.y).toBeGreaterThan(headingBounds!.y + headingBounds!.height);
       }

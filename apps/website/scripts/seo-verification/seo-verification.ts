@@ -26,6 +26,7 @@ const WebsiteSchema = z.object({
   '@type': z.literal('WebSite'),
   name: z.string().min(1),
   alternateName: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
+  description: z.string().min(1),
   url: z.url(),
 });
 
@@ -149,10 +150,15 @@ const parseStructuredData = (elements: IHtmlElement[]) => {
     .map((element) => StructuredDataSchema.parse(JSON.parse(getTextContent(element))));
 };
 
-/** Verifies the WebSite or breadcrumb structured data required for one page. */
+/**
+ * Verifies the WebSite identity and page description, or the page's breadcrumb trail.
+ * @throws
+ * - If structured data is missing or disagrees with the page metadata or canonical home.
+ */
 const verifyStructuredData = (
   artifact: IHtmlSeoArtifact,
   structuredData: z.infer<typeof StructuredDataSchema>[],
+  description: string,
   homePageUrl: string,
   siteName: string,
   websiteStructuredDataUrl: string | null,
@@ -173,7 +179,11 @@ const verifyStructuredData = (
 
     const websiteRecord = WebsiteSchema.parse(websiteRecords[0]);
 
-    if (websiteRecord.name !== siteName || websiteRecord.url !== websiteStructuredDataUrl) {
+    if (
+      websiteRecord.name !== siteName ||
+      websiteRecord.description !== description ||
+      websiteRecord.url !== websiteStructuredDataUrl
+    ) {
       throw new Error(`${artifact.url} has inconsistent WebSite structured data.`);
     }
     return;
@@ -324,6 +334,8 @@ const verifySocialMetadata = (
 /**
  * Verifies indexability, unique metadata, canonical URLs, social cards, structured data, and sitemap alignment.
  * @param artifacts The generated HTML and sitemap sources with their canonical deployment context.
+ * @throws
+ * - If required metadata or discovery output is missing, malformed, duplicated, or inconsistent.
  */
 export const verifySeoArtifacts = (artifacts: ISeoArtifacts): void => {
   const sitemapUrls = parseSitemapUrls(artifacts.sitemapSources);
@@ -403,6 +415,7 @@ export const verifySeoArtifacts = (artifacts: ISeoArtifacts): void => {
     verifyStructuredData(
       artifact,
       parseStructuredData(elements),
+      description,
       artifacts.homePageUrl,
       artifacts.siteName,
       artifacts.websiteStructuredDataUrl,

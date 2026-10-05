@@ -72,6 +72,7 @@ const createWebsite = () => ({
   '@type': 'WebSite',
   name: SITE_NAME,
   alternateName: 'packages.moldea.ai',
+  description: 'Open-source behavioral integrity packages.',
   url: HOME_URL,
 });
 
@@ -80,6 +81,25 @@ const createSitemap = (urls: string[]): string => {
 };
 
 describe('verifySeoArtifacts', () => {
+  test('rejects a WebSite description that disagrees with the page metadata', () => {
+    expect(() =>
+      verifySeoArtifacts({
+        homePageUrl: HOME_URL,
+        htmlArtifacts: [
+          createIndexableHtml({
+            description: 'Current project context and structural checks.',
+            structuredData: createWebsite(),
+            title: 'Project context · moldea packages',
+            url: HOME_URL,
+          }),
+        ],
+        sitemapSources: [createSitemap([HOME_URL])],
+        siteName: SITE_NAME,
+        websiteStructuredDataUrl: HOME_URL,
+      }),
+    ).toThrow('has inconsistent WebSite structured data');
+  });
+
   test('accepts unique canonical pages and excludes noindex artifacts from the sitemap', () => {
     const documentationUrl = `${HOME_URL}packages/core/`;
 
