@@ -1,5 +1,12 @@
 ---
-import { ArrowRight, ExternalLink, FileCheckCorner, GitBranch, ScanSearch } from '@lucide/astro';
+import {
+  ArrowDown,
+  ArrowRight,
+  ExternalLink,
+  FileCheckCorner,
+  GitBranch,
+  ScanSearch,
+} from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
@@ -74,7 +81,7 @@ const basePath = import.meta.env.BASE_URL;
             <ActionLink
               href="#how-it-works"
               size="lg"
-              >See how it works <ArrowRight
+              >See how it works <ArrowDown
                 class="size-4"
                 aria-hidden="true"
               /></ActionLink
@@ -84,7 +91,10 @@ const basePath = import.meta.env.BASE_URL;
               href={withBase('/getting-started/', basePath)}
               size="lg"
               variant="ghost"
-              >Start using the tools</ActionLink
+              >Start using the tools <ArrowRight
+                class="size-4"
+                aria-hidden="true"
+              /></ActionLink
             >
           </div>
           <p class="mt-5 text-sm leading-7 text-muted-foreground">
