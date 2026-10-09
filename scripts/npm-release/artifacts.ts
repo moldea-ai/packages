@@ -162,6 +162,40 @@ export const parseNpmReleaseChecksumManifest = (
 };
 
 /**
+ * Requires the current consumer closure to match the artifacts qualified by downstream consumers.
+ * @param actualManifest The checksums from the trusted public-package build.
+ * @param consumerManifest The reviewed downstream-consumer checksum selection.
+ * @param expectedNames The complete current CLI closure artifact names.
+ * @throws If consumer evidence is missing, stale, duplicated, or describes different bytes.
+ */
+export const verifyNpmReleaseConsumerChecksums = (
+  actualManifest: string,
+  consumerManifest: string,
+  expectedNames: readonly string[],
+): void => {
+  const expected = parseNpmReleaseChecksumManifest(consumerManifest);
+  requireArtifactNames(
+    expected.map(({ fileName }) => fileName),
+    expectedNames,
+  );
+  const names = new Set(expectedNames);
+  const actual = parseNpmReleaseChecksumManifest(actualManifest).filter(({ fileName }) =>
+    names.has(fileName),
+  );
+  requireArtifactNames(
+    actual.map(({ fileName }) => fileName),
+    expectedNames,
+  );
+  const byName = (left: INpmReleaseArtifactChecksum, right: INpmReleaseArtifactChecksum): number =>
+    compareExactStrings(left.fileName, right.fileName);
+  if (JSON.stringify(actual.sort(byName)) !== JSON.stringify(expected.sort(byName))) {
+    throw new TypeError(
+      'The public package artifacts differ from the qualified consumer artifacts.',
+    );
+  }
+};
+
+/**
  * Loads canonical package manifests and derives the complete expected artifact set.
  * @param repositoryRoot The repository root containing the public project manifests.
  * @returns A promise that resolves to the expected tarball names.

@@ -1,4 +1,5 @@
 // @vitest-environment node
+import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { parse } from 'yaml';
@@ -80,7 +81,7 @@ describe('npm release workflow', () => {
     expect(ciSource).toContain('name: public-package-tarballs');
     expect(ciSource).toContain('SHA256SUMS');
     expect(ciSource).not.toContain('playwright install --with-deps chromium');
-    expect(ciSource.match(/name: public-package-tarballs/gu)).toHaveLength(13);
+    expect(ciSource.match(/^\s+name: public-package-tarballs$/gmu)).toHaveLength(13);
     expect(ciSource).toContain(
       'node projects/adapter-cloudflare-agents/scripts/runtime-compatibility/index.mjs',
     );
@@ -116,6 +117,32 @@ describe('npm release workflow', () => {
         release_project: '${{ needs.plan.outputs.project_key }}',
       },
     });
+  });
+
+  test('gates publication on the same trusted tarballs and immutable skill consumer tooling', () => {
+    const consumers = ciWorkflow.jobs?.['consumer-conformance'];
+    const skillCommit = consumers?.with?.['skill_ref'];
+    assert.ok(typeof skillCommit === 'string');
+    expect(skillCommit).toMatch(/^[0-9a-f]{40}$/u);
+    expect(consumers).toStrictEqual({
+      name: 'Exact Artifact Skill Consumers',
+      needs: 'verify',
+      permissions: { contents: 'read' },
+      uses: `moldea-ai/skill/.github/workflows/release-candidate.yml@${skillCommit}`,
+      with: {
+        artifact_name: 'public-package-tarballs',
+        packages_ref: '${{ github.sha }}',
+        skill_ref: skillCommit,
+        skill_version: '7.0.0',
+      },
+    });
+    expect(ciSource).toContain('pnpm release:checksums verify-consumers');
+    expect(ciSource).toContain(
+      'git rev-parse HEAD > "$public_packages_directory/packages-commit.txt"',
+    );
+    expect(ciSource).toContain(
+      'artifacts/public-package-tarballs/runtime-compatibility-publication.json',
+    );
   });
 
   test('plans automatic main releases while retaining manual bootstrap and recovery', () => {

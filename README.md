@@ -25,7 +25,7 @@ See [local development](docs/local-development.md) for focused commands, build a
 | [`packages/`](packages/)                                               | Private shared implementation packages                                                        |
 | [`apps/`](apps/)                                                       | Private applications, including the packages website                                          |
 | [`specifications/`](specifications/)                                   | Public cross-package contracts                                                                |
-| [`compatibility/`](compatibility/)                                     | Canonical technical runtime compatibility data                                                |
+| [`compatibility/`](compatibility/)                                     | Canonical technical runtime compatibility data and qualified downstream-consumer checksums    |
 | [`fixtures/`](fixtures/)                                               | Shared conformance fixtures                                                                   |
 | [`configs/`](configs/), [`scripts/`](scripts/), [`.github/`](.github/) | Workspace configuration and automation                                                        |
 | [`docs/`](docs/)                                                       | Concise, quickly scannable documentation of essential, durable project concepts and processes |

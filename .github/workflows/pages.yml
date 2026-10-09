@@ -13,6 +13,7 @@ on:
       - packages/**
       - projects/**
       - scripts/runtime-compatibility/**
+      - scripts/npm-release/**
       - scripts/website/**
       - specifications/repository-format.md
       - .prettierignore
@@ -112,9 +113,34 @@ jobs:
         with:
           path: apps/website/dist
 
+  availability:
+    name: Verify Advertised npm Versions
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact main commit
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install release tooling without scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Require advertised stable package versions
+        run: pnpm release:availability
+
   deploy:
     name: Deploy GitHub Pages
-    needs: build
+    needs: [build, availability]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

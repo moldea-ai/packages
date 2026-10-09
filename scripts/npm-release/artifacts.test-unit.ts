@@ -3,11 +3,45 @@ import { createHash } from 'node:crypto';
 
 import { describe, expect, test } from 'vitest';
 
-import { createNpmReleaseChecksumManifest, parseNpmReleaseChecksumManifest } from './artifacts.ts';
+import {
+  createNpmReleaseChecksumManifest,
+  parseNpmReleaseChecksumManifest,
+  verifyNpmReleaseConsumerChecksums,
+} from './artifacts.ts';
 
 const hash = (content: string): string => createHash('sha256').update(content).digest('hex');
 
 describe('npm release artifacts', () => {
+  test('binds the entire qualified consumer closure while allowing the separately owned website UI', () => {
+    const consumer = `${hash('cli')}  cli.tgz\n${hash('core')}  core.tgz\n`;
+    expect(() =>
+      verifyNpmReleaseConsumerChecksums(`${consumer}${hash('ui')}  ui.tgz\n`, consumer, [
+        'cli.tgz',
+        'core.tgz',
+      ]),
+    ).not.toThrow();
+    expect(() =>
+      verifyNpmReleaseConsumerChecksums(
+        `${hash('changed')}  cli.tgz\n${hash('core')}  core.tgz\n`,
+        consumer,
+        ['cli.tgz', 'core.tgz'],
+      ),
+    ).toThrow('differ from the qualified');
+  });
+
+  test.each([
+    ['missing', `${hash('cli')}  cli.tgz\n`],
+    ['duplicate', `${hash('cli')}  cli.tgz\n${hash('cli')}  cli.tgz\n`],
+    ['unexpected', `${hash('cli')}  cli.tgz\n${hash('extra')}  extra.tgz\n`],
+  ])(
+    'rejects %s consumer evidence even when its remaining bytes match',
+    (_description, consumer) => {
+      const actual = `${hash('cli')}  cli.tgz\n${hash('core')}  core.tgz\n`;
+      expect(() =>
+        verifyNpmReleaseConsumerChecksums(actual, consumer, ['cli.tgz', 'core.tgz']),
+      ).toThrow('artifact set is inconsistent');
+    },
+  );
   test('creates sorted deterministic checksums for the exact artifact set', () => {
     const manifest = createNpmReleaseChecksumManifest(
       [
