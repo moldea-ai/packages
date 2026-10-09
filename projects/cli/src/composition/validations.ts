@@ -1,7 +1,5 @@
 import { satisfies as doesVersionSatisfy, valid as isValidVersion, validRange } from 'semver';
 
-import type { IRuntimeAdapter } from '@moldea.ai/core/adapter';
-
 import {
   MOLDEA_CLI_ADAPTER_PACKAGE_PREFIX,
   MOLDEA_CLI_CUSTOM_ADAPTER_ID,
@@ -31,10 +29,10 @@ const hasUniquePositiveIntegers = (entries: readonly number[]): boolean =>
   new Set(entries).size === entries.length;
 
 const createActiveAdapterMap = (
-  adapters: readonly IRuntimeAdapter[],
+  adapters: IMoldeaCliCompositionStateInput['activeAdapters'],
   coreRepositoryFormatVersions: readonly number[],
-): ReadonlyMap<string, IRuntimeAdapter> | null => {
-  const adapterMap = new Map<string, IRuntimeAdapter>();
+): ReadonlyMap<string, IMoldeaCliCompositionStateInput['activeAdapters'][number]> | null => {
+  const adapterMap = new Map<string, IMoldeaCliCompositionStateInput['activeAdapters'][number]>();
 
   for (const adapter of adapters) {
     if (

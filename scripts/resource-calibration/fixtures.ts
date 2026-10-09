@@ -24,6 +24,12 @@ export type ICalibrationWorkload =
   | 'cyclic-alias'
   | 'deep-syntax'
   | 'large-syntax'
+  | 'large-comment'
+  | 'large-template'
+  | 'large-regex'
+  | 'large-jsx'
+  | 'large-function-comment'
+  | 'maximum-diagnostic'
   | 'mixed-adapters'
   | 'imported-mutation';
 
@@ -46,6 +52,17 @@ export const CALIBRATION_WORKLOADS: readonly ICalibrationWorkload[] = [
   'large-syntax',
   'mixed-adapters',
   'imported-mutation',
+];
+
+// additional complete-bridge workloads retain the existing file and diagnostic envelopes
+export const NODE_CALIBRATION_WORKLOADS: readonly ICalibrationWorkload[] = [
+  ...CALIBRATION_WORKLOADS,
+  'large-comment',
+  'large-template',
+  'large-regex',
+  'large-jsx',
+  'large-function-comment',
+  'maximum-diagnostic',
 ];
 
 // fixed shipped-adapter set exercised together by the aggregate workload
@@ -168,6 +185,23 @@ const appendDenseSyntax = (source: string, sourceBytes: number): string => {
   return `${source}\nconst syntax = [${'0,'.repeat(Math.floor(remaining / 2))}];\n`;
 };
 
+/** Fills the existing file envelope with valid low-density syntax in a referenced source. */
+const appendLowDensitySyntax = (source: string, workload: ICalibrationWorkload): string => {
+  const delimiters: Record<string, [string, string]> = {
+    'large-comment': ['\n/*', '*/\n'],
+    'large-template': ['\nconst padding = `', '`;\n'],
+    'large-regex': ['\nconst padding = /', '/;\n'],
+    'large-jsx': ['\nconst padding = <span>', '</span>;\n'],
+    'large-function-comment': ['\nfunction padding() { /*', '*/ }\n'],
+  };
+  const selected = delimiters[workload];
+  if (selected === undefined) throw new TypeError('The low-density workload is invalid.');
+  const [prefix, suffix] = selected;
+  const remaining = 8_388_608 - Buffer.byteLength(source + prefix + suffix);
+  if (remaining < 0) throw new TypeError('The fixture exceeds the existing file envelope.');
+  return source + prefix + 'x'.repeat(remaining) + suffix;
+};
+
 /** Exercises registered Eve tools alongside dense agent and shared schema sources. */
 const createDenseEveEntries = (toolCount: number): IMemoryRepositoryEntry[] => {
   const fixture = loadFixture('eve');
@@ -262,12 +296,47 @@ export const createCalibrationEntries = (
   workload: ICalibrationWorkload,
   largeSyntaxBytes?: number,
 ): readonly IMemoryRepositoryEntry[] => {
+  if (workload === 'maximum-diagnostic')
+    return [
+      { path: '/moldea/project.md', type: 'file', content: '# Maximum diagnostic calibration\n' },
+      {
+        path: '/moldea/moldea.yaml',
+        type: 'file',
+        content: JSON.stringify({
+          version: 1,
+          context: Object.fromEntries(
+            Array.from({ length: 10_000 }, (_, index) => [
+              `/moldea/context/missing-${index}.md`,
+              {},
+            ]),
+          ),
+        }),
+      },
+    ];
   if (workload === 'mixed-adapters') return createMixedAdapterEntries(largeSyntaxBytes);
   if (workload.startsWith('dense-eve-'))
     return createDenseEveEntries(Number(workload.slice('dense-eve-'.length)));
   const fixture = loadFixture(
     workload === 'deep-eve' || workload === 'broad-eve' ? 'eve' : 'anthropic',
   );
+
+  if (
+    [
+      'large-comment',
+      'large-template',
+      'large-regex',
+      'large-jsx',
+      'large-function-comment',
+    ].includes(workload)
+  ) {
+    const source = fixture.entries.find((entry) => entry.path === '/src/agent.ts');
+    if (source === undefined) throw new TypeError('The runtime source fixture is missing.');
+    source.text = appendLowDensitySyntax(source.text, workload);
+    if (workload === 'large-jsx') {
+      source.path = '/src/agent.tsx';
+      fixture.manifest = fixture.manifest.replaceAll('/src/agent.ts', '/src/agent.tsx');
+    }
+  }
 
   if (workload === 'shared-source-many-agent' || workload === 'multi-page') {
     addSharedAgents(fixture, 64);

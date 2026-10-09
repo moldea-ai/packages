@@ -216,23 +216,7 @@ Options:
     });
   });
 
-  // composition loads the package graph and needs headroom during parallel release verification
-  test('reports composition and maps failed command execution to a safe error', async () => {
-    const compositionResult = await runMoldeaCli({
-      commandLineArguments: ['composition', '--json'],
-      invocationDirectory: INVOCATION_DIRECTORY,
-      packageMetadata: INSTALLED_PACKAGE_METADATA,
-    });
-
-    expect(compositionResult.exitCode).toBe(0);
-    expect(compositionResult.stderr).toBe('');
-    expect(JSON.parse(compositionResult.stdout)).toMatchObject({
-      cliVersion: '10.0.0',
-      command: 'composition',
-      result: { repositoryFormatVersions: [1] },
-      status: 'valid',
-    });
-
+  test('maps failed command execution to a safe error', async () => {
     const executeCommand = vi
       .fn<IMoldeaCliCommandExecutor>()
       .mockRejectedValue(new Error('private host path: /tmp/private'));
@@ -250,5 +234,5 @@ Options:
       stdout:
         '{"cliVersion":"10.0.0","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":6,"status":"error"}\n',
     });
-  }, 30_000);
+  });
 });

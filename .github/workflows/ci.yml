@@ -253,12 +253,16 @@ jobs:
           "${{ runner.temp }}/public-package-tarballs"
 
   cli-runtime-compatibility:
-    name: CLI Runtime (Node.js ${{ matrix.node-version }})
+    name: CLI Runtime (${{ matrix.os }}, Node.js ${{ matrix.node-version }})
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
         node-version:
           - 22.11.0
           - 22.x

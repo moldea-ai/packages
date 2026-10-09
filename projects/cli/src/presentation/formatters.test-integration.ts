@@ -9,6 +9,8 @@ import {
   type IMemoryRepositoryEntry,
 } from '@moldea.ai/repository/memory';
 
+import { INSTALLED_PACKAGE_METADATA } from '../composition/composition.test-fixtures.js';
+
 import { executeMoldeaCliCoreInspection } from '../core-composition/index.js';
 import { createMoldeaCliInspectExecutionResult } from '../cli-execution/results.js';
 
@@ -62,6 +64,7 @@ const inspectCompleteProject = async (): Promise<IProjectInspectionPageResult> =
 
   return (await executeMoldeaCliCoreInspection({
     command: 'inspect',
+    packageMetadata: INSTALLED_PACKAGE_METADATA,
     repository: createMemoryRepositoryReader(entries),
     resourceLimits: {
       maxDiagnostics: 10_000,

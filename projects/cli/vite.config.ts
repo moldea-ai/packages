@@ -5,6 +5,7 @@ import { createLibraryConfig } from '../../configs/vite/library.config.js';
 const libraryConfig = createLibraryConfig({
   entry: {
     moldea: 'src/bin/index.ts',
+    'adapter-registry': 'src/core-composition/registry.ts',
   },
   externalPackages: [
     '@moldea.ai/adapter-anthropic',

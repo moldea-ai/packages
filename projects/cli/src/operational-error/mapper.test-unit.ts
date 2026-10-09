@@ -12,11 +12,17 @@ import { GitContentTransformUnsupportedException } from '../repository-content-t
 import { MoldeaCliOutputPageException } from '../output-page/index.js';
 import { MoldeaCliProjectContentException } from '../project-content/index.js';
 import { MoldeaCliProjectScopeException } from '../project-scope/index.js';
+import { MoldeaCliCompositionException } from '../composition/index.js';
 
 import { mapMoldeaCliOperationalError } from './mapper.js';
 
 describe('mapMoldeaCliOperationalError', () => {
   test.each([
+    [
+      new MoldeaCliCompositionException(),
+      'COMPOSITION_STATE_INVALID',
+      'The installed composition state is invalid.',
+    ],
     [
       new MoldeaCliOutputPageException('OUTPUT_BUDGET_TOO_SMALL'),
       'OUTPUT_BUDGET_TOO_SMALL',
@@ -40,6 +46,55 @@ describe('mapMoldeaCliOperationalError', () => {
       path: null,
       retryable: false,
       source: 'cli',
+    });
+  });
+
+  test('keeps verified heap capacity and unknown usage in safe JSON metadata', () => {
+    const error = new CoreOperationException({
+      code: 'RESOURCE_LIMIT_EXCEEDED',
+      operation: 'create-project-inspection',
+      limit: 'maxAnalysisHeapBytes',
+      limitMaximum: 560 * 1_048_576,
+      observedUsage: null,
+      nextAction: 'review-inspection-capacity',
+      cause: new Error('private native diagnostics'),
+    });
+    expect(mapMoldeaCliOperationalError(error)).toStrictEqual({
+      code: error.code,
+      message: 'A Core resource limit was exceeded.',
+      retryable: false,
+      source: 'core',
+      path: null,
+      details: {
+        operation: error.operation,
+        limit: error.limit,
+        limitMaximum: error.limitMaximum,
+        observedUsage: null,
+        nextAction: 'review-inspection-capacity',
+      },
+    });
+  });
+
+  test.each([
+    ['INSPECTION_BUSY', true, 'Project inspection capacity is busy. Try again shortly.'],
+    ['INSPECTION_TIMEOUT', true, 'The isolated project inspection timed out.'],
+    ['INSPECTION_PROCESS_FAILED', false, 'The isolated project inspection failed.'],
+  ] as const)('maps %s without inventing capacity metadata', (code, retryable, message) => {
+    expect(
+      mapMoldeaCliOperationalError(
+        new CoreOperationException({
+          code,
+          operation: 'create-project-inspection',
+          cause: new Error('private'),
+        }),
+      ),
+    ).toStrictEqual({
+      code,
+      retryable,
+      message,
+      path: null,
+      source: 'core',
+      details: { operation: 'create-project-inspection' },
     });
   });
 

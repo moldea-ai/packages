@@ -30,5 +30,8 @@ export const CORE_OPERATION_ERROR_MESSAGES = Object.freeze({
   ADAPTER_EXECUTION_FAILED: 'A runtime adapter failed during inspection.',
   CONTENT_INVALID: 'The requested canonical content is invalid.',
   INVALID_ARGUMENT: 'The Core operation received an invalid argument.',
+  INSPECTION_BUSY: 'Project inspection capacity is busy. Try again shortly.',
+  INSPECTION_TIMEOUT: 'The isolated project inspection timed out.',
+  INSPECTION_PROCESS_FAILED: 'The isolated project inspection failed.',
   RESOURCE_LIMIT_EXCEEDED: 'A Core resource limit was exceeded.',
 } as const satisfies Readonly<Record<ICoreOperationErrorCode, string>>);

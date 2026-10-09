@@ -4,7 +4,7 @@
 
 Source-neutral, deterministic, content-safe interpretation of the `moldea` repository format.
 
-Version 6 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. It performs no filesystem, Git, or network access independently. Project validation returns content-free summaries, diagnostics, evidence, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
+Version 6 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. The main, format, and adapter entry points remain environment-neutral. Repository access belongs to the caller-supplied reader. Project validation returns content-free summaries, diagnostics, evidence, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
 
 ## Install
 
@@ -17,6 +17,7 @@ pnpm add @moldea.ai/core@6 @moldea.ai/repository@2
 - `@moldea.ai/core` exposes Core construction, operations, results, diagnostics, limits, and exceptions.
 - `@moldea.ai/core/format` exposes repository-format contracts.
 - `@moldea.ai/core/adapter` exposes the per-agent runtime-adapter contract and bounded reader utilities.
+- `@moldea.ai/core/node` exposes supervised Node inspection with asynchronous paging and disposal. It imports only a caller-selected trusted installed adapter registry, never project application code.
 
 ## Text and document parsing
 

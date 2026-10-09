@@ -10,6 +10,7 @@ export type {
 } from './types.js';
 
 // validation
+export { MoldeaCliCompositionException } from './exception.js';
 export { isMoldeaCliCompositionStateValid } from './validations.js';
 
 // transformation

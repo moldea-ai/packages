@@ -5,6 +5,8 @@ import path from 'node:path';
 
 import { isCompatiblePackageDependency } from '../compatible-dependency/index.mjs';
 
+import { verifyPackedNodeInspection } from './node-inspection.mjs';
+
 /** Selects one unambiguous package tarball from the prepared artifact directory. */
 const selectPackageTarball = (tarballNames, pattern, packageName) => {
   const matchingNames = tarballNames.filter((tarballName) => pattern.test(tarballName));
@@ -274,7 +276,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(
       compositionEnvelope.cliVersion === cliVersion &&
         compositionEnvelope.command === 'composition' &&
-        compositionEnvelope.schemaVersion === 5,
+        compositionEnvelope.schemaVersion === 6,
       'The composition envelope is invalid.',
     );
     assertRuntimeInvariant(
@@ -421,11 +423,11 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(inspectResult.status === 0, 'The installed CLI inspection failed.');
     assertRuntimeInvariant(inspectResult.stderr === '', 'The inspection command wrote stderr.');
     assertRuntimeInvariant(
-      inspectEnvelope.schemaVersion === 5 &&
+      inspectEnvelope.schemaVersion === 6 &&
         inspectEnvelope.result?.project?.project?.path === '/moldea/project.md' &&
         !inspectResult.stdout.includes('# Project') &&
         !inspectResult.stdout.includes('"content"'),
-      'Inspection did not preserve the content-free schema 5 contract.',
+      'Inspection did not preserve the content-free schema 6 contract.',
     );
     assertRuntimeInvariant(
       JSON.stringify(
@@ -443,14 +445,14 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(
       scopeResult.status === 0 &&
         scopeResult.stderr === '' &&
-        scopeEnvelope.schemaVersion === 5 &&
+        scopeEnvelope.schemaVersion === 6 &&
         scopeEnvelope.result?.relevant === true,
       'The installed CLI scope command failed.',
     );
     assertRuntimeInvariant(
       contentResult.status === 0 &&
         contentResult.stderr === '' &&
-        contentEnvelope.schemaVersion === 5 &&
+        contentEnvelope.schemaVersion === 6 &&
         contentEnvelope.result?.asset?.path === '/moldea/project.md' &&
         contentEnvelope.result?.chunk?.content === '# Project\n',
       'The installed CLI content command failed.',
@@ -462,6 +464,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       'JSON output contains ANSI control sequences.',
     );
     assertRuntimeInvariant(statusBefore.equals(statusAfter), 'The CLI changed repository state.');
+    await verifyPackedNodeInspection(consumerDirectory, environment);
   } finally {
     await rm(consumerDirectory, { force: true, recursive: true });
   }

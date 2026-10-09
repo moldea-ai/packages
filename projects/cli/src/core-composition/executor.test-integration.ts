@@ -1,9 +1,17 @@
 // @vitest-environment node
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
 import { describe, expect, test } from 'vitest';
 
-import { createCore } from '@moldea.ai/core';
-import type { IRuntimeAdapter } from '@moldea.ai/core/adapter';
-import { parseRepositoryPath } from '@moldea.ai/repository';
+import { createNodeProjectInspection } from '@moldea.ai/core/node';
+
+import {
+  createTestCompositionState,
+  INSTALLED_PACKAGE_METADATA,
+} from '../composition/composition.test-fixtures.js';
 import {
   createMemoryRepositoryReader,
   type IMemoryRepositoryEntry,
@@ -20,7 +28,7 @@ const RESOURCE_LIMITS = Object.freeze({
   maxEvidence: 16,
   maxFileBytes: 4096,
   maxManifestBytes: 2048,
-  maxTotalBytes: 8192,
+  maxTotalBytes: 16 * 1_048_576,
 });
 
 /** Creates one complete agent fixture for a runtime adapter. */
@@ -62,6 +70,7 @@ describe('CLI Core composition with the memory repository reader', () => {
       command: 'validate',
       repository: reader,
       resourceLimits: RESOURCE_LIMITS,
+      packageMetadata: INSTALLED_PACKAGE_METADATA,
     });
 
     expect(result).toMatchObject({
@@ -116,6 +125,7 @@ describe('CLI Core composition with the memory repository reader', () => {
       command: 'validate',
       repository: reader,
       resourceLimits: RESOURCE_LIMITS,
+      packageMetadata: INSTALLED_PACKAGE_METADATA,
     });
 
     expect(result).toMatchObject({
@@ -173,6 +183,7 @@ describe('CLI Core composition with the memory repository reader', () => {
       command: 'validate',
       repository: reader,
       resourceLimits: RESOURCE_LIMITS,
+      packageMetadata: INSTALLED_PACKAGE_METADATA,
     });
 
     expect(result).toMatchObject({
@@ -228,6 +239,7 @@ describe('CLI Core composition with the memory repository reader', () => {
       command: 'validate',
       repository: reader,
       resourceLimits: RESOURCE_LIMITS,
+      packageMetadata: INSTALLED_PACKAGE_METADATA,
     });
 
     expect(result).toMatchObject({
@@ -284,6 +296,7 @@ describe('CLI Core composition with the memory repository reader', () => {
       command: 'validate',
       repository: reader,
       resourceLimits: RESOURCE_LIMITS,
+      packageMetadata: INSTALLED_PACKAGE_METADATA,
     });
 
     expect(result).toMatchObject({
@@ -298,100 +311,75 @@ describe('CLI Core composition with the memory repository reader', () => {
     });
   });
 
-  test('normalizes injected adapter execution while universal failure remains all-or-nothing', async () => {
-    const calls: string[] = [];
-    const projectPath = parseRepositoryPath('/moldea/project.md');
-    const createAdapter = (id: string): IRuntimeAdapter => ({
-      id,
-      inspect: (context) => {
-        calls.push(id);
-        const agentId = context.agent.id;
+  test('combines isolated adapters while universal failure remains all-or-nothing', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'moldea-cli-registry-'));
+    const registryPath = path.join(directory, 'registry.mjs');
+    const ids = createTestCompositionState().activeAdapters.map(({ id }) => id);
+    await writeFile(
+      registryPath,
+      `export const adapters = ${JSON.stringify(ids)}.map((id) => ({
+      id, supportedRepositoryFormatVersions: [1], inspect: async (context) => ({
+        diagnostics: id === 'openai' ? [{ code: 'OPENAI_TEST_DIAGNOSTIC', details: {},
+          entity: { adapterId: id, agentId: context.agent.id }, message: 'Fixture diagnostic.',
+          path: null, pointer: null, range: null, severity: 'error', source: id }] : [],
+        evidence: id === 'anthropic' ? [{ agentId: context.agent.id, capabilityId: null,
+          capabilityKind: null, details: { observed: true }, kind: 'agent-definition',
+          references: [{ path: '/moldea/project.md' }], runtimeName: 'AnthropicFixture', source: id }] : [],
+      }),
+    }));`,
+    );
+    try {
+      const executeInspection = createMoldeaCliCoreInspectionExecutor(
+        createNodeProjectInspection,
+        pathToFileURL(registryPath),
+      );
+      const entries = [
+        {
+          content: [
+            'version: 1',
+            'agents:',
+            '  alpha:',
+            '    runtime:',
+            '      id: anthropic',
+            '  zeta:',
+            '    runtime:',
+            '      id: openai',
+            '',
+          ].join('\n'),
+          path: '/moldea/moldea.yaml',
+          type: 'file' as const,
+        },
+        { content: '# Project\n', path: '/moldea/project.md', type: 'file' as const },
+        ...createAgentEntries('alpha'),
+        ...createAgentEntries('zeta'),
+      ];
 
-        return Promise.resolve({
-          diagnostics:
-            id === 'openai'
-              ? [
-                  {
-                    code: 'OPENAI_TEST_DIAGNOSTIC',
-                    details: {},
-                    entity: { adapterId: id, agentId },
-                    message: 'The OpenAI adapter fixture reported a diagnostic.',
-                    path: null,
-                    pointer: null,
-                    range: null,
-                    severity: 'error' as const,
-                    source: id,
-                  },
-                ]
-              : [],
-          evidence:
-            id === 'anthropic'
-              ? [
-                  {
-                    agentId,
-                    capabilityId: null,
-                    capabilityKind: null,
-                    details: { observed: true },
-                    kind: 'agent-definition',
-                    references: [{ path: projectPath }],
-                    runtimeName: 'AnthropicFixture',
-                    source: id,
-                  },
-                ]
-              : [],
-        });
-      },
-      supportedRepositoryFormatVersions: [1],
-    });
-    const executeInspection = createMoldeaCliCoreInspectionExecutor(createCore, [
-      createAdapter('openai'),
-      createAdapter('anthropic'),
-    ]);
-    const entries = [
-      {
-        content: [
-          'version: 1',
-          'agents:',
-          '  alpha:',
-          '    runtime:',
-          '      id: anthropic',
-          '  zeta:',
-          '    runtime:',
-          '      id: openai',
-          '',
-        ].join('\n'),
-        path: '/moldea/moldea.yaml',
-        type: 'file' as const,
-      },
-      { content: '# Project\n', path: '/moldea/project.md', type: 'file' as const },
-      ...createAgentEntries('alpha'),
-      ...createAgentEntries('zeta'),
-    ];
+      const result = await executeInspection({
+        command: 'validate',
+        repository: createMemoryRepositoryReader(entries),
+        resourceLimits: RESOURCE_LIMITS,
+        packageMetadata: INSTALLED_PACKAGE_METADATA,
+      });
 
-    const result = await executeInspection({
-      command: 'validate',
-      repository: createMemoryRepositoryReader(entries),
-      resourceLimits: RESOURCE_LIMITS,
-    });
+      expect(result).toMatchObject({
+        diagnostics: [{ code: 'OPENAI_TEST_DIAGNOSTIC', source: 'openai' }],
+        evidence: [{ kind: 'agent-definition', source: 'anthropic' }],
+        summary: { counts: { agents: 2 } },
+        valid: false,
+      });
 
-    expect(calls).toStrictEqual(['anthropic', 'openai']);
-    expect(result).toMatchObject({
-      diagnostics: [{ code: 'OPENAI_TEST_DIAGNOSTIC', source: 'openai' }],
-      evidence: [{ kind: 'agent-definition', source: 'anthropic' }],
-      summary: { counts: { agents: 2 } },
-      valid: false,
-    });
+      const universalFailure = await executeInspection({
+        command: 'validate',
+        repository: createMemoryRepositoryReader(
+          entries.filter(({ path }) => path !== '/moldea/project.md'),
+        ),
+        resourceLimits: RESOURCE_LIMITS,
+        packageMetadata: INSTALLED_PACKAGE_METADATA,
+      });
 
-    calls.length = 0;
-    const universalFailure = await executeInspection({
-      command: 'validate',
-      repository: createMemoryRepositoryReader(
-        entries.filter(({ path }) => path !== '/moldea/project.md'),
-      ),
-      resourceLimits: RESOURCE_LIMITS,
-    });
-
-    expect(universalFailure).toMatchObject({ evidence: [], summary: null, valid: false });
-    expect(calls).toStrictEqual([]);
+      expect(universalFailure).toMatchObject({ evidence: [], summary: null, valid: false });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 });

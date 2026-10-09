@@ -67,6 +67,34 @@ Canonical bodies exist only while the initial validation is being prepared. The 
 
 Resource refusals expose the exceeded limit name, configured maximum, observed or projected usage, and the stable `reduce-input-or-increase-limit` next action. Callers can therefore explain a refusal without receiving canonical content or implementation diagnostics.
 
+## Isolated Node inspection
+
+`createNodeProjectInspection` from `@moldea.ai/core/node` runs Core and trusted installed adapters in one analysis worker inside one supervised subprocess. The existing environment-neutral operations and synchronous prepared-inspection API remain available.
+
+The caller supplies an immutable `IRepositoryReader` and a `file:` URL for a compiled installed registry exporting `adapters`. Resolve that URL from trusted installed code. Repository declarations must never select executable modules. Authentication, provider calls, quotas, accounting, and the real reader stay in the parent. The bridge exposes only entry lookup, entry listing, and file pages, with four outstanding requests, 64 KiB file pages, and 1 MiB messages. It inherits no Node flags, preloads, inspector configuration, or credentials.
+
+The returned handle contains the existing content-free metadata, actual adapter IDs and supported formats, and the startup-reported `maxAnalysisHeapBytes`. `readPage` is asynchronous and may return fewer records than requested to fit the transport bound. Counts, order, digests, and continuation semantics are preserved. A single oversized record fails explicitly. Dispose the handle in `finally` before publishing success or beginning source post-checks. Disposal waits for actual reader work and IPC deliveries, then releases its reader reference. Retaining disposed metadata handles does not retain their input repositories.
+
+```typescript
+import { createNodeProjectInspection } from '@moldea.ai/core/node';
+
+const inspection = await createNodeProjectInspection({
+  repository,
+  adapterRegistryUrl: new URL('./adapter-registry.js', import.meta.url),
+  signal,
+});
+try {
+  const page = await inspection.readPage({ view: 'all', maxItems: 128 });
+  // Consume this content-free page and follow its continuation when needed.
+} finally {
+  await inspection.dispose();
+}
+```
+
+One installed Core owner admits one inspection at a time and rejects overlap with `INSPECTION_BUSY`. The fixed 120-second lifetime includes startup, reads, preparation, paging, and disposal. A caller may supply an earlier absolute Unix-millisecond `deadline` or cancellation signal. Cancellation reaches each real reader call. Cleanup awaits subprocess closure and actual reader settlement before releasing admission; reader implementations remain responsible for settling their work after cancellation. Disposal is idempotent and surfaces a terminal failure rather than allowing a late success.
+
+Logical retained-byte accounting reserves 48 MiB for simultaneous transport copies, including UTF-16 storage, before granting Core its remaining budget. File and total-read budgets remain unchanged. This ledger and the worker heap limit are separate from total process RSS. Verified worker heap exhaustion reports the actual V8 maximum with unknown usage; a timeout or unexplained process exit does not establish capacity exhaustion. Fixed bridge limits have no limit-raising next action. No parser file-size cutoff or heap-tuning option is exposed.
+
 ## Explicit canonical content
 
 `readCanonicalContentPage` is the only project-level Core operation that returns canonical text. It requires an explicit `/moldea/**` file path, byte offset, and `maxBytes`. It returns no more than the requested limit and adjusts the end boundary so a UTF-8 scalar is never split.

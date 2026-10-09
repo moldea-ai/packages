@@ -23,7 +23,7 @@ moldea content --path /moldea/project.md
 moldea composition
 ```
 
-The executable supports top-level and command-specific help, `moldea --version`, strict option validation, and deterministic usage failures. Repository-backed commands discover and pin a Git working tree, use a no-follow exact-path reader, and retry complete provisional operations when the selected source changes. `validate` and `inspect` run the full Core and adapter composition. `scope` and `content` do not load or verify adapters and limit Git inventory to the manifest or requested canonical path. `composition` reports installed executable state without discovering a repository.
+The executable supports top-level and command-specific help, `moldea --version`, strict option validation, and deterministic usage failures. Repository-backed commands discover and pin a Git working tree, use a no-follow exact-path reader, and retry complete provisional operations when the selected source changes. `validate` and `inspect` run the full Core and adapter composition in a supervised analysis worker. The CLI owns repository reads and closes the worker before source post-checks or successful output. `scope` and `content` do not load or verify adapters and limit Git inventory to the manifest or requested canonical path. `composition` reports installed executable state without discovering a repository.
 
 ## Package boundary
 
@@ -49,7 +49,7 @@ The package declares `preferUnplugged: true` so Yarn Plug'n'Play materializes th
 
 The executable derives its composition state from its installed manifest, actually resolved first-class package versions, active adapter singletons, Core repository-format constants, minimum Git constant, and JSON output schema constant. It carries no Runtime Compatibility Matrix or target-maturity snapshot.
 
-The executable performs no network requests, telemetry, repository writes, configured Git content transformations, temporary-index operations, or object-writing Git commands. Repository-backed commands use read-only Git and no-follow filesystem observations within at most three complete snapshot attempts. Help, version, and usage failures do not run the installation-integrity preflight. `composition` and that preflight do not invoke Git, a filesystem repository reader, a client manifest, or Core inspection; the preflight reads installed package manifests and compares them with the actual adapter and Core composition.
+The executable performs no network requests, telemetry, repository writes, configured Git content transformations, temporary-index operations, or object-writing Git commands. Repository-backed commands use read-only Git and no-follow filesystem observations within at most three complete snapshot attempts. Help, version, and usage failures do not run the installation-integrity preflight. The manifest preflight reads installed package metadata before repository discovery. Actual adapter identities are checked inside the isolated inspection. `composition` uses an empty in-memory snapshot to load and verify the installed adapters, without invoking Git or reading a client repository.
 
 ## Runtime support
 

@@ -4,11 +4,15 @@ import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 import { runCalibration } from './calibration.ts';
-import { CALIBRATION_WORKLOADS, createCalibrationEntries } from './fixtures.ts';
+import {
+  CALIBRATION_WORKLOADS,
+  NODE_CALIBRATION_WORKLOADS,
+  createCalibrationEntries,
+} from './fixtures.ts';
 
 describe('complete-workflow resource calibration', () => {
   test('keeps every synthetic path portable and fixture definitions isolated', () => {
-    for (const workload of CALIBRATION_WORKLOADS) {
+    for (const workload of NODE_CALIBRATION_WORKLOADS) {
       const entries = createCalibrationEntries(workload);
 
       expect(entries.length).toBeGreaterThan(0);

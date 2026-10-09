@@ -50,6 +50,10 @@ type IMoldeaCliCompositionLoader = (
 ) => ReturnType<IMoldeaCliCompositionResolver> | Promise<ReturnType<IMoldeaCliCompositionResolver>>;
 
 const loadInstalledComposition: IMoldeaCliCompositionLoader = async (input) => {
+  if (input.verifyRuntime === true) {
+    const { inspectMoldeaCliComposition } = await import('../core-composition/index.js');
+    return inspectMoldeaCliComposition(input);
+  }
   const { resolveInstalledMoldeaCliComposition } = await import('../composition/index.js');
 
   return resolveInstalledMoldeaCliComposition(input);
@@ -98,6 +102,8 @@ export const createMoldeaCliCommandExecutor = (
       ) {
         const compositionResolution = await compositionLoader({
           packageMetadata: input.packageMetadata,
+          verifyRuntime: command === MOLDEA_CLI_COMMANDS.Composition,
+          ...(input.signal === undefined ? {} : { signal: input.signal }),
         });
 
         if (compositionResolution.kind === 'invalid') {
@@ -208,6 +214,7 @@ export const createMoldeaCliCommandExecutor = (
           }
 
           return coreInspectionExecutor({
+            packageMetadata: input.packageMetadata,
             command: command === MOLDEA_CLI_COMMANDS.Inspect ? 'inspect' : 'validate',
             ...(inspectionCursor === null ? {} : { cursor: inspectionCursor }),
             repository,

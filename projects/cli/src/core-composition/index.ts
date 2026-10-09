@@ -1,9 +1,6 @@
-// constants
-export { ACTIVE_RUNTIME_ADAPTERS } from './constants.js';
-
 // types
 export type {
-  IMoldeaCliCoreFactory,
+  IMoldeaCliNodeInspectionFactory,
   IMoldeaCliCoreInspectionExecutor,
   IMoldeaCliCoreInspectionInput,
 } from './types.js';
@@ -12,4 +9,5 @@ export type {
 export {
   createMoldeaCliCoreInspectionExecutor,
   executeMoldeaCliCoreInspection,
+  inspectMoldeaCliComposition,
 } from './executor.js';

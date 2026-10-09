@@ -25,7 +25,10 @@ export interface IMoldeaCliCompositionResult {
 
 // actual runtime and package state checked before any command produces a result
 export interface IMoldeaCliCompositionStateInput {
-  readonly activeAdapters: readonly IRuntimeAdapter[];
+  readonly activeAdapters: readonly Pick<
+    IRuntimeAdapter,
+    'id' | 'supportedRepositoryFormatVersions'
+  >[];
   readonly coreSupportedRepositoryFormatVersions: readonly number[];
   readonly minimumGitVersion: string;
   readonly outputSchemaVersion: 6;
@@ -35,6 +38,9 @@ export interface IMoldeaCliCompositionStateInput {
 // installed input resolved through the executable's fixed runtime composition
 export interface IMoldeaCliInstalledCompositionInput {
   readonly packageMetadata: IMoldeaCliPackageMetadata;
+  readonly activeAdapters?: IMoldeaCliCompositionStateInput['activeAdapters'];
+  readonly verifyRuntime?: boolean;
+  readonly signal?: AbortSignal;
 }
 
 // all-or-nothing runtime composition resolution

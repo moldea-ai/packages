@@ -254,6 +254,7 @@ describe('createMoldeaCliCommandExecutor', () => {
     expect(coreInspection).toHaveBeenCalledWith({
       command: 'validate',
       repository: snapshot.reader,
+      packageMetadata: createCommandInput('validate').packageMetadata,
       resourceLimits: createCommandInput('validate').invocation.options.resourceLimits,
     });
   });
@@ -284,6 +285,7 @@ describe('createMoldeaCliCommandExecutor', () => {
       command: 'inspect',
       cursor: coreCursor,
       repository: snapshot.reader,
+      packageMetadata: createCommandInput('inspect').packageMetadata,
       resourceLimits: createCommandInput('inspect').invocation.options.resourceLimits,
     });
   });

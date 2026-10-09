@@ -13,6 +13,7 @@ import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
 
 import { describe, expect, test } from 'vitest';
+import ts from 'typescript';
 
 const projectDirectory = path.resolve(import.meta.dirname, '..');
 const repositoryProjectDirectory = path.resolve(projectDirectory, '..', 'repository');
@@ -48,12 +49,62 @@ const runPackageManager = (
 };
 
 const readDistributionFiles = (extension: string): readonly string[] => {
-  return readdirSync(distributionDirectory, { recursive: true })
-    .filter(
-      (fileName): fileName is string =>
-        typeof fileName === 'string' && fileName.endsWith(extension),
-    )
-    .map((fileName) => readFileSync(path.join(distributionDirectory, fileName), 'utf8'));
+  const pending = [distributionDirectory];
+  const contents: string[] = [];
+  const excluded = new Set(['_archive', '_archives', '_backup', '_backups']);
+  while (pending.length > 0) {
+    const directory = pending.pop()!;
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (excluded.has(entry.name)) continue;
+      const target = path.join(directory, entry.name);
+      if (entry.isDirectory()) pending.push(target);
+      else if (entry.isFile() && entry.name.endsWith(extension))
+        contents.push(readFileSync(target, 'utf8'));
+    }
+  }
+  return contents;
+};
+
+/** Follows actual emitted static and dynamic imports instead of excluding Node-named chunks. */
+const readNeutralImportGraphs = (): string => {
+  const pending = ['index.js', 'format.js', 'adapter.js'].map((name) =>
+    path.join(distributionDirectory, name),
+  );
+  const visited = new Set<string>();
+  const contents: string[] = [];
+  while (pending.length > 0) {
+    const target = pending.pop()!;
+    if (visited.has(target)) continue;
+    visited.add(target);
+    const relative = path.relative(distributionDirectory, target);
+    expect(
+      path.isAbsolute(relative) || relative === '..' || relative.startsWith('..' + path.sep),
+    ).toBe(false);
+    expect(
+      relative
+        .split(path.sep)
+        .some((part) => ['_archive', '_archives', '_backup', '_backups'].includes(part)),
+    ).toBe(false);
+    const source = readFileSync(target, 'utf8');
+    contents.push(source);
+    const visit = (node: ts.Node): void => {
+      const specifier =
+        ts.isImportDeclaration(node) || ts.isExportDeclaration(node)
+          ? node.moduleSpecifier
+          : ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword
+            ? node.arguments[0]
+            : undefined;
+      if (
+        specifier !== undefined &&
+        ts.isStringLiteral(specifier) &&
+        specifier.text.startsWith('.')
+      )
+        pending.push(path.resolve(path.dirname(target), specifier.text));
+      ts.forEachChild(node, visit);
+    };
+    visit(ts.createSourceFile(target, source, ts.ScriptTarget.Latest, false, ts.ScriptKind.JS));
+  }
+  return contents.join('\n');
 };
 
 /**
@@ -142,12 +193,23 @@ describe('published Core package artifacts', () => {
     const packedPaths = packResult.files.map((file) => file.path);
 
     expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '6.0.0' });
-    for (const entryName of ['index', 'format', 'adapter']) {
+    for (const entryName of [
+      'index',
+      'format',
+      'adapter',
+      'node',
+      'node-runner',
+      'analysis-worker',
+    ]) {
       expect(packedPaths).toContain(`dist/${entryName}.js`);
     }
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/format/index.d.ts');
     expect(packedPaths).toContain('dist/adapter/index.d.ts');
+    expect(packedPaths).toContain('dist/node/index.d.ts');
+    expect(
+      packedPaths.some((filePath) => /\.test-(?:unit|integration|e2e|bench)\./u.test(filePath)),
+    ).toBe(false);
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
     expect(packedPaths).toContain('cover.png');
@@ -179,7 +241,8 @@ describe('published Core package artifacts', () => {
           "const root = await import('@moldea.ai/core');",
           "const format = await import('@moldea.ai/core/format');",
           "const adapter = await import('@moldea.ai/core/adapter');",
-          'console.log(JSON.stringify({ root: Object.keys(root).sort(), format: Object.keys(format).sort(), adapter: Object.keys(adapter).sort() }));',
+          "const node = await import('@moldea.ai/core/node');",
+          'console.log(JSON.stringify({ root: Object.keys(root).sort(), format: Object.keys(format).sort(), adapter: Object.keys(adapter).sort(), node: Object.keys(node).sort() }));',
         ].join(''),
       ],
       { cwd: projectDirectory, encoding: 'utf8' },
@@ -192,6 +255,7 @@ describe('published Core package artifacts', () => {
         'readRuntimeAdapterFile',
       ],
       format: [],
+      node: ['createNodeProjectInspection'],
       root: [
         'CoreConfigurationException',
         'CoreOperationException',
@@ -355,14 +419,23 @@ describe('published Core package artifacts', () => {
           [
             "import { createCore } from '@moldea.ai/core';",
             "import { parseRepositoryPath } from '@moldea.ai/repository';",
+            "import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';",
+            "import { createNodeProjectInspection } from '@moldea.ai/core/node';",
+            "import { writeFileSync } from 'node:fs';",
+            "const registryUrl = new URL('./registry.mjs', import.meta.url);",
+            "writeFileSync(registryUrl, 'export const adapters = [];');",
+            'const isolated = await createNodeProjectInspection({ repository: createMemoryRepositoryReader([]), adapterRegistryUrl: registryUrl });',
+            "const page = await isolated.readPage({ maxItems: 1, view: 'diagnostics' });",
+            'const isolatedResult = { hasHeap: isolated.maxAnalysisHeapBytes > 0, hasDiagnostics: page.page.records.length > 0 };',
+            'await isolated.dispose(); await isolated.dispose();',
             'const core = createCore();',
             "const manifest = await core.parseManifest({ content: 'version: 1\\n', path: parseRepositoryPath('/moldea/moldea.yaml') });",
             "const scope = await core.matchManifestScope({ manifest: { content: 'version: 1\\n', path: parseRepositoryPath('/moldea/moldea.yaml') }, paths: ['/src/index.ts'] });",
             "const decision = await core.parseDecision({ content: '---\\nstatus: accepted\\ncreatedAt: \"2026-08-07T19:42:03.456Z\"\\n---\\nBody.\\n', path: parseRepositoryPath('/moldea/decisions/1786131723456-use-postgresql.md') });",
-            'console.log(JSON.stringify({ decision, manifest, scope }));',
+            'console.log(JSON.stringify({ decision, manifest, scope, isolated: isolatedResult }));',
           ].join(''),
         ],
-        { cwd: consumerDirectory, encoding: 'utf8' },
+        { cwd: consumerDirectory, encoding: 'utf8', timeout: 10_000 },
       );
       const runtimeResult = JSON.parse(runtimeOutput) as {
         readonly decision: {
@@ -387,6 +460,7 @@ describe('published Core package artifacts', () => {
       };
 
       expect(runtimeResult).toMatchObject({
+        isolated: { hasHeap: true, hasDiagnostics: true },
         decision: {
           decision: {
             asset: {
@@ -416,8 +490,8 @@ describe('published Core package artifacts', () => {
     }
   });
 
-  test('keeps every runtime artifact environment-neutral', () => {
-    const javascript = readDistributionFiles('.js').join('\n');
+  test('keeps main, format and adapter import graphs environment-neutral', () => {
+    const javascript = readNeutralImportGraphs();
 
     expect(javascript).not.toMatch(/from ['"]node:/u);
     expect(javascript).not.toMatch(/require\(['"](?:node:)?/u);
