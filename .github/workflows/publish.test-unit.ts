@@ -96,7 +96,7 @@ describe('npm release workflow', () => {
     );
     expect(ciWorkflow.jobs?.['verify']?.container).toStrictEqual({
       image: `mcr.microsoft.com/playwright:v${websitePackageManifest.devDependencies?.['@playwright/test']}-noble`,
-      options: '--ipc=host',
+      options: '--ipc=host --init',
     });
     expect(ciWorkflow.jobs?.['verify']?.env).toStrictEqual({
       PLAYWRIGHT_BROWSERS_PATH: '/ms-playwright',

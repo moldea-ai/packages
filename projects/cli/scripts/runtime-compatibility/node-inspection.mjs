@@ -1,11 +1,64 @@
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
-import { readFile, unlink, writeFile } from 'node:fs/promises';
+import { lstat, opendir, readFile, unlink, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 const executeFile = promisify(execFile);
+
+/**
+ * Observes only metadata in bounded known crash locations, without opening reports.
+ * @returns Bounded observations of available locations and matching artifact metadata.
+ */
+const observeCrashArtifacts = async (consumerDirectory) => {
+  const locations = [['owned-repository', consumerDirectory]];
+  if (process.platform === 'darwin')
+    locations.push(
+      ['user-diagnostics', path.join(homedir(), 'Library', 'Logs', 'DiagnosticReports')],
+      ['system-diagnostics', '/Library/Logs/DiagnosticReports'],
+      ['cores', '/cores'],
+    );
+  if (process.platform === 'win32') {
+    if (process.env.LOCALAPPDATA)
+      locations.push(
+        ['local-crash-dumps', path.join(process.env.LOCALAPPDATA, 'CrashDumps')],
+        [
+          'user-report-queue',
+          path.join(process.env.LOCALAPPDATA, 'Microsoft', 'Windows', 'WER', 'ReportQueue'),
+        ],
+      );
+    if (process.env.ProgramData)
+      locations.push([
+        'system-report-queue',
+        path.join(process.env.ProgramData, 'Microsoft', 'Windows', 'WER', 'ReportQueue'),
+      ]);
+  }
+  const observations = new Map();
+  for (const [label, directory] of locations) {
+    const artifacts = new Map();
+    try {
+      let entries = 0;
+      for await (const entry of await opendir(directory)) {
+        assert.ok(++entries <= 512, 'A crash-observation directory exceeded its metadata bound.');
+        if (
+          !/^(?:core(?:\.|$)|node.*\.(?:dmp|ips|crash)$|appcrash_node|report\..*\.json$|heap\..*\.heapsnapshot$)/iu.test(
+            entry.name,
+          )
+        )
+          continue;
+        const metadata = await lstat(path.join(directory, entry.name));
+        artifacts.set(entry.name, `${metadata.size}:${metadata.mtimeMs}`);
+      }
+      observations.set(label, { available: true, artifacts });
+    } catch (error) {
+      if (!['ENOENT', 'EACCES', 'EPERM'].includes(error.code)) throw error;
+      observations.set(label, { available: false, artifacts });
+    }
+  }
+  return observations;
+};
 
 /** Waits only for the known qualification subprocess, never arbitrary host processes. */
 const waitForOwnedExit = async (pid) => {
@@ -22,8 +75,12 @@ const waitForOwnedExit = async (pid) => {
   throw new Error('The owned inspection supervisor survived parent termination.');
 };
 
-/** Exercises the real packed Node export, handled worker exhaustion, and parent loss. */
+/**
+ * Exercises the real packed Node export, handled worker exhaustion, and parent loss.
+ * @returns Completion after assertions and owned process/file cleanup.
+ */
 export const verifyPackedNodeInspection = async (consumerDirectory, environment) => {
+  const crashBaseline = await observeCrashArtifacts(consumerDirectory);
   const markerPath = path.join(consumerDirectory, 'node-worker-ready.json');
   const blockedRegistryPath = path.join(consumerDirectory, 'node-blocked-registry.mjs');
   const emptyRegistryPath = path.join(consumerDirectory, 'node-empty-registry.mjs');
@@ -184,6 +241,19 @@ export const verifyPackedNodeInspection = async (consumerDirectory, environment)
     parent.kill('SIGKILL');
     await parentClosed;
     await waitForOwnedExit(supervisorPid);
+    const crashAfter = await observeCrashArtifacts(consumerDirectory);
+    const crashObservation = [...crashAfter].map(([location, observation]) => ({
+      location,
+      available: observation.available,
+      changedArtifacts: [...observation.artifacts].filter(
+        ([name, metadata]) => crashBaseline.get(location)?.artifacts.get(name) !== metadata,
+      ).length,
+    }));
+    process.stdout.write(JSON.stringify({ platform: process.platform, crashObservation }) + '\n');
+    assert.ok(
+      crashObservation.every((observation) => observation.changedArtifacts === 0),
+      'Expected worker exhaustion or parent termination created a crash artifact.',
+    );
   } finally {
     await cleanupOwnedResources();
   }

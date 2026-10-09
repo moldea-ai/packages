@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-noble
-      options: --ipc=host
+      options: --ipc=host --init
     env:
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:

@@ -143,7 +143,12 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
   const homeDirectory = path.join(consumerDirectory, '.home');
   const configDirectory = path.join(consumerDirectory, '.config');
   const hooksDirectory = path.join(consumerDirectory, '.hooks');
-  const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  // the official Windows Node distribution bundles npm beside node.exe; .cmd needs a shell
+  const npmExecutable = process.platform === 'win32' ? process.execPath : 'npm';
+  const npmPrefixArguments =
+    process.platform === 'win32'
+      ? [path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js')]
+      : [];
 
   try {
     await Promise.all(
@@ -160,6 +165,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     execFileSync(
       npmExecutable,
       [
+        ...npmPrefixArguments,
         'install',
         '--ignore-scripts',
         '--engine-strict',
@@ -465,6 +471,16 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     );
     assertRuntimeInvariant(statusBefore.equals(statusAfter), 'The CLI changed repository state.');
     await verifyPackedNodeInspection(consumerDirectory, environment);
+    execFileSync(
+      process.execPath,
+      [
+        '--experimental-strip-types',
+        path.join(import.meta.dirname, 'positive-corpus.mjs'),
+        consumerDirectory,
+        executablePath,
+      ],
+      { env: environment, stdio: 'inherit' },
+    );
   } finally {
     await rm(consumerDirectory, { force: true, recursive: true });
   }
