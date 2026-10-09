@@ -1,11 +1,14 @@
+import { createRuntimeAdapterResultCollector } from '@moldea.ai/core/adapter';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
 
+import type { IClaudeAgentSdkEvidenceCollector } from '../contracts/index.js';
 import { CLAUDE_AGENT_SDK_ADAPTER_ID } from '../constants/index.js';
 import type { IClaudeAgentSdkInspectionSession } from '../contracts/index.js';
 import {
@@ -14,6 +17,8 @@ import {
   getClaudeAgentSdkAgentDefinition,
   getClaudeAgentSdkQueryWrapper,
 } from '../source-analysis/index.js';
+
+import { createDeclaredClaudeAgentSdkRelationships } from './declared-relationships.js';
 import {
   addClaudeAgentSdkDiagnostic,
   analyzeClaudeAgentSdkBoundReference,
@@ -30,8 +35,8 @@ import type { IClaudeAgentSdkInspectedAgent } from './types.js';
 const inspectAgent = async (
   session: IClaudeAgentSdkInspectionSession,
   agent: IIndexedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IClaudeAgentSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IClaudeAgentSdkInspectedAgent | null> => {
   const runtimeAgent = agent.declaration.bindings?.runtimeAgent;
 
@@ -45,7 +50,7 @@ const inspectAgent = async (
     return null;
   }
 
-  evidence.push(
+  evidence.add(() =>
     createClaudeAgentSdkEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -55,7 +60,10 @@ const inspectAgent = async (
       references: [
         runtimeAgent.symbol === undefined
           ? { path: runtimeAgent.path }
-          : { path: runtimeAgent.path, symbol: runtimeAgent.symbol },
+          : {
+              path: runtimeAgent.path,
+              ...(runtimeAgent.symbol === undefined ? {} : { symbol: runtimeAgent.symbol }),
+            },
       ],
       runtimeName: null,
       source: CLAUDE_AGENT_SDK_ADAPTER_ID,
@@ -78,6 +86,7 @@ const inspectAgent = async (
   }
 
   if (!analysis.exports.has(runtimeAgent.symbol)) {
+    if (analysis.hasUnresolvedExports) return null;
     addClaudeAgentSdkDiagnostic(
       diagnostics,
       'CLAUDE_AGENT_SDK_RUNTIME_AGENT_SYMBOL_NOT_FOUND',
@@ -88,19 +97,23 @@ const inspectAgent = async (
   }
 
   const queryResult = getClaudeAgentSdkQueryWrapper(analysis, runtimeAgent.symbol);
+  const runtimeSymbol = runtimeAgent.symbol;
 
   if (queryResult.kind === 'present-supported') {
-    evidence.push(
+    evidence.add(() =>
       createClaudeAgentSdkEvidence({
         agentId: agent.id,
         capabilityId: null,
         capabilityKind: null,
         details: { call: 'query', patternId: 'direct-query-wrapper' },
         kind: 'runtime-pattern',
-        references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
-        runtimeName: isClaudeAgentSdkMachineString(runtimeAgent.symbol)
-          ? runtimeAgent.symbol
-          : null,
+        references: [
+          {
+            path: runtimeAgent.path,
+            ...(runtimeAgent.symbol === undefined ? {} : { symbol: runtimeAgent.symbol }),
+          },
+        ],
+        runtimeName: isClaudeAgentSdkMachineString(runtimeSymbol) ? runtimeSymbol : null,
         source: CLAUDE_AGENT_SDK_ADAPTER_ID,
       }),
     );
@@ -124,15 +137,20 @@ const inspectAgent = async (
     definitionResult.definition,
     collectClaudeAgentSdkAgentDefinitionReferences(analysis),
   );
-  evidence.push(
+  evidence.add(() =>
     createClaudeAgentSdkEvidence({
       agentId: agent.id,
       capabilityId: null,
       capabilityKind: null,
       details: { patternId: 'programmatic-agent-definition' },
       kind: 'agent-definition',
-      references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
-      runtimeName: isClaudeAgentSdkMachineString(runtimeAgent.symbol) ? runtimeAgent.symbol : null,
+      references: [
+        {
+          path: runtimeAgent.path,
+          ...(runtimeAgent.symbol === undefined ? {} : { symbol: runtimeAgent.symbol }),
+        },
+      ],
+      runtimeName: isClaudeAgentSdkMachineString(runtimeSymbol) ? runtimeSymbol : null,
       source: CLAUDE_AGENT_SDK_ADAPTER_ID,
     }),
   );
@@ -155,18 +173,24 @@ const inspectAgent = async (
  * - ENTRY_NOT_FILE: The requested repository entry is not a file.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
  * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
  * - INVALID_SOURCE_DATA: The repository source returned invalid data.
- * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
- * - ABORTED: The repository operation or inspection signal was aborted.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectClaudeAgentSdk = async (
   context: IRuntimeAdapterContext,
 ): Promise<IRuntimeAdapterResult> => {
   context.signal?.throwIfAborted();
   const session = createClaudeAgentSdkInspectionSession(context);
-  const evidence: IRuntimeAdapterEvidence[] = [];
-  const diagnostics: IAdapterDiagnostic[] = [];
+  const collector = createRuntimeAdapterResultCollector(context);
+  const relationships = createDeclaredClaudeAgentSdkRelationships(context, collector, session);
+  const { evidence, diagnostics } = relationships;
+  await relationships.inspectExports();
+  await relationships.inspectInstructionSource();
   const inspectedAgents: IClaudeAgentSdkInspectedAgent[] = [];
   const inspected = await inspectAgent(session, context.agent, evidence, diagnostics);
 
@@ -194,8 +218,6 @@ export const inspectClaudeAgentSdk = async (
   await inspectClaudeAgentSdkTools(session, inspectedAgents, evidence, diagnostics);
   context.signal?.throwIfAborted();
 
-  return Object.freeze({
-    diagnostics: Object.freeze(diagnostics),
-    evidence: Object.freeze(evidence),
-  });
+  relationships.finalize();
+  return collector.finalize();
 };

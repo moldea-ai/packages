@@ -5,6 +5,34 @@ import type { IOpenAiAdapterDiagnosticCode, IOpenAiDiagnosticInput } from '../co
 
 // stable OpenAI adapter diagnostic code and message catalog
 export const OPENAI_ADAPTER_DIAGNOSTICS = Object.freeze({
+  OPENAI_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent input-schema symbol was not found.',
+    severity: 'error',
+  },
+  OPENAI_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool-implementation symbol was not found.',
+    severity: 'error',
+  },
+  OPENAI_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool output-schema symbol was not found.',
+    severity: 'error',
+  },
+  OPENAI_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-implementation symbol was not found.',
+    severity: 'error',
+  },
+  OPENAI_SKILL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-registration symbol was not found.',
+    severity: 'error',
+  },
+  OPENAI_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND: {
+    message: 'The declared variable-provider symbol was not found.',
+    severity: 'error',
+  },
+  OPENAI_INSTRUCTION_SOURCE_MISMATCH: {
+    message: 'The declared instruction loader does not consume the canonical instruction source.',
+    severity: 'error',
+  },
   OPENAI_INSTRUCTION_LOADER_NOT_WIRED: {
     message: 'The declared instruction loader is not wired to the detected Responses API call.',
     severity: 'error',

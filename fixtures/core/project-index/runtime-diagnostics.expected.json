@@ -1,0 +1,118 @@
+{
+  "complete universal project": [
+    {
+      "code": "CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED",
+      "details": {
+        "reason": "unsupported-source-pattern",
+        "relationship": "runtime-agent"
+      },
+      "entity": {
+        "adapterId": "custom",
+        "agentId": "alpha"
+      },
+      "message": "The declared runtime relationship could not be verified.",
+      "path": "/src/agents.ts",
+      "pointer": null,
+      "range": null,
+      "severity": "warning",
+      "source": "custom"
+    },
+    {
+      "code": "CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED",
+      "details": {
+        "reason": "unsupported-source-pattern",
+        "relationship": "tool-implementation"
+      },
+      "entity": {
+        "adapterId": "custom",
+        "agentId": "alpha",
+        "capabilityId": "audit",
+        "capabilityKind": "tool"
+      },
+      "message": "The declared runtime relationship could not be verified.",
+      "path": "/src/audit.ts",
+      "pointer": null,
+      "range": null,
+      "severity": "warning",
+      "source": "custom"
+    }
+  ],
+  "agent capability combinations": [
+    {
+      "code": "CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED",
+      "details": {
+        "reason": "unsupported-source-pattern",
+        "relationship": "skill-implementation"
+      },
+      "entity": {
+        "adapterId": "custom",
+        "agentId": "skill-only",
+        "capabilityId": "document",
+        "capabilityKind": "skill"
+      },
+      "message": "The declared runtime relationship could not be verified.",
+      "path": "/.agents/skills/document/SKILL.md",
+      "pointer": null,
+      "range": null,
+      "severity": "warning",
+      "source": "custom"
+    },
+    {
+      "code": "CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED",
+      "details": {
+        "reason": "unsupported-source-pattern",
+        "relationship": "skill-implementation"
+      },
+      "entity": {
+        "adapterId": "custom",
+        "agentId": "both",
+        "capabilityId": "triage",
+        "capabilityKind": "skill"
+      },
+      "message": "The declared runtime relationship could not be verified.",
+      "path": "/.agents/skills/triage/SKILL.md",
+      "pointer": null,
+      "range": null,
+      "severity": "warning",
+      "source": "custom"
+    },
+    {
+      "code": "CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED",
+      "details": {
+        "reason": "unsupported-source-pattern",
+        "relationship": "tool-implementation"
+      },
+      "entity": {
+        "adapterId": "custom",
+        "agentId": "both",
+        "capabilityId": "inspect",
+        "capabilityKind": "tool"
+      },
+      "message": "The declared runtime relationship could not be verified.",
+      "path": "/src/inspect.ts",
+      "pointer": null,
+      "range": null,
+      "severity": "warning",
+      "source": "custom"
+    },
+    {
+      "code": "CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED",
+      "details": {
+        "reason": "unsupported-source-pattern",
+        "relationship": "tool-implementation"
+      },
+      "entity": {
+        "adapterId": "custom",
+        "agentId": "tool-only",
+        "capabilityId": "lookup",
+        "capabilityKind": "tool"
+      },
+      "message": "The declared runtime relationship could not be verified.",
+      "path": "/src/lookup.ts",
+      "pointer": null,
+      "range": null,
+      "severity": "warning",
+      "source": "custom"
+    }
+  ]
+}

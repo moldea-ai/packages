@@ -1,14 +1,15 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import {
   getCallableExportState,
   isModuleBindingVisible,
   unwrapExpression,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 
+import type { ILangChainEvidenceCollector } from '../contracts/index.js';
 import { LANGCHAIN_ADAPTER_ID, LANGCHAIN_TARGET_ID } from '../constants/index.js';
 import type {
   ILangChainBindingResult,
@@ -16,6 +17,7 @@ import type {
   ILangChainInspectionSession,
 } from '../contracts/index.js';
 import { classifyLangChainLoaderCall } from '../source-analysis/index.js';
+
 import {
   addLangChainDiagnostic,
   addLangChainUnverifiedRelationship,
@@ -63,12 +65,17 @@ const classifyInstruction = (
   return Object.freeze({ ...result, instructionForm: 'direct-loader-call' });
 };
 
-/** Inspects one declared instruction loader against the supported system prompt surface. */
+/**
+ * Inspects one declared instruction loader against the supported system prompt surface.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectLangChainInstruction = async (
   session: ILangChainInspectionSession,
   inspected: ILangChainInspectedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ILangChainEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = inspected.agent.declaration.bindings?.instructionLoader;
 
@@ -118,7 +125,7 @@ export const inspectLangChainInstruction = async (
   const result = classifyInstruction(inspected, boundReference);
 
   if (result.kind === 'wired') {
-    evidence.push(
+    evidence.instruction(() =>
       createLangChainEvidence({
         agentId: inspected.agent.id,
         capabilityId: null,
@@ -133,7 +140,7 @@ export const inspectLangChainInstruction = async (
           inspected.agent.declaration.bindings?.runtimeAgent as IRepositoryReference,
           boundReference,
         ],
-        runtimeName: boundReference.symbol,
+        runtimeName: boundReference.symbol ?? null,
         source: LANGCHAIN_ADAPTER_ID,
       }),
     );

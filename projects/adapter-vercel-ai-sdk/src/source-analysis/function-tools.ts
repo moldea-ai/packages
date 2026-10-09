@@ -50,6 +50,8 @@ export const getVercelAiSdkFunctionTool = (
   const exported = analysis.exports.get(symbol);
 
   if (exported === undefined) {
+    if (analysis.hasUnresolvedExports)
+      return Object.freeze({ declaration: analysis.sourceFile, kind: 'present-unsupported' });
     return Object.freeze({ kind: 'absent' });
   }
 

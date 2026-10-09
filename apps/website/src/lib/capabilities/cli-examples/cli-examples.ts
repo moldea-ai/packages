@@ -14,6 +14,7 @@ import { RUNTIME_EXAMPLES } from '../runtime-examples/index.ts';
 import { CLI_FIXTURE_FILES } from './constants.ts';
 import {
   CliCollectionResult,
+  CliInspectionResult,
   CliCompositionResult,
   CliContentResult,
   type ICliEnvelope,
@@ -157,7 +158,7 @@ const commandCase = (
 
 /**
  * Executes the declared CLI bin in an isolated Git fixture and verifies its read-only behavior.
- * @returns Validated schema 5 excerpts with real exit statuses and no host-specific identities.
+ * @returns Validated schema 6 excerpts with real exit statuses and no host-specific identities.
  * @throws
  * - A CLI result excerpt does not match the executed response.
  */
@@ -213,7 +214,8 @@ export const createCliExamples = async (
     const before = await captureFixtureState(workspace.directory);
     const examples: ICapabilityCase[] = [];
     const validation = await run(['validate']);
-    const validationResult = CliCollectionResult.parse(validation.envelope.result);
+    const validationResult = CliInspectionResult.parse(validation.envelope.result);
+    assertCapabilityFacts(validationResult.runtimeInspection, 'complete');
     assertCapabilityFacts(
       [
         validationResult.valid,
@@ -234,12 +236,14 @@ export const createCliExamples = async (
         validation.exitStatus,
         {
           valid: validationResult.valid,
+          runtimeInspection: validationResult.runtimeInspection,
           diagnosticCount: validationResult.diagnosticCount ?? 0,
           errorCount: validationResult.errorCount ?? 0,
           warningCount: validationResult.warningCount ?? 0,
         },
         {
           valid: validationResult.valid,
+          runtimeInspection: validationResult.runtimeInspection,
           diagnosticCount: validationResult.diagnosticCount ?? 0,
           errorCount: validationResult.errorCount ?? 0,
           warningCount: validationResult.warningCount ?? 0,
@@ -248,7 +252,8 @@ export const createCliExamples = async (
       ),
     );
     const inspection = await run(['inspect']);
-    const inspectionResult = CliCollectionResult.parse(inspection.envelope.result);
+    const inspectionResult = CliInspectionResult.parse(inspection.envelope.result);
+    assertCapabilityFacts(inspectionResult.runtimeInspection, 'complete');
     const paths = inspectionResult.page.records.flatMap(({ path }) =>
       typeof path === 'string' ? [path] : [],
     );
@@ -269,11 +274,13 @@ export const createCliExamples = async (
         inspection.exitStatus,
         {
           paths,
+          runtimeInspection: inspectionResult.runtimeInspection,
           counts: inspectionResult.counts ?? {},
           hasContinuation: inspectionResult.page.cursor !== null,
         },
         {
           valid: inspectionResult.valid,
+          runtimeInspection: inspectionResult.runtimeInspection,
           counts: inspectionResult.counts ?? {},
           page: { records: paths.map((path) => ({ path })) },
         },
@@ -467,7 +474,8 @@ export const createCliExamples = async (
     await workspace.write({ path: '/moldea/moldea.yaml', content: invalidManifest });
     const beforeInvalid = await captureFixtureState(workspace.directory);
     const invalid = await run(['validate']);
-    const invalidResult = CliCollectionResult.parse(invalid.envelope.result);
+    const invalidResult = CliInspectionResult.parse(invalid.envelope.result);
+    assertCapabilityFacts(invalidResult.runtimeInspection, 'not-run');
     assertCapabilityFacts(
       [
         invalid.exitStatus,
@@ -497,6 +505,7 @@ export const createCliExamples = async (
       invalid.exitStatus,
       {
         valid: invalidResult.valid,
+        runtimeInspection: invalidResult.runtimeInspection,
         diagnosticCount: invalidResult.diagnosticCount ?? 0,
         errorCount: invalidResult.errorCount ?? 0,
         warningCount: invalidResult.warningCount ?? 0,
@@ -508,6 +517,7 @@ export const createCliExamples = async (
       },
       {
         valid: invalidResult.valid,
+        runtimeInspection: invalidResult.runtimeInspection,
         diagnosticCount: invalidResult.diagnosticCount ?? 0,
         errorCount: invalidResult.errorCount ?? 0,
         warningCount: invalidResult.warningCount ?? 0,
@@ -545,7 +555,8 @@ export const createCliExamples = async (
     }
     const beforeWarning = await captureFixtureState(workspace.directory);
     const warning = await run(['validate']);
-    const warningResult = CliCollectionResult.parse(warning.envelope.result);
+    const warningResult = CliInspectionResult.parse(warning.envelope.result);
+    assertCapabilityFacts(warningResult.runtimeInspection, 'incomplete');
     assertCapabilityFacts(
       [
         warning.exitStatus,
@@ -586,6 +597,7 @@ export const createCliExamples = async (
         warning.exitStatus,
         {
           valid: warningResult.valid,
+          runtimeInspection: warningResult.runtimeInspection,
           diagnosticCount: warningResult.diagnosticCount ?? 0,
           errorCount: warningResult.errorCount ?? 0,
           warningCount: warningResult.warningCount ?? 0,
@@ -593,6 +605,7 @@ export const createCliExamples = async (
         },
         {
           valid: warningResult.valid,
+          runtimeInspection: warningResult.runtimeInspection,
           diagnosticCount: warningResult.diagnosticCount ?? 0,
           errorCount: warningResult.errorCount ?? 0,
           warningCount: warningResult.warningCount ?? 0,

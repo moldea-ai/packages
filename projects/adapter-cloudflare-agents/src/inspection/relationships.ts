@@ -1,14 +1,15 @@
 import type ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { classifyAiSdkDeferredLoading } from '@moldea.ai/adapter-static-analysis';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
-  IRuntimeAdapterEvidence,
   IRuntimeAdapterResolvedAgent,
 } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 
+import type { ICloudflareAgentsEvidenceCollector } from '../contracts/index.js';
 import {
   CLOUDFLARE_AGENTS_ADAPTER_ID,
   CLOUDFLARE_THINK_CONTEXT_BOUNDARY_VERSION,
@@ -25,6 +26,7 @@ import {
   classifyCloudflareAgentsInstructionLoader,
   getCloudflareAgentsOutputSchema,
 } from '../source-analysis/index.js';
+
 import {
   addCloudflareAgentsDiagnostic,
   addCloudflareAgentsWarning,
@@ -58,8 +60,8 @@ const inspectBinding = async (
     'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
   >,
   evidenceKind: 'instruction-loader' | 'schema',
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ICloudflareAgentsEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   schemaRole?: 'agent-output',
 ): Promise<void> => {
   const boundAnalysis = await hasCloudflareAgentsSymbol(
@@ -79,12 +81,14 @@ const inspectBinding = async (
       ? classifyCloudflareAgentsInstructionLoader(relationship, analysis, reference)
       : classifyCloudflareAgentsDirectBinding(relationship, analysis, reference);
 
-  if (matches !== true) {
+  if (matches === null) return;
+
+  if (matches === false) {
     addCloudflareAgentsDiagnostic(diagnostics, notWiredCode, reference.path, agent.id);
     return;
   }
 
-  evidence.push(
+  const createEvidence = () =>
     createCloudflareAgentsEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -94,8 +98,12 @@ const inspectBinding = async (
       references: [reference],
       runtimeName: reference.symbol ?? null,
       source: CLOUDFLARE_AGENTS_ADAPTER_ID,
-    }),
-  );
+    });
+  if (evidenceKind === 'instruction-loader') {
+    evidence.instruction(createEvidence);
+  } else {
+    evidence.add(createEvidence);
+  }
 };
 
 const classifyThinkInstructionVersion = (
@@ -157,8 +165,8 @@ const inspectThinkInstructionLoader = async (
   inspected: ICloudflareAgentsInspectedAgent,
   sources: ICloudflareAgentsThinkInstructions,
   reference: IRepositoryReference,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ICloudflareAgentsEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const boundAnalysis = await hasCloudflareAgentsSymbol(
     session,
@@ -184,7 +192,7 @@ const inspectThinkInstructionLoader = async (
           : null;
 
   if (result === true) {
-    evidence.push(
+    evidence.instruction(() =>
       createCloudflareAgentsEvidence({
         agentId: inspected.agent.id,
         capabilityId: null,
@@ -234,7 +242,7 @@ const inspectToolReference = async (
     ICloudflareAgentsAdapterDiagnosticCode,
     'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
   >,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<boolean> => {
   if (reference === undefined) {
     return true;
@@ -253,9 +261,13 @@ const inspectToolReference = async (
     return false;
   }
 
-  if (
-    classifyCloudflareAgentsDirectBinding(relationship, relationshipAnalysis, reference) !== true
-  ) {
+  const matches = classifyCloudflareAgentsDirectBinding(
+    relationship,
+    relationshipAnalysis,
+    reference,
+  );
+  if (matches === null) return false;
+  if (matches === false) {
     addCloudflareAgentsDiagnostic(
       diagnostics,
       notWiredCode,
@@ -275,8 +287,8 @@ const inspectTools = async (
   inspected: ICloudflareAgentsInspectedAgent,
   context: IRuntimeAdapterContext,
   isResolvedAgentSupported: (agent: IRuntimeAdapterResolvedAgent) => Promise<boolean>,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ICloudflareAgentsEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   if (inspected.tools.some((relationship) => relationship.kind === 'unresolved')) {
     return;
@@ -416,7 +428,8 @@ const inspectTools = async (
     );
 
     if (implementationMatches && inputMatches && outputMatches) {
-      evidence.push(
+      const registrationReference = tool.registration;
+      evidence.add(() =>
         createCloudflareAgentsEvidence({
           agentId: inspected.agent.id,
           capabilityId,
@@ -430,7 +443,7 @@ const inspectTools = async (
             toolName: matchedEntry.name,
           },
           kind: 'tool-registration',
-          references: [tool.registration, tool.implementation],
+          references: [registrationReference, tool.implementation],
           runtimeName: matchedEntry.name,
           source: CLOUDFLARE_AGENTS_ADAPTER_ID,
         }),
@@ -441,7 +454,7 @@ const inspectTools = async (
         ['tool-output', tool.outputSchema],
       ] as const) {
         if (reference !== undefined) {
-          evidence.push(
+          evidence.add(() =>
             createCloudflareAgentsEvidence({
               agentId: inspected.agent.id,
               capabilityId,
@@ -459,14 +472,19 @@ const inspectTools = async (
   }
 };
 
-/** Inspects manifest relationships for every supported Cloudflare runtime agent. */
+/**
+ * Inspects manifest relationships for every supported Cloudflare runtime agent.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectCloudflareAgentsRelationships = async (
   session: ICloudflareAgentsInspectionSession,
   inspectedAgents: readonly ICloudflareAgentsInspectedAgent[],
   context: IRuntimeAdapterContext,
   isResolvedAgentSupported: (agent: IRuntimeAdapterResolvedAgent) => Promise<boolean>,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ICloudflareAgentsEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   for (const inspected of inspectedAgents) {
     const bindings = inspected.agent.declaration.bindings;

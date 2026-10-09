@@ -1,5 +1,6 @@
 import type ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
 import type {
   IRuntimeAdapterEvidence,
@@ -82,9 +83,12 @@ const createEntity = (agentId: string, capabilityId?: string) =>
  * @param range The optional scalar source range.
  * @param capabilityId The optional owning tool capability.
  * @param details Safe scalar diagnostic details.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const addOpenAiAgentsSdkDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   code: Exclude<
     IOpenAiAgentsSdkAdapterDiagnosticCode,
     'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED'
@@ -95,7 +99,7 @@ export const addOpenAiAgentsSdkDiagnostic = (
   capabilityId?: string,
   details: IAdapterDiagnostic['details'] = {},
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createOpenAiAgentsSdkDiagnostic({
       code,
       details,
@@ -107,15 +111,20 @@ export const addOpenAiAgentsSdkDiagnostic = (
   );
 };
 
-/** Reports one declared relationship obscured by a recognized source candidate. */
+/**
+ * Reports one declared relationship obscured by a recognized source candidate.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addOpenAiAgentsSdkUnverifiedRelationship = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   relationship: IUnverifiedRelationship,
   path: IRepositoryPath,
   range: ISourceRange,
   agentId: string,
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createOpenAiAgentsSdkDiagnostic({
       code: 'OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
       details: { reason: 'dynamic-source-pattern', relationship },
@@ -142,11 +151,14 @@ export const locateOpenAiAgentsSdkNode = (
  * @param agentId The owning agent identifier.
  * @param capabilityId The optional owning tool capability.
  * @returns The indexed source or `null` after unsupported or invalid input.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const analyzeOpenAiAgentsSdkBoundReference = async (
   session: IOpenAiAgentsSdkInspectionSession,
   reference: IRepositoryReference,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
   capabilityId?: string,
 ): Promise<IOpenAiAgentsSdkSourceAnalysis | null> => {

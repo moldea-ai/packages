@@ -25,6 +25,7 @@ const RESOURCE_LIMITS = Object.freeze({
 
 const SOURCE = Object.freeze({ id: 'memory:test', sourceKind: 'memory' });
 const VALIDATION_RESULT = Object.freeze({
+  runtimeInspection: 'not-run' as const,
   diagnostics: Object.freeze([]),
   errorCount: 0,
   evidence: Object.freeze([]),
@@ -35,6 +36,7 @@ const VALIDATION_RESULT = Object.freeze({
   warningCount: 0,
 }) satisfies IProjectValidationResult;
 const INSPECTION_RESULT = Object.freeze({
+  runtimeInspection: 'not-run' as const,
   counts: Object.freeze({
     agents: 0,
     context: 0,
@@ -62,6 +64,7 @@ const INSPECTION_RESULT = Object.freeze({
   view: 'all',
 }) satisfies IProjectInspectionPageResult;
 const PROJECT_INSPECTION = Object.freeze({
+  runtimeInspection: 'complete' as const,
   counts: INSPECTION_RESULT.counts,
   formatVersion: INSPECTION_RESULT.formatVersion,
   inspectionDigest: INSPECTION_RESULT.inspectionDigest,

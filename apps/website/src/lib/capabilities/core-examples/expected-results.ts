@@ -938,7 +938,24 @@ export const CORE_EXPECTED_RESULTS: Record<
   },
   'tool-implementation-present': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { relationship: 'tool-implementation', reason: 'unsupported-source-pattern' },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'returns',
+          adapterId: 'custom',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/returns.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'custom',
+      },
+    ],
   },
   'skill-description-invalid': {
     valid: false,
@@ -996,7 +1013,24 @@ export const CORE_EXPECTED_RESULTS: Record<
   },
   'skill-implementation-present': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { relationship: 'skill-implementation', reason: 'unsupported-source-pattern' },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'skill',
+          capabilityId: 'returns',
+          adapterId: 'custom',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/returns.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'custom',
+      },
+    ],
   },
   'capability-description-missing': {
     valid: false,

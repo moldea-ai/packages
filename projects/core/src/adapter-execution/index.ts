@@ -13,8 +13,10 @@ import {
   validateRuntimeAdapterResult,
   type IRuntimeAdapterOutputCounts,
 } from '../adapter-validation/index.js';
+import { createRuntimeAdapterOutputBudget } from '../adapter-result-collection/index.js';
 import { normalizeDiagnostics } from '../diagnostic-utilities/index.js';
 import type { IAdapterDiagnostic } from '../diagnostics/index.js';
+import { inspectCustomRuntimeRelationships } from '../custom-runtime-inspection/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import type { ICoreOptionsSnapshot, IRuntimeAdapterSnapshot } from '../options/index.js';
@@ -32,7 +34,7 @@ const isInspectionBoundaryFailure = (error: unknown): boolean => {
     error instanceof RepositoryPathException ||
     error instanceof RepositorySourceException ||
     (error instanceof CoreOperationException &&
-      error.operation === 'validate-project' &&
+      (error.operation === 'validate-project' || error.operation === 'validate-adapter') &&
       (error.code === 'ABORTED' || error.code === 'RESOURCE_LIMIT_EXCEEDED'))
   );
 };
@@ -91,7 +93,7 @@ const createRuntimeAgentBindingIndex = (
 };
 
 const invokeAdapter = async (
-  adapter: IRuntimeAdapterSnapshot,
+  adapter: Pick<IRuntimeAdapterSnapshot, 'id' | 'inspect'>,
   agent: IIndexedAgent,
   agentBindings: IRuntimeAgentBindingIndex,
   project: IMoldeaProjectIndex,
@@ -123,6 +125,7 @@ const invokeAdapter = async (
 
   const context: IRuntimeAdapterContext = Object.freeze({
     agent: scopedAgent,
+    outputBudget: createRuntimeAdapterOutputBudget(outputCounts, options.limits),
     repository,
     resolveAgent,
     ...(signal === undefined ? {} : { signal }),
@@ -171,17 +174,20 @@ const invokeAdapter = async (
  * @param signal Optional cancellation shared by the complete inspection.
  * @returns A promise resolving to normalized evidence and adapter diagnostics.
  * @throws
- * - INVALID_REPOSITORY_PATH: An adapter repository path is invalid.
- * - ENTRY_NOT_FOUND: A requested repository entry is absent.
- * - ENTRY_NOT_FILE: A requested repository entry is not a regular file.
- * - ENTRY_NOT_DIRECTORY: A requested repository entry is not a directory.
+ * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+ * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+ * - ENTRY_NOT_FILE: The requested repository entry is not a file.
+ * - ENTRY_NOT_DIRECTORY: The requested repository entry is not a directory.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
- * - SNAPSHOT_CHANGED: The repository snapshot changed during adapter inspection.
- * - INVALID_SOURCE_DATA: The repository reader returned invalid contract data.
- * - RESOURCE_LIMIT_EXCEEDED: A Core or repository resource limit was exceeded.
- * - ABORTED: Adapter inspection or a repository operation was aborted.
- * - ADAPTER_EXECUTION_FAILED: An adapter failed or returned an invalid result.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
+ * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+ * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
+ * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
  */
 export const inspectRuntimeAdapters = async (
   project: IMoldeaProjectIndex,
@@ -204,7 +210,12 @@ export const inspectRuntimeAdapters = async (
     }
   }
 
-  for (const adapter of options.adapters) {
+  const inspections = [
+    ...options.adapters,
+    { id: 'custom', inspect: inspectCustomRuntimeRelationships },
+  ].sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
+
+  for (const adapter of inspections) {
     const agents = agentsByRuntimeId.get(adapter.id) ?? [];
     const agentBindings = createRuntimeAgentBindingIndex(agents);
 

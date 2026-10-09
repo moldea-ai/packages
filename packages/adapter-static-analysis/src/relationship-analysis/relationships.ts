@@ -13,14 +13,13 @@ import {
   isBoundIdentifier,
   isModuleBindingVisible,
   resolveBindingReferences,
-} from '../typescript-analysis/bindings.js';
-import {
+  resolveInstructionCallReferences,
   getDirectCall,
   isNullLiteral,
   isStaticLiteralValue,
   unwrapExpression,
-} from '../typescript-analysis/expressions.js';
-import { getClosedArrayIdentifiers } from '../typescript-analysis/requests.js';
+  getClosedArrayIdentifiers,
+} from '../typescript-analysis/index.js';
 
 /**
  * Classifies direct calls to one explicit instruction-loader binding.
@@ -38,6 +37,8 @@ export const classifyDirectCallRelationship = (
 ): IStaticAnalysisRelationshipResult => {
   let absentExpression: ts.Expression | null = null;
   let hasAmbiguousRelationship = hasAmbiguousCandidate;
+  let hasAbsentRelationship = false;
+  let hasPresentRelationship = false;
 
   for (const relationship of relationships) {
     if (relationship.kind === 'unresolved') {
@@ -46,6 +47,7 @@ export const classifyDirectCallRelationship = (
     }
 
     if (relationship.kind === 'absent') {
+      hasAbsentRelationship = true;
       continue;
     }
 
@@ -55,26 +57,41 @@ export const classifyDirectCallRelationship = (
     if (call !== null) {
       const callee = unwrapExpression(call.expression);
 
-      if (ts.isIdentifier(callee) && isBoundIdentifier(callee, analysis, reference)) {
-        return { kind: 'present' };
+      if (
+        ts.isIdentifier(callee) &&
+        resolveInstructionCallReferences(callee, analysis).some(
+          (candidate) => candidate.path === reference.path && candidate.symbol === reference.symbol,
+        )
+      ) {
+        hasPresentRelationship = true;
+        continue;
       }
 
       if (ts.isIdentifier(callee)) {
-        absentExpression ??= expression;
+        hasAmbiguousRelationship = true;
         continue;
       }
     }
 
     if (isStaticLiteralValue(expression)) {
+      hasAbsentRelationship = true;
       absentExpression ??= expression;
     } else {
       hasAmbiguousRelationship = true;
     }
   }
 
-  return hasAmbiguousRelationship
-    ? { kind: 'ambiguous' }
-    : { expression: absentExpression, kind: 'absent' };
+  return hasAbsentRelationship
+    ? {
+        expression: absentExpression,
+        kind: 'absent',
+        ...(hasAmbiguousRelationship ? { hasUnverifiedConsumer: true } : {}),
+      }
+    : hasAmbiguousRelationship
+      ? { kind: 'ambiguous' }
+      : hasPresentRelationship
+        ? { kind: 'present' }
+        : { expression: null, kind: 'absent' };
 };
 
 /**

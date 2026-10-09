@@ -33,7 +33,7 @@ The analyzer preserves canonical source wiring when query `verbatimPrompts`, a t
 
 Query inputs, query options, programmatic definitions, SDK MCP servers, and tool definitions are analyzed independently by relationship. Computed or duplicate relationship properties, object spreads, unsupported values, and observable mutation leave only affected relationships unresolved.
 
-Positive evidence is existential across supported query calls. Negative wiring diagnostics require every relevant candidate to be closed and contradictory, with no dynamic or availability-unresolved context that could establish the relationship.
+Tool registrations retain varying-availability behavior across calls: one supported available context can establish a tool, and a missing-wiring error requires closed absence across the relevant contexts. Instruction consumers are checked independently. A correct consumer does not suppress another consumer’s proved mismatch, and unresolved consumers receive scoped warnings. Instruction evidence also requires supported provenance from the canonical instruction or a validated mirror.
 
 ## Availability
 

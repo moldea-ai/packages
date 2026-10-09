@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest';
 import {
   indexIdentifierUses,
   indexImports,
-  indexLocalBindingNames,
+  indexLexicalBindings,
   indexModuleDeclarations,
   isBoundIdentifier,
   isModuleBindingVisible,
@@ -37,7 +37,7 @@ describe('static TypeScript bindings', () => {
     expect(imports.constructorNames).toStrictEqual(new Set(['Client', 'NamedClient']));
     expect(declarations.clientNames).toStrictEqual(new Set(['client']));
     expect(declarations.exports.get('agent')?.kind).toBe('present-supported');
-    expect(indexIdentifierUses(sourceFile).get('client')).toHaveLength(2);
+    expect(indexIdentifierUses(sourceFile).identifierUses.get('client')).toHaveLength(2);
     expect(declarations.moduleArrays.has('tools')).toBe(true);
   });
 
@@ -65,10 +65,15 @@ describe('static TypeScript bindings', () => {
 
     expect(
       isModuleBindingVisible(usage, {
+        estimatedRetainedBytes: 65536,
+        hasUnresolvedExports: false,
         clientNames: new Set(['client']),
         constructorNames: new Set(['Client']),
         exports: new Map(),
-        localBindingNames: indexLocalBindingNames(sourceFile),
+        localBindingNames: indexLexicalBindings(sourceFile).names,
+        lexicalBindings: indexLexicalBindings(sourceFile).declarations,
+        bindingMutations: new Map(),
+        bindingEscapes: new Map(),
         moduleArrays: new Map(),
         moduleConstDeclarations: new Map(),
         namedImports: new Map(),

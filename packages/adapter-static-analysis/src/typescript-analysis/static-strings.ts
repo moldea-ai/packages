@@ -8,6 +8,7 @@ import type {
 } from '../types.js';
 import { getConstExport } from './source-analysis.js';
 import { isModuleBindingVisible, resolveImportCandidatePaths } from './bindings.js';
+import { hasBindingMutation } from './mutations.js';
 import { getStaticString, unwrapExpression } from './expressions.js';
 
 const resolveCandidatePath = async <
@@ -51,7 +52,11 @@ const resolveStaticStringExpression = async <
     return Object.freeze({ expression: candidate, kind: 'supported', value: literal });
   }
 
-  if (!ts.isIdentifier(candidate) || !isModuleBindingVisible(candidate, analysis)) {
+  if (
+    !ts.isIdentifier(candidate) ||
+    !isModuleBindingVisible(candidate, analysis) ||
+    hasBindingMutation(candidate, analysis)
+  ) {
     return Object.freeze({ kind: 'unsupported' });
   }
 

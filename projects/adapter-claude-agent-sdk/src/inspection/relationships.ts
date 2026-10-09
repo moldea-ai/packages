@@ -1,5 +1,6 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import {
   getCallableExportState,
   getClosedObjectProperties,
@@ -7,15 +8,11 @@ import {
   getStaticString,
   unwrapExpression,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 
+import type { IClaudeAgentSdkEvidenceCollector } from '../contracts/index.js';
 import { CLAUDE_AGENT_SDK_ADAPTER_ID } from '../constants/index.js';
-import type {
-  IClaudeAgentSdkInspectedDefinitionAgent,
-  IClaudeAgentSdkInspectedQueryAgent,
-} from './types.js';
 import type {
   IClaudeAgentSdkInspectionSession,
   IClaudeAgentSdkRelationship,
@@ -24,6 +21,11 @@ import {
   classifyClaudeAgentSdkDirectBinding,
   classifyClaudeAgentSdkInstructionLoader,
 } from '../source-analysis/index.js';
+
+import type {
+  IClaudeAgentSdkInspectedDefinitionAgent,
+  IClaudeAgentSdkInspectedQueryAgent,
+} from './types.js';
 import {
   addClaudeAgentSdkDiagnostic,
   analyzeClaudeAgentSdkBoundReference,
@@ -35,7 +37,7 @@ const inspectCallableSymbol = async (
   session: IClaudeAgentSdkInspectionSession,
   reference: IRepositoryReference,
   agentId: string,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<boolean | null> => {
   if (reference.symbol === undefined) {
     return null;
@@ -92,8 +94,8 @@ const getInstructionRole = (relationship: IClaudeAgentSdkRelationship): string =
 const inspectQueryInstructionLoader = async (
   session: IClaudeAgentSdkInspectionSession,
   inspected: IClaudeAgentSdkInspectedQueryAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IClaudeAgentSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = inspected.agent.declaration.bindings?.instructionLoader;
 
@@ -121,7 +123,7 @@ const inspectQueryInstructionLoader = async (
     const context = inspected.wrapper.contexts[wiredIndex];
 
     if (context !== undefined) {
-      evidence.push(
+      evidence.instruction(() =>
         createClaudeAgentSdkEvidence({
           agentId: inspected.agent.id,
           capabilityId: null,
@@ -130,9 +132,12 @@ const inspectQueryInstructionLoader = async (
           kind: 'instruction-loader',
           references: [
             { path: inspected.analysis.path },
-            { path: reference.path, symbol: reference.symbol },
+            {
+              path: reference.path,
+              ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+            },
           ],
-          runtimeName: reference.symbol,
+          runtimeName: reference.symbol ?? null,
           source: CLAUDE_AGENT_SDK_ADAPTER_ID,
         }),
       );
@@ -153,8 +158,8 @@ const inspectQueryInstructionLoader = async (
 const inspectDefinitionInstructionLoader = async (
   session: IClaudeAgentSdkInspectionSession,
   inspected: IClaudeAgentSdkInspectedDefinitionAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IClaudeAgentSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = inspected.agent.declaration.bindings?.instructionLoader;
 
@@ -174,7 +179,7 @@ const inspectDefinitionInstructionLoader = async (
   );
 
   if (relationship === true) {
-    evidence.push(
+    evidence.instruction(() =>
       createClaudeAgentSdkEvidence({
         agentId: inspected.agent.id,
         capabilityId: null,
@@ -183,9 +188,12 @@ const inspectDefinitionInstructionLoader = async (
         kind: 'instruction-loader',
         references: [
           { path: inspected.analysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: CLAUDE_AGENT_SDK_ADAPTER_ID,
       }),
     );
@@ -236,8 +244,8 @@ const getOutputSchemaRelationship = (
 const inspectQueryOutputSchema = async (
   session: IClaudeAgentSdkInspectionSession,
   inspected: IClaudeAgentSdkInspectedQueryAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IClaudeAgentSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = inspected.agent.declaration.bindings?.outputSchema;
 
@@ -281,7 +289,7 @@ const inspectQueryOutputSchema = async (
   );
 
   if (results.includes(true)) {
-    evidence.push(
+    evidence.add(() =>
       createClaudeAgentSdkEvidence({
         agentId: inspected.agent.id,
         capabilityId: null,
@@ -290,9 +298,12 @@ const inspectQueryOutputSchema = async (
         kind: 'schema',
         references: [
           { path: inspected.analysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: CLAUDE_AGENT_SDK_ADAPTER_ID,
       }),
     );
@@ -309,12 +320,17 @@ const inspectQueryOutputSchema = async (
   }
 };
 
-/** Inspects canonical instruction and query-output-schema relationships. */
+/**
+ * Inspects canonical instruction and query-output-schema relationships.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectClaudeAgentSdkRelationships = async (
   session: IClaudeAgentSdkInspectionSession,
   inspected: IClaudeAgentSdkInspectedDefinitionAgent | IClaudeAgentSdkInspectedQueryAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IClaudeAgentSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   if (inspected.kind === 'query-wrapper') {
     await inspectQueryInstructionLoader(session, inspected, evidence, diagnostics);

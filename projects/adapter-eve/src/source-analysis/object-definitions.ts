@@ -1,6 +1,10 @@
 import ts from 'typescript';
 
-import { unwrapExpression } from '@moldea.ai/adapter-static-analysis';
+import {
+  unwrapExpression,
+  resolveLexicalBinding,
+  hasBindingMutation,
+} from '@moldea.ai/adapter-static-analysis';
 
 import type {
   IEveDefinitionKind,
@@ -98,7 +102,12 @@ export const getEveDefinition = (
   const callee = unwrapExpression(expression.expression);
   const helperKey = DEFINITION_HELPER_KEYS[kind];
 
-  if (!ts.isIdentifier(callee) || !analysis.helperImports[helperKey].has(callee.text)) {
+  if (
+    !ts.isIdentifier(callee) ||
+    !analysis.helperImports[helperKey].has(callee.text) ||
+    !ts.isImportSpecifier(resolveLexicalBinding(callee, analysis) ?? analysis.sourceFile) ||
+    hasBindingMutation(callee, analysis, '')
+  ) {
     return Object.freeze({ hasDefaultExport: true, kind: 'present-unsupported' });
   }
 

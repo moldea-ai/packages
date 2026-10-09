@@ -20,6 +20,16 @@
     "severity": "error"
   },
   {
+    "code": "LANGGRAPH_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND",
+    "message": "The declared instruction-loader symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "LANGGRAPH_INSTRUCTION_SOURCE_MISMATCH",
+    "message": "The declared instruction loader does not consume the canonical instruction source.",
+    "severity": "error"
+  },
+  {
     "code": "LANGGRAPH_PACKAGE_MANIFEST_INVALID",
     "message": "The owning package manifest is invalid for LangGraph dependency detection.",
     "severity": "error"
@@ -35,6 +45,16 @@
     "severity": "warning"
   },
   {
+    "code": "LANGGRAPH_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND",
+    "message": "The declared skill-implementation symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "LANGGRAPH_SKILL_REGISTRATION_SYMBOL_NOT_FOUND",
+    "message": "The declared skill-registration symbol was not found.",
+    "severity": "error"
+  },
+  {
     "code": "LANGGRAPH_SOURCE_SYNTAX_INVALID",
     "message": "The referenced LangGraph source file contains invalid TypeScript syntax.",
     "severity": "error"
@@ -42,6 +62,31 @@
   {
     "code": "LANGGRAPH_SOURCE_TEXT_INVALID",
     "message": "The referenced LangGraph source file is not valid normalized text.",
+    "severity": "error"
+  },
+  {
+    "code": "LANGGRAPH_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND",
+    "message": "The declared tool-implementation symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "LANGGRAPH_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND",
+    "message": "The declared tool input-schema symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "LANGGRAPH_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND",
+    "message": "The declared tool output-schema symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "LANGGRAPH_TOOL_REGISTRATION_SYMBOL_NOT_FOUND",
+    "message": "The declared tool-registration symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "LANGGRAPH_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND",
+    "message": "The declared variable-provider symbol was not found.",
     "severity": "error"
   },
   {

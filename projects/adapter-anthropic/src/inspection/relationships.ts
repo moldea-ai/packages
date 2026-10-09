@@ -1,5 +1,6 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import {
   classifyDirectCallRelationship,
   classifySchemaRelationship,
@@ -8,23 +9,23 @@ import {
   getClosedObjectProperties,
   getConstExport,
   getStaticString,
-  isBoundIdentifier,
   isNullLiteral,
-  isStaticLiteralValue,
   unwrapExpression,
   type IStaticAnalysisSource,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference, IToolManifestEntry } from '@moldea.ai/core/format';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
+import type { IAnthropicEvidenceCollector } from '../contracts/index.js';
 import { ANTHROPIC_ADAPTER_ID, ANTHROPIC_TOOL_NAME_PATTERN } from '../constants/index.js';
 import type {
   IAnthropicInspectionSession,
   IAnthropicMessagesAnalysis,
   IAnthropicSourceAnalysis,
 } from '../contracts/index.js';
+
 import {
   addAnthropicDiagnostic,
   addAnthropicUnverifiedRelationship,
@@ -44,7 +45,7 @@ interface IAnthropicRegistrationInspection {
 
 interface IAnthropicRegistrationShape {
   readonly detectedName: string;
-  readonly inputSchema: ts.Expression;
+  readonly inputSchema: ts.Expression | null;
   readonly properties: ReadonlyMap<string, ts.Expression>;
 }
 
@@ -61,27 +62,11 @@ const getExpressionRange = (
     ? null
     : analysis.text.locator.locateRange(expression.getStart(), expression.end);
 
-const isSupportedRegistrationInputSchema = (
-  expression: ts.Expression,
-  analysis: IStaticAnalysisSource,
-  inputSchemaReference: IRepositoryReference | undefined,
-): boolean => {
-  const candidate = unwrapExpression(expression);
-
-  return (
-    (ts.isObjectLiteralExpression(candidate) && isStaticLiteralValue(candidate)) ||
-    (ts.isIdentifier(candidate) &&
-      inputSchemaReference?.symbol !== undefined &&
-      isBoundIdentifier(candidate, analysis, inputSchemaReference))
-  );
-};
-
 const getRegistrationShape = (
   analysis: IStaticAnalysisSource,
   symbol: string,
-  inputSchemaReference?: IRepositoryReference,
 ): IAnthropicRegistrationShapeResult => {
-  const exported = getConstExport(analysis, symbol);
+  const exported = getConstExport(analysis, symbol, ['type', 'name']);
 
   if (exported.kind === 'absent') {
     return { kind: 'absent' };
@@ -142,7 +127,6 @@ const getRegistrationShape = (
     !isSupportedType ||
     detectedName === null ||
     inputSchema === undefined ||
-    !isSupportedRegistrationInputSchema(inputSchema, analysis, inputSchemaReference) ||
     !isSupportedStrict ||
     !isSupportedDescription
   ) {
@@ -151,7 +135,10 @@ const getRegistrationShape = (
 
   return {
     detectedName,
-    inputSchema,
+    inputSchema:
+      getConstExport(analysis, symbol, ['input_schema']).kind === 'present-supported'
+        ? inputSchema
+        : null,
     kind: 'present-supported',
     properties,
   };
@@ -164,8 +151,8 @@ const inspectRegistration = async (
   agent: IIndexedAgent,
   capabilityId: string,
   tool: IToolManifestEntry,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IAnthropicEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IAnthropicRegistrationInspection | null> => {
   const reference = tool.registration;
 
@@ -185,7 +172,7 @@ const inspectRegistration = async (
     return null;
   }
 
-  const shape = getRegistrationShape(registrationAnalysis, reference.symbol, tool.inputSchema);
+  const shape = getRegistrationShape(registrationAnalysis, reference.symbol);
 
   if (shape.kind === 'absent') {
     addAnthropicDiagnostic(
@@ -271,8 +258,8 @@ const inspectInputSchema = async (
   reference: IRepositoryReference,
   registrationAnalysis: IAnthropicSourceAnalysis,
   inputSchema: ts.Expression | null,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IAnthropicEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   if (reference.symbol === undefined) {
     return;
@@ -315,7 +302,7 @@ const inspectInputSchema = async (
   const relationship = classifySchemaRelationship(registrationAnalysis, inputSchema, reference);
 
   if (relationship.kind === 'present') {
-    evidence.push(
+    evidence.add(() =>
       createAnthropicEvidence({
         agentId: agent.id,
         capabilityId,
@@ -324,9 +311,12 @@ const inspectInputSchema = async (
         kind: 'schema',
         references: [
           { path: registrationAnalysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: ANTHROPIC_ADAPTER_ID,
       }),
     );
@@ -350,8 +340,8 @@ const inspectInstructionLoader = async (
   agent: IIndexedAgent,
   runtimeAnalysis: IAnthropicSourceAnalysis,
   messages: IAnthropicMessagesAnalysis,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IAnthropicEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = agent.declaration.bindings?.instructionLoader;
 
@@ -382,17 +372,6 @@ const inspectInstructionLoader = async (
     return;
   }
 
-  if (loader.kind === 'present-unsupported') {
-    addAnthropicUnverifiedRelationship(
-      diagnostics,
-      'instruction-loader',
-      'unsupported-source-pattern',
-      reference.path,
-      agent.id,
-    );
-    return;
-  }
-
   const relationship = classifyDirectCallRelationship(
     runtimeAnalysis,
     messages.requests.map((request) => request.system),
@@ -400,8 +379,18 @@ const inspectInstructionLoader = async (
     reference,
   );
 
+  if (relationship.kind === 'absent' && relationship.hasUnverifiedConsumer === true) {
+    addAnthropicUnverifiedRelationship(
+      diagnostics,
+      'instruction-loader',
+      'dynamic-source-pattern',
+      runtimeAnalysis.path,
+      agent.id,
+    );
+  }
+
   if (relationship.kind === 'present') {
-    evidence.push(
+    evidence.instruction(() =>
       createAnthropicEvidence({
         agentId: agent.id,
         capabilityId: null,
@@ -410,9 +399,12 @@ const inspectInstructionLoader = async (
         kind: 'instruction-loader',
         references: [
           { path: runtimeAnalysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: ANTHROPIC_ADAPTER_ID,
       }),
     );
@@ -440,8 +432,8 @@ const inspectToolRelationships = async (
   agent: IIndexedAgent,
   runtimeAnalysis: IAnthropicSourceAnalysis,
   messages: IAnthropicMessagesAnalysis,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IAnthropicEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const registrations: IAnthropicRegistrationInspection[] = [];
 
@@ -512,7 +504,7 @@ const inspectToolRelationships = async (
     }
 
     if (relationship.kind === 'present' && registration.isNameMatch && registration.isNameValid) {
-      evidence.push(
+      evidence.add(() =>
         createAnthropicEvidence({
           agentId: agent.id,
           capabilityId: registration.capabilityId,
@@ -521,7 +513,12 @@ const inspectToolRelationships = async (
           kind: 'tool-registration',
           references: [
             { path: runtimeAnalysis.path },
-            { path: registration.reference.path, symbol: registration.reference.symbol },
+            {
+              path: registration.reference.path,
+              ...(registration.reference.symbol === undefined
+                ? {}
+                : { symbol: registration.reference.symbol }),
+            },
           ],
           runtimeName: registration.detectedName,
           source: ANTHROPIC_ADAPTER_ID,
@@ -539,14 +536,17 @@ const inspectToolRelationships = async (
  * @param messages The relationship-specific Messages request analysis.
  * @param evidence The operation evidence collection.
  * @param diagnostics The operation diagnostic collection.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectAnthropicRelationships = async (
   session: IAnthropicInspectionSession,
   agent: IIndexedAgent,
   runtimeAnalysis: IAnthropicSourceAnalysis,
   messages: IAnthropicMessagesAnalysis,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IAnthropicEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   await inspectInstructionLoader(session, agent, runtimeAnalysis, messages, evidence, diagnostics);
   await inspectAnthropicOutputSchema(

@@ -141,7 +141,7 @@ describe('published Core package artifacts', () => {
     ) as { readonly dependencies?: Readonly<Record<string, string>> };
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '5.0.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '6.0.0' });
     for (const entryName of ['index', 'format', 'adapter']) {
       expect(packedPaths).toContain(`dist/${entryName}.js`);
     }
@@ -186,7 +186,11 @@ describe('published Core package artifacts', () => {
     );
 
     expect(JSON.parse(output)).toStrictEqual({
-      adapter: ['iterateRuntimeAdapterEntries', 'readRuntimeAdapterFile'],
+      adapter: [
+        'createRuntimeAdapterResultCollector',
+        'iterateRuntimeAdapterEntries',
+        'readRuntimeAdapterFile',
+      ],
       format: [],
       root: [
         'CoreConfigurationException',

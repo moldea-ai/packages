@@ -1,10 +1,23 @@
 import type ts from 'typescript';
 
+import type {
+  IRuntimeAdapterRecordCollector,
+  IRuntimeAdapterEvidence as ICollectedEvidence,
+} from '@moldea.ai/core/adapter';
 import type { ISourceRange } from '@moldea.ai/core';
 import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 export type ILangGraphAdapterDiagnosticCode =
+  | 'LANGGRAPH_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND'
+  | 'LANGGRAPH_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'LANGGRAPH_TOOL_REGISTRATION_SYMBOL_NOT_FOUND'
+  | 'LANGGRAPH_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'LANGGRAPH_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'LANGGRAPH_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'LANGGRAPH_SKILL_REGISTRATION_SYMBOL_NOT_FOUND'
+  | 'LANGGRAPH_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND'
+  | 'LANGGRAPH_INSTRUCTION_SOURCE_MISMATCH'
   | 'LANGGRAPH_PACKAGE_MANIFEST_INVALID'
   | 'LANGGRAPH_VERSION_UNSUPPORTED'
   | 'LANGGRAPH_SOURCE_TEXT_INVALID'
@@ -69,17 +82,23 @@ export interface ILangGraphImports {
 }
 
 export interface ILangGraphSourceAnalysis {
+  readonly estimatedRetainedBytes: number;
+  readonly hasUnresolvedExports: boolean;
   readonly clientNames: ReadonlySet<string>;
   readonly constructorNames: ReadonlySet<string>;
   readonly exports: ReadonlyMap<
     string,
     | { readonly declaration: ts.Node; readonly kind: 'absent' }
+    | { readonly declaration: ts.Node; readonly kind: 'unresolved' }
     | { readonly declaration: ts.Node; readonly kind: 'present-supported' }
     | { readonly declaration: ts.Node; readonly kind: 'present-unsupported' }
   >;
   readonly identifierUses: ReadonlyMap<string, readonly ts.Identifier[]>;
   readonly imports: ILangGraphImports;
   readonly localBindingNames: ReadonlyMap<ts.Node, ReadonlySet<string>>;
+  readonly lexicalBindings: ReadonlyMap<ts.Node, ReadonlyMap<string, ts.Node | null>>;
+  readonly bindingMutations: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
+  readonly bindingEscapes: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
   readonly moduleArrays: ReadonlyMap<
     string,
     {
@@ -212,3 +231,8 @@ export type ILangGraphAgentDefinitionResult =
       readonly kind: 'present-supported';
       readonly targetId: 'typescript-functional-api-1-4';
     };
+
+// adapter-owned evidence admission uses only Core public types in packed declarations
+export interface ILangGraphEvidenceCollector extends IRuntimeAdapterRecordCollector<ICollectedEvidence> {
+  instruction(factory: () => ICollectedEvidence): void;
+}

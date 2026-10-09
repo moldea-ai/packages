@@ -16,13 +16,17 @@ test('keeps normalization, digests, three inspection views, content, and scope r
   expect(examples.every(({ result }) => result.kind === 'inspection')).toBe(true);
 });
 
-test('keeps complete warning and error counts on both diagnostic pages', () => {
+test('keeps complete warning and error counts on every diagnostic page', () => {
   const result = examples.find(({ id }) => id === 'inspection-mixed-diagnostics')?.result;
   expect(result).toStrictEqual({
     kind: 'inspection',
     facts: {
-      counts: { diagnostics: 2, errors: 1, warnings: 1 },
+      counts: { diagnostics: 3, errors: 1, warnings: 2 },
       pages: [
+        {
+          records: [{ code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED', severity: 'warning' }],
+          hasContinuation: true,
+        },
         {
           records: [{ code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED', severity: 'warning' }],
           hasContinuation: true,
@@ -39,7 +43,7 @@ test('keeps complete warning and error counts on both diagnostic pages', () => {
 
 test.each([
   ['metadata', 5],
-  ['diagnostics', 1],
+  ['diagnostics', 2],
   ['evidence', 5],
 ])('inspection(%s) -> %d complete records', (view, total) => {
   const result = examples.find(({ id }) => id === `inspection-${view}`)?.result;

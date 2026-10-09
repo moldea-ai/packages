@@ -63,7 +63,10 @@ export const classifyEveBoundExpression = async (
 
   if (isSameModule) {
     if (!boundResult.analysis.runtimeSymbols.has(reference.symbol)) {
-      return boundResult.analysis.exports.has(reference.symbol) ? 'unresolved' : 'missing';
+      return boundResult.analysis.exports.has(reference.symbol) ||
+        boundResult.analysis.hasUnresolvedExports
+        ? 'unresolved'
+        : 'missing';
     }
 
     if (!isSupportedRuntimeSymbol(boundResult.analysis, reference.symbol, requiresFunction)) {
@@ -73,7 +76,7 @@ export const classifyEveBoundExpression = async (
     const exported = boundResult.analysis.exports.get(reference.symbol);
 
     if (exported === undefined) {
-      return 'missing';
+      return boundResult.analysis.hasUnresolvedExports ? 'unresolved' : 'missing';
     }
 
     if (

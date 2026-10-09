@@ -39,6 +39,114 @@ const analyzeRequests = (source: string) => {
 };
 
 describe('static provider requests', () => {
+  test('recognizes a local SDK client and an immutable client alias', () => {
+    const result = analyzeRequests(
+      [
+        "import Client from 'provider';",
+        'export const agent = () => {',
+        ' const client = new Client();',
+        ' const alias = client;',
+        ' return alias.messages.create({ system: loadSystem() });',
+        '};',
+      ].join('\n'),
+    );
+    expect(result.requests).toHaveLength(1);
+  });
+
+  test.each([
+    'client.messages.create = replacement;',
+    'client!.messages.create = replacement;',
+    '(<Client>client).messages.create = replacement;',
+    'Object.assign(client.messages, { create: replacement });',
+    "Object.defineProperty(client.messages, 'create', { value: replacement });",
+    "Reflect.defineProperty(client.messages, 'create', { value: replacement });",
+    'Object.defineProperties(client.messages, { create: { value: replacement } });',
+    "Object['defineProperty'](client.messages, 'create', { value: replacement });",
+    "Object.defineProperty(client, 'messages', { value: replacement });",
+    'Object.defineProperty(client, dynamic, { value: replacement });',
+    'Object.defineProperties(client, descriptors);',
+    "const Object = { defineProperty: replace }; Object.defineProperty(client, 'other', {});",
+    "const Reflect = { set: replace }; Reflect.set(client, 'other', replacement);",
+    "namespace Object { export const defineProperty = replace; } namespace Object { export const extra = 1; } Object.defineProperty(client, 'other', {});",
+    "namespace Reflect { export const set = replace; } namespace Reflect { export const extra = 1; } Reflect.set(client, 'other', replacement);",
+    'Object.setPrototypeOf(client.messages, replacement);',
+    'Reflect.setPrototypeOf(client.messages, replacement);',
+    "const alias = client.messages; Object.defineProperty(alias, 'create', { value: replacement });",
+    "Object.defineProperty(Client.prototype, 'messages', { value: replacement });",
+    'replace(client);',
+    'replace(options, client);',
+    'const alias = client.messages; replace(alias);',
+    "const define = Object.defineProperty; define(client.messages, 'create', { value: replacement });",
+    'new Decorator(client);',
+    'decorate(Client);',
+    'decorate(Client.prototype);',
+    'const alias = client.messages; alias.create = replacement;',
+    'client[dynamic].create = replacement;',
+  ])('does not retain stale method proofs (%s)', (mutation) => {
+    const result = analyzeRequests(
+      [
+        "import Client from 'provider';",
+        'const client = new Client();',
+        mutation,
+        'export const agent = () => client.messages.create({ system: loadSystem() });',
+      ].join('\n'),
+    );
+    expect(result.requests).toHaveLength(0);
+    expect(result.hasAmbiguousCandidate).toBe(true);
+  });
+
+  test.each([
+    'client.other.create = replacement;',
+    "Object.defineProperty(client, 'other', { value: replacement });",
+    "Reflect.defineProperty(client, 'other', { value: replacement });",
+    'Object.defineProperties(client, { other: { value: replacement } });',
+    'Object.assign(client, { other: replacement });',
+    "Reflect.set(client, 'other', replacement);",
+    'Object.defineProperties(client.messages, {});',
+    'consume(client.other);',
+    'consume(Client.other);',
+  ])('preserves proofs for an unrelated client member mutation (%s)', (mutation) => {
+    const result = analyzeRequests(
+      [
+        "import Client from 'provider';",
+        'const client = new Client();',
+        mutation,
+        'export const agent = () => client.messages.create({ system: loadSystem() });',
+      ].join('\n'),
+    );
+    expect(result.requests).toHaveLength(1);
+    expect(result.hasAmbiguousCandidate).toBe(false);
+  });
+
+  test.each([
+    'let alias = client; alias = replacement;',
+    'let alias = client.messages; alias = replacement;',
+  ])('preserves the original SDK client when a separate alias is rebound (%s)', (rebinding) => {
+    const result = analyzeRequests(
+      [
+        "import Client from 'provider';",
+        'const client = new Client();',
+        rebinding,
+        'export const agent = () => client.messages.create({ system: loadSystem() });',
+      ].join('\n'),
+    );
+    expect(result.requests).toHaveLength(1);
+    expect(result.hasAmbiguousCandidate).toBe(false);
+  });
+
+  test('does not recognize a shadowed SDK constructor', () => {
+    const result = analyzeRequests(
+      [
+        "import Client from 'provider';",
+        'export const agent = (Client: unknown) => {',
+        ' const client = new Client();',
+        ' return client.messages.create({ system: loadSystem() });',
+        '};',
+      ].join('\n'),
+    );
+    expect(result.requests).toHaveLength(0);
+    expect(result.hasAmbiguousCandidate).toBe(true);
+  });
   test('classifies nested object relationships independently', () => {
     const sourceFile = ts.createSourceFile(
       '/src/config.ts',

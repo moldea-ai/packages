@@ -1,5 +1,6 @@
 import type ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
 import type {
   IRuntimeAdapterEvidence,
@@ -74,9 +75,14 @@ const createEntity = (agentId: string, capabilityId?: string) =>
     ...(capabilityId === undefined ? {} : { capabilityId, capabilityKind: 'tool' as const }),
   });
 
-/** Appends one stable package-owned diagnostic. */
+/**
+ * Appends one stable package-owned diagnostic.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addLangChainDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   code: Exclude<ILangChainAdapterDiagnosticCode, 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
@@ -84,7 +90,7 @@ export const addLangChainDiagnostic = (
   capabilityId?: string,
   details: IAdapterDiagnostic['details'] = {},
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createLangChainDiagnostic({
       code,
       details,
@@ -96,15 +102,20 @@ export const addLangChainDiagnostic = (
   );
 };
 
-/** Reports one declared relationship obscured by a recognized source candidate. */
+/**
+ * Reports one declared relationship obscured by a recognized source candidate.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addLangChainUnverifiedRelationship = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   relationship: IUnverifiedRelationship,
   path: IRepositoryPath,
   agentId: string,
   capabilityId?: string,
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createLangChainDiagnostic({
       code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED',
       details: { reason: 'dynamic-source-pattern', relationship },
@@ -116,9 +127,14 @@ export const addLangChainUnverifiedRelationship = (
   );
 };
 
-/** Appends the stable diagnostic for one invalid imported relationship source. */
+/**
+ * Appends the stable diagnostic for one invalid imported relationship source.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addLangChainSourceFailureDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   failure: ILangChainSourceFailure,
   agentId: string,
   capabilityId?: string,
@@ -152,11 +168,16 @@ export const locateLangChainNode = (
 ): ISourceRange =>
   analysis.text.locator.locateRange(node.getStart(analysis.sourceFile), node.getEnd());
 
-/** Loads and validates one supported manifest-bound TypeScript source. */
+/**
+ * Loads and validates one supported manifest-bound TypeScript source.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const analyzeLangChainBoundReference = async (
   session: ILangChainInspectionSession,
   reference: IRepositoryReference,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
   capabilityId?: string,
 ): Promise<ILangChainSourceAnalysis | null> => {

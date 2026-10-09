@@ -8,6 +8,42 @@ import type {
 
 // stable LangGraph adapter diagnostic messages
 export const LANGGRAPH_ADAPTER_DIAGNOSTICS = Object.freeze({
+  LANGGRAPH_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND: {
+    message: 'The declared instruction-loader symbol was not found.',
+    severity: 'error',
+  },
+  LANGGRAPH_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool-implementation symbol was not found.',
+    severity: 'error',
+  },
+  LANGGRAPH_TOOL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool-registration symbol was not found.',
+    severity: 'error',
+  },
+  LANGGRAPH_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool input-schema symbol was not found.',
+    severity: 'error',
+  },
+  LANGGRAPH_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool output-schema symbol was not found.',
+    severity: 'error',
+  },
+  LANGGRAPH_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-implementation symbol was not found.',
+    severity: 'error',
+  },
+  LANGGRAPH_SKILL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-registration symbol was not found.',
+    severity: 'error',
+  },
+  LANGGRAPH_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND: {
+    message: 'The declared variable-provider symbol was not found.',
+    severity: 'error',
+  },
+  LANGGRAPH_INSTRUCTION_SOURCE_MISMATCH: {
+    message: 'The declared instruction loader does not consume the canonical instruction source.',
+    severity: 'error',
+  },
   LANGGRAPH_AGENT_INPUT_SCHEMA_NOT_WIRED: {
     message: 'The declared agent input schema is not wired to the detected LangGraph input schema.',
     severity: 'error',

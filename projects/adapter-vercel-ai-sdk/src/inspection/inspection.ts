@@ -1,11 +1,14 @@
+import { createRuntimeAdapterResultCollector } from '@moldea.ai/core/adapter';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
 
+import type { IVercelAiSdkEvidenceCollector } from '../contracts/index.js';
 import {
   VERCEL_AI_SDK_ADAPTER_ID,
   VERCEL_AI_SDK_GENERATION_TARGET_ID,
@@ -17,6 +20,8 @@ import {
   getVercelAiSdkToolLoopAgentDefinition,
   resolveVercelAiSdkStaticString,
 } from '../source-analysis/index.js';
+
+import { createDeclaredVercelAiSdkRelationships } from './declared-relationships.js';
 import {
   addVercelAiSdkDiagnostic,
   analyzeVercelAiSdkBoundReference,
@@ -31,8 +36,8 @@ import type { IVercelAiSdkInspectedAgent } from './types.js';
 const inspectAgent = async (
   session: IVercelAiSdkInspectionSession,
   agent: IIndexedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IVercelAiSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IVercelAiSdkInspectedAgent | null> => {
   const runtimeAgent = agent.declaration.bindings?.runtimeAgent;
 
@@ -46,7 +51,7 @@ const inspectAgent = async (
     return null;
   }
 
-  evidence.push(
+  evidence.add(() =>
     createVercelAiSdkEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -56,7 +61,10 @@ const inspectAgent = async (
       references: [
         runtimeAgent.symbol === undefined
           ? { path: runtimeAgent.path }
-          : { path: runtimeAgent.path, symbol: runtimeAgent.symbol },
+          : {
+              path: runtimeAgent.path,
+              ...(runtimeAgent.symbol === undefined ? {} : { symbol: runtimeAgent.symbol }),
+            },
       ],
       runtimeName: null,
       source: VERCEL_AI_SDK_ADAPTER_ID,
@@ -79,6 +87,9 @@ const inspectAgent = async (
   }
 
   if (!analysis.exports.has(runtimeAgent.symbol)) {
+    if (analysis.hasUnresolvedExports) {
+      return null;
+    }
     addVercelAiSdkDiagnostic(
       diagnostics,
       'VERCEL_AI_SDK_RUNTIME_AGENT_SYMBOL_NOT_FOUND',
@@ -103,14 +114,19 @@ const inspectAgent = async (
       staticId?.kind === 'supported' && isVercelAiSdkMachineString(staticId.value)
         ? staticId.value
         : null;
-    evidence.push(
+    evidence.add(() =>
       createVercelAiSdkEvidence({
         agentId: agent.id,
         capabilityId: null,
         capabilityKind: null,
         details: { targetId: VERCEL_AI_SDK_TOOL_LOOP_AGENT_TARGET_ID },
         kind: 'agent-definition',
-        references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
+        references: [
+          {
+            path: runtimeAgent.path,
+            ...(runtimeAgent.symbol === undefined ? {} : { symbol: runtimeAgent.symbol }),
+          },
+        ],
         runtimeName,
         source: VERCEL_AI_SDK_ADAPTER_ID,
       }),
@@ -130,7 +146,8 @@ const inspectAgent = async (
     return null;
   }
 
-  evidence.push(
+  const runtimeSymbol = runtimeAgent.symbol;
+  evidence.add(() =>
     createVercelAiSdkEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -140,8 +157,13 @@ const inspectAgent = async (
         targetId: VERCEL_AI_SDK_GENERATION_TARGET_ID,
       },
       kind: 'runtime-pattern',
-      references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
-      runtimeName: isVercelAiSdkMachineString(runtimeAgent.symbol) ? runtimeAgent.symbol : null,
+      references: [
+        {
+          path: runtimeAgent.path,
+          ...(runtimeAgent.symbol === undefined ? {} : { symbol: runtimeAgent.symbol }),
+        },
+      ],
+      runtimeName: isVercelAiSdkMachineString(runtimeSymbol) ? runtimeSymbol : null,
       source: VERCEL_AI_SDK_ADAPTER_ID,
     }),
   );
@@ -164,18 +186,24 @@ const inspectAgent = async (
  * - ENTRY_NOT_FILE: The requested repository entry is not a file.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
  * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
  * - INVALID_SOURCE_DATA: The repository source returned invalid data.
- * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
- * - ABORTED: The repository operation or inspection signal was aborted.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectVercelAiSdk = async (
   context: IRuntimeAdapterContext,
 ): Promise<IRuntimeAdapterResult> => {
   context.signal?.throwIfAborted();
   const session = createVercelAiSdkInspectionSession(context);
-  const evidence: IRuntimeAdapterEvidence[] = [];
-  const diagnostics: IAdapterDiagnostic[] = [];
+  const collector = createRuntimeAdapterResultCollector(context);
+  const relationships = createDeclaredVercelAiSdkRelationships(context, collector, session);
+  const { evidence, diagnostics } = relationships;
+  await relationships.inspectExports();
+  await relationships.inspectInstructionSource();
   const agents = [context.agent];
   const inspectedAgents: IVercelAiSdkInspectedAgent[] = [];
 
@@ -192,8 +220,6 @@ export const inspectVercelAiSdk = async (
   await inspectVercelAiSdkRelationships(session, inspectedAgents, evidence, diagnostics);
 
   context.signal?.throwIfAborted();
-  return Object.freeze({
-    diagnostics: Object.freeze(diagnostics),
-    evidence: Object.freeze(evidence),
-  });
+  relationships.finalize();
+  return collector.finalize();
 };

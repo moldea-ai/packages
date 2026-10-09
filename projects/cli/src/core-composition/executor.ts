@@ -75,16 +75,19 @@ export const createMoldeaCliCoreInspectionExecutor = (
  * - INVALID_ADAPTER_DEFINITION: A runtime adapter definition is invalid.
  * - INVALID_RESOURCE_LIMIT: A Core resource limit is invalid.
  * - INVALID_ARGUMENT: The Core operation received an invalid argument.
- * - INVALID_REPOSITORY_PATH: A repository path is invalid.
- * - ENTRY_NOT_FOUND: A discovered file disappeared from the reader snapshot.
- * - ENTRY_NOT_FILE: A discovered file changed type during inspection.
- * - ENTRY_NOT_DIRECTORY: A discovered directory changed type during inspection.
+ * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+ * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+ * - ENTRY_NOT_FILE: The requested repository entry is not a file.
+ * - ENTRY_NOT_DIRECTORY: The requested repository entry is not a directory.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
- * - SNAPSHOT_CHANGED: The repository snapshot changed during inspection.
- * - INVALID_SOURCE_DATA: The repository reader returned invalid contract data.
- * - RESOURCE_LIMIT_EXCEEDED: A Core or repository resource limit was exceeded.
- * - ABORTED: Project inspection or a repository operation was aborted.
- * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed or returned an invalid result.
+ * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
+ * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
+ * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
  */
 export const executeMoldeaCliCoreInspection = createMoldeaCliCoreInspectionExecutor();

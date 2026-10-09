@@ -1,11 +1,22 @@
 import type ts from 'typescript';
 
+import type {
+  IRuntimeAdapterRecordCollector,
+  IRuntimeAdapterEvidence as ICollectedEvidence,
+} from '@moldea.ai/core/adapter';
 import type { ISourceRange } from '@moldea.ai/core';
 import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
 export type IAnthropicAdapterDiagnosticCode =
+  | 'ANTHROPIC_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'ANTHROPIC_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'ANTHROPIC_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'ANTHROPIC_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'ANTHROPIC_SKILL_REGISTRATION_SYMBOL_NOT_FOUND'
+  | 'ANTHROPIC_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND'
+  | 'ANTHROPIC_INSTRUCTION_SOURCE_MISMATCH'
   | 'ANTHROPIC_PACKAGE_MANIFEST_INVALID'
   | 'ANTHROPIC_SDK_VERSION_UNSUPPORTED'
   | 'ANTHROPIC_SOURCE_TEXT_INVALID'
@@ -66,6 +77,7 @@ export interface IAnthropicNamedImport {
 
 export type IAnthropicExportState =
   | { readonly kind: 'absent' }
+  | { readonly declaration: ts.Node; readonly kind: 'unresolved' }
   | { readonly declaration: ts.Node; readonly kind: 'present-supported' }
   | { readonly declaration: ts.Node; readonly kind: 'present-unsupported' };
 
@@ -76,9 +88,14 @@ export interface IAnthropicModuleArray {
 
 // parsed and indexed source used only for one inspection
 export interface IAnthropicSourceAnalysis {
+  readonly estimatedRetainedBytes: number;
+  readonly hasUnresolvedExports: boolean;
   readonly clientNames: ReadonlySet<string>;
   readonly exports: ReadonlyMap<string, IAnthropicExportState & { readonly declaration: ts.Node }>;
   readonly localBindingNames: ReadonlyMap<ts.Node, ReadonlySet<string>>;
+  readonly lexicalBindings: ReadonlyMap<ts.Node, ReadonlyMap<string, ts.Node | null>>;
+  readonly bindingMutations: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
+  readonly bindingEscapes: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
   readonly moduleArrays: ReadonlyMap<string, IAnthropicModuleArray>;
   readonly moduleConstDeclarations: ReadonlyMap<string, ts.VariableDeclaration>;
   readonly namedImports: ReadonlyMap<string, IAnthropicNamedImport>;
@@ -132,3 +149,8 @@ export type IAnthropicDiagnosticInput =
   | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
       readonly code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED';
     });
+
+// adapter-owned evidence admission uses only Core public types in packed declarations
+export interface IAnthropicEvidenceCollector extends IRuntimeAdapterRecordCollector<ICollectedEvidence> {
+  instruction(factory: () => ICollectedEvidence): void;
+}

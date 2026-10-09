@@ -118,7 +118,12 @@ describe('cloudflareAgentsAdapter Core integration', () => {
   test('emits the complete normalized evidence for both supported targets', async () => {
     const result = await inspect();
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
     expect(result.summary).not.toBeNull();
@@ -136,7 +141,12 @@ describe('cloudflareAgentsAdapter Core integration', () => {
       }),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
   });
 
@@ -211,7 +221,12 @@ describe('cloudflareAgentsAdapter Core integration', () => {
       });
 
       expect(result.valid).toBe(true);
-      expect(result.diagnostics).toStrictEqual([]);
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(
         result.evidence.filter(
           ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
@@ -252,8 +267,13 @@ describe('cloudflareAgentsAdapter Core integration', () => {
       [packageEntry.path]: replaceFixtureText(packageEntry.text, '^0.16.0', '0.18.0-rc.1'),
     });
 
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(false);
-    expect(result.diagnostics).toMatchObject([
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toMatchObject([
       {
         code: 'CLOUDFLARE_AGENTS_RUNTIME_VERSION_UNSUPPORTED',
         details: { declaredRange: '0.18.0-rc.1' },
@@ -325,7 +345,12 @@ describe('cloudflareAgentsAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.filter(
         ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
@@ -344,7 +369,12 @@ describe('cloudflareAgentsAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.filter(
         ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
@@ -390,7 +420,12 @@ describe('cloudflareAgentsAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.filter(
         ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
@@ -447,7 +482,12 @@ describe('cloudflareAgentsAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence
         .filter(

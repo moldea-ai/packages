@@ -1,23 +1,27 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import {
   analyzeObjectRelationships,
   classifySchemaRelationship,
   getConstExport,
   getStaticString,
+  hasBindingMutation,
   isModuleBindingVisible,
   unwrapExpression,
   type IStaticAnalysisRequestRelationship,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 
+import type { IOpenAiEvidenceCollector } from '../contracts/index.js';
 import { OPENAI_ADAPTER_ID } from '../constants/index.js';
 import type {
   IOpenAiInspectionSession,
   IOpenAiResponsesAnalysis,
   IOpenAiSourceAnalysis,
 } from '../contracts/index.js';
+
 import {
   addOpenAiDiagnostic,
   addOpenAiUnverifiedRelationship,
@@ -76,7 +80,11 @@ const getFormatSchema = (
 
   const callee = unwrapExpression(expression.expression);
 
-  if (!ts.isIdentifier(callee) || !isModuleBindingVisible(callee, analysis)) {
+  if (
+    !ts.isIdentifier(callee) ||
+    !isModuleBindingVisible(callee, analysis) ||
+    hasBindingMutation(callee, analysis, '')
+  ) {
     return UNRESOLVED;
   }
 
@@ -94,14 +102,19 @@ const getFormatSchema = (
   return schema === undefined ? UNRESOLVED : { expression: schema, kind: 'present' };
 };
 
-/** Inspects the exact agent output-schema binding in effective Responses text formats. */
+/**
+ * Inspects the exact agent output-schema binding in effective Responses text formats.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectOpenAiOutputSchema = async (
   session: IOpenAiInspectionSession,
   agent: IIndexedAgent,
   runtimeAnalysis: IOpenAiSourceAnalysis,
   responses: IOpenAiResponsesAnalysis,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = agent.declaration.bindings?.outputSchema;
 
@@ -144,7 +157,8 @@ export const inspectOpenAiOutputSchema = async (
   }
 
   let isUnverified = responses.hasAmbiguousCandidate;
-  let absentExpression: ts.Expression | null = null;
+  let hasMatch = false;
+  let hasContradiction = false;
 
   for (const request of responses.requests) {
     const format = getNestedProperty(request.text, 'format');
@@ -166,28 +180,23 @@ export const inspectOpenAiOutputSchema = async (
     );
 
     if (relationship.kind === 'present') {
-      evidence.push(
-        createOpenAiEvidence({
-          agentId: agent.id,
-          capabilityId: null,
-          capabilityKind: null,
-          details: { requestProperty: 'text.format', schemaRole: 'output' },
-          kind: 'schema',
-          references: [
-            { path: runtimeAnalysis.path },
-            { path: reference.path, symbol: reference.symbol },
-          ],
-          runtimeName: reference.symbol,
-          source: OPENAI_ADAPTER_ID,
-        }),
-      );
-      return;
-    }
-
-    if (relationship.kind === 'ambiguous') {
+      hasMatch = true;
+    } else if (relationship.kind === 'ambiguous') {
       isUnverified = true;
     } else {
-      absentExpression ??= relationship.expression;
+      hasContradiction = true;
+      addOpenAiDiagnostic(
+        diagnostics,
+        'OPENAI_OUTPUT_SCHEMA_NOT_WIRED',
+        runtimeAnalysis.path,
+        agent.id,
+        relationship.expression === null
+          ? null
+          : runtimeAnalysis.text.locator.locateRange(
+              relationship.expression.getStart(),
+              relationship.expression.end,
+            ),
+      );
     }
   }
 
@@ -199,18 +208,35 @@ export const inspectOpenAiOutputSchema = async (
       runtimeAnalysis.path,
       agent.id,
     );
-  } else {
+  }
+
+  if (!hasMatch && !hasContradiction && !isUnverified) {
     addOpenAiDiagnostic(
       diagnostics,
       'OPENAI_OUTPUT_SCHEMA_NOT_WIRED',
       runtimeAnalysis.path,
       agent.id,
-      absentExpression === null
-        ? null
-        : runtimeAnalysis.text.locator.locateRange(
-            absentExpression.getStart(),
-            absentExpression.end,
-          ),
+    );
+  }
+
+  if (hasMatch && !hasContradiction && !isUnverified) {
+    evidence.add(() =>
+      createOpenAiEvidence({
+        agentId: agent.id,
+        capabilityId: null,
+        capabilityKind: null,
+        details: { requestProperty: 'text.format', schemaRole: 'output' },
+        kind: 'schema',
+        references: [
+          { path: runtimeAnalysis.path },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
+        ],
+        runtimeName: reference.symbol ?? null,
+        source: OPENAI_ADAPTER_ID,
+      }),
     );
   }
 };

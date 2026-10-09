@@ -1,5 +1,6 @@
 import type ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
 import type { IRuntimeAdapterEvidence, ISourceRange } from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
@@ -74,16 +75,21 @@ const createEntity = (agentId: string) =>
     agentId,
   });
 
-/** Appends one stable package-owned diagnostic. */
+/**
+ * Appends one stable package-owned diagnostic.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addLangGraphDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   code: Exclude<ILangGraphAdapterDiagnosticCode, 'LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,
   details: IAdapterDiagnostic['details'] = {},
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createLangGraphDiagnostic({
       code,
       details,
@@ -95,9 +101,14 @@ export const addLangGraphDiagnostic = (
   );
 };
 
-/** Appends the stable diagnostic for one invalid imported relationship source. */
+/**
+ * Appends the stable diagnostic for one invalid imported relationship source.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addLangGraphSourceFailureDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   failure: ILangGraphSourceFailure,
   agentId: string,
 ): void => {
@@ -119,11 +130,16 @@ export const locateLangGraphNode = (
 ): ISourceRange =>
   analysis.text.locator.locateRange(node.getStart(analysis.sourceFile), node.getEnd());
 
-/** Loads and validates one supported manifest-bound TypeScript source. */
+/**
+ * Loads and validates one supported manifest-bound TypeScript source.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const analyzeLangGraphBoundReference = async (
   session: ILangGraphInspectionSession,
   reference: IRepositoryReference,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
 ): Promise<ILangGraphSourceAnalysis | null> => {
   if (!isSupportedTypeScriptSourcePath(reference.path)) {

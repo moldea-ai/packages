@@ -28,6 +28,12 @@ type IFixtureReplacement = string | Uint8Array;
 const fixture = JSON.parse(
   readFileSync(new URL('../../../../fixtures/adapter-openai/cases.json', import.meta.url), 'utf8'),
 ) as IOpenAiFixture;
+const shipmentFixture = JSON.parse(
+  readFileSync(
+    new URL('../../../../fixtures/adapter-openai/shipment-regression.json', import.meta.url),
+    'utf8',
+  ),
+) as IOpenAiFixture;
 const expectedEvidence = JSON.parse(
   readFileSync(
     new URL('../../../../fixtures/adapter-openai/evidence.expected.json', import.meta.url),
@@ -61,6 +67,59 @@ const inspectEntries = async (entries: readonly IMemoryRepositoryEntry[]) =>
     repository: createMemoryRepositoryReader(entries),
   });
 
+test.each([
+  ['canonical shipment instruction', null, null, null],
+  [
+    'replaced request instruction',
+    '/src/shipment-explainer/agent.ts',
+    [
+      'instructions: await loadShipmentExplainerInstruction()',
+      "instructions: 'Use the wrong shipment policy'",
+    ],
+    'OPENAI_INSTRUCTION_LOADER_NOT_WIRED',
+  ],
+  [
+    'loader reading another file',
+    '/src/shipment-explainer/instructions.ts',
+    ['../../moldea/agents/shipment-explainer/instruction.md', './wrong-instruction.md'],
+    'OPENAI_INSTRUCTION_SOURCE_MISMATCH',
+  ],
+  [
+    'wrong consumer alongside a correct consumer',
+    '/src/shipment-explainer/agent.ts',
+    [
+      '  const response =',
+      "  await client.responses.create({ model: validatedModel, instructions: 'Use the wrong shipment policy', input: 'Draft a response' });\n  const response =",
+    ],
+    'OPENAI_INSTRUCTION_LOADER_NOT_WIRED',
+  ],
+] as const)('inspects the copied shipment mock: %s', async (_scenario, path, replacement, code) => {
+  const entries: IMemoryRepositoryEntry[] = [
+    { path: '/moldea/moldea.yaml', type: 'file', content: shipmentFixture.manifest },
+    ...shipmentFixture.entries.map((entry): IMemoryRepositoryEntry => ({
+      path: entry.path,
+      type: 'file',
+      content:
+        entry.path === path && replacement !== null
+          ? entry.text.replace(replacement[0], replacement[1])
+          : entry.text,
+    })),
+    {
+      path: '/src/shipment-explainer/wrong-instruction.md',
+      type: 'file',
+      content: 'Use the wrong shipment policy.\n',
+    },
+  ];
+  const result = await inspectEntries(entries);
+  expect(result.valid).toBe(code === null);
+  expect(result.errorCount).toBe(code === null ? 0 : 1);
+  expect(result.warningCount).toBe(0);
+  expect(result.runtimeInspection).toBe('complete');
+  expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toStrictEqual(
+    code === null ? [] : [code],
+  );
+});
+
 const inspect = async (replacements: Readonly<Record<string, IFixtureReplacement>> = {}) =>
   inspectEntries(createEntries(replacements));
 
@@ -69,6 +128,7 @@ const inspectOutputSchema = async (
   options?: string,
   helperImport = '',
   outputSchema = "export const OutputSchema = { type: 'object' } as const;",
+  otherFormats: readonly string[] = [],
 ) => {
   const agent = fixture.entries.find(({ path }) => path === '/src/agent.ts')?.text;
   const contracts = fixture.entries.find(({ path }) => path === '/src/contracts.ts')?.text;
@@ -77,7 +137,7 @@ const inspectOutputSchema = async (
     throw new TypeError('The output-schema fixture requires agent and contract sources.');
   }
 
-  const runtime = agent
+  let runtime = agent
     .replace(
       "import OpenAIClient from 'openai';",
       `import OpenAIClient from 'openai';\n${helperImport}`,
@@ -92,6 +152,23 @@ const inspectOutputSchema = async (
       `    tools: [registeredFindOrder],\n    text: { format: ${format} },`,
     )
     .replace('  });', `  }${options === undefined ? '' : `, ${options}`});`);
+
+  if (otherFormats.length > 0) {
+    const requests = otherFormats.map(
+      (otherFormat) =>
+        `  client.responses.parse({
+    instructions: readInstruction(),
+    tools: [registeredFindOrder],
+    text: { format: ${otherFormat} },
+  });`,
+    );
+    runtime = runtime
+      .replace(
+        'export const supportAgent = async () =>',
+        'export const supportAgent = async () => {',
+      )
+      .replace('  });', `  });\n${requests.join('\n')}\n};`);
+  }
 
   return inspect({
     '/moldea/moldea.yaml': fixture.manifest.replace(
@@ -140,7 +217,12 @@ describe('openAiAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence
         .filter(({ kind }) => kind === 'runtime-pattern')
@@ -150,13 +232,86 @@ describe('openAiAdapter Core integration', () => {
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
+  test.each([
+    ['matching first', 'OutputSchema', '{}'],
+    ['contradiction first', '{}', 'OutputSchema'],
+  ])('preserves an output-schema contradiction with %s', async (_order, first, second) => {
+    const result = await inspectOutputSchema(
+      `{ type: 'json_schema', schema: ${first} }`,
+      undefined,
+      '',
+      undefined,
+      [`{ type: 'json_schema', schema: ${second} }`],
+    );
+
+    expect(result.valid).toBe(false);
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['OPENAI_OUTPUT_SCHEMA_NOT_WIRED']);
+    expect(
+      result.evidence.some(
+        ({ kind, details }) => kind === 'schema' && details['schemaRole'] === 'output',
+      ),
+    ).toBe(false);
+  });
+
+  test('keeps a matching output schema unverified beside an unresolved consumer', async () => {
+    const result = await inspectOutputSchema(
+      "{ type: 'json_schema', schema: OutputSchema }",
+      undefined,
+      '',
+      undefined,
+      ['dynamicFormat'],
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { relationship: 'agent-output-schema', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      }),
+    );
+    expect(
+      result.evidence.some(
+        ({ kind, details }) => kind === 'schema' && details['schemaRole'] === 'output',
+      ),
+    ).toBe(false);
+  });
+
+  test('does not trust a replaced SDK output-format helper', async () => {
+    const result = await inspectOutputSchema(
+      "zodTextFormat(OutputSchema, 'answer')",
+      undefined,
+      "import { zodTextFormat } from 'openai/helpers/zod';\nzodTextFormat = replacement;",
+    );
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { relationship: 'agent-output-schema', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      }),
+    );
+    expect(
+      result.evidence.some(
+        ({ kind, details }) => kind === 'schema' && details['schemaRole'] === 'output',
+      ),
+    ).toBe(false);
+  });
+
   test('establishes direct output-schema identity through the effective text format', async () => {
     const result = await inspectOutputSchema(
       "{ type: 'json_schema', name: 'answer', schema: OutputSchema }",
     );
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence).toContainEqual(
       expect.objectContaining({
         kind: 'schema',
@@ -174,7 +329,12 @@ describe('openAiAdapter Core integration', () => {
     );
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence).toContainEqual(
       expect.objectContaining({
         kind: 'schema',
@@ -261,7 +421,12 @@ describe('openAiAdapter Core integration', () => {
   test('emits the complete normalized evidence for the supported target', async () => {
     const result = await inspect();
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     // JSON goldens cannot encode Core's null-prototype details records.
     expect(result.evidence).toEqual(expectedEvidence);
@@ -271,7 +436,12 @@ describe('openAiAdapter Core integration', () => {
   test('accepts a later stable provider major through the minimum-only range', async () => {
     const result = await inspect({ '/package.json': '{"dependencies":{"openai":"8.0.0"}}' });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
   });
 
@@ -401,9 +571,14 @@ describe('openAiAdapter Core integration', () => {
     async (expectedCode, path, replacement, range, capabilityId) => {
       const result = await inspect({ [path]: replacement });
 
-      expect(result.diagnostics).toStrictEqual([
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([
         createExpectedDiagnostic(expectedCode, path, range, capabilityId),
       ]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(result.valid).toBe(false);
     },
   );
@@ -426,7 +601,7 @@ describe('openAiAdapter Core integration', () => {
       '/src/find-order.ts': registration,
     });
 
-    expect(result.diagnostics).toStrictEqual([
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([
       createExpectedDiagnostic(
         'OPENAI_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND',
         '/src/find-order.ts',
@@ -434,6 +609,11 @@ describe('openAiAdapter Core integration', () => {
         'find-order',
       ),
     ]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(false);
   });
 
@@ -443,7 +623,7 @@ describe('openAiAdapter Core integration', () => {
       '/src/find-order.ts': Uint8Array.from([0xff]),
     });
 
-    expect(result.diagnostics).toStrictEqual([
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([
       createExpectedDiagnostic('OPENAI_PACKAGE_MANIFEST_INVALID', '/package.json', null),
       createExpectedDiagnostic(
         'OPENAI_SOURCE_TEXT_INVALID',
@@ -452,6 +632,11 @@ describe('openAiAdapter Core integration', () => {
         'find-order',
       ),
     ]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(false);
   });
 
@@ -463,9 +648,14 @@ describe('openAiAdapter Core integration', () => {
     async (_description, content) => {
       const result = await inspect({ '/package.json': content });
 
-      expect(result.diagnostics).toStrictEqual([
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([
         createExpectedDiagnostic('OPENAI_PACKAGE_MANIFEST_INVALID', '/package.json', null),
       ]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(result.valid).toBe(false);
     },
   );
@@ -481,7 +671,12 @@ describe('openAiAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual(['language', 'runtime-package']);
   });
 
@@ -496,7 +691,12 @@ describe('openAiAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual(['language', 'runtime-package']);
   });
 
@@ -515,21 +715,41 @@ describe('openAiAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.valid).toBe(false);
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
-      'OPENAI_INSTRUCTION_LOADER_NOT_WIRED',
-    ]);
-    expect(result.diagnostics[0]).toMatchObject({
-      details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
-      severity: 'warning',
-    });
+    expect(result).toMatchObject({ valid: true, errorCount: 0, runtimeInspection: 'incomplete' });
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual([
       'language',
       'runtime-package',
       'runtime-pattern',
       'schema',
     ]);
+  });
+
+  test('preserves registration identity after only its input schema is mutated', async () => {
+    const registration = fixture.entries.find(({ path }) => path === '/src/find-order.ts')?.text;
+    if (registration === undefined) throw new TypeError('The registration fixture is required.');
+    const result = await inspect({
+      '/src/find-order.ts': `${registration}\nfindOrderTool.parameters = replacement;\n`,
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
+    expect(
+      result.evidence.some(
+        ({ kind, capabilityId }) => kind === 'schema' && capabilityId === 'find-order',
+      ),
+    ).toBe(false);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { relationship: 'tool-input-schema', reason: 'unsupported-source-pattern' },
+        severity: 'warning',
+      }),
+    );
   });
 
   test('does not compare the manifest description with the OpenAI tool description', async () => {
@@ -547,7 +767,12 @@ describe('openAiAdapter Core integration', () => {
     const result = await inspect({ '/src/find-order.ts': registration });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
@@ -572,7 +797,12 @@ describe('openAiAdapter Core integration', () => {
     const result = await inspect({ '/src/find-order.ts': registration });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toEqual(
       expect.arrayContaining(['schema', 'tool-registration']),
     );
@@ -598,7 +828,12 @@ describe('openAiAdapter Core integration', () => {
     const result = await inspect({ '/src/find-order.ts': registration });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(({ kind }) => kind === 'schema' || kind === 'tool-registration'),
     ).toBe(false);
@@ -610,12 +845,17 @@ describe('openAiAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('schema');
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
-  test('leaves dynamically constructed registration parameters unestablished', async () => {
+  test('keeps dynamic input schemas unverified while proving registration identity', async () => {
     const registration = fixture.entries
       .find(({ path }) => path === '/src/find-order.ts')
       ?.text.replace(
@@ -631,10 +871,14 @@ describe('openAiAdapter Core integration', () => {
     const result = await inspect({ '/src/find-order.ts': registration });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
     expect(
-      result.evidence.some(({ kind }) => kind === 'schema' || kind === 'tool-registration'),
-    ).toBe(false);
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(result.evidence.some(({ kind }) => kind === 'schema')).toBe(false);
+    expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
   test('ignores unrelated dynamic request properties for both relationships', async () => {
@@ -649,7 +893,12 @@ describe('openAiAdapter Core integration', () => {
     const result = await inspect({ '/src/agent.ts': agent });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toEqual(
       expect.arrayContaining(['instruction-loader', 'tool-registration']),
     );
@@ -671,9 +920,16 @@ describe('openAiAdapter Core integration', () => {
       ].join('\n'),
     });
 
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(
-      result.diagnostics.map(({ code, details, severity }) => ({ code, details, severity })),
+      result.diagnostics
+        .filter(({ details }) => details['relationship'] !== 'tool-implementation')
+        .map(({ code, details, severity }) => ({ code, details, severity })),
     ).toStrictEqual([
       {
         code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
@@ -701,13 +957,18 @@ describe('openAiAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'OPENAI_INSTRUCTION_LOADER_NOT_WIRED',
-    ]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['OPENAI_INSTRUCTION_LOADER_NOT_WIRED']);
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
-  test('uses positive existential matching across multiple calls and a shorthand tool array', async () => {
+  test('preserves known instruction contradictions beside matching and unresolved requests', async () => {
     const result = await inspect({
       '/src/agent.ts': [
         "import OpenAI from 'openai';",
@@ -723,10 +984,18 @@ describe('openAiAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(false);
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['OPENAI_INSTRUCTION_LOADER_NOT_WIRED']);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).toEqual(
-      expect.arrayContaining(['instruction-loader', 'runtime-pattern', 'tool-registration']),
+      expect.arrayContaining(['runtime-pattern', 'tool-registration']),
     );
   });
 
@@ -762,11 +1031,16 @@ describe('openAiAdapter Core integration', () => {
     ]);
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
-  test('emits negative relationship diagnostics only when every candidate is closed', async () => {
+  test('preserves known instruction errors beside unresolved request candidates', async () => {
     const closedResult = await inspect({
       '/src/agent.ts': [
         "import OpenAI from 'openai';",
@@ -796,13 +1070,34 @@ describe('openAiAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(closedResult.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'OPENAI_INSTRUCTION_LOADER_NOT_WIRED',
-      'OPENAI_TOOL_REGISTRATION_NOT_WIRED',
-    ]);
-    expect(ambiguousResult.valid).toBe(true);
     expect(
-      ambiguousResult.diagnostics.map(({ details, severity }) => ({ details, severity })),
+      ambiguousResult.diagnostics
+        .filter(({ severity }) => severity === 'error')
+        .map(({ code }) => code),
+    ).toStrictEqual(['OPENAI_INSTRUCTION_LOADER_NOT_WIRED']);
+    expect(
+      closedResult.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      ambiguousResult.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      closedResult.diagnostics
+        .filter(({ severity }) => severity === 'error')
+        .map(({ code }) => code),
+    ).toStrictEqual(['OPENAI_INSTRUCTION_LOADER_NOT_WIRED', 'OPENAI_TOOL_REGISTRATION_NOT_WIRED']);
+    expect(ambiguousResult.valid).toBe(false);
+    expect(
+      ambiguousResult.diagnostics
+        .filter(
+          ({ severity, details }) =>
+            severity === 'warning' && details['relationship'] !== 'tool-implementation',
+        )
+        .map(({ details, severity }) => ({ details, severity })),
     ).toStrictEqual([
       {
         details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
@@ -815,7 +1110,7 @@ describe('openAiAdapter Core integration', () => {
     ]);
   });
 
-  test('suppresses negative relationship diagnostics for an aliased Responses candidate', async () => {
+  test('preserves known instruction errors beside an aliased Responses candidate', async () => {
     const result = await inspect({
       '/src/agent.ts': [
         "import OpenAI from 'openai';",
@@ -834,7 +1129,20 @@ describe('openAiAdapter Core integration', () => {
     });
 
     expect(
-      result.diagnostics.map(({ details, severity }) => ({ details, severity })),
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['OPENAI_INSTRUCTION_LOADER_NOT_WIRED']);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      result.diagnostics
+        .filter(
+          ({ severity, details }) =>
+            severity === 'warning' && details['relationship'] !== 'tool-implementation',
+        )
+        .map(({ details, severity }) => ({ details, severity })),
     ).toStrictEqual([
       {
         details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
@@ -845,7 +1153,7 @@ describe('openAiAdapter Core integration', () => {
         severity: 'warning',
       },
     ]);
-    expect(result.valid).toBe(true);
+    expect(result.valid).toBe(false);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });
@@ -868,7 +1176,14 @@ describe('openAiAdapter Core integration', () => {
     });
 
     expect(
-      result.diagnostics.map(({ details, severity }) => ({ details, severity })),
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      result.diagnostics
+        .filter(({ details }) => details['relationship'] !== 'tool-implementation')
+        .map(({ details, severity }) => ({ details, severity })),
     ).toStrictEqual([
       {
         details: { reason: 'dynamic-source-pattern', relationship: 'tool-registration' },
@@ -885,7 +1200,12 @@ describe('openAiAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual(['language', 'runtime-package']);
     expect(result.evidence.find(({ kind }) => kind === 'language')?.references).toStrictEqual([
       { path: '/src/agent.ts' },
@@ -904,7 +1224,12 @@ describe('openAiAdapter Core integration', () => {
     ]);
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual(['runtime-package']);
   });
 
@@ -914,7 +1239,12 @@ describe('openAiAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual(['language', 'runtime-package']);
   });
 
@@ -1038,11 +1368,16 @@ describe('openAiAdapter Core integration', () => {
     const result = await createCore({ adapters: [openAiAdapter] }).validateProject({ repository });
     const packageEvidence = result.evidence.filter(({ kind }) => kind === 'runtime-package');
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(packageEvidence.map(({ agentId }) => agentId)).toStrictEqual(['alpha', 'beta']);
-    expect(readCounts.get('/package.json')).toBe(2);
-    expect(readCounts.get('/src/agent.ts')).toBe(2);
+    expect(readCounts.get('/package.json')).toBe(1);
+    expect(readCounts.get('/src/agent.ts')).toBe(1);
   });
 
   test('suppresses derived tool evidence for an unsupported registration shape', async () => {
@@ -1057,7 +1392,12 @@ describe('openAiAdapter Core integration', () => {
     const result = await inspect({ '/src/find-order.ts': registration });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(({ kind }) => kind === 'schema' || kind === 'tool-registration'),
     ).toBe(false);

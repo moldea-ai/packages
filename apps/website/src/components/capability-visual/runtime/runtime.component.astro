@@ -12,9 +12,12 @@ import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
 
 // selected patterns need a source excerpt that shows the behavior being discussed
 const FEATURED_SOURCE_PATHS: Record<string, string> = {
+  'anthropic-parse-output': '/src/agent.ts',
   'eve-excluded-test-tool': '/agent/tools/search.test.ts',
   'eve-workspace-peer': '/agents/support/agent/subagents/research.ts',
+  'google-mixed-generation': '/src/agent.ts',
   'langgraph-resume-schema': '/src/functional.ts',
+  'openai-parse-output': '/src/agent.ts',
   'vercel-deferred-tool': '/src/tools.ts',
 };
 

@@ -1,9 +1,11 @@
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
+import type { IGoogleGenAiEvidenceCollector } from '../contracts/index.js';
 import { GOOGLE_GENAI_ADAPTER_ID, GOOGLE_GENAI_SDK_PACKAGE_NAME } from '../constants/index.js';
 import type { IGoogleGenAiInspectionSession } from '../contracts/index.js';
+
 import { addGoogleGenAiDiagnostic, createGoogleGenAiEvidence } from './common.js';
 
 /**
@@ -13,12 +15,15 @@ import { addGoogleGenAiDiagnostic, createGoogleGenAiEvidence } from './common.js
  * @param evidence The operation evidence collection.
  * @param diagnostics The operation diagnostic collection.
  * @param agentId The owning agent identifier.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectGoogleGenAiPackage = async (
   session: IGoogleGenAiInspectionSession,
   sourcePath: IRepositoryPath,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IGoogleGenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
 ): Promise<void> => {
   const discovery = await session.discoverPackage(sourcePath);
@@ -50,7 +55,7 @@ export const inspectGoogleGenAiPackage = async (
   }
 
   for (const declaration of observation.declarations) {
-    evidence.push(
+    evidence.add(() =>
       createGoogleGenAiEvidence({
         agentId,
         capabilityId: null,

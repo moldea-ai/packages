@@ -272,7 +272,6 @@ describe('OpenAI Agents SDK source analysis', () => {
     ],
     ['conditional call', 'condition ? loadInstructions() : fallbackInstructions()'],
     ['property call', 'loaders.loadInstructions()'],
-    ['indirect alias', 'loaderAlias'],
   ])('leaves a %s instruction relationship unresolved', (_description, instructions) => {
     const source = [
       "import { Agent } from '@openai/agents';",
@@ -291,6 +290,30 @@ describe('OpenAI Agents SDK source analysis', () => {
             symbol: 'loadInstructions',
           }),
     ).toBeNull();
+  });
+
+  test('recognizes an immutable instruction-loader alias and rejects its replacement', () => {
+    for (const isReplaced of [false, true]) {
+      const analysis = analyze(
+        '/src/agent.ts',
+        [
+          "import { Agent } from '@openai/agents';",
+          "import { loadInstructions } from './instructions.js';",
+          'const loaderAlias = loadInstructions;',
+          ...(isReplaced ? ['loaderAlias = replacement;'] : []),
+          'export const agent = new Agent({ instructions: loaderAlias });',
+        ].join('\n'),
+      );
+      const definition = getOpenAiAgentsSdkAgentDefinition(analysis, 'agent').definition;
+      expect(
+        definition === undefined
+          ? null
+          : classifyOpenAiAgentsSdkInstructionLoader(definition.instructions, analysis, {
+              path: parseRepositoryPath('/src/instructions.ts'),
+              symbol: 'loadInstructions',
+            }),
+      ).toBe(isReplaced ? null : true);
+    }
   });
 
   test('recognizes closed function tools and closed Agent tool collections', async () => {

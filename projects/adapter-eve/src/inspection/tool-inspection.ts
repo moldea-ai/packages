@@ -1,7 +1,6 @@
 import ts from 'typescript';
 
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
-import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
+import type { IAdapterDiagnostic, IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IToolManifestEntry } from '@moldea.ai/core/format';
 
 import {
@@ -15,6 +14,7 @@ import {
 import type {
   IEveAgentDefinition,
   IEveDefinitionResult,
+  IEveEvidenceCollector,
   IEveInspectionSession,
   IEveSourceAnalysis,
   IEveToolCandidate,
@@ -36,15 +36,19 @@ import {
 } from './common.js';
 import { classifyEveBoundExpression } from './relationships.js';
 
+// availability summaries must not keep every candidate's source graph alive
 interface IPreparedTool {
-  readonly analysis: IEveSourceAnalysis;
   readonly availability: 'absent' | 'enabled' | 'disabled' | 'unknown';
   readonly candidate: IEveToolCandidate;
-  readonly definition: Extract<IEveDefinitionResult, { readonly kind: 'present-supported' }>;
   readonly execution: 'background' | 'foreground' | 'unknown';
   readonly helperKind: 'tool' | 'workflow-tool';
   readonly isRegistrationEligible: boolean;
   readonly workflowExecutor: 'valid' | 'invalid' | 'unknown' | null;
+}
+
+interface IResolvedTool extends IPreparedTool {
+  readonly analysis: IEveSourceAnalysis;
+  readonly definition: Extract<IEveDefinitionResult, { readonly kind: 'present-supported' }>;
 }
 
 const ALLOWED_TOOL_KEYS = new Set([
@@ -56,7 +60,6 @@ const ALLOWED_TOOL_KEYS = new Set([
   'outputSchema',
   'toModelOutput',
 ]);
-const TOOL_PREPARATION_BATCH_SIZE = 8;
 
 const isApprovalSupported = async (
   session: IEveInspectionSession,
@@ -197,10 +200,8 @@ const prepareTool = async (
     (await resolveEveStaticString(session, result.analysis, description)).kind === 'supported';
 
   return Object.freeze({
-    analysis: result.analysis,
     availability,
     candidate,
-    definition,
     execution,
     helperKind,
     isRegistrationEligible,
@@ -255,12 +256,12 @@ const selectToolCandidate = (
 const inspectToolSchema = async (
   session: IEveInspectionSession,
   definition: IEveAgentDefinition,
-  prepared: IPreparedTool,
+  prepared: IResolvedTool,
   capabilityId: string,
   role: 'input' | 'output',
   tool: IToolManifestEntry,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IEveEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = role === 'input' ? tool.inputSchema : tool.outputSchema;
 
@@ -303,7 +304,7 @@ const inspectToolSchema = async (
       capabilityId,
     );
   } else if (state === 'wired') {
-    evidence.push(
+    evidence.add(() =>
       createEveEvidence({
         agentId: definition.agent.id,
         capabilityId,
@@ -311,7 +312,7 @@ const inspectToolSchema = async (
         details: { schemaRole: `tool-${role}` },
         kind: 'schema',
         references: [reference],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: EVE_ADAPTER_ID,
       }),
     );
@@ -328,12 +329,17 @@ const inspectToolSchema = async (
   }
 };
 
-/** Inspects recursive static Eve tools declared by one scoped agent. */
+/**
+ * Inspects recursive static Eve tools declared by one scoped agent.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectEveTools = async (
   session: IEveInspectionSession,
   definition: IEveAgentDefinition,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IEveEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<ReadonlySet<string>> => {
   const testExclusionBehavior = definition.inspectedPackage.testExclusionBehavior;
   const sourceCandidates = definition.rootIndex.toolCandidates.filter(
@@ -341,13 +347,12 @@ export const inspectEveTools = async (
   );
   const prepared: IPreparedTool[] = [];
 
-  for (let index = 0; index < sourceCandidates.length; index += TOOL_PREPARATION_BATCH_SIZE) {
-    const batch = await Promise.all(
-      sourceCandidates
-        .slice(index, index + TOOL_PREPARATION_BATCH_SIZE)
-        .map((candidate) => prepareTool(session, candidate)),
-    );
-    prepared.push(...batch.filter((candidate): candidate is IPreparedTool => candidate !== null));
+  for (const candidate of sourceCandidates) {
+    const summary = await prepareTool(session, candidate);
+
+    if (summary !== null) {
+      prepared.push(summary);
+    }
   }
   const runtimeGroups = new Map<string, IEveToolCandidate[]>();
 
@@ -433,9 +438,9 @@ export const inspectEveTools = async (
       }
     }
 
-    const selected = selectTool(prepared, tool);
+    const summary = selectTool(prepared, tool);
 
-    if (selected === null) {
+    if (summary === null) {
       const candidate = selectToolCandidate(sourceCandidates, tool);
 
       if (
@@ -457,6 +462,31 @@ export const inspectEveTools = async (
       continue;
     }
 
+    const selectedSource = await session.analyzeSource(summary.candidate.path);
+
+    if (selectedSource.kind !== 'valid') {
+      addEveSourceFailureDiagnostic(
+        diagnostics,
+        selectedSource,
+        summary.candidate.path,
+        definition.agent.id,
+        'tool',
+        capabilityId,
+      );
+      continue;
+    }
+
+    const selectedDefinition = getEveDefinition(selectedSource.analysis, summary.helperKind);
+
+    if (selectedDefinition.kind !== 'present-supported') {
+      continue;
+    }
+
+    const selected: IResolvedTool = {
+      ...summary,
+      analysis: selectedSource.analysis,
+      definition: selectedDefinition,
+    };
     const { candidate } = selected;
     if (selected.helperKind === 'workflow-tool') {
       const behavior = definition.inspectedPackage.workflowToolBehavior;
@@ -786,7 +816,7 @@ export const inspectEveTools = async (
       { path: candidate.path },
       ...(tool.implementation.path === candidate.path ? [] : [tool.implementation]),
     ];
-    evidence.push(
+    evidence.add(() =>
       createEveEvidence({
         agentId: definition.agent.id,
         capabilityId,

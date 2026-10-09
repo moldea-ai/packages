@@ -297,18 +297,24 @@ describe('analyzeOpenAiSource', () => {
       'Responses object',
       '  const responses = client.responses;',
       '  return responses.create({ instructions: loadInstruction() });',
+      1,
+      true,
     ],
     [
       'OpenAI client',
       '  const delegatedClient = client;',
       '  return delegatedClient.responses.create({ instructions: loadInstruction() });',
+      2,
+      false,
     ],
     [
       'conditionally selected OpenAI client',
       '  const delegatedClient = condition ? client : fallbackClient;',
       '  return delegatedClient.responses.create({ instructions: loadInstruction() });',
+      1,
+      true,
     ],
-  ])('tracks an aliased %s as an unresolved data-flow candidate', (_description, alias, call) => {
+  ])('classifies an aliased %s', (_description, alias, call, requestCount, hasAmbiguity) => {
     const { responses } = findResponses(
       [
         "import OpenAI from 'openai';",
@@ -321,8 +327,8 @@ describe('analyzeOpenAiSource', () => {
       ].join('\n'),
     );
 
-    expect(responses.requests).toHaveLength(1);
-    expect(responses.hasAmbiguousCandidate).toBe(true);
+    expect(responses.requests).toHaveLength(requestCount);
+    expect(responses.hasAmbiguousCandidate).toBe(hasAmbiguity);
   });
 
   test('does not treat an unrelated property name as an OpenAI client escape', () => {
@@ -424,11 +430,12 @@ describe('analyzeOpenAiSource', () => {
     expect(responses.requests).toStrictEqual([]);
   });
 
-  test('classifies default-export and indirect-export runtime symbols as unsupported', () => {
+  test('distinguishes the default export from its local name and an indirect named export', () => {
     const defaultExport = analyze('export default function agent() {}');
     const indirectExport = analyze('const agent = () => undefined; export { agent };');
 
-    expect(getRuntimeExport(defaultExport, 'agent').kind).toBe('present-unsupported');
+    expect(getRuntimeExport(defaultExport, 'agent').kind).toBe('absent');
+    expect(getRuntimeExport(defaultExport, 'default').kind).toBe('present-unsupported');
     expect(getRuntimeExport(indirectExport, 'agent').kind).toBe('present-unsupported');
   });
 

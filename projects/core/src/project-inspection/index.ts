@@ -26,6 +26,7 @@ type IInspectionViews = Readonly<Record<IProjectInspectionView, readonly IKeyedI
 
 interface IPreparedProjectInspectionInput {
   readonly counts: IProjectInspection['counts'];
+  readonly runtimeInspection: IProjectInspection['runtimeInspection'];
   readonly formatVersion: IProjectInspection['formatVersion'];
   readonly items: readonly IKeyedInspectionItem[];
   readonly maxEntries: number;
@@ -41,7 +42,7 @@ interface IPreparedProjectInspectionInput {
   readonly valid: boolean;
 }
 
-const CURSOR_PREFIX = 'core5';
+const CURSOR_PREFIX = 'core6';
 const PREPARED_FIXED_BYTES = 512;
 const PREPARED_ITEM_FIXED_BYTES = 64;
 const PREPARED_TEXT_BYTE_MULTIPLIER = 2;
@@ -180,7 +181,7 @@ const decodeCursor = (
   }
 
   const match =
-    /^core5:(all|diagnostics|evidence|metadata):([^:]+):(sha256:[0-9a-f]{64}):(sha256:[0-9a-f]{64})$/u.exec(
+    /^core6:(all|diagnostics|evidence|metadata):([^:]+):(sha256:[0-9a-f]{64}):(sha256:[0-9a-f]{64})$/u.exec(
       cursor,
     );
 
@@ -311,6 +312,7 @@ const estimatePreparedProjectInspection = (
       serializeDeterministically({
         counts,
         formatVersion: state.result.formatVersion,
+        runtimeInspection: state.result.runtimeInspection,
         inspectionDigest: 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
         source: state.result.source,
         summary: state.result.summary,
@@ -330,12 +332,19 @@ const createInspectionDigest = (
   formatVersion: IProjectInspection['formatVersion'],
   items: readonly IKeyedInspectionItem[],
   summary: IProjectInspection['summary'],
+  runtimeInspection: IProjectInspection['runtimeInspection'],
   valid: boolean,
 ): string =>
   createIdentity(
     (function* (): IterableIterator<string> {
-      yield 'core5-prepared-inspection';
-      yield serializeDeterministically({ counts, formatVersion, summary, valid });
+      yield 'core6-prepared-inspection';
+      yield serializeDeterministically({
+        counts,
+        formatVersion,
+        runtimeInspection,
+        summary,
+        valid,
+      });
 
       for (const { key } of items) {
         yield key;
@@ -380,6 +389,7 @@ const createPreparedProjectInspection = (
   const {
     counts,
     formatVersion,
+    runtimeInspection,
     items,
     maxEntries,
     preparedBytes,
@@ -389,7 +399,14 @@ const createPreparedProjectInspection = (
     valid,
   } = input;
   const views = createViews(items);
-  const inspectionDigest = createInspectionDigest(counts, formatVersion, items, summary, valid);
+  const inspectionDigest = createInspectionDigest(
+    counts,
+    formatVersion,
+    items,
+    summary,
+    runtimeInspection,
+    valid,
+  );
   const resourceUsage: IProjectInspectionResourceUsage = freezeRecursively({
     canonicalBytes: validationUsage.canonicalBytes,
     peakRetainedBytes: Math.max(
@@ -437,6 +454,7 @@ const createPreparedProjectInspection = (
     return freezeRecursively({
       counts,
       formatVersion,
+      runtimeInspection,
       inspectionDigest,
       page: {
         isComplete: nextCursor === null,
@@ -454,6 +472,7 @@ const createPreparedProjectInspection = (
   return freezeRecursively({
     counts,
     formatVersion,
+    runtimeInspection,
     inspectionDigest,
     readPage,
     resourceUsage,
@@ -463,7 +482,28 @@ const createPreparedProjectInspection = (
   });
 };
 
-/** Prepares one immutable content-free inspection for synchronous bounded page reads. */
+/**
+ * Prepares one immutable content-free inspection for synchronous bounded page reads.
+ * @param input The source-neutral reader and optional cancellation signal.
+ * @param options The immutable adapter registry and operation limits.
+ * @returns A promise resolving to the complete prepared inspection.
+ * @throws
+ * - INVALID_ARGUMENT: The Core operation received an invalid argument.
+ * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+ * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+ * - ENTRY_NOT_FILE: The requested repository entry is not a file.
+ * - ENTRY_NOT_DIRECTORY: The requested repository entry is not a directory.
+ * - ACCESS_DENIED: Access to the repository source was denied.
+ * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
+ * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
+ * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
+ */
 export const createProjectInspection = async (
   input: IProjectInspectionInput,
   options: ICoreOptionsSnapshot,
@@ -492,6 +532,7 @@ export const createProjectInspection = async (
   return createPreparedProjectInspection({
     counts,
     formatVersion: state.result.formatVersion,
+    runtimeInspection: state.result.runtimeInspection,
     items,
     maxEntries: options.limits.maxEntries,
     preparedBytes: estimate.preparedBytes,

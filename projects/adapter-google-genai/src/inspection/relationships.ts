@@ -1,16 +1,17 @@
 import type ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import {
   classifyDirectCallRelationship,
   classifySchemaRelationship,
   getCallableExportState,
   getConstExport,
-  isModuleConstValueSafe,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference, IToolManifestEntry } from '@moldea.ai/core/format';
 
+import type { IGoogleGenAiEvidenceCollector } from '../contracts/index.js';
 import { GOOGLE_GENAI_ADAPTER_ID } from '../constants/index.js';
 import type {
   IGoogleGenAiGenerateContentAnalysis,
@@ -24,8 +25,10 @@ import {
   type IGoogleGenAiCollectionRegistration,
   type IGoogleGenAiFunctionDeclarationShape,
 } from '../source-analysis/index.js';
+
 import {
   addGoogleGenAiDiagnostic,
+  addGoogleGenAiUnverifiedRelationship,
   analyzeGoogleGenAiBoundReference,
   compareGoogleGenAiStrings,
   createGoogleGenAiEvidence,
@@ -57,9 +60,8 @@ const inspectInputSchema = async (
   reference: IRepositoryReference,
   registrationAnalysis: IGoogleGenAiSourceAnalysis,
   parametersJsonSchema: ts.Expression | null | undefined,
-  hasAmbiguousCandidate: boolean,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IGoogleGenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   if (reference.symbol === undefined) {
     return;
@@ -92,11 +94,7 @@ const inspectInputSchema = async (
   }
 
   if (schema.kind !== 'present-supported' || parametersJsonSchema === null) {
-    if (
-      schema.kind === 'present-supported' &&
-      parametersJsonSchema === null &&
-      !hasAmbiguousCandidate
-    ) {
+    if (schema.kind === 'present-supported' && parametersJsonSchema === null) {
       addGoogleGenAiDiagnostic(
         diagnostics,
         'GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED',
@@ -121,7 +119,7 @@ const inspectInputSchema = async (
   );
 
   if (relationship.kind === 'present') {
-    evidence.push(
+    evidence.add(() =>
       createGoogleGenAiEvidence({
         agentId: agent.id,
         capabilityId,
@@ -130,13 +128,16 @@ const inspectInputSchema = async (
         kind: 'schema',
         references: [
           { path: registrationAnalysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: GOOGLE_GENAI_ADAPTER_ID,
       }),
     );
-  } else if (relationship.kind === 'absent' && !hasAmbiguousCandidate) {
+  } else if (relationship.kind === 'absent') {
     addGoogleGenAiDiagnostic(
       diagnostics,
       'GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED',
@@ -153,8 +154,8 @@ const inspectRegistration = async (
   agent: IIndexedAgent,
   capabilityId: string,
   tool: IToolManifestEntry,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IGoogleGenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IGoogleGenAiRegistrationInspection | null> => {
   const reference = tool.registration;
 
@@ -174,11 +175,7 @@ const inspectRegistration = async (
     return null;
   }
 
-  const shape = getGoogleGenAiFunctionDeclarationShape(
-    registrationAnalysis,
-    reference.symbol,
-    tool.inputSchema,
-  );
+  const shape = getGoogleGenAiFunctionDeclarationShape(registrationAnalysis, reference.symbol);
 
   if (shape.kind === 'absent') {
     addGoogleGenAiDiagnostic(
@@ -192,15 +189,6 @@ const inspectRegistration = async (
     return null;
   }
 
-  const declaration = registrationAnalysis.moduleConstDeclarations.get(reference.symbol);
-
-  if (
-    declaration === undefined ||
-    !isModuleConstValueSafe(registrationAnalysis, declaration, new Set(), 'object')
-  ) {
-    return null;
-  }
-
   if (shape.kind === 'present-unsupported') {
     if (tool.inputSchema !== undefined) {
       await inspectInputSchema(
@@ -210,7 +198,6 @@ const inspectRegistration = async (
         tool.inputSchema,
         registrationAnalysis,
         undefined,
-        true,
         evidence,
         diagnostics,
       );
@@ -261,8 +248,8 @@ const inspectInstructionLoader = async (
   agent: IIndexedAgent,
   runtimeAnalysis: IGoogleGenAiSourceAnalysis,
   generateContent: IGoogleGenAiGenerateContentAnalysis,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IGoogleGenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = agent.declaration.bindings?.instructionLoader;
 
@@ -293,10 +280,6 @@ const inspectInstructionLoader = async (
     return;
   }
 
-  if (loader.kind === 'present-unsupported') {
-    return;
-  }
-
   const relationship = classifyDirectCallRelationship(
     runtimeAnalysis,
     generateContent.requests.map((request) => request.systemInstruction),
@@ -304,8 +287,18 @@ const inspectInstructionLoader = async (
     reference,
   );
 
+  if (relationship.kind === 'absent' && relationship.hasUnverifiedConsumer === true) {
+    addGoogleGenAiUnverifiedRelationship(
+      diagnostics,
+      'instruction-loader',
+      'dynamic-source-pattern',
+      runtimeAnalysis.path,
+      agent.id,
+    );
+  }
+
   if (relationship.kind === 'present') {
-    evidence.push(
+    evidence.instruction(() =>
       createGoogleGenAiEvidence({
         agentId: agent.id,
         capabilityId: null,
@@ -314,9 +307,12 @@ const inspectInstructionLoader = async (
         kind: 'instruction-loader',
         references: [
           { path: runtimeAnalysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: GOOGLE_GENAI_ADAPTER_ID,
       }),
     );
@@ -336,8 +332,8 @@ const inspectToolRelationships = async (
   agent: IIndexedAgent,
   runtimeAnalysis: IGoogleGenAiSourceAnalysis,
   generateContent: IGoogleGenAiGenerateContentAnalysis,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IGoogleGenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const registrations: IGoogleGenAiRegistrationInspection[] = [];
 
@@ -391,7 +387,6 @@ const inspectToolRelationships = async (
       registration.inputSchema,
       registration.analysis,
       registration.shape.parametersJsonSchema,
-      collections.hasAmbiguousCandidate,
       evidence,
       diagnostics,
     );
@@ -410,7 +405,7 @@ const inspectToolRelationships = async (
   registrations.forEach((registration, index) => {
     if (collections.presentRegistrationIndexes.has(index)) {
       if (registration.isNameMatch && registration.isNameValid) {
-        evidence.push(
+        evidence.add(() =>
           createGoogleGenAiEvidence({
             agentId: agent.id,
             capabilityId: registration.capabilityId,
@@ -419,7 +414,12 @@ const inspectToolRelationships = async (
             kind: 'tool-registration',
             references: [
               { path: runtimeAnalysis.path },
-              { path: registration.reference.path, symbol: registration.reference.symbol },
+              {
+                path: registration.reference.path,
+                ...(registration.reference.symbol === undefined
+                  ? {}
+                  : { symbol: registration.reference.symbol }),
+              },
             ],
             runtimeName: registration.detectedName,
             source: GOOGLE_GENAI_ADAPTER_ID,
@@ -451,14 +451,17 @@ const inspectToolRelationships = async (
  * @param generateContent The nested generate-content request analysis.
  * @param evidence The operation evidence collection.
  * @param diagnostics The operation diagnostic collection.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectGoogleGenAiRelationships = async (
   session: IGoogleGenAiInspectionSession,
   agent: IIndexedAgent,
   runtimeAnalysis: IGoogleGenAiSourceAnalysis,
   generateContent: IGoogleGenAiGenerateContentAnalysis,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IGoogleGenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   await inspectInstructionLoader(
     session,

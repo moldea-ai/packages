@@ -45,7 +45,7 @@ export type ICapabilityResult =
       kind: 'cli';
       command: string;
       exitStatus: number;
-      schemaVersion: 5;
+      schemaVersion: 6;
       status: 'valid' | 'invalid' | 'error';
       facts: Record<string, ICapabilityFact>;
       envelopeExcerpt: {
@@ -53,7 +53,7 @@ export type ICapabilityResult =
         command: string;
         error: ICapabilityFact;
         result: ICapabilityFact;
-        schemaVersion: 5;
+        schemaVersion: 6;
         status: 'valid' | 'invalid' | 'error';
       };
     };

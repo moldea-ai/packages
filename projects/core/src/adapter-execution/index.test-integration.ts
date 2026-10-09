@@ -390,7 +390,12 @@ describe('Core runtime-adapter execution', () => {
           context.resolveAgent({ path: evidencePath, symbol: 'BetaRuntime' }),
           context.resolveAgent({ path: evidencePath, symbol: 'ZetaRuntime' }),
         );
-        expect(Object.keys(context).sort()).toStrictEqual(['agent', 'repository', 'resolveAgent']);
+        expect(Object.keys(context).sort()).toStrictEqual([
+          'agent',
+          'outputBudget',
+          'repository',
+          'resolveAgent',
+        ]);
       },
     });
 

@@ -72,6 +72,7 @@ const inspectOutputSchema = async (
   options?: string,
   helperImport = '',
   outputSchema = "export const OutputSchema = { type: 'object' } as const;",
+  otherFormats: readonly string[] = [],
 ) => {
   const agent = fixture.entries.find(({ path }) => path === '/src/agent.ts')?.text;
   const contracts = fixture.entries.find(({ path }) => path === '/src/contracts.ts')?.text;
@@ -80,7 +81,7 @@ const inspectOutputSchema = async (
     throw new TypeError('The output-schema fixture requires agent and contract sources.');
   }
 
-  const runtime = agent
+  let runtime = agent
     .replace(
       "import AnthropicClient from '@anthropic-ai/sdk';",
       `import AnthropicClient from '@anthropic-ai/sdk';\n${helperImport}`,
@@ -95,6 +96,23 @@ const inspectOutputSchema = async (
       `    tools: [registeredFindOrder],\n    output_config: { format: ${format} },`,
     )
     .replace('  });', `  }${options === undefined ? '' : `, ${options}`});`);
+
+  if (otherFormats.length > 0) {
+    const requests = otherFormats.map(
+      (otherFormat) =>
+        `  client.messages.parse({
+    system: readInstruction(),
+    tools: [registeredFindOrder],
+    output_config: { format: ${otherFormat} },
+  });`,
+    );
+    runtime = runtime
+      .replace(
+        'export const supportAgent = async () =>',
+        'export const supportAgent = async () => {',
+      )
+      .replace('  });', `  });\n${requests.join('\n')}\n};`);
+  }
 
   return inspect({
     '/moldea/moldea.yaml': fixture.manifest.replace(
@@ -146,7 +164,12 @@ describe('anthropicAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence
         .filter(({ kind }) => kind === 'runtime-pattern')
@@ -156,11 +179,84 @@ describe('anthropicAdapter Core integration', () => {
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
+  test.each([
+    ['matching first', 'OutputSchema', '{}'],
+    ['contradiction first', '{}', 'OutputSchema'],
+  ])('preserves an output-schema contradiction with %s', async (_order, first, second) => {
+    const result = await inspectOutputSchema(
+      `{ type: 'json_schema', schema: ${first} }`,
+      undefined,
+      '',
+      undefined,
+      [`{ type: 'json_schema', schema: ${second} }`],
+    );
+
+    expect(result.valid).toBe(false);
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['ANTHROPIC_OUTPUT_SCHEMA_NOT_WIRED']);
+    expect(
+      result.evidence.some(
+        ({ kind, details }) => kind === 'schema' && details['schemaRole'] === 'output',
+      ),
+    ).toBe(false);
+  });
+
+  test('keeps a matching output schema unverified beside an unresolved consumer', async () => {
+    const result = await inspectOutputSchema(
+      "{ type: 'json_schema', schema: OutputSchema }",
+      undefined,
+      '',
+      undefined,
+      ['dynamicFormat'],
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { relationship: 'agent-output-schema', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      }),
+    );
+    expect(
+      result.evidence.some(
+        ({ kind, details }) => kind === 'schema' && details['schemaRole'] === 'output',
+      ),
+    ).toBe(false);
+  });
+
+  test('does not trust a replaced SDK output-format helper', async () => {
+    const result = await inspectOutputSchema(
+      'zodOutputFormat(OutputSchema)',
+      undefined,
+      "import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';\nzodOutputFormat = replacement;",
+    );
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { relationship: 'agent-output-schema', reason: 'dynamic-source-pattern' },
+        severity: 'warning',
+      }),
+    );
+    expect(
+      result.evidence.some(
+        ({ kind, details }) => kind === 'schema' && details['schemaRole'] === 'output',
+      ),
+    ).toBe(false);
+  });
+
   test('establishes direct output-schema identity through the effective output format', async () => {
     const result = await inspectOutputSchema("{ type: 'json_schema', schema: OutputSchema }");
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence).toContainEqual(
       expect.objectContaining({
         kind: 'schema',
@@ -178,7 +274,12 @@ describe('anthropicAdapter Core integration', () => {
     );
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence).toContainEqual(
       expect.objectContaining({
         kind: 'schema',
@@ -265,7 +366,12 @@ describe('anthropicAdapter Core integration', () => {
   test('emits the complete normalized evidence for the supported target', async () => {
     const result = await inspect();
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     // JSON goldens cannot encode Core's null-prototype details records.
     expect(result.evidence).toEqual(expectedEvidence);
@@ -277,7 +383,12 @@ describe('anthropicAdapter Core integration', () => {
       '/package.json': '{"dependencies":{"@anthropic-ai/sdk":"1.0.0"}}',
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
   });
 
@@ -407,9 +518,14 @@ describe('anthropicAdapter Core integration', () => {
     async (expectedCode, path, replacement, range, capabilityId) => {
       const result = await inspect({ [path]: replacement });
 
-      expect(result.diagnostics).toStrictEqual([
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([
         createExpectedDiagnostic(expectedCode, path, range, capabilityId),
       ]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(result.valid).toBe(false);
     },
   );
@@ -432,7 +548,7 @@ describe('anthropicAdapter Core integration', () => {
       '/src/find-order.ts': registration,
     });
 
-    expect(result.diagnostics).toStrictEqual([
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([
       createExpectedDiagnostic(
         'ANTHROPIC_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND',
         '/src/find-order.ts',
@@ -440,6 +556,11 @@ describe('anthropicAdapter Core integration', () => {
         'find-order',
       ),
     ]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(false);
   });
 
@@ -449,7 +570,7 @@ describe('anthropicAdapter Core integration', () => {
       '/src/find-order.ts': Uint8Array.from([0xff]),
     });
 
-    expect(result.diagnostics).toStrictEqual([
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([
       createExpectedDiagnostic('ANTHROPIC_PACKAGE_MANIFEST_INVALID', '/package.json', null),
       createExpectedDiagnostic(
         'ANTHROPIC_SOURCE_TEXT_INVALID',
@@ -458,6 +579,11 @@ describe('anthropicAdapter Core integration', () => {
         'find-order',
       ),
     ]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(false);
   });
 
@@ -469,9 +595,14 @@ describe('anthropicAdapter Core integration', () => {
     async (_description, content) => {
       const result = await inspect({ '/package.json': content });
 
-      expect(result.diagnostics).toStrictEqual([
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([
         createExpectedDiagnostic('ANTHROPIC_PACKAGE_MANIFEST_INVALID', '/package.json', null),
       ]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(result.valid).toBe(false);
     },
   );
@@ -487,7 +618,12 @@ describe('anthropicAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual(['language', 'runtime-package']);
   });
 
@@ -502,8 +638,42 @@ describe('anthropicAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual(['language', 'runtime-package']);
+  });
+
+  test.each([
+    "Object.defineProperty(client.messages, 'create', { value: replacement });",
+    'decorate(client);',
+    "const define = Object.defineProperty; define(client.messages, 'create', { value: replacement });",
+  ])('does not verify SDK requests after a write or unknown escape (%s)', async (effect) => {
+    const runtime = fixture.entries.find(({ path }) => path === '/src/agent.ts')?.text;
+    if (runtime === undefined) throw new TypeError('The runtime fixture is required.');
+    const result = await inspect({
+      '/src/agent.ts': runtime.replace(
+        'const client = new AnthropicClient();',
+        `const client = new AnthropicClient();\n${effect}`,
+      ),
+    });
+
+    expect(result).toMatchObject({ valid: true, errorCount: 0, runtimeInspection: 'incomplete' });
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, details }) => ({
+          code,
+          relationship: details['relationship'],
+        })),
+    ).toContainEqual({
+      code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      relationship: 'runtime-agent',
+    });
+    expect(result.evidence.some(({ kind }) => kind === 'runtime-pattern')).toBe(false);
   });
 
   test('rejects instruction and tool evidence through shadowed imports', async () => {
@@ -521,21 +691,41 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.valid).toBe(false);
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
-      'ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED',
-    ]);
-    expect(result.diagnostics[0]).toMatchObject({
-      details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
-      severity: 'warning',
-    });
+    expect(result).toMatchObject({ valid: true, errorCount: 0, runtimeInspection: 'incomplete' });
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual([
       'language',
       'runtime-package',
       'runtime-pattern',
       'schema',
     ]);
+  });
+
+  test('preserves registration identity after only its input schema is mutated', async () => {
+    const registration = fixture.entries.find(({ path }) => path === '/src/find-order.ts')?.text;
+    if (registration === undefined) throw new TypeError('The registration fixture is required.');
+    const result = await inspect({
+      '/src/find-order.ts': `${registration}\nfindOrderTool.input_schema = replacement;\n`,
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
+    expect(
+      result.evidence.some(
+        ({ kind, capabilityId }) => kind === 'schema' && capabilityId === 'find-order',
+      ),
+    ).toBe(false);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { relationship: 'tool-input-schema', reason: 'unsupported-source-pattern' },
+        severity: 'warning',
+      }),
+    );
   });
 
   test('does not compare the manifest description with the Anthropic tool description', async () => {
@@ -553,7 +743,12 @@ describe('anthropicAdapter Core integration', () => {
     const result = await inspect({ '/src/find-order.ts': registration });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
@@ -575,7 +770,12 @@ describe('anthropicAdapter Core integration', () => {
       '/src/find-order.ts': registration,
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
@@ -590,10 +790,14 @@ describe('anthropicAdapter Core integration', () => {
 
     const result = await inspect({ '/src/find-order.ts': registration });
 
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'ANTHROPIC_TOOL_NAME_INVALID',
-      'ANTHROPIC_TOOL_NAME_MISMATCH',
-    ]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['ANTHROPIC_TOOL_NAME_INVALID', 'ANTHROPIC_TOOL_NAME_MISMATCH']);
   });
 
   test.each([
@@ -616,9 +820,14 @@ describe('anthropicAdapter Core integration', () => {
       '/src/find-order.ts': registration,
     });
 
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'ANTHROPIC_TOOL_NAME_INVALID',
-    ]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['ANTHROPIC_TOOL_NAME_INVALID']);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });
 
@@ -633,10 +842,14 @@ describe('anthropicAdapter Core integration', () => {
 
     const result = await inspect({ '/src/find-order.ts': registration });
 
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'ANTHROPIC_TOOL_NAME_INVALID',
-      'ANTHROPIC_TOOL_NAME_MISMATCH',
-    ]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['ANTHROPIC_TOOL_NAME_INVALID', 'ANTHROPIC_TOOL_NAME_MISMATCH']);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });
 
@@ -654,7 +867,12 @@ describe('anthropicAdapter Core integration', () => {
 
     const result = await inspect({ '/src/find-order.ts': registration });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toEqual(
       expect.arrayContaining(['schema', 'tool-registration']),
     );
@@ -671,7 +889,12 @@ describe('anthropicAdapter Core integration', () => {
 
     const result = await inspect({ '/src/find-order.ts': registration });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(({ kind }) => kind === 'schema' || kind === 'tool-registration'),
     ).toBe(false);
@@ -700,7 +923,12 @@ describe('anthropicAdapter Core integration', () => {
     const result = await inspect({ '/src/find-order.ts': registration });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toEqual(
       expect.arrayContaining(['schema', 'tool-registration']),
     );
@@ -726,7 +954,12 @@ describe('anthropicAdapter Core integration', () => {
     const result = await inspect({ '/src/find-order.ts': registration });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(({ kind }) => kind === 'schema' || kind === 'tool-registration'),
     ).toBe(false);
@@ -738,12 +971,17 @@ describe('anthropicAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('schema');
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
-  test('leaves dynamically constructed registration input_schema unestablished', async () => {
+  test('keeps dynamic input schemas unverified while proving registration identity', async () => {
     const registration = fixture.entries
       .find(({ path }) => path === '/src/find-order.ts')
       ?.text.replace(
@@ -759,10 +997,14 @@ describe('anthropicAdapter Core integration', () => {
     const result = await inspect({ '/src/find-order.ts': registration });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
     expect(
-      result.evidence.some(({ kind }) => kind === 'schema' || kind === 'tool-registration'),
-    ).toBe(false);
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(result.evidence.some(({ kind }) => kind === 'schema')).toBe(false);
+    expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
   test('ignores unrelated dynamic request properties for both relationships', async () => {
@@ -777,7 +1019,12 @@ describe('anthropicAdapter Core integration', () => {
     const result = await inspect({ '/src/agent.ts': agent });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toEqual(
       expect.arrayContaining(['instruction-loader', 'tool-registration']),
     );
@@ -799,14 +1046,21 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toMatchObject([
+    expect(
+      result.diagnostics.filter(({ details }) => details['relationship'] !== 'tool-implementation'),
+    ).toMatchObject([
       {
         details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
         severity: 'warning',
       },
     ]);
-    expect(result).toMatchObject({ errorCount: 0, warningCount: 1 });
+    expect(result).toMatchObject({ errorCount: 0, warningCount: 2 });
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
@@ -827,13 +1081,18 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED',
-    ]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED']);
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
-  test('uses positive existential matching across multiple calls and a shorthand tool array', async () => {
+  test('preserves known instruction contradictions beside matching and unresolved requests', async () => {
     const result = await inspect({
       '/src/agent.ts': [
         "import Anthropic from '@anthropic-ai/sdk';",
@@ -849,10 +1108,18 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(false);
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED']);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).toEqual(
-      expect.arrayContaining(['instruction-loader', 'runtime-pattern', 'tool-registration']),
+      expect.arrayContaining(['runtime-pattern', 'tool-registration']),
     );
   });
 
@@ -888,7 +1155,12 @@ describe('anthropicAdapter Core integration', () => {
     ]);
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toContain('tool-registration');
   });
 
@@ -924,8 +1196,15 @@ describe('anthropicAdapter Core integration', () => {
       },
     ]);
 
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toMatchObject([
+    expect(
+      result.diagnostics.filter(({ details }) => details['relationship'] !== 'tool-implementation'),
+    ).toMatchObject([
       {
         details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
         severity: 'warning',
@@ -934,7 +1213,7 @@ describe('anthropicAdapter Core integration', () => {
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });
 
-  test('emits negative relationship diagnostics only when every candidate is closed', async () => {
+  test('preserves known instruction errors beside unresolved request candidates', async () => {
     const closedResult = await inspect({
       '/src/agent.ts': [
         "import Anthropic from '@anthropic-ai/sdk';",
@@ -964,11 +1243,35 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(closedResult.diagnostics.map(({ code }) => code)).toStrictEqual([
+    expect(
+      ambiguousResult.diagnostics
+        .filter(({ severity }) => severity === 'error')
+        .map(({ code }) => code),
+    ).toStrictEqual(['ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED']);
+    expect(
+      closedResult.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      ambiguousResult.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      closedResult.diagnostics
+        .filter(({ severity }) => severity === 'error')
+        .map(({ code }) => code),
+    ).toStrictEqual([
       'ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED',
       'ANTHROPIC_TOOL_REGISTRATION_NOT_WIRED',
     ]);
-    expect(ambiguousResult.diagnostics).toMatchObject([
+    expect(
+      ambiguousResult.diagnostics.filter(
+        ({ severity, details }) =>
+          severity === 'warning' && details['relationship'] !== 'tool-implementation',
+      ),
+    ).toMatchObject([
       {
         details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
         severity: 'warning',
@@ -978,10 +1281,10 @@ describe('anthropicAdapter Core integration', () => {
         severity: 'warning',
       },
     ]);
-    expect(ambiguousResult.valid).toBe(true);
+    expect(ambiguousResult.valid).toBe(false);
   });
 
-  test('suppresses negative relationship diagnostics for an aliased Messages candidate', async () => {
+  test('preserves known instruction errors beside an aliased Messages candidate', async () => {
     const result = await inspect({
       '/src/agent.ts': [
         "import Anthropic from '@anthropic-ai/sdk';",
@@ -999,7 +1302,20 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toMatchObject([
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED']);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      result.diagnostics.filter(
+        ({ severity, details }) =>
+          severity === 'warning' && details['relationship'] !== 'tool-implementation',
+      ),
+    ).toMatchObject([
       {
         details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
         severity: 'warning',
@@ -1009,7 +1325,7 @@ describe('anthropicAdapter Core integration', () => {
         severity: 'warning',
       },
     ]);
-    expect(result.valid).toBe(true);
+    expect(result.valid).toBe(false);
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('instruction-loader');
     expect(result.evidence.map(({ kind }) => kind)).not.toContain('tool-registration');
   });
@@ -1031,7 +1347,14 @@ describe('anthropicAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toMatchObject([
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      result.diagnostics.filter(({ details }) => details['relationship'] !== 'tool-implementation'),
+    ).toMatchObject([
       {
         details: { relationship: 'tool-registration', reason: 'dynamic-source-pattern' },
         severity: 'warning',
@@ -1047,7 +1370,12 @@ describe('anthropicAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual(['language', 'runtime-package']);
     expect(result.evidence.find(({ kind }) => kind === 'language')?.references).toStrictEqual([
       { path: '/src/agent.ts' },
@@ -1066,7 +1394,12 @@ describe('anthropicAdapter Core integration', () => {
     ]);
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual(['runtime-package']);
   });
 
@@ -1076,7 +1409,12 @@ describe('anthropicAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual(['language', 'runtime-package']);
   });
 
@@ -1204,11 +1542,16 @@ describe('anthropicAdapter Core integration', () => {
     });
     const packageEvidence = result.evidence.filter(({ kind }) => kind === 'runtime-package');
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(packageEvidence.map(({ agentId }) => agentId)).toStrictEqual(['alpha', 'beta']);
-    expect(readCounts.get('/package.json')).toBe(2);
-    expect(readCounts.get('/src/agent.ts')).toBe(2);
+    expect(readCounts.get('/package.json')).toBe(1);
+    expect(readCounts.get('/src/agent.ts')).toBe(1);
   });
 
   test('suppresses derived tool evidence for an unsupported registration shape', async () => {
@@ -1226,7 +1569,12 @@ describe('anthropicAdapter Core integration', () => {
     const result = await inspect({ '/src/find-order.ts': registration });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(({ kind }) => kind === 'schema' || kind === 'tool-registration'),
     ).toBe(false);

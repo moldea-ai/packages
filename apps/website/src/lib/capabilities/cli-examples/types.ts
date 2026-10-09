@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-// schema 5 is a closed envelope; command results validate only the fields consumed below
+// schema 6 is a closed envelope; command results validate only the fields consumed below
 export const CliEnvelope = z.strictObject({
   cliVersion: z.string(),
   command: z.enum(['validate', 'inspect', 'scope', 'content', 'composition']),
-  schemaVersion: z.literal(5),
+  schemaVersion: z.literal(6),
   status: z.enum(['valid', 'invalid', 'error']),
   error: z
     .object({
@@ -99,8 +99,10 @@ const CliOtherRecord = z.object({
 });
 
 // known metadata and relationship records; additive producer fields are intentionally stripped
+const RuntimeInspectionStatus = z.enum(['complete', 'incomplete', 'not-run']);
 export const CliCollectionResult = z.object({
   valid: z.boolean(),
+  runtimeInspection: RuntimeInspectionStatus.optional(),
   diagnosticCount: z.number().optional(),
   errorCount: z.number().optional(),
   warningCount: z.number().optional(),
@@ -134,6 +136,10 @@ export const CliCollectionResult = z.object({
     cursor: z.string().nullable(),
     records: z.array(z.union([CliDiagnosticRecord, CliOtherRecord])),
   }),
+});
+// validate and inspect expose runtime status; scope shares collection fields without that status
+export const CliInspectionResult = CliCollectionResult.extend({
+  runtimeInspection: RuntimeInspectionStatus,
 });
 export const CliContentResult = z.object({
   asset: z.object({ path: z.string(), totalBytes: z.number().int().nonnegative() }),

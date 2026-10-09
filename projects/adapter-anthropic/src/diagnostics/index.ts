@@ -8,6 +8,34 @@ import type {
 
 // stable Anthropic adapter diagnostic code and message catalog
 export const ANTHROPIC_ADAPTER_DIAGNOSTICS = Object.freeze({
+  ANTHROPIC_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent input-schema symbol was not found.',
+    severity: 'error',
+  },
+  ANTHROPIC_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool-implementation symbol was not found.',
+    severity: 'error',
+  },
+  ANTHROPIC_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool output-schema symbol was not found.',
+    severity: 'error',
+  },
+  ANTHROPIC_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-implementation symbol was not found.',
+    severity: 'error',
+  },
+  ANTHROPIC_SKILL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-registration symbol was not found.',
+    severity: 'error',
+  },
+  ANTHROPIC_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND: {
+    message: 'The declared variable-provider symbol was not found.',
+    severity: 'error',
+  },
+  ANTHROPIC_INSTRUCTION_SOURCE_MISMATCH: {
+    message: 'The declared instruction loader does not consume the canonical instruction source.',
+    severity: 'error',
+  },
   ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED: {
     message:
       'The declared instruction loader is not wired to the detected Anthropic Messages API call.',

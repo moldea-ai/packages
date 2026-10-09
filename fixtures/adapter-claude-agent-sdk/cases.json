@@ -53,7 +53,7 @@
     },
     {
       "path": "/src/instructions.ts",
-      "text": "export const loadBillingInstruction = async (): Promise<string> => 'Resolve billing requests.';\nexport const loadTriageInstruction = async (): Promise<string> => 'Route the request.';\n",
+      "text": "import { readFileSync as readCanonicalInstruction } from 'node:fs';\n\nexport const loadBillingInstruction = async (): Promise<string> => readCanonicalInstruction(new URL('../moldea/agents/billing/instruction.md', import.meta.url), 'utf8');\nexport const loadTriageInstruction = async (): Promise<string> => readCanonicalInstruction(new URL('../moldea/agents/triage/instruction.md', import.meta.url), 'utf8');\n",
       "type": "file"
     },
     {

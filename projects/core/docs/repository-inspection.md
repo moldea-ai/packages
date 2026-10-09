@@ -42,6 +42,8 @@ export const validate = async (repository: IRepositoryReader) => {
 
 The result contains source identity, validity, format version, summary counts and digests, diagnostics, and runtime evidence. Core internally composes canonical discovery, project and context validation, decision graphs, registered-agent assets, mirrors, references, relationships, and configured adapters through one budget-aware reader session.
 
+Required `runtimeInspection` distinguishes `complete` checks, `incomplete` checks with scoped unverified-relationship warnings, and `not-run` checks blocked by universal errors or unavailable adapters. Validity still means zero errors. A project with no applicable runtime relationships is complete; business readiness remains a separate decision.
+
 The `unresolved` summary count includes all project-owned and agent-owned requirements, across every effect. Identical IDs under different owners count separately. Validation and every inspection page report the same complete total. Requirements describe readiness gaps; even blocking requirements do not invalidate a structurally valid project.
 
 Structural repository errors return error diagnostics. Adapters may return scoped warnings for unverified declared runtime relationships without invalidating an otherwise valid project. Reader access failures, snapshot drift, cancellation, resource exhaustion, invalid operation input, and invalid adapter output reject with typed exceptions.
@@ -58,6 +60,8 @@ Structural repository errors return error diagnostics. Adapters may return scope
 Each `agent` item contains exactly the canonical `agentId` and manifest-declared `runtimeId`. It does not contain a path, body, digest, relationship, adapter result, or runtime-publication claim. The aggregate `agents` count describes the complete canonical agent collection, while `metadata` continues to count asset-metadata items only. Page totals include every record in the selected view.
 
 The returned inspection exposes synchronous `readPage({ view, maxItems, cursor? })` calls. Those page reads perform no repository access, validation, adapter execution, sorting, or digesting. Cursors bind progress to the inspection digest and selected view, so a cursor cannot resume another project state or output shape. Agent assignments participate in that digest, which invalidates continuation when a declared runtime changes.
+
+Every inspection and page carries the complete `runtimeInspection` value, including an empty or filtered view. The status participates in prepared-memory accounting and the `core6-prepared-inspection` identity. Current cursors use the `core6` domain; cursors from another inspection generation are rejected.
 
 Canonical bodies exist only while the initial validation is being prepared. The returned inspection retains content-free records and indexes only. Its deterministic resource report distinguishes source bytes read, canonical bytes processed, prepared bytes retained after validation, and peak logical retained bytes. Construction fails before exceeding `maxRetainedBytes`; paging remains bounded by `maxItems` and the Core entry limit.
 

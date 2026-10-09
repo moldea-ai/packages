@@ -1,4 +1,7 @@
-import { createInspectionSession } from '@moldea.ai/adapter-static-analysis';
+import {
+  createInspectionSessionFactory,
+  getSourceRetainedBytes,
+} from '@moldea.ai/adapter-static-analysis';
 import { readRuntimeAdapterFile, type IRuntimeAdapterContext } from '@moldea.ai/core/adapter';
 
 import type { IGoogleGenAiInspectionSession } from '../contracts/index.js';
@@ -10,11 +13,18 @@ import { analyzeGoogleGenAiSource } from '../source-analysis/index.js';
  * @param context The Core-owned adapter context.
  * @returns The source and package analysis session.
  */
-export const createGoogleGenAiInspectionSession = (
+export const createGoogleGenAiInspectionSession: (
   context: IRuntimeAdapterContext,
-): IGoogleGenAiInspectionSession =>
-  createInspectionSession({
+) => IGoogleGenAiInspectionSession = createInspectionSessionFactory(
+  (context: IRuntimeAdapterContext) => ({
+    owner: context.repository,
+    ...(context.agent.declaration.bindings?.runtimeAgent === undefined
+      ? {}
+      : {
+          activeSourcePath: context.agent.declaration.bindings.runtimeAgent.path,
+        }),
     analyzeSource: analyzeGoogleGenAiSource,
+    getSourceRetainedBytes,
     discoverPackage: (path, signal) => discoverGoogleGenAiPackage(context.repository, path, signal),
     getEntry: (path, signal) =>
       context.repository.getEntry(path, signal === undefined ? undefined : { signal }),
@@ -25,4 +35,5 @@ export const createGoogleGenAiInspectionSession = (
         signal === undefined ? undefined : { signal },
       ),
     ...(context.signal === undefined ? {} : { signal: context.signal }),
-  });
+  }),
+);

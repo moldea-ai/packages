@@ -1,4 +1,4 @@
-import type { ICoreDiagnosticCode, ITextDocumentContent } from '@moldea.ai/core';
+import type { IDiagnostic, ITextDocumentContent } from '@moldea.ai/core';
 import type { IMemoryRepositoryEntry } from '@moldea.ai/repository/memory';
 
 import type { ICapabilityGroupId } from '../index.ts';
@@ -12,5 +12,5 @@ export interface ICoreExampleDefinition {
   operation: 'validateProject' | 'parseManifest' | 'parseDecision' | 'normalizeText';
   entries: IMemoryRepositoryEntry[];
   text?: { path: string; content: ITextDocumentContent };
-  expectedCodes: ICoreDiagnosticCode[];
+  expectedCodes: IDiagnostic['code'][];
 }

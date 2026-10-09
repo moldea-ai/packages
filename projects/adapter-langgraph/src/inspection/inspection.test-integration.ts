@@ -91,7 +91,12 @@ describe('langGraphAdapter Core integration', () => {
   test('emits complete normalized evidence for both verified targets', async () => {
     const result = await inspect();
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
   });
@@ -102,7 +107,12 @@ describe('langGraphAdapter Core integration', () => {
         '{"dependencies":{"@langchain/core":"2.0.0","@langchain/langgraph":"2.0.0"}}',
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
   });
 
@@ -327,7 +337,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -343,7 +358,12 @@ describe('langGraphAdapter Core integration', () => {
       '/src/graph.ts': "export const supportGraph = createAgent({ model: 'provider:model' });\n",
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -382,7 +402,12 @@ describe('langGraphAdapter Core integration', () => {
         ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     const interrupt = result.evidence.find(
       ({ agentId, details, kind }) =>
         agentId === 'functional' &&
@@ -411,7 +436,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       structuredClone(
         result.evidence.find(
@@ -478,7 +508,12 @@ describe('langGraphAdapter Core integration', () => {
         ),
       });
 
-      expect(result.diagnostics).toStrictEqual([]);
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(
         result.evidence.some(
           ({ agentId, details }) =>
@@ -539,7 +574,12 @@ describe('langGraphAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, details, kind }) =>
@@ -583,7 +623,12 @@ describe('langGraphAdapter Core integration', () => {
   ] as const)('recognizes a module-local fluent %s chain', async (_description, graphSource) => {
     const result = await inspect({ '/src/graph.ts': graphSource });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, details, kind }) =>
@@ -614,7 +659,12 @@ describe('langGraphAdapter Core integration', () => {
       ({ agentId, kind }) => agentId === 'graph' && kind === 'schema',
     );
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(graphSchemas).toHaveLength(2);
     expect(graphSchemas.every(({ details }) => details['schemaSource'] === 'state-fallback')).toBe(
       true,
@@ -629,7 +679,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, details }) => agentId === 'graph' && details['edgeKind'] === 'waiting',
@@ -645,7 +700,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -661,7 +721,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -682,7 +747,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -698,7 +768,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'functional' && kind === 'agent-definition',
@@ -717,7 +792,12 @@ describe('langGraphAdapter Core integration', () => {
       ({ agentId, kind }) => agentId === 'functional' && kind === 'agent-definition',
     );
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(definition?.runtimeName).toBeNull();
   });
 
@@ -726,7 +806,12 @@ describe('langGraphAdapter Core integration', () => {
       '/moldea/moldea.yaml': fixture.manifest.replace('        symbol: supportWorkflow\n', ''),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'functional' && kind === 'runtime-package',
@@ -750,7 +835,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -769,7 +859,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -793,7 +888,12 @@ describe('langGraphAdapter Core integration', () => {
         agentId === 'graph' && details['schemaRole'] === 'agent-input' && kind === 'schema',
     );
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(inputSchema?.details['schemaSource']).toBe('state-fallback');
   });
 
@@ -808,7 +908,12 @@ describe('langGraphAdapter Core integration', () => {
       '/src/omission.ts': 'export const omission = undefined;\n',
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -824,7 +929,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -845,7 +955,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, details }) =>
@@ -862,7 +977,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -878,7 +998,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -902,7 +1027,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -926,7 +1056,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -942,7 +1077,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'graph' && kind === 'agent-definition',
@@ -958,7 +1098,12 @@ describe('langGraphAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'functional' && kind === 'agent-definition',

@@ -1,8 +1,9 @@
 import ts from 'typescript';
 
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 
+import type { IEveEvidenceCollector } from '../contracts/index.js';
 import {
   EVE_ADAPTER_ID,
   EVE_AGENT_OUTPUT_SCHEMA_REMOVAL_VERSION,
@@ -22,6 +23,7 @@ import {
   getEvePropertyExpression,
   resolveEveStaticString,
 } from '../source-analysis/index.js';
+
 import {
   addEveDiagnostic,
   addEveSourceFailureDiagnostic,
@@ -58,12 +60,17 @@ const getStaticBoolean = (
       : null;
 };
 
-/** Inspects one exact manifest-bound Eve agent definition and its output schema. */
+/**
+ * Inspects one exact manifest-bound Eve agent definition and its output schema.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectEveAgent = async (
   session: IEveInspectionSession,
   agent: IEveScopedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IEveEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IEveAgentDefinition | null> => {
   const runtimeAgent = agent.declaration.bindings?.runtimeAgent;
 
@@ -128,7 +135,7 @@ export const inspectEveAgent = async (
     return null;
   }
 
-  evidence.push(
+  evidence.add(() =>
     createEveEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -254,7 +261,7 @@ export const inspectEveAgent = async (
     }
   }
 
-  evidence.push(
+  evidence.add(() =>
     createEveEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -291,7 +298,7 @@ export const inspectEveAgent = async (
           agent.id,
         );
       } else if (state === 'wired') {
-        evidence.push(
+        evidence.add(() =>
           createEveEvidence({
             agentId: agent.id,
             capabilityId: null,
@@ -299,7 +306,7 @@ export const inspectEveAgent = async (
             details: { schemaRole: 'agent-output' },
             kind: 'schema',
             references: [outputSchema],
-            runtimeName: outputSchema.symbol,
+            runtimeName: outputSchema.symbol ?? null,
             source: EVE_ADAPTER_ID,
           }),
         );

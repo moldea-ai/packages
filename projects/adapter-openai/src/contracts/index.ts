@@ -1,11 +1,22 @@
 import type ts from 'typescript';
 
+import type {
+  IRuntimeAdapterRecordCollector,
+  IRuntimeAdapterEvidence as ICollectedEvidence,
+} from '@moldea.ai/core/adapter';
 import type { ISourceRange } from '@moldea.ai/core';
 import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
 export type IOpenAiAdapterDiagnosticCode =
+  | 'OPENAI_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'OPENAI_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'OPENAI_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'OPENAI_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'OPENAI_SKILL_REGISTRATION_SYMBOL_NOT_FOUND'
+  | 'OPENAI_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND'
+  | 'OPENAI_INSTRUCTION_SOURCE_MISMATCH'
   | 'OPENAI_PACKAGE_MANIFEST_INVALID'
   | 'OPENAI_SDK_VERSION_UNSUPPORTED'
   | 'OPENAI_SOURCE_TEXT_INVALID'
@@ -65,6 +76,7 @@ export interface IOpenAiNamedImport {
 
 export type IOpenAiExportState =
   | { readonly kind: 'absent' }
+  | { readonly declaration: ts.Node; readonly kind: 'unresolved' }
   | { readonly declaration: ts.Node; readonly kind: 'present-supported' }
   | { readonly declaration: ts.Node; readonly kind: 'present-unsupported' };
 
@@ -75,9 +87,14 @@ export interface IOpenAiModuleArray {
 
 // parsed and indexed source used only for one inspection
 export interface IOpenAiSourceAnalysis {
+  readonly estimatedRetainedBytes: number;
+  readonly hasUnresolvedExports: boolean;
   readonly clientNames: ReadonlySet<string>;
   readonly exports: ReadonlyMap<string, IOpenAiExportState & { readonly declaration: ts.Node }>;
   readonly localBindingNames: ReadonlyMap<ts.Node, ReadonlySet<string>>;
+  readonly lexicalBindings: ReadonlyMap<ts.Node, ReadonlyMap<string, ts.Node | null>>;
+  readonly bindingMutations: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
+  readonly bindingEscapes: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
   readonly moduleArrays: ReadonlyMap<string, IOpenAiModuleArray>;
   readonly moduleConstDeclarations: ReadonlyMap<string, ts.VariableDeclaration>;
   readonly namedImports: ReadonlyMap<string, IOpenAiNamedImport>;
@@ -131,3 +148,8 @@ export type IOpenAiDiagnosticInput =
   | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
       readonly code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED';
     });
+
+// adapter-owned evidence admission uses only Core public types in packed declarations
+export interface IOpenAiEvidenceCollector extends IRuntimeAdapterRecordCollector<ICollectedEvidence> {
+  instruction(factory: () => ICollectedEvidence): void;
+}

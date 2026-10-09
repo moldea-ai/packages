@@ -8,6 +8,30 @@ import type {
 
 // stable Claude Agent SDK adapter diagnostic code and message catalog
 export const CLAUDE_AGENT_SDK_ADAPTER_DIAGNOSTICS = Object.freeze({
+  CLAUDE_AGENT_SDK_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent input-schema symbol was not found.',
+    severity: 'error',
+  },
+  CLAUDE_AGENT_SDK_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool output-schema symbol was not found.',
+    severity: 'error',
+  },
+  CLAUDE_AGENT_SDK_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-implementation symbol was not found.',
+    severity: 'error',
+  },
+  CLAUDE_AGENT_SDK_SKILL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-registration symbol was not found.',
+    severity: 'error',
+  },
+  CLAUDE_AGENT_SDK_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND: {
+    message: 'The declared variable-provider symbol was not found.',
+    severity: 'error',
+  },
+  CLAUDE_AGENT_SDK_INSTRUCTION_SOURCE_MISMATCH: {
+    message: 'The declared instruction loader does not consume the canonical instruction source.',
+    severity: 'error',
+  },
   CLAUDE_AGENT_SDK_AGENT_OUTPUT_SCHEMA_NOT_WIRED: {
     message:
       'The declared agent output schema is not wired to the detected Claude Agent SDK query output format.',

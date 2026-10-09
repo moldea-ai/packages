@@ -1,5 +1,6 @@
 import type ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
 import type { IRuntimeAdapterEvidence, ISourceRange } from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
@@ -78,9 +79,12 @@ const createEntity = (agentId: string, capabilityId?: string) =>
  * @param range The optional scalar source range.
  * @param capabilityId The optional owning tool capability.
  * @param details Safe scalar diagnostic details.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const addClaudeAgentSdkDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   code: Exclude<
     IClaudeAgentSdkAdapterDiagnosticCode,
     'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED'
@@ -91,7 +95,7 @@ export const addClaudeAgentSdkDiagnostic = (
   capabilityId?: string,
   details: IAdapterDiagnostic['details'] = {},
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createClaudeAgentSdkDiagnostic({
       code,
       details,
@@ -118,11 +122,14 @@ export const locateClaudeAgentSdkNode = (
  * @param agentId The owning agent identifier.
  * @param capabilityId The optional owning tool capability.
  * @returns The indexed source or `null` after unsupported or invalid input.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const analyzeClaudeAgentSdkBoundReference = async (
   session: IClaudeAgentSdkInspectionSession,
   reference: IRepositoryReference,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
   capabilityId?: string,
 ): Promise<IClaudeAgentSdkSourceAnalysis | null> => {

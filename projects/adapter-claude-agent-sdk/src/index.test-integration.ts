@@ -92,7 +92,7 @@ describe('@moldea.ai/adapter-claude-agent-sdk public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-claude-agent-sdk',
-      version: '4.1.0',
+      version: '5.0.0',
     });
     expect(packedPaths).toEqual(
       expect.arrayContaining([
@@ -126,7 +126,7 @@ describe('@moldea.ai/adapter-claude-agent-sdk public API', () => {
       ),
     ).toBe(true);
     expect(manifest.dependencies).toStrictEqual({
-      '@moldea.ai/core': 'workspace:^5.0.0',
+      '@moldea.ai/core': 'workspace:^6.0.0',
       '@moldea.ai/repository': 'workspace:^2.0.0',
       semver: '7.8.5',
       typescript: '6.0.3',
@@ -145,7 +145,12 @@ describe('published binding example', () => {
     }).validateProject({
       repository: createMemoryRepositoryReader(files),
     });
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     for (const { path: sourcePath, symbol, ...identity } of [
       {

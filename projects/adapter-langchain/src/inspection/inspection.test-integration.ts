@@ -81,7 +81,7 @@ const getFixtureText = (path: string): string => {
 };
 
 const expectMiddlewareWarnings = (result: Awaited<ReturnType<typeof inspect>>): void => {
-  expect([result.valid, result.errorCount, result.warningCount]).toStrictEqual([true, 0, 3]);
+  expect([result.valid, result.errorCount, result.warningCount]).toStrictEqual([true, 0, 4]);
   expect(
     result.diagnostics.map(({ code, details, entity, severity }) => ({
       code,
@@ -113,6 +113,17 @@ const expectMiddlewareWarnings = (result: Awaited<ReturnType<typeof inspect>>): 
       },
       severity: 'warning',
     },
+    {
+      code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason: 'unsupported-source-pattern', relationship: 'tool-implementation' },
+      entity: {
+        adapterId: 'langchain',
+        agentId: 'support',
+        capabilityId: 'find-order',
+        capabilityKind: 'tool',
+      },
+      severity: 'warning',
+    },
   ]);
 };
 
@@ -128,7 +139,12 @@ describe('langChainAdapter Core integration', () => {
   test('emits complete normalized evidence for the verified createAgent target', async () => {
     const result = await inspect();
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
   });
@@ -138,7 +154,12 @@ describe('langChainAdapter Core integration', () => {
       '/package.json': '{"dependencies":{"@langchain/core":"2.0.0","langchain":"2.0.0"}}',
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
   });
 
@@ -152,7 +173,12 @@ describe('langChainAdapter Core integration', () => {
     async (_companionState, packageManifest) => {
       const result = await inspect({ '/package.json': packageManifest });
 
-      expect(result.diagnostics).toStrictEqual([]);
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(result.evidence.some(({ kind }) => kind === 'runtime-package')).toBe(false);
     },
   );
@@ -303,7 +329,12 @@ describe('langChainAdapter Core integration', () => {
       '/src/agent.d.ts': getFixtureText('/src/agent.ts'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.filter(
         ({ agentId, kind }) =>
@@ -320,7 +351,12 @@ describe('langChainAdapter Core integration', () => {
         [runtimePath]: getFixtureText('/src/agent.ts'),
       });
 
-      expect(result.diagnostics).toStrictEqual([]);
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(
         result.evidence.some(
           ({ kind, references }) =>
@@ -338,7 +374,12 @@ describe('langChainAdapter Core integration', () => {
       '/src/tools.ts': `${getFixtureText('/src/tools.ts')}export const TOOLS = [findOrderTool];\n`,
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ capabilityId, kind }) => capabilityId === 'find-order' && kind === 'tool-registration',
@@ -351,7 +392,12 @@ describe('langChainAdapter Core integration', () => {
       '/src/tools.ts': `${getFixtureText('/src/tools.ts')}const escaped = [findOrderTool]; consume(escaped);\n`,
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.filter(({ capabilityId }) => capabilityId === 'find-order'),
     ).toStrictEqual([]);
@@ -382,7 +428,12 @@ describe('langChainAdapter Core integration', () => {
       repository,
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ capabilityId, kind }) => capabilityId === 'find-order' && kind === 'tool-registration',
@@ -401,7 +452,12 @@ describe('langChainAdapter Core integration', () => {
         ),
       });
 
-      expect(result.diagnostics).toStrictEqual([]);
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(
         result.evidence.some(
           ({ details, kind }) =>
@@ -436,7 +492,12 @@ describe('langChainAdapter Core integration', () => {
         ...(isImported ? { '/src/middleware.ts': 'export const MIDDLEWARE = [];\n' } : {}),
       });
 
-      expect(result.diagnostics).toStrictEqual([]);
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(result.evidence.some(({ kind }) => kind === 'instruction-loader')).toBe(true);
       expect(result.evidence.some(({ kind }) => kind === 'tool-registration')).toBe(true);
       expect(result.evidence.some(({ details }) => details['schemaRole'] === 'agent-output')).toBe(
@@ -492,7 +553,12 @@ describe('langChainAdapter Core integration', () => {
       );
     const result = await inspect({ '/src/agent.ts': agentSource });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.some(({ kind }) => kind === 'instruction-loader')).toBe(true);
   });
 
@@ -533,7 +599,12 @@ describe('langChainAdapter Core integration', () => {
           .replace(source, replacement),
       });
 
-      expect(result.diagnostics).toStrictEqual([]);
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(
         result.evidence.some(
           ({ details, kind }) =>
@@ -623,7 +694,12 @@ describe('langChainAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ capabilityId, kind }) => capabilityId === 'find-order' && kind === 'tool-registration',
@@ -664,7 +740,12 @@ describe('langChainAdapter Core integration', () => {
           capabilityId === 'find-order' && details['schemaRole'] === 'tool-input',
       );
 
-      expect(result.diagnostics).toStrictEqual([]);
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
       expect(registration !== undefined).toBe(expectsRegistration);
       expect(schema !== undefined).toBe(expectsSchema);
 
@@ -780,7 +861,12 @@ describe('langChainAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence).toStrictEqual([]);
   });
 

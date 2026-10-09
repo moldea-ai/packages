@@ -30,6 +30,8 @@ Missing or invalid references, context relationships, runtime guidance, and deci
 
 Agent directories, identity, descriptions, instructions, variables, runtime availability, tools, and skills use `MOLDEA_AGENT_*`, `MOLDEA_RUNTIME_*`, `MOLDEA_VARIABLE_*`, `MOLDEA_CAPABILITY_*`, `MOLDEA_TOOL_*`, and `MOLDEA_SKILL_*` codes.
 
+`CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified. Core emits this warning with source `custom` and the declared relationship's identity. It does not register a custom adapter or infer a provider. Warning-only validity remains successful while `runtimeInspection` is `incomplete`.
+
 ### [Mirrors](#mirrors)
 
 Mirror path validity, presence, type, and digest coherence use `MOLDEA_MIRROR_*` codes.

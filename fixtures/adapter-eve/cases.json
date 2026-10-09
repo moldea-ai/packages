@@ -6,7 +6,11 @@
       "text": "{\"name\":\"@acme/support-app\",\"dependencies\":{\"eve\":\"^0.39.1\"}}",
       "type": "file"
     },
-    { "path": "/moldea/project.md", "text": "# Fixture project\n", "type": "file" },
+    {
+      "path": "/moldea/project.md",
+      "text": "# Fixture project\n",
+      "type": "file"
+    },
     {
       "path": "/moldea/agents/support/description.md",
       "text": "Supports customers.\n",
@@ -44,7 +48,7 @@
     },
     {
       "path": "/agent/loaders.ts",
-      "text": "export const loadInstruction = () => 'Support customers.';\n",
+      "text": "import { readFileSync as readCanonicalInstruction } from 'node:fs';\n\nexport const loadInstruction = () => readCanonicalInstruction(new URL('../moldea/agents/support/instruction.md', import.meta.url), 'utf8');\n",
       "type": "file"
     },
     {

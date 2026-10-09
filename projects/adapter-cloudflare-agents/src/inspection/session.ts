@@ -1,4 +1,7 @@
-import { createInspectionSession } from '@moldea.ai/adapter-static-analysis';
+import {
+  createInspectionSessionFactory,
+  getSourceRetainedBytes,
+} from '@moldea.ai/adapter-static-analysis';
 import { readRuntimeAdapterFile, type IRuntimeAdapterContext } from '@moldea.ai/core/adapter';
 
 import type { ICloudflareAgentsInspectionSession } from '../contracts/index.js';
@@ -6,11 +9,18 @@ import { discoverCloudflareAgentsPackage } from '../package-discovery/index.js';
 import { analyzeCloudflareAgentsSource } from '../source-analysis/index.js';
 
 /** Creates one operation-local Cloudflare Agents inspection session. */
-export const createCloudflareAgentsInspectionSession = (
+export const createCloudflareAgentsInspectionSession: (
   context: IRuntimeAdapterContext,
-): ICloudflareAgentsInspectionSession =>
-  createInspectionSession({
+) => ICloudflareAgentsInspectionSession = createInspectionSessionFactory(
+  (context: IRuntimeAdapterContext) => ({
+    owner: context.repository,
+    ...(context.agent.declaration.bindings?.runtimeAgent === undefined
+      ? {}
+      : {
+          activeSourcePath: context.agent.declaration.bindings.runtimeAgent.path,
+        }),
     analyzeSource: analyzeCloudflareAgentsSource,
+    getSourceRetainedBytes,
     discoverPackage: (path, signal) =>
       discoverCloudflareAgentsPackage(context.repository, path, signal),
     getEntry: (path, signal) =>
@@ -22,4 +32,5 @@ export const createCloudflareAgentsInspectionSession = (
         signal === undefined ? undefined : { signal },
       ),
     ...(context.signal === undefined ? {} : { signal: context.signal }),
-  });
+  }),
+);

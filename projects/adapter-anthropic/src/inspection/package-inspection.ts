@@ -1,9 +1,11 @@
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
+import type { IAnthropicEvidenceCollector } from '../contracts/index.js';
 import { ANTHROPIC_ADAPTER_ID, ANTHROPIC_SDK_PACKAGE_NAME } from '../constants/index.js';
 import type { IAnthropicInspectionSession } from '../contracts/index.js';
+
 import { addAnthropicDiagnostic, createAnthropicEvidence } from './common.js';
 
 /**
@@ -13,12 +15,15 @@ import { addAnthropicDiagnostic, createAnthropicEvidence } from './common.js';
  * @param evidence The operation evidence collection.
  * @param diagnostics The operation diagnostic collection.
  * @param agentId The owning agent identifier.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectAnthropicPackage = async (
   session: IAnthropicInspectionSession,
   sourcePath: IRepositoryPath,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IAnthropicEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
 ): Promise<void> => {
   const discovery = await session.discoverPackage(sourcePath);
@@ -50,7 +55,7 @@ export const inspectAnthropicPackage = async (
   }
 
   for (const declaration of observation.declarations) {
-    evidence.push(
+    evidence.add(() =>
       createAnthropicEvidence({
         agentId,
         capabilityId: null,

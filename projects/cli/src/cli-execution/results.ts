@@ -122,6 +122,7 @@ export const createMoldeaCliValidateExecutionResult = (
     page,
     snapshotDigest: projection.snapshotDigest,
     source: projection.source,
+    runtimeInspection: projection.runtimeInspection,
     valid: projection.valid,
     warningCount: projection.warningCount,
   });
@@ -178,6 +179,7 @@ export const createMoldeaCliInspectExecutionResult = (
     project: projection.project,
     snapshotDigest: projection.snapshotDigest,
     source: projection.source,
+    runtimeInspection: projection.runtimeInspection,
     valid: projection.valid,
     view: projection.view,
   });

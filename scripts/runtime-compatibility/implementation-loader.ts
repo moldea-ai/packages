@@ -5,6 +5,7 @@ import {
   SUPPORTED_REPOSITORY_FORMAT_VERSIONS,
 } from '../../projects/core/src/constants/index.ts';
 import { ACTIVE_RUNTIME_ADAPTERS } from '../../projects/cli/src/core-composition/constants.ts';
+import { MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES } from '../../projects/cli/src/composition/constants.ts';
 
 import { validateMoldeaCliImplementation } from './implementation-validations.ts';
 import type {
@@ -69,6 +70,7 @@ export const validateMoldeaCliImplementationSources = async (
   validateMoldeaCliImplementation({
     activeAdapters,
     cliManifest,
+    cliPackageRanges: MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES,
     coreRecognizedAdapterIds: RECOGNIZED_RUNTIME_ADAPTER_IDS,
     coreSupportedRepositoryFormatVersions: SUPPORTED_REPOSITORY_FORMAT_VERSIONS,
     matrix,

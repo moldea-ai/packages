@@ -1,11 +1,14 @@
+import { createRuntimeAdapterResultCollector } from '@moldea.ai/core/adapter';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
 
+import type { IOpenAiAgentsSdkEvidenceCollector } from '../contracts/index.js';
 import { OPENAI_AGENTS_SDK_ADAPTER_ID } from '../constants/index.js';
 import type { IOpenAiAgentsSdkInspectionSession } from '../contracts/index.js';
 import {
@@ -14,6 +17,8 @@ import {
   getOpenAiAgentsSdkAgentDefinition,
   resolveOpenAiAgentsSdkStaticString,
 } from '../source-analysis/index.js';
+
+import { createDeclaredOpenAiAgentsSdkRelationships } from './declared-relationships.js';
 import {
   addOpenAiAgentsSdkDiagnostic,
   analyzeOpenAiAgentsSdkBoundReference,
@@ -29,8 +34,8 @@ const inspectAgent = async (
   context: IRuntimeAdapterContext,
   session: IOpenAiAgentsSdkInspectionSession,
   agent: IIndexedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiAgentsSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const runtimeAgent = agent.declaration.bindings?.runtimeAgent;
 
@@ -44,7 +49,7 @@ const inspectAgent = async (
     return;
   }
 
-  evidence.push(
+  evidence.add(() =>
     createOpenAiAgentsSdkEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -54,7 +59,10 @@ const inspectAgent = async (
       references: [
         runtimeAgent.symbol === undefined
           ? { path: runtimeAgent.path }
-          : { path: runtimeAgent.path, symbol: runtimeAgent.symbol },
+          : {
+              path: runtimeAgent.path,
+              ...(runtimeAgent.symbol === undefined ? {} : { symbol: runtimeAgent.symbol }),
+            },
       ],
       runtimeName: null,
       source: OPENAI_AGENTS_SDK_ADAPTER_ID,
@@ -102,18 +110,23 @@ const inspectAgent = async (
       ? await resolveOpenAiAgentsSdkStaticString(session, analysis, definition.name.expression)
       : { kind: 'unsupported' as const };
 
-  evidence.push(
+  evidence.add(() =>
     createOpenAiAgentsSdkEvidence({
       agentId: agent.id,
       capabilityId: null,
       capabilityKind: null,
       details: { definitionKind: 'agent' },
       kind: 'agent-definition',
-      references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
+      references: [
+        {
+          path: runtimeAgent.path,
+          ...(runtimeAgent.symbol === undefined ? {} : { symbol: runtimeAgent.symbol }),
+        },
+      ],
       runtimeName:
         runtimeName.kind === 'supported' && isOpenAiAgentsSdkMachineString(runtimeName.value)
           ? runtimeName.value
-          : runtimeAgent.symbol,
+          : (runtimeAgent.symbol ?? null),
       source: OPENAI_AGENTS_SDK_ADAPTER_ID,
     }),
   );
@@ -147,18 +160,24 @@ const inspectAgent = async (
  * - ENTRY_NOT_FILE: The requested repository entry is not a file.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
  * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
  * - INVALID_SOURCE_DATA: The repository source returned invalid data.
- * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
- * - ABORTED: The repository operation or inspection signal was aborted.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectOpenAiAgentsSdk = async (
   context: IRuntimeAdapterContext,
 ): Promise<IRuntimeAdapterResult> => {
   context.signal?.throwIfAborted();
   const session = createOpenAiAgentsSdkInspectionSession(context);
-  const evidence: IRuntimeAdapterEvidence[] = [];
-  const diagnostics: IAdapterDiagnostic[] = [];
+  const collector = createRuntimeAdapterResultCollector(context);
+  const relationships = createDeclaredOpenAiAgentsSdkRelationships(context, collector, session);
+  const { evidence, diagnostics } = relationships;
+  await relationships.inspectExports();
+  await relationships.inspectInstructionSource();
   const agents = [context.agent];
 
   for (const agent of agents) {
@@ -167,8 +186,6 @@ export const inspectOpenAiAgentsSdk = async (
   }
 
   context.signal?.throwIfAborted();
-  return Object.freeze({
-    diagnostics: Object.freeze(diagnostics),
-    evidence: Object.freeze(evidence),
-  });
+  relationships.finalize();
+  return collector.finalize();
 };

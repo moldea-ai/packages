@@ -1,6 +1,79 @@
 # Package launch readiness
 
-This report records implementation and verification for the [approved launch plan](https://github.com/moldea-ai/packages/blob/ca543e304b675dd28db7d42c60c844afda0a35e8/coding-agent-planning/1790360458_adapter-launch-readiness/plan.md), retained in Git history after the completed planning files were removed. A package is not declared production ready merely because its version or compatibility range has been updated. Milestone 11 identifies the final combined consumer and operating-system matrix as a release gate.
+This report records implementation and verification for the [approved launch plan](https://github.com/moldea-ai/packages/blob/ca543e304b675dd28db7d42c60c844afda0a35e8/coding-agent-planning/1790360458_adapter-launch-readiness/plan.md), retained in Git history after the completed planning files were removed. A package is not declared production ready merely because its version or compatibility range has been updated. The current runtime-validation release requires isolated CLI and platform resource qualification, complete consumer checks, and coordinated publication. The earlier milestone sections below record their own historical release gates.
+
+## Runtime-validation release: resource checkpoint, 2026-10-08
+
+The Core 6, CLI 10/schema 6, Repository FS 2.0.3, and ten-adapter candidate is incomplete and unpublished. No fixed parser-source cutoff replaces the existing 8 MiB general-file allowance. The approved release adds bounded isolated inspection in the following milestones.
+
+At the initial resource checkpoint, the ten adapter integration suites passed 852 tests after independent declaration accounting, canonical instruction provenance, consumer-preserving schema checks, scoped mutation handling, invocation-local reuse of the active runtime source, and node-sensitive source-cache admission. The private static-analysis suite passed 163 unit tests and its new compiler/cache integration test. The then-current 15-workload calibration integration file passed both tests; root typechecking and targeted resource/static-analysis lint passed. A preliminary 14-package closure built and packed for resource probes. Those initial checks preceded the final Milestone 1 verification recorded below; they are not release readiness evidence.
+
+Fresh-process probes used Node 24.15.0 on Linux, the same dense numeric-array source immediately below the existing per-file allowance, built package artifacts, one Core prepared inspection, and complete page traversal. The unprofiled samples disabled inspector parser coverage. RSS includes the process and its dependencies; heap is observed between phases, while native peak RSS also captures synchronous allocation peaks.
+
+| Dense source size |    Samples | Native peak RSS MiB |  CPU ms | Elapsed ms |
+| ----------------- | ---------: | ------------------: | ------: | ---------: |
+| 512 KiB candidate | 3, medians |               289.1 |   508.3 |      339.6 |
+| 1 MiB candidate   | 3, medians |               333.6 |   686.7 |      520.0 |
+| 2 MiB candidate   | 3, medians |               498.1 | 1,383.2 |    1,076.2 |
+| 4 MiB candidate   | 3, medians |               704.4 | 2,155.6 |    1,802.2 |
+| 8 MiB candidate   | 3, medians |             1,124.5 | 4,147.1 |    3,628.5 |
+| 8 MiB baseline    |          1 |             1,123.5 | 4,020.3 |    3,496.6 |
+
+The baseline was the detached packages commit `6a3c6809b72dd1556be9f3e01847028c1da43b84`. The candidate measurements used the current uncommitted release worktree and the same inputs. This is an existing envelope problem, rather than evidence of a candidate-only memory regression. The initial candidate also reparsed an oversized nonresident runtime source during independent export checks. Borrowing that one analysis for the current agent invocation removed the repeated parse and read without retaining it across invocations. The original profiled candidate used 16,778,640 read bytes and five parser calls; the corrected unprofiled candidate read 8,390,044 bytes. No parser count is inferred from unprofiled runs.
+
+Separating normalization, TypeScript parsing, syntax diagnostics, and module indexing established that parsing dominates dense-source cost. A 4 MiB numeric-array source reached 676 MiB native peak RSS during parsing and 701 MiB through module indexing. An equally sized comment source used about 129 MiB through indexing. These are synthetic shape comparisons, not typical-project forecasts.
+
+Source-cache admission now estimates `65536 + normalizedText.length * 8 + nodeCount * 512` bytes. Counting nodes shares the existing identifier-indexing pass. The 4 MiB dense graph retained about 327 MiB of heap after forced collection, roughly 164 bytes per node. Additional approximately 1 MiB identifier-use and exported-declaration probes retained 25 MiB and 51 MiB of heap against admission estimates of 93 MiB and 103 MiB. This headroom is empirical for the tested shapes, not a universal allocator bound. Cache-owned sources remain limited to 16 entries and 16 MiB of estimated cost per adapter. Entry and package observations share 128 entries and 128 KiB estimated cost; their admission includes lookup keys and variable-sized content identities/dependency metadata instead of fixed per-entry estimates. Source, observation, and Eve root-index caches share four active loads per adapter. Eve root-index retention remains separately bounded. Entry count, estimates, eviction, and weak ownership do not bound first-parse allocation, transient serialization, garbage-collection timing, or references retained by callers.
+
+The expanded 15-workload harness completed three fresh-process samples per workload. Its first sample measures parser calls; the other two measure lower-overhead timing and memory. The shared-source workload used four parser calls for 65 agents, compared with the earlier 132-call baseline. Its added agents deliberately reference the base agent's canonical loader, so the current provenance checks produce 64 confirmed mismatches. The broad-tool workload established 65 registrations with no errors. The mixed workload invoked all ten adapters, established 12 tool registrations, produced no errors, read 5,176,043 bytes, and measured about 457–459 MiB native peak RSS in the unprofiled samples. Its over-capacity source working sets deliberately expose eviction/reparsing: the instrumented mixed sample used 380 parser calls. Adding a dense source to the final provider in that same operation produced the following single unprofiled measurements:
+
+| Dense source in mixed operation | Native peak RSS MiB |
+| ------------------------------- | ------------------: |
+| 1 MiB                           |               570.2 |
+| 2 MiB                           |               743.3 |
+| 4 MiB                           |               928.3 |
+
+The preliminary packed CLI closure ran nine cases against the same isolated Git fixture with 4,096 tracked inventory files in one directory. Each process returned schema 6, CLI 10, zero errors, and one scoped warning. Native per-process peaks and sampled aggregate RSS are separate measurements; the latter includes owned Git descendants and can miss brief synchronous peaks.
+
+| Dense source | One CLI: native peak RSS MiB | Two CLIs: sampled aggregate MiB | Four CLIs: sampled aggregate MiB |
+| ------------ | ---------------------------: | ------------------------------: | -------------------------------: |
+| 1 MiB        |                        352.8 |                           710.5 |                          1,434.2 |
+| 2 MiB        |                        495.9 |                           927.4 |                          1,723.8 |
+| 4 MiB        |                        728.3 |                         1,455.4 |                          2,912.5 |
+
+These packed measurements used Node 24.15.0 on Linux. The producer used pnpm 11.9.0; the disposable consumer's tarball installation used pnpm 12.4.0 with lifecycle scripts disabled. Adding the producer pin afterward did not retroactively verify installation under pnpm 11.9.0. This consumer is resource evidence, not the final release-qualified consumer/toolchain matrix. No provider SDK was executed. Timing may also reflect other work on the shared development host.
+
+The initial checkpoint identified two further resource defects:
+
+- Exact-path filesystem-reader initialization scans a parent directory again for each selected child. Fresh reader-only probes measured 256 flat files at 163 ms, 1,024 at 1,407 ms, and 4,096 at 17,638 ms. Grouping the same 4,096 files into 64-file directories reduced initialization to 2,075 ms. The implementation and the growth both establish repeated directory work; the packed CLI took about 20–25 seconds across the matrix. A source-parser limit cannot correct this CPU/I/O path. Milestone 1 now groups selected children by parent, retains only selected names for exact-path proof, and reuses active recursive traversal frames. Real 256/1,024/4,096-file conformance cases verify bounded scans together with cancellation, exact spelling, containment, identity drift, and cursors. The fixed release is Repository FS 2.0.3, and CLI composition rejects older FS resolutions.
+- Eve's `inspectEveTools` accumulates `IPreparedTool` values containing complete analyses and syntax definitions. Those references survive source-cache eviction until the tool pass finishes. Fresh complete inspections of 8, 16, and 32 additional supported tools, each in a 256 KiB dense source, reached 509, 574, and 954 MiB native peak RSS respectively. Each inspection had zero errors and established every added registration. All individual files are below even the previously discussed 512 KiB limit. Milestone 1 now prepares candidates serially, retains scalar availability and eligibility summaries, and reacquires selected graphs transiently. The real 8/16/32-tool integration cases establish every added registration without errors while checking serial source preparation.
+
+Existing production budgets and 8 MiB general-file support remain unchanged. The revised plan includes the filesystem and Eve corrections and supervised process/worker isolation instead of a fixed per-file parsing cutoff. Parser pagination does not bound AST ownership because TypeScript requires the complete source. No whole-machine freeze was observed or claimed.
+
+The harness now includes 18 workloads, adding dense Eve 8/16/32 tools with simultaneous 256 KiB agent and schema sources. One fresh unprofiled dense-32 probe completed in 26.8 seconds at 836.6 MiB native peak RSS. A separate precise-coverage probe completed in 180.8 seconds at 682.7 MiB native peak RSS and counted 297 parser calls. Both established 32 registrations with zero errors. These single-host, uncommitted candidate observations are diagnostic evidence, not constrained resource qualification. Precise coverage disables parser optimizations; its separate subprocess allowance is six minutes, while unprofiled calibration samples retain the existing two-minute allowance. The test covers one profiled and two unprofiled subprocesses per workload without mixing their timings. Production inspection deadlines are not raised by profiling.
+
+Mutation indexing now skips binding/member facts already propagated through an alias chain, while keeping direct alias rebinding separate. A 4,096-alias fixture with repeated writes to the same member occupies 226,103 source bytes. One same-host probe fell from 2,043 ms to 72 ms after the correction. A large-chain/cycle regression verifies changed-member rejection and preservation of unaffected members. These observations do not establish a universal linear bound for every mutation shape or replace isolated resource qualification.
+
+Candidate CLI 10/schema 6 validation of the isolated platform at base commit `b429ced33e56e26cbb2df0d402cead9dec646bca` returned zero errors, 15 unverified-relationship warnings, and `runtimeInspection: incomplete`. Its installed CLI 9.0.1/schema 5 returned zero diagnostics on the same checkout. The new warnings concern unsupported runtime-agent, instruction-loader, and schema patterns, rather than proved contradictions. They require review in the platform milestone, without assuming that unsupported source needs rewriting. The platform's native version-consistency checker still rejects the old installed package closure; its coordinated dependency and skill upgrade remains outstanding.
+
+### Milestone 1 verification, 2026-10-09
+
+The final validation-contract and resource-correction candidate passed all 33 workspace unit tasks, including 200 root tests and 229 private static-analysis tests. Root integration passed 90 tests, including one profiled and two unprofiled samples for each of the 18 resource workloads. All 35 workspace integration tasks passed: the ten official adapters passed 862 tests, Core 189, Repository FS 32, CLI 59, and the website 137. The final installed CLI closure passed all three end-to-end tests. Typechecking and workspace lint each passed 33 tasks; root lint, the 18-task build, compatibility generation/checking, and documentation checking also passed. Whole maintained-tree formatting passed.
+
+Review added regression coverage for erased runtime exports, property descriptor and prototype writes, unknown helper/constructor escapes, and shadowed or ambiguously merged `Object`/`Reflect` declarations. Known unrelated member writes retain their proofs. These checks exercise source facts and real Core/adapter interactions, without running project application code or claiming to interpret arbitrary JavaScript.
+
+The complete Chromium suite passed all 227 tests with two workers. An earlier eight-worker run had three timeouts; assertions and timeouts were not relaxed. After the final binding correction, all 120 rebuilt website files remained byte-for-byte identical to the tested artifacts (SHA-256 `19a51a68e484cc515dd4f85d39518f2dbb6ddb17f82cc93907a1338a00f7e4a1`, computed over sorted relative paths and each file's SHA-256). Manual result-dialog inspection also passed at 320px and 1440px in light and dark themes, with visible keyboard focus, reduced motion, and no horizontal page overflow. The preview and browser were stopped, and the screenshots removed.
+
+The seven affected knowledge-base articles passed the existing 55 tests and editorial validation of 114 pages with zero errors. Platform specification formatting passed. Its native installed-version consistency check remains an explicit later-milestone closure gate: the platform still installs CLI 9/Core 5 and the old skill while its package specifications describe the coordinated candidate. Platform dependencies and the complete skill distribution are upgraded in the platform/skill/release milestones. No npm package, skill, website, hosted application, or live editorial content was published by these checks. Isolated CLI and actual-worker resource qualification, final profile freeze, and coordinated publication remain outstanding.
+
+To reproduce one low-overhead probe after building the affected packages:
+
+```bash
+node scripts/resource-calibration/calibration.ts --sample large-syntax --no-parser-coverage
+node scripts/resource-calibration/calibration.ts --sample large-syntax --syntax-bytes 524288 --no-parser-coverage
+```
+
+The earlier 15-workload suite passed at the initial checkpoint; the final expanded 18-workload suite passed after the current corrections, as recorded above. Timing samples with parser coverage must not be combined with unprofiled timing measurements. Diagnostic JSON, checksums, disposable probe sources, and preliminary tarballs remain in the task worktree's verification directory while the resource findings are unresolved. All measurement processes exited; reader-only temporary filesystem fixtures were removed by their probe teardown. All earlier milestone sections below are retained historical evidence for their recorded release.
 
 ## Milestone 1: diagnostic contract and resource baseline
 

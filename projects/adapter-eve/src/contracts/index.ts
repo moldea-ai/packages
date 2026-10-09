@@ -1,6 +1,10 @@
 import type ts from 'typescript';
 
 import type {
+  IRuntimeAdapterRecordCollector,
+  IRuntimeAdapterEvidence as ICollectedEvidence,
+} from '@moldea.ai/core/adapter';
+import type {
   IStaticAnalysisModuleValueSource,
   IStaticAnalysisPackageCompatibility,
   IStaticAnalysisPackageDeclaration,
@@ -19,6 +23,9 @@ import type {
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 export type IEveAdapterDiagnosticCode =
+  | 'EVE_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'EVE_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND'
+  | 'EVE_INSTRUCTION_SOURCE_MISMATCH'
   | 'EVE_PACKAGE_MANIFEST_INVALID'
   | 'EVE_SDK_VERSION_UNSUPPORTED'
   | 'EVE_SDK_FEATURE_UNAVAILABLE'
@@ -210,4 +217,9 @@ export interface IEveInspectionState {
   readonly definitions: readonly IEveAgentDefinition[];
   readonly diagnostics: IAdapterDiagnostic[];
   readonly evidence: IRuntimeAdapterEvidence[];
+}
+
+// adapter-owned evidence admission uses only Core public types in packed declarations
+export interface IEveEvidenceCollector extends IRuntimeAdapterRecordCollector<ICollectedEvidence> {
+  instruction(factory: () => ICollectedEvidence): void;
 }

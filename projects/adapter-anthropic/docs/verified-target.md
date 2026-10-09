@@ -27,7 +27,7 @@ Bindings must remain lexically visible at each matched use. Parameters or local 
 
 Each supported call is analyzed independently. `system`, `tools`, and `output_config` have separate closure, and an exact `stream` property is ignored. Exact shorthand relationship properties are treated as direct identifier values. Computed relationship properties, spreads, duplicate effective properties, methods, getters, or setters leave only the affected relationship unresolved. An unresolved options `body` leaves dependent relationships unverified.
 
-Positive evidence is existential across supported calls. A negative wiring diagnostic requires every relevant supported call to prove the relationship absent with no unresolved candidate.
+Tool registrations retain varying-availability behavior across calls: one supported available context can establish a tool, and a missing-wiring error requires closed absence across the relevant contexts. Instruction consumers are checked independently. A correct consumer does not suppress another consumer’s proved mismatch, and unresolved consumers receive scoped warnings. Instruction evidence also requires supported provenance from the canonical instruction or a validated mirror.
 
 ## Static client tools
 

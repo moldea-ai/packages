@@ -1,11 +1,19 @@
 import type ts from 'typescript';
 
+import type {
+  IRuntimeAdapterRecordCollector,
+  IRuntimeAdapterEvidence as ICollectedEvidence,
+} from '@moldea.ai/core/adapter';
 import type { ISourceRange } from '@moldea.ai/core';
 import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
 export type IVercelAiSdkAdapterDiagnosticCode =
+  | 'VERCEL_AI_SDK_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'VERCEL_AI_SDK_SKILL_REGISTRATION_SYMBOL_NOT_FOUND'
+  | 'VERCEL_AI_SDK_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND'
+  | 'VERCEL_AI_SDK_INSTRUCTION_SOURCE_MISMATCH'
   | 'VERCEL_AI_SDK_PACKAGE_MANIFEST_INVALID'
   | 'VERCEL_AI_SDK_VERSION_UNSUPPORTED'
   | 'VERCEL_AI_SDK_SOURCE_TEXT_INVALID'
@@ -61,6 +69,7 @@ export interface IVercelAiSdkImports {
 
 export type IVercelAiSdkModuleExportState =
   | { readonly kind: 'absent' }
+  | { readonly declaration: ts.Node; readonly kind: 'unresolved' }
   | { readonly declaration: ts.Node; readonly kind: 'present-supported' }
   | { readonly declaration: ts.Node; readonly kind: 'present-unsupported' };
 
@@ -74,6 +83,8 @@ export type IVercelAiSdkTextResult =
 
 // parsed source and Vercel AI SDK bindings used only within one inspection
 export interface IVercelAiSdkSourceAnalysis {
+  readonly estimatedRetainedBytes: number;
+  readonly hasUnresolvedExports: boolean;
   readonly clientNames: ReadonlySet<string>;
   readonly constructorNames: ReadonlySet<string>;
   readonly exports: ReadonlyMap<
@@ -83,6 +94,9 @@ export interface IVercelAiSdkSourceAnalysis {
   readonly identifierUses: ReadonlyMap<string, readonly ts.Identifier[]>;
   readonly imports: IVercelAiSdkImports;
   readonly localBindingNames: ReadonlyMap<ts.Node, ReadonlySet<string>>;
+  readonly lexicalBindings: ReadonlyMap<ts.Node, ReadonlyMap<string, ts.Node | null>>;
+  readonly bindingMutations: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
+  readonly bindingEscapes: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
   readonly moduleArrays: ReadonlyMap<
     string,
     { readonly declaration: ts.VariableDeclaration; readonly expression: ts.ArrayLiteralExpression }
@@ -201,3 +215,8 @@ export type IVercelAiSdkDiagnosticInput =
   | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
       readonly code: 'VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED';
     });
+
+// adapter-owned evidence admission uses only Core public types in packed declarations
+export interface IVercelAiSdkEvidenceCollector extends IRuntimeAdapterRecordCollector<ICollectedEvidence> {
+  instruction(factory: () => ICollectedEvidence): void;
+}

@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`published binding example > establishes every documented relationship through the real adapter 1`] = `
+[
+  {
+    "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "claude-agent-sdk",
+      "agentId": "billing",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "claude-agent-sdk",
+      "agentId": "billing",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;

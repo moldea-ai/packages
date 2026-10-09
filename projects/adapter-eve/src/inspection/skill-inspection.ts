@@ -1,9 +1,10 @@
 import ts from 'typescript';
 
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { ISkillManifestEntry } from '@moldea.ai/core/format';
 
+import type { IEveEvidenceCollector } from '../contracts/index.js';
 import { EVE_ADAPTER_ID } from '../constants/index.js';
 import type {
   IEveAgentDefinition,
@@ -18,6 +19,7 @@ import {
   isEveStaticStringRecord,
   resolveEveStaticString,
 } from '../source-analysis/index.js';
+
 import { addEveDiagnostic, addEveSourceFailureDiagnostic, createEveEvidence } from './common.js';
 
 interface IPreparedSkill {
@@ -91,12 +93,17 @@ const selectSkill = (
   return nameMatches.length === 1 ? (nameMatches[0] ?? null) : null;
 };
 
-/** Inspects flat, packaged, and TypeScript Eve skills for one scoped agent. */
+/**
+ * Inspects flat, packaged, and TypeScript Eve skills for one scoped agent.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectEveSkills = async (
   session: IEveInspectionSession,
   definition: IEveAgentDefinition,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IEveEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   for (const [capabilityId, skill] of Object.entries(definition.agent.declaration.skills ?? {})) {
     const candidate = selectSkill(definition.rootIndex.skillCandidates, skill);
@@ -247,14 +254,21 @@ export const inspectEveSkills = async (
       continue;
     }
 
-    evidence.push(
+    evidence.add(() =>
       createEveEvidence({
         agentId: definition.agent.id,
         capabilityId,
         capabilityKind: 'skill',
         details: { registrationKind: 'typescript' },
         kind: 'skill-registration',
-        references: [{ path: candidate.path }],
+        references: [
+          skill.implementation,
+          ...(skill.registration === undefined ||
+          (skill.registration.path === skill.implementation.path &&
+            skill.registration.symbol === skill.implementation.symbol)
+            ? []
+            : [skill.registration]),
+        ],
         runtimeName: candidate.identity,
         source: EVE_ADAPTER_ID,
       }),

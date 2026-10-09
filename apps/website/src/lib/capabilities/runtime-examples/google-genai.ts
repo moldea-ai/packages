@@ -49,6 +49,7 @@ export const GOOGLE_GENAI_FILES: IMemoryRepositoryEntry[] = [
   {
     path: '/src/instructions.ts',
     type: 'file',
-    content: "export const loadInstruction = (): string => 'Follow the canonical instruction.';\n",
+    content:
+      "import { readFileSync } from 'node:fs';\n\nexport const loadInstruction = () =>\n  readFileSync(new URL('../moldea/agents/support/instruction.md', import.meta.url), 'utf8');\n",
   },
 ];

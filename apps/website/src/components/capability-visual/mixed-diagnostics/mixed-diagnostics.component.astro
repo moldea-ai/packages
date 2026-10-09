@@ -3,7 +3,7 @@ import StatusBadge from '@moldea.ai/website-ui/status-badge';
 
 import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
 
-// both pages and their totals come from one executed Core inspection
+// every page and its totals come from one executed Core inspection
 interface Props {
   example: ICapabilityCase;
 }
@@ -15,20 +15,20 @@ if (
   !counts ||
   typeof counts !== 'object' ||
   Array.isArray(counts) ||
-  counts.diagnostics !== 2 ||
+  counts.diagnostics !== 3 ||
   counts.errors !== 1 ||
-  counts.warnings !== 1
+  counts.warnings !== 2
 )
   throw new Error('Mixed diagnostic illustration requires complete inspection counts.');
 const pages = getCapabilityFactRows(example.result.facts.pages);
-if (pages.length !== 2) throw new Error('Mixed diagnostic illustration requires two pages.');
+if (pages.length !== 3) throw new Error('Mixed diagnostic illustration requires three pages.');
 const entries = pages.map((page, index) => {
   const [record] = getCapabilityFactRows(page.records);
   if (
     !record ||
     typeof record.code !== 'string' ||
     (record.severity !== 'warning' && record.severity !== 'error') ||
-    page.hasContinuation !== (index === 0)
+    page.hasContinuation !== index < pages.length - 1
   )
     throw new Error('Mixed diagnostic illustration requires a paginated diagnostic.');
   return { page: index + 1, code: record.code, severity: record.severity };
@@ -41,8 +41,8 @@ const entries = pages.map((page, index) => {
   aria-label="Paginated inspection diagnostics"
 >
   <p class="text-sm leading-6">
-    Complete inspection: <strong>{counts.diagnostics} diagnostics</strong>, {counts.warnings} warning
-    and {counts.errors} error.
+    Inspection totals: <strong>{counts.diagnostics} diagnostics</strong>, {counts.warnings} warnings and
+    {counts.errors} error.
   </p>
   <ol
     class="divide-y rounded-lg border px-3"
@@ -62,7 +62,5 @@ const entries = pages.map((page, index) => {
       ))
     }
   </ol>
-  <p class="text-xs leading-5 text-muted-foreground">
-    Each page retains the complete inspection counts.
-  </p>
+  <p class="text-xs leading-5 text-muted-foreground">Each page retains the inspection totals.</p>
 </div>

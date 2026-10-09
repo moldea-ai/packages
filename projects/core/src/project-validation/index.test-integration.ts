@@ -50,6 +50,15 @@ const expectedDiagnosticsByCase = JSON.parse(
     'utf8',
   ),
 ) as Readonly<Record<string, readonly unknown[]>>;
+const expectedRuntimeDiagnosticsByCase = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../../../fixtures/core/project-index/runtime-diagnostics.expected.json',
+      import.meta.url,
+    ),
+    'utf8',
+  ),
+) as Readonly<Record<string, readonly unknown[]>>;
 const customRuntimeFixture = JSON.parse(
   readFileSync(
     new URL('../../../../fixtures/core/custom-runtime/cases.json', import.meta.url),
@@ -91,7 +100,10 @@ describe('public Core project validation', () => {
       throw new TypeError(`The ${case_.name} diagnostic golden is required.`);
     }
 
-    expect(toJsonValue(result.diagnostics)).toStrictEqual(expectedDiagnostics);
+    expect(toJsonValue(result.diagnostics)).toStrictEqual([
+      ...expectedDiagnostics,
+      ...(expectedRuntimeDiagnosticsByCase[case_.name] ?? []),
+    ]);
     expect(result.evidence).toStrictEqual([]);
     expect(result.formatVersion).toBe(case_.expectedFormatVersion);
     expect(result.valid).toBe(case_.expectedProjectFixture !== null);
@@ -115,7 +127,18 @@ describe('public Core project validation', () => {
       const metadataPage = inspection.readPage({ maxItems: 256, view: 'metadata' });
       expect(toJsonValue(secondResult)).toStrictEqual(toJsonValue(firstResult));
       expect(firstResult.valid).toBe(true);
-      expect(firstResult.diagnostics).toStrictEqual([]);
+      expect(firstResult.runtimeInspection).toBe('incomplete');
+      expect(firstResult.errorCount).toBe(0);
+      expect(firstResult.warningCount).toBe(1);
+      expect(firstResult.diagnostics).toMatchObject([
+        {
+          code: 'CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED',
+          details: { relationship: 'runtime-agent', reason: 'unsupported-source-pattern' },
+          entity: { agentId: 'custom-agent', adapterId: 'custom' },
+          path: '/src/custom-agent.ts',
+          severity: 'warning',
+        },
+      ]);
       expect(firstResult.evidence).toStrictEqual([]);
       expect(firstResult.formatVersion).toBe(1);
       expect(firstResult.summary?.counts.agents).toBe(1);

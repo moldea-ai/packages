@@ -1,0 +1,133 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`claudeAgentSdkAdapter Core integration > accepts a later stable provider major through the minimum-only range 1`] = `
+[
+  {
+    "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "claude-agent-sdk",
+      "agentId": "billing",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "claude-agent-sdk",
+      "agentId": "billing",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`claudeAgentSdkAdapter Core integration > does not combine delegation and agent maps from separate core queries 1`] = `
+[
+  {
+    "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "claude-agent-sdk",
+      "agentId": "billing",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "claude-agent-sdk",
+      "agentId": "billing",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`claudeAgentSdkAdapter Core integration > emits the complete normalized evidence for the supported target 1`] = `
+[
+  {
+    "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "claude-agent-sdk",
+      "agentId": "billing",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "claude-agent-sdk",
+      "agentId": "billing",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`claudeAgentSdkAdapter Core integration > preserves query-local prompt, handoff, and tool evidence with current prompt controls 1`] = `
+[
+  {
+    "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "claude-agent-sdk",
+      "agentId": "billing",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "claude-agent-sdk",
+      "agentId": "billing",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;

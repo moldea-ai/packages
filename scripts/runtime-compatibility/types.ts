@@ -148,6 +148,7 @@ export interface IRuntimeAdapterImplementationDefinition {
 export interface IMoldeaCliImplementationSources {
   activeAdapters: readonly IRuntimeAdapterImplementationDefinition[];
   cliManifest: unknown;
+  cliPackageRanges: Readonly<Record<string, string>>;
   coreRecognizedAdapterIds: readonly string[];
   coreSupportedRepositoryFormatVersions: readonly number[];
   matrix: IRuntimeCompatibilityMatrix;

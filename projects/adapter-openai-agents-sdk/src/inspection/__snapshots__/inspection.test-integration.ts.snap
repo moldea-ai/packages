@@ -1,0 +1,135 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`openAiAgentsSdkAdapter Core integration > accepts a later stable provider major through the minimum-only range 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > emits the complete normalized evidence for the supported target 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > omits an evidence runtime name containing NUL 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > omits an evidence runtime name containing leading ASCII whitespace 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > omits an evidence runtime name containing line break 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > omits an evidence runtime name containing trailing Unicode whitespace 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > preserves a machine-valid Agent name containing internal spaces 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > returns no runtime diagnostics when dedicated-repository bindings are absent 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains NUL 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains a leading lone surrogate 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains a trailing lone surrogate 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains an internal CR 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains an internal LF 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains an internal NEL 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains an internal line separator 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains an internal paragraph separator 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+0009 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+000A 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+000B 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+000C 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+000D 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+0020 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+0085 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+00A0 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+200A 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+202F 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+205F 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+1680 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2000 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2001 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2002 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2003 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2004 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2005 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2006 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2007 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2008 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2009 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2028 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+2029 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains leading U+3000 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+0009 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+000A 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+000B 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+000C 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+000D 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+0020 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+0085 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+00A0 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+200A 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+202F 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+205F 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+1680 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2000 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2001 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2002 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2003 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2004 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2005 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2006 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2007 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2008 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2009 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2028 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+2029 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > uses the bound symbol when an Agent name contains trailing U+3000 1`] = `[]`;
+
+exports[`openAiAgentsSdkAdapter Core integration > validates target and registration-level routing descriptions independently 1`] = `[]`;

@@ -5,6 +5,18 @@ import type { IEveAdapterDiagnosticCode, IEveDiagnosticInput } from '../contract
 
 // stable Eve adapter diagnostic code and message catalog
 export const EVE_ADAPTER_DIAGNOSTICS = Object.freeze({
+  EVE_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent input-schema symbol was not found.',
+    severity: 'error',
+  },
+  EVE_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND: {
+    message: 'The declared variable-provider symbol was not found.',
+    severity: 'error',
+  },
+  EVE_INSTRUCTION_SOURCE_MISMATCH: {
+    message: 'The declared instruction loader does not consume the canonical instruction source.',
+    severity: 'error',
+  },
   EVE_PACKAGE_MANIFEST_INVALID: {
     message: 'The owning package manifest is invalid for Eve dependency detection.',
     severity: 'error',

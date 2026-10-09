@@ -1,14 +1,14 @@
+import { createRuntimeAdapterResultCollector } from '@moldea.ai/core/adapter';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type {
-  IRuntimeAdapterEvidence,
-  IRuntimeAdapterResolvedAgent,
-} from '@moldea.ai/core/adapter';
+import type { IRuntimeAdapterResolvedAgent } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
 
+import type { ICloudflareAgentsEvidenceCollector } from '../contracts/index.js';
 import { CLOUDFLARE_AGENTS_ADAPTER_ID, CLOUDFLARE_AI_CHAT_TARGET_ID } from '../constants/index.js';
 import type {
   ICloudflareAgentsInspectionSession,
@@ -23,6 +23,8 @@ import {
   getCloudflareAgentsThinkSystemPrompt,
   getCloudflareAgentsThinkTools,
 } from '../source-analysis/index.js';
+
+import { createDeclaredCloudflareAgentsRelationships } from './declared-relationships.js';
 import {
   addCloudflareAgentsDiagnostic,
   analyzeCloudflareAgentsBoundReference,
@@ -51,8 +53,8 @@ const combineRelationships = (
 const inspectAgent = async (
   session: ICloudflareAgentsInspectionSession,
   agent: ICloudflareAgentsScopedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ICloudflareAgentsEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<ICloudflareAgentsInspectedAgent | null> => {
   const runtimeAgent = agent.declaration.bindings?.runtimeAgent;
 
@@ -60,7 +62,7 @@ const inspectAgent = async (
     return null;
   }
 
-  evidence.push(
+  evidence.add(() =>
     createCloudflareAgentsEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -89,6 +91,9 @@ const inspectAgent = async (
   }
 
   if (!analysis.exports.has(runtimeAgent.symbol)) {
+    if (analysis.hasUnresolvedExports) {
+      return null;
+    }
     addCloudflareAgentsDiagnostic(
       diagnostics,
       'CLOUDFLARE_AGENTS_RUNTIME_AGENT_SYMBOL_NOT_FOUND',
@@ -126,7 +131,7 @@ const inspectAgent = async (
     return null;
   }
 
-  evidence.push(
+  evidence.add(() =>
     createCloudflareAgentsEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -134,7 +139,7 @@ const inspectAgent = async (
       details: { targetId },
       kind: 'agent-definition',
       references: [runtimeAgent],
-      runtimeName: runtimeAgent.symbol,
+      runtimeName: runtimeAgent.symbol ?? null,
       source: CLOUDFLARE_AGENTS_ADAPTER_ID,
     }),
   );
@@ -159,7 +164,7 @@ const inspectAgent = async (
       });
     }
 
-    evidence.push(
+    evidence.add(() =>
       createCloudflareAgentsEvidence({
         agentId: agent.id,
         capabilityId: null,
@@ -167,7 +172,7 @@ const inspectAgent = async (
         details: { calls: [...new Set(requests.map(({ call }) => call))].join(',') },
         kind: 'runtime-pattern',
         references: [runtimeAgent],
-        runtimeName: runtimeAgent.symbol,
+        runtimeName: runtimeAgent.symbol ?? null,
         source: CLOUDFLARE_AGENTS_ADAPTER_ID,
       }),
     );
@@ -216,18 +221,24 @@ const inspectAgent = async (
  * - ENTRY_NOT_FILE: The requested repository entry is not a file.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
  * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
  * - INVALID_SOURCE_DATA: The repository source returned invalid data.
- * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
- * - ABORTED: The repository operation or inspection signal was aborted.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectCloudflareAgents = async (
   context: IRuntimeAdapterContext,
 ): Promise<IRuntimeAdapterResult> => {
   context.signal?.throwIfAborted();
   const session = createCloudflareAgentsInspectionSession(context);
-  const evidence: IRuntimeAdapterEvidence[] = [];
-  const diagnostics: IAdapterDiagnostic[] = [];
+  const collector = createRuntimeAdapterResultCollector(context);
+  const relationships = createDeclaredCloudflareAgentsRelationships(context, collector, session);
+  const { evidence, diagnostics } = relationships;
+  await relationships.inspectExports();
+  await relationships.inspectInstructionSource();
   const agents = [context.agent];
   const inspectedAgents: ICloudflareAgentsInspectedAgent[] = [];
   const relatedInspectionCache = new Map<string, Promise<boolean>>();
@@ -238,7 +249,15 @@ export const inspectCloudflareAgents = async (
       return cached;
     }
 
-    const inspection = inspectAgent(session, agent, [], []).then((result) => result !== null);
+    // related-agent discovery reports no records; factories are intentionally not executed
+    const ignored = {
+      add: (): void => {},
+      instruction: (): void => {},
+      some: () => false,
+    };
+    const inspection = inspectAgent(session, agent, ignored, ignored).then(
+      (result) => result !== null,
+    );
     relatedInspectionCache.set(agent.id, inspection);
     return inspection;
   };
@@ -262,8 +281,6 @@ export const inspectCloudflareAgents = async (
     diagnostics,
   );
 
-  return Object.freeze({
-    diagnostics: Object.freeze(diagnostics),
-    evidence: Object.freeze(evidence),
-  });
+  relationships.finalize();
+  return collector.finalize();
 };

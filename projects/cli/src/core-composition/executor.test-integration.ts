@@ -65,6 +65,7 @@ describe('CLI Core composition with the memory repository reader', () => {
     });
 
     expect(result).toMatchObject({
+      runtimeInspection: 'complete' as const,
       diagnostics: [],
       evidence: [],
       formatVersion: 1,

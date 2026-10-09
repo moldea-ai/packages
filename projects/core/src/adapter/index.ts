@@ -10,6 +10,7 @@ import type {
 } from '@moldea.ai/repository';
 
 import type { IIndexedAgent, IIndexedDescriptionAsset } from '../contracts/index.js';
+import type { IRuntimeAdapterOutputBudget } from '../adapter-result-collection/index.js';
 import type { IAdapterDiagnostic, IDiagnosticDetails } from '../diagnostics/index.js';
 import type { IRepositoryFormatVersion, IRepositoryReference } from '../format/index.js';
 
@@ -29,10 +30,13 @@ export interface IRuntimeAdapter {
    * - ENTRY_NOT_DIRECTORY: The requested repository entry is not a directory.
    * - ACCESS_DENIED: Access to the repository source was denied.
    * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+   * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
    * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
    * - INVALID_SOURCE_DATA: The repository source returned invalid data.
    * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+   * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
    * - ABORTED: The repository operation was aborted.
+   * - ABORTED: The Core operation was aborted.
    */
   inspect(context: IRuntimeAdapterContext): Promise<IRuntimeAdapterResult>;
 }
@@ -40,6 +44,7 @@ export interface IRuntimeAdapter {
 // immutable invocation context supplied only after universal validation succeeds
 export interface IRuntimeAdapterContext {
   readonly agent: IIndexedAgent;
+  readonly outputBudget: IRuntimeAdapterOutputBudget;
   readonly repository: IRuntimeAdapterRepository;
   readonly signal?: AbortSignal;
 
@@ -79,10 +84,13 @@ export interface IRuntimeAdapterRepository {
    * - INVALID_REPOSITORY_PATH: The repository path is invalid.
    * - ACCESS_DENIED: Access to the repository source was denied.
    * - SOURCE_UNAVAILABLE: The repository source is unavailable.
-   * - SNAPSHOT_CHANGED: The repository snapshot changed during inspection.
-   * - INVALID_SOURCE_DATA: The repository reader returned invalid contract data.
-   * - RESOURCE_LIMIT_EXCEEDED: A Core or repository resource limit was exceeded.
-   * - ABORTED: Adapter inspection or the repository operation was aborted.
+   * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
+   * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+   * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+   * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+   * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+   * - ABORTED: The repository operation was aborted.
+   * - ABORTED: The Core operation was aborted.
    */
   getEntry(
     path: IRepositoryPath,
@@ -100,6 +108,7 @@ export interface IRuntimeAdapterRepository {
    * - INVALID_PAGE_REQUEST: The repository page request is invalid.
    * - ACCESS_DENIED: Access to the repository source was denied.
    * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+   * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
    * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
    * - INVALID_SOURCE_DATA: The repository source returned invalid data.
    * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
@@ -119,6 +128,7 @@ export interface IRuntimeAdapterRepository {
    * - INVALID_PAGE_REQUEST: The repository page request is invalid.
    * - ACCESS_DENIED: Access to the repository source was denied.
    * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+   * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
    * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
    * - INVALID_SOURCE_DATA: The repository source returned invalid data.
    * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
@@ -195,3 +205,11 @@ export {
   iterateRuntimeAdapterEntries,
   readRuntimeAdapterFile,
 } from '../adapter-repository/index.js';
+
+// bounded raw output admission
+export type {
+  IRuntimeAdapterOutputBudget,
+  IRuntimeAdapterRecordCollector,
+  IRuntimeAdapterResultCollector,
+} from '../adapter-result-collection/index.js';
+export { createRuntimeAdapterResultCollector } from '../adapter-result-collection/index.js';

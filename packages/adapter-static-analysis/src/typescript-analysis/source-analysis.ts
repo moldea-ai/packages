@@ -12,10 +12,12 @@ import { normalizeText } from '../text/index.js';
 import {
   indexIdentifierUses,
   indexImports,
-  indexLocalBindingNames,
+  indexLexicalBindings,
   indexModuleDeclarations,
+  resolveLexicalBinding,
 } from './bindings.js';
-import { unwrapExpression } from './expressions.js';
+import { indexBindingEffects } from './mutations.js';
+import { getStaticString, unwrapExpression } from './expressions.js';
 import { indexSafeModuleArrayNames } from './requests.js';
 
 const TYPESCRIPT_DECLARATION_EXTENSIONS = ['.d.ts', '.d.tsx', '.d.mts', '.d.cts'] as const;
@@ -107,16 +109,58 @@ export const analyzeTypeScriptModule = (
     constructorNames,
   );
   signal?.throwIfAborted();
-  const identifierUses = indexIdentifierUses(sourceFile);
+  const { identifierUses, nodeCount } = indexIdentifierUses(sourceFile);
   signal?.throwIfAborted();
-  const localBindingNames = indexLocalBindingNames(sourceFile);
+  const lexical = indexLexicalBindings(sourceFile);
+  signal?.throwIfAborted();
+  const bindingEffects = indexBindingEffects(identifierUses, lexical.declarations);
   signal?.throwIfAborted();
   const analysis: IStaticAnalysisModuleValueSource = Object.freeze({
+    // Includes normalized text, scalar positions, syntax nodes, and indexes.
+    // The measured dense graph used about 164 bytes per node; 512 allows index headroom.
+    estimatedRetainedBytes: 65536 + text.value.length * 8 + nodeCount * 512,
     clientNames,
     constructorNames,
     exports,
+    hasUnresolvedExports:
+      ['exports', 'module'].some((name) =>
+        (identifierUses.get(name) ?? []).some((identifier) => {
+          let scope: ts.Node | undefined = identifier;
+          while (scope !== undefined) {
+            if (lexical.declarations.get(scope)?.has(name) === true) return false;
+            scope = scope.parent;
+          }
+          const parent = identifier.parent;
+          return (
+            (ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent)) &&
+            parent.expression === identifier &&
+            (name === 'exports' ||
+              (ts.isPropertyAccessExpression(parent)
+                ? parent.name.text === 'exports'
+                : parent.argumentExpression !== undefined &&
+                  getStaticString(parent.argumentExpression) === 'exports'))
+          );
+        }),
+      ) ||
+      sourceFile.statements.some(
+        (statement) =>
+          (ts.isExportDeclaration(statement) &&
+            !statement.isTypeOnly &&
+            statement.exportClause === undefined) ||
+          (ts.isExportAssignment(statement) && statement.isExportEquals) ||
+          (ts.isVariableStatement(statement) &&
+            statement.modifiers?.some(
+              (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+            ) === true &&
+            statement.declarationList.declarations.some(
+              (declaration) => !ts.isIdentifier(declaration.name),
+            )),
+      ),
     identifierUses,
-    localBindingNames,
+    localBindingNames: lexical.names,
+    lexicalBindings: lexical.declarations,
+    bindingMutations: bindingEffects.mutations,
+    bindingEscapes: bindingEffects.escapes,
     moduleArrays,
     moduleConstDeclarations,
     namedImports,
@@ -182,14 +226,31 @@ export const getRuntimeExport = (
   const exported = analysis.exports.get(symbol);
 
   if (exported === undefined) {
-    return Object.freeze({ kind: 'absent' });
+    return analysis.hasUnresolvedExports
+      ? Object.freeze({ declaration: analysis.sourceFile, kind: 'unresolved' })
+      : Object.freeze({ kind: 'absent' });
   }
 
   if (exported.kind === 'present-unsupported') {
     return exported;
   }
 
-  const { declaration } = exported;
+  if (analysis.bindingMutations.get(exported.declaration)?.has(null) === true) {
+    return Object.freeze({ declaration: exported.declaration, kind: 'present-unsupported' });
+  }
+  let declaration = exported.declaration;
+  const visited = new Set<ts.Node>();
+  while (ts.isVariableDeclaration(declaration) && declaration.initializer !== undefined) {
+    if (visited.has(declaration)) break;
+    visited.add(declaration);
+    const initializer = unwrapExpression(declaration.initializer);
+    if (!ts.isIdentifier(initializer)) break;
+    const target = resolveLexicalBinding(initializer, analysis);
+    if (target === null || analysis.bindingMutations.get(target)?.has(null) === true) {
+      return Object.freeze({ declaration, kind: 'present-unsupported' });
+    }
+    declaration = target;
+  }
 
   if (ts.isFunctionDeclaration(declaration) && declaration.body !== undefined) {
     return Object.freeze({ body: declaration.body, declaration, kind: 'present-supported' });
@@ -227,16 +288,31 @@ export const getCallableExportState = (
  * Classifies a directly exported constant and returns its static initializer.
  * @param analysis The indexed source.
  * @param symbol The exact bound symbol.
+ * @param relevantMembers Selected object properties whose mutation invalidates this proof; all members by default.
  * @returns The symbol state and initializer when supported.
  */
 export const getConstExport = (
   analysis: IStaticAnalysisSource,
   symbol: string,
+  relevantMembers?: readonly string[],
 ): IStaticAnalysisExportState & { readonly expression?: ts.Expression } => {
   const exported = analysis.exports.get(symbol);
 
   if (exported === undefined) {
-    return Object.freeze({ kind: 'absent' });
+    return analysis.hasUnresolvedExports
+      ? Object.freeze({ declaration: analysis.sourceFile, kind: 'unresolved' })
+      : Object.freeze({ kind: 'absent' });
+  }
+
+  const mutations = analysis.bindingMutations.get(exported.declaration);
+  if (
+    mutations !== undefined &&
+    (mutations.has(null) ||
+      (relevantMembers === undefined
+        ? mutations.size > 0
+        : relevantMembers.some((member) => mutations.has(member))))
+  ) {
+    return Object.freeze({ declaration: exported.declaration, kind: 'present-unsupported' });
   }
 
   if (

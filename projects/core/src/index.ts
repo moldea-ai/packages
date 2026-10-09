@@ -36,6 +36,7 @@ export type {
   IProjectValidationInput,
   IProjectValidationResult,
   IProjectValidationSummary,
+  IRuntimeInspectionStatus,
   ITextDocumentContent,
   ITextDocumentInput,
   ITextNormalizationResult,

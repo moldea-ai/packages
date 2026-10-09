@@ -1,16 +1,15 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { getStaticString, normalizeText } from '@moldea.ai/adapter-static-analysis';
-import {
-  readRuntimeAdapterFile,
-  type IAdapterDiagnostic,
-  type IRuntimeAdapterEvidence,
-} from '@moldea.ai/core/adapter';
+import { readRuntimeAdapterFile, type IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
+import type { IEveEvidenceCollector } from '../contracts/index.js';
 import { EVE_ADAPTER_ID } from '../constants/index.js';
 import type { IEveAgentDefinition, IEveInspectionSession } from '../contracts/index.js';
 import { getEveDefinition, getEvePropertyExpression } from '../source-analysis/index.js';
+
 import {
   addEveDiagnostic,
   addEveSourceFailureDiagnostic,
@@ -31,7 +30,7 @@ const isModernModule = (name: string): boolean =>
 const isLegacyModule = (name: string): boolean => /^system\.(?:cts|mts|cjs|mjs|ts|js)$/u.test(name);
 
 const addInstructionConflicts = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
   candidates: readonly IRepositoryEntry[],
 ): void => {
@@ -60,8 +59,8 @@ const inspectMarkdown = async (
   session: IEveInspectionSession,
   definition: IEveAgentDefinition,
   path: IRepositoryPath,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IEveEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const binding = definition.agent.declaration.bindings?.instructionLoader;
 
@@ -82,7 +81,7 @@ const inspectMarkdown = async (
   }
 
   if (binding.path === path && binding.symbol === undefined) {
-    evidence.push(
+    evidence.instruction(() =>
       createEveEvidence({
         agentId: definition.agent.id,
         capabilityId: null,
@@ -106,8 +105,8 @@ const inspectTypeScriptInstructions = async (
   session: IEveInspectionSession,
   definition: IEveAgentDefinition,
   path: IRepositoryPath,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IEveEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const binding = definition.agent.declaration.bindings?.instructionLoader;
 
@@ -170,7 +169,7 @@ const inspectTypeScriptInstructions = async (
       definition.agent.id,
     );
   } else if (state === 'wired') {
-    evidence.push(
+    evidence.instruction(() =>
       createEveEvidence({
         agentId: definition.agent.id,
         capabilityId: null,
@@ -187,12 +186,17 @@ const inspectTypeScriptInstructions = async (
   }
 };
 
-/** Inspects the exclusive modern instruction surface for one supported Eve agent. */
+/**
+ * Inspects the exclusive modern instruction surface for one supported Eve agent.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectEveInstructions = async (
   session: IEveInspectionSession,
   definition: IEveAgentDefinition,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IEveEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const entries = definition.rootIndex.instructionEntries;
   const named = entries.map((entry) => ({

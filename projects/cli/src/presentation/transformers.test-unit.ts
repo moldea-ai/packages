@@ -15,9 +15,10 @@ import {
 
 const SOURCE = Object.freeze({ id: 'memory:presentation', sourceKind: 'memory' });
 
-describe('schema 5 presentation projections', () => {
+describe('schema 6 presentation projections', () => {
   test('projects a bounded Core page without canonical bodies or arbitrary details', () => {
     const inspection: IProjectInspectionPageResult = {
+      runtimeInspection: 'complete' as const,
       counts: {
         agents: 1,
         context: 0,
@@ -106,6 +107,7 @@ describe('schema 5 presentation projections', () => {
 
   test('projects invalid diagnostics without arbitrary detail fields', () => {
     const validation: IProjectValidationResult = {
+      runtimeInspection: 'not-run' as const,
       diagnostics: [
         {
           code: 'MOLDEA_MANIFEST_MISSING',
@@ -140,6 +142,7 @@ describe('schema 5 presentation projections', () => {
 
   test('projects only the approved warning context and complete counts', () => {
     const validation: IProjectValidationResult = {
+      runtimeInspection: 'incomplete' as const,
       diagnostics: [
         {
           code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
@@ -198,6 +201,7 @@ describe('schema 5 presentation projections', () => {
   test('rejects contradictory validation results', () => {
     expect(() =>
       createMoldeaCliValidateProjection({
+        runtimeInspection: 'not-run' as const,
         diagnostics: [],
         errorCount: 0,
         evidence: [],

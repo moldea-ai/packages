@@ -1,3 +1,4 @@
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
 import type {
   IRuntimeAdapterEvidence,
@@ -53,16 +54,19 @@ const createEntity = (agentId: string, capabilityId?: string) =>
  * @param agentId The owning agent identifier.
  * @param range The optional scalar source range.
  * @param capabilityId The optional owning tool capability.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const addOpenAiDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   code: Exclude<IOpenAiAdapterDiagnosticCode, 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,
   capabilityId?: string,
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createOpenAiDiagnostic({
       code,
       details: {},
@@ -74,16 +78,21 @@ export const addOpenAiDiagnostic = (
   );
 };
 
-/** Appends a scoped warning when a declared relationship cannot be decided from source. */
+/**
+ * Appends a scoped warning when a declared relationship cannot be decided from source.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addOpenAiUnverifiedRelationship = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   relationship: IUnverifiedRelationship,
   reason: 'unsupported-source-pattern' | 'dynamic-source-pattern',
   path: IRepositoryPath,
   agentId: string,
   capabilityId?: string,
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createOpenAiDiagnostic({
       code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
       details: { reason, relationship },
@@ -103,11 +112,14 @@ export const addOpenAiUnverifiedRelationship = (
  * @param agentId The owning agent identifier.
  * @param capabilityId The optional owning tool capability.
  * @returns The indexed source or `null` after unsupported or invalid input.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const analyzeOpenAiBoundReference = async (
   session: IOpenAiInspectionSession,
   reference: IRepositoryReference,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
   capabilityId?: string,
 ): Promise<IOpenAiSourceAnalysis | null> => {

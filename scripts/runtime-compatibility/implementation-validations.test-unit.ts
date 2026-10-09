@@ -35,6 +35,11 @@ const createPlannedMatrix = (): IRuntimeCompatibilityMatrix => ({
 
 const createSources = (): IMoldeaCliImplementationSources => ({
   activeAdapters: [],
+  cliPackageRanges: {
+    '@moldea.ai/core': '^1.0.0',
+    '@moldea.ai/repository': '^1.0.0',
+    '@moldea.ai/repository-fs': '^1.0.0',
+  },
   cliManifest: {
     dependencies: { ...FOUNDATIONAL_DEPENDENCIES },
     engines: { node: '>=22.11.0' },
@@ -112,6 +117,7 @@ const activateOpenAi = (
   cliManifest.dependencies['@moldea.ai/adapter-openai'] = 'workspace:^1.0.0';
   return {
     ...sources,
+    cliPackageRanges: { ...sources.cliPackageRanges, '@moldea.ai/adapter-openai': '^1.0.0' },
     activeAdapters: [{ id: 'openai', supportedRepositoryFormatVersions: [1] }],
     packageManifests: {
       ...sources.packageManifests,
@@ -126,6 +132,44 @@ const activateOpenAi = (
 describe('CLI implementation validation', () => {
   test('accepts the current planned technical composition', () => {
     expect(validateMoldeaCliImplementation(createSources())).toBeUndefined();
+  });
+
+  test.each([
+    ['2.0.3', 'workspace:^2.0.3', true],
+    ['2.1.0', 'workspace:^2.0.3', true],
+    ['2.0.2', 'workspace:^2.0.3', false],
+    ['2.0.3', 'workspace:^2.0.0', false],
+    ['2.0.3', 'workspace:2.0.3', false],
+    ['3.0.0', 'workspace:^2.0.3', false],
+  ])('checks the fixed FS minimum: %s with %s -> %s', (version, declaration, isValid) => {
+    const sources = createSources();
+    sources.cliPackageRanges = {
+      ...sources.cliPackageRanges,
+      '@moldea.ai/repository-fs': '^2.0.3',
+    };
+    sources.packageManifests = {
+      ...sources.packageManifests,
+      '@moldea.ai/repository-fs': { name: '@moldea.ai/repository-fs', version },
+    };
+    const manifest = sources.cliManifest as { dependencies: Record<string, string> };
+    manifest.dependencies['@moldea.ai/repository-fs'] = declaration;
+
+    if (isValid) {
+      expect(validateMoldeaCliImplementation(sources)).toBeUndefined();
+    } else {
+      expect(() => validateMoldeaCliImplementation(sources)).toThrow(
+        'The @moldea.ai/repository-fs CLI dependency is not compatible with its major line.',
+      );
+    }
+  });
+
+  test('rejects a missing release-owned package range', () => {
+    const sources = createSources();
+    sources.cliPackageRanges = { '@moldea.ai/core': '^1.0.0', '@moldea.ai/repository': '^1.0.0' };
+
+    expect(() => validateMoldeaCliImplementation(sources)).toThrow(
+      'The CLI first-class package range set is inconsistent.',
+    );
   });
 
   test.each([

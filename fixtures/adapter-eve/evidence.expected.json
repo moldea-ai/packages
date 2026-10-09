@@ -10,7 +10,12 @@
       "targetId": "typescript-filesystem-agent-0-39"
     },
     "kind": "agent-definition",
-    "references": [{ "path": "/agent/subagents/summary/agent.ts", "symbol": "default" }],
+    "references": [
+      {
+        "path": "/agent/subagents/summary/agent.ts",
+        "symbol": "default"
+      }
+    ],
     "runtimeName": "summary",
     "source": "eve"
   },
@@ -25,7 +30,12 @@
       "targetId": "typescript-filesystem-agent-0-39"
     },
     "kind": "agent-definition",
-    "references": [{ "path": "/agent/agent.ts", "symbol": "default" }],
+    "references": [
+      {
+        "path": "/agent/agent.ts",
+        "symbol": "default"
+      }
+    ],
     "runtimeName": "support-app",
     "source": "eve"
   },
@@ -42,8 +52,14 @@
     },
     "kind": "handoff-registration",
     "references": [
-      { "path": "/agent/agent.ts", "symbol": "default" },
-      { "path": "/agent/subagents/summary/agent.ts", "symbol": "default" }
+      {
+        "path": "/agent/agent.ts",
+        "symbol": "default"
+      },
+      {
+        "path": "/agent/subagents/summary/agent.ts",
+        "symbol": "default"
+      }
     ],
     "runtimeName": "summary",
     "source": "eve"
@@ -54,7 +70,15 @@
     "capabilityKind": null,
     "details": {},
     "kind": "instruction-loader",
-    "references": [{ "path": "/agent/loaders.ts", "symbol": "loadInstruction" }],
+    "references": [
+      {
+        "path": "/agent/loaders.ts",
+        "symbol": "loadInstruction"
+      },
+      {
+        "path": "/moldea/agents/support/instruction.md"
+      }
+    ],
     "runtimeName": "loadInstruction",
     "source": "eve"
   },
@@ -62,9 +86,16 @@
     "agentId": "summary",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "language": "typescript" },
+    "details": {
+      "language": "typescript"
+    },
     "kind": "language",
-    "references": [{ "path": "/agent/subagents/summary/agent.ts", "symbol": "default" }],
+    "references": [
+      {
+        "path": "/agent/subagents/summary/agent.ts",
+        "symbol": "default"
+      }
+    ],
     "runtimeName": null,
     "source": "eve"
   },
@@ -72,9 +103,16 @@
     "agentId": "support",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "language": "typescript" },
+    "details": {
+      "language": "typescript"
+    },
     "kind": "language",
-    "references": [{ "path": "/agent/agent.ts", "symbol": "default" }],
+    "references": [
+      {
+        "path": "/agent/agent.ts",
+        "symbol": "default"
+      }
+    ],
     "runtimeName": null,
     "source": "eve"
   },
@@ -89,7 +127,11 @@
       "targetId": "typescript-filesystem-agent-0-39"
     },
     "kind": "runtime-package",
-    "references": [{ "path": "/package.json" }],
+    "references": [
+      {
+        "path": "/package.json"
+      }
+    ],
     "runtimeName": null,
     "source": "eve"
   },
@@ -104,7 +146,11 @@
       "targetId": "typescript-filesystem-agent-0-39"
     },
     "kind": "runtime-package",
-    "references": [{ "path": "/package.json" }],
+    "references": [
+      {
+        "path": "/package.json"
+      }
+    ],
     "runtimeName": null,
     "source": "eve"
   },
@@ -112,9 +158,16 @@
     "agentId": "support",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "schemaRole": "agent-output" },
+    "details": {
+      "schemaRole": "agent-output"
+    },
     "kind": "schema",
-    "references": [{ "path": "/agent/contracts.ts", "symbol": "SupportOutputSchema" }],
+    "references": [
+      {
+        "path": "/agent/contracts.ts",
+        "symbol": "SupportOutputSchema"
+      }
+    ],
     "runtimeName": "SupportOutputSchema",
     "source": "eve"
   },
@@ -122,9 +175,16 @@
     "agentId": "support",
     "capabilityId": "search",
     "capabilityKind": "tool",
-    "details": { "schemaRole": "tool-input" },
+    "details": {
+      "schemaRole": "tool-input"
+    },
     "kind": "schema",
-    "references": [{ "path": "/agent/contracts.ts", "symbol": "SearchInputSchema" }],
+    "references": [
+      {
+        "path": "/agent/contracts.ts",
+        "symbol": "SearchInputSchema"
+      }
+    ],
     "runtimeName": "SearchInputSchema",
     "source": "eve"
   },
@@ -132,9 +192,16 @@
     "agentId": "support",
     "capabilityId": "search",
     "capabilityKind": "tool",
-    "details": { "schemaRole": "tool-output" },
+    "details": {
+      "schemaRole": "tool-output"
+    },
     "kind": "schema",
-    "references": [{ "path": "/agent/contracts.ts", "symbol": "SearchOutputSchema" }],
+    "references": [
+      {
+        "path": "/agent/contracts.ts",
+        "symbol": "SearchOutputSchema"
+      }
+    ],
     "runtimeName": "SearchOutputSchema",
     "source": "eve"
   },
@@ -142,9 +209,16 @@
     "agentId": "support",
     "capabilityId": "analyze",
     "capabilityKind": "skill",
-    "details": { "registrationKind": "typescript" },
+    "details": {
+      "registrationKind": "typescript"
+    },
     "kind": "skill-registration",
-    "references": [{ "path": "/agent/skills/analyze.ts" }],
+    "references": [
+      {
+        "path": "/agent/skills/analyze.ts",
+        "symbol": "default"
+      }
+    ],
     "runtimeName": "analyze",
     "source": "eve"
   },
@@ -159,8 +233,13 @@
     },
     "kind": "tool-registration",
     "references": [
-      { "path": "/agent/implementations.ts", "symbol": "searchKnowledge" },
-      { "path": "/agent/tools/search.ts" }
+      {
+        "path": "/agent/implementations.ts",
+        "symbol": "searchKnowledge"
+      },
+      {
+        "path": "/agent/tools/search.ts"
+      }
     ],
     "runtimeName": "search",
     "source": "eve"

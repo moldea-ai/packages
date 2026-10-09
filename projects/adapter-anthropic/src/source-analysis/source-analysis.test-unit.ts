@@ -349,18 +349,24 @@ describe('analyzeAnthropicSource', () => {
       'Messages object',
       '  const messages = client.messages;',
       '  return messages.create({ system: loadInstruction() });',
+      1,
+      true,
     ],
     [
       'Anthropic client',
       '  const delegatedClient = client;',
       '  return delegatedClient.messages.create({ system: loadInstruction() });',
+      2,
+      false,
     ],
     [
       'conditionally selected Anthropic client',
       '  const delegatedClient = condition ? client : fallbackClient;',
       '  return delegatedClient.messages.create({ system: loadInstruction() });',
+      1,
+      true,
     ],
-  ])('tracks an aliased %s as an unresolved data-flow candidate', (_description, alias, call) => {
+  ])('classifies an aliased %s', (_description, alias, call, requestCount, hasAmbiguity) => {
     const { messages } = findMessages(
       [
         "import Anthropic from '@anthropic-ai/sdk';",
@@ -373,8 +379,8 @@ describe('analyzeAnthropicSource', () => {
       ].join('\n'),
     );
 
-    expect(messages.requests).toHaveLength(1);
-    expect(messages.hasAmbiguousCandidate).toBe(true);
+    expect(messages.requests).toHaveLength(requestCount);
+    expect(messages.hasAmbiguousCandidate).toBe(hasAmbiguity);
   });
 
   test('does not treat an unrelated property name as an Anthropic client escape', () => {
@@ -476,11 +482,12 @@ describe('analyzeAnthropicSource', () => {
     expect(messages.requests).toStrictEqual([]);
   });
 
-  test('classifies default-export and indirect-export runtime symbols as unsupported', () => {
+  test('distinguishes the default export from its local name and an indirect named export', () => {
     const defaultExport = analyze('export default function agent() {}');
     const indirectExport = analyze('const agent = () => undefined; export { agent };');
 
-    expect(getRuntimeExport(defaultExport, 'agent').kind).toBe('present-unsupported');
+    expect(getRuntimeExport(defaultExport, 'agent').kind).toBe('absent');
+    expect(getRuntimeExport(defaultExport, 'default').kind).toBe('present-unsupported');
     expect(getRuntimeExport(indirectExport, 'agent').kind).toBe('present-unsupported');
   });
 

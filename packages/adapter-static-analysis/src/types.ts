@@ -114,6 +114,7 @@ export interface IStaticAnalysisNamedImport {
 
 export type IStaticAnalysisExportState =
   | { readonly kind: 'absent' }
+  | { readonly declaration: ts.Node; readonly kind: 'unresolved' }
   | { readonly declaration: ts.Node; readonly kind: 'present-supported' }
   | { readonly declaration: ts.Node; readonly kind: 'present-unsupported' };
 
@@ -148,6 +149,9 @@ export interface IStaticAnalysisSourceConfig {
 
 // parsed and indexed source for one adapter inspection
 export interface IStaticAnalysisSource {
+  // calibrated cache-admission estimate, not a process-memory ceiling
+  readonly estimatedRetainedBytes: number;
+  readonly hasUnresolvedExports: boolean;
   readonly clientNames: ReadonlySet<string>;
   readonly constructorNames: ReadonlySet<string>;
   readonly exports: ReadonlyMap<
@@ -155,6 +159,9 @@ export interface IStaticAnalysisSource {
     IStaticAnalysisExportState & { readonly declaration: ts.Node }
   >;
   readonly localBindingNames: ReadonlyMap<ts.Node, ReadonlySet<string>>;
+  readonly lexicalBindings: ReadonlyMap<ts.Node, ReadonlyMap<string, ts.Node | null>>;
+  readonly bindingMutations: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
+  readonly bindingEscapes: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
   readonly moduleArrays: ReadonlyMap<string, IStaticAnalysisModuleArray>;
   readonly moduleConstDeclarations: ReadonlyMap<string, ts.VariableDeclaration>;
   readonly namedImports: ReadonlyMap<string, IStaticAnalysisNamedImport>;
@@ -253,6 +260,14 @@ export interface IStaticAnalysisInspectionSession<
   analyzeSource(path: TPath): Promise<TSourceResult>;
   discoverPackage(path: TPath): Promise<TPackageResult>;
   getEntry(path: TPath): Promise<TEntry>;
+  /**
+   * Admits additional adapter-owned listing work under the same four-load allowance.
+   * @param load The operation whose actual settlement releases admission.
+   * @param signal Cancellation checked before starting queued work.
+   * @returns A promise that resolves to the operation's result.
+   * @throws Propagates cancellation and loader failures.
+   */
+  runLoad<T>(load: () => Promise<T>, signal?: AbortSignal): Promise<T>;
 }
 
 // provider callbacks used to construct an operation-local inspection session
@@ -269,13 +284,21 @@ export interface IStaticAnalysisInspectionSessionOptions<
   ) => TSourceResult | Promise<TSourceResult>;
   readonly discoverPackage: (path: TPath, signal?: AbortSignal) => Promise<TPackageResult>;
   readonly getEntry: (path: TPath, signal?: AbortSignal) => Promise<TEntry>;
+  readonly getSourceRetainedBytes: (result: NoInfer<TSourceResult>) => number;
   readonly readFile: (path: TPath, signal?: AbortSignal) => Promise<Uint8Array>;
   readonly signal?: AbortSignal;
+  // one runtime source borrowed only for the current agent invocation
+  readonly activeSourcePath?: NoInfer<TPath>;
+  readonly owner: object;
 }
 
 // provider-neutral result for a statically inspected relationship
 export type IStaticAnalysisRelationshipResult =
-  | { readonly expression: ts.Expression | null; readonly kind: 'absent' }
+  | {
+      readonly expression: ts.Expression | null;
+      readonly kind: 'absent';
+      readonly hasUnverifiedConsumer?: boolean;
+    }
   | { readonly kind: 'ambiguous' }
   | { readonly kind: 'present' };
 

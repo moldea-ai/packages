@@ -145,7 +145,12 @@ describe('eveAdapter Core integration', () => {
   test('emits complete normalized evidence for the verified filesystem target', async () => {
     const result = await inspect();
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
   });
@@ -153,7 +158,12 @@ describe('eveAdapter Core integration', () => {
   test('accepts a later stable provider major through the minimum-only range', async () => {
     const result = await inspect(agentSchemaReplacements('1.0.0', false, false));
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
   });
 
@@ -172,9 +182,21 @@ describe('eveAdapter Core integration', () => {
         agentSchemaReplacements(version, hasAuthoredSchema, hasBoundSchema),
       );
 
-      expect(result.diagnostics.map(({ code }) => code)).toStrictEqual(
-        expectedCode === null ? [] : [expectedCode],
-      );
+      expect(
+        result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+      ).toStrictEqual(expectedCode === 'EVE_SDK_FEATURE_UNAVAILABLE' ? [expectedCode] : []);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
+      if (expectedCode === 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED')
+        expect(
+          result.diagnostics.some(
+            ({ code, details }) =>
+              code === expectedCode && details['reason'] === 'version-dependent-behavior',
+          ),
+        ).toBe(true);
       expect(result.valid).toBe(expectedCode !== 'EVE_SDK_FEATURE_UNAVAILABLE');
       expect(
         result.evidence.some(
@@ -191,7 +213,11 @@ describe('eveAdapter Core integration', () => {
         expect(result.evidence.some(({ kind }) => kind === 'handoff-registration')).toBe(false);
       }
       if (expectedCode === 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED') {
-        expect(result.diagnostics[0]?.details).toMatchObject({
+        expect(
+          result.diagnostics.find(
+            ({ details }) => details['reason'] === 'version-dependent-behavior',
+          )?.details,
+        ).toMatchObject({
           boundaryVersion: '0.67.0',
           reason: 'version-dependent-behavior',
           relationship: hasBoundSchema ? 'agent-output-schema' : 'runtime-agent',
@@ -203,7 +229,12 @@ describe('eveAdapter Core integration', () => {
   test('keeps the Eve 0.67.0 agent and tool evidence when no agent schema is declared', async () => {
     const result = await inspect(agentSchemaReplacements('0.67.0', false, false));
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(
       result.evidence.some(
@@ -242,9 +273,14 @@ describe('eveAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'EVE_SDK_FEATURE_UNAVAILABLE',
-    ]);
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['EVE_SDK_FEATURE_UNAVAILABLE']);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'support' && kind === 'agent-definition',
@@ -347,9 +383,21 @@ describe('eveAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual(
-      expectedCode === null ? [] : [expectedCode],
-    );
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(expectedCode === 'EVE_SDK_FEATURE_UNAVAILABLE' ? [expectedCode] : []);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    if (expectedCode === 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED')
+      expect(
+        result.diagnostics.some(
+          ({ code, details }) =>
+            code === expectedCode && details['reason'] === 'version-dependent-behavior',
+        ),
+      ).toBe(true);
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'support' && kind === 'agent-definition',
@@ -467,7 +515,12 @@ describe('eveAdapter Core integration', () => {
       ({ capabilityId, kind }) => capabilityId === 'search' && kind === 'tool-registration',
     );
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(registration?.details).toMatchObject({
       declaredAvailableInSubagents: 'disabled',
       declaredExecution: 'background',
@@ -528,9 +581,21 @@ describe('eveAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual(
-      expectedCode === null ? [] : [expectedCode],
-    );
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(expectedCode === 'EVE_SDK_FEATURE_UNAVAILABLE' ? [expectedCode] : []);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    if (expectedCode === 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED')
+      expect(
+        result.diagnostics.some(
+          ({ code, details }) =>
+            code === expectedCode && details['reason'] === 'version-dependent-behavior',
+        ),
+      ).toBe(true);
     const registration = result.evidence.find(
       ({ capabilityId, kind }) => capabilityId === 'search' && kind === 'tool-registration',
     );
@@ -560,7 +625,12 @@ describe('eveAdapter Core integration', () => {
         ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ capabilityId, kind }) => capabilityId === 'search' && kind === 'tool-registration',
@@ -755,7 +825,12 @@ describe('eveAdapter Core integration', () => {
       ),
     );
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence
         .filter(({ kind }) => kind === 'handoff-registration')
@@ -784,7 +859,12 @@ describe('eveAdapter Core integration', () => {
       '/agents/support/agent/subagents/specialist.ts': declaration,
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence
         .filter(({ kind }) => kind === 'handoff-registration')
@@ -810,7 +890,12 @@ describe('eveAdapter Core integration', () => {
         "import { defineAgent } from 'eve'; export default defineAgent({ description: 'Handles detailed requests.', model: 'provider/model' });\n",
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence
         .filter(({ kind }) => kind === 'handoff-registration')
@@ -839,7 +924,12 @@ describe('eveAdapter Core integration', () => {
       ),
     );
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'research' && kind === 'agent-definition',
@@ -860,9 +950,21 @@ describe('eveAdapter Core integration', () => {
       '/package.json': `{"name":"@acme/support-app","dependencies":{"eve":"${version}"}}`,
     });
 
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual(
-      expectedCode === null ? [] : [expectedCode],
-    );
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(expectedCode === 'EVE_SDK_FEATURE_UNAVAILABLE' ? [expectedCode] : []);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    if (expectedCode === 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED')
+      expect(
+        result.diagnostics.some(
+          ({ code, details }) =>
+            code === expectedCode && details['reason'] === 'version-dependent-behavior',
+        ),
+      ).toBe(true);
     expect(result.evidence.some(({ kind }) => kind === 'handoff-registration')).toBe(false);
   });
 
@@ -945,7 +1047,12 @@ describe('eveAdapter Core integration', () => {
     );
 
     if (expectedCode === null) {
-      expect(result.diagnostics).toStrictEqual([]);
+      expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
     } else {
       expect(result.diagnostics.map(({ code }) => code)).toContain(expectedCode);
     }
@@ -962,7 +1069,12 @@ describe('eveAdapter Core integration', () => {
       ),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind }) => agentId === 'summary' && kind === 'agent-definition',

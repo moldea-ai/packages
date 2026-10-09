@@ -138,7 +138,7 @@ export const getCapabilityOutcome = (
     };
   if (example.id === 'inspection-mixed-diagnostics')
     return {
-      title: '1 warning and 1 error across two pages',
+      title: '2 warnings and 1 error across three pages',
       description,
       label: 'Mixed results',
       tone: 'danger',

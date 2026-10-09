@@ -4,12 +4,12 @@
 
 Source-neutral, deterministic, content-safe interpretation of the `moldea` repository format.
 
-Version 5 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. It performs no filesystem, Git, or network access independently. Project validation returns content-free summaries, diagnostics, evidence, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
+Version 6 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. It performs no filesystem, Git, or network access independently. Project validation returns content-free summaries, diagnostics, evidence, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
 
 ## Install
 
 ```bash
-pnpm add @moldea.ai/core@5 @moldea.ai/repository@2
+pnpm add @moldea.ai/core@6 @moldea.ai/repository@2
 ```
 
 ## Public entry points
@@ -65,7 +65,9 @@ const repository = createMemoryRepositoryReader([
 const result = await core.validateProject({ repository });
 ```
 
-`validateProject` returns validity, format version, source identity, summary counts and digests, diagnostics, and runtime evidence. It never returns manifest, project, context, decision, runtime-guidance, mirror, description, or instruction bodies.
+`validateProject` returns validity, runtime-inspection status, format version, source identity, summary counts and digests, diagnostics, and runtime evidence. It never returns manifest, project, context, decision, runtime-guidance, mirror, description, or instruction bodies.
+
+`runtimeInspection` is `complete` when applicable runtime checks finish without unverified relationships, `incomplete` when any relationship remains unverified, and `not-run` when universal checks or adapter availability prevent runtime inspection. Validity remains based on errors. Warning-only results are valid, and projects without runtime relationships are complete. Every prepared inspection and page preserves the same aggregate status.
 
 `createProjectInspection` validates the snapshot once, prepares one immutable content-free record set, and returns synchronous bounded page reads for the `metadata`, `diagnostics`, `evidence`, and `all` views. The `metadata` and `all` views include one independently keyed `agent` record per canonical agent with exactly its `agentId` and manifest-declared `runtimeId`, distinct from asset metadata and adapter evidence. Each page uses a semantic continuation cursor tied to the complete inspection digest and view. Page reads perform no repository access, revalidation, sorting, digesting, or adapter execution.
 
@@ -73,7 +75,11 @@ The prepared inspection retains only its content-free records, summary, source i
 
 ## Per-agent runtime adapters
 
-Universal validation must succeed before adapters run. Core invokes a configured package adapter once for each matching agent, in deterministic adapter and agent order. Each invocation receives only that agent, a bounded reader, a shared cancellation signal, and an exact same-runtime `resolveAgent(reference)` function for bindings that genuinely require another agent. It never receives the complete agent collection.
+Universal validation must succeed before adapters run. Core invokes a configured package adapter once for each matching agent, in deterministic adapter and agent order. Each invocation receives only that agent, a bounded reader, a shared cancellation signal, the remaining operation-wide diagnostic/evidence allowance as `outputBudget`, and an exact same-runtime `resolveAgent(reference)` function for bindings that genuinely require another agent. It never receives the complete agent collection.
+
+Adapters use `createRuntimeAdapterResultCollector(context)` from `@moldea.ai/core/adapter`. Its `diagnostics.add(factory)` and `evidence.add(factory)` methods reserve raw admission before constructing records; `finalize()` returns the existing `{ evidence, diagnostics }` result. Earlier invocations consume the allowance before deduplication. Exhaustion raises `RESOURCE_LIMIT_EXCEEDED`, and Core still checks the complete raw result independently.
+
+For the reserved `custom` runtime, Core reports `CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED` warnings for declared bindings, capabilities, schemas, and variable providers. Core registers no custom adapter and infers no SDK or native handoff graph.
 
 Adapter evidence and diagnostics are validated, normalized, deduplicated, sorted, and limited before exposure. An unexpected adapter failure or invalid output rejects the complete operation with `ADAPTER_EXECUTION_FAILED`.
 

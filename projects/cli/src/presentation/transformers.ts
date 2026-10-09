@@ -89,7 +89,7 @@ export const createMoldeaCliDiagnosticRecord = (
   return Object.freeze({ ...record, severity: 'error' as const });
 };
 
-/** Projects one bounded Core inspection item through the schema 5 allowlist. */
+/** Projects one bounded Core inspection item through the schema 6 allowlist. */
 const createInspectRecord = (
   item: IProjectInspectionItem,
   index: number,
@@ -183,6 +183,7 @@ export const createMoldeaCliValidateProjection = (
     errorCount: validation.errorCount,
     formatVersion: validation.formatVersion,
     summary: validation.summary,
+    runtimeInspection: validation.runtimeInspection,
     valid: validation.valid,
     warningCount: validation.warningCount,
   } as unknown as IJsonValue);
@@ -193,12 +194,13 @@ export const createMoldeaCliValidateProjection = (
     formatVersion: validation.formatVersion,
     snapshotDigest,
     source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
+    runtimeInspection: validation.runtimeInspection,
     valid: validation.valid,
     warningCount: validation.warningCount,
   });
 };
 
-/** Projects one bounded Core page through the content-free schema 5 allowlist. */
+/** Projects one bounded Core page through the content-free schema 6 allowlist. */
 export const createMoldeaCliInspectProjection = (
   inspection: IProjectInspectionPageResult,
 ): IMoldeaCliInspectProjection => {
@@ -240,6 +242,7 @@ export const createMoldeaCliInspectProjection = (
     records,
     snapshotDigest,
     source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
+    runtimeInspection: inspection.runtimeInspection,
     valid: inspection.valid,
     view: inspection.view,
   });

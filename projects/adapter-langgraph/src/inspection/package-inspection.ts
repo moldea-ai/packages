@@ -1,9 +1,10 @@
 import { validRange } from 'semver';
 
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
+import type { ILangGraphEvidenceCollector } from '../contracts/index.js';
 import {
   LANGGRAPH_ADAPTER_ID,
   LANGGRAPH_CORE_PACKAGE_NAME,
@@ -13,17 +14,23 @@ import type {
   ILangGraphInspectionSession,
   ILangGraphTargetPackageClassification,
 } from '../contracts/index.js';
+
 import { addLangGraphDiagnostic, createLangGraphEvidence } from './common.js';
 
 const getPackageRole = (packageName: string): 'companion' | 'primary' =>
   packageName === LANGGRAPH_CORE_PACKAGE_NAME ? 'companion' : 'primary';
 
-/** Inspects the nearest owning manifest and returns the conjunctive target package state. */
+/**
+ * Inspects the nearest owning manifest and returns the conjunctive target package state.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectLangGraphPackage = async (
   session: ILangGraphInspectionSession,
   sourcePath: IRepositoryPath,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ILangGraphEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
 ): Promise<ILangGraphTargetPackageClassification> => {
   const discovery = await session.discoverPackage(sourcePath);
@@ -61,7 +68,7 @@ export const inspectLangGraphPackage = async (
           loose: false,
         }) !== null;
 
-      evidence.push(
+      evidence.add(() =>
         createLangGraphEvidence({
           agentId,
           capabilityId: null,

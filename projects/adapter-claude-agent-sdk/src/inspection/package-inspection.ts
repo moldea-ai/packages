@@ -1,17 +1,24 @@
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
+import type { IClaudeAgentSdkEvidenceCollector } from '../contracts/index.js';
 import { CLAUDE_AGENT_SDK_ADAPTER_ID, CLAUDE_AGENT_SDK_PACKAGE_NAME } from '../constants/index.js';
 import type { IClaudeAgentSdkInspectionSession } from '../contracts/index.js';
+
 import { addClaudeAgentSdkDiagnostic, createClaudeAgentSdkEvidence } from './common.js';
 
-/** Inspects the nearest owning package manifest for one runtime source. */
+/**
+ * Inspects the nearest owning package manifest for one runtime source.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectClaudeAgentSdkPackage = async (
   session: IClaudeAgentSdkInspectionSession,
   sourcePath: IRepositoryPath,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IClaudeAgentSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
 ): Promise<void> => {
   const discovery = await session.discoverPackage(sourcePath);
@@ -43,7 +50,7 @@ export const inspectClaudeAgentSdkPackage = async (
   }
 
   for (const declaration of observation.declarations) {
-    evidence.push(
+    evidence.add(() =>
       createClaudeAgentSdkEvidence({
         agentId,
         capabilityId: null,

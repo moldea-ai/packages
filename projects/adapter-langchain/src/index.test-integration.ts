@@ -92,7 +92,7 @@ describe('@moldea.ai/adapter-langchain public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-langchain',
-      version: '4.0.0',
+      version: '5.0.0',
     });
     expect(packedPaths).toEqual(
       expect.arrayContaining([
@@ -126,7 +126,7 @@ describe('@moldea.ai/adapter-langchain public API', () => {
       ),
     ).toBe(true);
     expect(manifest.dependencies).toStrictEqual({
-      '@moldea.ai/core': 'workspace:^5.0.0',
+      '@moldea.ai/core': 'workspace:^6.0.0',
       '@moldea.ai/repository': 'workspace:^2.0.0',
       semver: '7.8.5',
       typescript: '6.0.3',
@@ -143,7 +143,12 @@ describe('published binding example', () => {
     const result = await createCore({ adapters: [publicApi.langChainAdapter] }).validateProject({
       repository: createMemoryRepositoryReader(files),
     });
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     for (const { path: sourcePath, symbol, ...identity } of [
       {

@@ -90,7 +90,12 @@ describe('claudeAgentSdkAdapter Core integration', () => {
   test('emits the complete normalized evidence for the supported target', async () => {
     const result = await inspect();
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
     expect(result.summary).not.toBeNull();
@@ -114,7 +119,12 @@ describe('claudeAgentSdkAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence).toContainEqual(
       expect.objectContaining({
         agentId: 'triage',
@@ -148,7 +158,12 @@ describe('claudeAgentSdkAdapter Core integration', () => {
     const result = await inspect({ '/src/runtime.ts': runtime });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.filter(({ kind }) => kind === 'handoff-registration')).toHaveLength(0);
     expect(
       result.evidence
@@ -162,7 +177,12 @@ describe('claudeAgentSdkAdapter Core integration', () => {
       '/package.json': '{"dependencies":{"@anthropic-ai/claude-agent-sdk":"1.0.0"}}',
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
   });
 

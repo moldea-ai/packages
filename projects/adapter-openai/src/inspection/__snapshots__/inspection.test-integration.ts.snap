@@ -1,0 +1,1748 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`openAiAdapter Core integration > accepts a later stable provider major through the minimum-only range 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > accepts additional statically resolvable OpenAI registrations in a closed tool array 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > does not compare the manifest description with the OpenAI tool description 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > does not trust a module tool array after a concise-arrow return 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > does not trust a module tool array after a destructured member mutation 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits a negative diagnostic despite an unrelated dynamic request property 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_INSTRUCTION_LOADER_NOT_WIRED with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_PACKAGE_MANIFEST_INVALID with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_RUNTIME_AGENT_SYMBOL_NOT_FOUND with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_SDK_VERSION_UNSUPPORTED with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_SOURCE_SYNTAX_INVALID with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_SOURCE_SYNTAX_INVALID with its exact normalized location and entity 2`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_SOURCE_TEXT_INVALID with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_SOURCE_TEXT_INVALID with its exact normalized location and entity 2`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_TOOL_INPUT_SCHEMA_NOT_WIRED with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_TOOL_NAME_MISMATCH with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_TOOL_REGISTRATION_NOT_WIRED with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits only OPENAI_TOOL_REGISTRATION_SYMBOL_NOT_FOUND with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits package and language evidence when the runtime binding omits a symbol 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > emits the complete normalized evidence for the supported target 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > establishes direct output-schema identity through the effective text format 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > ignores unrelated dynamic request properties for both relationships 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > keeps ambiguity local to the affected request relationship 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > keeps dynamic input schemas unverified while proving registration identity 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > keeps package detection independent from the supported source-language target 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.js",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > keeps shared-source evidence agent-scoped while reusing source and package reads 1`] = `[]`;
+
+exports[`openAiAdapter Core integration > maps a package manifest with NUL only to the package diagnostic 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > maps a package manifest with invalid UTF-8 only to the package diagnostic 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > preserves known instruction contradictions beside matching and unresolved requests 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > preserves known instruction errors beside an aliased Responses candidate 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > preserves known instruction errors beside unresolved request candidates 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > preserves known instruction errors beside unresolved request candidates 2`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > preserves package diagnostics independently from source-analysis failures 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > rejects instruction and tool evidence through shadowed imports 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > reports an absent same-file input-schema symbol independently from registration shape 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > reports the stable stream method without losing direct relationships 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > returns no false runtime diagnostic when the bound pattern is indirect 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > returns no runtime-pattern evidence for a shadowed OpenAI client 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > silently ignores a present but unsupported runtime symbol form 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > silently leaves a FunctionTool with a computed property unsupported 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > silently leaves a FunctionTool with a getter unsupported 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > silently leaves a FunctionTool with a method unsupported 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > silently leaves a FunctionTool with a setter unsupported 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > silently leaves a FunctionTool with a shorthand property unsupported 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > silently leaves a FunctionTool with a spread property unsupported 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > silently leaves a FunctionTool with an unknown property unsupported 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > silently leaves a present but unsupported input-schema symbol unestablished 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > suppresses derived tool evidence for an unsupported registration shape 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > tolerates additional FunctionTool fields without interpreting their values 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`openAiAdapter Core integration > traces a direct zodTextFormat helper to its exact bound schema 1`] = `
+[
+  {
+    "code": "OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "openai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;

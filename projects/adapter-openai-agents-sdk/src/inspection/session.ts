@@ -1,4 +1,7 @@
-import { createInspectionSession } from '@moldea.ai/adapter-static-analysis';
+import {
+  createInspectionSessionFactory,
+  getSourceRetainedBytes,
+} from '@moldea.ai/adapter-static-analysis';
 import { readRuntimeAdapterFile, type IRuntimeAdapterContext } from '@moldea.ai/core/adapter';
 
 import type { IOpenAiAgentsSdkInspectionSession } from '../contracts/index.js';
@@ -6,11 +9,18 @@ import { discoverOpenAiAgentsSdkPackage } from '../package-discovery/index.js';
 import { analyzeOpenAiAgentsSdkSource } from '../source-analysis/index.js';
 
 /** Creates one operation-local OpenAI Agents SDK inspection session. */
-export const createOpenAiAgentsSdkInspectionSession = (
+export const createOpenAiAgentsSdkInspectionSession: (
   context: IRuntimeAdapterContext,
-): IOpenAiAgentsSdkInspectionSession =>
-  createInspectionSession({
+) => IOpenAiAgentsSdkInspectionSession = createInspectionSessionFactory(
+  (context: IRuntimeAdapterContext) => ({
+    owner: context.repository,
+    ...(context.agent.declaration.bindings?.runtimeAgent === undefined
+      ? {}
+      : {
+          activeSourcePath: context.agent.declaration.bindings.runtimeAgent.path,
+        }),
     analyzeSource: analyzeOpenAiAgentsSdkSource,
+    getSourceRetainedBytes,
     discoverPackage: (path, signal) =>
       discoverOpenAiAgentsSdkPackage(context.repository, path, signal),
     getEntry: (path, signal) =>
@@ -22,4 +32,5 @@ export const createOpenAiAgentsSdkInspectionSession = (
         signal === undefined ? undefined : { signal },
       ),
     ...(context.signal === undefined ? {} : { signal: context.signal }),
-  });
+  }),
+);
