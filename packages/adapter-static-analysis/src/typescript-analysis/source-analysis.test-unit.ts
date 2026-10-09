@@ -110,31 +110,36 @@ describe('TypeScript source analysis', () => {
     expect(getCallableExportState(result.analysis, 'loader').kind).toBe('present-supported');
   });
 
-  test('accounts for repeated member writes through a large alias chain and cycles', () => {
-    const count = 4096;
-    const declarations = ["export const tool = { name: 'find', parameters: {} };"];
-    for (let index = 1; index <= count; index += 1) {
-      const target = index === 1 ? 'tool' : 'alias' + (index - 1);
-      declarations.push(`const alias${index} = ${target}; alias${index}.parameters = {};`);
-    }
-    declarations.push(
-      'const cycleA = cycleB; const cycleB = cycleA; cycleA.parameters = {}; cycleB.parameters = {};',
-    );
-    const result = analyzeSource(
-      '/src/tool.ts',
-      new TextEncoder().encode(declarations.join('\n')),
-      SOURCE_CONFIG,
-    );
-    if (result.kind !== 'valid') throw new TypeError('The source fixture must be valid.');
-    expect(result.analysis.bindingMutations.size).toBe(count + 3);
-    expect(
-      [...result.analysis.bindingMutations.values()].every((members) => members.size === 1),
-    ).toBe(true);
-    expect(getConstExport(result.analysis, 'tool', ['name']).kind).toBe('present-supported');
-    expect(getConstExport(result.analysis, 'tool', ['parameters']).kind).toBe(
-      'present-unsupported',
-    );
-  });
+  // the large compiler fixture exceeds Vitest's default timeout on contended Windows runners
+  test(
+    'accounts for repeated member writes through a large alias chain and cycles',
+    { timeout: 30_000 },
+    () => {
+      const count = 4096;
+      const declarations = ["export const tool = { name: 'find', parameters: {} };"];
+      for (let index = 1; index <= count; index += 1) {
+        const target = index === 1 ? 'tool' : 'alias' + (index - 1);
+        declarations.push(`const alias${index} = ${target}; alias${index}.parameters = {};`);
+      }
+      declarations.push(
+        'const cycleA = cycleB; const cycleB = cycleA; cycleA.parameters = {}; cycleB.parameters = {};',
+      );
+      const result = analyzeSource(
+        '/src/tool.ts',
+        new TextEncoder().encode(declarations.join('\n')),
+        SOURCE_CONFIG,
+      );
+      if (result.kind !== 'valid') throw new TypeError('The source fixture must be valid.');
+      expect(result.analysis.bindingMutations.size).toBe(count + 3);
+      expect(
+        [...result.analysis.bindingMutations.values()].every((members) => members.size === 1),
+      ).toBe(true);
+      expect(getConstExport(result.analysis, 'tool', ['name']).kind).toBe('present-supported');
+      expect(getConstExport(result.analysis, 'tool', ['parameters']).kind).toBe(
+        'present-unsupported',
+      );
+    },
+  );
 
   test('indexes a provider module without request analysis', () => {
     const result = analyzeTypeScriptModule(
