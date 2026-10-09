@@ -7,3 +7,6 @@ export type {
 
 // isolated project inspection
 export { createNodeProjectInspection } from '../node-inspection/client.js';
+
+// execution identity
+export { NODE_INSPECTION_PROFILE } from '../node-inspection/constants.js';

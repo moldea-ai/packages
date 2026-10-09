@@ -17,7 +17,7 @@ pnpm add @moldea.ai/core@6 @moldea.ai/repository@2
 - `@moldea.ai/core` exposes Core construction, operations, results, diagnostics, limits, and exceptions.
 - `@moldea.ai/core/format` exposes repository-format contracts.
 - `@moldea.ai/core/adapter` exposes the per-agent runtime-adapter contract and bounded reader utilities.
-- `@moldea.ai/core/node` exposes supervised Node inspection with asynchronous paging and disposal. It imports only a caller-selected trusted installed adapter registry, never project application code.
+- `@moldea.ai/core/node` exposes supervised Node inspection with asynchronous paging and disposal. It imports only a caller-selected trusted installed adapter registry, never project application code. Its frozen `NODE_INSPECTION_PROFILE` reports the fixed heap, lifetime, bridge and transport settings for authenticated consumer state; it does not configure them. Each inspection handle separately reports the runtime's actual V8 heap limit.
 
 ## Text and document parsing
 

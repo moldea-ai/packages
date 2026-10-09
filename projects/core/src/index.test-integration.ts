@@ -255,7 +255,7 @@ describe('published Core package artifacts', () => {
         'readRuntimeAdapterFile',
       ],
       format: [],
-      node: ['createNodeProjectInspection'],
+      node: ['NODE_INSPECTION_PROFILE', 'createNodeProjectInspection'],
       root: [
         'CoreConfigurationException',
         'CoreOperationException',
