@@ -38,14 +38,14 @@ const initializeDisclosure = (): void => {
         if (!first) return;
         const previousTop = button.getBoundingClientRect().top;
         reveal(Math.min(visible + PAGE_SIZE, examples.length));
-        const heading = first.querySelector<HTMLElement>('h3');
+        const trigger = first.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]');
         if (event.detail === 0) {
-          heading?.focus({ preventScroll: true });
-          heading?.scrollIntoView({ block: 'nearest' });
+          trigger?.focus({ preventScroll: true });
+          trigger?.scrollIntoView({ block: 'nearest' });
         } else {
           // put new content where the activated control was, including scroll anchoring adjustments
           window.scrollBy(0, first.getBoundingClientRect().top - previousTop);
-          if (button.hidden) heading?.focus({ preventScroll: true });
+          if (button.hidden) trigger?.focus({ preventScroll: true });
         }
       },
       { signal: controller.signal },
@@ -71,8 +71,15 @@ const initializeDisclosure = (): void => {
     if (!reveal) return;
     const target = reveal();
     requestAnimationFrame(() => {
-      if (!controller.signal.aborted && target.isConnected)
-        target.scrollIntoView({ block: 'start' });
+      if (controller.signal.aborted || !target.isConnected) return;
+      target.scrollIntoView({ block: 'start' });
+      const dialog = document.getElementById(`example-${id}`);
+      if (!(dialog instanceof HTMLDialogElement) || dialog.open) return;
+      for (const openDialog of Array.from(
+        document.querySelectorAll<HTMLDialogElement>('[data-capability-example] dialog:modal'),
+      ).reverse())
+        openDialog.close();
+      target.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]')?.click();
     });
   };
   window.addEventListener('hashchange', revealFragment, { signal: controller.signal });

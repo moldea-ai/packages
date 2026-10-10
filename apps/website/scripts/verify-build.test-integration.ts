@@ -135,6 +135,11 @@ describe('production discovery guards', () => {
       'omits visible result mirror-stale',
     ],
     [
+      'id="example-mirror-stale"',
+      'data-removed="example-mirror-stale"',
+      'omits illustration dialog mirror-stale',
+    ],
+    [
       'id="result-mirror-stale"',
       'data-removed="result-mirror-stale"',
       'omits result dialog mirror-stale',

@@ -15,8 +15,8 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
     featuredExampleIds: [
       'policy-reference-missing',
       'policy-reference-connected',
-      'manifest-duplicate-key',
-      'foundation-missing',
+      'exact-impact-missing',
+      'manifest-path',
     ],
     reference: { route: '/packages/core/diagnostics/', label: 'Explore structural checks' },
   },
@@ -35,7 +35,7 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
       'mirror-stale',
       'tool-implementation-missing',
       'variable-undeclared',
-      'skill-implementation-missing',
+      'agent-context-present',
     ],
     reference: { route: '/repository-format/', label: 'Explore agent declarations' },
   },
@@ -52,8 +52,8 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
     featuredExampleIds: [
       'decision-replacement-chain',
       'decision-cycle',
-      'decision-reference-missing',
       'decision-relationship-accepted',
+      'decision-status-mismatch',
     ],
     reference: { route: '/repository-format/', label: 'Explore decision records' },
   },
@@ -70,8 +70,8 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
     featuredExampleIds: [
       'openai-responses',
       'openai-loader-disconnected',
-      'langchain-middleware-warning',
       'openai-agent-handoffs',
+      'langgraph-workflows',
     ],
     reference: { route: '/adapters/', label: 'Find your runtime and its scope' },
   },
@@ -89,7 +89,7 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
     featuredExampleIds: [
       'snapshot-comparison',
       'manifest-change-relevance',
-      'inspection-mixed-diagnostics',
+      'normalized-digests',
       'canonical-content-pages',
     ],
     reference: {
@@ -109,9 +109,9 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
     ],
     featuredExampleIds: [
       'cli-invalid-project',
-      'cli-version-warning',
+      'cli-scope-stdin',
+      'cli-inspect-selection',
       'cli-content-continuation',
-      'cli-composition',
     ],
     reference: { route: '/packages/cli/commands/', label: 'Explore CLI commands' },
   },

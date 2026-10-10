@@ -463,7 +463,7 @@ describe('createSearchRecords', () => {
       'mirror-stale',
       'tool-implementation-missing',
       'variable-undeclared',
-      'skill-implementation-missing',
+      'agent-context-present',
     ]);
     for (const example of examples) {
       const records = model.searchRecords.filter(
