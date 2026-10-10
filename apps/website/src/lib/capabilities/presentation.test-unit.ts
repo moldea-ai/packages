@@ -5,6 +5,7 @@ import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import {
   getCapabilityFactRows,
+  getCapabilityVisualFamily,
   getCapabilityOutcome,
   getCapabilityShowcase,
   getCapabilityResultExcerpt,
@@ -38,42 +39,64 @@ const cliEnvelopeExcerpt = (
   status,
 });
 
-test('resolves selected illustrations in section order independently of case order', () => {
+test('orders every case once with four featured cases per category', () => {
   const groups = CAPABILITY_GROUPS;
-  const cases = groups.flatMap((group) =>
-    group.exampleIds.map((id) => ({ ...example, id, groupId: group.id })),
+  const featured = groups.flatMap((group) =>
+    group.featuredExampleIds.map((id) => ({ ...example, id, groupId: group.id })),
   );
-  const complete = { groups, cases };
-  expect(getCapabilityShowcase({ ...complete, cases: [...cases].reverse() })).toStrictEqual(
-    groups.map((group) => ({
-      group,
-      examples: group.exampleIds.map((id) => cases.find((entry) => entry.id === id)),
-    })),
-  );
-  expect(() => getCapabilityShowcase({ ...complete, cases: cases.slice(1) })).toThrow(
-    'Missing capability illustration',
+  const extra = { ...example, id: 'extra', groupId: groups[0].id };
+  const cases = [extra, ...featured].reverse();
+  const result = getCapabilityShowcase({ groups, cases });
+  expect(result.flatMap(({ examples }) => examples)).toHaveLength(cases.length);
+  for (const { group, examples } of result)
+    expect(examples.slice(0, 4).map(({ id }) => id)).toStrictEqual(group.featuredExampleIds);
+  expect(result[0].examples.at(-1)).toStrictEqual(extra);
+  expect(() =>
+    getCapabilityShowcase({ groups, cases: cases.filter(({ id }) => id !== 'mirror-stale') }),
+  ).toThrow('Missing capability illustration for agents: mirror-stale');
+  expect(() => getCapabilityShowcase({ groups, cases: [...cases, cases[0]] })).toThrow(
+    'Repeated capability case',
   );
   expect(() =>
     getCapabilityShowcase({
-      ...complete,
+      groups,
       cases: cases.map((entry) => ({ ...entry, groupId: 'agents' })),
     }),
   ).toThrow('Missing capability illustration');
   expect(() =>
     getCapabilityShowcase({
-      ...complete,
-      cases: cases.filter(({ id }) => id !== 'mirror-stale'),
-    }),
-  ).toThrow('Missing capability illustration for agents: mirror-stale');
-  expect(() =>
-    getCapabilityShowcase({
-      ...complete,
+      cases,
       groups: groups.map((group) => ({
         ...group,
-        exampleIds: [...group.exampleIds, group.exampleIds[0]],
+        featuredExampleIds: [
+          group.featuredExampleIds[0],
+          group.featuredExampleIds[0],
+          group.featuredExampleIds[2],
+          group.featuredExampleIds[3],
+        ],
       })),
     }),
   ).toThrow('Repeated capability illustration');
+});
+
+test.each([
+  ['policy-reference-connected', 'validation', 'files'],
+  ['manifest-duplicate-key', 'validation', 'source'],
+  ['decision-relationship-accepted', 'validation', 'source'],
+  ['mirror-stale', 'validation', 'agents'],
+  ['reader-invalid-cursor', 'reader', 'operation'],
+  ['reader-entry-pages', 'reader', 'operation'],
+  ['snapshot-comparison', 'reader', 'records'],
+  ['canonical-content-pages', 'inspection', 'operation'],
+  ['example', 'adapter', 'runtime'],
+] as const)('selects a truthful visual family for %s (%s) -> %s', (id, kind, family) => {
+  const result: ICapabilityResult =
+    kind === 'validation'
+      ? { kind, valid: true, diagnostics: [] }
+      : kind === 'adapter'
+        ? { kind, valid: true, ...noDiagnostics, diagnostics: [], evidence: [] }
+        : { kind, facts: {} };
+  expect(getCapabilityVisualFamily({ ...example, id, result })).toBe(family);
 });
 
 describe('getCapabilityOutcome', () => {

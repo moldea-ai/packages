@@ -13,6 +13,7 @@ import {
   RUNTIME_PATTERN_PROOFS,
 } from './coverage.ts';
 import type { ICapabilities, ICapabilityCase, IRuntimePatternProof } from './types.ts';
+import { getCapabilityShowcase } from './presentation.ts';
 
 /**
  * Rejects a stale story rather than publishing an unexpected package result.
@@ -129,6 +130,7 @@ export const validateCapabilities = (
   publication: IRuntimeCompatibilityPublicationV1,
   sourcePaths: Set<string>,
 ): void => {
+  getCapabilityShowcase(catalog);
   const ids = catalog.cases.map(({ id }) => id);
   assertCapabilityFacts([...ids].sort(), [...REQUIRED_CASE_IDS].sort());
   assertCapabilityFacts(new Set(ids).size, ids.length);

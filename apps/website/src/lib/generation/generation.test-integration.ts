@@ -453,14 +453,17 @@ describe('createSearchRecords', () => {
     const showcase = getCapabilityShowcase(model.capabilities);
     expect(showcase).toHaveLength(6);
     const examples = showcase.flatMap((section) => section.examples);
-    expect(examples).toHaveLength(31);
+    expect(examples).toHaveLength(model.capabilities.cases.length);
     expect(
-      showcase.find(({ group }) => group.id === 'agents')?.examples.map(({ id }) => id),
+      showcase
+        .find(({ group }) => group.id === 'agents')
+        ?.examples.slice(0, 4)
+        .map(({ id }) => id),
     ).toStrictEqual([
-      'variable-undeclared',
       'mirror-stale',
-      'agent-identity',
       'tool-implementation-missing',
+      'variable-undeclared',
+      'skill-implementation-missing',
     ]);
     for (const example of examples) {
       const records = model.searchRecords.filter(
@@ -484,13 +487,10 @@ describe('createSearchRecords', () => {
     const capabilityRecords = model.searchRecords.filter(({ route }) =>
       route.startsWith('/capabilities/'),
     );
-    expect(capabilityRecords).toHaveLength(38);
-    for (const example of model.capabilities.cases) {
-      if (examples.some((entry) => entry.id === example.id)) continue;
-      expect(capabilityRecords.some(({ route }) => route === `/capabilities/#${example.id}`)).toBe(
-        false,
-      );
-    }
+    expect(capabilityRecords).toHaveLength(model.capabilities.cases.length + 7);
+    expect(new Set(examples.map(({ id }) => id))).toStrictEqual(
+      new Set(model.capabilities.cases.map(({ id }) => id)),
+    );
     expect(JSON.stringify(capabilityRecords)).not.toContain('export async function');
     expect(JSON.stringify(capabilityRecords)).not.toContain('boundaryVersion');
   });

@@ -94,6 +94,7 @@ const missingPath =
     </p>
     <CodeBlock
       source={result.command}
+      ariaLabel={`Command for ${example.title}`}
       language="sh"
       copyable={true}
     />
@@ -116,10 +117,10 @@ const missingPath =
           result.status === 'invalid'
             ? 'Validation failed'
             : result.status === 'error'
-              ? 'Source code is not a knowledge document'
+              ? 'Operation refused'
               : hasWarnings
                 ? 'Validation completed with a warning'
-                : 'Document returned as JSON'
+                : 'Command completed'
         }</span
       >
     </div>

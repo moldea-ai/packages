@@ -1,36 +1,41 @@
 import type { ICapabilityGroup } from './types.ts';
 
-// the public page is a curated introduction; the complete executable catalog stays internal
+// each section leads with four cases, then exposes every other executed case in catalog order
 export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
   {
     id: 'structure',
     label: 'Files',
     title: 'Catch broken file connections.',
-    description: 'See when a file your project points to is missing.',
+    description: 'Validate project files, text, declarations, and their connections.',
     coverage: [
       'formats, names and paths',
       'required files and valid text',
       'context and code references',
     ],
-    exampleIds: ['policy-reference-missing', 'foundation-missing', 'policy-reference-directory'],
+    featuredExampleIds: [
+      'policy-reference-missing',
+      'policy-reference-connected',
+      'manifest-duplicate-key',
+      'foundation-missing',
+    ],
     reference: { route: '/packages/core/diagnostics/', label: 'Explore structural checks' },
   },
   {
     id: 'agents',
     label: 'Agents',
     title: 'Keep agent files in sync.',
-    description: 'Catch undeclared variables and instruction copies that no longer match.',
+    description: 'Check instructions, variables, tools, skills, and their declared ownership.',
     coverage: [
       'agent identity and descriptions',
       'variables and their sources',
       'tools, skills and runtimes',
       'instruction copies and ownership',
     ],
-    exampleIds: [
-      'variable-undeclared',
+    featuredExampleIds: [
       'mirror-stale',
-      'agent-identity',
       'tool-implementation-missing',
+      'variable-undeclared',
+      'skill-implementation-missing',
     ],
     reference: { route: '/repository-format/', label: 'Explore agent declarations' },
   },
@@ -38,13 +43,18 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
     id: 'decisions',
     label: 'Decisions',
     title: 'Keep a consistent decision history.',
-    description: 'Check that each decision correctly replaces the one before it.',
+    description: 'Validate decision records, replacement chains, and implementation references.',
     coverage: [
       'record format, dates and unique IDs',
       'replacement links and status',
       'missing links and cycles',
     ],
-    exampleIds: ['decision-replacement-chain', 'decision-cycle', 'decision-reference-missing'],
+    featuredExampleIds: [
+      'decision-replacement-chain',
+      'decision-cycle',
+      'decision-reference-missing',
+      'decision-relationship-accepted',
+    ],
     reference: { route: '/repository-format/', label: 'Explore decision records' },
   },
   {
@@ -57,20 +67,11 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
       'schemas, handoffs and workflows',
       'version-sensitive behavior and scoped warnings',
     ],
-    exampleIds: [
+    featuredExampleIds: [
       'openai-responses',
-      'openai-loader-unverified',
       'openai-loader-disconnected',
-      'anthropic-parse-output',
-      'openai-parse-output',
-      'google-mixed-generation',
-      'cloudflare-think-session-context',
-      'cloudflare-think-configured-context',
-      'cloudflare-think-ambiguous-context',
-      'eve-workspace-peer',
-      'eve-excluded-test-tool',
-      'vercel-deferred-tool',
-      'langgraph-resume-schema',
+      'langchain-middleware-warning',
+      'openai-agent-handoffs',
     ],
     reference: { route: '/adapters/', label: 'Find your runtime and its scope' },
   },
@@ -85,11 +86,11 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
       'normalized text and content hashes',
       'read limits, pagination and snapshot consistency',
     ],
-    exampleIds: [
+    featuredExampleIds: [
       'snapshot-comparison',
       'manifest-change-relevance',
       'inspection-mixed-diagnostics',
-      'normalized-digests',
+      'canonical-content-pages',
     ],
     reference: {
       route: '/packages/repository/reader-contract/',
@@ -106,11 +107,11 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
       'JSON output and exit codes',
       'installed packages and adapters',
     ],
-    exampleIds: [
+    featuredExampleIds: [
       'cli-invalid-project',
       'cli-version-warning',
-      'cli-canonical-content',
-      'cli-content-refusal',
+      'cli-content-continuation',
+      'cli-composition',
     ],
     reference: { route: '/packages/cli/commands/', label: 'Explore CLI commands' },
   },

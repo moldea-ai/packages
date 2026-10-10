@@ -20,6 +20,7 @@ export { createCapabilities } from './capabilities.ts';
 // shared page and discovery presentation
 export {
   getCapabilityShowcase,
+  getCapabilityVisualFamily,
   getCapabilityOutcome,
   getCapabilityResultExcerpt,
   getCapabilityFactRows,
