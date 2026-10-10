@@ -3,3 +3,7 @@
 **/node_modules
 .turbo
 pnpm-lock.yaml
+**/_archive/**
+**/_archives/**
+**/_backup/**
+**/_backups/**

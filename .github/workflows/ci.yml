@@ -14,6 +14,11 @@ on:
         required: false
         type: boolean
         default: false
+      comparison_commit:
+        description: Exact comparison commit for ordinary main-push verification.
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
 
 permissions:
@@ -32,14 +37,59 @@ env:
   PNPM_VERSION: 11.9.0
 
 jobs:
-  verify:
-    name: Verify Repository
+  plan:
+    name: Select CI Workspaces
+    runs-on: ubuntu-latest
+    outputs:
+      plan: ${{ steps.selection.outputs.plan }}
+      artifacts: ${{ steps.selection.outputs.artifacts }}
+      cross_platform: ${{ steps.selection.outputs.cross_platform }}
+      website: ${{ steps.selection.outputs.website }}
+      consumer_conformance: ${{ steps.selection.outputs.consumer_conformance }}
+      repository_testing_peer_compatibility: ${{ steps.selection.outputs.repository_testing_peer_compatibility }}
+      cli_testing_peer_compatibility: ${{ steps.selection.outputs.cli_testing_peer_compatibility }}
+      repository_fs_runtime_compatibility: ${{ steps.selection.outputs.repository_fs_runtime_compatibility }}
+      cli_runtime_compatibility: ${{ steps.selection.outputs.cli_runtime_compatibility }}
+      adapter_anthropic_runtime_compatibility: ${{ steps.selection.outputs.adapter_anthropic_runtime_compatibility }}
+      adapter_google_genai_runtime_compatibility: ${{ steps.selection.outputs.adapter_google_genai_runtime_compatibility }}
+      adapter_openai_runtime_compatibility: ${{ steps.selection.outputs.adapter_openai_runtime_compatibility }}
+      adapter_openai_agents_sdk_runtime_compatibility: ${{ steps.selection.outputs.adapter_openai_agents_sdk_runtime_compatibility }}
+      adapter_claude_agent_sdk_runtime_compatibility: ${{ steps.selection.outputs.adapter_claude_agent_sdk_runtime_compatibility }}
+      adapter_cloudflare_agents_runtime_compatibility: ${{ steps.selection.outputs.adapter_cloudflare_agents_runtime_compatibility }}
+      adapter_eve_runtime_compatibility: ${{ steps.selection.outputs.adapter_eve_runtime_compatibility }}
+      adapter_langchain_runtime_compatibility: ${{ steps.selection.outputs.adapter_langchain_runtime_compatibility }}
+      adapter_langgraph_runtime_compatibility: ${{ steps.selection.outputs.adapter_langgraph_runtime_compatibility }}
+      adapter_vercel_ai_sdk_runtime_compatibility: ${{ steps.selection.outputs.adapter_vercel_ai_sdk_runtime_compatibility }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Select Verification Workspaces
+        id: selection
+        env:
+          CI_BASE_COMMIT: ${{ inputs.comparison_commit || github.event.pull_request.base.sha || github.event.before || '' }}
+          CI_TESTED_COMMIT: ${{ github.sha }}
+          CI_RELEASE_BUILD: ${{ inputs.release_build == true && 'true' || 'false' }}
+        run: node scripts/ci/plan.ts
+
+  checks:
+    name: Check Selected Workspaces
+    needs: plan
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-noble
       options: --ipc=host --init
     env:
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      MOLDEA_CI_PLAN: ${{ needs.plan.outputs.plan }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -80,31 +130,11 @@ jobs:
           "$RELEASE_BASE_COMMIT"
           "$RELEASE_CURRENT_COMMIT"
 
-      - name: Check Runtime Compatibility Artifacts
-        run: pnpm compatibility:check
-
-      - name: Check Package Documentation Sources
-        run: pnpm docs:check
-
-      - name: Check Pinned Upstream SDKs
-        run: pnpm upstream:check
-
-      - name: Check Formatting
-        run: pnpm format:check
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Build
-        run: pnpm build
-
-      - name: Test
-        run: pnpm test
+      - name: Verify Selected Workspaces and Shared Contracts
+        run: pnpm ci:run checks
 
       - name: Pack Public Package Artifacts
+        if: ${{ needs.plan.outputs.artifacts == 'true' }}
         run: |
           public_packages_directory="$GITHUB_WORKSPACE/artifacts/public-package-tarballs"
           mkdir -p "$public_packages_directory"
@@ -137,6 +167,7 @@ jobs:
           fi
 
       - name: Upload Public Package Artifacts
+        if: ${{ needs.plan.outputs.artifacts == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: public-package-tarballs
@@ -151,7 +182,8 @@ jobs:
 
   consumer-conformance:
     name: Exact Artifact Skill Consumers
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.consumer_conformance == 'true' }}
     permissions:
       contents: read
     uses: moldea-ai/skill/.github/workflows/release-candidate.yml@ee7e74dde63d610da6306967885dbb293ec8f4e5
@@ -163,7 +195,8 @@ jobs:
 
   repository-testing-peer-compatibility:
     name: Repository Testing Peers (Vitest ${{ matrix.vitest-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.repository_testing_peer_compatibility == 'true' }}
     runs-on: ubuntu-latest
     env:
       PNPM_VERSION: 11.9.0
@@ -206,7 +239,8 @@ jobs:
 
   cli-testing-peer-compatibility:
     name: CLI Existing Vitest 3.2.4 Compatibility
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.cli_testing_peer_compatibility == 'true' }}
     runs-on: ubuntu-latest
     env:
       PNPM_VERSION: 11.21.0
@@ -239,7 +273,8 @@ jobs:
 
   repository-fs-runtime-compatibility:
     name: Repository FS Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.repository_fs_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -272,7 +307,8 @@ jobs:
 
   cli-runtime-compatibility:
     name: CLI Runtime (${{ matrix.os }}, Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.cli_runtime_compatibility == 'true' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -309,7 +345,8 @@ jobs:
 
   adapter-openai-runtime-compatibility:
     name: OpenAI Adapter Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.adapter_openai_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -342,7 +379,8 @@ jobs:
 
   adapter-google-genai-runtime-compatibility:
     name: Google Gen AI Adapter Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.adapter_google_genai_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -375,7 +413,8 @@ jobs:
 
   adapter-openai-agents-sdk-runtime-compatibility:
     name: OpenAI Agents SDK Adapter Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.adapter_openai_agents_sdk_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -408,7 +447,8 @@ jobs:
 
   adapter-claude-agent-sdk-runtime-compatibility:
     name: Claude Agent SDK Adapter Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.adapter_claude_agent_sdk_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -441,7 +481,8 @@ jobs:
 
   adapter-cloudflare-agents-runtime-compatibility:
     name: Cloudflare Agents Adapter Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.adapter_cloudflare_agents_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -474,7 +515,8 @@ jobs:
 
   adapter-vercel-ai-sdk-runtime-compatibility:
     name: Vercel AI SDK Adapter Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.adapter_vercel_ai_sdk_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -507,7 +549,8 @@ jobs:
 
   adapter-eve-runtime-compatibility:
     name: Eve Adapter Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.adapter_eve_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -540,7 +583,8 @@ jobs:
 
   adapter-langchain-runtime-compatibility:
     name: LangChain Adapter Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.adapter_langchain_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -573,7 +617,8 @@ jobs:
 
   adapter-langgraph-runtime-compatibility:
     name: LangGraph Adapter Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.adapter_langgraph_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -606,7 +651,8 @@ jobs:
 
   adapter-anthropic-runtime-compatibility:
     name: Anthropic Adapter Runtime (Node.js ${{ matrix.node-version }})
-    needs: verify
+    needs: [plan, checks]
+    if: ${{ needs.plan.outputs.adapter_anthropic_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -639,6 +685,10 @@ jobs:
 
   test-cross-platform:
     name: Test (${{ matrix.os }})
+    needs: plan
+    if: ${{ needs.plan.outputs.cross_platform == 'true' }}
+    env:
+      MOLDEA_CI_PLAN: ${{ needs.plan.outputs.plan }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -672,10 +722,48 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Website Browser
+        if: ${{ needs.plan.outputs.website == 'true' }}
         run: pnpm --filter @moldea.ai/packages-website exec playwright install chromium
 
-      - name: Build
-        run: pnpm build
+      - name: Test Selected Workspaces
+        run: pnpm ci:run test
 
-      - name: Test
-        run: pnpm test
+  verify:
+    name: Verify Repository
+    if: ${{ always() }}
+    needs:
+      - plan
+      - checks
+      - consumer-conformance
+      - repository-testing-peer-compatibility
+      - cli-testing-peer-compatibility
+      - repository-fs-runtime-compatibility
+      - cli-runtime-compatibility
+      - adapter-anthropic-runtime-compatibility
+      - adapter-google-genai-runtime-compatibility
+      - adapter-openai-runtime-compatibility
+      - adapter-openai-agents-sdk-runtime-compatibility
+      - adapter-claude-agent-sdk-runtime-compatibility
+      - adapter-cloudflare-agents-runtime-compatibility
+      - adapter-eve-runtime-compatibility
+      - adapter-langchain-runtime-compatibility
+      - adapter-langgraph-runtime-compatibility
+      - adapter-vercel-ai-sdk-runtime-compatibility
+      - test-cross-platform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Require Successful Selected Jobs
+        env:
+          MOLDEA_CI_PLAN: ${{ needs.plan.outputs.plan }}
+          GITHUB_NEEDS: ${{ toJSON(needs) }}
+        run: node scripts/ci/run.ts gate

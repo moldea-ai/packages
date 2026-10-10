@@ -95,12 +95,13 @@ describe('npm release workflow', () => {
     expect(ciSource).toContain(
       'node projects/adapter-vercel-ai-sdk/scripts/runtime-compatibility/index.mjs',
     );
-    expect(ciWorkflow.jobs?.['verify']?.container).toStrictEqual({
+    expect(ciWorkflow.jobs?.['checks']?.container).toStrictEqual({
       image: `mcr.microsoft.com/playwright:v${websitePackageManifest.devDependencies?.['@playwright/test']}-noble`,
       options: '--ipc=host --init',
     });
-    expect(ciWorkflow.jobs?.['verify']?.env).toStrictEqual({
+    expect(ciWorkflow.jobs?.['checks']?.env).toStrictEqual({
       PLAYWRIGHT_BROWSERS_PATH: '/ms-playwright',
+      MOLDEA_CI_PLAN: '${{ needs.plan.outputs.plan }}',
     });
     expect(turboConfiguration.tasks?.['test:e2e']?.env).toContain('PLAYWRIGHT_BROWSERS_PATH');
     expect(rootPackageManifest.scripts?.['test:integration']).toBe(
@@ -113,7 +114,8 @@ describe('npm release workflow', () => {
       permissions: { contents: 'read' },
       uses: './.github/workflows/ci.yml',
       with: {
-        release_build: true,
+        release_build: "${{ needs.plan.outputs.has_releases == 'true' }}",
+        comparison_commit: "${{ github.event.before || '' }}",
         release_project: '${{ needs.plan.outputs.project_key }}',
       },
     });
@@ -126,7 +128,8 @@ describe('npm release workflow', () => {
     expect(skillCommit).toMatch(/^[0-9a-f]{40}$/u);
     expect(consumers).toStrictEqual({
       name: 'Exact Artifact Skill Consumers',
-      needs: 'verify',
+      needs: ['plan', 'checks'],
+      if: "${{ needs.plan.outputs.consumer_conformance == 'true' }}",
       permissions: { contents: 'read' },
       uses: `moldea-ai/skill/.github/workflows/release-candidate.yml@${skillCommit}`,
       with: {
