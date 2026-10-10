@@ -179,7 +179,9 @@ test('renders every executed case once with a truthful visual and result', async
   await expect(page.locator('#unicode-invalid')).toContainText('JSON-string representation');
   await expect(page.locator('#canonical-content-pages')).toContainText('Bytes 3 to 7');
   await expect(page.locator('#reader-cancellation')).toContainText('Read cancelled');
-  await expect(page.locator('#policy-reference-connected')).toContainText('Declared target exists');
+  await expect(page.locator('#policy-reference-connected')).toContainText(
+    'Declared target in moldea.yaml',
+  );
   await expect(page.locator('#openai-loader-disconnected')).toContainText(
     'Not connected to this loader',
   );
