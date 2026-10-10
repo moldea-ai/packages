@@ -154,11 +154,11 @@ jobs:
     needs: verify
     permissions:
       contents: read
-    uses: moldea-ai/skill/.github/workflows/release-candidate.yml@c8576dfb9dff3cca9937d72ad3ec816101daf071
+    uses: moldea-ai/skill/.github/workflows/release-candidate.yml@ee7e74dde63d610da6306967885dbb293ec8f4e5
     with:
       artifact_name: public-package-tarballs
       packages_ref: ${{ github.sha }}
-      skill_ref: c8576dfb9dff3cca9937d72ad3ec816101daf071
+      skill_ref: ee7e74dde63d610da6306967885dbb293ec8f4e5
       skill_version: '7.0.0'
 
   repository-testing-peer-compatibility:
