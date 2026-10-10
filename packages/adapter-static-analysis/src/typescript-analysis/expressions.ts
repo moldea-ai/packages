@@ -11,7 +11,9 @@ export const unwrapExpression = (expression: ts.Expression): ts.Expression => {
   while (
     ts.isAsExpression(current) ||
     ts.isParenthesizedExpression(current) ||
-    ts.isSatisfiesExpression(current)
+    ts.isSatisfiesExpression(current) ||
+    ts.isNonNullExpression(current) ||
+    ts.isTypeAssertionExpression(current)
   ) {
     current = current.expression;
   }

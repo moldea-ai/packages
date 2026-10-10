@@ -48,6 +48,11 @@ test('distinguishes an unverified instruction from a confirmed broken connection
       details: { relationship: 'instruction-loader' },
       severity: 'warning',
     },
+    {
+      code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { relationship: 'tool-implementation' },
+      severity: 'warning',
+    },
   ]);
   expect(unverified.evidence.some(({ kind }) => kind === 'instruction-loader')).toBe(false);
   expect(unverified.evidence.some(({ kind }) => kind === 'tool-registration')).toBe(true);
@@ -55,6 +60,11 @@ test('distinguishes an unverified instruction from a confirmed broken connection
   expect(disconnected.valid).toBe(false);
   expect(disconnected.diagnostics).toMatchObject([
     { code: 'OPENAI_INSTRUCTION_LOADER_NOT_WIRED', severity: 'error' },
+    {
+      code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { relationship: 'tool-implementation' },
+      severity: 'warning',
+    },
   ]);
   expect(disconnected.evidence.some(({ kind }) => kind === 'instruction-loader')).toBe(false);
 });
@@ -97,7 +107,17 @@ test('does not label an unestablished dynamic relationship invalid or supported'
   expect(result?.kind).toBe('adapter');
   if (result?.kind !== 'adapter') return;
   expect(result.valid).toBe(true);
-  expect(result.diagnostics).toStrictEqual([]);
+  expect(
+    result.diagnostics.map(({ code, severity, details }) => ({ code, severity, details })),
+  ).toStrictEqual(
+    ['agent-output-schema', 'tool-implementation', 'instruction-loader', 'tool-registration'].map(
+      (relationship) => ({
+        code: 'VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        severity: 'warning',
+        details: { relationship, reason: 'unsupported-source-pattern' },
+      }),
+    ),
+  );
   expect(
     result.evidence.filter(
       ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
@@ -123,11 +143,17 @@ test('keeps warning, confirmed failure, and mixed paginated outcomes distinct', 
   const warning = await core.validateProject({
     repository: createRepository('dynamicSystem', '[registeredFindOrder]'),
   });
-  expect([warning.valid, warning.errorCount, warning.warningCount]).toStrictEqual([true, 0, 1]);
+  expect([warning.valid, warning.errorCount, warning.warningCount]).toStrictEqual([true, 0, 2]);
+  expect(warning.runtimeInspection).toBe('incomplete');
   expect(warning.diagnostics).toMatchObject([
     {
       code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
       details: { reason: 'dynamic-source-pattern', relationship: 'instruction-loader' },
+      severity: 'warning',
+    },
+    {
+      code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason: 'unsupported-source-pattern', relationship: 'tool-implementation' },
       severity: 'warning',
     },
   ]);
@@ -139,10 +165,15 @@ test('keeps warning, confirmed failure, and mixed paginated outcomes distinct', 
   expect([confirmed.valid, confirmed.errorCount, confirmed.warningCount]).toStrictEqual([
     false,
     1,
-    0,
+    1,
   ]);
   expect(confirmed.diagnostics).toMatchObject([
     { code: 'ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED', severity: 'error' },
+    {
+      code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { relationship: 'tool-implementation' },
+      severity: 'warning',
+    },
   ]);
 
   const inspection = await core.createProjectInspection({
@@ -155,14 +186,26 @@ test('keeps warning, confirmed failure, and mixed paginated outcomes distinct', 
     maxItems: 1,
     view: 'diagnostics',
   });
-  expect(first.counts).toMatchObject({ diagnostics: 2, errors: 1, warnings: 1 });
+  expect(second.page.nextCursor).not.toBeNull();
+  const third = inspection.readPage({
+    cursor: second.page.nextCursor ?? '',
+    maxItems: 1,
+    view: 'diagnostics',
+  });
+  expect(first.counts).toMatchObject({ diagnostics: 3, errors: 1, warnings: 2 });
   expect(second.counts).toStrictEqual(first.counts);
-  expect(second.page.nextCursor).toBeNull();
+  expect(third.counts).toStrictEqual(first.counts);
+  expect([
+    first.runtimeInspection,
+    second.runtimeInspection,
+    third.runtimeInspection,
+  ]).toStrictEqual(['incomplete', 'incomplete', 'incomplete']);
+  expect(third.page.nextCursor).toBeNull();
   expect(
-    [...first.page.records, ...second.page.records].map(({ item }) =>
+    [...first.page.records, ...second.page.records, ...third.page.records].map(({ item }) =>
       item.kind === 'diagnostic' ? item.diagnostic.severity : null,
     ),
-  ).toStrictEqual(['warning', 'error']);
+  ).toStrictEqual(['warning', 'warning', 'error']);
 });
 
 test('retains deterministic outcomes when input file enumeration changes', async () => {

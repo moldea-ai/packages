@@ -1,5 +1,6 @@
 import type ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IRuntimeAdapterEvidence, ISourceRange } from '@moldea.ai/core';
 import type { IAdapterDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
@@ -12,6 +13,13 @@ import type {
   IEveSourceAnalysisResult,
 } from '../contracts/index.js';
 import { createEveDiagnostic } from '../diagnostics/index.js';
+
+// related-agent queries do not emit records or execute record factories
+export const IGNORED_EVE_RECORDS = Object.freeze({
+  add: (): void => {},
+  instruction: (): void => {},
+  some: (): boolean => false,
+});
 
 /** Compares exact strings without locale-sensitive behavior. */
 export const compareEveStrings = (left: string, right: string): number =>
@@ -40,9 +48,14 @@ const createEntity = (agentId: string, capabilityKind?: 'skill' | 'tool', capabi
       : { capabilityId, capabilityKind }),
   });
 
-/** Appends one stable package-owned Eve diagnostic. */
+/**
+ * Appends one stable package-owned Eve diagnostic.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addEveDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   code: Exclude<IEveAdapterDiagnosticCode, 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
@@ -51,7 +64,7 @@ export const addEveDiagnostic = (
   capabilityId?: string,
   details: IAdapterDiagnostic['details'] = {},
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createEveDiagnostic({
       code,
       details,
@@ -63,16 +76,21 @@ export const addEveDiagnostic = (
   );
 };
 
-/** Appends one scoped warning when an Eve relationship cannot be established. */
+/**
+ * Appends one scoped warning when an Eve relationship cannot be established.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addEveWarning = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   path: IRepositoryPath,
   agentId: string,
   details: IAdapterWarningDiagnostic['details'],
   capabilityKind?: 'skill' | 'tool',
   capabilityId?: string,
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createEveDiagnostic({
       code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
       details,
@@ -84,9 +102,14 @@ export const addEveWarning = (
   );
 };
 
-/** Adds the sole permitted diagnostic for invalid referenced TypeScript source. */
+/**
+ * Adds the sole permitted diagnostic for invalid referenced TypeScript source.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addEveSourceFailureDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   result: IEveSourceAnalysisResult,
   path: IRepositoryPath,
   agentId: string,

@@ -48,6 +48,7 @@ const resolveVariableReference = async (
 
   for (const reference of references) {
     const path = parseRepositoryPath(reference.path);
+    if (path !== analysis.path && (await session.getEntry(path))?.type !== 'file') continue;
     const targetAnalysis =
       path === analysis.path
         ? analysis

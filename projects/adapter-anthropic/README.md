@@ -2,11 +2,11 @@
 
 Deterministic runtime evidence and diagnostics for direct Anthropic SDK integrations.
 
-Version `5.1.0` supports this verified technical boundary:
+Version `6.0.0` supports this verified technical boundary:
 
 - TypeScript ESM source in `.ts`, `.tsx`, and `.mts` files
 - `@anthropic-ai/sdk >=0.117.1`
-- `@moldea.ai/core ^5.0.0`
+- `@moldea.ai/core ^6.0.0`
 - Repository Format version `1`
 - direct `client.messages.create(...)`, `parse(...)`, and `stream(...)` calls
 - effective second-argument `body` overrides; transport-only options leave request wiring unchanged
@@ -39,6 +39,6 @@ These guides are included in the installed package. Open only the page relevant 
 
 ## Diagnostics
 
-`ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+`ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` when an applicable declared relationship remains unverified, including unsupported source patterns, dynamic or mutated wiring, and ranges spanning a relevant behavior change. Its safe details identify the relationship and reason; version-dependent warnings also include normalized dependency context. Independent export checks and proved contradictions remain errors. Warning-only validation is valid with `runtimeInspection: 'incomplete'`; it does not establish launch readiness. A newer eligible dependency version alone does not produce this warning.
 
 `ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified.

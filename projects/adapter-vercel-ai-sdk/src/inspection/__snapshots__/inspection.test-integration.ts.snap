@@ -1,0 +1,74 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`vercelAiSdkAdapter Core integration > accepts a later stable provider major through the minimum-only range 1`] = `[]`;
+
+exports[`vercelAiSdkAdapter Core integration > emits the complete normalized evidence for both supported targets 1`] = `[]`;
+
+exports[`vercelAiSdkAdapter Core integration > reports declared deferred loading deferLoading as unknown 1`] = `[]`;
+
+exports[`vercelAiSdkAdapter Core integration > reports declared deferred loading false as disabled 1`] = `[]`;
+
+exports[`vercelAiSdkAdapter Core integration > reports declared deferred loading true as enabled 1`] = `[]`;
+
+exports[`vercelAiSdkAdapter Core integration > resolves relative imported output specifications and tools maps 1`] = `[]`;
+
+exports[`vercelAiSdkAdapter Core integration > resolves safe local relationships shared across manifest agents 1`] = `[]`;
+
+exports[`vercelAiSdkAdapter Core integration > returns no runtime diagnostics when dedicated-repository bindings are absent 1`] = `[]`;
+
+exports[`vercelAiSdkAdapter Core integration > suppresses relationship negatives when preparation can replace them 1`] = `
+[
+  {
+    "code": "VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "vercel-ai-sdk",
+      "agentId": "support",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "vercel-ai-sdk",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+  {
+    "code": "VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "vercel-ai-sdk",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+  {
+    "code": "VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "vercel-ai-sdk",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;

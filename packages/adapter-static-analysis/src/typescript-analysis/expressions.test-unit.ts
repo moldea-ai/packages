@@ -34,12 +34,15 @@ const parseInitializer = (initializer: string): ts.Expression => {
 };
 
 describe('static TypeScript expressions', () => {
-  test('unwraps supported wrappers and direct awaited calls', () => {
-    const call = getDirectCall(parseInitializer('(await load()) satisfies unknown'));
+  test.each(['(await load()) satisfies unknown', 'load()!', '<unknown>load()'])(
+    'unwraps supported wrappers and direct awaited calls (%s)',
+    (expression) => {
+      const call = getDirectCall(parseInitializer(expression));
 
-    expect(call).not.toBeNull();
-    expect(call && ts.isIdentifier(call.expression) ? call.expression.text : null).toBe('load');
-  });
+      expect(call).not.toBeNull();
+      expect(call && ts.isIdentifier(call.expression) ? call.expression.text : null).toBe('load');
+    },
+  );
 
   test('indexes exact closed properties and static strings', () => {
     const expression = parseInitializer("{ name: 'lookup', 'description': `Find an item` }");

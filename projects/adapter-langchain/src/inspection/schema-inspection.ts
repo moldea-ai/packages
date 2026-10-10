@@ -1,14 +1,16 @@
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { getConstExport } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 
+import type { ILangChainEvidenceCollector } from '../contracts/index.js';
 import { LANGCHAIN_ADAPTER_ID, LANGCHAIN_TARGET_ID } from '../constants/index.js';
 import type { ILangChainInspectedAgent, ILangChainInspectionSession } from '../contracts/index.js';
 import {
   classifyLangChainResponseFormat,
   isLangChainSingleSchemaInitializer,
 } from '../source-analysis/index.js';
+
 import {
   addLangChainDiagnostic,
   addLangChainUnverifiedRelationship,
@@ -17,12 +19,17 @@ import {
   locateLangChainNode,
 } from './common.js';
 
-/** Inspects one declared agent output schema against supported response formats. */
+/**
+ * Inspects one declared agent output schema against supported response formats.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectLangChainOutputSchema = async (
   session: ILangChainInspectionSession,
   inspected: ILangChainInspectedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ILangChainEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = inspected.agent.declaration.bindings?.outputSchema;
 
@@ -89,7 +96,7 @@ export const inspectLangChainOutputSchema = async (
         );
 
   if (result.kind === 'wired') {
-    evidence.push(
+    evidence.add(() =>
       createLangChainEvidence({
         agentId: inspected.agent.id,
         capabilityId: null,
@@ -105,7 +112,7 @@ export const inspectLangChainOutputSchema = async (
           inspected.agent.declaration.bindings?.runtimeAgent as IRepositoryReference,
           boundReference,
         ],
-        runtimeName: boundReference.symbol,
+        runtimeName: boundReference.symbol ?? null,
         source: LANGCHAIN_ADAPTER_ID,
       }),
     );

@@ -1,11 +1,21 @@
 import type ts from 'typescript';
 
+import type {
+  IRuntimeAdapterRecordCollector,
+  IRuntimeAdapterEvidence as ICollectedEvidence,
+} from '@moldea.ai/core/adapter';
 import type { ISourceRange } from '@moldea.ai/core';
 import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
 export type IClaudeAgentSdkAdapterDiagnosticCode =
+  | 'CLAUDE_AGENT_SDK_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'CLAUDE_AGENT_SDK_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'CLAUDE_AGENT_SDK_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'CLAUDE_AGENT_SDK_SKILL_REGISTRATION_SYMBOL_NOT_FOUND'
+  | 'CLAUDE_AGENT_SDK_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND'
+  | 'CLAUDE_AGENT_SDK_INSTRUCTION_SOURCE_MISMATCH'
   | 'CLAUDE_AGENT_SDK_PACKAGE_MANIFEST_INVALID'
   | 'CLAUDE_AGENT_SDK_VERSION_UNSUPPORTED'
   | 'CLAUDE_AGENT_SDK_SOURCE_TEXT_INVALID'
@@ -59,6 +69,7 @@ export interface IClaudeAgentSdkImports {
 
 export type IClaudeAgentSdkModuleExportState =
   | { readonly kind: 'absent' }
+  | { readonly declaration: ts.Node; readonly kind: 'unresolved' }
   | { readonly declaration: ts.Node; readonly kind: 'present-supported' }
   | { readonly declaration: ts.Node; readonly kind: 'present-unsupported' };
 
@@ -72,6 +83,8 @@ export type IClaudeAgentSdkTextResult =
 
 // parsed source and Claude Agent SDK bindings used only within one inspection
 export interface IClaudeAgentSdkSourceAnalysis {
+  readonly estimatedRetainedBytes: number;
+  readonly hasUnresolvedExports: boolean;
   readonly clientNames: ReadonlySet<string>;
   readonly constructorNames: ReadonlySet<string>;
   readonly exports: ReadonlyMap<
@@ -81,6 +94,9 @@ export interface IClaudeAgentSdkSourceAnalysis {
   readonly identifierUses: ReadonlyMap<string, readonly ts.Identifier[]>;
   readonly imports: IClaudeAgentSdkImports;
   readonly localBindingNames: ReadonlyMap<ts.Node, ReadonlySet<string>>;
+  readonly lexicalBindings: ReadonlyMap<ts.Node, ReadonlyMap<string, ts.Node | null>>;
+  readonly bindingMutations: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
+  readonly bindingEscapes: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
   readonly moduleArrays: ReadonlyMap<
     string,
     { readonly declaration: ts.VariableDeclaration; readonly expression: ts.ArrayLiteralExpression }
@@ -209,3 +225,8 @@ export type IClaudeAgentSdkDiagnosticInput =
   | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
       readonly code: 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED';
     });
+
+// adapter-owned evidence admission uses only Core public types in packed declarations
+export interface IClaudeAgentSdkEvidenceCollector extends IRuntimeAdapterRecordCollector<ICollectedEvidence> {
+  instruction(factory: () => ICollectedEvidence): void;
+}

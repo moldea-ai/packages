@@ -8,6 +8,26 @@ import type {
 
 // stable OpenAI Agents SDK adapter diagnostic code and message catalog
 export const OPENAI_AGENTS_SDK_ADAPTER_DIAGNOSTICS = Object.freeze({
+  OPENAI_AGENTS_SDK_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent input-schema symbol was not found.',
+    severity: 'error',
+  },
+  OPENAI_AGENTS_SDK_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-implementation symbol was not found.',
+    severity: 'error',
+  },
+  OPENAI_AGENTS_SDK_SKILL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-registration symbol was not found.',
+    severity: 'error',
+  },
+  OPENAI_AGENTS_SDK_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND: {
+    message: 'The declared variable-provider symbol was not found.',
+    severity: 'error',
+  },
+  OPENAI_AGENTS_SDK_INSTRUCTION_SOURCE_MISMATCH: {
+    message: 'The declared instruction loader does not consume the canonical instruction source.',
+    severity: 'error',
+  },
   OPENAI_AGENTS_SDK_AGENT_OUTPUT_SCHEMA_NOT_WIRED: {
     message:
       'The declared agent output schema is not wired to the detected OpenAI Agents SDK agent output type.',

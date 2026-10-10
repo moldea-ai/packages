@@ -7,6 +7,7 @@ import type {
   IProjectInspectionView,
   IProjectMetadataKind,
   IRuntimeAdapterEvidenceKind,
+  IRuntimeInspectionStatus,
   IUnverifiedRelationshipDetails,
 } from '@moldea.ai/core';
 import type { IRepositoryPath, IRepositorySourceErrorCode } from '@moldea.ai/repository';
@@ -115,6 +116,7 @@ export interface IMoldeaCliInspectProjectMetadata {
 }
 
 export interface IMoldeaCliInspectProjection {
+  readonly runtimeInspection: IRuntimeInspectionStatus;
   readonly counts: IProjectInspectionCounts;
   readonly formatVersion: number | null;
   readonly getSourceCursor: (record: IMoldeaCliInspectRecord) => string | null;
@@ -127,6 +129,7 @@ export interface IMoldeaCliInspectProjection {
 }
 
 export interface IMoldeaCliInspectResult {
+  readonly runtimeInspection: IRuntimeInspectionStatus;
   readonly counts: IProjectInspectionCounts;
   readonly formatVersion: number | null;
   readonly page: IMoldeaCliOutputPage<IMoldeaCliInspectRecord>;
@@ -138,6 +141,7 @@ export interface IMoldeaCliInspectResult {
 }
 
 export interface IMoldeaCliValidateProjection {
+  readonly runtimeInspection: IRuntimeInspectionStatus;
   readonly diagnostics: readonly IMoldeaCliDiagnosticRecord[];
   readonly errorCount: number;
   readonly formatVersion: number | null;
@@ -148,6 +152,7 @@ export interface IMoldeaCliValidateProjection {
 }
 
 export interface IMoldeaCliValidateResult {
+  readonly runtimeInspection: IRuntimeInspectionStatus;
   readonly diagnosticCount: number;
   readonly errorCount: number;
   readonly formatVersion: number | null;

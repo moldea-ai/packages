@@ -54,7 +54,7 @@ export const CLOUDFLARE_AGENTS_FILES: IMemoryRepositoryEntry[] = [
     path: '/src/instructions.ts',
     type: 'file',
     content:
-      "export const loadSupportInstruction = () => 'support';\nexport const loadSummaryInstruction = () => 'summary';\n",
+      "import { readFileSync } from 'node:fs';\n\nexport const loadSupportInstruction = () =>\n  readFileSync(new URL('../moldea/agents/support/instruction.md', import.meta.url), 'utf8');\n\nexport const loadSummaryInstruction = () =>\n  readFileSync(new URL('../moldea/agents/summary/instruction.md', import.meta.url), 'utf8');\n",
   },
   {
     path: '/src/implementations.ts',

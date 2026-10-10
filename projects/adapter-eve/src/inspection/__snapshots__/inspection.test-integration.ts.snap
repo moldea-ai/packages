@@ -1,0 +1,1591 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`eveAdapter Core integration > accepts a later stable provider major through the minimum-only range 1`] = `[]`;
+
+exports[`eveAdapter Core integration > classifies Eve >=0.39.1 agent schema authored=false bound=true 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "boundaryVersion": "0.67.0",
+      "declaredRange": ">=0.39.1",
+      "packageName": "eve",
+      "reason": "version-dependent-behavior",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies Eve >=0.39.1 agent schema authored=true bound=false 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "boundaryVersion": "0.67.0",
+      "declaredRange": ">=0.39.1",
+      "packageName": "eve",
+      "reason": "version-dependent-behavior",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies Eve >=0.39.1 agent schema authored=true bound=true 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "boundaryVersion": "0.67.0",
+      "declaredRange": ">=0.39.1",
+      "packageName": "eve",
+      "reason": "version-dependent-behavior",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies Eve 0.66.3 agent schema authored=true bound=true 1`] = `[]`;
+
+exports[`eveAdapter Core integration > classifies Eve 0.67.0 agent schema authored=false bound=true 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies Eve 0.67.0 agent schema authored=true bound=false 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies Eve 0.67.0 agent schema authored=true bound=true 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies subagent tool exposure for Eve >=0.39.1 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "boundaryVersion": "0.67.0",
+      "declaredRange": ">=0.39.1",
+      "packageName": "eve",
+      "reason": "version-dependent-behavior",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies subagent tool exposure for Eve 0.60.1 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies subagent tool exposure for Eve 0.61.0 1`] = `[]`;
+
+exports[`eveAdapter Core integration > classifies the defaultTools agent option for Eve >=0.39.1 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "boundaryVersion": "0.67.0",
+      "declaredRange": ">=0.39.1",
+      "packageName": "eve",
+      "reason": "version-dependent-behavior",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies the defaultTools agent option for Eve 0.52.1 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies the defaultTools agent option for Eve 0.52.2 1`] = `[]`;
+
+exports[`eveAdapter Core integration > classifies the todo default for eve 0.65.0 1`] = `[]`;
+
+exports[`eveAdapter Core integration > classifies the tool agent option for Eve >=0.39.1 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "boundaryVersion": "0.67.0",
+      "declaredRange": ">=0.39.1",
+      "packageName": "eve",
+      "reason": "version-dependent-behavior",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies the tool agent option for Eve 0.59.0 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies the tool agent option for Eve 0.59.1 1`] = `[]`;
+
+exports[`eveAdapter Core integration > classifies workspace peer tool visibility for Eve >=0.54.3 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "boundaryVersion": "0.59.1",
+      "declaredRange": ">=0.54.3",
+      "packageName": "eve",
+      "reason": "version-dependent-behavior",
+      "relationship": "handoff-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agents/support/agent/subagents/research.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > classifies workspace peer tool visibility for Eve 0.54.3 1`] = `[]`;
+
+exports[`eveAdapter Core integration > classifies workspace peer tool visibility for Eve 0.59.1 1`] = `[]`;
+
+exports[`eveAdapter Core integration > does not expose a local subagent with tool false to the parent model 1`] = `[]`;
+
+exports[`eveAdapter Core integration > emits complete normalized evidence for the verified filesystem target 1`] = `[]`;
+
+exports[`eveAdapter Core integration > keeps a workspace peer with tool false callable but not model-visible 1`] = `[]`;
+
+exports[`eveAdapter Core integration > keeps a workspace subagent slot name distinct from its peer name 1`] = `[]`;
+
+exports[`eveAdapter Core integration > keeps the Eve 0.67.0 agent and tool evidence when no agent schema is declared 1`] = `[]`;
+
+exports[`eveAdapter Core integration > recognizes a direct workflow tool with a compiled executor declaration 1`] = `[]`;
+
+exports[`eveAdapter Core integration > recognizes an inline async workflow executor 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > registers a local child beneath a workspace agent 1`] = `[]`;
+
+exports[`eveAdapter Core integration > reports the removed schema even alongside an unsupported advanced agent option 1`] = `
+[
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/agent.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/contracts.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/implementations.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+    },
+    "path": "/agent/loaders.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-implementation",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "skill-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "analyze",
+      "capabilityKind": "skill",
+    },
+    "path": "/agent/skills/analyze.ts",
+  },
+  {
+    "code": "EVE_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "eve",
+      "agentId": "support",
+      "capabilityId": "search",
+      "capabilityKind": "tool",
+    },
+    "path": "/agent/tools/search.ts",
+  },
+]
+`;
+
+exports[`eveAdapter Core integration > resolves only an exact registered workspace peer and its parent edge 1`] = `[]`;

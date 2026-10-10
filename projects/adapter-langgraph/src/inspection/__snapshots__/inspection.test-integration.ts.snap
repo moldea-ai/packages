@@ -1,0 +1,461 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`langGraphAdapter Core integration > accepts later stable provider majors through minimum-only ranges 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > does not accept an imported explicit optional-argument omission 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-input-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/graph.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > does not prove the newer interrupt form for >=1.4.12 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > does not prove the newer interrupt form for ~1.4.12 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > does not select a target for a dynamic or higher-level runtime boundary 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-input-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/graph.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > emits complete normalized evidence for both verified targets 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > emits path evidence but no symbol evidence when runtimeAgent omits its symbol 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "functional",
+    },
+    "path": "/src/functional.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > keeps an unsafe workflow identity out of evidence without rejecting the entrypoint 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > preserves a conditional node action without emitting unresolved node evidence 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > preserves a conditional schema role when at least one branch is viable 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-input-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > preserves a waiting edge with an opaque endpoint without positive edge evidence 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > preserves an interpolated node name without emitting unresolved node evidence 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > preserves conditional path-map viability when one branch is supported 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > preserves graph identity without node evidence for an inline opaque runnable 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > preserves the graph definition but suppresses schema conclusions for an opaque constructor 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-input-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > recognizes a direct resume schema only with a newer LangGraph declaration 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > recognizes a module-local fluent compile receiver chain 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > recognizes a module-local fluent initializer chain 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > recognizes a module-local fluent top-level operation chain 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > recognizes an inline fluent StateGraph builder 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > recognizes closed empty interrupt options without claiming a resume schema 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > recognizes one closed bound waiting-edge source 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > rejects a conditional node name when every branch is reserved 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-input-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/graph.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > rejects a conditional schema role when every branch is incompatible 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-input-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/graph.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > rejects a node action reached through a post-declaration alias 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-input-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/graph.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > rejects a non-generic graph operation with explicit type arguments 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-input-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/graph.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > rejects a path-map shorthand that resolves to START 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-input-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/graph.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > rejects a statically incompatible modern context value 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-input-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "graph",
+    },
+    "path": "/src/graph.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > rejects a task relationship when its imported binding is aliased 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > rejects an entrypoint with an ineligible explicit type-argument count 1`] = `
+[
+  {
+    "code": "LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langgraph",
+      "agentId": "functional",
+    },
+    "path": "/src/functional.ts",
+  },
+]
+`;
+
+exports[`langGraphAdapter Core integration > treats a nullish shorthand schema role as absent for state fallback 1`] = `[]`;
+
+exports[`langGraphAdapter Core integration > uses one closed state schema as the input and output fallback 1`] = `[]`;

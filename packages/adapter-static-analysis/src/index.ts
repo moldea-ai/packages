@@ -44,7 +44,11 @@ export type {
 } from './types.js';
 
 // inspection session
-export { createInspectionSession } from './inspection-session/index.js';
+export {
+  createInspectionSessionFactory,
+  createBoundedInspectionCache,
+  getSourceRetainedBytes,
+} from './inspection-session/index.js';
 
 // AI SDK function-tool shape
 export {
@@ -94,7 +98,8 @@ export {
   getSafeModuleConstLiteral,
   getStaticString,
   indexImports,
-  indexLocalBindingNames,
+  indexLexicalBindings,
+  resolveLexicalBinding,
   indexModuleDeclarations,
   indexSafeModuleArrayNames,
   isBoundIdentifier,
@@ -110,3 +115,21 @@ export {
   resolveStaticString,
   unwrapExpression,
 } from './typescript-analysis/index.js';
+// declared relationship accounting
+export {
+  createRelationshipCoverage,
+  iterateDeclaredRelationships,
+} from './relationship-analysis/index.js';
+export type {
+  IDeclaredRelationship,
+  IDeclaredRelationshipSubject,
+  IRelationshipDeclaration,
+  IRelationshipEvidenceCollector,
+} from './relationship-analysis/index.js';
+// independent declared export checks
+export { inspectDeclaredExports } from './relationship-analysis/index.js';
+// canonical instruction provenance
+export { classifyInstructionSource } from './relationship-analysis/index.js';
+export type { IInstructionSourceResult } from './relationship-analysis/index.js';
+// lexical mutation observations
+export { hasBindingMutation } from './typescript-analysis/index.js';

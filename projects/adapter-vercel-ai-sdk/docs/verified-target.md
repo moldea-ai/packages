@@ -33,7 +33,7 @@ The optional static `id` becomes the agent-definition runtime name only when it 
 
 A directly exported function declaration, arrow function, or function expression must contain a direct `generateText({ ... })` or `streamText({ ... })` call in its own lexical body. `instructions` takes precedence over the deprecated `system` fallback. `prepareStep` leaves instructions unresolved without obscuring outer tools or output.
 
-Positive evidence is existential across supported calls. Negative diagnostics require every relevant candidate to be closed and contradictory. Nested, indirect, non-object, or otherwise unsupported candidates suppress optimistic negative conclusions.
+Tool registrations retain varying-availability behavior across calls: one supported available context can establish a tool, and a missing-wiring error requires closed absence across the relevant contexts. Instruction consumers are checked independently. A correct consumer does not suppress another consumer’s proved mismatch, and unresolved consumers receive scoped warnings. Instruction evidence also requires supported provenance from the canonical instruction or a validated mirror.
 
 ## Relationship closure
 

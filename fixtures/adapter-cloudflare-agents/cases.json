@@ -6,7 +6,11 @@
       "text": "{\"dependencies\":{\"@cloudflare/think\":\"^0.16.0\",\"@cloudflare/ai-chat\":\"^0.10.2\",\"agents\":\"^0.21.0\",\"ai\":\"^7.0.0\"}}",
       "type": "file"
     },
-    { "path": "/moldea/project.md", "text": "# Fixture project\n", "type": "file" },
+    {
+      "path": "/moldea/project.md",
+      "text": "# Fixture project\n",
+      "type": "file"
+    },
     {
       "path": "/moldea/agents/support/description.md",
       "text": "Supports customers.\n",
@@ -39,7 +43,7 @@
     },
     {
       "path": "/src/instructions.ts",
-      "text": "export const loadSupportInstruction = () => 'support';\nexport const loadSummaryInstruction = () => 'summary';\n",
+      "text": "import { readFileSync as readCanonicalInstruction } from 'node:fs';\n\nexport const loadSupportInstruction = () => readCanonicalInstruction(new URL('../moldea/agents/support/instruction.md', import.meta.url), 'utf8');\nexport const loadSummaryInstruction = () => readCanonicalInstruction(new URL('../moldea/agents/summary/instruction.md', import.meta.url), 'utf8');\n",
       "type": "file"
     },
     {

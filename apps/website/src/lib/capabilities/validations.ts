@@ -184,7 +184,7 @@ export const validateCapabilities = (
     }
     if (
       result.kind === 'cli' &&
-      (result.schemaVersion !== 5 ||
+      (result.schemaVersion !== 6 ||
         (result.status === 'valid'
           ? result.exitStatus !== 0
           : result.status === 'invalid'

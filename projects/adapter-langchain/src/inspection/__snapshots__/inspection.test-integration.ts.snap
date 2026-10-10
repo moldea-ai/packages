@@ -1,0 +1,642 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`langChainAdapter Core integration > accepts later stable provider majors through minimum-only ranges 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > does not inspect declaration files as runtime TypeScript sources 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/agent.d.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > does not probe an unrelated imported tool collection 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > emits complete normalized evidence for the verified createAgent target 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > emits no runtime-package evidence when the primary is absent and the companion is absent 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > emits no runtime-package evidence when the primary is absent and the companion is ambiguous 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > emits no runtime-package evidence when the primary is absent and the companion is supported 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > emits no runtime-package evidence when the primary is absent and the companion is unsupported 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "agent-output-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > inspects supported runtime source /src/agent.mts 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > inspects supported runtime source /src/agent.tsx 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > keeps a returned-tool description metadata mutation relationship-local 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > keeps a returned-tool func mutation relationship-local 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > keeps a returned-tool invoke mutation relationship-local 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > keeps a returned-tool name mutation relationship-local 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > keeps a returned-tool schema mutation relationship-local 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > keeps a returned-tool unrelated metadata mutation relationship-local 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > keeps relationships active with imported empty middleware 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > keeps relationships active with inline empty middleware 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > keeps relationships active with omitted middleware 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > keeps tool relationships unresolved when an unrelated array alias escapes 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > leaves normal tools with dynamic descriptions unresolved 1`] = `
+[
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+  {
+    "code": "LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "langchain",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`langChainAdapter Core integration > recognizes a tool declared beside its imported agent collection 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > recognizes the aliased core SystemMessage instruction form 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > recognizes the awaited loader call instruction form 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > recognizes the direct loader call instruction form 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > recognizes the direct provider strategy response format 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > recognizes the direct schema response format 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > recognizes the normal function tool from langchain 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > recognizes the normal function tool from langchain/tools 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > recognizes the tool strategy response format 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > recognizes the tool strategy with options response format 1`] = `[]`;
+
+exports[`langChainAdapter Core integration > returns no runtime diagnostics for a dedicated repository without bindings 1`] = `[]`;

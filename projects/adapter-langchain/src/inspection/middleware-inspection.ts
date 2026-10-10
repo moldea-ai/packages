@@ -1,3 +1,4 @@
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 
 import type {
@@ -9,13 +10,18 @@ import type {
 import { addLangChainSourceFailureDiagnostic } from './common.js';
 import { isClosedLangChainArray, resolveLangChainArray } from './resolution.js';
 
-/** Classifies middleware as inactive, active, or unresolved without interpreting it. */
+/**
+ * Classifies middleware as inactive, active, or unresolved without interpreting it.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const classifyLangChainMiddleware = async (
   session: ILangChainInspectionSession,
   analysis: ILangChainSourceAnalysis,
   relationship: ILangChainRelationship,
   relatedRelationships: readonly ILangChainRelationship[],
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
 ): Promise<ILangChainMiddlewareState> => {
   if (relationship.kind === 'absent') {

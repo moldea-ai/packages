@@ -1,9 +1,11 @@
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
+import type { IOpenAiEvidenceCollector } from '../contracts/index.js';
 import { OPENAI_ADAPTER_ID, OPENAI_SDK_PACKAGE_NAME } from '../constants/index.js';
 import type { IOpenAiInspectionSession } from '../contracts/index.js';
+
 import { addOpenAiDiagnostic, createOpenAiEvidence } from './common.js';
 
 /**
@@ -13,12 +15,15 @@ import { addOpenAiDiagnostic, createOpenAiEvidence } from './common.js';
  * @param evidence The operation evidence collection.
  * @param diagnostics The operation diagnostic collection.
  * @param agentId The owning agent identifier.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectOpenAiPackage = async (
   session: IOpenAiInspectionSession,
   sourcePath: IRepositoryPath,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
 ): Promise<void> => {
   const discovery = await session.discoverPackage(sourcePath);
@@ -40,7 +45,7 @@ export const inspectOpenAiPackage = async (
   }
 
   for (const declaration of observation.declarations) {
-    evidence.push(
+    evidence.add(() =>
       createOpenAiEvidence({
         agentId,
         capabilityId: null,

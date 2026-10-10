@@ -1,0 +1,14 @@
+ddeb6e1da803cfd54f800bf34ad6677f4e03aeb1a5818736034354a063379323  moldea.ai-adapter-anthropic-6.0.0.tgz
+670e9770e3236164de70a1794d0a14f00613dbc9a699eb5e26014a83e8e5329d  moldea.ai-adapter-claude-agent-sdk-5.0.0.tgz
+d23eb9e30fa371d10d25089c829829720cf3564f7dc924dbaed48ce3f0f5ccf1  moldea.ai-adapter-cloudflare-agents-5.0.0.tgz
+ea39f3530491b165ead3a4a101e4833f44169102f00be67e4737c7c222c84925  moldea.ai-adapter-eve-5.0.0.tgz
+5dd599d3056b33c845717057c7a959d26175d0ae32f42b3a8a0dad456f75a712  moldea.ai-adapter-google-genai-5.0.0.tgz
+859e8daa947df4a84be82d048883bb88d1790aa6bd579e530ba79f49ffb9f251  moldea.ai-adapter-langchain-5.0.0.tgz
+64fa1ecd554b8f21036ecb3f7af34b22cf833aa6fe78c19f31e814dbcb103b5e  moldea.ai-adapter-langgraph-5.0.0.tgz
+e22b0e2c7c231c0d676b14657a8fd228aeef7c330d9a06aeadbfc0b329923ca0  moldea.ai-adapter-openai-6.0.0.tgz
+274271c1b12f3ebc4bbe68532c16e2a45b1003116ce685f926b2ec68c80769d0  moldea.ai-adapter-openai-agents-sdk-5.0.0.tgz
+9fa20c35d82495b0f3bc3c53f06bef1add3e7ec2e62d09614ce99527a26afa3e  moldea.ai-adapter-vercel-ai-sdk-5.0.0.tgz
+7c820567ce801f391edfb90666eb77c7aa6633ba9feaa92fea23d5bafd2b2a4c  moldea.ai-cli-10.0.0.tgz
+5d65d4696073544c42db076cfbbcdf8120093b89a158f85d8304fec2891f80a7  moldea.ai-core-6.0.0.tgz
+455a53c5b21de44f1b1173ff7bdacfe7c838f9eec46f4b3a8a651393deb80ea7  moldea.ai-repository-2.0.0.tgz
+53e7785f61a55e81f2744195ee181595eea51dffa86979afccfd1489fd39592c  moldea.ai-repository-fs-2.0.3.tgz

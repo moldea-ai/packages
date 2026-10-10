@@ -8,10 +8,10 @@ The package implements the official `google-genai` runtime adapter for `@moldea.
 
 ## Supported target
 
-Version `4.1.0` supports:
+Version `5.0.0` supports:
 
 - Repository Format version `1`
-- `@moldea.ai/core ^5.0.0`
+- `@moldea.ai/core ^6.0.0`
 - TypeScript ESM source
 - npm `@google/genai >=2.17.1`
 - a named runtime value import of `GoogleGenAI` and a module-local `const` client
@@ -44,7 +44,7 @@ The package exports only `googleGenAiAdapter`. It has no default export, mutable
 
 ## Evidence and diagnostics
 
-`GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+`GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` when an applicable declared relationship remains unverified, including unsupported source patterns, dynamic or mutated wiring, and ranges spanning a relevant behavior change. Its safe details identify the relationship and reason; version-dependent warnings also include normalized dependency context. Independent export checks and proved contradictions remain errors. Warning-only validation is valid with `runtimeInspection: 'incomplete'`; it does not establish launch readiness. A newer eligible dependency version alone does not produce this warning.
 
 `GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified.
 

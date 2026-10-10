@@ -1,5 +1,6 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import {
   classifyDirectCallRelationship,
   classifySchemaRelationship,
@@ -8,24 +9,23 @@ import {
   getClosedObjectProperties,
   getConstExport,
   getStaticString,
-  isBoundIdentifier,
   isNullLiteral,
-  isStaticLiteralValue,
   isStrictLiteral,
-  unwrapExpression,
   type IStaticAnalysisSource,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference, IToolManifestEntry } from '@moldea.ai/core/format';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
+import type { IOpenAiEvidenceCollector } from '../contracts/index.js';
 import { OPENAI_ADAPTER_ID } from '../constants/index.js';
 import type {
   IOpenAiInspectionSession,
   IOpenAiResponsesAnalysis,
   IOpenAiSourceAnalysis,
 } from '../contracts/index.js';
+
 import {
   addOpenAiDiagnostic,
   addOpenAiUnverifiedRelationship,
@@ -44,7 +44,7 @@ interface IOpenAiRegistrationInspection {
 
 interface IOpenAiRegistrationShape {
   readonly detectedName: string;
-  readonly parameters: ts.Expression;
+  readonly parameters: ts.Expression | null;
   readonly properties: ReadonlyMap<string, ts.Expression>;
 }
 
@@ -58,28 +58,11 @@ const getExpressionRange = (analysis: IOpenAiSourceAnalysis, expression: ts.Expr
     ? null
     : analysis.text.locator.locateRange(expression.getStart(), expression.end);
 
-const isSupportedRegistrationParameters = (
-  expression: ts.Expression,
-  analysis: IStaticAnalysisSource,
-  inputSchemaReference: IRepositoryReference | undefined,
-): boolean => {
-  const candidate = unwrapExpression(expression);
-
-  return (
-    isNullLiteral(candidate) ||
-    (ts.isObjectLiteralExpression(candidate) && isStaticLiteralValue(candidate)) ||
-    (ts.isIdentifier(candidate) &&
-      inputSchemaReference?.symbol !== undefined &&
-      isBoundIdentifier(candidate, analysis, inputSchemaReference))
-  );
-};
-
 const getRegistrationShape = (
   analysis: IStaticAnalysisSource,
   symbol: string,
-  inputSchemaReference?: IRepositoryReference,
 ): IOpenAiRegistrationShapeResult => {
-  const exported = getConstExport(analysis, symbol);
+  const exported = getConstExport(analysis, symbol, ['type', 'name']);
 
   if (exported.kind === 'absent') {
     return { kind: 'absent' };
@@ -135,7 +118,6 @@ const getRegistrationShape = (
     getStaticString(type) !== 'function' ||
     detectedName === null ||
     parameters === undefined ||
-    !isSupportedRegistrationParameters(parameters, analysis, inputSchemaReference) ||
     strict === undefined ||
     !isStrictLiteral(strict) ||
     !isSupportedDescription
@@ -146,7 +128,10 @@ const getRegistrationShape = (
   return {
     detectedName,
     kind: 'present-supported',
-    parameters,
+    parameters:
+      getConstExport(analysis, symbol, ['parameters']).kind === 'present-supported'
+        ? parameters
+        : null,
     properties,
   };
 };
@@ -156,8 +141,8 @@ const inspectRegistration = async (
   agent: IIndexedAgent,
   capabilityId: string,
   tool: IToolManifestEntry,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IOpenAiRegistrationInspection | null> => {
   const reference = tool.registration;
 
@@ -177,7 +162,7 @@ const inspectRegistration = async (
     return null;
   }
 
-  const shape = getRegistrationShape(registrationAnalysis, reference.symbol, tool.inputSchema);
+  const shape = getRegistrationShape(registrationAnalysis, reference.symbol);
 
   if (shape.kind === 'absent') {
     addOpenAiDiagnostic(
@@ -250,8 +235,8 @@ const inspectInputSchema = async (
   reference: IRepositoryReference,
   registrationAnalysis: IOpenAiSourceAnalysis,
   parameters: ts.Expression | null,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   if (reference.symbol === undefined) {
     return;
@@ -294,7 +279,7 @@ const inspectInputSchema = async (
   const relationship = classifySchemaRelationship(registrationAnalysis, parameters, reference);
 
   if (relationship.kind === 'present') {
-    evidence.push(
+    evidence.add(() =>
       createOpenAiEvidence({
         agentId: agent.id,
         capabilityId,
@@ -303,9 +288,12 @@ const inspectInputSchema = async (
         kind: 'schema',
         references: [
           { path: registrationAnalysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: OPENAI_ADAPTER_ID,
       }),
     );
@@ -329,8 +317,8 @@ const inspectInstructionLoader = async (
   agent: IIndexedAgent,
   runtimeAnalysis: IOpenAiSourceAnalysis,
   responses: IOpenAiResponsesAnalysis,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = agent.declaration.bindings?.instructionLoader;
 
@@ -361,17 +349,6 @@ const inspectInstructionLoader = async (
     return;
   }
 
-  if (loader.kind === 'present-unsupported') {
-    addOpenAiUnverifiedRelationship(
-      diagnostics,
-      'instruction-loader',
-      'unsupported-source-pattern',
-      reference.path,
-      agent.id,
-    );
-    return;
-  }
-
   const relationship = classifyDirectCallRelationship(
     runtimeAnalysis,
     responses.requests.map((request) => request.instructions),
@@ -379,8 +356,18 @@ const inspectInstructionLoader = async (
     reference,
   );
 
+  if (relationship.kind === 'absent' && relationship.hasUnverifiedConsumer === true) {
+    addOpenAiUnverifiedRelationship(
+      diagnostics,
+      'instruction-loader',
+      'dynamic-source-pattern',
+      runtimeAnalysis.path,
+      agent.id,
+    );
+  }
+
   if (relationship.kind === 'present') {
-    evidence.push(
+    evidence.instruction(() =>
       createOpenAiEvidence({
         agentId: agent.id,
         capabilityId: null,
@@ -389,9 +376,12 @@ const inspectInstructionLoader = async (
         kind: 'instruction-loader',
         references: [
           { path: runtimeAnalysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: OPENAI_ADAPTER_ID,
       }),
     );
@@ -419,8 +409,8 @@ const inspectToolRelationships = async (
   agent: IIndexedAgent,
   runtimeAnalysis: IOpenAiSourceAnalysis,
   responses: IOpenAiResponsesAnalysis,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const registrations: IOpenAiRegistrationInspection[] = [];
 
@@ -488,7 +478,7 @@ const inspectToolRelationships = async (
     }
 
     if (relationship.kind === 'present' && registration.isNameMatch) {
-      evidence.push(
+      evidence.add(() =>
         createOpenAiEvidence({
           agentId: agent.id,
           capabilityId: registration.capabilityId,
@@ -497,7 +487,12 @@ const inspectToolRelationships = async (
           kind: 'tool-registration',
           references: [
             { path: runtimeAnalysis.path },
-            { path: registration.reference.path, symbol: registration.reference.symbol },
+            {
+              path: registration.reference.path,
+              ...(registration.reference.symbol === undefined
+                ? {}
+                : { symbol: registration.reference.symbol }),
+            },
           ],
           runtimeName: registration.detectedName,
           source: OPENAI_ADAPTER_ID,
@@ -515,14 +510,17 @@ const inspectToolRelationships = async (
  * @param responses The relationship-specific Responses request analysis.
  * @param evidence The operation evidence collection.
  * @param diagnostics The operation diagnostic collection.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectOpenAiRelationships = async (
   session: IOpenAiInspectionSession,
   agent: IIndexedAgent,
   runtimeAnalysis: IOpenAiSourceAnalysis,
   responses: IOpenAiResponsesAnalysis,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   await inspectInstructionLoader(session, agent, runtimeAnalysis, responses, evidence, diagnostics);
   await inspectOpenAiOutputSchema(

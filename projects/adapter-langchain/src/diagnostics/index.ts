@@ -8,6 +8,30 @@ import type {
 
 // stable LangChain adapter diagnostic code and message catalog
 export const LANGCHAIN_ADAPTER_DIAGNOSTICS = Object.freeze({
+  LANGCHAIN_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent input-schema symbol was not found.',
+    severity: 'error',
+  },
+  LANGCHAIN_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool output-schema symbol was not found.',
+    severity: 'error',
+  },
+  LANGCHAIN_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-implementation symbol was not found.',
+    severity: 'error',
+  },
+  LANGCHAIN_SKILL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-registration symbol was not found.',
+    severity: 'error',
+  },
+  LANGCHAIN_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND: {
+    message: 'The declared variable-provider symbol was not found.',
+    severity: 'error',
+  },
+  LANGCHAIN_INSTRUCTION_SOURCE_MISMATCH: {
+    message: 'The declared instruction loader does not consume the canonical instruction source.',
+    severity: 'error',
+  },
   LANGCHAIN_PACKAGE_MANIFEST_INVALID: {
     message: 'The owning package manifest is invalid for LangChain dependency detection.',
     severity: 'error',

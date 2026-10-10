@@ -8,6 +8,38 @@ import type {
 
 // stable Google Gen AI adapter diagnostic code and message catalog
 export const GOOGLE_GENAI_ADAPTER_DIAGNOSTICS = Object.freeze({
+  GOOGLE_GENAI_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent input-schema symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_AGENT_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent output-schema symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool-implementation symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared tool output-schema symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-implementation symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_SKILL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-registration symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND: {
+    message: 'The declared variable-provider symbol was not found.',
+    severity: 'error',
+  },
+  GOOGLE_GENAI_INSTRUCTION_SOURCE_MISMATCH: {
+    message: 'The declared instruction loader does not consume the canonical instruction source.',
+    severity: 'error',
+  },
   GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED: {
     message:
       'The detected Google Gen AI function-declaration collection exceeds the supported SDK declaration limit.',

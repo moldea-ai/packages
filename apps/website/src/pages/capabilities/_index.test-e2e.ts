@@ -112,9 +112,9 @@ for (const width of [320, 1440]) {
       for (const [id, title] of [
         ['policy-reference-missing', '1 missing file'],
         ['decision-replacement-chain', 'Decision chain checks pass'],
-        ['openai-responses', 'Instruction and tool connections found'],
-        ['openai-loader-unverified', '1 runtime relationship unverified'],
-        ['inspection-mixed-diagnostics', '1 warning and 1 error across two pages'],
+        ['openai-responses', '1 runtime relationship unverified'],
+        ['openai-loader-unverified', '2 runtime relationships unverified'],
+        ['inspection-mixed-diagnostics', '2 warnings and 1 error across three pages'],
         ['snapshot-comparison', 'Changes identified'],
         ['cli-invalid-project', 'Broken reference caught by validation'],
         ['cli-version-warning', '1 runtime relationship unverified'],
@@ -218,7 +218,7 @@ for (const width of [320, 1440]) {
       await runtime.getByRole('button', { name: /^View result:/u }).click();
       const runtimeDialog = page.locator('#result-openai-responses');
       await expect(
-        runtimeDialog.getByRole('heading', { name: 'Instruction and tool connections found' }),
+        runtimeDialog.getByRole('heading', { name: '1 runtime relationship unverified' }),
       ).toBeVisible();
       const runtimeExcerpt = JSON.parse(
         (await runtimeDialog.locator('pre').textContent()) ?? '',
@@ -226,7 +226,7 @@ for (const width of [320, 1440]) {
       expect(runtimeExcerpt).toMatchObject({
         valid: true,
         errorCount: 0,
-        warningCount: 0,
+        warningCount: 1,
         evidence: expect.any(Array),
       });
       const analysis = await new AxeBuilder({ page }).include('dialog[open]').analyze();
@@ -479,14 +479,14 @@ test('shows source-backed adapter changes and preserves warning and error labels
     ['eve-excluded-test-tool', ['Invalid', 'search.test.ts']],
     ['vercel-deferred-tool', ['deferLoading: true']],
     ['langgraph-resume-schema', ['responseSchema: ResumeSchema']],
-    ['inspection-mixed-diagnostics', ['1 warning and 1 error', 'Page 1', 'Page 2']],
+    ['inspection-mixed-diagnostics', ['2 warnings and 1 error', 'Page 1', 'Page 2', 'Page 3']],
   ] satisfies [string, string[]][]) {
     const dialog = await openExample(page, id);
     for (const text of expected) await expect(dialog).toContainText(text);
     if (id === 'anthropic-parse-output')
       await expect(
         dialog.getByRole('group', { name: /source and result$/u }).locator('[data-status-badge]'),
-      ).toHaveCount(0);
+      ).toHaveText('Unverified');
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       320,
     );
@@ -548,7 +548,7 @@ test('gives long structured results more reading width on desktop', async ({ pag
   expect((await page.locator('#result-openai-responses').boundingBox())!.width).toBeLessThan(700);
 });
 
-test('shows a successful schema 5 warning result with bounded version details', async ({
+test('shows a successful schema 6 warning result with bounded version details', async ({
   page,
 }) => {
   await page.goto(route);
@@ -559,16 +559,17 @@ test('shows a successful schema 5 warning result with bounded version details', 
   const dialog = page.getByRole('dialog', { name: '1 runtime relationship unverified' });
   const excerpt = JSON.parse((await dialog.locator('pre').textContent()) ?? '') as unknown;
   expect(excerpt).toMatchObject({
-    cliVersion: '9.0.1',
+    cliVersion: '10.0.0',
     command: 'validate',
     error: null,
-    schemaVersion: 5,
+    schemaVersion: 6,
     status: 'valid',
     result: {
       valid: true,
       diagnosticCount: 1,
       errorCount: 0,
       warningCount: 1,
+      runtimeInspection: 'incomplete',
       page: {
         records: [
           {
@@ -720,7 +721,7 @@ test('explains file failures, successful checks, and source evidence without a t
   await expect(connections).toContainText('responses.create');
   await expect(connections).toContainText('loadInstruction');
   await expect(connections).toContainText('find_order');
-  await expect(page.locator('#openai-responses')).toContainText('Inspected');
+  await expect(page.locator('#openai-responses')).toContainText('Warnings');
   await expect(page.locator('#cli-invalid-project')).toContainText('Exit 1');
   await expect(page.locator('#snapshot-comparison')).toContainText('Now a folder');
   await expect(page.getByRole('region', { name: 'Check boundaries and next step' })).toContainText(
@@ -920,10 +921,10 @@ for (const theme of ['light', 'dark'] as const) {
       );
       await expect(page.locator('#variable-undeclared')).toContainText('1 undeclared variable');
       await expect(page.locator('#openai-loader-unverified')).toContainText(
-        '1 runtime relationship unverified',
+        '2 runtime relationships unverified',
       );
       await expect(page.locator('#inspection-mixed-diagnostics')).toContainText(
-        '1 warning and 1 error across two pages',
+        '2 warnings and 1 error across three pages',
       );
       for (const group of model.capabilities.groups)
         await expect(page.locator(`[data-capability-coverage="${group.id}"]`)).toHaveText(
@@ -968,9 +969,9 @@ for (const [query, id, title] of [
     'The instruction choice cannot be verified',
   ],
   [
-    'Warnings and errors across two pages',
+    'Warnings and errors across three pages',
     'inspection-mixed-diagnostics',
-    'Warnings and errors across two pages',
+    'Warnings and errors across three pages',
   ],
 ]) {
   test(`discovers ${id} through search and releases dialogs when navigating away`, async ({

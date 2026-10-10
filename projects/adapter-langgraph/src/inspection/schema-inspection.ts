@@ -1,14 +1,17 @@
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { getConstExport } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 
+import type { ILangGraphEvidenceCollector } from '../contracts/index.js';
 import { LANGGRAPH_ADAPTER_ID, LANGGRAPH_STATE_GRAPH_TARGET_ID } from '../constants/index.js';
 import type {
   ILangGraphInspectionSession,
   ILangGraphSchemaRelationship,
   ILangGraphSourceAnalysis,
 } from '../contracts/index.js';
+
 import {
   addLangGraphDiagnostic,
   analyzeLangGraphBoundReference,
@@ -23,12 +26,17 @@ interface ILangGraphSchemaInspectionInput {
   readonly role: 'input' | 'output';
 }
 
-/** Inspects one declared agent schema against one closed Graph API relationship. */
+/**
+ * Inspects one declared agent schema against one closed Graph API relationship.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectLangGraphSchema = async (
   session: ILangGraphInspectionSession,
   input: ILangGraphSchemaInspectionInput,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ILangGraphEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const bindingName = input.role === 'input' ? 'inputSchema' : 'outputSchema';
   const reference = input.agent.declaration.bindings?.[bindingName];
@@ -72,14 +80,15 @@ export const inspectLangGraphSchema = async (
     input.relationship.source.symbol === boundReference.symbol;
 
   if (isWired) {
-    evidence.push(
+    const schemaSource = input.relationship.schemaSource;
+    evidence.add(() =>
       createLangGraphEvidence({
         agentId: input.agent.id,
         capabilityId: null,
         capabilityKind: null,
         details: {
           schemaRole: input.role === 'input' ? 'agent-input' : 'agent-output',
-          schemaSource: input.relationship.schemaSource,
+          schemaSource,
           targetId: LANGGRAPH_STATE_GRAPH_TARGET_ID,
         },
         kind: 'schema',

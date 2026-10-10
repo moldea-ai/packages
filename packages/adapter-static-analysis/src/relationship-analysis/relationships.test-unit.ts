@@ -7,8 +7,11 @@ import type {
   IStaticAnalysisSource,
   IStaticAnalysisToolRegistration,
 } from '../types.js';
-import { analyzeClientRequests } from '../typescript-analysis/requests.js';
-import { analyzeSource, getRuntimeExport } from '../typescript-analysis/source-analysis.js';
+import {
+  analyzeClientRequests,
+  analyzeSource,
+  getRuntimeExport,
+} from '../typescript-analysis/index.js';
 import {
   classifyDirectCallRelationship,
   classifySchemaRelationship,
@@ -70,6 +73,34 @@ const analyzeRelationships = (
 };
 
 describe('relationship analysis', () => {
+  test.each([
+    ['loadInstructions()', "'wrong instructions'", 'absent'],
+    ["'wrong instructions'", 'loadInstructions()', 'absent'],
+    ['loadInstructions()', 'dynamicInstructions()', 'ambiguous'],
+    ['loadInstructions()', 'context.instructions', 'ambiguous'],
+  ])('checks both consumers (%s, %s) -> %s', (first, second, expected) => {
+    const analysis = analyzeFixture(
+      '/src/agent.ts',
+      [
+        "import Client from 'provider';",
+        "import { loadInstructions } from './bindings.js';",
+        'const client = new Client();',
+        'export const agent = (context: unknown) => {',
+        '  client.messages.create({ instructions: ' + first + ' });',
+        '  return client.messages.create({ instructions: ' + second + ' });',
+        '};',
+      ].join('\n'),
+    );
+    const consumers = analyzeRelationships(analysis, 'instructions');
+    expect(
+      classifyDirectCallRelationship(
+        analysis,
+        consumers.relationships,
+        consumers.hasAmbiguousCandidate,
+        { path: '/src/bindings.ts', symbol: 'loadInstructions' },
+      ).kind,
+    ).toBe(expected);
+  });
   test('classifies direct instruction calls and schema bindings', () => {
     const analysis = analyzeFixture(
       '/src/agent.ts',

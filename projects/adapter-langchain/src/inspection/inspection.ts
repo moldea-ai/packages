@@ -1,11 +1,14 @@
+import { createRuntimeAdapterResultCollector } from '@moldea.ai/core/adapter';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
 
+import type { ILangChainEvidenceCollector } from '../contracts/index.js';
 import { LANGCHAIN_ADAPTER_ID, LANGCHAIN_TARGET_ID } from '../constants/index.js';
 import type {
   ILangChainAgentDefinition,
@@ -17,6 +20,8 @@ import {
   getLangChainAgentDefinition,
   resolveLangChainStaticString,
 } from '../source-analysis/index.js';
+
+import { createDeclaredLangChainRelationships } from './declared-relationships.js';
 import {
   addLangChainDiagnostic,
   addLangChainSourceFailureDiagnostic,
@@ -40,8 +45,8 @@ interface ILangChainAgentCandidate {
 const inspectAgent = async (
   session: ILangChainInspectionSession,
   agent: IIndexedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ILangChainEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<ILangChainAgentCandidate | null> => {
   const runtimeAgent = agent.declaration.bindings?.runtimeAgent;
 
@@ -72,7 +77,7 @@ const inspectAgent = async (
     return null;
   }
 
-  evidence.push(
+  evidence.add(() =>
     createLangChainEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -119,7 +124,7 @@ const inspectAgent = async (
       ? staticName.value
       : null;
 
-  evidence.push(
+  evidence.add(() =>
     createLangChainEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -145,18 +150,24 @@ const inspectAgent = async (
  * - ENTRY_NOT_FILE: The requested repository entry is not a file.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
  * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
  * - INVALID_SOURCE_DATA: The repository source returned invalid data.
- * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
- * - ABORTED: The repository operation or inspection signal was aborted.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectLangChain = async (
   context: IRuntimeAdapterContext,
 ): Promise<IRuntimeAdapterResult> => {
   context.signal?.throwIfAborted();
   const session = createLangChainInspectionSession(context);
-  const evidence: IRuntimeAdapterEvidence[] = [];
-  const diagnostics: IAdapterDiagnostic[] = [];
+  const collector = createRuntimeAdapterResultCollector(context);
+  const relationships = createDeclaredLangChainRelationships(context, collector, session);
+  const { evidence, diagnostics } = relationships;
+  await relationships.inspectExports();
+  await relationships.inspectInstructionSource();
   const agents = [context.agent];
   const candidates: ILangChainAgentCandidate[] = [];
 
@@ -198,8 +209,6 @@ export const inspectLangChain = async (
   await inspectLangChainTools(session, inspectedAgents, evidence, diagnostics);
   context.signal?.throwIfAborted();
 
-  return Object.freeze({
-    diagnostics: Object.freeze(diagnostics),
-    evidence: Object.freeze(evidence),
-  });
+  relationships.finalize();
+  return collector.finalize();
 };

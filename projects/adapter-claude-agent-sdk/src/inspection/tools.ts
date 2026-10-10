@@ -1,10 +1,11 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { getCallableExportState, getConstExport } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference, IToolManifestEntry } from '@moldea.ai/core/format';
 
+import type { IClaudeAgentSdkEvidenceCollector } from '../contracts/index.js';
 import {
   CLAUDE_AGENT_SDK_ADAPTER_ID,
   CLAUDE_AGENT_SDK_MCP_SERVER_KEY_PATTERN,
@@ -30,6 +31,7 @@ import {
   getClaudeAgentSdkToolDefinition,
   resolveClaudeAgentSdkStaticString,
 } from '../source-analysis/index.js';
+
 import {
   addClaudeAgentSdkDiagnostic,
   analyzeClaudeAgentSdkBoundReference,
@@ -71,6 +73,7 @@ interface IQueryMountCollection {
 }
 
 interface IInspectedManifestTool {
+  readonly isImplementationVerified: boolean;
   readonly analysis: IClaudeAgentSdkSourceAnalysis;
   readonly definition: IClaudeAgentSdkToolDefinition;
   readonly reference: IRepositoryReference & { readonly symbol: string };
@@ -119,7 +122,7 @@ const inspectCallableSymbol = async (
   reference: IRepositoryReference,
   agentId: string,
   capabilityId: string,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<boolean | null> => {
   if (reference.symbol === undefined) {
     return null;
@@ -159,7 +162,7 @@ const inspectConstSymbol = async (
   reference: IRepositoryReference,
   agentId: string,
   capabilityId: string,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<boolean | null> => {
   if (reference.symbol === undefined) {
     return null;
@@ -199,8 +202,8 @@ const inspectManifestTool = async (
   agentId: string,
   capabilityId: string,
   declaration: IToolManifestEntry,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IClaudeAgentSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IInspectedManifestTool | null> => {
   const reference = declaration.registration;
 
@@ -272,6 +275,8 @@ const inspectManifestTool = async (
   }
 
   if (declaration.inputSchema?.symbol !== undefined) {
+    const inputSchema = declaration.inputSchema;
+    const inputSymbol = declaration.inputSchema.symbol;
     const schemaState = await inspectConstSymbol(
       session,
       declaration.inputSchema,
@@ -289,18 +294,15 @@ const inspectManifestTool = async (
           );
 
     if (schemaState === true && schemaRelationship === true) {
-      evidence.push(
+      evidence.add(() =>
         createClaudeAgentSdkEvidence({
           agentId,
           capabilityId,
           capabilityKind: 'tool',
           details: { role: 'tool-input', schemaKind: 'sdk-tool-input' },
           kind: 'schema',
-          references: [
-            { path: analysis.path },
-            { path: declaration.inputSchema.path, symbol: declaration.inputSchema.symbol },
-          ],
-          runtimeName: declaration.inputSchema.symbol,
+          references: [{ path: analysis.path }, { path: inputSchema.path, symbol: inputSymbol }],
+          runtimeName: inputSymbol,
           source: CLAUDE_AGENT_SDK_ADAPTER_ID,
         }),
       );
@@ -319,6 +321,8 @@ const inspectManifestTool = async (
   return Object.freeze({
     analysis,
     definition: result.tool,
+    isImplementationVerified:
+      implementationSymbolState === true && implementationRelationship === true,
     reference: Object.freeze({ path: reference.path, symbol: reference.symbol }),
   });
 };
@@ -326,7 +330,7 @@ const inspectManifestTool = async (
 const collectQueryMounts = async (
   session: IClaudeAgentSdkInspectionSession,
   queryAgent: IClaudeAgentSdkInspectedQueryAgent,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IQueryMountCollection> => {
   const mounts: IQueryToolMount[] = [];
   let hasUnresolvedCandidate = queryAgent.wrapper.hasAmbiguousCandidate;
@@ -627,12 +631,17 @@ const getEligibleMounts = async (
   return Object.freeze({ hasUnresolvedCandidate, mounts: Object.freeze(mounts) });
 };
 
-/** Inspects custom tool declarations, schemas, implementations, mounts, and availability. */
+/**
+ * Inspects custom tool declarations, schemas, implementations, mounts, and availability.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectClaudeAgentSdkTools = async (
   session: IClaudeAgentSdkInspectionSession,
   inspectedAgents: readonly IClaudeAgentSdkInspectedAgent[],
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IClaudeAgentSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const queryAgents = inspectedAgents.filter(
     (inspected): inspected is IClaudeAgentSdkInspectedQueryAgent =>
@@ -677,7 +686,7 @@ export const inspectClaudeAgentSdkTools = async (
       );
 
       if (matchingMount !== undefined && isClaudeAgentSdkMachineString(matchingMount.runtimeName)) {
-        evidence.push(
+        evidence.add(() =>
           createClaudeAgentSdkEvidence({
             agentId: inspected.agent.id,
             capabilityId,
@@ -696,13 +705,13 @@ export const inspectClaudeAgentSdkTools = async (
             kind: 'tool-registration',
             references: [
               { path: matchingMount.queryAgent.analysis.path },
-              { path: registration.reference.path, symbol: registration.reference.symbol },
               {
-                path: declaration.implementation.path,
-                ...(declaration.implementation.symbol === undefined
+                path: registration.reference.path,
+                ...(registration.reference.symbol === undefined
                   ? {}
-                  : { symbol: declaration.implementation.symbol }),
+                  : { symbol: registration.reference.symbol }),
               },
+              ...(registration.isImplementationVerified ? [declaration.implementation] : []),
             ],
             runtimeName: matchingMount.runtimeName,
             source: CLAUDE_AGENT_SDK_ADAPTER_ID,

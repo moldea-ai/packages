@@ -68,7 +68,7 @@ describe('loadMoldeaCliPackageMetadata', () => {
   test('loads and freezes exact installed package metadata', async () => {
     const manifestPath = await writeManifest({
       dependencies: {
-        '@moldea.ai/core': '2.0.1',
+        '@moldea.ai/core': '6.0.0',
         '@moldea.ai/repository': '1.0.2',
         '@moldea.ai/repository-fs': '1.0.3',
         semver: '7.8.5',
@@ -81,15 +81,15 @@ describe('loadMoldeaCliPackageMetadata', () => {
 
     expect(metadata).toStrictEqual({
       dependencies: {
-        '@moldea.ai/core': '2.0.1',
+        '@moldea.ai/core': '6.0.0',
         '@moldea.ai/repository': '1.0.2',
         '@moldea.ai/repository-fs': '1.0.3',
         semver: '7.8.5',
       },
       installedPackageVersions: {
-        '@moldea.ai/core': '5.0.1',
+        '@moldea.ai/core': '6.0.0',
         '@moldea.ai/repository': '2.0.0',
-        '@moldea.ai/repository-fs': '2.0.2',
+        '@moldea.ai/repository-fs': '2.0.3',
       },
       supportedNodeRange: '>=22.11.0',
       version: '1.0.1',
@@ -139,7 +139,7 @@ describe('loadMoldeaCliPackageMetadata', () => {
   test('retains the actual resolved package version for composition rejection', async () => {
     const manifestPath = await writeManifest({
       dependencies: {
-        '@moldea.ai/core': '1.0.0',
+        '@moldea.ai/core': '6.0.0',
         '@moldea.ai/repository': '1.0.0',
         '@moldea.ai/repository-fs': '1.0.0',
       },
@@ -148,7 +148,7 @@ describe('loadMoldeaCliPackageMetadata', () => {
       version: '1.0.0',
     });
     const packageEntryResolver = await createPackageEntryResolver(manifestPath, {
-      '@moldea.ai/core': '0.0.2',
+      '@moldea.ai/core': '6.0.0',
       '@moldea.ai/repository': '1.0.0',
       '@moldea.ai/repository-fs': '1.0.0',
     });
@@ -156,8 +156,8 @@ describe('loadMoldeaCliPackageMetadata', () => {
     await expect(
       loadMoldeaCliPackageMetadata(manifestPath, packageEntryResolver),
     ).resolves.toMatchObject({
-      dependencies: { '@moldea.ai/core': '1.0.0' },
-      installedPackageVersions: { '@moldea.ai/core': '0.0.2' },
+      dependencies: { '@moldea.ai/core': '6.0.0' },
+      installedPackageVersions: { '@moldea.ai/core': '6.0.0' },
     });
   });
 

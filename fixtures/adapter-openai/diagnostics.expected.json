@@ -1,5 +1,10 @@
 [
   {
+    "code": "OPENAI_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND",
+    "message": "The declared agent input-schema symbol was not found.",
+    "severity": "error"
+  },
+  {
     "code": "OPENAI_INSTRUCTION_LOADER_NOT_WIRED",
     "message": "The declared instruction loader is not wired to the detected Responses API call.",
     "severity": "error"
@@ -7,6 +12,11 @@
   {
     "code": "OPENAI_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND",
     "message": "The declared instruction-loader symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "OPENAI_INSTRUCTION_SOURCE_MISMATCH",
+    "message": "The declared instruction loader does not consume the canonical instruction source.",
     "severity": "error"
   },
   {
@@ -40,6 +50,16 @@
     "severity": "error"
   },
   {
+    "code": "OPENAI_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND",
+    "message": "The declared skill-implementation symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "OPENAI_SKILL_REGISTRATION_SYMBOL_NOT_FOUND",
+    "message": "The declared skill-registration symbol was not found.",
+    "severity": "error"
+  },
+  {
     "code": "OPENAI_SOURCE_SYNTAX_INVALID",
     "message": "The referenced OpenAI source file contains invalid TypeScript syntax.",
     "severity": "error"
@@ -47,6 +67,11 @@
   {
     "code": "OPENAI_SOURCE_TEXT_INVALID",
     "message": "The referenced OpenAI source file is not valid normalized text.",
+    "severity": "error"
+  },
+  {
+    "code": "OPENAI_TOOL_IMPLEMENTATION_SYMBOL_NOT_FOUND",
+    "message": "The declared tool-implementation symbol was not found.",
     "severity": "error"
   },
   {
@@ -65,6 +90,11 @@
     "severity": "error"
   },
   {
+    "code": "OPENAI_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND",
+    "message": "The declared tool output-schema symbol was not found.",
+    "severity": "error"
+  },
+  {
     "code": "OPENAI_TOOL_REGISTRATION_NOT_WIRED",
     "message": "The declared tool registration is not wired to the detected Responses API call.",
     "severity": "error"
@@ -72,6 +102,11 @@
   {
     "code": "OPENAI_TOOL_REGISTRATION_SYMBOL_NOT_FOUND",
     "message": "The declared tool-registration symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "OPENAI_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND",
+    "message": "The declared variable-provider symbol was not found.",
     "severity": "error"
   }
 ]

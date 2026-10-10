@@ -1,5 +1,6 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import {
   getCallableExportState,
   getConstExport,
@@ -8,10 +9,10 @@ import {
   resolveBindingReferences,
   unwrapExpression,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference, IToolManifestEntry } from '@moldea.ai/core/format';
 
+import type { ILangChainEvidenceCollector } from '../contracts/index.js';
 import { LANGCHAIN_ADAPTER_ID, LANGCHAIN_TARGET_ID } from '../constants/index.js';
 import type {
   ILangChainBindingResult,
@@ -27,6 +28,7 @@ import {
   getLangChainFunctionTool,
   resolveLangChainStaticString,
 } from '../source-analysis/index.js';
+
 import {
   addLangChainDiagnostic,
   addLangChainSourceFailureDiagnostic,
@@ -49,7 +51,7 @@ const resolveFunctionToolMetadata = async (
   session: ILangChainInspectionSession,
   analysis: ILangChainSourceAnalysis,
   functionTool: ILangChainFunctionToolShape,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
   capabilityId: string,
 ): Promise<{ readonly runtimeName: string | null } | null> => {
@@ -229,7 +231,7 @@ const inspectImplementation = async (
   manifestTool: IToolManifestEntry,
   registrationAnalysis: ILangChainSourceAnalysis,
   functionTool: ILangChainFunctionTool,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<ILangChainBindingResult | null> => {
   const reference = manifestTool.implementation;
 
@@ -302,8 +304,8 @@ const inspectInputSchema = async (
   manifestTool: IToolManifestEntry,
   registrationAnalysis: ILangChainSourceAnalysis,
   functionTool: ILangChainFunctionTool,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ILangChainEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<ILangChainBindingResult | null> => {
   const reference = manifestTool.inputSchema;
 
@@ -355,7 +357,7 @@ const inspectInputSchema = async (
           );
 
   if (result.kind === 'wired') {
-    evidence.push(
+    evidence.add(() =>
       createLangChainEvidence({
         agentId: inspected.agent.id,
         capabilityId,
@@ -367,7 +369,7 @@ const inspectInputSchema = async (
         },
         kind: 'schema',
         references: [manifestTool.registration as IRepositoryReference, boundReference],
-        runtimeName: boundReference.symbol,
+        runtimeName: boundReference.symbol ?? null,
         source: LANGCHAIN_ADAPTER_ID,
       }),
     );
@@ -392,7 +394,7 @@ const classifyRegistration = async (
   inspectedAgents: readonly ILangChainInspectedAgent[],
   inspected: ILangChainInspectedAgent,
   registrationReference: IRepositoryReference & { readonly symbol: string },
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   capabilityId: string,
 ): Promise<boolean | null> => {
   const relationship = inspected.definition.tools;
@@ -521,12 +523,17 @@ const createRegistrationReferences = (
     : []),
 ];
 
-/** Inspects all declared normal function tools and their agent registrations. */
+/**
+ * Inspects all declared normal function tools and their agent registrations.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectLangChainTools = async (
   session: ILangChainInspectionSession,
   inspectedAgents: readonly ILangChainInspectedAgent[],
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ILangChainEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   for (const inspected of inspectedAgents) {
     const tools = Object.entries(inspected.agent.declaration.tools ?? {}).sort(([left], [right]) =>
@@ -667,7 +674,7 @@ export const inspectLangChainTools = async (
           capabilityId,
         );
       } else if (registration === true) {
-        evidence.push(
+        evidence.add(() =>
           createLangChainEvidence({
             agentId: inspected.agent.id,
             capabilityId,

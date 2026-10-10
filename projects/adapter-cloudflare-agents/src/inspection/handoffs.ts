@@ -1,19 +1,21 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { resolveBindingReferences, unwrapExpression } from '@moldea.ai/adapter-static-analysis';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
-  IRuntimeAdapterEvidence,
   IRuntimeAdapterResolvedAgent,
 } from '@moldea.ai/core/adapter';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
+import type { ICloudflareAgentsEvidenceCollector } from '../contracts/index.js';
 import { CLOUDFLARE_AGENTS_ADAPTER_ID } from '../constants/index.js';
 import type {
   ICloudflareAgentsInspectionSession,
   ICloudflareAgentsSourceAnalysis,
 } from '../contracts/index.js';
+
 import { addCloudflareAgentsDiagnostic, createCloudflareAgentsEvidence } from './common.js';
 import { resolveCloudflareAgentsToolDefinition } from './resolution.js';
 import type { ICloudflareAgentsResolvedToolMap } from './resolution.js';
@@ -63,15 +65,20 @@ const resolveTargetAgent = (
     : Object.freeze({ agent, kind: 'matched' });
 };
 
-/** Inspects active Cloudflare `agentTool` helpers as runtime handoff registrations. */
+/**
+ * Inspects active Cloudflare `agentTool` helpers as runtime handoff registrations.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectCloudflareAgentsHandoffs = async (
   session: ICloudflareAgentsInspectionSession,
   sourceAgent: ICloudflareAgentsScopedAgent,
   context: IRuntimeAdapterContext,
   isResolvedAgentSupported: (agent: IRuntimeAdapterResolvedAgent) => Promise<boolean>,
   resolvedMaps: readonly ICloudflareAgentsResolvedToolMap[],
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ICloudflareAgentsEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   for (const resolvedMap of resolvedMaps) {
     for (const entry of resolvedMap.map.entries) {
@@ -145,7 +152,7 @@ export const inspectCloudflareAgentsHandoffs = async (
         continue;
       }
 
-      evidence.push(
+      evidence.add(() =>
         createCloudflareAgentsEvidence({
           agentId: sourceAgent.id,
           capabilityId: null,

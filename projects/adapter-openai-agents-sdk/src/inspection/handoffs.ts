@@ -1,7 +1,8 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { resolveBindingReferences, unwrapExpression } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
@@ -9,6 +10,7 @@ import type {
 } from '@moldea.ai/core/adapter';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
+import type { IOpenAiAgentsSdkEvidenceCollector } from '../contracts/index.js';
 import { OPENAI_AGENTS_SDK_ADAPTER_ID } from '../constants/index.js';
 import type {
   IOpenAiAgentsSdkAgentDefinition,
@@ -26,6 +28,7 @@ import {
   getOpenAiAgentsSdkHandoffElements,
   resolveOpenAiAgentsSdkStaticString,
 } from '../source-analysis/index.js';
+
 import {
   addOpenAiAgentsSdkDiagnostic,
   addOpenAiAgentsSdkUnverifiedRelationship,
@@ -169,7 +172,7 @@ const inspectRoutingDescription = async (
   registration: IOpenAiAgentsSdkHandoffRegistration,
   target: IOpenAiAgentsSdkResolvedAgentTarget,
   targetAgent: IRuntimeAdapterResolvedAgent,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<'override' | 'target' | 'unresolved'> => {
   const canonicalDescription =
     targetAgent.handoffDescription?.value ?? targetAgent.description.value;
@@ -258,15 +261,20 @@ const inspectRoutingDescription = async (
   return 'target';
 };
 
-/** Inspects runtime-native handoff registrations and routing-description wiring. */
+/**
+ * Inspects runtime-native handoff registrations and routing-description wiring.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectOpenAiAgentsSdkHandoffs = async (
   context: IRuntimeAdapterContext,
   session: IOpenAiAgentsSdkInspectionSession,
   agent: IIndexedAgent,
   analysis: IOpenAiAgentsSdkSourceAnalysis,
   definition: IOpenAiAgentsSdkAgentDefinition,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiAgentsSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const localDefinitions = getLocalAgentDefinitions(analysis);
   const relationships = localDefinitions.map(({ handoffs }) => handoffs);
@@ -343,14 +351,17 @@ export const inspectOpenAiAgentsSdkHandoffs = async (
       }
     }
 
-    evidence.push(
+    evidence.add(() =>
       createOpenAiAgentsSdkEvidence({
         agentId: agent.id,
         capabilityId: null,
         capabilityKind: null,
         details: getSafeDetails(registration, routingDescriptionSource, target, mappedAgent?.id),
         kind: 'handoff-registration',
-        references: [{ path: analysis.path }, { path: target.path, symbol: target.symbol }],
+        references: [
+          { path: analysis.path },
+          { path: target.path, ...(target.symbol === undefined ? {} : { symbol: target.symbol }) },
+        ],
         runtimeName,
         source: OPENAI_AGENTS_SDK_ADAPTER_ID,
       }),

@@ -32,7 +32,7 @@ const createDiagnostic = (): ICoreDiagnostic => ({
   source: 'core',
 });
 
-describe('schema 5 CLI presentation formatters', () => {
+describe('schema 6 CLI presentation formatters', () => {
   test('returns help for every command', () => {
     expect(formatMoldeaCliHelp(null)).toBe(MOLDEA_CLI_TOP_LEVEL_HELP);
 
@@ -41,23 +41,23 @@ describe('schema 5 CLI presentation formatters', () => {
     }
   });
 
-  test('formats safe human and strict schema 5 JSON errors', () => {
+  test('formats safe human and strict schema 6 JSON errors', () => {
     const error = createMoldeaCliOwnedError('CURSOR_INVALID');
 
     expect(formatMoldeaCliHumanError(error)).toBe(
       'cli:CURSOR_INVALID The continuation cursor is invalid for this request.\n',
     );
-    expect(JSON.parse(formatMoldeaCliJsonError(error, 'inspect', '9.0.0'))).toStrictEqual({
-      cliVersion: '9.0.0',
+    expect(JSON.parse(formatMoldeaCliJsonError(error, 'inspect', '10.0.0'))).toStrictEqual({
+      cliVersion: '10.0.0',
       command: 'inspect',
       error,
       result: null,
-      schemaVersion: 5,
+      schemaVersion: 6,
       status: 'error',
     });
   });
 
-  test('formats composition in human and schema 5 JSON forms', () => {
+  test('formats composition in human and schema 6 JSON forms', () => {
     const result: IMoldeaCliCompositionResult = {
       adapters: [{ id: 'custom', repositoryFormatVersions: [1] }],
       minimumGitVersion: '2.30.0',
@@ -66,13 +66,13 @@ describe('schema 5 CLI presentation formatters', () => {
       supportedNodeRange: '>=22.11.0',
     };
 
-    expect(formatMoldeaCliHumanCompositionResult(result, '9.0.0')).toContain(
-      'JSON output schema: 5',
+    expect(formatMoldeaCliHumanCompositionResult(result, '10.0.0')).toContain(
+      'JSON output schema: 6',
     );
-    expect(JSON.parse(formatMoldeaCliJsonCompositionResult(result, '9.0.0'))).toMatchObject({
+    expect(JSON.parse(formatMoldeaCliJsonCompositionResult(result, '10.0.0'))).toMatchObject({
       command: 'composition',
       result,
-      schemaVersion: 5,
+      schemaVersion: 6,
       status: 'valid',
     });
   });
@@ -80,6 +80,7 @@ describe('schema 5 CLI presentation formatters', () => {
   test('formats paginated validation diagnostics in both output modes', () => {
     const diagnostic = createMoldeaCliDiagnosticRecord(createDiagnostic());
     const result: IMoldeaCliValidateResult = {
+      runtimeInspection: 'not-run' as const,
       diagnosticCount: 1,
       errorCount: 1,
       formatVersion: null,
@@ -91,12 +92,12 @@ describe('schema 5 CLI presentation formatters', () => {
     };
 
     expect(formatMoldeaCliHumanValidateResult(result)).toBe(
-      'The moldea project is invalid.\ncore:MOLDEA_MANIFEST_MISSING /moldea/moldea.yaml The project manifest is missing.\nDiagnostic: 1\nError: 1\nWarnings: 0\nAdditional diagnostics are available through JSON pagination.\n',
+      'The moldea project is invalid.\nRuntime inspection: not-run\ncore:MOLDEA_MANIFEST_MISSING /moldea/moldea.yaml The project manifest is missing.\nDiagnostic: 1\nError: 1\nWarnings: 0\nAdditional diagnostics are available through JSON pagination.\n',
     );
-    expect(JSON.parse(formatMoldeaCliJsonValidateResult(result, '9.0.0'))).toMatchObject({
+    expect(JSON.parse(formatMoldeaCliJsonValidateResult(result, '10.0.0'))).toMatchObject({
       command: 'validate',
       result: { diagnosticCount: 1 },
-      schemaVersion: 5,
+      schemaVersion: 6,
       status: 'invalid',
     });
   });
@@ -120,6 +121,7 @@ describe('schema 5 CLI presentation formatters', () => {
       source: 'anthropic',
     };
     const result: IMoldeaCliValidateResult = {
+      runtimeInspection: 'incomplete' as const,
       diagnosticCount: 1,
       errorCount: 0,
       formatVersion: 1,
@@ -130,7 +132,7 @@ describe('schema 5 CLI presentation formatters', () => {
       warningCount: 1,
     };
     const human = formatMoldeaCliHumanValidateResult(result);
-    const json = JSON.parse(formatMoldeaCliJsonValidateResult(result, '9.0.0')) as {
+    const json = JSON.parse(formatMoldeaCliJsonValidateResult(result, '10.0.0')) as {
       result: IMoldeaCliValidateResult;
       status: string;
     };

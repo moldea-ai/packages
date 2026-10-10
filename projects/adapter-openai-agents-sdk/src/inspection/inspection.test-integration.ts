@@ -91,7 +91,12 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
   test('emits the complete normalized evidence for the supported target', async () => {
     const result = await inspect();
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
     expect(result.summary).not.toBeNull();
@@ -102,7 +107,12 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
       '/package.json': '{"dependencies":{"@openai/agents":"1.0.0"}}',
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
   });
 
@@ -272,7 +282,14 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
       },
     ]);
     expect(dynamic.evidence.filter(({ kind }) => kind === 'handoff-registration')).toHaveLength(2);
-    expect(emptyOverride.diagnostics).toStrictEqual([]);
+    expect(emptyOverride.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual(
+      [],
+    );
+    expect(
+      emptyOverride.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       emptyOverride.evidence.find(
         ({ details, kind }) =>
@@ -322,7 +339,12 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
         kind === 'handoff-registration' && details['registrationKind'] === 'handoff',
     );
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(registration).toMatchObject({ runtimeName: null });
   });
 
@@ -397,7 +419,12 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
     const registrations = result.evidence.filter(({ kind }) => kind === 'handoff-registration');
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(definition).toMatchObject({ runtimeName: 'billingAgent' });
     expect(registrations).toHaveLength(2);
     expect(registrations.every(({ details }) => !Object.hasOwn(details, 'targetRuntimeName'))).toBe(
@@ -417,7 +444,12 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
     const registrations = result.evidence.filter(({ kind }) => kind === 'handoff-registration');
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(definition).toMatchObject({ runtimeName: 'billing support' });
     expect(
       registrations.every(({ details }) => details['targetRuntimeName'] === 'billing support'),
@@ -486,7 +518,12 @@ describe('openAiAgentsSdkAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence).toStrictEqual([]);
   });
 

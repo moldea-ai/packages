@@ -2,17 +2,21 @@
 import { describe, expect, test, vi } from 'vitest';
 
 import { createMoldeaCliProcessSignalSession } from './session.js';
-import type { IMoldeaCliProcessSignalSource, IMoldeaCliTerminationSignal } from './types.js';
+import type { IMoldeaCliProcessSignalSource, IMoldeaCliProcessEvent } from './types.js';
 
 /** Creates an evented process-signal boundary for lifecycle tests. */
-const createSignalSource = (): {
-  readonly emit: (signal: IMoldeaCliTerminationSignal) => void;
+const createSignalSource = (
+  hasDisconnectedLauncher = false,
+): {
+  readonly emit: (signal: IMoldeaCliProcessEvent) => void;
   readonly removeListener: ReturnType<
     typeof vi.fn<IMoldeaCliProcessSignalSource['removeListener']>
   >;
   readonly source: IMoldeaCliProcessSignalSource;
+  readonly closeIpc: ReturnType<typeof vi.fn>;
 } => {
-  const listeners = new Map<IMoldeaCliTerminationSignal, Set<() => void>>();
+  const listeners = new Map<IMoldeaCliProcessEvent, Set<() => void>>();
+  const closeIpc = vi.fn();
   const addListener = vi.fn<IMoldeaCliProcessSignalSource['addListener']>((signal, listener) => {
     const signalListeners = listeners.get(signal) ?? new Set();
 
@@ -32,14 +36,28 @@ const createSignalSource = (): {
       }
     },
     removeListener,
-    source: { addListener, removeListener },
+    source: {
+      addListener,
+      removeListener,
+      closeIpc,
+      hasDisconnectedLauncher: () => hasDisconnectedLauncher,
+    },
+    closeIpc,
   };
 };
 
 describe('createMoldeaCliProcessSignalSession', () => {
+  test('cancels when private launcher IPC was already lost before session creation', () => {
+    const source = createSignalSource(true);
+    const session = createMoldeaCliProcessSignalSession(source.source);
+    expect(session.signal.aborted).toBe(true);
+    expect(session.exitCode).toBe(143);
+    session.dispose();
+  });
   test.each([
     ['SIGINT', 130],
     ['SIGTERM', 143],
+    ['disconnect', 143],
   ] as const)('aborts once and maps the first %s to exit code %d', (signal, exitCode) => {
     const signalSource = createSignalSource();
     const session = createMoldeaCliProcessSignalSession(signalSource.source);
@@ -69,7 +87,7 @@ describe('createMoldeaCliProcessSignalSession', () => {
     session.dispose();
   });
 
-  test('removes both listeners exactly once when disposed', () => {
+  test('removes listeners and closes IPC exactly once when disposed', () => {
     const signalSource = createSignalSource();
     const session = createMoldeaCliProcessSignalSession(signalSource.source);
 
@@ -77,7 +95,8 @@ describe('createMoldeaCliProcessSignalSession', () => {
     session.dispose();
     signalSource.emit('SIGTERM');
 
-    expect(signalSource.removeListener).toHaveBeenCalledTimes(2);
+    expect(signalSource.removeListener).toHaveBeenCalledTimes(3);
+    expect(signalSource.closeIpc).toHaveBeenCalledTimes(1);
     expect(session.signal.aborted).toBe(false);
     expect(session.exitCode).toBeNull();
   });

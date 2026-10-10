@@ -3,9 +3,16 @@
     "agentId": "billing",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "definitionKind": "agent" },
+    "details": {
+      "definitionKind": "agent"
+    },
     "kind": "agent-definition",
-    "references": [{ "path": "/src/agents.ts", "symbol": "billingAgent" }],
+    "references": [
+      {
+        "path": "/src/agents.ts",
+        "symbol": "billingAgent"
+      }
+    ],
     "runtimeName": "billing",
     "source": "openai-agents-sdk"
   },
@@ -13,9 +20,16 @@
     "agentId": "triage",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "definitionKind": "agent" },
+    "details": {
+      "definitionKind": "agent"
+    },
     "kind": "agent-definition",
-    "references": [{ "path": "/src/agents.ts", "symbol": "triageAgent" }],
+    "references": [
+      {
+        "path": "/src/agents.ts",
+        "symbol": "triageAgent"
+      }
+    ],
     "runtimeName": "triage",
     "source": "openai-agents-sdk"
   },
@@ -31,8 +45,13 @@
     },
     "kind": "handoff-registration",
     "references": [
-      { "path": "/src/agents.ts" },
-      { "path": "/src/agents.ts", "symbol": "billingAgent" }
+      {
+        "path": "/src/agents.ts"
+      },
+      {
+        "path": "/src/agents.ts",
+        "symbol": "billingAgent"
+      }
     ],
     "runtimeName": null,
     "source": "openai-agents-sdk"
@@ -49,8 +68,13 @@
     },
     "kind": "handoff-registration",
     "references": [
-      { "path": "/src/agents.ts" },
-      { "path": "/src/agents.ts", "symbol": "billingAgent" }
+      {
+        "path": "/src/agents.ts"
+      },
+      {
+        "path": "/src/agents.ts",
+        "symbol": "billingAgent"
+      }
     ],
     "runtimeName": "route_billing",
     "source": "openai-agents-sdk"
@@ -59,11 +83,21 @@
     "agentId": "triage",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "configurationProperty": "instructions" },
+    "details": {
+      "configurationProperty": "instructions"
+    },
     "kind": "instruction-loader",
     "references": [
-      { "path": "/src/agents.ts" },
-      { "path": "/src/instructions.ts", "symbol": "loadTriageInstruction" }
+      {
+        "path": "/moldea/agents/triage/instruction.md"
+      },
+      {
+        "path": "/src/agents.ts"
+      },
+      {
+        "path": "/src/instructions.ts",
+        "symbol": "loadTriageInstruction"
+      }
     ],
     "runtimeName": "loadTriageInstruction",
     "source": "openai-agents-sdk"
@@ -72,9 +106,16 @@
     "agentId": "billing",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "language": "typescript" },
+    "details": {
+      "language": "typescript"
+    },
     "kind": "language",
-    "references": [{ "path": "/src/agents.ts", "symbol": "billingAgent" }],
+    "references": [
+      {
+        "path": "/src/agents.ts",
+        "symbol": "billingAgent"
+      }
+    ],
     "runtimeName": null,
     "source": "openai-agents-sdk"
   },
@@ -82,9 +123,16 @@
     "agentId": "triage",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "language": "typescript" },
+    "details": {
+      "language": "typescript"
+    },
     "kind": "language",
-    "references": [{ "path": "/src/agents.ts", "symbol": "triageAgent" }],
+    "references": [
+      {
+        "path": "/src/agents.ts",
+        "symbol": "triageAgent"
+      }
+    ],
     "runtimeName": null,
     "source": "openai-agents-sdk"
   },
@@ -98,7 +146,11 @@
       "dependencyKind": "dependencies"
     },
     "kind": "runtime-package",
-    "references": [{ "path": "/package.json" }],
+    "references": [
+      {
+        "path": "/package.json"
+      }
+    ],
     "runtimeName": "@openai/agents",
     "source": "openai-agents-sdk"
   },
@@ -112,7 +164,11 @@
       "dependencyKind": "dependencies"
     },
     "kind": "runtime-package",
-    "references": [{ "path": "/package.json" }],
+    "references": [
+      {
+        "path": "/package.json"
+      }
+    ],
     "runtimeName": "@openai/agents",
     "source": "openai-agents-sdk"
   },
@@ -120,11 +176,19 @@
     "agentId": "triage",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "configurationProperty": "outputType", "schemaRole": "agent-output" },
+    "details": {
+      "configurationProperty": "outputType",
+      "schemaRole": "agent-output"
+    },
     "kind": "schema",
     "references": [
-      { "path": "/src/agents.ts" },
-      { "path": "/src/contracts.ts", "symbol": "TriageOutputSchema" }
+      {
+        "path": "/src/agents.ts"
+      },
+      {
+        "path": "/src/contracts.ts",
+        "symbol": "TriageOutputSchema"
+      }
     ],
     "runtimeName": "TriageOutputSchema",
     "source": "openai-agents-sdk"
@@ -133,11 +197,19 @@
     "agentId": "triage",
     "capabilityId": "find-order",
     "capabilityKind": "tool",
-    "details": { "configurationProperty": "parameters", "schemaRole": "tool-input" },
+    "details": {
+      "configurationProperty": "parameters",
+      "schemaRole": "tool-input"
+    },
     "kind": "schema",
     "references": [
-      { "path": "/src/contracts.ts", "symbol": "FindOrderInputSchema" },
-      { "path": "/src/tools.ts" }
+      {
+        "path": "/src/contracts.ts",
+        "symbol": "FindOrderInputSchema"
+      },
+      {
+        "path": "/src/tools.ts"
+      }
     ],
     "runtimeName": "FindOrderInputSchema",
     "source": "openai-agents-sdk"
@@ -146,11 +218,19 @@
     "agentId": "triage",
     "capabilityId": "find-order",
     "capabilityKind": "tool",
-    "details": { "configurationProperty": "outputSchema", "schemaRole": "tool-output" },
+    "details": {
+      "configurationProperty": "outputSchema",
+      "schemaRole": "tool-output"
+    },
     "kind": "schema",
     "references": [
-      { "path": "/src/contracts.ts", "symbol": "FindOrderOutputSchema" },
-      { "path": "/src/tools.ts" }
+      {
+        "path": "/src/contracts.ts",
+        "symbol": "FindOrderOutputSchema"
+      },
+      {
+        "path": "/src/tools.ts"
+      }
     ],
     "runtimeName": "FindOrderOutputSchema",
     "source": "openai-agents-sdk"
@@ -159,12 +239,22 @@
     "agentId": "triage",
     "capabilityId": "find-order",
     "capabilityKind": "tool",
-    "details": { "toolType": "function" },
+    "details": {
+      "toolType": "function"
+    },
     "kind": "tool-registration",
     "references": [
-      { "path": "/src/agents.ts" },
-      { "path": "/src/find-order.ts", "symbol": "findOrder" },
-      { "path": "/src/tools.ts", "symbol": "findOrderTool" }
+      {
+        "path": "/src/agents.ts"
+      },
+      {
+        "path": "/src/find-order.ts",
+        "symbol": "findOrder"
+      },
+      {
+        "path": "/src/tools.ts",
+        "symbol": "findOrderTool"
+      }
     ],
     "runtimeName": "find_order",
     "source": "openai-agents-sdk"

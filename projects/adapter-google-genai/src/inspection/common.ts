@@ -1,5 +1,10 @@
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
-import type { IRuntimeAdapterEvidence, ISourceRange } from '@moldea.ai/core';
+import type {
+  IRuntimeAdapterEvidence,
+  ISourceRange,
+  IUnverifiedRelationship,
+} from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference } from '@moldea.ai/core/format';
 import type { IRepositoryPath } from '@moldea.ai/repository';
@@ -51,16 +56,19 @@ const createEntity = (agentId: string, capabilityId?: string) =>
  * @param agentId The owning agent identifier.
  * @param range The optional scalar source range.
  * @param capabilityId The optional owning tool capability.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const addGoogleGenAiDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   code: Exclude<IGoogleGenAiAdapterDiagnosticCode, 'GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED'>,
   path: IRepositoryPath | null,
   agentId: string,
   range: ISourceRange | null = null,
   capabilityId?: string,
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createGoogleGenAiDiagnostic({
       code,
       details: {},
@@ -73,6 +81,32 @@ export const addGoogleGenAiDiagnostic = (
 };
 
 /**
+ * Appends a scoped warning when a declared relationship cannot be decided from source.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
+export const addGoogleGenAiUnverifiedRelationship = (
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
+  relationship: IUnverifiedRelationship,
+  reason: 'unsupported-source-pattern' | 'dynamic-source-pattern',
+  path: IRepositoryPath,
+  agentId: string,
+  capabilityId?: string,
+): void => {
+  diagnostics.add(() =>
+    createGoogleGenAiDiagnostic({
+      code: 'GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+      details: { reason, relationship },
+      entity: createEntity(agentId, capabilityId),
+      path,
+      pointer: null,
+      range: null,
+    }),
+  );
+};
+
+/**
  * Loads and validates one supported bound TypeScript source.
  * @param session The operation-local inspection session.
  * @param reference The exact manifest reference.
@@ -80,11 +114,14 @@ export const addGoogleGenAiDiagnostic = (
  * @param agentId The owning agent identifier.
  * @param capabilityId The optional owning tool capability.
  * @returns The indexed source or `null` after unsupported or invalid input.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
  */
 export const analyzeGoogleGenAiBoundReference = async (
   session: IGoogleGenAiInspectionSession,
   reference: IRepositoryReference,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
   capabilityId?: string,
 ): Promise<IGoogleGenAiSourceAnalysis | null> => {

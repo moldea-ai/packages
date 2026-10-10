@@ -2,75 +2,107 @@ import type {
   IStaticAnalysisInspectionSession,
   IStaticAnalysisInspectionSessionOptions,
 } from '../types.js';
+import {
+  createBoundedInspectionCache,
+  createInspectionLoadLimiter,
+  OBSERVATION_CACHE_LIMITS,
+  SOURCE_CACHE_LIMITS,
+} from './cache.js';
+import { getObservationRetainedBytes } from './retention.js';
 
 /**
- * Creates an operation-local inspection session with deterministic promise caches.
- * @param options Provider callbacks and the optional operation signal.
- * @returns Cached source, package, and entry inspection functions.
- * @throws If the inspection is aborted.
+ * Creates a typed adapter-owned session factory with weak operation ownership.
+ * @param getOptions Supplies the immutable repository identity and provider callbacks.
+ * @returns A factory reusing bounded resident observations across agents in one operation.
+ * @throws Propagates cancellation and provider callback failures.
  */
-export const createInspectionSession = <
+export const createInspectionSessionFactory = <
+  TContext,
   TPath extends string,
   TSourceResult,
   TPackageResult,
   TEntry,
 >(
-  options: IStaticAnalysisInspectionSessionOptions<TPath, TSourceResult, TPackageResult, TEntry>,
-): IStaticAnalysisInspectionSession<TPath, TSourceResult, TPackageResult, TEntry> => {
-  const sourceCache = new Map<TPath, Promise<TSourceResult>>();
-  const packageCache = new Map<TPath, Promise<TPackageResult>>();
-  const entryCache = new Map<TPath, Promise<TEntry>>();
-
-  const analyzeSource = (path: TPath): Promise<TSourceResult> => {
-    options.signal?.throwIfAborted();
-    const existing = sourceCache.get(path);
-
-    if (existing !== undefined) {
-      return existing;
-    }
-
-    const analysis = (async (): Promise<TSourceResult> => {
-      options.signal?.throwIfAborted();
-      const bytes = await options.readFile(path, options.signal);
-      options.signal?.throwIfAborted();
-      const result = await options.analyzeSource(path, bytes, options.signal);
-      options.signal?.throwIfAborted();
-      return result;
-    })();
-    sourceCache.set(path, analysis);
-    return analysis;
+  getOptions: (
+    context: TContext,
+  ) => IStaticAnalysisInspectionSessionOptions<TPath, TSourceResult, TPackageResult, TEntry>,
+) => {
+  const createCaches = () => {
+    const runLoad = createInspectionLoadLimiter();
+    return {
+      sources: createBoundedInspectionCache<TSourceResult>(SOURCE_CACHE_LIMITS, runLoad),
+      observations: createBoundedInspectionCache<TPackageResult | TEntry>(
+        OBSERVATION_CACHE_LIMITS,
+        runLoad,
+      ),
+      runLoad,
+    };
   };
+  const owners = new WeakMap<object, ReturnType<typeof createCaches>>();
 
-  const discoverPackage = (path: TPath): Promise<TPackageResult> => {
-    options.signal?.throwIfAborted();
-    const existing = packageCache.get(path);
-
-    if (existing !== undefined) {
-      return existing;
+  return (
+    context: TContext,
+  ): IStaticAnalysisInspectionSession<TPath, TSourceResult, TPackageResult, TEntry> => {
+    const options = getOptions(context);
+    let caches = owners.get(options.owner);
+    if (caches === undefined) {
+      caches = createCaches();
+      owners.set(options.owner, caches);
     }
-
-    const discovery = options.discoverPackage(path, options.signal);
-    packageCache.set(path, discovery);
-    return discovery;
+    const { sources, observations, runLoad } = caches;
+    const loadSource = (path: TPath): Promise<TSourceResult> =>
+      sources.get(
+        path,
+        async () => {
+          options.signal?.throwIfAborted();
+          const bytes = await options.readFile(path, options.signal);
+          options.signal?.throwIfAborted();
+          const result = await options.analyzeSource(path, bytes, options.signal);
+          return { result, retainedBytes: options.getSourceRetainedBytes(result) };
+        },
+        options.signal,
+      );
+    // This single borrowed graph dies with the agent's session. It is not an extra resident cache.
+    let activeSource: Promise<TSourceResult> | undefined;
+    const analyzeSource = async (path: TPath): Promise<TSourceResult> => {
+      options.signal?.throwIfAborted();
+      if (path !== options.activeSourcePath) return loadSource(path);
+      activeSource ??= loadSource(path);
+      try {
+        const result = await activeSource;
+        options.signal?.throwIfAborted();
+        return result;
+      } catch (error) {
+        activeSource = undefined;
+        throw error;
+      }
+    };
+    return Object.freeze({
+      analyzeSource,
+      runLoad,
+      // namespaced keys keep the two observation result types distinct in their shared allowance
+      discoverPackage: async (path: TPath) =>
+        (await observations.get(
+          'package:' + path,
+          async () => {
+            const result = await options.discoverPackage(path, options.signal);
+            return {
+              result,
+              retainedBytes: getObservationRetainedBytes('package:' + path, result),
+            };
+          },
+          options.signal,
+        )) as TPackageResult,
+      getEntry: async (path: TPath) =>
+        (await observations.get(
+          'entry:' + path,
+          async () => {
+            const result = await options.getEntry(path, options.signal);
+            return { result, retainedBytes: getObservationRetainedBytes('entry:' + path, result) };
+          },
+          options.signal,
+        )) as TEntry,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    });
   };
-
-  const getEntry = (path: TPath): Promise<TEntry> => {
-    options.signal?.throwIfAborted();
-    const existing = entryCache.get(path);
-
-    if (existing !== undefined) {
-      return existing;
-    }
-
-    const entry = options.getEntry(path, options.signal);
-    entryCache.set(path, entry);
-    return entry;
-  };
-
-  return Object.freeze({
-    analyzeSource,
-    discoverPackage,
-    getEntry,
-    ...(options.signal === undefined ? {} : { signal: options.signal }),
-  });
 };

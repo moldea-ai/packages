@@ -1,10 +1,11 @@
 import { validRange } from 'semver';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { classifyVersionBehavior } from '@moldea.ai/adapter-static-analysis';
-
-import type { IAdapterDiagnostic, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
+import type { IEveEvidenceCollector } from '../contracts/index.js';
 import {
   EVE_ADAPTER_ID,
   EVE_AGENT_OUTPUT_SCHEMA_REMOVAL_VERSION,
@@ -23,15 +24,21 @@ import type {
   IEveInspectionSession,
   IEveScopedAgent,
 } from '../contracts/index.js';
+
 import { addEveDiagnostic, createEveEvidence } from './common.js';
 
-/** Inspects one scoped agent's nearest Eve package declaration. */
+/**
+ * Inspects one scoped agent's nearest Eve package declaration.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectEvePackage = async (
   session: IEveInspectionSession,
   agent: IEveScopedAgent,
   sourcePath: IRepositoryPath,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IEveEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IEveInspectedPackage | null> => {
   const result = await session.discoverPackage(sourcePath);
 
@@ -58,7 +65,7 @@ export const inspectEvePackage = async (
         loose: false,
       }) !== null;
 
-    evidence.push(
+    evidence.add(() =>
       createEveEvidence({
         agentId: agent.id,
         capabilityId: null,

@@ -1,5 +1,10 @@
 [
   {
+    "code": "EVE_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND",
+    "message": "The declared agent input-schema symbol was not found.",
+    "severity": "error"
+  },
+  {
     "code": "EVE_AGENT_OUTPUT_SCHEMA_NOT_WIRED",
     "message": "The declared agent output schema is not wired to the Eve agent definition.",
     "severity": "error"
@@ -22,6 +27,11 @@
   {
     "code": "EVE_INSTRUCTION_ROOT_CONFLICT",
     "message": "The Eve instruction slot contains conflicting authored sources.",
+    "severity": "error"
+  },
+  {
+    "code": "EVE_INSTRUCTION_SOURCE_MISMATCH",
+    "message": "The declared instruction loader does not consume the canonical instruction source.",
     "severity": "error"
   },
   {
@@ -167,6 +177,11 @@
   {
     "code": "EVE_TOOL_SUBAGENT_NAME_COLLISION",
     "message": "The Eve tool and subagent use the same runtime tool name.",
+    "severity": "error"
+  },
+  {
+    "code": "EVE_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND",
+    "message": "The declared variable-provider symbol was not found.",
     "severity": "error"
   },
   {

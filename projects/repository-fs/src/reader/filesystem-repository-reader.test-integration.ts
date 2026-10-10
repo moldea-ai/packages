@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { mkdir, mkdtemp, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import fsPromises from 'node:fs/promises';
+import { syncBuiltinESMExports } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -12,7 +14,7 @@ import {
   type IRepositoryReader,
 } from '@moldea.ai/repository';
 import { describeRepositoryReaderConformance } from '@moldea.ai/repository/testing';
-import { afterAll, describe, expect, test } from 'vitest';
+import { afterAll, describe, expect, test, vi } from 'vitest';
 import { expectToRejectCode } from 'web-utils-kit';
 
 import { createFilesystemRepositoryTestFixtures } from './factory.test-fixtures.js';
@@ -88,6 +90,128 @@ describeRepositoryReaderConformance('filesystem', {
 });
 
 describe('filesystem repository reader', () => {
+  test.each([
+    ['paths', 256],
+    ['paths', 1024],
+    ['paths', 4096],
+    ['directory', 256],
+    ['directory', 1024],
+    ['directory', 4096],
+  ] as const)('bounds real directory scans for %s with %d files', async (kind, fileCount) => {
+    const rootDirectory = await mkdtemp(path.join(tmpdir(), 'moldea-scan-growth-'));
+    const selectedPaths = Array.from({ length: fileCount }, (_, index) =>
+      parseRepositoryPath(`/entry-${index.toString().padStart(4, '0')}.txt`),
+    );
+    const originalOpendir = fsPromises.opendir;
+    let directoryScans = 0;
+    let namesScanned = 0;
+    const spy = vi.spyOn(fsPromises, 'opendir').mockImplementation(async (...args) => {
+      const directory = await originalOpendir(...args);
+      const iterate = directory[Symbol.asyncIterator].bind(directory);
+      directoryScans += 1;
+      directory[Symbol.asyncIterator] = async function* () {
+        for await (const entry of iterate()) {
+          namesScanned += 1;
+          yield entry;
+        }
+      };
+      return directory;
+    });
+    syncBuiltinESMExports();
+
+    try {
+      for (let offset = 0; offset < selectedPaths.length; offset += 32) {
+        await Promise.all(
+          selectedPaths
+            .slice(offset, offset + 32)
+            .map((logicalPath) =>
+              writeFile(path.join(rootDirectory, logicalPath.slice(1)), 'selected content'),
+            ),
+        );
+      }
+      const reader = await createFilesystemRepositoryReader({
+        rootDirectory,
+        selection: kind === 'paths' ? { kind, paths: selectedPaths } : { kind },
+      });
+      const entries: IRepositoryEntry[] = [];
+      let cursor: string | undefined;
+
+      while (true) {
+        const page = await reader.listEntriesPage({
+          ...(cursor === undefined ? {} : { cursor }),
+          maxEntries: kind === 'paths' ? 64 : 4096,
+        });
+        entries.push(...page.entries);
+        if (page.isComplete) break;
+        expect(page.nextCursor).not.toBeNull();
+        cursor = page.nextCursor ?? undefined;
+      }
+
+      expect(entries.map((entry) => entry.path)).toStrictEqual(selectedPaths);
+      expect(entries.every((entry) => entry.type === 'file')).toBe(true);
+      expect(directoryScans).toBeGreaterThan(0);
+      expect(directoryScans).toBeLessThanOrEqual(kind === 'paths' ? 1 : 2);
+      expect(namesScanned).toBeGreaterThanOrEqual(fileCount);
+      expect(namesScanned).toBeLessThanOrEqual(fileCount * (kind === 'paths' ? 1 : 2));
+      await expect(
+        reader.readFilePage(selectedPaths[0]!, { maxBytes: 8, offset: 0 }),
+      ).resolves.toMatchObject({
+        bytes: new TextEncoder().encode('selected'),
+      });
+    } finally {
+      spy.mockRestore();
+      syncBuiltinESMExports();
+      await rm(rootDirectory, { force: true, recursive: true });
+    }
+  });
+
+  test('cancels grouped selection during scanning and closes the real directory', async () => {
+    const rootDirectory = await mkdtemp(path.join(tmpdir(), 'moldea-scan-abort-'));
+    const controller = new AbortController();
+    const originalOpendir = fsPromises.opendir;
+    let scannedNames = 0;
+    let isDirectoryClosed = false;
+    const spy = vi.spyOn(fsPromises, 'opendir').mockImplementation(async (...args) => {
+      const directory = await originalOpendir(...args);
+      const iterate = directory[Symbol.asyncIterator].bind(directory);
+      directory[Symbol.asyncIterator] = async function* () {
+        try {
+          for await (const entry of iterate()) {
+            scannedNames += 1;
+            controller.abort();
+            yield entry;
+          }
+        } finally {
+          isDirectoryClosed = true;
+        }
+      };
+      return directory;
+    });
+    syncBuiltinESMExports();
+
+    try {
+      await writeFile(path.join(rootDirectory, 'first.txt'), 'first');
+      await writeFile(path.join(rootDirectory, 'second.txt'), 'second');
+      await expectToRejectCode(
+        createFilesystemRepositoryReader({
+          rootDirectory,
+          selection: {
+            kind: 'paths',
+            paths: [parseRepositoryPath('/first.txt'), parseRepositoryPath('/second.txt')],
+          },
+          signal: controller.signal,
+        }),
+        'ABORTED',
+      );
+      expect(scannedNames).toBe(1);
+      expect(isDirectoryClosed).toBe(true);
+    } finally {
+      spy.mockRestore();
+      syncBuiltinESMExports();
+      await rm(rootDirectory, { force: true, recursive: true });
+    }
+  });
+
   test('keeps stat identities private while serving bounded file pages', async () => {
     const logicalPath = parseRepositoryPath('/nested/deep/data.bin');
     const reader = await createFilesystemRepositoryReader({

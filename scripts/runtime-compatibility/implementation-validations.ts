@@ -21,9 +21,27 @@ const FOUNDATIONAL_PACKAGE_NAMES = [
 ] as const;
 const MOLDEA_ADAPTER_PACKAGE_PREFIX = '@moldea.ai/adapter-';
 
-/** Returns the source-workspace range for one stable first-party package major. */
-const createCompatibleMajorWorkspaceRange = (version: string): string =>
-  `workspace:^${getVersionMajor(version)}.0.0`;
+/** Requires the release-owned compatible range, including a supported patch-level minimum. */
+const requireCompatibleWorkspaceRange = (
+  packageManifest: IMoldeaPackageManifestSource,
+  expectedRange: string | undefined,
+  dependencyRange: string | undefined,
+): void => {
+  const minimum = expectedRange?.startsWith('^') === true ? expectedRange.slice(1) : undefined;
+  if (
+    minimum === undefined ||
+    isValidVersion(minimum) !== minimum ||
+    minimum.includes('-') ||
+    minimum.includes('+') ||
+    getVersionMajor(minimum) !== getVersionMajor(packageManifest.version) ||
+    dependencyRange !== `workspace:${expectedRange}` ||
+    !doesVersionSatisfy(packageManifest.version, expectedRange ?? '')
+  ) {
+    throw new TypeError(
+      `The ${packageManifest.name} CLI dependency is not compatible with its major line.`,
+    );
+  }
+};
 
 /** Validates the package identity and version fields used by release generation. */
 const requireManifest = (value: unknown, expectedName: string): IMoldeaPackageManifestSource => {
@@ -160,12 +178,11 @@ const validatePublishedAdapter = (
   const packageManifest = requireManifest(sources.packageManifests[packageName], packageName);
   const dependencyVersion = cliDependencies[packageName];
 
-  if (
-    dependencyVersion !== createCompatibleMajorWorkspaceRange(packageManifest.version) ||
-    !doesVersionSatisfy(packageManifest.version, dependencyVersion.slice('workspace:'.length))
-  ) {
-    throw new TypeError(`The ${packageName} CLI dependency is not compatible with its major line.`);
-  }
+  requireCompatibleWorkspaceRange(
+    packageManifest,
+    sources.cliPackageRanges[packageName],
+    dependencyVersion,
+  );
 
   if (
     matrixEntry.implementation.versionRange === undefined ||
@@ -269,6 +286,11 @@ export const validateMoldeaCliImplementation = (sources: IMoldeaCliImplementatio
     [...expectedMoldeaDependencies],
     'The CLI first-class dependency set',
   );
+  requireExactStringSet(
+    Object.keys(sources.cliPackageRanges),
+    [...expectedMoldeaDependencies],
+    'The CLI first-class package range set',
+  );
 
   const dependencyAdapterIds = actualMoldeaDependencies
     .filter((packageName) => packageName.startsWith(MOLDEA_ADAPTER_PACKAGE_PREFIX))
@@ -282,13 +304,10 @@ export const validateMoldeaCliImplementation = (sources: IMoldeaCliImplementatio
   for (const packageManifest of packageManifests) {
     const dependencyRange = cliDependencies[packageManifest.name];
 
-    if (
-      dependencyRange !== createCompatibleMajorWorkspaceRange(packageManifest.version) ||
-      !doesVersionSatisfy(packageManifest.version, dependencyRange.slice('workspace:'.length))
-    ) {
-      throw new TypeError(
-        `The ${packageManifest.name} CLI dependency is not compatible with its major line.`,
-      );
-    }
+    requireCompatibleWorkspaceRange(
+      packageManifest,
+      sources.cliPackageRanges[packageManifest.name],
+      dependencyRange,
+    );
   }
 };

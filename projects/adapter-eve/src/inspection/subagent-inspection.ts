@@ -1,10 +1,11 @@
 import { posix } from 'node:path';
 import ts from 'typescript';
 
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic, IRuntimeAdapterContext } from '@moldea.ai/core/adapter';
 import { parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 
+import type { IEveEvidenceCollector } from '../contracts/index.js';
 import {
   EVE_ADAPTER_ID,
   EVE_DEFAULT_TOOLS_BOUNDARY_VERSION,
@@ -29,6 +30,8 @@ import {
   getEvePropertyExpression,
   resolveEveStaticString,
 } from '../source-analysis/index.js';
+
+import { IGNORED_EVE_RECORDS } from './common.js';
 import { inspectEveAgent } from './agent-inspection.js';
 import {
   addEveDiagnostic,
@@ -104,7 +107,7 @@ const reportEveSubagentNameIssue = (
   path: IRepositoryPath,
   agentId: string,
   state: INameState,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): boolean => {
   if (state.kind === 'free') {
     return false;
@@ -141,13 +144,18 @@ const reportEveSubagentNameIssue = (
   return true;
 };
 
-/** Resolves a direct workspace declaration only through its exact registered peer path. */
+/**
+ * Resolves a direct workspace declaration only through its exact registered peer path.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const resolveEveWorkspaceSubagent = async (
   session: IEveInspectionSession,
   context: IRuntimeAdapterContext,
   parent: IEveAgentDefinition,
   candidate: IEveSubagentCandidate,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IEveWorkspaceSubagentRegistration | null> => {
   if (
     parent.root.layout !== 'workspace' ||
@@ -296,7 +304,12 @@ export const resolveEveWorkspaceSubagent = async (
     return null;
   }
 
-  const target = await inspectEveAgent(session, resolution.agent, [], []);
+  const target = await inspectEveAgent(
+    session,
+    resolution.agent,
+    IGNORED_EVE_RECORDS,
+    IGNORED_EVE_RECORDS,
+  );
 
   return target?.root.layout === 'workspace' && target.root.runtimeName === name.value
     ? Object.freeze({
@@ -309,14 +322,19 @@ export const resolveEveWorkspaceSubagent = async (
     : null;
 };
 
-/** Inspects exact immediate directory-backed local-subagent registrations. */
+/**
+ * Inspects exact immediate directory-backed local-subagent registrations.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectEveSubagents = (
   definitions: readonly IEveAgentDefinition[],
   workspaceRegistrations: readonly IEveWorkspaceSubagentRegistration[],
   preparedToolNames: ReadonlyMap<string, ReadonlySet<string>>,
   ambiguousParentRoots: ReadonlyMap<IRepositoryPath, number>,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IEveEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): void => {
   const definitionsByRoot = new Map<IRepositoryPath, IEveAgentDefinition[]>();
   const candidatesByRoot = new Map<
@@ -486,7 +504,7 @@ export const inspectEveSubagents = (
       continue;
     }
 
-    evidence.push(
+    evidence.add(() =>
       createEveEvidence({
         agentId: parent.agent.id,
         capabilityId: null,
@@ -584,7 +602,7 @@ export const inspectEveSubagents = (
       continue;
     }
 
-    evidence.push(
+    evidence.add(() =>
       createEveEvidence({
         agentId: parent.agent.id,
         capabilityId: null,

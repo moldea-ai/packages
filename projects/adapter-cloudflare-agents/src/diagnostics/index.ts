@@ -8,6 +8,26 @@ import type {
 
 // stable Cloudflare Agents adapter diagnostic code and message catalog
 export const CLOUDFLARE_AGENTS_ADAPTER_DIAGNOSTICS = Object.freeze({
+  CLOUDFLARE_AGENTS_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND: {
+    message: 'The declared agent input-schema symbol was not found.',
+    severity: 'error',
+  },
+  CLOUDFLARE_AGENTS_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-implementation symbol was not found.',
+    severity: 'error',
+  },
+  CLOUDFLARE_AGENTS_SKILL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-registration symbol was not found.',
+    severity: 'error',
+  },
+  CLOUDFLARE_AGENTS_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND: {
+    message: 'The declared variable-provider symbol was not found.',
+    severity: 'error',
+  },
+  CLOUDFLARE_AGENTS_INSTRUCTION_SOURCE_MISMATCH: {
+    message: 'The declared instruction loader does not consume the canonical instruction source.',
+    severity: 'error',
+  },
   CLOUDFLARE_AGENTS_AGENT_OUTPUT_SCHEMA_NOT_WIRED: {
     message:
       'The declared agent output schema is not wired to the detected AIChatAgent structured output.',

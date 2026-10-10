@@ -98,17 +98,20 @@ export interface IProjectValidationState {
  * @returns A promise resolving to the frozen all-or-nothing project inspection result.
  * @throws
  * - INVALID_ARGUMENT: The Core operation received an invalid argument.
- * - INVALID_REPOSITORY_PATH: A repository path is invalid.
- * - ENTRY_NOT_FOUND: A discovered file disappeared from the reader snapshot.
- * - ENTRY_NOT_FILE: A discovered file changed type during inspection.
- * - ENTRY_NOT_DIRECTORY: A discovered directory changed type during inspection.
+ * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+ * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+ * - ENTRY_NOT_FILE: The requested repository entry is not a file.
+ * - ENTRY_NOT_DIRECTORY: The requested repository entry is not a directory.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
- * - SNAPSHOT_CHANGED: The repository snapshot changed during inspection.
- * - INVALID_SOURCE_DATA: The repository reader returned invalid contract data.
- * - RESOURCE_LIMIT_EXCEEDED: A Core or repository resource limit was exceeded.
- * - ABORTED: Project inspection or a repository operation was aborted.
- * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed or returned an invalid result.
+ * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
+ * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
+ * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
  */
 export const validateProjectState = async (
   input: IProjectValidationInput,
@@ -140,6 +143,7 @@ export const validateProjectState = async (
         ...counts,
         evidence: [],
         formatVersion: universal.formatVersion,
+        runtimeInspection: 'not-run',
         source: validatedInput.repository.snapshot,
         summary: null,
         valid: false,
@@ -166,6 +170,7 @@ export const validateProjectState = async (
         ...counts,
         evidence: [],
         formatVersion: universal.formatVersion,
+        runtimeInspection: 'not-run',
         source: validatedInput.repository.snapshot,
         summary: projectSummary,
         valid: false,
@@ -190,6 +195,7 @@ export const validateProjectState = async (
       ...counts,
       evidence: adapterInspection.evidence,
       formatVersion: universal.formatVersion,
+      runtimeInspection: counts.warningCount === 0 ? 'complete' : 'incomplete',
       source: validatedInput.repository.snapshot,
       summary: projectSummary,
       valid,
@@ -197,7 +203,28 @@ export const validateProjectState = async (
   });
 };
 
-/** Validates one project without returning canonical document bodies. */
+/**
+ * Validates one project without returning canonical document bodies.
+ * @param input The source-neutral reader and optional cancellation signal.
+ * @param options The immutable adapter registry and operation limits.
+ * @returns A promise resolving to the complete validation result.
+ * @throws
+ * - INVALID_ARGUMENT: The Core operation received an invalid argument.
+ * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+ * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+ * - ENTRY_NOT_FILE: The requested repository entry is not a file.
+ * - ENTRY_NOT_DIRECTORY: The requested repository entry is not a directory.
+ * - ACCESS_DENIED: Access to the repository source was denied.
+ * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
+ * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
+ * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
+ */
 export const validateProject = async (
   input: IProjectValidationInput,
   options: ICoreOptionsSnapshot,

@@ -8,6 +8,22 @@ import type {
 
 // stable Vercel AI SDK adapter diagnostic code and message catalog
 export const VERCEL_AI_SDK_ADAPTER_DIAGNOSTICS = Object.freeze({
+  VERCEL_AI_SDK_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-implementation symbol was not found.',
+    severity: 'error',
+  },
+  VERCEL_AI_SDK_SKILL_REGISTRATION_SYMBOL_NOT_FOUND: {
+    message: 'The declared skill-registration symbol was not found.',
+    severity: 'error',
+  },
+  VERCEL_AI_SDK_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND: {
+    message: 'The declared variable-provider symbol was not found.',
+    severity: 'error',
+  },
+  VERCEL_AI_SDK_INSTRUCTION_SOURCE_MISMATCH: {
+    message: 'The declared instruction loader does not consume the canonical instruction source.',
+    severity: 'error',
+  },
   VERCEL_AI_SDK_AGENT_INPUT_SCHEMA_NOT_WIRED: {
     message:
       'The declared agent input schema is not wired to the detected ToolLoopAgent call-options schema.',

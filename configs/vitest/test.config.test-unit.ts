@@ -10,6 +10,7 @@ describe('createTestConfig', () => {
     expect(config.test).toEqual({
       clearMocks: true,
       environment: 'node',
+      exclude: ['**/node_modules/**', '**/.git/**', '**/{_archive,_archives,_backup,_backups}/**'],
       globals: false,
       include: ['src/**/*.test-unit.ts'],
       passWithNoTests: false,

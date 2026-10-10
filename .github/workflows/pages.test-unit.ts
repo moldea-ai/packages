@@ -8,6 +8,7 @@ import { expect, test } from 'vitest';
 // only the workflow and cache fields that define deployment input coverage
 interface IPagesWorkflow {
   on: { push: { branches: string[]; paths: string[] }; workflow_dispatch: unknown };
+  jobs: Record<string, { needs?: string[]; steps?: { name?: string; run?: string }[] }>;
 }
 interface ITurboConfiguration {
   tasks: Record<string, { inputs?: string[] }>;
@@ -33,10 +34,18 @@ test.each([
   'projects/website-ui/src/components/dialog/dialog.component.astro',
   'apps/website/content/getting-started.md',
   'compatibility/runtimes.yaml',
+  'scripts/npm-release/availability.ts',
 ])('deploys when %s changes alone', (sourcePath) => {
   expect(workflow.on.push.paths.some((pattern) => posix.matchesGlob(sourcePath, pattern))).toBe(
     true,
   );
+});
+
+test('requires npm availability before deploying the built artifact', () => {
+  expect(workflow.jobs['deploy']?.needs).toStrictEqual(['build', 'availability']);
+  expect(
+    workflow.jobs['availability']?.steps?.some(({ run }) => run === 'pnpm release:availability'),
+  ).toBe(true);
 });
 
 test('covers every repository-level website build input with a deployment trigger', () => {

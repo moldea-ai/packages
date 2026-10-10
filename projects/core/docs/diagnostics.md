@@ -30,6 +30,8 @@ Missing or invalid references, context relationships, runtime guidance, and deci
 
 Agent directories, identity, descriptions, instructions, variables, runtime availability, tools, and skills use `MOLDEA_AGENT_*`, `MOLDEA_RUNTIME_*`, `MOLDEA_VARIABLE_*`, `MOLDEA_CAPABILITY_*`, `MOLDEA_TOOL_*`, and `MOLDEA_SKILL_*` codes.
 
+`CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified. Core emits this warning with source `custom` and the declared relationship's identity. It does not register a custom adapter or infer a provider. Warning-only validity remains successful while `runtimeInspection` is `incomplete`.
+
 ### [Mirrors](#mirrors)
 
 Mirror path validity, presence, type, and digest coherence use `MOLDEA_MIRROR_*` codes.
@@ -43,3 +45,15 @@ Adapter diagnostics use the same normalized shape but retain the adapter ID as `
 ## Operational exceptions
 
 `CoreConfigurationException` reports invalid limits or adapter registration. `CoreOperationException` reports invalid operation arguments, resource exhaustion, cancellation, or adapter execution failure. Repository reader exceptions propagate through the inspection boundary. None of these are converted into content diagnostics.
+
+The opt-in Node inspection boundary adds these operation contracts:
+
+| Code                        | Stable message                                          |
+| --------------------------- | ------------------------------------------------------- |
+| `INSPECTION_BUSY`           | Project inspection capacity is busy. Try again shortly. |
+| `INSPECTION_TIMEOUT`        | The isolated project inspection timed out.              |
+| `INSPECTION_PROCESS_FAILED` | The isolated project inspection failed.                 |
+
+Busy and timeout failures are retryable; process failures are not. Timeout does not establish an input or heap limit. Verified worker heap exhaustion uses `RESOURCE_LIMIT_EXCEEDED` with the existing message `A Core resource limit was exceeded.`, `limit: maxAnalysisHeapBytes`, the startup-reported V8 heap maximum, unknown `observedUsage: null`, and `nextAction: review-inspection-capacity`. It carries no inferred source path. Logical resource refusals retain their measured or projected usage and `reduce-input-or-increase-limit` action.
+
+Fixed `maxInspectionMessageBytes` and `maxReaderRequests` transport refusals carry observed usage and `nextAction: null`; these limits cannot be raised by a caller.

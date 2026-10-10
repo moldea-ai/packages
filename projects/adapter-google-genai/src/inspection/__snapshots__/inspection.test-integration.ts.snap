@@ -1,0 +1,482 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`googleGenAiAdapter Core integration > accepts a later stable provider major through the minimum-only range 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > distinguishes different static and unresolved dynamic schema values 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > distinguishes different static and unresolved dynamic schema values 2`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > emits independent instruction, name, and schema relationship diagnostics 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > emits independent instruction, name, and schema relationship diagnostics 2`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > emits independent instruction, name, and schema relationship diagnostics 3`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > emits the complete normalized evidence for the supported target 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > enforces the 512-function boundary for inline, repeated, and distinct declarations 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > enforces the 512-function boundary for inline, repeated, and distinct declarations 2`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > enforces the 512-function boundary for inline, repeated, and distinct declarations 3`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > enforces the 512-function boundary for inline, repeated, and distinct declarations 4`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > keeps a mutated exported registration unresolved without false relationship evidence 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > keeps dynamic request and configuration candidates conservative 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > preserves a declared input-schema omission beside unresolved collection members 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > preserves a declared input-schema omission beside unresolved collection members 2`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > preserves a declared input-schema omission beside unresolved collection members 3`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > preserves a declared input-schema omission beside unresolved collection members 4`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > preserves registration identity after only parametersJsonSchema is mutated 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > preserves registration identity after only responseJsonSchema is mutated 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > recognizes safe module-local tool, container, and declaration collections 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`googleGenAiAdapter Core integration > reports the streaming method identity while preserving established relationships 1`] = `
+[
+  {
+    "code": "GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "google-genai",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;

@@ -1,10 +1,12 @@
 import type ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { getCallableExportState, getConstExport } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference, IToolManifestEntry } from '@moldea.ai/core/format';
 
+import type { IOpenAiAgentsSdkEvidenceCollector } from '../contracts/index.js';
 import {
   OPENAI_AGENTS_SDK_ADAPTER_ID,
   OPENAI_AGENTS_SDK_TOOL_NAME_PATTERN,
@@ -27,6 +29,7 @@ import {
   getOpenAiAgentsSdkToolElements,
   resolveOpenAiAgentsSdkStaticString,
 } from '../source-analysis/index.js';
+
 import {
   addOpenAiAgentsSdkDiagnostic,
   analyzeOpenAiAgentsSdkBoundReference,
@@ -87,7 +90,7 @@ const inspectConstSymbol = async (
     | 'OPENAI_AGENTS_SDK_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
     | 'OPENAI_AGENTS_SDK_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND',
   agentId: string,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   capabilityId?: string,
 ): Promise<boolean | null> => {
   if (reference.symbol === undefined) {
@@ -128,8 +131,8 @@ const inspectInstructionLoader = async (
   agent: IIndexedAgent,
   analysis: IOpenAiAgentsSdkSourceAnalysis,
   definition: IOpenAiAgentsSdkAgentDefinition,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiAgentsSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = agent.declaration.bindings?.instructionLoader;
 
@@ -171,15 +174,21 @@ const inspectInstructionLoader = async (
   );
 
   if (relationship === true) {
-    evidence.push(
+    evidence.instruction(() =>
       createOpenAiAgentsSdkEvidence({
         agentId: agent.id,
         capabilityId: null,
         capabilityKind: null,
         details: { configurationProperty: 'instructions' },
         kind: 'instruction-loader',
-        references: [{ path: analysis.path }, { path: reference.path, symbol: reference.symbol }],
-        runtimeName: reference.symbol,
+        references: [
+          { path: analysis.path },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
+        ],
+        runtimeName: reference.symbol ?? null,
         source: OPENAI_AGENTS_SDK_ADAPTER_ID,
       }),
     );
@@ -199,8 +208,8 @@ const inspectAgentOutputSchema = async (
   agent: IIndexedAgent,
   analysis: IOpenAiAgentsSdkSourceAnalysis,
   definition: IOpenAiAgentsSdkAgentDefinition,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiAgentsSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = agent.declaration.bindings?.outputSchema;
 
@@ -227,15 +236,21 @@ const inspectAgentOutputSchema = async (
   );
 
   if (relationship === true) {
-    evidence.push(
+    evidence.add(() =>
       createOpenAiAgentsSdkEvidence({
         agentId: agent.id,
         capabilityId: null,
         capabilityKind: null,
         details: { configurationProperty: 'outputType', schemaRole: 'agent-output' },
         kind: 'schema',
-        references: [{ path: analysis.path }, { path: reference.path, symbol: reference.symbol }],
-        runtimeName: reference.symbol,
+        references: [
+          { path: analysis.path },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
+        ],
+        runtimeName: reference.symbol ?? null,
         source: OPENAI_AGENTS_SDK_ADAPTER_ID,
       }),
     );
@@ -255,7 +270,7 @@ const inspectImplementationSymbol = async (
   agent: IIndexedAgent,
   capabilityId: string,
   reference: IRepositoryReference,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<boolean | null> => {
   if (reference.symbol === undefined) {
     return null;
@@ -295,7 +310,7 @@ const inspectFunctionTool = async (
   agent: IIndexedAgent,
   capabilityId: string,
   toolDeclaration: IToolManifestEntry,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IFunctionToolInspection | null> => {
   const reference = toolDeclaration.registration;
 
@@ -399,8 +414,8 @@ const inspectToolSchema = async (
   reference: IRepositoryReference,
   registration: IFunctionToolInspection | null,
   relationshipName: 'outputSchema' | 'parameters',
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiAgentsSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   if (reference.symbol === undefined) {
     return;
@@ -429,7 +444,7 @@ const inspectToolSchema = async (
   );
 
   if (relationship === true) {
-    evidence.push(
+    evidence.add(() =>
       createOpenAiAgentsSdkEvidence({
         agentId: agent.id,
         capabilityId,
@@ -441,9 +456,12 @@ const inspectToolSchema = async (
         kind: 'schema',
         references: [
           { path: registration.analysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: OPENAI_AGENTS_SDK_ADAPTER_ID,
       }),
     );
@@ -466,8 +484,8 @@ const inspectTools = async (
   agent: IIndexedAgent,
   runtimeAnalysis: IOpenAiAgentsSdkSourceAnalysis,
   definition: IOpenAiAgentsSdkAgentDefinition,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiAgentsSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const localDefinitions = getAgentDefinitions(runtimeAnalysis);
   const toolRelationships = localDefinitions.map(({ tools }) => tools);
@@ -567,7 +585,7 @@ const inspectTools = async (
       registration.isNameMatch &&
       registration.name !== null
     ) {
-      evidence.push(
+      evidence.add(() =>
         createOpenAiAgentsSdkEvidence({
           agentId: agent.id,
           capabilityId,
@@ -576,7 +594,12 @@ const inspectTools = async (
           kind: 'tool-registration',
           references: [
             { path: runtimeAnalysis.path },
-            { path: registration.reference.path, symbol: registration.reference.symbol },
+            {
+              path: registration.reference.path,
+              ...(registration.reference.symbol === undefined
+                ? {}
+                : { symbol: registration.reference.symbol }),
+            },
             {
               path: toolDeclaration.implementation.path,
               ...(toolDeclaration.implementation.symbol === undefined
@@ -592,14 +615,19 @@ const inspectTools = async (
   }
 };
 
-/** Inspects instruction, agent-schema, function-tool, and tool-schema relationships. */
+/**
+ * Inspects instruction, agent-schema, function-tool, and tool-schema relationships.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectOpenAiAgentsSdkRelationships = async (
   session: IOpenAiAgentsSdkInspectionSession,
   agent: IIndexedAgent,
   analysis: IOpenAiAgentsSdkSourceAnalysis,
   definition: IOpenAiAgentsSdkAgentDefinition,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IOpenAiAgentsSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   await inspectInstructionLoader(session, agent, analysis, definition, evidence, diagnostics);
   await inspectAgentOutputSchema(session, agent, analysis, definition, evidence, diagnostics);

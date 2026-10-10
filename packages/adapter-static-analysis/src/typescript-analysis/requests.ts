@@ -8,7 +8,8 @@ import type {
   IStaticAnalysisRequests,
   IStaticAnalysisSource,
 } from '../types.js';
-import { isModuleBindingVisible } from './bindings.js';
+import { isModuleBindingVisible, resolveLexicalBinding } from './bindings.js';
+import { hasBindingMutation } from './mutations.js';
 import { unwrapExpression } from './expressions.js';
 
 interface IAccessSegment {
@@ -47,6 +48,52 @@ const getAccessSegment = (expression: ts.Expression): IAccessSegment | null => {
   return null;
 };
 
+const resolveKnownSdkClient = (
+  identifier: ts.Identifier,
+  analysis: IStaticAnalysisSource,
+): ts.VariableDeclaration | null => {
+  let binding = resolveLexicalBinding(identifier, analysis);
+  const visited = new Set<ts.Node>();
+  while (binding !== null && !visited.has(binding)) {
+    visited.add(binding);
+    if (
+      !ts.isVariableDeclaration(binding) ||
+      binding.initializer === undefined ||
+      !ts.isIdentifier(binding.name) ||
+      !ts.isVariableDeclarationList(binding.parent) ||
+      (binding.parent.flags & ts.NodeFlags.Const) === 0
+    )
+      return null;
+    const initializer = unwrapExpression(binding.initializer);
+    if (ts.isIdentifier(initializer)) {
+      binding = resolveLexicalBinding(initializer, analysis);
+      continue;
+    }
+    if (!ts.isNewExpression(initializer)) return null;
+    const constructorExpression = unwrapExpression(initializer.expression);
+    if (
+      !ts.isIdentifier(constructorExpression) ||
+      !analysis.constructorNames.has(constructorExpression.text)
+    )
+      return null;
+    if (
+      hasBindingMutation(constructorExpression, analysis, '') ||
+      hasBindingMutation(constructorExpression, analysis, 'prototype')
+    )
+      return null;
+    const constructor = resolveLexicalBinding(constructorExpression, analysis);
+    const constructorEscapes =
+      constructor === null ? undefined : analysis.bindingEscapes.get(constructor);
+    if (constructorEscapes?.has(null) === true || constructorEscapes?.has('prototype') === true)
+      return null;
+    return constructor !== null &&
+      (ts.isImportClause(constructor) || ts.isImportSpecifier(constructor))
+      ? binding
+      : null;
+  }
+  return null;
+};
+
 const classifyKnownClientResourceAccess = (
   expression: ts.Expression,
   analysis: IStaticAnalysisSource,
@@ -63,14 +110,27 @@ const classifyKnownClientResourceAccess = (
 
   const client = unwrapExpression(resourceAccess.target);
 
-  if (
-    !ts.isIdentifier(client) ||
-    !analysis.clientNames.has(client.text) ||
-    !isModuleBindingVisible(client, analysis)
-  ) {
+  if (!ts.isIdentifier(client)) return null;
+  const declaration = resolveKnownSdkClient(client, analysis);
+  if (declaration === null) {
     return null;
   }
 
+  const mutations = analysis.bindingMutations.get(declaration);
+  const clientBinding = resolveLexicalBinding(client, analysis);
+  const escapes = [
+    analysis.bindingEscapes.get(declaration),
+    clientBinding === null ? undefined : analysis.bindingEscapes.get(clientBinding),
+  ];
+  if (
+    hasBindingMutation(client, analysis, config.resourceName) ||
+    mutations?.has(null) === true ||
+    mutations?.has(config.resourceName) === true ||
+    escapes.some(
+      (members) => members?.has(null) === true || members?.has(config.resourceName) === true,
+    )
+  )
+    return 'indirect';
   return resourceAccess.isDirect ? 'direct' : 'indirect';
 };
 
@@ -328,7 +388,7 @@ const getClientValueExpression = (identifier: ts.Identifier): ts.Node => {
   }
 };
 
-const isClientEscape = (identifier: ts.Identifier): boolean => {
+const isClientEscape = (identifier: ts.Identifier, analysis: IStaticAnalysisSource): boolean => {
   const expression = getClientValueExpression(identifier);
   const parent = expression.parent;
 
@@ -337,6 +397,13 @@ const isClientEscape = (identifier: ts.Identifier): boolean => {
     parent.initializer !== undefined &&
     skipTransparentParents(parent.initializer) === expression
   ) {
+    if (
+      ts.isIdentifier(parent.name) &&
+      ts.isVariableDeclarationList(parent.parent) &&
+      (parent.parent.flags & ts.NodeFlags.Const) !== 0 &&
+      resolveKnownSdkClient(parent.name, analysis) !== null
+    )
+      return false;
     return true;
   }
 
@@ -457,10 +524,9 @@ export const analyzeClientRequests = (
 
     if (
       ts.isIdentifier(node) &&
-      analysis.clientNames.has(node.text) &&
-      isModuleBindingVisible(node, analysis) &&
+      resolveKnownSdkClient(node, analysis) !== null &&
       !isKnownClientResourceTarget(node, analysis, config) &&
-      isClientEscape(node)
+      isClientEscape(node, analysis)
     ) {
       hasAmbiguousCandidate = true;
     }

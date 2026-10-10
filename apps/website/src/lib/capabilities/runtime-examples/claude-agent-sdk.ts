@@ -66,7 +66,7 @@ export const CLAUDE_AGENT_SDK_FILES: IMemoryRepositoryEntry[] = [
     path: '/src/instructions.ts',
     type: 'file',
     content:
-      "export const loadBillingInstruction = async (): Promise<string> => 'Resolve billing requests.';\nexport const loadTriageInstruction = async (): Promise<string> => 'Route the request.';\n",
+      "import { readFile } from 'node:fs/promises';\n\nexport const loadBillingInstruction = () =>\n  readFile(new URL('../moldea/agents/billing/instruction.md', import.meta.url), 'utf8');\n\nexport const loadTriageInstruction = () =>\n  readFile(new URL('../moldea/agents/triage/instruction.md', import.meta.url), 'utf8');\n",
   },
   {
     path: '/src/runtime.ts',

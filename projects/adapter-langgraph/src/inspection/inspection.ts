@@ -1,14 +1,17 @@
+import { createRuntimeAdapterResultCollector } from '@moldea.ai/core/adapter';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import {
   classifyVersionBehavior,
   isSupportedTypeScriptSourcePath,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
 
+import type { ILangGraphEvidenceCollector } from '../contracts/index.js';
 import {
   LANGGRAPH_ADAPTER_ID,
   LANGGRAPH_FUNCTIONAL_API_TARGET_ID,
@@ -28,6 +31,8 @@ import {
   getLangGraphStateGraphDefinition,
   resolveLangGraphStaticString,
 } from '../source-analysis/index.js';
+
+import { createDeclaredLangGraphRelationships } from './declared-relationships.js';
 import {
   addLangGraphDiagnostic,
   addLangGraphSourceFailureDiagnostic,
@@ -67,7 +72,7 @@ const emitPatterns = (
   agentId: string,
   targetId: string,
   patterns: readonly ILangGraphRuntimePattern[],
-  evidence: IRuntimeAdapterEvidence[],
+  evidence: ILangGraphEvidenceCollector,
   canVerifyTwoArgumentInterrupt: boolean,
 ): void => {
   for (const pattern of patterns) {
@@ -75,7 +80,7 @@ const emitPatterns = (
       continue;
     }
 
-    evidence.push(
+    evidence.add(() =>
       createLangGraphEvidence({
         agentId,
         capabilityId: null,
@@ -93,7 +98,7 @@ const emitPatterns = (
 const selectDefinition = async (
   session: ILangGraphInspectionSession,
   agent: IIndexedAgent,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   analysis: Parameters<typeof getLangGraphStateGraphDefinition>[1],
   symbol: string,
 ): Promise<ILangGraphAgentDefinitionResult> => {
@@ -141,8 +146,8 @@ const selectDefinition = async (
 const inspectAgent = async (
   session: ILangGraphInspectionSession,
   agent: IIndexedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ILangGraphEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const runtimeAgent = agent.declaration.bindings?.runtimeAgent;
 
@@ -173,7 +178,7 @@ const inspectAgent = async (
     return;
   }
 
-  evidence.push(
+  evidence.add(() =>
     createLangGraphEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -230,7 +235,7 @@ const inspectAgent = async (
       ? [runtimeAgent, { path: definition.definition.functionAnalysis.path }]
       : [runtimeAgent];
 
-  evidence.push(
+  evidence.add(() =>
     createLangGraphEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -306,18 +311,24 @@ const inspectAgent = async (
  * - ENTRY_NOT_FILE: The requested repository entry is not a file.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
  * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
  * - INVALID_SOURCE_DATA: The repository source returned invalid data.
- * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
- * - ABORTED: The repository operation or inspection signal was aborted.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectLangGraph = async (
   context: IRuntimeAdapterContext,
 ): Promise<IRuntimeAdapterResult> => {
   context.signal?.throwIfAborted();
   const session = createLangGraphInspectionSession(context);
-  const evidence: IRuntimeAdapterEvidence[] = [];
-  const diagnostics: IAdapterDiagnostic[] = [];
+  const collector = createRuntimeAdapterResultCollector(context);
+  const relationships = createDeclaredLangGraphRelationships(context, collector, session);
+  const { evidence, diagnostics } = relationships;
+  await relationships.inspectExports();
+  await relationships.inspectInstructionSource();
   const agents = [context.agent];
 
   for (const agent of agents) {
@@ -326,8 +337,6 @@ export const inspectLangGraph = async (
   }
 
   context.signal?.throwIfAborted();
-  return Object.freeze({
-    diagnostics: Object.freeze(diagnostics),
-    evidence: Object.freeze(evidence),
-  });
+  relationships.finalize();
+  return collector.finalize();
 };

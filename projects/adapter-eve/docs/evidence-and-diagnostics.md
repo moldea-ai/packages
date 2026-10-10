@@ -10,8 +10,11 @@ The adapter may emit `runtime-package`, `language`, `agent-definition`, `instruc
 
 ## Stable diagnostics
 
-| Code                                        | Message                                                                                |
+| Code                                        | Stable message                                                                         |
 | ------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `EVE_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND`   | The declared agent input-schema symbol was not found.                                  |
+| `EVE_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND`    | The declared variable-provider symbol was not found.                                   |
+| `EVE_INSTRUCTION_SOURCE_MISMATCH`           | The declared instruction loader does not consume the canonical instruction source.     |
 | `EVE_PACKAGE_MANIFEST_INVALID`              | The owning package manifest is invalid for Eve dependency detection.                   |
 | `EVE_SDK_VERSION_UNSUPPORTED`               | The observed Eve dependency range is disjoint from the supported range.                |
 | `EVE_SDK_FEATURE_UNAVAILABLE`               | The declared Eve feature is unavailable in the eligible SDK versions.                  |
@@ -50,6 +53,12 @@ The adapter may emit `runtime-package`, `language`, `agent-definition`, `instruc
 
 Diagnostics never include source snippets, descriptions, instructions, schema contents, credentials, URLs, host paths, or raw TypeScript diagnostic messages.
 
-`EVE_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+`EVE_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` when an applicable declared relationship remains unverified, including unsupported source patterns, dynamic or mutated wiring, and ranges spanning a relevant behavior change. Its safe details identify the relationship and reason; version-dependent warnings also include normalized dependency context. Independent export checks and proved contradictions remain errors. Warning-only validation is valid with `runtimeInspection: 'incomplete'`; it does not establish launch readiness. A newer eligible dependency version alone does not produce this warning.
 
 The Eve `0.67.0` removal of `defineAgent.outputSchema` applies only when an agent schema property or binding is present. A declaration confined to `0.67.0` or later produces `EVE_SDK_FEATURE_UNAVAILABLE` for that relationship. A range spanning the removal emits `EVE_RUNTIME_RELATIONSHIP_UNVERIFIED` and withholds dependent agent and handoff evidence. An unaffected agent and a tool `outputSchema` keep their independent evidence.
+
+## Declaration outcomes
+
+Each applicable declared binding, tool, skill, schema, and variable provider receives evidence, a confirmed error, or a scoped unverified warning. Declared exports are checked independently of runtime wiring. A closed local export inventory can prove a symbol missing; dynamic or wildcard exports remain uncertain. Reader, snapshot, cancellation, and resource failures propagate through Core instead of being reported as unsupported source. Relationships absent from the declaration receive no invented warning.
+
+Instruction-loader evidence requires both supported wiring and canonical source provenance. A supported loader reading a different file or returning different instruction text produces `INSTRUCTION_SOURCE_MISMATCH` with the adapter prefix. Unsupported loaders remain unverified. Proved mismatches from one consumer remain observable when another consumer is correctly wired. Static inspection does not execute application code or require a particular application architecture.

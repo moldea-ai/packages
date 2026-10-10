@@ -17,7 +17,7 @@ The canonical Runtime Compatibility Matrix defines technical target `typescript-
 - a directly exported runtime-agent function containing exact non-computed `client.models.generateContent({ ... })` or `generateContentStream({ ... })` calls
 - one exact object-literal request argument
 
-`config` is resolved only as a direct object literal. `systemInstruction` and `tools` are classified independently inside it. Positive evidence is existential across supported calls; a negative wiring diagnostic requires every candidate to prove the relationship absent with no dynamic or unsupported candidate that could contain it.
+`config` is resolved only as a direct object literal. `systemInstruction` and `tools` are classified independently inside it. Tool registrations retain varying-availability behavior across calls: one supported available context can establish a tool, and a missing-wiring error requires closed absence across the relevant contexts. Instruction consumers are checked independently. A correct consumer does not suppress another consumer’s proved mismatch, and unresolved consumers receive scoped warnings. Instruction evidence also requires supported provenance from the canonical instruction or a validated mirror.
 
 ## Function declarations
 

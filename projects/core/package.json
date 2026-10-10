@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/core",
-  "version": "5.0.1",
+  "version": "6.0.0",
   "description": "Source-neutral, deterministic interpretation and indexing of moldea repositories.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/core#readme",
   "bugs": {
@@ -30,12 +30,20 @@
       "types": "./dist/format/index.d.ts",
       "import": "./dist/format.js"
     },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "import": "./dist/node.js"
+    },
     "./adapter": {
       "types": "./dist/adapter/index.d.ts",
       "import": "./dist/adapter.js"
     }
   },
   "main": "./dist/index.js",
+  "imports": {
+    "#moldea-core-runner": "./dist/node-runner.js",
+    "#moldea-core-analysis-worker": "./dist/analysis-worker.js"
+  },
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "vite build --emptyOutDir && tsc -p tsconfig.build.json",

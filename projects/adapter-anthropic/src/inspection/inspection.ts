@@ -1,17 +1,22 @@
+import { createRuntimeAdapterResultCollector } from '@moldea.ai/core/adapter';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import {
   getRuntimeExport,
   isSupportedTypeScriptSourcePath,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
   IRuntimeAdapterResult,
 } from '@moldea.ai/core/adapter';
 
+import type { IAnthropicEvidenceCollector } from '../contracts/index.js';
 import { ANTHROPIC_ADAPTER_ID } from '../constants/index.js';
 import type { IAnthropicInspectionSession } from '../contracts/index.js';
 import { analyzeAnthropicMessages } from '../source-analysis/index.js';
+
+import { createDeclaredAnthropicRelationships } from './declared-relationships.js';
 import {
   addAnthropicDiagnostic,
   analyzeAnthropicBoundReference,
@@ -24,8 +29,8 @@ import { createAnthropicInspectionSession } from './session.js';
 const inspectAgent = async (
   session: IAnthropicInspectionSession,
   agent: IIndexedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IAnthropicEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const runtimeAgent = agent.declaration.bindings?.runtimeAgent;
 
@@ -39,7 +44,7 @@ const inspectAgent = async (
     return;
   }
 
-  evidence.push(
+  evidence.add(() =>
     createAnthropicEvidence({
       agentId: agent.id,
       capabilityId: null,
@@ -49,7 +54,10 @@ const inspectAgent = async (
       references: [
         runtimeAgent.symbol === undefined
           ? { path: runtimeAgent.path }
-          : { path: runtimeAgent.path, symbol: runtimeAgent.symbol },
+          : {
+              path: runtimeAgent.path,
+              ...(runtimeAgent.symbol === undefined ? {} : { symbol: runtimeAgent.symbol }),
+            },
       ],
       runtimeName: null,
       source: ANTHROPIC_ADAPTER_ID,
@@ -96,14 +104,19 @@ const inspectAgent = async (
   for (const methodName of [
     ...new Set(messages.requests.map((request) => request.methodName)),
   ].sort()) {
-    evidence.push(
+    evidence.add(() =>
       createAnthropicEvidence({
         agentId: agent.id,
         capabilityId: null,
         capabilityKind: null,
         details: { api: 'messages' },
         kind: 'runtime-pattern',
-        references: [{ path: runtimeAgent.path, symbol: runtimeAgent.symbol }],
+        references: [
+          {
+            path: runtimeAgent.path,
+            ...(runtimeAgent.symbol === undefined ? {} : { symbol: runtimeAgent.symbol }),
+          },
+        ],
         runtimeName: `messages.${methodName}`,
         source: ANTHROPIC_ADAPTER_ID,
       }),
@@ -123,18 +136,24 @@ const inspectAgent = async (
  * - ENTRY_NOT_FILE: The requested repository entry is not a file.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
  * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
  * - INVALID_SOURCE_DATA: The repository source returned invalid data.
- * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
  * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectAnthropic = async (
   context: IRuntimeAdapterContext,
 ): Promise<IRuntimeAdapterResult> => {
   context.signal?.throwIfAborted();
   const session = createAnthropicInspectionSession(context);
-  const evidence: IRuntimeAdapterEvidence[] = [];
-  const diagnostics: IAdapterDiagnostic[] = [];
+  const collector = createRuntimeAdapterResultCollector(context);
+  const relationships = createDeclaredAnthropicRelationships(context, collector, session);
+  const { evidence, diagnostics } = relationships;
+  await relationships.inspectExports();
+  await relationships.inspectInstructionSource();
   const agents = [context.agent];
 
   for (const agent of agents) {
@@ -143,8 +162,6 @@ export const inspectAnthropic = async (
   }
 
   context.signal?.throwIfAborted();
-  return Object.freeze({
-    diagnostics: Object.freeze(diagnostics),
-    evidence: Object.freeze(evidence),
-  });
+  relationships.finalize();
+  return collector.finalize();
 };

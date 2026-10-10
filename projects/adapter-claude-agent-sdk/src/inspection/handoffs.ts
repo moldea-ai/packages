@@ -1,12 +1,13 @@
 import ts from 'typescript';
 
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import type {
   IAdapterDiagnostic,
   IRuntimeAdapterContext,
   IRuntimeAdapterResolvedAgent,
 } from '@moldea.ai/core/adapter';
 
+import type { IClaudeAgentSdkEvidenceCollector } from '../contracts/index.js';
 import { CLAUDE_AGENT_SDK_ADAPTER_ID } from '../constants/index.js';
 import type {
   IClaudeAgentSdkInspectionSession,
@@ -21,6 +22,7 @@ import {
   getClaudeAgentSdkClosedMapEntries,
   resolveClaudeAgentSdkStaticString,
 } from '../source-analysis/index.js';
+
 import {
   addClaudeAgentSdkDiagnostic,
   createClaudeAgentSdkEvidence,
@@ -68,7 +70,7 @@ const inspectRoutingDescription = async (
   target: IClaudeAgentSdkResolvedAgentDefinition,
   targetAgent: IRuntimeAdapterResolvedAgent,
   runtimeName: string,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const canonicalDescription =
     targetAgent.handoffDescription?.value ?? targetAgent.description.value;
@@ -125,13 +127,18 @@ const inspectRoutingDescription = async (
   }
 };
 
-/** Inspects active query-configured programmatic subagent registrations and routing metadata. */
+/**
+ * Inspects active query-configured programmatic subagent registrations and routing metadata.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectClaudeAgentSdkHandoffs = async (
   context: IRuntimeAdapterContext,
   session: IClaudeAgentSdkInspectionSession,
   inspected: IClaudeAgentSdkInspectedQueryAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IClaudeAgentSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<readonly IClaudeAgentSdkInspectedDefinitionAgent[]> => {
   const resolvedAgents = new Map<string, IClaudeAgentSdkInspectedDefinitionAgent>();
   const collectionReferences = collectClaudeAgentSdkRelationshipIdentifiers(
@@ -251,7 +258,7 @@ export const inspectClaudeAgentSdkHandoffs = async (
         );
       }
 
-      evidence.push(
+      evidence.add(() =>
         createClaudeAgentSdkEvidence({
           agentId: inspected.agent.id,
           capabilityId: null,
@@ -260,7 +267,10 @@ export const inspectClaudeAgentSdkHandoffs = async (
           kind: 'handoff-registration',
           references: [
             { path: inspected.analysis.path },
-            { path: target.path, symbol: target.symbol },
+            {
+              path: target.path,
+              ...(target.symbol === undefined ? {} : { symbol: target.symbol }),
+            },
           ],
           runtimeName: safeRuntimeName,
           source: CLAUDE_AGENT_SDK_ADAPTER_ID,

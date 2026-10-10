@@ -1,5 +1,10 @@
 [
   {
+    "code": "CLAUDE_AGENT_SDK_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND",
+    "message": "The declared agent input-schema symbol was not found.",
+    "severity": "error"
+  },
+  {
     "code": "CLAUDE_AGENT_SDK_AGENT_OUTPUT_SCHEMA_NOT_WIRED",
     "message": "The declared agent output schema is not wired to the detected Claude Agent SDK query output format.",
     "severity": "error"
@@ -35,6 +40,11 @@
     "severity": "error"
   },
   {
+    "code": "CLAUDE_AGENT_SDK_INSTRUCTION_SOURCE_MISMATCH",
+    "message": "The declared instruction loader does not consume the canonical instruction source.",
+    "severity": "error"
+  },
+  {
     "code": "CLAUDE_AGENT_SDK_MCP_SERVER_KEY_UNSUPPORTED",
     "message": "The detected Claude Agent SDK MCP server key cannot establish a canonical runtime-name segment.",
     "severity": "error"
@@ -53,6 +63,16 @@
     "code": "CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
     "message": "The declared runtime relationship could not be verified.",
     "severity": "warning"
+  },
+  {
+    "code": "CLAUDE_AGENT_SDK_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND",
+    "message": "The declared skill-implementation symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "CLAUDE_AGENT_SDK_SKILL_REGISTRATION_SYMBOL_NOT_FOUND",
+    "message": "The declared skill-registration symbol was not found.",
+    "severity": "error"
   },
   {
     "code": "CLAUDE_AGENT_SDK_SOURCE_SYNTAX_INVALID",
@@ -90,6 +110,11 @@
     "severity": "error"
   },
   {
+    "code": "CLAUDE_AGENT_SDK_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND",
+    "message": "The declared tool output-schema symbol was not found.",
+    "severity": "error"
+  },
+  {
     "code": "CLAUDE_AGENT_SDK_TOOL_REGISTRATION_NOT_WIRED",
     "message": "The declared tool registration is not available to the detected Claude Agent SDK agent.",
     "severity": "error"
@@ -97,6 +122,11 @@
   {
     "code": "CLAUDE_AGENT_SDK_TOOL_REGISTRATION_SYMBOL_NOT_FOUND",
     "message": "The declared tool-registration symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "CLAUDE_AGENT_SDK_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND",
+    "message": "The declared variable-provider symbol was not found.",
     "severity": "error"
   },
   {

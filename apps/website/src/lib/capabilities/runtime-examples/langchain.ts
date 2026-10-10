@@ -36,7 +36,8 @@ export const LANGCHAIN_FILES: IMemoryRepositoryEntry[] = [
   {
     path: '/src/instructions.ts',
     type: 'file',
-    content: "export const loadSupportInstruction = () => 'support';\n",
+    content:
+      "import { readFileSync } from 'node:fs';\n\nexport const loadSupportInstruction = () =>\n  readFileSync(new URL('../moldea/agents/support/instruction.md', import.meta.url), 'utf8');\n",
   },
   {
     path: '/src/implementations.ts',

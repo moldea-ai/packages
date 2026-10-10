@@ -2,6 +2,7 @@ import { CoreConfigurationException, CoreOperationException } from '@moldea.ai/c
 import { isRepositoryPath, RepositorySourceException } from '@moldea.ai/repository';
 
 import { MoldeaCliOutputPageException } from '../output-page/index.js';
+import { MoldeaCliCompositionException } from '../composition/index.js';
 import { MoldeaCliProjectContentException } from '../project-content/index.js';
 import { MoldeaCliProjectScopeException } from '../project-scope/index.js';
 import { GitContentTransformUnsupportedException } from '../repository-content-transformation-guard/index.js';
@@ -18,8 +19,8 @@ const EMPTY_ERROR_DETAILS = Object.freeze({});
 /** Creates frozen safe Core metadata without retaining null fields. */
 const createCoreErrorDetails = (
   error: CoreConfigurationException | CoreOperationException,
-): Readonly<Record<string, string | number>> => {
-  const details: Record<string, string | number> = { operation: error.operation };
+): Readonly<Record<string, string | number | null>> => {
+  const details: Record<string, string | number | null> = { operation: error.operation };
 
   if (error.adapterId !== null) {
     details['adapterId'] = error.adapterId;
@@ -42,7 +43,7 @@ const createCoreErrorDetails = (
       details['nextAction'] = error.nextAction;
     }
 
-    if (error.observedUsage !== null) {
+    if (error.observedUsage !== null || error.nextAction === 'review-inspection-capacity') {
       details['observedUsage'] = error.observedUsage;
     }
   }
@@ -57,6 +58,7 @@ const createCoreErrorDetails = (
  */
 export const mapMoldeaCliOperationalError = (error: unknown): IMoldeaCliError => {
   if (
+    error instanceof MoldeaCliCompositionException ||
     error instanceof MoldeaCliOutputPageException ||
     error instanceof MoldeaCliProjectContentException ||
     error instanceof MoldeaCliProjectScopeException

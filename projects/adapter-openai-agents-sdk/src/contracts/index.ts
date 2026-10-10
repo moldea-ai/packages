@@ -1,11 +1,20 @@
 import type ts from 'typescript';
 
+import type {
+  IRuntimeAdapterRecordCollector,
+  IRuntimeAdapterEvidence as ICollectedEvidence,
+} from '@moldea.ai/core/adapter';
 import type { ISourceRange } from '@moldea.ai/core';
 import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 // stable package-owned diagnostic codes
 export type IOpenAiAgentsSdkAdapterDiagnosticCode =
+  | 'OPENAI_AGENTS_SDK_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'OPENAI_AGENTS_SDK_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'OPENAI_AGENTS_SDK_SKILL_REGISTRATION_SYMBOL_NOT_FOUND'
+  | 'OPENAI_AGENTS_SDK_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND'
+  | 'OPENAI_AGENTS_SDK_INSTRUCTION_SOURCE_MISMATCH'
   | 'OPENAI_AGENTS_SDK_PACKAGE_MANIFEST_INVALID'
   | 'OPENAI_AGENTS_SDK_VERSION_UNSUPPORTED'
   | 'OPENAI_AGENTS_SDK_SOURCE_TEXT_INVALID'
@@ -66,6 +75,7 @@ export interface IOpenAiAgentsSdkNamedImport {
 
 export type IOpenAiAgentsSdkModuleExportState =
   | { readonly kind: 'absent' }
+  | { readonly declaration: ts.Node; readonly kind: 'unresolved' }
   | { readonly declaration: ts.Node; readonly kind: 'present-supported' }
   | { readonly declaration: ts.Node; readonly kind: 'present-unsupported' };
 
@@ -84,6 +94,8 @@ export type IOpenAiAgentsSdkTextResult =
 
 // parsed source and Agents SDK bindings used only within one inspection
 export interface IOpenAiAgentsSdkSourceAnalysis {
+  readonly estimatedRetainedBytes: number;
+  readonly hasUnresolvedExports: boolean;
   readonly clientNames: ReadonlySet<string>;
   readonly constructorNames: ReadonlySet<string>;
   readonly exports: ReadonlyMap<
@@ -93,6 +105,9 @@ export interface IOpenAiAgentsSdkSourceAnalysis {
   readonly identifierUses: ReadonlyMap<string, readonly ts.Identifier[]>;
   readonly imports: IOpenAiAgentsSdkImports;
   readonly localBindingNames: ReadonlyMap<ts.Node, ReadonlySet<string>>;
+  readonly lexicalBindings: ReadonlyMap<ts.Node, ReadonlyMap<string, ts.Node | null>>;
+  readonly bindingMutations: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
+  readonly bindingEscapes: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
   readonly moduleArrays: ReadonlyMap<string, IOpenAiAgentsSdkModuleArray>;
   readonly moduleConstDeclarations: ReadonlyMap<string, ts.VariableDeclaration>;
   readonly namedImports: ReadonlyMap<string, IOpenAiAgentsSdkNamedImport>;
@@ -195,4 +210,9 @@ export type IOpenAiAgentsSdkDiagnosticInput =
 export interface IOpenAiAgentsSdkLocatedExpression {
   readonly expression: ts.Expression;
   readonly range: ISourceRange;
+}
+
+// adapter-owned evidence admission uses only Core public types in packed declarations
+export interface IOpenAiAgentsSdkEvidenceCollector extends IRuntimeAdapterRecordCollector<ICollectedEvidence> {
+  instruction(factory: () => ICollectedEvidence): void;
 }

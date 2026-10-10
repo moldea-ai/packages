@@ -1,4 +1,4 @@
-import type { ICoreDiagnosticCode } from '@moldea.ai/core';
+import type { IDiagnostic } from '@moldea.ai/core';
 import type { IMemoryRepositoryEntry } from '@moldea.ai/repository/memory';
 
 import {
@@ -24,7 +24,7 @@ const agentCase = (
   title: string,
   description: string,
   entries: IMemoryRepositoryEntry[],
-  expectedCodes: ICoreDiagnosticCode[],
+  expectedCodes: IDiagnostic['code'][],
 ): ICoreExampleDefinition => ({
   id,
   title,
@@ -216,8 +216,8 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
       ),
       agentCase(
         `${kind}-implementation-present`,
-        `The ${kind} implementation is connected`,
-        'Core establishes file presence, not whether this implementation behaves correctly.',
+        `The ${kind} file exists, with runtime wiring unverified`,
+        'The custom runtime has no adapter to verify this relationship. Core reports the uncertainty as a warning.',
         [
           ...createAgentEntries(manifest),
           {
@@ -227,7 +227,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
               'export const explainReturns = () => "Returns are accepted within 30 days of delivery.";\n',
           },
         ],
-        [],
+        ['CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED'],
       ),
     ];
   }),

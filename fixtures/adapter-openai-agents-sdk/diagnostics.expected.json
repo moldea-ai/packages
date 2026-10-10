@@ -1,5 +1,10 @@
 [
   {
+    "code": "OPENAI_AGENTS_SDK_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND",
+    "message": "The declared agent input-schema symbol was not found.",
+    "severity": "error"
+  },
+  {
     "code": "OPENAI_AGENTS_SDK_AGENT_OUTPUT_SCHEMA_NOT_WIRED",
     "message": "The declared agent output schema is not wired to the detected OpenAI Agents SDK agent output type.",
     "severity": "error"
@@ -35,6 +40,11 @@
     "severity": "error"
   },
   {
+    "code": "OPENAI_AGENTS_SDK_INSTRUCTION_SOURCE_MISMATCH",
+    "message": "The declared instruction loader does not consume the canonical instruction source.",
+    "severity": "error"
+  },
+  {
     "code": "OPENAI_AGENTS_SDK_PACKAGE_MANIFEST_INVALID",
     "message": "The owning package manifest is invalid for OpenAI Agents SDK dependency detection.",
     "severity": "error"
@@ -48,6 +58,16 @@
     "code": "OPENAI_AGENTS_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED",
     "message": "The declared runtime relationship could not be verified.",
     "severity": "warning"
+  },
+  {
+    "code": "OPENAI_AGENTS_SDK_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND",
+    "message": "The declared skill-implementation symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "OPENAI_AGENTS_SDK_SKILL_REGISTRATION_SYMBOL_NOT_FOUND",
+    "message": "The declared skill-registration symbol was not found.",
+    "severity": "error"
   },
   {
     "code": "OPENAI_AGENTS_SDK_SOURCE_SYNTAX_INVALID",
@@ -102,6 +122,11 @@
   {
     "code": "OPENAI_AGENTS_SDK_TOOL_REGISTRATION_SYMBOL_NOT_FOUND",
     "message": "The declared tool-registration symbol was not found.",
+    "severity": "error"
+  },
+  {
+    "code": "OPENAI_AGENTS_SDK_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND",
+    "message": "The declared variable-provider symbol was not found.",
     "severity": "error"
   },
   {

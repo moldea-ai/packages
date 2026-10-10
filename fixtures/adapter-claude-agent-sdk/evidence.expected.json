@@ -3,9 +3,16 @@
     "agentId": "billing",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "patternId": "programmatic-agent-definition" },
+    "details": {
+      "patternId": "programmatic-agent-definition"
+    },
     "kind": "agent-definition",
-    "references": [{ "path": "/src/agents.ts", "symbol": "billingAgent" }],
+    "references": [
+      {
+        "path": "/src/agents.ts",
+        "symbol": "billingAgent"
+      }
+    ],
     "runtimeName": "billingAgent",
     "source": "claude-agent-sdk"
   },
@@ -23,8 +30,13 @@
     },
     "kind": "handoff-registration",
     "references": [
-      { "path": "/src/agents.ts", "symbol": "billingAgent" },
-      { "path": "/src/runtime.ts" }
+      {
+        "path": "/src/agents.ts",
+        "symbol": "billingAgent"
+      },
+      {
+        "path": "/src/runtime.ts"
+      }
     ],
     "runtimeName": "billing",
     "source": "claude-agent-sdk"
@@ -33,11 +45,21 @@
     "agentId": "billing",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "role": "subagent-prompt" },
+    "details": {
+      "role": "subagent-prompt"
+    },
     "kind": "instruction-loader",
     "references": [
-      { "path": "/src/agents.ts" },
-      { "path": "/src/instructions.ts", "symbol": "loadBillingInstruction" }
+      {
+        "path": "/moldea/agents/billing/instruction.md"
+      },
+      {
+        "path": "/src/agents.ts"
+      },
+      {
+        "path": "/src/instructions.ts",
+        "symbol": "loadBillingInstruction"
+      }
     ],
     "runtimeName": "loadBillingInstruction",
     "source": "claude-agent-sdk"
@@ -46,11 +68,21 @@
     "agentId": "triage",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "role": "query-system-prompt" },
+    "details": {
+      "role": "query-system-prompt"
+    },
     "kind": "instruction-loader",
     "references": [
-      { "path": "/src/instructions.ts", "symbol": "loadTriageInstruction" },
-      { "path": "/src/runtime.ts" }
+      {
+        "path": "/moldea/agents/triage/instruction.md"
+      },
+      {
+        "path": "/src/instructions.ts",
+        "symbol": "loadTriageInstruction"
+      },
+      {
+        "path": "/src/runtime.ts"
+      }
     ],
     "runtimeName": "loadTriageInstruction",
     "source": "claude-agent-sdk"
@@ -59,9 +91,16 @@
     "agentId": "billing",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "language": "typescript" },
+    "details": {
+      "language": "typescript"
+    },
     "kind": "language",
-    "references": [{ "path": "/src/agents.ts", "symbol": "billingAgent" }],
+    "references": [
+      {
+        "path": "/src/agents.ts",
+        "symbol": "billingAgent"
+      }
+    ],
     "runtimeName": null,
     "source": "claude-agent-sdk"
   },
@@ -69,9 +108,16 @@
     "agentId": "triage",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "language": "typescript" },
+    "details": {
+      "language": "typescript"
+    },
     "kind": "language",
-    "references": [{ "path": "/src/runtime.ts", "symbol": "triageAgent" }],
+    "references": [
+      {
+        "path": "/src/runtime.ts",
+        "symbol": "triageAgent"
+      }
+    ],
     "runtimeName": null,
     "source": "claude-agent-sdk"
   },
@@ -85,7 +131,11 @@
       "dependencyKind": "dependencies"
     },
     "kind": "runtime-package",
-    "references": [{ "path": "/package.json" }],
+    "references": [
+      {
+        "path": "/package.json"
+      }
+    ],
     "runtimeName": "@anthropic-ai/claude-agent-sdk",
     "source": "claude-agent-sdk"
   },
@@ -99,7 +149,11 @@
       "dependencyKind": "dependencies"
     },
     "kind": "runtime-package",
-    "references": [{ "path": "/package.json" }],
+    "references": [
+      {
+        "path": "/package.json"
+      }
+    ],
     "runtimeName": "@anthropic-ai/claude-agent-sdk",
     "source": "claude-agent-sdk"
   },
@@ -107,9 +161,17 @@
     "agentId": "triage",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "call": "query", "patternId": "direct-query-wrapper" },
+    "details": {
+      "call": "query",
+      "patternId": "direct-query-wrapper"
+    },
     "kind": "runtime-pattern",
-    "references": [{ "path": "/src/runtime.ts", "symbol": "triageAgent" }],
+    "references": [
+      {
+        "path": "/src/runtime.ts",
+        "symbol": "triageAgent"
+      }
+    ],
     "runtimeName": "triageAgent",
     "source": "claude-agent-sdk"
   },
@@ -117,11 +179,19 @@
     "agentId": "billing",
     "capabilityId": "find-order",
     "capabilityKind": "tool",
-    "details": { "role": "tool-input", "schemaKind": "sdk-tool-input" },
+    "details": {
+      "role": "tool-input",
+      "schemaKind": "sdk-tool-input"
+    },
     "kind": "schema",
     "references": [
-      { "path": "/src/contracts.ts", "symbol": "FindOrderInputSchema" },
-      { "path": "/src/tools.ts" }
+      {
+        "path": "/src/contracts.ts",
+        "symbol": "FindOrderInputSchema"
+      },
+      {
+        "path": "/src/tools.ts"
+      }
     ],
     "runtimeName": "FindOrderInputSchema",
     "source": "claude-agent-sdk"
@@ -130,11 +200,19 @@
     "agentId": "triage",
     "capabilityId": null,
     "capabilityKind": null,
-    "details": { "role": "agent-output", "schemaKind": "json-schema" },
+    "details": {
+      "role": "agent-output",
+      "schemaKind": "json-schema"
+    },
     "kind": "schema",
     "references": [
-      { "path": "/src/contracts.ts", "symbol": "TriageOutputSchema" },
-      { "path": "/src/runtime.ts" }
+      {
+        "path": "/src/contracts.ts",
+        "symbol": "TriageOutputSchema"
+      },
+      {
+        "path": "/src/runtime.ts"
+      }
     ],
     "runtimeName": "TriageOutputSchema",
     "source": "claude-agent-sdk"
@@ -143,11 +221,19 @@
     "agentId": "triage",
     "capabilityId": "find-order",
     "capabilityKind": "tool",
-    "details": { "role": "tool-input", "schemaKind": "sdk-tool-input" },
+    "details": {
+      "role": "tool-input",
+      "schemaKind": "sdk-tool-input"
+    },
     "kind": "schema",
     "references": [
-      { "path": "/src/contracts.ts", "symbol": "FindOrderInputSchema" },
-      { "path": "/src/tools.ts" }
+      {
+        "path": "/src/contracts.ts",
+        "symbol": "FindOrderInputSchema"
+      },
+      {
+        "path": "/src/tools.ts"
+      }
     ],
     "runtimeName": "FindOrderInputSchema",
     "source": "claude-agent-sdk"
@@ -164,9 +250,17 @@
     },
     "kind": "tool-registration",
     "references": [
-      { "path": "/src/find-order.ts", "symbol": "findOrder" },
-      { "path": "/src/runtime.ts" },
-      { "path": "/src/tools.ts", "symbol": "findOrderTool" }
+      {
+        "path": "/src/find-order.ts",
+        "symbol": "findOrder"
+      },
+      {
+        "path": "/src/runtime.ts"
+      },
+      {
+        "path": "/src/tools.ts",
+        "symbol": "findOrderTool"
+      }
     ],
     "runtimeName": "mcp__support__find_order",
     "source": "claude-agent-sdk"
@@ -183,9 +277,17 @@
     },
     "kind": "tool-registration",
     "references": [
-      { "path": "/src/find-order.ts", "symbol": "findOrder" },
-      { "path": "/src/runtime.ts" },
-      { "path": "/src/tools.ts", "symbol": "findOrderTool" }
+      {
+        "path": "/src/find-order.ts",
+        "symbol": "findOrder"
+      },
+      {
+        "path": "/src/runtime.ts"
+      },
+      {
+        "path": "/src/tools.ts",
+        "symbol": "findOrderTool"
+      }
     ],
     "runtimeName": "mcp__support__find_order",
     "source": "claude-agent-sdk"

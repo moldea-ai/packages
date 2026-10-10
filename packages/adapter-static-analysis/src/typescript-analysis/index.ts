@@ -1,11 +1,13 @@
 // bindings
 export {
   indexImports,
-  indexLocalBindingNames,
+  indexLexicalBindings,
+  resolveLexicalBinding,
   indexModuleDeclarations,
   isBoundIdentifier,
   isModuleBindingVisible,
   resolveBindingReferences,
+  resolveInstructionCallReferences,
   resolveImportCandidatePaths,
 } from './bindings.js';
 
@@ -50,3 +52,4 @@ export {
   getRuntimeExport,
   isSupportedTypeScriptSourcePath,
 } from './source-analysis.js';
+export { indexBindingEffects, hasBindingMutation } from './mutations.js';

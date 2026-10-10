@@ -69,6 +69,12 @@ interface IRuntimeCursorFrame extends ICursorFrame {
   readonly nextIndex: number;
 }
 
+// exact selections retain only selected names, fenced by their parent identity
+interface ISelectedDirectoryProof {
+  readonly identity: string;
+  readonly names: ReadonlySet<string>;
+}
+
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 const MAX_CURSOR_BYTES = 65_536;
 const DIRECTORY_CURSOR_KEYS = new Set(['frames', 'kind', 'prefix', 'snapshotId', 'version']);
@@ -377,6 +383,14 @@ class FilesystemRepositoryReader implements IRepositoryReader {
 
   readonly #selectedPaths: readonly IRepositoryPath[];
 
+  readonly #selectedPathSet: ReadonlySet<IRepositoryPath>;
+
+  readonly #explicitSelectedPaths: ReadonlySet<IRepositoryPath>;
+
+  readonly #selectedNamesByParent = new Map<IRepositoryPath, Set<string>>();
+
+  readonly #selectedDirectoryProofs = new Map<IRepositoryPath, ISelectedDirectoryProof>();
+
   public constructor(
     options: INormalizedFilesystemRepositoryReaderOptions,
     rootDirectory: string,
@@ -395,6 +409,19 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       options.selection.kind === 'paths'
         ? this.#createVisibleSelectedPaths(options.selection.paths)
         : [];
+    this.#selectedPathSet = new Set(this.#selectedPaths);
+    this.#explicitSelectedPaths = new Set(
+      options.selection.kind === 'paths' ? options.selection.paths : [],
+    );
+
+    for (const logicalPath of this.#selectedPaths) {
+      if (logicalPath === REPOSITORY_ROOT) continue;
+      const separatorIndex = logicalPath.lastIndexOf('/');
+      const parentPath = parseRepositoryPath(logicalPath.slice(0, separatorIndex) || '/');
+      const names = this.#selectedNamesByParent.get(parentPath) ?? new Set<string>();
+      names.add(logicalPath.slice(separatorIndex + 1));
+      this.#selectedNamesByParent.set(parentPath, names);
+    }
   }
 
   /** Completes bounded initialization for exact-path selections. */
@@ -405,7 +432,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
 
     for (const logicalPath of this.#selectedPaths) {
       throwIfAborted(signal, 'create-reader', logicalPath);
-      const entry = await this.#observeEntry(logicalPath, 'create-reader');
+      const entry = await this.#observeEntry(logicalPath, 'create-reader', undefined, signal);
 
       if (entry === null) {
         return throwSource('ENTRY_NOT_FOUND', 'create-reader', logicalPath, true);
@@ -413,7 +440,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
 
       if (
         logicalPath !== REPOSITORY_ROOT &&
-        !this.#selection.paths.includes(logicalPath) &&
+        !this.#explicitSelectedPaths.has(logicalPath) &&
         entry.type !== 'directory'
       ) {
         throwSource('ENTRY_NOT_DIRECTORY', 'create-reader', logicalPath, false);
@@ -439,7 +466,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     }
 
     return this.#gate.run('get-entry', parsedPath, options?.signal, () =>
-      this.#observeEntry(parsedPath, 'get-entry'),
+      this.#observeEntry(parsedPath, 'get-entry', undefined, options?.signal),
     );
   }
 
@@ -457,7 +484,12 @@ class FilesystemRepositoryReader implements IRepositoryReader {
         'list-entries-page',
         prefix,
       );
-      const prefixEntry = await this.#observeEntry(prefix, 'list-entries-page');
+      const prefixEntry = await this.#observeEntry(
+        prefix,
+        'list-entries-page',
+        undefined,
+        options.signal,
+      );
 
       if (prefixEntry === null || !this.#isVisible(prefix)) {
         return throwSource('ENTRY_NOT_FOUND', 'list-entries-page', prefix, false);
@@ -468,7 +500,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       }
 
       return this.#selection.kind === 'paths'
-        ? this.#listSelectedEntries(prefix, maxEntries, options.cursor)
+        ? this.#listSelectedEntries(prefix, maxEntries, options.cursor, options.signal)
         : this.#listDirectoryEntries(prefix, maxEntries, options.cursor, options.signal);
     });
   }
@@ -493,7 +525,12 @@ class FilesystemRepositoryReader implements IRepositoryReader {
         throwSource('ENTRY_NOT_FOUND', 'read-file-page', parsedPath, false);
       }
 
-      const entry = await this.#observeEntry(parsedPath, 'read-file-page');
+      const entry = await this.#observeEntry(
+        parsedPath,
+        'read-file-page',
+        undefined,
+        options.signal,
+      );
 
       if (entry === null) {
         return throwSource('ENTRY_NOT_FOUND', 'read-file-page', parsedPath, false);
@@ -716,7 +753,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
   }
 
   #isVisible(logicalPath: IRepositoryPath): boolean {
-    return this.#selection.kind === 'directory' || this.#selectedPaths.includes(logicalPath);
+    return this.#selection.kind === 'directory' || this.#selectedPathSet.has(logicalPath);
   }
 
   async #listDirectoryEntries(
@@ -726,9 +763,18 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     signal: AbortSignal | undefined,
   ): Promise<IRepositoryEntryPage> {
     let frames: IRuntimeCursorFrame[];
+    const directoryFrames = new Map<IRepositoryPath, IRuntimeCursorFrame>();
 
     if (encodedCursor === undefined) {
-      frames = [await this.#createDirectoryFrame(prefix, null, 'list-entries-page')];
+      const initialFrame = await this.#createDirectoryFrame(
+        prefix,
+        null,
+        'list-entries-page',
+        directoryFrames,
+        signal,
+      );
+      frames = [initialFrame];
+      directoryFrames.set(prefix, initialFrame);
     } else {
       const cursor = this.#decodeCursor(encodedCursor, prefix);
 
@@ -739,7 +785,9 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       frames = [];
 
       for (const frame of cursor.frames) {
-        frames.push(await this.#restoreDirectoryFrame(frame));
+        const restored = await this.#restoreDirectoryFrame(frame, directoryFrames, signal);
+        frames.push(restored);
+        directoryFrames.set(restored.path, restored);
       }
     }
 
@@ -755,6 +803,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
 
       if (frame.nextIndex >= frame.names.length) {
         frames.pop();
+        directoryFrames.delete(frame.path);
         continue;
       }
 
@@ -772,7 +821,12 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       const childPath = parseRepositoryPath(
         frame.path === REPOSITORY_ROOT ? `/${name}` : `${frame.path}/${name}`,
       );
-      const entry = await this.#observeEntry(childPath, 'list-entries-page');
+      const entry = await this.#observeEntry(
+        childPath,
+        'list-entries-page',
+        directoryFrames,
+        signal,
+      );
 
       if (entry === null) {
         return throwSource('SNAPSHOT_CHANGED', 'list-entries-page', childPath, true);
@@ -781,7 +835,15 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       entries.push(entry);
 
       if (entry.type === 'directory') {
-        frames.push(await this.#createDirectoryFrame(childPath, null, 'list-entries-page'));
+        const childFrame = await this.#createDirectoryFrame(
+          childPath,
+          null,
+          'list-entries-page',
+          directoryFrames,
+          signal,
+        );
+        frames.push(childFrame);
+        directoryFrames.set(childPath, childFrame);
       }
     }
 
@@ -812,13 +874,14 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     prefix: IRepositoryPath,
     maxEntries: number,
     encodedCursor: string | undefined,
+    signal: AbortSignal | undefined,
   ): Promise<IRepositoryEntryPage> {
     let lastPath: IRepositoryPath | null = null;
 
     if (encodedCursor !== undefined) {
       const cursor = this.#decodeCursor(encodedCursor, prefix);
 
-      if (cursor.kind !== 'paths' || !this.#selectedPaths.includes(cursor.lastPath)) {
+      if (cursor.kind !== 'paths' || !this.#selectedPathSet.has(cursor.lastPath)) {
         return throwSource('INVALID_PAGE_REQUEST', 'list-entries-page', prefix, false);
       }
 
@@ -830,13 +893,14 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     const entries: IRepositoryEntry[] = [];
 
     while (entries.length < maxEntries) {
+      throwIfAborted(signal, 'list-entries-page', prefix);
       const logicalPath = this.#selectedPaths[pathIndex];
 
       if (logicalPath === undefined || !logicalPath.startsWith(descendantPrefix)) {
         break;
       }
 
-      const entry = await this.#observeEntry(logicalPath, 'list-entries-page');
+      const entry = await this.#observeEntry(logicalPath, 'list-entries-page', undefined, signal);
 
       if (entry === null) {
         return throwSource('SNAPSHOT_CHANGED', 'list-entries-page', logicalPath, true);
@@ -904,14 +968,16 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     logicalPath: IRepositoryPath,
     lastName: string | null,
     operation: IRepositoryOperation,
+    directoryFrames?: ReadonlyMap<IRepositoryPath, IRuntimeCursorFrame>,
+    signal?: AbortSignal,
   ): Promise<IRuntimeCursorFrame> {
-    const entry = await this.#observeEntry(logicalPath, operation);
+    const entry = await this.#observeEntry(logicalPath, operation, directoryFrames, signal);
 
     if (entry === null || entry.type !== 'directory') {
       throwSource('SNAPSHOT_CHANGED', operation, logicalPath, true);
     }
 
-    const names = await this.#readDirectoryNames(logicalPath, operation);
+    const names = await this.#readDirectoryNames(logicalPath, operation, directoryFrames, signal);
     const nextIndex = lastName === null ? 0 : findSortedName(names, lastName) + 1;
 
     if (nextIndex === 0 && lastName !== null) {
@@ -928,11 +994,17 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     };
   }
 
-  async #restoreDirectoryFrame(frame: ICursorFrame): Promise<IRuntimeCursorFrame> {
+  async #restoreDirectoryFrame(
+    frame: ICursorFrame,
+    directoryFrames: ReadonlyMap<IRepositoryPath, IRuntimeCursorFrame>,
+    signal: AbortSignal | undefined,
+  ): Promise<IRuntimeCursorFrame> {
     const restored = await this.#createDirectoryFrame(
       parseRepositoryPath(frame.path),
       frame.lastName,
       'list-entries-page',
+      directoryFrames,
+      signal,
     );
 
     if (
@@ -948,6 +1020,8 @@ class FilesystemRepositoryReader implements IRepositoryReader {
   async #readDirectoryNames(
     logicalPath: IRepositoryPath,
     operation: IRepositoryOperation,
+    directoryFrames?: ReadonlyMap<IRepositoryPath, IRuntimeCursorFrame>,
+    signal?: AbortSignal,
   ): Promise<readonly string[]> {
     try {
       const directory = await openBufferDirectory(this.#getHostPath(logicalPath));
@@ -955,6 +1029,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       let observedEntries = 0;
 
       for await (const directoryEntry of directory) {
+        throwIfAborted(signal, operation, logicalPath);
         observedEntries += 1;
 
         if (observedEntries > this.#limits.maxDirectoryEntries) {
@@ -972,7 +1047,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
         }
       }
 
-      await this.#observeEntry(logicalPath, operation);
+      await this.#observeEntry(logicalPath, operation, directoryFrames, signal);
 
       return names.sort();
     } catch (cause) {
@@ -984,17 +1059,45 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     }
   }
 
-  /** Finds one exact child spelling without retaining or sorting unrelated names. */
+  /** Reuses verified page names or one bounded scan of a parent's selected children. */
   async #hasExactChildName(
     logicalPath: IRepositoryPath,
     targetName: string,
     operation: IRepositoryOperation,
+    parentIdentity: string,
+    directoryFrames: ReadonlyMap<IRepositoryPath, IRuntimeCursorFrame> | undefined,
+    signal: AbortSignal | undefined,
   ): Promise<boolean> {
+    const frame = directoryFrames?.get(logicalPath);
+
+    if (frame !== undefined) {
+      if (frame.pathIdentity !== parentIdentity) {
+        throwSource('SNAPSHOT_CHANGED', operation, logicalPath, true);
+      }
+      return findSortedName(frame.names, targetName) >= 0;
+    }
+
+    const selectedNames = this.#selectedNamesByParent.get(logicalPath);
+    const isSelectedName = selectedNames?.has(targetName) === true;
+    const proof = isSelectedName ? this.#selectedDirectoryProofs.get(logicalPath) : undefined;
+
+    if (proof !== undefined) {
+      if (proof.identity !== parentIdentity) {
+        throwSource('SNAPSHOT_CHANGED', operation, logicalPath, true);
+      }
+      throwIfAborted(signal, operation, logicalPath);
+      return proof.names.has(targetName);
+    }
+
     try {
       const directory = await openBufferDirectory(this.#getHostPath(logicalPath));
+      const targets =
+        isSelectedName && selectedNames !== undefined ? selectedNames : new Set([targetName]);
+      const names = new Set<string>();
       let observedEntries = 0;
 
       for await (const directoryEntry of directory) {
+        throwIfAborted(signal, operation, logicalPath);
         observedEntries += 1;
 
         if (observedEntries > this.#limits.maxDirectoryEntries) {
@@ -1007,12 +1110,25 @@ class FilesystemRepositoryReader implements IRepositoryReader {
 
         const name = decodeName(directoryEntry.name, operation, logicalPath);
 
-        if (name !== '.git' && name === targetName) {
-          return true;
+        if (name !== '.git' && targets.has(name)) {
+          names.add(name);
+          if (names.size === targets.size) break;
         }
       }
 
-      return false;
+      if (isSelectedName) {
+        const statistics = await lstat(this.#getHostPath(logicalPath), { bigint: true });
+        if (
+          !statistics.isDirectory() ||
+          getStatisticsIdentity(statistics, 'directory') !== parentIdentity
+        ) {
+          throwSource('SNAPSHOT_CHANGED', operation, logicalPath, true);
+        }
+        this.#selectedDirectoryProofs.set(logicalPath, { identity: parentIdentity, names });
+      }
+
+      throwIfAborted(signal, operation, logicalPath);
+      return names.has(targetName);
     } catch (cause) {
       if (cause instanceof RepositorySourceException) {
         throw cause;
@@ -1026,6 +1142,8 @@ class FilesystemRepositoryReader implements IRepositoryReader {
   async #readExactEntryStatistics(
     logicalPath: IRepositoryPath,
     operation: IRepositoryOperation,
+    directoryFrames?: ReadonlyMap<IRepositoryPath, IRuntimeCursorFrame>,
+    signal?: AbortSignal,
   ): Promise<BigIntStats | null> {
     const rootStatistics = await this.#assertRootUnchanged(operation, logicalPath);
 
@@ -1039,7 +1157,18 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     const parentIdentities: { path: IRepositoryPath; identity: string }[] = [];
 
     for (const [index, segment] of segments.entries()) {
-      if (!(await this.#hasExactChildName(currentPath, segment, operation))) {
+      throwIfAborted(signal, operation, logicalPath);
+      const parentIdentity = getStatisticsIdentity(statistics ?? rootStatistics, 'directory');
+      if (
+        !(await this.#hasExactChildName(
+          currentPath,
+          segment,
+          operation,
+          parentIdentity,
+          directoryFrames,
+          signal,
+        ))
+      ) {
         return null;
       }
 
@@ -1066,6 +1195,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     }
 
     for (const parent of parentIdentities) {
+      throwIfAborted(signal, operation, logicalPath);
       let currentStatistics: BigIntStats;
 
       try {
@@ -1116,8 +1246,16 @@ class FilesystemRepositoryReader implements IRepositoryReader {
   async #observeEntry(
     logicalPath: IRepositoryPath,
     operation: IRepositoryOperation,
+    directoryFrames?: ReadonlyMap<IRepositoryPath, IRuntimeCursorFrame>,
+    signal?: AbortSignal,
   ): Promise<IRepositoryEntry | null> {
-    const statistics = await this.#readExactEntryStatistics(logicalPath, operation);
+    const statistics = await this.#readExactEntryStatistics(
+      logicalPath,
+      operation,
+      directoryFrames,
+      signal,
+    );
+    throwIfAborted(signal, operation, logicalPath);
 
     if (statistics === null) {
       return this.#observations.has(logicalPath)

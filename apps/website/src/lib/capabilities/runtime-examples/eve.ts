@@ -58,7 +58,8 @@ export const EVE_FILES: IMemoryRepositoryEntry[] = [
   {
     path: '/agent/loaders.ts',
     type: 'file',
-    content: "export const loadInstruction = () => 'Support customers.';\n",
+    content:
+      "import { readFileSync } from 'node:fs';\n\nexport const loadInstruction = () =>\n  readFileSync(new URL('../moldea/agents/support/instruction.md', import.meta.url), 'utf8');\n",
   },
   {
     path: '/agent/instructions.ts',

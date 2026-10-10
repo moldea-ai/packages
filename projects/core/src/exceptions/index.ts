@@ -12,19 +12,25 @@ export type ICoreOperationErrorCode =
   | 'ABORTED'
   | 'RESOURCE_LIMIT_EXCEEDED'
   | 'ADAPTER_EXECUTION_FAILED'
+  | 'INSPECTION_BUSY'
+  | 'INSPECTION_TIMEOUT'
+  | 'INSPECTION_PROCESS_FAILED'
   | 'CONTENT_INVALID';
 
-export type ICoreOperation =
-  | 'create-core'
-  | 'normalize-text'
-  | 'calculate-content-digest'
-  | 'parse-manifest'
-  | 'match-manifest-scope'
-  | 'parse-decision'
-  | 'create-project-inspection'
-  | 'read-canonical-content-page'
-  | 'validate-project'
-  | 'validate-adapter';
+const CORE_OPERATIONS = [
+  'create-core',
+  'normalize-text',
+  'calculate-content-digest',
+  'parse-manifest',
+  'match-manifest-scope',
+  'parse-decision',
+  'create-project-inspection',
+  'read-canonical-content-page',
+  'validate-project',
+  'validate-adapter',
+] as const;
+
+export type ICoreOperation = (typeof CORE_OPERATIONS)[number];
 
 // safe construction options for exported Core exceptions
 export interface ICoreConfigurationExceptionOptions {
@@ -41,8 +47,9 @@ interface ICoreOperationExceptionOptionsBase {
   readonly cause?: unknown;
 }
 
-// complete resource-refusal metadata required by Core 5
-export type ICoreResourceLimitNextAction = 'reduce-input-or-increase-limit';
+// logical budget refusals and verified isolated-worker heap exhaustion
+export type ICoreResourceLimitNextAction =
+  'reduce-input-or-increase-limit' | 'review-inspection-capacity';
 
 export type ICoreOperationExceptionOptions = ICoreOperationExceptionOptionsBase &
   (
@@ -50,7 +57,21 @@ export type ICoreOperationExceptionOptions = ICoreOperationExceptionOptionsBase 
         readonly code: 'RESOURCE_LIMIT_EXCEEDED';
         readonly limit: string;
         readonly limitMaximum: number;
-        readonly nextAction: ICoreResourceLimitNextAction;
+        readonly nextAction: 'reduce-input-or-increase-limit';
+        readonly observedUsage: number;
+      }
+    | {
+        readonly code: 'RESOURCE_LIMIT_EXCEEDED';
+        readonly limit: 'maxAnalysisHeapBytes';
+        readonly limitMaximum: number;
+        readonly nextAction: 'review-inspection-capacity';
+        readonly observedUsage: null;
+      }
+    | {
+        readonly code: 'RESOURCE_LIMIT_EXCEEDED';
+        readonly limit: 'maxInspectionMessageBytes' | 'maxReaderRequests';
+        readonly limitMaximum: number;
+        readonly nextAction: null;
         readonly observedUsage: number;
       }
     | {
@@ -74,6 +95,9 @@ const OPERATION_ERROR_MESSAGES = {
   ADAPTER_EXECUTION_FAILED: 'A runtime adapter failed during inspection.',
   CONTENT_INVALID: 'The canonical content is not valid UTF-8 text.',
   INVALID_ARGUMENT: 'The Core operation received an invalid argument.',
+  INSPECTION_BUSY: 'Project inspection capacity is busy. Try again shortly.',
+  INSPECTION_TIMEOUT: 'The isolated project inspection timed out.',
+  INSPECTION_PROCESS_FAILED: 'The isolated project inspection failed.',
   RESOURCE_LIMIT_EXCEEDED: 'A Core resource limit was exceeded.',
 } as const satisfies Readonly<Record<ICoreOperationErrorCode, string>>;
 
@@ -82,8 +106,25 @@ const OPERATION_ERROR_RETRYABILITY = {
   ADAPTER_EXECUTION_FAILED: false,
   CONTENT_INVALID: false,
   INVALID_ARGUMENT: false,
+  INSPECTION_BUSY: true,
+  INSPECTION_TIMEOUT: true,
+  INSPECTION_PROCESS_FAILED: false,
   RESOURCE_LIMIT_EXCEEDED: false,
 } as const satisfies Readonly<Record<ICoreOperationErrorCode, boolean>>;
+
+/** Checks a transported operation against the authoritative Core operation set. */
+export const isCoreOperation = (input: unknown): input is ICoreOperation =>
+  CORE_OPERATIONS.some((operation) => operation === input);
+
+/** Checks a transported configuration code against the authoritative message registry. */
+export const isCoreConfigurationErrorCode = (
+  input: unknown,
+): input is ICoreConfigurationErrorCode =>
+  typeof input === 'string' && Object.hasOwn(CONFIGURATION_ERROR_MESSAGES, input);
+
+/** Checks a transported operation code against the authoritative message registry. */
+export const isCoreOperationErrorCode = (input: unknown): input is ICoreOperationErrorCode =>
+  typeof input === 'string' && Object.hasOwn(OPERATION_ERROR_MESSAGES, input);
 
 const attachCause = (exception: Error, cause: unknown): void => {
   if (cause === undefined) {

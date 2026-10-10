@@ -10,7 +10,7 @@ Read this example before searching adapter implementation for binding syntax. It
 
 ## How the bindings connect
 
-Both exported classes are bound separately. Think connects `getSystemPrompt` and the closed `getTools` map; it has no agent input/output schema evidence. AIChatAgent connects its direct `streamText` call and `Output.object` schema. `agentTool` supplies the exact target routing description. Function tools bind `execute`, `inputSchema`, and `outputSchema`. The Markdown imports require the application's Worker text-module configuration; this is not a deployable Worker scaffold.
+Both exported classes are bound separately. Think connects `getSystemPrompt` and the closed `getTools` map; it has no agent input/output schema evidence. AIChatAgent connects its direct `streamText` call and `Output.object` schema. `agentTool` supplies the exact target routing description. Function tools bind `execute`, `inputSchema`, and `outputSchema`. The Markdown imports require the application's Worker text-module configuration. Their provenance is unverified by this release's static inspector, so this example returns scoped instruction-loader warnings and an incomplete runtime inspection. The other supported relationships remain inspectable. This is not a deployable Worker scaffold.
 
 Paths below are repository-root-relative logical paths. Keep the canonical instructions as the policy source. General manifest semantics belong to the [Repository Format specification](https://packages.moldea.ai/repository-format/). Use the other local guides for the full supported boundary and limitations; this example does not expand them.
 

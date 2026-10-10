@@ -9,6 +9,9 @@
     "kind": "instruction-loader",
     "references": [
       {
+        "path": "/moldea/agents/support/instruction.md"
+      },
+      {
         "path": "/src/agent.ts"
       },
       {

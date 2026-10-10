@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`published binding example > establishes supported relationships and warns for Worker text-module provenance 1`] = `
+[
+  {
+    "code": "CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "cloudflare-agents",
+      "agentId": "summary",
+    },
+    "path": "/src/instructions.ts",
+  },
+  {
+    "code": "CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "cloudflare-agents",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;

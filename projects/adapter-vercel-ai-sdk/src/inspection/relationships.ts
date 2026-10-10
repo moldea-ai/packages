@@ -1,5 +1,6 @@
 import ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import {
   classifyAiSdkDeferredLoading,
   getCallableExportState,
@@ -8,10 +9,11 @@ import {
   resolveBindingReferences,
   unwrapExpression,
 } from '@moldea.ai/adapter-static-analysis';
-import type { IIndexedAgent, IRuntimeAdapterEvidence } from '@moldea.ai/core/adapter';
+import type { IIndexedAgent } from '@moldea.ai/core/adapter';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryReference, IToolManifestEntry } from '@moldea.ai/core/format';
 
+import type { IVercelAiSdkEvidenceCollector } from '../contracts/index.js';
 import {
   VERCEL_AI_SDK_ADAPTER_ID,
   VERCEL_AI_SDK_GENERATION_TARGET_ID,
@@ -30,6 +32,7 @@ import {
   getVercelAiSdkGenerationWrapper,
   getVercelAiSdkToolLoopAgentDefinition,
 } from '../source-analysis/index.js';
+
 import {
   addVercelAiSdkDiagnostic,
   analyzeVercelAiSdkBoundReference,
@@ -119,7 +122,7 @@ const inspectConstSymbol = async (
     | 'VERCEL_AI_SDK_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
     | 'VERCEL_AI_SDK_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND',
   agentId: string,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   capabilityId?: string,
 ): Promise<boolean | null> => {
   if (reference.symbol === undefined) {
@@ -158,8 +161,8 @@ const inspectConstSymbol = async (
 const inspectInstructionLoader = async (
   session: IVercelAiSdkInspectionSession,
   inspected: IVercelAiSdkInspectedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IVercelAiSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = inspected.agent.declaration.bindings?.instructionLoader;
 
@@ -200,7 +203,7 @@ const inspectInstructionLoader = async (
   );
 
   if (results.includes(true)) {
-    evidence.push(
+    evidence.instruction(() =>
       createVercelAiSdkEvidence({
         agentId: inspected.agent.id,
         capabilityId: null,
@@ -209,9 +212,12 @@ const inspectInstructionLoader = async (
         kind: 'instruction-loader',
         references: [
           { path: inspected.analysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: VERCEL_AI_SDK_ADAPTER_ID,
       }),
     );
@@ -229,8 +235,8 @@ const inspectInstructionLoader = async (
 const inspectAgentInputSchema = async (
   session: IVercelAiSdkInspectionSession,
   inspected: IVercelAiSdkInspectedAgent,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IVercelAiSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   if (inspected.kind !== 'tool-loop-agent') {
     return;
@@ -261,7 +267,7 @@ const inspectAgentInputSchema = async (
   );
 
   if (result === true) {
-    evidence.push(
+    evidence.add(() =>
       createVercelAiSdkEvidence({
         agentId: inspected.agent.id,
         capabilityId: null,
@@ -274,9 +280,12 @@ const inspectAgentInputSchema = async (
         kind: 'schema',
         references: [
           { path: inspected.analysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: VERCEL_AI_SDK_ADAPTER_ID,
       }),
     );
@@ -326,8 +335,8 @@ const inspectAgentOutputSchema = async (
   session: IVercelAiSdkInspectionSession,
   inspected: IVercelAiSdkInspectedAgent,
   relatedRelationships: readonly IVercelAiSdkRelationship[],
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IVercelAiSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const reference = inspected.agent.declaration.bindings?.outputSchema;
 
@@ -365,7 +374,7 @@ const inspectAgentOutputSchema = async (
   const matched = results.find(({ state }) => state === true);
 
   if (matched !== undefined) {
-    evidence.push(
+    evidence.add(() =>
       createVercelAiSdkEvidence({
         agentId: inspected.agent.id,
         capabilityId: null,
@@ -375,9 +384,12 @@ const inspectAgentOutputSchema = async (
         references: [
           { path: inspected.analysis.path },
           ...matched.references,
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: VERCEL_AI_SDK_ADAPTER_ID,
       }),
     );
@@ -402,7 +414,7 @@ const inspectImplementationSymbol = async (
   agent: IIndexedAgent,
   capabilityId: string,
   reference: IRepositoryReference,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<boolean | null> => {
   if (reference.symbol === undefined) {
     return null;
@@ -443,7 +455,7 @@ const inspectFunctionTool = async (
   capabilityId: string,
   declaration: IToolManifestEntry,
   maps: readonly (IVercelAiSdkResolvedToolMap | null)[],
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<IVercelAiSdkFunctionToolInspection | null> => {
   const reference = declaration.registration;
 
@@ -522,8 +534,8 @@ const inspectToolSchema = async (
   reference: IRepositoryReference,
   registration: IVercelAiSdkFunctionToolInspection | null,
   relationshipName: 'inputSchema' | 'outputSchema',
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IVercelAiSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<boolean> => {
   if (reference.symbol === undefined) {
     return false;
@@ -549,7 +561,7 @@ const inspectToolSchema = async (
   const result = classifyVercelAiSdkDirectBinding(relationship, registration.analysis, reference);
 
   if (result === true) {
-    evidence.push(
+    evidence.add(() =>
       createVercelAiSdkEvidence({
         agentId: agent.id,
         capabilityId,
@@ -561,9 +573,12 @@ const inspectToolSchema = async (
         kind: 'schema',
         references: [
           { path: registration.analysis.path },
-          { path: reference.path, symbol: reference.symbol },
+          {
+            path: reference.path,
+            ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
+          },
         ],
-        runtimeName: reference.symbol,
+        runtimeName: reference.symbol ?? null,
         source: VERCEL_AI_SDK_ADAPTER_ID,
       }),
     );
@@ -665,8 +680,8 @@ const inspectToolRegistration = (
   establishedImplementation: boolean,
   establishedInputSchema: boolean,
   establishedOutputSchema: boolean,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IVercelAiSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): void => {
   const classifications = maps.map((map) =>
     map === null
@@ -703,7 +718,7 @@ const inspectToolRegistration = (
       references.push(declaration.outputSchema);
     }
 
-    evidence.push(
+    evidence.add(() =>
       createVercelAiSdkEvidence({
         agentId: inspected.agent.id,
         capabilityId,
@@ -752,8 +767,8 @@ const inspectTools = async (
   inspected: IVercelAiSdkInspectedAgent,
   maps: readonly (IVercelAiSdkResolvedToolMap | null)[],
   allowedMaps: readonly (IVercelAiSdkResolvedToolMap | null)[],
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IVercelAiSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   for (const capabilityId of Object.keys(inspected.agent.declaration.tools ?? {}).sort(
     compareVercelAiSdkStrings,
@@ -848,12 +863,17 @@ const inspectTools = async (
   }
 };
 
-/** Inspects instruction, agent-schema, function-tool, and tool-schema relationships. */
+/**
+ * Inspects instruction, agent-schema, function-tool, and tool-schema relationships.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectVercelAiSdkRelationships = async (
   session: IVercelAiSdkInspectionSession,
   inspectedAgents: readonly IVercelAiSdkInspectedAgent[],
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: IVercelAiSdkEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
 ): Promise<void> => {
   const toolMaps = new Map<
     IVercelAiSdkInspectedAgent,

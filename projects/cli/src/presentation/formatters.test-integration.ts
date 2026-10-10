@@ -9,6 +9,8 @@ import {
   type IMemoryRepositoryEntry,
 } from '@moldea.ai/repository/memory';
 
+import { INSTALLED_PACKAGE_METADATA } from '../composition/composition.test-fixtures.js';
+
 import { executeMoldeaCliCoreInspection } from '../core-composition/index.js';
 import { createMoldeaCliInspectExecutionResult } from '../cli-execution/results.js';
 
@@ -62,6 +64,7 @@ const inspectCompleteProject = async (): Promise<IProjectInspectionPageResult> =
 
   return (await executeMoldeaCliCoreInspection({
     command: 'inspect',
+    packageMetadata: INSTALLED_PACKAGE_METADATA,
     repository: createMemoryRepositoryReader(entries),
     resourceLimits: {
       maxDiagnostics: 10_000,
@@ -79,7 +82,7 @@ describe('CLI inspection presentation through Core and the memory repository rea
     const inspection = await inspectCompleteProject();
     const execution = createMoldeaCliInspectExecutionResult(
       inspection,
-      '9.0.0',
+      '10.0.0',
       true,
       null,
       65_536,
@@ -94,7 +97,7 @@ describe('CLI inspection presentation through Core and the memory repository rea
 
     expect(execution.exitCode).toBe(0);
     expect(Buffer.byteLength(execution.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
-    expect(envelope.schemaVersion).toBe(5);
+    expect(envelope.schemaVersion).toBe(6);
     expect(envelope.result.counts).toMatchObject({ agents: 2, context: 2, decisions: 1 });
     expect(envelope.result.page.records.map(({ kind }) => kind)).toContain('metadata');
     expect(execution.stdout).not.toContain('Universal project.');

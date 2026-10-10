@@ -48,6 +48,8 @@ void page;
 
 Exact-path construction verifies only selected paths and required parents. Directory traversal is deferred to `listEntriesPage`, and regular-file bytes are read only through `readFilePage`.
 
+Version `2.0.3` groups exact selections by parent. One bounded scan proves the selected names for a parent, retaining only those names and the parent identity. Later accesses reuse that proof only while the identity remains unchanged. Recursive listing reuses the names already held by its current traversal frames instead of rescanning a parent for each child. This bounds retained names by the selection or active frames; it adds no repository-wide directory cache.
+
 ## Default limits
 
 | Limit                     |          Default | Purpose                                     |
@@ -88,4 +90,4 @@ pnpm --filter @moldea.ai/repository-fs test:integration
 pnpm --filter @moldea.ai/repository-fs test
 ```
 
-Unit and integration tests cover resource ceilings, cursor integrity, snapshot drift, symlink boundaries, cancellation, cache eviction, cross-platform path behavior, and the shared repository reader conformance contract.
+Unit and integration tests cover resource ceilings, cursor integrity, snapshot drift, symlink boundaries, cancellation, cache eviction, cross-platform path behavior, and the shared repository reader conformance contract. Real 256-, 1,024-, and 4,096-file cases also verify selected-parent and traversal-frame scan reuse without per-child directory scans.

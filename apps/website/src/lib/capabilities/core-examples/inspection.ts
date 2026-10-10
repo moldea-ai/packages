@@ -60,25 +60,33 @@ const createMixedDiagnosticExample = async (): Promise<ICapabilityCase> => {
   });
   const first = inspection.readPage({ view: 'diagnostics', maxItems: 1 });
   if (first.page.nextCursor === null) throw new Error('A diagnostic continuation is missing.');
-  const second = inspection.readPage({
-    view: 'diagnostics',
-    maxItems: 1,
-    cursor: first.page.nextCursor,
-  });
-  const pages = [first, second].map((page) => ({
+  const diagnosticPages = [first];
+  let cursor: string | null = first.page.nextCursor;
+  while (cursor !== null) {
+    const page = inspection.readPage({ view: 'diagnostics', maxItems: 1, cursor });
+    assertCapabilityFacts(page.counts, first.counts);
+    assertCapabilityFacts(page.inspectionDigest, first.inspectionDigest);
+    assertCapabilityFacts(page.runtimeInspection, first.runtimeInspection);
+    diagnosticPages.push(page);
+    cursor = page.page.nextCursor;
+  }
+  const pages = diagnosticPages.map((page) => ({
     records: page.page.records.map(({ item }) => {
       if (item.kind !== 'diagnostic') throw new Error('A diagnostic page contains another record.');
       return { code: item.diagnostic.code, severity: item.diagnostic.severity };
     }),
     hasContinuation: page.page.nextCursor !== null,
   }));
-  assertCapabilityFacts(first.counts, second.counts);
-  assertCapabilityFacts(first.inspectionDigest, second.inspectionDigest);
+  assertCapabilityFacts(first.runtimeInspection, 'incomplete');
   assertCapabilityFacts(
     [first.counts.diagnostics, first.counts.errors, first.counts.warnings],
-    [2, 1, 1],
+    [3, 1, 2],
   );
   assertCapabilityFacts(pages, [
+    {
+      records: [{ code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED', severity: 'warning' }],
+      hasContinuation: true,
+    },
     {
       records: [{ code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED', severity: 'warning' }],
       hasContinuation: true,
@@ -92,8 +100,8 @@ const createMixedDiagnosticExample = async (): Promise<ICapabilityCase> => {
   return operationCase(
     'inspection-mixed-diagnostics',
     'createProjectInspection',
-    'Warnings and errors across two pages',
-    'Each bounded page reports the same complete counts, while a dynamic instruction stays a warning and a missing tool registration is an error.',
+    'Warnings and errors across three pages',
+    'Every page retains complete counts. A disconnected tool fails, while the dynamic instruction and tool implementation remain unverified.',
     {
       counts: {
         diagnostics: first.counts.diagnostics,
@@ -223,7 +231,7 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
       cursor = result.page.nextCursor ?? undefined;
     } while (cursor !== undefined);
     assertCapabilityFacts(recordCount, totalItems);
-    assertCapabilityFacts(totalItems, view === 'metadata' ? 5 : view === 'diagnostics' ? 1 : 5);
+    assertCapabilityFacts(totalItems, view === 'diagnostics' ? 2 : 5);
     examples.push(
       operationCase(
         `inspection-${view}`,

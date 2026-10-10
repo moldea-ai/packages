@@ -9,7 +9,7 @@ import type {
   IStaticAnalysisReference,
   IStaticAnalysisSource,
 } from '../types.js';
-import { unwrapExpression } from './expressions.js';
+import { getDirectCall, unwrapExpression } from './expressions.js';
 
 const hasModifier = (node: ts.Node, kind: ts.SyntaxKind): boolean =>
   ts.canHaveModifiers(node) &&
@@ -72,6 +72,7 @@ export const indexImports = (
 
     if (
       (!moduleSpecifier.startsWith('.') &&
+        !['node:fs', 'fs', 'node:fs/promises', 'fs/promises'].includes(moduleSpecifier) &&
         !config.namedHelperModuleSpecifiers?.includes(moduleSpecifier)) ||
       importClause?.namedBindings === undefined ||
       !ts.isNamedImports(importClause.namedBindings)
@@ -121,6 +122,27 @@ export const indexModuleDeclarations = (
   const moduleConstDeclarations = new Map<string, ts.VariableDeclaration>();
 
   for (const statement of sourceFile.statements) {
+    if (
+      ts.isInterfaceDeclaration(statement) ||
+      ts.isTypeAliasDeclaration(statement) ||
+      hasModifier(statement, ts.SyntaxKind.DeclareKeyword)
+    ) {
+      continue;
+    }
+    if (ts.isExportAssignment(statement) && !statement.isExportEquals) {
+      exports.set(
+        'default',
+        Object.freeze({ declaration: statement, kind: 'present-unsupported' }),
+      );
+      continue;
+    }
+    if (hasModifier(statement, ts.SyntaxKind.DefaultKeyword)) {
+      exports.set(
+        'default',
+        Object.freeze({ declaration: statement, kind: 'present-unsupported' }),
+      );
+      continue;
+    }
     if (ts.isFunctionDeclaration(statement) && statement.name !== undefined) {
       if (hasModifier(statement, ts.SyntaxKind.ExportKeyword)) {
         exports.set(
@@ -139,7 +161,17 @@ export const indexModuleDeclarations = (
     }
 
     if (ts.isExportDeclaration(statement) && statement.exportClause !== undefined) {
-      if (!ts.isNamedExports(statement.exportClause) || statement.isTypeOnly) {
+      if (statement.isTypeOnly) {
+        continue;
+      }
+      if (ts.isNamespaceExport(statement.exportClause)) {
+        exports.set(
+          statement.exportClause.name.text,
+          Object.freeze({ declaration: statement.exportClause, kind: 'present-unsupported' }),
+        );
+        continue;
+      }
+      if (!ts.isNamedExports(statement.exportClause)) {
         continue;
       }
 
@@ -287,10 +319,49 @@ const getLocalBindingNames = (bindings: Map<ts.Node, Set<string>>, scope: ts.Nod
  * @param sourceFile The parsed TypeScript source.
  * @returns Local binding names keyed by lexical or function scope.
  */
-export const indexLocalBindingNames = (
+export const indexLexicalBindings = (
   sourceFile: ts.SourceFile,
-): ReadonlyMap<ts.Node, ReadonlySet<string>> => {
+): {
+  names: ReadonlyMap<ts.Node, ReadonlySet<string>>;
+  declarations: ReadonlyMap<ts.Node, ReadonlyMap<string, ts.Node | null>>;
+} => {
   const bindings = new Map<ts.Node, Set<string>>();
+  const declarations = new Map<ts.Node, Map<string, ts.Node | null>>();
+  const register = (scope: ts.Node, name: ts.BindingName, declaration: ts.Node): void => {
+    const names = new Set<string>();
+    addBindingNames(names, name);
+    const scoped = declarations.get(scope) ?? new Map<string, ts.Node | null>();
+    for (const name of names) {
+      const prior = scoped.get(name);
+      scoped.set(name, prior === undefined || prior === declaration ? declaration : null);
+    }
+    declarations.set(scope, scoped);
+  };
+  const registerStatement = (scope: ts.Node, statement: ts.Statement): void => {
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations)
+        register(scope, declaration.name, declaration);
+    } else if (
+      (ts.isFunctionDeclaration(statement) ||
+        ts.isClassDeclaration(statement) ||
+        ts.isEnumDeclaration(statement) ||
+        ts.isModuleDeclaration(statement)) &&
+      statement.name !== undefined &&
+      ts.isIdentifier(statement.name)
+    )
+      register(scope, statement.name, statement);
+    else if (ts.isImportDeclaration(statement) && statement.importClause !== undefined) {
+      const clause = statement.importClause;
+      if (clause.name !== undefined) register(scope, clause.name, clause);
+      if (clause.namedBindings !== undefined) {
+        if (ts.isNamespaceImport(clause.namedBindings))
+          register(scope, clause.namedBindings.name, clause.namedBindings);
+        else
+          for (const element of clause.namedBindings.elements)
+            register(scope, element.name, element);
+      }
+    }
+  };
   const visit = (node: ts.Node, functionScope: ts.FunctionLikeDeclaration | null): void => {
     let childFunctionScope = functionScope;
 
@@ -299,20 +370,23 @@ export const indexLocalBindingNames = (
 
       for (const parameter of node.parameters) {
         addBindingNames(names, parameter.name);
+        register(node, parameter.name, parameter);
       }
 
       if (node.name !== undefined && ts.isIdentifier(node.name)) {
         names.add(node.name.text);
+        register(node, node.name, node);
       }
 
       childFunctionScope = node;
     }
 
-    if (ts.isBlock(node) || ts.isModuleBlock(node)) {
+    if (ts.isBlock(node) || ts.isModuleBlock(node) || ts.isSourceFile(node)) {
       const names = getLocalBindingNames(bindings, node);
 
       for (const statement of node.statements) {
         addStatementBindings(names, statement);
+        registerStatement(node, statement);
       }
     } else if (ts.isCaseBlock(node)) {
       const names = getLocalBindingNames(bindings, node);
@@ -320,16 +394,20 @@ export const indexLocalBindingNames = (
       for (const clause of node.clauses) {
         for (const statement of clause.statements) {
           addStatementBindings(names, statement);
+          registerStatement(node, statement);
         }
       }
     } else if (ts.isCatchClause(node) && node.variableDeclaration !== undefined) {
       addBindingNames(getLocalBindingNames(bindings, node), node.variableDeclaration.name);
+      register(node, node.variableDeclaration.name, node.variableDeclaration);
     } else if (
       (ts.isForStatement(node) || ts.isForInStatement(node) || ts.isForOfStatement(node)) &&
       node.initializer !== undefined &&
       ts.isVariableDeclarationList(node.initializer)
     ) {
       addVariableDeclarationListBindings(getLocalBindingNames(bindings, node), node.initializer);
+      for (const declaration of node.initializer.declarations)
+        register(node, declaration.name, declaration);
     } else if (ts.isClassExpression(node) && node.name !== undefined) {
       getLocalBindingNames(bindings, node).add(node.name.text);
     }
@@ -340,14 +418,47 @@ export const indexLocalBindingNames = (
       (node.flags & ts.NodeFlags.BlockScoped) === 0
     ) {
       addVariableDeclarationListBindings(getLocalBindingNames(bindings, childFunctionScope), node);
+      for (const declaration of node.declarations)
+        register(childFunctionScope, declaration.name, declaration);
     }
 
     ts.forEachChild(node, (child) => visit(child, childFunctionScope));
   };
 
   visit(sourceFile, null);
-  return bindings;
+  return { names: bindings, declarations };
 };
+
+/** Finds the nearest scope containing the name, preserving ambiguous declarations. */
+const findLexicalBindingScope = (
+  identifier: ts.Identifier,
+  analysis: Pick<IStaticAnalysisSource, 'lexicalBindings'>,
+): ReadonlyMap<string, ts.Node | null> | undefined => {
+  let scope: ts.Node | undefined = identifier.parent;
+  while (scope !== undefined) {
+    const declarations = analysis.lexicalBindings.get(scope);
+    if (declarations?.has(identifier.text) === true) return declarations;
+    scope = scope.parent;
+  }
+  return undefined;
+};
+
+/** Checks whether a declaration shadows a global name, including ambiguous merged bindings. */
+export const hasLexicalBinding = (
+  identifier: ts.Identifier,
+  analysis: Pick<IStaticAnalysisSource, 'lexicalBindings'>,
+): boolean => findLexicalBindingScope(identifier, analysis) !== undefined;
+
+/**
+ * Resolves the nearest lexical declaration, preserving parameter and local shadowing.
+ * @param identifier The binding use.
+ * @param analysis The source's indexed lexical declarations.
+ * @returns Its exact declaration, or null for unknown or conflicting bindings.
+ */
+export const resolveLexicalBinding = (
+  identifier: ts.Identifier,
+  analysis: Pick<IStaticAnalysisSource, 'lexicalBindings'>,
+): ts.Node | null => findLexicalBindingScope(identifier, analysis)?.get(identifier.text) ?? null;
 
 /**
  * Indexes identifier occurrences once for binding-specific safety analysis.
@@ -356,9 +467,11 @@ export const indexLocalBindingNames = (
  */
 export const indexIdentifierUses = (
   sourceFile: ts.SourceFile,
-): ReadonlyMap<string, readonly ts.Identifier[]> => {
+): { identifierUses: ReadonlyMap<string, readonly ts.Identifier[]>; nodeCount: number } => {
   const identifierUses = new Map<string, ts.Identifier[]>();
+  let nodeCount = 0;
   const visit = (node: ts.Node): void => {
+    nodeCount += 1;
     if (ts.isIdentifier(node)) {
       const uses = identifierUses.get(node.text) ?? [];
       uses.push(node);
@@ -369,7 +482,12 @@ export const indexIdentifierUses = (
   };
 
   visit(sourceFile);
-  return new Map([...identifierUses].map(([name, uses]) => [name, Object.freeze(uses)] as const));
+  return {
+    identifierUses: new Map(
+      [...identifierUses].map(([name, uses]) => [name, Object.freeze(uses)] as const),
+    ),
+    nodeCount,
+  };
 };
 
 /**
@@ -426,32 +544,122 @@ export const resolveImportCandidatePaths = (
  * @param analysis The source containing that identifier.
  * @returns Same-file or relative-import candidates in deterministic order.
  */
+type IBindingReferences = readonly (IStaticAnalysisReference & { readonly symbol: string })[];
+const referenceOwners = new WeakMap<
+  IStaticAnalysisSource,
+  {
+    identities: Map<ts.Node, IBindingReferences>;
+    calls: Map<ts.Node, IBindingReferences>;
+  }
+>();
+
+const resolveReferences = (
+  identifier: ts.Identifier,
+  analysis: IStaticAnalysisSource,
+  followReturnCalls: boolean,
+): readonly (IStaticAnalysisReference & { readonly symbol: string })[] => {
+  const initial = resolveLexicalBinding(identifier, analysis);
+  if (initial === null) return [];
+  let owner = referenceOwners.get(analysis);
+  if (owner === undefined) {
+    owner = { identities: new Map(), calls: new Map() };
+    referenceOwners.set(analysis, owner);
+  }
+  const cache = followReturnCalls ? owner.calls : owner.identities;
+  const cached = cache.get(initial);
+  if (cached !== undefined) return cached;
+  const references: (IStaticAnalysisReference & { readonly symbol: string })[] = [];
+  const visited = new Set<ts.Node>();
+  let current: ts.Identifier | null = identifier;
+  while (current !== null) {
+    const binding = resolveLexicalBinding(current, analysis);
+    if (binding === null || visited.has(binding)) break;
+    if (analysis.bindingMutations.get(binding)?.has(null) === true) {
+      const unresolved = Object.freeze([]);
+      cache.set(initial, unresolved);
+      return unresolved;
+    }
+    visited.add(binding);
+    if (
+      analysis.exports.get(current.text)?.declaration === binding ||
+      (ts.isImportSpecifier(binding) &&
+        isModuleBindingVisible(current, analysis) &&
+        analysis.exports.has(current.text))
+    ) {
+      references.push(Object.freeze({ path: analysis.path, symbol: current.text }));
+    }
+    if (ts.isImportSpecifier(binding) && isModuleBindingVisible(current, analysis)) {
+      const imported = analysis.namedImports.get(current.text);
+      if (imported?.moduleSpecifier.startsWith('.') === true) {
+        for (const path of resolveImportCandidatePaths(analysis.path, imported.moduleSpecifier)) {
+          references.push(Object.freeze({ path, symbol: imported.importedName }));
+        }
+      }
+      break;
+    }
+    let expression: ts.Expression | null = null;
+    if (
+      ts.isVariableDeclaration(binding) &&
+      binding.initializer !== undefined &&
+      ts.isVariableDeclarationList(binding.parent) &&
+      (binding.parent.flags & ts.NodeFlags.Const) !== 0
+    ) {
+      const initializer = unwrapExpression(binding.initializer);
+      if (ts.isIdentifier(initializer)) expression = initializer;
+      else if (
+        followReturnCalls &&
+        (ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer)) &&
+        initializer.parameters.length === 0
+      ) {
+        const body = initializer.body;
+        expression = ts.isBlock(body)
+          ? body.statements.length === 1 && ts.isReturnStatement(body.statements[0]!)
+            ? (body.statements[0].expression ?? null)
+            : null
+          : body;
+      }
+    } else if (
+      followReturnCalls &&
+      ts.isFunctionDeclaration(binding) &&
+      binding.parameters.length === 0 &&
+      binding.body?.statements.length === 1
+    ) {
+      const statement = binding.body.statements[0];
+      if (statement !== undefined && ts.isReturnStatement(statement))
+        expression = statement.expression ?? null;
+    }
+    if (expression === null) break;
+    const candidate = unwrapExpression(expression);
+    const call = getDirectCall(candidate);
+    const isAlias: boolean =
+      ts.isVariableDeclaration(binding) &&
+      binding.initializer !== undefined &&
+      ts.isIdentifier(unwrapExpression(binding.initializer));
+    const target: ts.Expression | null = isAlias
+      ? candidate
+      : call?.arguments.length === 0
+        ? unwrapExpression(call.expression)
+        : null;
+    current = target !== null && ts.isIdentifier(target) ? target : null;
+  }
+  const result = Object.freeze(references);
+  cache.set(initial, result);
+  return result;
+};
+
+/** Resolves direct binding identity through immutable aliases, without invoking wrappers. */
 export const resolveBindingReferences = (
   identifier: ts.Identifier,
   analysis: IStaticAnalysisSource,
-): readonly (IStaticAnalysisReference & { readonly symbol: string })[] => {
-  if (!isModuleBindingVisible(identifier, analysis)) {
-    return [];
-  }
+): readonly (IStaticAnalysisReference & { readonly symbol: string })[] =>
+  resolveReferences(identifier, analysis, false);
 
-  const references: (IStaticAnalysisReference & { readonly symbol: string })[] = [];
-
-  if (analysis.exports.has(identifier.text)) {
-    references.push(Object.freeze({ path: analysis.path, symbol: identifier.text }));
-  }
-
-  const namedImport = analysis.namedImports.get(identifier.text);
-
-  if (namedImport !== undefined) {
-    references.push(
-      ...resolveImportCandidatePaths(analysis.path, namedImport.moduleSpecifier).map((path) =>
-        Object.freeze({ path, symbol: namedImport.importedName }),
-      ),
-    );
-  }
-
-  return references;
-};
+/** Resolves instruction consumers through immutable aliases and simple return-call wrappers. */
+export const resolveInstructionCallReferences = (
+  identifier: ts.Identifier,
+  analysis: IStaticAnalysisSource,
+): readonly (IStaticAnalysisReference & { readonly symbol: string })[] =>
+  resolveReferences(identifier, analysis, true);
 
 /**
  * Checks whether an identifier resolves directly to an explicit bound reference.

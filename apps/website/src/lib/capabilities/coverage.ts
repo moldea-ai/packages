@@ -1380,7 +1380,7 @@ export const RUNTIME_PATTERN_PROOFS: Record<string, Record<string, IRuntimePatte
         caseId: 'eve-markdown-instruction',
         source: {
           path: '/agent/instructions.md',
-          contains: 'Support customers with order and delivery questions.',
+          contains: 'You are the `support` agent.',
         },
         witness: {
           kind: 'evidence',

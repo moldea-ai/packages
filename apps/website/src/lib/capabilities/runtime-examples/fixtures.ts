@@ -43,10 +43,12 @@ const overrideFiles = (
 ];
 
 const eveManifest = source(EVE_FILES, '/moldea/moldea.yaml');
-const markdownInstructionManifest = eveManifest.replace(
-  'path: /agent/loaders.ts\n        symbol: loadInstruction',
-  'path: /agent/instructions.md',
-);
+const markdownInstructionManifest = eveManifest
+  .replace(
+    'path: /agent/loaders.ts\n        symbol: loadInstruction',
+    'path: /agent/instructions.md',
+  )
+  .replace('    tools:\n', '    mirrors: [/agent/instructions.md]\n    tools:\n');
 
 // direct source forms with positive package evidence; provider source is never imported
 export const RUNTIME_EXAMPLES: IRuntimeExampleDefinition[] = [
@@ -595,7 +597,9 @@ const ResumeSchema = z.object({ approved: z.boolean() });`,
       ...entry,
       path: entry.path.replace(/^\/agent\//u, '/'),
       ...(entry.type === 'file' && typeof entry.content === 'string'
-        ? { content: entry.content.replaceAll('/agent/', '/') }
+        ? {
+            content: entry.content.replaceAll('/agent/', '/').replace("'../moldea/", "'./moldea/"),
+          }
         : {}),
     })),
   },
@@ -616,7 +620,9 @@ const ResumeSchema = z.object({ approved: z.boolean() });`,
                   ? '{"name":"@acme/support-app","dependencies":{"eve":"0.66.3"}}'
                   : entry.path === '/moldea/moldea.yaml'
                     ? `${entry.content.replaceAll('/agent/', '/agents/support/agent/')}  research:\n    runtime:\n      id: eve\n    bindings:\n      runtimeAgent:\n        path: /agents/research/agent/agent.ts\n        symbol: default\n`
-                    : entry.content,
+                    : entry.path === '/agent/loaders.ts'
+                      ? entry.content.replace("'../moldea/", "'../../../moldea/")
+                      : entry.content,
             }
           : {}),
       })),
@@ -649,11 +655,11 @@ const ResumeSchema = z.object({ approved: z.boolean() });`,
     adapter: eveAdapter,
     title: 'A single Markdown instruction slot',
     description:
-      'An exclusive lowercase instructions.md file establishes the declared instruction path.',
+      'The lowercase instructions.md slot is a declared mirror of the canonical instruction.',
     files: overrideFiles(EVE_FILES, {
       '/moldea/moldea.yaml': markdownInstructionManifest,
       '/agent/instructions.ts': null,
-      '/agent/instructions.md': 'Support customers with order and delivery questions.\n',
+      '/agent/instructions.md': source(EVE_FILES, '/moldea/agents/support/instruction.md'),
     }),
   },
   {

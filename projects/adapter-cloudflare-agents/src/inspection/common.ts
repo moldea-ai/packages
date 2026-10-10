@@ -1,5 +1,6 @@
 import type ts from 'typescript';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { isSupportedTypeScriptSourcePath } from '@moldea.ai/adapter-static-analysis';
 import type { IRuntimeAdapterEvidence, ISourceRange } from '@moldea.ai/core';
 import type { IAdapterDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
@@ -41,9 +42,14 @@ const createEntity = (agentId: string, capabilityId?: string) =>
     ...(capabilityId === undefined ? {} : { capabilityId, capabilityKind: 'tool' as const }),
   });
 
-/** Appends one stable package-owned diagnostic. */
+/**
+ * Appends one stable package-owned diagnostic.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addCloudflareAgentsDiagnostic = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   code: Exclude<
     ICloudflareAgentsAdapterDiagnosticCode,
     'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED'
@@ -54,7 +60,7 @@ export const addCloudflareAgentsDiagnostic = (
   capabilityId?: string,
   details: IAdapterDiagnostic['details'] = {},
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createCloudflareAgentsDiagnostic({
       code,
       details,
@@ -66,14 +72,19 @@ export const addCloudflareAgentsDiagnostic = (
   );
 };
 
-/** Appends one scoped warning without asserting a failed runtime relationship. */
+/**
+ * Appends one scoped warning without asserting a failed runtime relationship.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const addCloudflareAgentsWarning = (
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   path: IRepositoryPath,
   agentId: string,
   details: IAdapterWarningDiagnostic['details'],
 ): void => {
-  diagnostics.push(
+  diagnostics.add(() =>
     createCloudflareAgentsDiagnostic({
       code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
       details,
@@ -92,11 +103,16 @@ export const locateCloudflareAgentsNode = (
 ): ISourceRange =>
   analysis.text.locator.locateRange(node.getStart(analysis.sourceFile), node.getEnd());
 
-/** Loads and validates one supported bound TypeScript source. */
+/**
+ * Loads and validates one supported bound TypeScript source.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const analyzeCloudflareAgentsBoundReference = async (
   session: ICloudflareAgentsInspectionSession,
   reference: IRepositoryReference,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
   capabilityId?: string,
 ): Promise<ICloudflareAgentsSourceAnalysis | null> => {
@@ -133,11 +149,16 @@ export const analyzeCloudflareAgentsBoundReference = async (
   return result.analysis;
 };
 
-/** Determines whether a declared symbol exists in its exact analyzed module. */
+/**
+ * Determines whether a declared symbol exists in its exact analyzed module.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const hasCloudflareAgentsSymbol = async (
   session: ICloudflareAgentsInspectionSession,
   reference: IRepositoryReference,
-  diagnostics: IAdapterDiagnostic[],
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
   missingCode: Exclude<
     ICloudflareAgentsAdapterDiagnosticCode,
@@ -158,6 +179,9 @@ export const hasCloudflareAgentsSymbol = async (
   }
 
   if (!analysis.exports.has(reference.symbol)) {
+    if (analysis.hasUnresolvedExports) {
+      return null;
+    }
     addCloudflareAgentsDiagnostic(
       diagnostics,
       missingCode,

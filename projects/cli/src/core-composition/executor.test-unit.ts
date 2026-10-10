@@ -1,18 +1,16 @@
 // @vitest-environment node
 import { describe, expect, test, vi } from 'vitest';
 
-import type {
-  ICore,
-  IProjectInspection,
-  IProjectInspectionPageResult,
-  IProjectValidationResult,
-} from '@moldea.ai/core';
-import type { IRuntimeAdapter } from '@moldea.ai/core/adapter';
+import type { IProjectInspectionPageResult, IProjectValidationResult } from '@moldea.ai/core';
+import type { INodeProjectInspection } from '@moldea.ai/core/node';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
-import { ACTIVE_RUNTIME_ADAPTERS } from './constants.js';
+import {
+  createTestCompositionState,
+  INSTALLED_PACKAGE_METADATA,
+} from '../composition/composition.test-fixtures.js';
 import { createMoldeaCliCoreInspectionExecutor } from './executor.js';
-import type { IMoldeaCliCoreFactory } from './types.js';
+import type { IMoldeaCliNodeInspectionFactory } from './types.js';
 
 const RESOURCE_LIMITS = Object.freeze({
   maxDiagnostics: 32,
@@ -25,6 +23,7 @@ const RESOURCE_LIMITS = Object.freeze({
 
 const SOURCE = Object.freeze({ id: 'memory:test', sourceKind: 'memory' });
 const VALIDATION_RESULT = Object.freeze({
+  runtimeInspection: 'not-run' as const,
   diagnostics: Object.freeze([]),
   errorCount: 0,
   evidence: Object.freeze([]),
@@ -35,6 +34,7 @@ const VALIDATION_RESULT = Object.freeze({
   warningCount: 0,
 }) satisfies IProjectValidationResult;
 const INSPECTION_RESULT = Object.freeze({
+  runtimeInspection: 'not-run' as const,
   counts: Object.freeze({
     agents: 0,
     context: 0,
@@ -62,10 +62,11 @@ const INSPECTION_RESULT = Object.freeze({
   view: 'all',
 }) satisfies IProjectInspectionPageResult;
 const PROJECT_INSPECTION = Object.freeze({
+  runtimeInspection: 'not-run' as const,
   counts: INSPECTION_RESULT.counts,
   formatVersion: INSPECTION_RESULT.formatVersion,
   inspectionDigest: INSPECTION_RESULT.inspectionDigest,
-  readPage: vi.fn<IProjectInspection['readPage']>().mockReturnValue(INSPECTION_RESULT),
+  readPage: vi.fn<INodeProjectInspection['readPage']>().mockResolvedValue(INSPECTION_RESULT),
   resourceUsage: Object.freeze({
     canonicalBytes: 0,
     peakRetainedBytes: 512,
@@ -76,127 +77,103 @@ const PROJECT_INSPECTION = Object.freeze({
   source: SOURCE,
   summary: null,
   valid: false,
-}) satisfies IProjectInspection;
+  adapters: createTestCompositionState().activeAdapters,
+  maxAnalysisHeapBytes: 560 * 1_048_576,
+  dispose: vi.fn<INodeProjectInspection['dispose']>().mockResolvedValue(undefined),
+}) satisfies INodeProjectInspection;
 
-/** Creates a complete Core double around the two CLI project operations. */
-const createCoreDouble = () => {
-  const createProjectInspection = vi
-    .fn<ICore['createProjectInspection']>()
-    .mockResolvedValue(PROJECT_INSPECTION);
-  const validateProject = vi.fn<ICore['validateProject']>().mockResolvedValue(VALIDATION_RESULT);
-  const core: ICore = {
-    calculateContentDigest: vi.fn<ICore['calculateContentDigest']>(),
-    createProjectInspection,
-    matchManifestScope: vi.fn<ICore['matchManifestScope']>(),
-    normalizeText: vi.fn<ICore['normalizeText']>(),
-    parseDecision: vi.fn<ICore['parseDecision']>(),
-    parseManifest: vi.fn<ICore['parseManifest']>(),
-    readCanonicalContentPage: vi.fn<ICore['readCanonicalContentPage']>(),
-    validateProject,
-  };
+const REGISTRY_URL = new URL('file:///installed-registry.mjs');
+const createInput = () => ({
+  command: 'validate' as const,
+  repository: createMemoryRepositoryReader([]),
+  packageMetadata: INSTALLED_PACKAGE_METADATA,
+  resourceLimits: RESOURCE_LIMITS,
+});
 
-  return { core, createProjectInspection, validateProject };
-};
-
-/** Creates a minimal adapter definition for deterministic registry-order tests. */
-const createAdapter = (id: string): IRuntimeAdapter => ({
-  id,
-  inspect: () => Promise.resolve(Object.freeze({ diagnostics: [], evidence: [] })),
-  supportedRepositoryFormatVersions: Object.freeze([1]),
+const createInspectionDouble = () => ({
+  ...PROJECT_INSPECTION,
+  readPage: vi.fn<INodeProjectInspection['readPage']>().mockResolvedValue(INSPECTION_RESULT),
+  dispose: vi.fn<INodeProjectInspection['dispose']>().mockResolvedValue(undefined),
 });
 
 describe('createMoldeaCliCoreInspectionExecutor', () => {
-  test('creates fresh Core state with exact limits and validates without a project projection', async () => {
+  test('passes exact limits and caller cancellation to the isolated boundary', async () => {
+    const inspection = createInspectionDouble();
+    const factory = vi.fn<IMoldeaCliNodeInspectionFactory>().mockResolvedValue(inspection);
+    const execute = createMoldeaCliCoreInspectionExecutor(factory, REGISTRY_URL);
     const controller = new AbortController();
-    const reader = createMemoryRepositoryReader([]);
-    const coreDouble = createCoreDouble();
-    const coreFactory = vi.fn<IMoldeaCliCoreFactory>().mockReturnValue(coreDouble.core);
-    const executeInspection = createMoldeaCliCoreInspectionExecutor(coreFactory);
-
-    await expect(
-      executeInspection({
-        command: 'validate',
-        repository: reader,
-        resourceLimits: RESOURCE_LIMITS,
-        signal: controller.signal,
-      }),
-    ).resolves.toBe(VALIDATION_RESULT);
-    expect(coreFactory.mock.calls[0]?.[0]?.limits).toStrictEqual({
-      maxDiagnostics: 32,
-      maxEntries: 128,
-      maxEvidence: 16,
-      maxFileBytes: 4096,
-      maxManifestBytes: 2048,
-      maxRetainedBytes: 32_768,
-      maxTotalBytesRead: 8192,
-    });
-    expect(coreDouble.validateProject).toHaveBeenCalledWith({
-      repository: reader,
+    const input = { ...createInput(), signal: controller.signal };
+    await expect(execute(input)).resolves.toStrictEqual(VALIDATION_RESULT);
+    expect(factory).toHaveBeenCalledWith({
+      adapterRegistryUrl: REGISTRY_URL,
+      repository: input.repository,
       signal: controller.signal,
+      limits: {
+        maxDiagnostics: 32,
+        maxEntries: 128,
+        maxEvidence: 16,
+        maxFileBytes: 4096,
+        maxManifestBytes: 2048,
+        maxRetainedBytes: 32_768,
+        maxTotalBytesRead: 8192,
+      },
     });
-
-    await executeInspection({
-      command: 'validate',
-      repository: reader,
-      resourceLimits: RESOURCE_LIMITS,
-    });
-
-    expect(coreFactory).toHaveBeenCalledTimes(2);
-    expect(ACTIVE_RUNTIME_ADAPTERS.map(({ id }) => id)).toStrictEqual([
-      'anthropic',
-      'claude-agent-sdk',
-      'cloudflare-agents',
-      'eve',
-      'google-genai',
-      'langchain',
-      'langgraph',
-      'openai',
-      'openai-agents-sdk',
-      'vercel-ai-sdk',
+    expect(inspection.readPage.mock.calls.map(([page]) => page.view)).toStrictEqual([
+      'diagnostics',
+      'evidence',
     ]);
+    expect(inspection.dispose).toHaveBeenCalledTimes(1);
   });
 
-  test('passes the opaque Core cursor only to bounded inspection pages', async () => {
-    const reader = createMemoryRepositoryReader([]);
-    const coreDouble = createCoreDouble();
-    const executeInspection = createMoldeaCliCoreInspectionExecutor(() => coreDouble.core);
-
-    await expect(
-      executeInspection({
-        command: 'inspect',
-        cursor: 'core5:all:1:memory%3Atest',
-        repository: reader,
-        resourceLimits: RESOURCE_LIMITS,
-      }),
-    ).resolves.toBe(INSPECTION_RESULT);
-    expect(coreDouble.createProjectInspection).toHaveBeenCalledWith({
-      repository: reader,
-    });
-    expect(PROJECT_INSPECTION.readPage).toHaveBeenCalledWith({
-      cursor: 'core5:all:1:memory%3Atest',
+  test('passes the opaque cursor to asynchronous inspect paging and disposes before returning', async () => {
+    const inspection = createInspectionDouble();
+    const execute = createMoldeaCliCoreInspectionExecutor(
+      () => Promise.resolve(inspection),
+      REGISTRY_URL,
+    );
+    await expect(execute({ ...createInput(), command: 'inspect', cursor: 'opaque' })).resolves.toBe(
+      INSPECTION_RESULT,
+    );
+    expect(inspection.readPage).toHaveBeenCalledWith({
+      cursor: 'opaque',
       maxItems: 128,
       view: 'all',
     });
-    expect(coreDouble.validateProject).not.toHaveBeenCalled();
+    expect(inspection.dispose).toHaveBeenCalledTimes(1);
   });
 
-  test('normalizes the active adapter set by ID before Core creation', async () => {
-    const reader = createMemoryRepositoryReader([]);
-    const coreDouble = createCoreDouble();
-    const coreFactory = vi.fn<IMoldeaCliCoreFactory>().mockReturnValue(coreDouble.core);
-    const zetaAdapter = createAdapter('zeta');
-    const alphaAdapter = createAdapter('alpha');
-    const executeInspection = createMoldeaCliCoreInspectionExecutor(coreFactory, [
-      zetaAdapter,
-      alphaAdapter,
-    ]);
+  test('disposes failed paging without reporting success', async () => {
+    const inspection = createInspectionDouble();
+    const cause = new Error('page failed');
+    inspection.readPage.mockRejectedValue(cause);
+    const execute = createMoldeaCliCoreInspectionExecutor(
+      () => Promise.resolve(inspection),
+      REGISTRY_URL,
+    );
+    await expect(execute(createInput())).rejects.toBe(cause);
+    expect(inspection.dispose).toHaveBeenCalledTimes(1);
+  });
 
-    await executeInspection({
-      command: 'validate',
-      repository: reader,
-      resourceLimits: RESOURCE_LIMITS,
+  test('does not publish a result when disposal detects terminal failure', async () => {
+    const inspection = createInspectionDouble();
+    const cause = new Error('child lost');
+    inspection.dispose.mockRejectedValue(cause);
+    const execute = createMoldeaCliCoreInspectionExecutor(
+      () => Promise.resolve(inspection),
+      REGISTRY_URL,
+    );
+    await expect(execute(createInput())).rejects.toBe(cause);
+  });
+
+  test('rejects actual installed adapter mismatch and still disposes', async () => {
+    const inspection = { ...createInspectionDouble(), adapters: [] };
+    const execute = createMoldeaCliCoreInspectionExecutor(
+      () => Promise.resolve(inspection),
+      REGISTRY_URL,
+    );
+    await expect(execute(createInput())).rejects.toMatchObject({
+      code: 'COMPOSITION_STATE_INVALID',
     });
-
-    expect(coreFactory.mock.calls[0]?.[0]?.adapters).toStrictEqual([alphaAdapter, zetaAdapter]);
+    expect(inspection.dispose).toHaveBeenCalledTimes(1);
   });
 });

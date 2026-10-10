@@ -1,5 +1,9 @@
 import type ts from 'typescript';
 
+import type {
+  IRuntimeAdapterRecordCollector,
+  IRuntimeAdapterEvidence as ICollectedEvidence,
+} from '@moldea.ai/core/adapter';
 import type { ISourceRange } from '@moldea.ai/core';
 import type { IAdapterErrorDiagnostic, IAdapterWarningDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
@@ -8,6 +12,11 @@ export type ICloudflareAgentsTargetId =
   'typescript-think-0-16-ai-sdk-7' | 'typescript-ai-chat-agent-0-10-ai-sdk-7';
 
 export type ICloudflareAgentsAdapterDiagnosticCode =
+  | 'CLOUDFLARE_AGENTS_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'CLOUDFLARE_AGENTS_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'CLOUDFLARE_AGENTS_SKILL_REGISTRATION_SYMBOL_NOT_FOUND'
+  | 'CLOUDFLARE_AGENTS_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND'
+  | 'CLOUDFLARE_AGENTS_INSTRUCTION_SOURCE_MISMATCH'
   | 'CLOUDFLARE_AGENTS_PACKAGE_MANIFEST_INVALID'
   | 'CLOUDFLARE_AGENTS_RUNTIME_VERSION_UNSUPPORTED'
   | 'CLOUDFLARE_AGENTS_SOURCE_TEXT_INVALID'
@@ -63,6 +72,7 @@ export interface ICloudflareAgentsImports {
 
 export type ICloudflareAgentsModuleExportState =
   | { readonly kind: 'absent' }
+  | { readonly declaration: ts.Node; readonly kind: 'unresolved' }
   | { readonly declaration: ts.Node; readonly kind: 'present-supported' }
   | { readonly declaration: ts.Node; readonly kind: 'present-unsupported' };
 
@@ -75,6 +85,8 @@ export type ICloudflareAgentsTextResult =
     };
 
 export interface ICloudflareAgentsSourceAnalysis {
+  readonly estimatedRetainedBytes: number;
+  readonly hasUnresolvedExports: boolean;
   readonly clientNames: ReadonlySet<string>;
   readonly constructorNames: ReadonlySet<string>;
   readonly exports: ReadonlyMap<
@@ -84,6 +96,9 @@ export interface ICloudflareAgentsSourceAnalysis {
   readonly identifierUses: ReadonlyMap<string, readonly ts.Identifier[]>;
   readonly imports: ICloudflareAgentsImports;
   readonly localBindingNames: ReadonlyMap<ts.Node, ReadonlySet<string>>;
+  readonly lexicalBindings: ReadonlyMap<ts.Node, ReadonlyMap<string, ts.Node | null>>;
+  readonly bindingMutations: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
+  readonly bindingEscapes: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
   readonly moduleArrays: ReadonlyMap<
     string,
     { readonly declaration: ts.VariableDeclaration; readonly expression: ts.ArrayLiteralExpression }
@@ -202,3 +217,8 @@ export type ICloudflareAgentsDiagnosticInput =
   | (Omit<IAdapterWarningDiagnostic, 'message' | 'source' | 'severity' | 'code'> & {
       readonly code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED';
     });
+
+// adapter-owned evidence admission uses only Core public types in packed declarations
+export interface ICloudflareAgentsEvidenceCollector extends IRuntimeAdapterRecordCollector<ICollectedEvidence> {
+  instruction(factory: () => ICollectedEvidence): void;
+}

@@ -94,7 +94,12 @@ describe('vercelAiSdkAdapter Core integration', () => {
   test('emits the complete normalized evidence for both supported targets', async () => {
     const result = await inspect();
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
     expect(result.summary).not.toBeNull();
@@ -103,7 +108,12 @@ describe('vercelAiSdkAdapter Core integration', () => {
   test('accepts a later stable provider major through the minimum-only range', async () => {
     const result = await inspect({ '/package.json': '{"dependencies":{"ai":"8.0.0"}}' });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
   });
 
@@ -120,7 +130,12 @@ describe('vercelAiSdkAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence
         .filter(
@@ -290,7 +305,12 @@ describe('vercelAiSdkAdapter Core integration', () => {
       ({ entity }) => entity?.agentId === 'support',
     );
 
-    expect(supportDiagnostics).toStrictEqual([]);
+    expect(supportDiagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      supportDiagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.filter(
         ({ agentId, kind }) => agentId === 'support' && kind === 'agent-definition',
@@ -355,7 +375,12 @@ describe('vercelAiSdkAdapter Core integration', () => {
       ({ capabilityId, kind }) => capabilityId === 'find-order' && kind === 'tool-registration',
     );
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(registrations).toHaveLength(2);
     expect(
       registrations.every(({ references }) =>
@@ -440,7 +465,12 @@ describe('vercelAiSdkAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(
         ({ agentId, kind, references }) =>
@@ -497,7 +527,12 @@ describe('vercelAiSdkAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence).toStrictEqual([]);
   });
 

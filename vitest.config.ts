@@ -8,6 +8,7 @@ export default mergeConfig(
       '.github/workflows/*.test-unit.ts',
       'configs/**/*.test-unit.ts',
       'scripts/**/*.test-unit.ts',
+      'projects/cli/scripts/**/*.test-unit.mjs',
     ],
     suite: 'unit',
   }),

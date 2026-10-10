@@ -1,0 +1,2056 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`anthropicAdapter Core integration > accepts a client tool with a null type 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > accepts a client tool with omitted optional fields 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > accepts a client-tool name at 64 ASCII characters 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > accepts a client-tool name at ASCII letters, digits, underscores, hyphens, and a leading digit 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > accepts a client-tool name at one ASCII character 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > accepts a later stable provider major through the minimum-only range 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > accepts additional statically resolvable Anthropic registrations in a closed tool array 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > diagnoses a client-tool name containing an unpaired surrogate escape 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > diagnoses an empty client-tool name and its independent mismatch 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > does not compare the manifest description with the Anthropic tool description 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > does not trust a module tool array after a concise-arrow return 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > does not trust a module tool array after a destructured member mutation 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits a negative diagnostic despite an unrelated dynamic request property 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_INSTRUCTION_LOADER_SYMBOL_NOT_FOUND with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_PACKAGE_MANIFEST_INVALID with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_RUNTIME_AGENT_SYMBOL_NOT_FOUND with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_SDK_VERSION_UNSUPPORTED with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_SOURCE_SYNTAX_INVALID with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_SOURCE_SYNTAX_INVALID with its exact normalized location and entity 2`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_SOURCE_TEXT_INVALID with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_SOURCE_TEXT_INVALID with its exact normalized location and entity 2`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_TOOL_INPUT_SCHEMA_NOT_WIRED with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_TOOL_INPUT_SCHEMA_SYMBOL_NOT_FOUND with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_TOOL_NAME_MISMATCH with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_TOOL_REGISTRATION_NOT_WIRED with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits only ANTHROPIC_TOOL_REGISTRATION_SYMBOL_NOT_FOUND with its exact normalized location and entity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits package and language evidence when the runtime binding omits a symbol 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > emits the complete normalized evidence for the supported target 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > establishes direct output-schema identity through the effective output format 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > ignores unrelated dynamic request properties for both relationships 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > keeps a closed tool array ambiguous when an additional registration name is invalid 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > keeps ambiguity local to the affected request relationship 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > keeps dynamic input schemas unverified while proving registration identity 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > keeps package detection independent from the supported source-language target 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/agent.js",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > keeps shared-source evidence and reads isolated to each agent invocation 1`] = `[]`;
+
+exports[`anthropicAdapter Core integration > leaves a provider/server tool type unsupported 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > maps a package manifest with NUL only to the package diagnostic 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > maps a package manifest with invalid UTF-8 only to the package diagnostic 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > preserves known instruction contradictions beside matching and unresolved requests 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > preserves known instruction errors beside an aliased Messages candidate 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > preserves known instruction errors beside unresolved request candidates 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > preserves known instruction errors beside unresolved request candidates 2`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > preserves package diagnostics independently from source-analysis failures 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > rejects a client-tool name with 65 ASCII characters 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > rejects a client-tool name with composed non-ASCII characters 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > rejects a client-tool name with decomposed non-ASCII characters 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > rejects a client-tool name with unsupported punctuation 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > rejects a client-tool name with whitespace 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > rejects instruction and tool evidence through shadowed imports 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "dynamic-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > reports an absent same-file input-schema symbol independently from registration shape 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > reports the stable stream method without losing direct relationships 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > returns no false runtime diagnostic when the bound pattern is indirect 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > returns no runtime-pattern evidence for a shadowed Anthropic client 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > silently ignores a present but unsupported runtime symbol form 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/agent.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > silently leaves a client tool with a computed property unsupported 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > silently leaves a client tool with a getter unsupported 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > silently leaves a client tool with a method unsupported 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > silently leaves a client tool with a setter unsupported 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > silently leaves a client tool with a shorthand property unsupported 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > silently leaves a client tool with a spread property unsupported 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > silently leaves a client tool with an unknown property unsupported 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > silently leaves a present but unsupported input-schema symbol unestablished 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > suppresses derived tool evidence for an unsupported registration shape 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > tolerates additional client-tool fields without interpreting their values 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;
+
+exports[`anthropicAdapter Core integration > traces a direct zodOutputFormat helper to its exact bound schema 1`] = `
+[
+  {
+    "code": "ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "anthropic",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/find-order.ts",
+  },
+]
+`;

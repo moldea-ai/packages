@@ -7,16 +7,18 @@ order: 0
 
 # The local package composition
 
-`@moldea.ai/cli` version 9 provides the `moldea` executable. It emits concise human results or deterministic schema 5 JSON pages. Full validation and metadata inspection use Core with active official adapters; changed-path scope and explicit canonical content use adapter-free, path-selected repository reads.
+`@moldea.ai/cli` version 10 provides the `moldea` executable. It emits concise human results or deterministic schema 6 JSON pages. Full validation and metadata inspection use Core with active official adapters; changed-path scope and explicit canonical content use adapter-free, path-selected repository reads.
 
 ```bash
-pnpm add -D @moldea.ai/cli@9
+pnpm add -D @moldea.ai/cli@10
 pnpm exec moldea validate
 ```
 
 Install and invoke the CLI from each adopted repository. Global, user-home, and cross-repository installations are outside the supported trust boundary because they can expose unrelated repositories to ambient executable or skill behavior.
 
-The package exposes no supported JavaScript or TypeScript import API. Its public contract is the executable, command grammar, schema 5 envelope, bounded pagination and content chunks, status and exit semantics, safe operational errors, and runtime requirements.
+The package exposes no supported JavaScript or TypeScript import API. Its public contract is the executable, command grammar, schema 6 envelope, bounded pagination and content chunks, status and exit semantics, safe operational errors, and runtime requirements.
+
+Runtime inspection is reported separately from validity as `complete`, `incomplete`, or `not-run`. `complete` means every applicable declaration was accounted for with evidence or a proved error; `incomplete` means scoped unverified warnings remain; `not-run` means universal validation or adapter availability prevented inspection. A project with no applicable runtime relationships is `complete`. Zero errors still produces `valid`, including warning-only results. A valid result with incomplete runtime inspection does not establish launch readiness. Operational failure returns an error without a fabricated completed inspection.
 
 ## Composition
 

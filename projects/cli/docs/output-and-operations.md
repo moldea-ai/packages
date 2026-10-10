@@ -8,13 +8,15 @@ order: 30
 
 ## JSON envelope
 
-`--json` writes one deterministic schema 5 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`. No command mixes a partial success result with an operational error.
+`--json` writes one deterministic schema 6 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`. No command mixes a partial success result with an operational error.
 
 `validate`, `inspect`, `scope`, and `composition` are recursively content-free. `inspect` projects only allowlisted records and splits unbounded collections into independent keys. Its `agent` record contains exactly one canonical `agentId` and manifest-declared `runtimeId`; it remains distinct from installed composition and runtime evidence. `content` is the only command allowed to return a `content` property, and it does so only for one explicitly selected canonical asset.
 
 Validation diagnostics carry required severity. Warning-only results use `valid` and exit `0`; confirmed errors use `invalid` and exit `1`. Complete error and warning counts appear on every collection page. The CLI projects only the closed relationship, reason, and safe version context of an unverified warning; arbitrary adapter error details remain private. Human warnings identify the affected relationship without implying successful verification or broken wiring.
 
 Collection and content JSON use a default 65,536-byte page budget and accept explicit budgets from 4,096 through 1,048,576 bytes. Byte accounting measures the final newline-terminated UTF-8 serialization after escaping. Opaque keyset cursors bind their format version, command, filters, source snapshot, last key, and checksum. Pages can traverse a large repository without gaps or duplicate records; a changed snapshot fails instead of mixing states.
+
+Runtime inspection is reported separately from validity as `complete`, `incomplete`, or `not-run`. `complete` means every applicable declaration was accounted for with evidence or a proved error; `incomplete` means scoped unverified warnings remain; `not-run` means universal validation or adapter availability prevented inspection. A project with no applicable runtime relationships is `complete`. Zero errors still produces `valid`, including warning-only results. A valid result with incomplete runtime inspection does not establish launch readiness. Operational failure returns an error without a fabricated completed inspection.
 
 ## Status and exit codes
 
@@ -32,7 +34,7 @@ Collection and content JSON use a default 65,536-byte page budget and accept exp
 
 Known repository and Core exceptions retain their source, code, retryability, safe logical path when applicable, and non-confidential metadata. Git and CLI errors use a closed stable registry. Unexpected failures become `cli:INTERNAL_ERROR` without raw causes, stack traces, host paths, or process diagnostics.
 
-Schema 5 includes these stable CLI-owned contracts:
+Schema 6 includes these stable CLI-owned contracts:
 
 | Code                      | Stable message                                                                                                |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -43,8 +45,10 @@ Schema 5 includes these stable CLI-owned contracts:
 | `OUTPUT_BUDGET_TOO_SMALL` | The output byte budget cannot contain the next complete result.                                               |
 | `PATH_INPUT_INVALID`      | The scope path input is invalid. Use leading-slash repository-logical paths and NUL-delimited UTF-8 on stdin. |
 
+Isolated inspection adds `core:INSPECTION_BUSY` (retryable, `Project inspection capacity is busy. Try again shortly.`), `core:INSPECTION_TIMEOUT` (retryable, `The isolated project inspection timed out.`), and `core:INSPECTION_PROCESS_FAILED` (nonretryable, `The isolated project inspection failed.`). None implies invalid repository content. Verified worker heap exhaustion retains `core:RESOURCE_LIMIT_EXCEEDED`, reports the startup-observed `maxAnalysisHeapBytes`, `observedUsage: null`, and `nextAction: review-inspection-capacity`, without an inferred source path. Fixed transport refusals expose their dimension and usage without suggesting a limit increase.
+
 ## Cancellation and read-only guarantees
 
-One operation-scoped abort signal reaches Git processes, inventory, filesystem reader creation, repository reads, Core, and adapters. A signal discards an unwritten provisional result and stops further snapshot retries.
+One operation-scoped abort signal reaches Git processes, inventory, filesystem reader creation, repository reads, Core, and adapters. A signal discards an unwritten provisional result and stops further snapshot retries. The supervised inspection has a fixed 120-second lifetime covering reads, preparation, paging, and disposal. Cleanup awaits actual repository reads and child closure before source post-checks or successful output. A private skill-launcher IPC disconnect follows the same cancellation path; standalone CLI invocation remains supported.
 
 The executable does not modify the working tree, real index, refs or `HEAD`, Git configuration, attributes, submodules, object database, filters, or runtime environment. It never uses a temporary index or object-writing plumbing. `scope` and `content` do not load adapter modules. Before `validate`, `inspect`, and `composition`, installation-integrity checks compare installed package identities, exact resolved versions, compatible-major dependency declarations, actual active adapters, Core formats, and executable constants so a contradictory installation cannot report a misleading result. Compatible patch and minor resolutions are accepted; prerelease or breaking-major substitutions fail closed.

@@ -63,6 +63,9 @@
     "kind": "instruction-loader",
     "references": [
       {
+        "path": "/moldea/agents/summary/instruction.md"
+      },
+      {
         "path": "/src/instructions.ts",
         "symbol": "loadSummaryInstruction"
       }
@@ -77,6 +80,9 @@
     "details": {},
     "kind": "instruction-loader",
     "references": [
+      {
+        "path": "/moldea/agents/support/instruction.md"
+      },
       {
         "path": "/src/instructions.ts",
         "symbol": "loadSupportInstruction"

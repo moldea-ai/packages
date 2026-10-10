@@ -1,11 +1,11 @@
 import { intersects, subset, validRange } from 'semver';
 
+import type { IRuntimeAdapterRecordCollector } from '@moldea.ai/core/adapter';
 import { classifyVersionBehavior, type IVersionBehavior } from '@moldea.ai/adapter-static-analysis';
-
-import type { IRuntimeAdapterEvidence } from '@moldea.ai/core';
 import type { IAdapterDiagnostic } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
+import type { ICloudflareAgentsEvidenceCollector } from '../contracts/index.js';
 import {
   AI_SDK_PACKAGE_NAME,
   AI_SDK_SUPPORTED_RANGE,
@@ -26,6 +26,7 @@ import type {
   ICloudflareAgentsPackageDeclaration,
   ICloudflareAgentsTargetId,
 } from '../contracts/index.js';
+
 import { addCloudflareAgentsDiagnostic, createCloudflareAgentsEvidence } from './common.js';
 
 const classifyDeclaration = (
@@ -76,13 +77,18 @@ export interface ICloudflareAgentsPackageInspection {
   readonly thinkBehavior: IVersionBehavior | null;
 }
 
-/** Inspects exact package declarations and gates one verified target. */
+/**
+ * Inspects exact package declarations and gates one verified target.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ */
 export const inspectCloudflareAgentsPackage = async (
   session: ICloudflareAgentsInspectionSession,
   sourcePath: IRepositoryPath,
   targetId: ICloudflareAgentsTargetId,
-  evidence: IRuntimeAdapterEvidence[],
-  diagnostics: IAdapterDiagnostic[],
+  evidence: ICloudflareAgentsEvidenceCollector,
+  diagnostics: IRuntimeAdapterRecordCollector<IAdapterDiagnostic>,
   agentId: string,
 ): Promise<ICloudflareAgentsPackageInspection | null> => {
   const discovery = await session.discoverPackage(sourcePath);
@@ -128,7 +134,7 @@ export const inspectCloudflareAgentsPackage = async (
         return null;
       }
 
-      evidence.push(
+      evidence.add(() =>
         createCloudflareAgentsEvidence({
           agentId,
           capabilityId: null,

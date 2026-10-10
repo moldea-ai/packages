@@ -17,34 +17,35 @@ beforeAll(async () => {
   examples = await createCliExamples(repositoryRoot, packages);
 });
 
-test('executes every public command with actual schema 5 status and process outcomes', () => {
+test('executes every public command with actual schema 6 status and process outcomes', () => {
   expect(examples).toHaveLength(10);
   expect(
     examples.map(({ result }) =>
       result.kind === 'cli' ? [result.schemaVersion, result.status, result.exitStatus] : null,
     ),
   ).toStrictEqual([
-    [5, 'valid', 0],
-    [5, 'valid', 0],
-    [5, 'valid', 0],
-    [5, 'valid', 0],
-    [5, 'valid', 0],
-    [5, 'valid', 0],
-    [5, 'error', 3],
-    [5, 'valid', 0],
-    [5, 'invalid', 1],
-    [5, 'valid', 0],
+    [6, 'valid', 0],
+    [6, 'valid', 0],
+    [6, 'valid', 0],
+    [6, 'valid', 0],
+    [6, 'valid', 0],
+    [6, 'valid', 0],
+    [6, 'error', 3],
+    [6, 'valid', 0],
+    [6, 'invalid', 1],
+    [6, 'valid', 0],
   ]);
 });
 
-test('publishes the executed schema 5 version warning without a false failure', () => {
+test('publishes the executed schema 6 version warning without a false failure', () => {
   expect(examples.find(({ id }) => id === 'cli-version-warning')?.result).toMatchObject({
     kind: 'cli',
-    schemaVersion: 5,
+    schemaVersion: 6,
     status: 'valid',
     exitStatus: 0,
     facts: {
       valid: true,
+      runtimeInspection: 'incomplete',
       diagnosticCount: 1,
       errorCount: 0,
       warningCount: 1,
@@ -62,6 +63,15 @@ test('publishes the executed schema 5 version warning without a false failure', 
         },
       ],
     },
+  });
+});
+
+test('distinguishes a project failure that prevented runtime inspection', () => {
+  expect(examples.find(({ id }) => id === 'cli-invalid-project')?.result).toMatchObject({
+    kind: 'cli',
+    status: 'invalid',
+    exitStatus: 1,
+    facts: { valid: false, runtimeInspection: 'not-run' },
   });
 });
 

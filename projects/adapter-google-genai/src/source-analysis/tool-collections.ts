@@ -1,10 +1,10 @@
 import ts from 'typescript';
 
 import {
+  analyzeModuleValueMutations,
   getClosedObjectProperties,
   getSafeModuleConstLiteral,
   isModuleBindingVisible,
-  isModuleConstValueSafe,
   isModuleValueBindingSafe,
   resolveBindingReferences,
   unwrapExpression,
@@ -198,7 +198,6 @@ const resolveLocalFunctionDeclaration = (
   identifier: ts.Identifier,
   analysis: IGoogleGenAiSourceAnalysis,
   allowedReferences: ReadonlySet<ts.Identifier>,
-  inputSchema?: IRepositoryReference,
 ): boolean => {
   if (!isModuleBindingVisible(identifier, analysis)) {
     return false;
@@ -208,13 +207,17 @@ const resolveLocalFunctionDeclaration = (
   const initializer =
     declaration?.initializer === undefined ? null : unwrapExpression(declaration.initializer);
 
+  if (
+    declaration === undefined ||
+    initializer === null ||
+    !ts.isObjectLiteralExpression(initializer)
+  )
+    return false;
+  const mutations = analyzeModuleValueMutations(analysis, declaration, allowedReferences);
   return (
-    declaration !== undefined &&
-    initializer !== null &&
-    ts.isObjectLiteralExpression(initializer) &&
-    isModuleConstValueSafe(analysis, declaration, allowedReferences, 'object') &&
-    getGoogleGenAiFunctionDeclarationObjectShape(analysis, initializer, inputSchema).kind ===
-      'present-supported'
+    !mutations.hasUnknownMutation &&
+    !mutations.mutatedMembers.has('name') &&
+    getGoogleGenAiFunctionDeclarationObjectShape(initializer).kind === 'present-supported'
   );
 };
 
@@ -222,7 +225,6 @@ const resolveFunctionDeclaration = async (
   expression: ts.Expression,
   analysis: IGoogleGenAiSourceAnalysis,
   allowedReferences: ReadonlySet<ts.Identifier>,
-  registrations: readonly IGoogleGenAiCollectionRegistration[],
   registrationIndex: IRegistrationIndex,
   session: IGoogleGenAiInspectionSession,
 ): Promise<IFunctionDeclarationResolution> => {
@@ -231,8 +233,7 @@ const resolveFunctionDeclaration = async (
   if (ts.isObjectLiteralExpression(candidate)) {
     return Object.freeze({
       isSupported:
-        getGoogleGenAiFunctionDeclarationObjectShape(analysis, candidate).kind ===
-        'present-supported',
+        getGoogleGenAiFunctionDeclarationObjectShape(candidate).kind === 'present-supported',
       matchingRegistrationIndexes: Object.freeze([]),
     });
   }
@@ -241,33 +242,24 @@ const resolveFunctionDeclaration = async (
     return Object.freeze({ isSupported: false, matchingRegistrationIndexes: Object.freeze([]) });
   }
 
-  if (!isModuleValueBindingSafe(analysis, candidate.text, null, allowedReferences, 'object')) {
-    return Object.freeze({
-      isSupported: false,
-      matchingRegistrationIndexes: Object.freeze([]),
-    });
-  }
-
   const matchingRegistrationIndexes = getRegistrationIndexes(
     candidate,
     analysis,
     registrationIndex,
   );
-  const matchingRegistration =
-    matchingRegistrationIndexes.length === 1
-      ? registrations[matchingRegistrationIndexes[0] as number]
-      : undefined;
   const localDeclaration = analysis.moduleConstDeclarations.get(candidate.text);
 
   if (localDeclaration !== undefined) {
     return Object.freeze({
-      isSupported: resolveLocalFunctionDeclaration(
-        candidate,
-        analysis,
-        allowedReferences,
-        matchingRegistration?.inputSchema,
-      ),
+      isSupported: resolveLocalFunctionDeclaration(candidate, analysis, allowedReferences),
       matchingRegistrationIndexes: Object.freeze(matchingRegistrationIndexes),
+    });
+  }
+
+  if (!isModuleValueBindingSafe(analysis, candidate.text, null, allowedReferences, 'object')) {
+    return Object.freeze({
+      isSupported: false,
+      matchingRegistrationIndexes: Object.freeze([]),
     });
   }
 
@@ -293,15 +285,9 @@ const resolveFunctionDeclaration = async (
   const shape = getGoogleGenAiFunctionDeclarationShape(
     importedResult.analysis,
     importedReference.symbol,
-    matchingRegistration?.inputSchema,
   );
-  const declaration = importedResult.analysis.moduleConstDeclarations.get(importedReference.symbol);
-  const isSafe =
-    declaration !== undefined &&
-    isModuleConstValueSafe(importedResult.analysis, declaration, new Set(), 'object');
-
   return Object.freeze({
-    isSupported: shape.kind === 'present-supported' && isSafe,
+    isSupported: shape.kind === 'present-supported',
     matchingRegistrationIndexes: Object.freeze(matchingRegistrationIndexes),
   });
 };
@@ -440,7 +426,6 @@ export const analyzeGoogleGenAiToolCollections = async (
           expression,
           analysis,
           allowedFunctionDeclarationReferences,
-          registrations,
           registrationIndex,
           session,
         );

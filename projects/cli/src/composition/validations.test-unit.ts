@@ -39,7 +39,7 @@ describe('isMoldeaCliCompositionStateValid', () => {
       'an invalid JSON schema version',
       (state: IMoldeaCliCompositionStateInput): IMoldeaCliCompositionStateInput => ({
         ...state,
-        outputSchemaVersion: 1 as 5,
+        outputSchemaVersion: 1 as 6,
       }),
     ],
   ])('rejects %s', (_description, mutate) => {
@@ -60,8 +60,8 @@ describe('isMoldeaCliCompositionStateValid', () => {
   });
 
   test.each([
-    ['a future breaking major', '6.0.0'],
-    ['a prerelease', '5.0.0-rc.1'],
+    ['a future breaking major', '7.0.0'],
+    ['a prerelease', '6.0.0-rc.1'],
   ])('rejects %s for a first-party package', (_description, version) => {
     const state = createTestCompositionState();
 
@@ -89,14 +89,14 @@ describe('isMoldeaCliCompositionStateValid', () => {
           ...state.packageMetadata,
           installedPackageVersions: {
             ...(state.packageMetadata.installedPackageVersions ?? {}),
-            '@moldea.ai/core': '5.9.9',
+            '@moldea.ai/core': '6.9.9',
           },
         },
       }),
     ).toBe(true);
   });
 
-  test.each(['4.0.1', '>=4.0.0'])('rejects an unsupported Core declaration %s', (range) => {
+  test.each(['5.0.1', '>=5.0.0'])('rejects an unsupported Core declaration %s', (range) => {
     const state = createTestCompositionState();
 
     expect(
@@ -112,6 +112,25 @@ describe('isMoldeaCliCompositionStateValid', () => {
       }),
     ).toBe(false);
   });
+
+  test.each(['2.0.0', '2.0.2'])(
+    'rejects Repository FS %s below the corrected minimum',
+    (version) => {
+      const state = createTestCompositionState();
+      expect(
+        isMoldeaCliCompositionStateValid({
+          ...state,
+          packageMetadata: {
+            ...state.packageMetadata,
+            installedPackageVersions: {
+              ...(state.packageMetadata.installedPackageVersions ?? {}),
+              '@moldea.ai/repository-fs': version,
+            },
+          },
+        }),
+      ).toBe(false);
+    },
+  );
 
   test.each([
     ['duplicate IDs', [createTestRuntimeAdapter('openai'), createTestRuntimeAdapter('openai')]],

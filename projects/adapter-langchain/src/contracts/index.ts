@@ -1,5 +1,9 @@
 import type ts from 'typescript';
 
+import type {
+  IRuntimeAdapterRecordCollector,
+  IRuntimeAdapterEvidence as ICollectedEvidence,
+} from '@moldea.ai/core/adapter';
 import type { ISourceRange } from '@moldea.ai/core';
 import type {
   IAdapterErrorDiagnostic,
@@ -9,6 +13,12 @@ import type {
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
 export type ILangChainAdapterDiagnosticCode =
+  | 'LANGCHAIN_AGENT_INPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'LANGCHAIN_TOOL_OUTPUT_SCHEMA_SYMBOL_NOT_FOUND'
+  | 'LANGCHAIN_SKILL_IMPLEMENTATION_SYMBOL_NOT_FOUND'
+  | 'LANGCHAIN_SKILL_REGISTRATION_SYMBOL_NOT_FOUND'
+  | 'LANGCHAIN_VARIABLE_PROVIDER_SYMBOL_NOT_FOUND'
+  | 'LANGCHAIN_INSTRUCTION_SOURCE_MISMATCH'
   | 'LANGCHAIN_PACKAGE_MANIFEST_INVALID'
   | 'LANGCHAIN_VERSION_UNSUPPORTED'
   | 'LANGCHAIN_SOURCE_TEXT_INVALID'
@@ -76,17 +86,23 @@ export interface ILangChainImports {
 }
 
 export interface ILangChainSourceAnalysis {
+  readonly estimatedRetainedBytes: number;
+  readonly hasUnresolvedExports: boolean;
   readonly clientNames: ReadonlySet<string>;
   readonly constructorNames: ReadonlySet<string>;
   readonly exports: ReadonlyMap<
     string,
     | { readonly declaration: ts.Node; readonly kind: 'absent' }
+    | { readonly declaration: ts.Node; readonly kind: 'unresolved' }
     | { readonly declaration: ts.Node; readonly kind: 'present-supported' }
     | { readonly declaration: ts.Node; readonly kind: 'present-unsupported' }
   >;
   readonly identifierUses: ReadonlyMap<string, readonly ts.Identifier[]>;
   readonly imports: ILangChainImports;
   readonly localBindingNames: ReadonlyMap<ts.Node, ReadonlySet<string>>;
+  readonly lexicalBindings: ReadonlyMap<ts.Node, ReadonlyMap<string, ts.Node | null>>;
+  readonly bindingMutations: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
+  readonly bindingEscapes: ReadonlyMap<ts.Node, ReadonlySet<string | null>>;
   readonly moduleArrays: ReadonlyMap<
     string,
     { readonly declaration: ts.VariableDeclaration; readonly expression: ts.ArrayLiteralExpression }
@@ -203,3 +219,8 @@ export type ILangChainBindingResult =
   | { readonly expression: ts.Expression | null; readonly kind: 'different' }
   | { readonly kind: 'unresolved' }
   | { readonly expression: ts.Expression; readonly kind: 'wired' };
+
+// adapter-owned evidence admission uses only Core public types in packed declarations
+export interface ILangChainEvidenceCollector extends IRuntimeAdapterRecordCollector<ICollectedEvidence> {
+  instruction(factory: () => ICollectedEvidence): void;
+}

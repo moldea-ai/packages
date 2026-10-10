@@ -89,7 +89,7 @@ describe('@moldea.ai/adapter-cloudflare-agents public API', () => {
 
     expect(packResult).toMatchObject({
       name: '@moldea.ai/adapter-cloudflare-agents',
-      version: '4.0.0',
+      version: '5.0.0',
     });
     expect(packResult.files.map(({ path: filePath }) => filePath)).toEqual(
       expect.arrayContaining([
@@ -101,7 +101,7 @@ describe('@moldea.ai/adapter-cloudflare-agents public API', () => {
       ]),
     );
     expect(manifest.dependencies).toStrictEqual({
-      '@moldea.ai/core': 'workspace:^5.0.0',
+      '@moldea.ai/core': 'workspace:^6.0.0',
       '@moldea.ai/repository': 'workspace:^2.0.0',
       semver: '7.8.5',
       typescript: '6.0.3',
@@ -114,26 +114,41 @@ describe('published binding example', () => {
     readFileSync(new URL('../docs/binding-example.md', import.meta.url), 'utf8'),
   );
 
-  test('establishes every documented relationship through the real adapter', async () => {
+  test('establishes supported relationships and warns for Worker text-module provenance', async () => {
     const result = await createCore({
       adapters: [publicApi.cloudflareAgentsAdapter],
     }).validateProject({
       repository: createMemoryRepositoryReader(files),
     });
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
+    expect(result.runtimeInspection).toBe('incomplete');
+    expect(result.evidence.some(({ kind }) => kind === 'instruction-loader')).toBe(false);
+    expect(
+      result.diagnostics
+        .filter(({ details }) => details['relationship'] === 'instruction-loader')
+        .map(({ entity, details }) => ({ agentId: entity?.agentId, details })),
+    ).toStrictEqual([
+      {
+        agentId: 'summary',
+        details: { relationship: 'instruction-loader', reason: 'unsupported-source-pattern' },
+      },
+      {
+        agentId: 'support',
+        details: { relationship: 'instruction-loader', reason: 'unsupported-source-pattern' },
+      },
+    ]);
     for (const { path: sourcePath, symbol, ...identity } of [
       {
         agentId: 'support',
         kind: 'agent-definition',
         path: '/src/agents.ts',
         symbol: 'SupportAgent',
-      },
-      {
-        agentId: 'support',
-        kind: 'instruction-loader',
-        path: '/src/instructions.ts',
-        symbol: 'loadSupportInstruction',
       },
       {
         agentId: 'support',
@@ -161,12 +176,6 @@ describe('published binding example', () => {
         kind: 'agent-definition',
         path: '/src/agents.ts',
         symbol: 'SummaryAgent',
-      },
-      {
-        agentId: 'summary',
-        kind: 'instruction-loader',
-        path: '/src/instructions.ts',
-        symbol: 'loadSummaryInstruction',
       },
       {
         agentId: 'summary',

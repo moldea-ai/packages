@@ -30,11 +30,11 @@ const cliEnvelopeExcerpt = (
   status: Extract<ICapabilityResult, { kind: 'cli' }>['status'],
   command: string,
 ) => ({
-  cliVersion: '9.0.0',
+  cliVersion: '10.0.0',
   command,
   error: null,
   result: {},
-  schemaVersion: 5 as const,
+  schemaVersion: 6 as const,
   status,
 });
 
@@ -85,13 +85,13 @@ describe('getCapabilityOutcome', () => {
           id: 'inspection-mixed-diagnostics',
           result: {
             kind: 'inspection',
-            facts: { counts: { diagnostics: 2, errors: 1, warnings: 1 } },
+            facts: { counts: { diagnostics: 3, errors: 1, warnings: 2 } },
           },
         },
         catalog,
       ),
     ).toMatchObject({
-      title: '1 warning and 1 error across two pages',
+      title: '2 warnings and 1 error across three pages',
       label: 'Mixed results',
       tone: 'danger',
     });
@@ -134,7 +134,7 @@ describe('getCapabilityOutcome', () => {
           result: {
             kind: 'cli',
             status: 'valid',
-            schemaVersion: 5,
+            schemaVersion: 6,
             exitStatus: 0,
             command: 'moldea validate --json',
             facts: { warningCount: 1 },
@@ -165,7 +165,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'valid',
-        schemaVersion: 5,
+        schemaVersion: 6,
         exitStatus: 0,
         command: 'moldea inspect --json',
         facts: {},
@@ -178,7 +178,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'invalid',
-        schemaVersion: 5,
+        schemaVersion: 6,
         exitStatus: 1,
         command: 'moldea validate --json',
         facts: {},
@@ -191,7 +191,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'error',
-        schemaVersion: 5,
+        schemaVersion: 6,
         exitStatus: 3,
         command: 'moldea content --json',
         facts: {},

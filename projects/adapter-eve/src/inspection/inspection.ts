@@ -1,13 +1,12 @@
-import type {
-  IAdapterDiagnostic,
-  IRuntimeAdapterContext,
-  IRuntimeAdapterEvidence,
-  IRuntimeAdapterResult,
-} from '@moldea.ai/core/adapter';
+import { createRuntimeAdapterResultCollector } from '@moldea.ai/core/adapter';
+import type { IRuntimeAdapterContext, IRuntimeAdapterResult } from '@moldea.ai/core/adapter';
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import { EVE_TEST_EXCLUSION_BOUNDARY_VERSION } from '../constants/index.js';
 import type { IEveAgentDefinition, IEveWorkspaceSubagentRegistration } from '../contracts/index.js';
+
+import { createDeclaredEveRelationships } from './declared-relationships.js';
+import { IGNORED_EVE_RECORDS } from './common.js';
 import { inspectEveAgent } from './agent-inspection.js';
 import { addEveWarning } from './common.js';
 import { inspectEveInstructions } from './instruction-inspection.js';
@@ -27,18 +26,24 @@ import { inspectEveTools } from './tool-inspection.js';
  * - ENTRY_NOT_DIRECTORY: The requested repository entry is not a directory.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - PROVIDER_INCOMPLETE: The repository provider cannot expose a complete result.
  * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
  * - INVALID_SOURCE_DATA: The repository source returned invalid data.
- * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
- * - ABORTED: The repository operation or inspection signal was aborted.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - ABORTED: The repository operation was aborted.
+ * - ABORTED: The Core operation was aborted.
  */
 export const inspectEve = async (
   context: IRuntimeAdapterContext,
 ): Promise<IRuntimeAdapterResult> => {
   context.signal?.throwIfAborted();
   const session = createEveInspectionSession(context);
-  const evidence: IRuntimeAdapterEvidence[] = [];
-  const diagnostics: IAdapterDiagnostic[] = [];
+  const collector = createRuntimeAdapterResultCollector(context);
+  const relationships = createDeclaredEveRelationships(context, collector, session);
+  const { evidence, diagnostics } = relationships;
+  await relationships.inspectExports();
+  await relationships.inspectInstructionSource();
   const definitions: IEveAgentDefinition[] = [];
   const workspaceRegistrations: IEveWorkspaceSubagentRegistration[] = [];
   const definition = await inspectEveAgent(session, context.agent, evidence, diagnostics);
@@ -122,13 +127,23 @@ export const inspectEve = async (
         continue;
       }
 
-      const relatedDefinition = await inspectEveAgent(session, resolution.agent, [], []);
+      const relatedDefinition = await inspectEveAgent(
+        session,
+        resolution.agent,
+        IGNORED_EVE_RECORDS,
+        IGNORED_EVE_RECORDS,
+      );
 
       if (relatedDefinition !== null) {
         definitions.push(relatedDefinition);
         preparedToolNames.set(
           relatedDefinition.agent.id,
-          await inspectEveTools(session, relatedDefinition, [], []),
+          await inspectEveTools(
+            session,
+            relatedDefinition,
+            IGNORED_EVE_RECORDS,
+            IGNORED_EVE_RECORDS,
+          ),
         );
       }
     }
@@ -144,8 +159,6 @@ export const inspectEve = async (
     diagnostics,
   );
 
-  return Object.freeze({
-    diagnostics: Object.freeze(diagnostics),
-    evidence: Object.freeze(evidence),
-  });
+  relationships.finalize();
+  return collector.finalize();
 };

@@ -14,7 +14,27 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
 > = {
   'anthropic-messages': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'anthropic',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'anthropic',
+      },
+    ],
     evidence: [
       {
         agentId: 'support',
@@ -25,6 +45,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agent.ts',
           },
@@ -134,7 +157,27 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'anthropic-parse-output': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'anthropic',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'anthropic',
+      },
+    ],
     evidence: [
       {
         agentId: 'support',
@@ -145,6 +188,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agent.ts',
           },
@@ -275,7 +321,46 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'claude-query': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'billing',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'claude-agent-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'claude-agent-sdk',
+      },
+      {
+        code: 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-registration',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'billing',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'claude-agent-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/tools.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'claude-agent-sdk',
+      },
+    ],
     evidence: [
       {
         agentId: 'billing',
@@ -329,6 +414,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/billing/instruction.md',
+          },
+          {
             path: '/src/agents.ts',
           },
           {
@@ -348,6 +436,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/triage/instruction.md',
+          },
           {
             path: '/src/instructions.ts',
             symbol: 'loadTriageInstruction',
@@ -569,7 +660,46 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'claude-core-prompt-controls': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'billing',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'claude-agent-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'claude-agent-sdk',
+      },
+      {
+        code: 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-registration',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'billing',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'claude-agent-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/tools.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'claude-agent-sdk',
+      },
+    ],
     evidence: [
       {
         agentId: 'billing',
@@ -623,6 +753,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/billing/instruction.md',
+          },
+          {
             path: '/src/agents.ts',
           },
           {
@@ -642,6 +775,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/triage/instruction.md',
+          },
           {
             path: '/src/instructions.ts',
             symbol: 'loadTriageInstruction',
@@ -929,6 +1065,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/summary/instruction.md',
+          },
+          {
             path: '/src/instructions.ts',
             symbol: 'loadSummaryInstruction',
           },
@@ -943,6 +1082,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         details: {},
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/instructions.ts',
             symbol: 'loadSupportInstruction',
@@ -1328,6 +1470,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
             path: '/agent/loaders.ts',
             symbol: 'loadInstruction',
           },
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
         ],
         runtimeName: 'loadInstruction',
         source: 'eve',
@@ -1449,6 +1594,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -1481,7 +1627,27 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'google-generate-content': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'google-genai',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'google-genai',
+      },
+    ],
     evidence: [
       {
         agentId: 'support',
@@ -1492,6 +1658,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agent.ts',
           },
@@ -1601,7 +1770,27 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'google-mixed-generation': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'GOOGLE_GENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'google-genai',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'google-genai',
+      },
+    ],
     evidence: [
       {
         agentId: 'support',
@@ -1612,6 +1801,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agent.ts',
           },
@@ -1768,6 +1960,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agent.ts',
             symbol: 'supportAgent',
@@ -1955,6 +2150,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/support/instruction.md',
+          },
+          {
             path: '/src/agent.ts',
             symbol: 'supportAgent',
           },
@@ -2140,6 +2338,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agent.ts',
             symbol: 'supportAgent',
@@ -2689,7 +2890,27 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'openai-responses': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'openai',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'openai',
+      },
+    ],
     evidence: [
       {
         agentId: 'support',
@@ -2700,6 +2921,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agent.ts',
           },
@@ -2809,7 +3033,27 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'openai-parse-output': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'openai',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'openai',
+      },
+    ],
     evidence: [
       {
         agentId: 'support',
@@ -2820,6 +3064,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agent.ts',
           },
@@ -3042,6 +3289,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/triage/instruction.md',
+          },
+          {
             path: '/src/agents.ts',
           },
           {
@@ -3243,6 +3493,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/summary/instruction.md',
+          },
+          {
             path: '/src/agents.ts',
           },
           {
@@ -3262,6 +3515,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agents.ts',
           },
@@ -3582,7 +3838,46 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'claude-preset': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'billing',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'claude-agent-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'claude-agent-sdk',
+      },
+      {
+        code: 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-registration',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'billing',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'claude-agent-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/tools.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'claude-agent-sdk',
+      },
+    ],
     evidence: [
       {
         agentId: 'billing',
@@ -3636,6 +3931,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/billing/instruction.md',
+          },
+          {
             path: '/src/agents.ts',
           },
           {
@@ -3655,6 +3953,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/triage/instruction.md',
+          },
           {
             path: '/src/instructions.ts',
             symbol: 'loadTriageInstruction',
@@ -3876,7 +4177,46 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'claude-inherited-tools': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'billing',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'claude-agent-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'claude-agent-sdk',
+      },
+      {
+        code: 'CLAUDE_AGENT_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-registration',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'billing',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'claude-agent-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/tools.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'claude-agent-sdk',
+      },
+    ],
     evidence: [
       {
         agentId: 'billing',
@@ -3930,6 +4270,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/billing/instruction.md',
+          },
+          {
             path: '/src/agents.ts',
           },
           {
@@ -3949,6 +4292,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/triage/instruction.md',
+          },
           {
             path: '/src/instructions.ts',
             symbol: 'loadTriageInstruction',
@@ -4592,6 +4938,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/summary/instruction.md',
+          },
+          {
             path: '/src/agents.ts',
           },
           {
@@ -4611,6 +4960,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agents.ts',
           },
@@ -4960,6 +5312,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/summary/instruction.md',
+          },
+          {
             path: '/src/agents.ts',
           },
           {
@@ -4979,6 +5334,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agents.ts',
           },
@@ -5328,6 +5686,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         kind: 'instruction-loader',
         references: [
           {
+            path: '/moldea/agents/summary/instruction.md',
+          },
+          {
             path: '/src/agents.ts',
           },
           {
@@ -5347,6 +5708,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
           {
             path: '/src/agents.ts',
           },
@@ -5667,7 +6031,80 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'vercel-dynamic-preparation': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'agent-output-schema',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          adapterId: 'vercel-ai-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/contracts.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'vercel-ai-sdk',
+      },
+      {
+        code: 'VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'vercel-ai-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/implementations.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'vercel-ai-sdk',
+      },
+      {
+        code: 'VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'instruction-loader',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          adapterId: 'vercel-ai-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/instructions.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'vercel-ai-sdk',
+      },
+      {
+        code: 'VERCEL_AI_SDK_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-registration',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'vercel-ai-sdk',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/tools.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'vercel-ai-sdk',
+      },
+    ],
     evidence: [
       {
         agentId: 'support',
@@ -5695,6 +6132,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         },
         kind: 'instruction-loader',
         references: [
+          {
+            path: '/moldea/agents/summary/instruction.md',
+          },
           {
             path: '/src/agents.ts',
           },
@@ -6038,6 +6478,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
             path: '/loaders.ts',
             symbol: 'loadInstruction',
           },
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
         ],
         runtimeName: 'loadInstruction',
         source: 'eve',
@@ -6176,6 +6619,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -6423,6 +6867,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -6451,11 +6896,29 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         source: 'eve',
       },
     ],
-    manifestDigest: 'sha256:70f00a3afe08fbb1c0df208a32ce79790ad079d6c4973765b95186bf007e5270',
+    manifestDigest: 'sha256:051d594b6cdcf4885ffd9d23c37ad8321ab0d49e878d4eb1f61530d8b00fb21a',
   },
   'eve-case-varied-instruction': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'instruction-loader',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/loaders.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
+    ],
     evidence: [
       {
         agentId: 'summary',
@@ -6656,6 +7119,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -6688,7 +7152,25 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'eve-system-instruction': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'instruction-loader',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/loaders.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
+    ],
     evidence: [
       {
         agentId: 'summary',
@@ -6889,6 +7371,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -6999,6 +7482,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
             path: '/agent/loaders.ts',
             symbol: 'loadInstruction',
           },
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
         ],
         runtimeName: 'loadInstruction',
         source: 'eve',
@@ -7137,6 +7623,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -7170,6 +7657,44 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   'eve-tool-name-collision': {
     valid: false,
     diagnostics: [
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'search',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/implementations.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-registration',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'search',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/tools/orders-search.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
       {
         code: 'EVE_TOOL_RUNTIME_NAME_COLLISION',
         details: {
@@ -7264,6 +7789,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
             path: '/agent/loaders.ts',
             symbol: 'loadInstruction',
           },
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
         ],
         runtimeName: 'loadInstruction',
         source: 'eve',
@@ -7402,6 +7930,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -7412,7 +7941,46 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'eve-flat-skill': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'skill-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'skill',
+          capabilityId: 'analyze',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/skills/analyze.md',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'skill-registration',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'skill',
+          capabilityId: 'analyze',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/skills/analyze.md',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
+    ],
     evidence: [
       {
         agentId: 'summary',
@@ -7489,6 +8057,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
           {
             path: '/agent/loaders.ts',
             symbol: 'loadInstruction',
+          },
+          {
+            path: '/moldea/agents/support/instruction.md',
           },
         ],
         runtimeName: 'loadInstruction',
@@ -7644,7 +8215,46 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'eve-packaged-skill': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'skill-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'skill',
+          capabilityId: 'analyze',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/skills/analyze/SKILL.md',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'skill-registration',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'skill',
+          capabilityId: 'analyze',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/skills/analyze/SKILL.md',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
+    ],
     evidence: [
       {
         agentId: 'summary',
@@ -7721,6 +8331,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
           {
             path: '/agent/loaders.ts',
             symbol: 'loadInstruction',
+          },
+          {
+            path: '/moldea/agents/support/instruction.md',
           },
         ],
         runtimeName: 'loadInstruction',
@@ -7876,7 +8489,25 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   },
   'eve-single-file-subagent': {
     valid: true,
-    diagnostics: [],
+    diagnostics: [
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'runtime-agent',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'summary',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/subagents/summary.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
+    ],
     evidence: [
       {
         agentId: 'support',
@@ -7908,6 +8539,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
           {
             path: '/agent/loaders.ts',
             symbol: 'loadInstruction',
+          },
+          {
+            path: '/moldea/agents/support/instruction.md',
           },
         ],
         runtimeName: 'loadInstruction',
@@ -8011,6 +8645,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -8113,6 +8748,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
             path: '/agent/loaders.ts',
             symbol: 'loadInstruction',
           },
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
         ],
         runtimeName: 'loadInstruction',
         source: 'eve',
@@ -8251,6 +8889,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -8361,6 +9000,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
             path: '/agent/loaders.ts',
             symbol: 'loadInstruction',
           },
+          {
+            path: '/moldea/agents/support/instruction.md',
+          },
         ],
         runtimeName: 'loadInstruction',
         source: 'eve',
@@ -8499,6 +9141,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -8534,6 +9177,63 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
   'eve-excluded-test-tool': {
     valid: false,
     diagnostics: [
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-input-schema',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'search',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/contracts.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-output-schema',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'search',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/contracts.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
+      {
+        code: 'EVE_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'search',
+          adapterId: 'eve',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/agent/implementations.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'eve',
+      },
       {
         code: 'EVE_TOOL_REGISTRATION_NOT_WIRED',
         details: {},
@@ -8627,6 +9327,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
           {
             path: '/agent/loaders.ts',
             symbol: 'loadInstruction',
+          },
+          {
+            path: '/moldea/agents/support/instruction.md',
           },
         ],
         runtimeName: 'loadInstruction',
@@ -8732,6 +9435,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -8867,6 +9571,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
           {
             path: '/agents/support/agent/loaders.ts',
             symbol: 'loadInstruction',
+          },
+          {
+            path: '/moldea/agents/support/instruction.md',
           },
         ],
         runtimeName: 'loadInstruction',
@@ -9042,6 +9749,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agents/support/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -9151,6 +9859,9 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
           {
             path: '/agent/loaders.ts',
             symbol: 'loadInstruction',
+          },
+          {
+            path: '/moldea/agents/support/instruction.md',
           },
         ],
         runtimeName: 'loadInstruction',
@@ -9290,6 +10001,7 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
         references: [
           {
             path: '/agent/skills/analyze.ts',
+            symbol: 'default',
           },
         ],
         runtimeName: 'analyze',
@@ -9346,6 +10058,25 @@ const BASE_RUNTIME_EXPECTED_RESULTS: Record<
           },
         },
         severity: 'error',
+        source: 'openai',
+      },
+      {
+        code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: {
+          relationship: 'tool-implementation',
+          reason: 'unsupported-source-pattern',
+        },
+        entity: {
+          agentId: 'support',
+          capabilityKind: 'tool',
+          capabilityId: 'find-order',
+          adapterId: 'openai',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/find-order.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
         source: 'openai',
       },
     ],
@@ -9576,23 +10307,41 @@ const deriveLangChainMiddlewareWarningResult = (): IRuntimeExpectedResult => {
   const relationships = ['agent-output-schema', 'instruction-loader', 'tool-registration'] as const;
   return {
     ...base,
-    diagnostics: relationships.map((relationship) => ({
-      code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED',
-      details: { reason: 'dynamic-source-pattern', relationship },
-      entity: {
-        adapterId: 'langchain',
-        agentId: 'support',
-        ...(relationship === 'tool-registration'
-          ? { capabilityId: 'find-order', capabilityKind: 'tool' as const }
-          : {}),
+    diagnostics: [
+      ...relationships.map<IRuntimeExpectedResult['diagnostics'][number]>((relationship) => ({
+        code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { reason: 'dynamic-source-pattern', relationship },
+        entity: {
+          adapterId: 'langchain',
+          agentId: 'support',
+          ...(relationship === 'tool-registration'
+            ? { capabilityId: 'find-order', capabilityKind: 'tool' as const }
+            : {}),
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/agent.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'langchain',
+      })),
+      {
+        code: 'LANGCHAIN_RUNTIME_RELATIONSHIP_UNVERIFIED',
+        details: { reason: 'unsupported-source-pattern', relationship: 'tool-implementation' },
+        entity: {
+          adapterId: 'langchain',
+          agentId: 'support',
+          capabilityId: 'find-order',
+          capabilityKind: 'tool',
+        },
+        message: 'The declared runtime relationship could not be verified.',
+        path: '/src/implementations.ts',
+        pointer: null,
+        range: null,
+        severity: 'warning',
+        source: 'langchain',
       },
-      message: 'The declared runtime relationship could not be verified.',
-      path: '/src/agent.ts',
-      pointer: null,
-      range: null,
-      severity: 'warning',
-      source: 'langchain',
-    })),
+    ],
     evidence: base.evidence.filter(
       (entry) =>
         entry.kind !== 'instruction-loader' &&
@@ -9646,6 +10395,7 @@ const deriveOpenAiLoaderUnverifiedResult = (): IRuntimeExpectedResult => {
         severity: 'warning',
         source: 'openai',
       },
+      ...base.diagnostics,
     ],
     evidence: base.evidence.filter(({ kind }) => kind !== 'instruction-loader'),
   };

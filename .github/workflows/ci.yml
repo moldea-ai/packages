@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-noble
-      options: --ipc=host
+      options: --ipc=host --init
     env:
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
@@ -124,6 +124,10 @@ jobs:
           pnpm --dir projects/cli pack --pack-destination "$public_packages_directory"
           pnpm --dir projects/website-ui pack --pack-destination "$public_packages_directory"
           pnpm release:checksums create "$public_packages_directory"
+          pnpm release:checksums verify-consumers "$public_packages_directory"
+          git rev-parse HEAD > "$public_packages_directory/packages-commit.txt"
+          cp apps/website/dist/compatibility/runtimes.json \
+            "$public_packages_directory/runtime-compatibility-publication.json"
 
           expected_tarball_count=15
           actual_tarball_count=$(find "$public_packages_directory" -maxdepth 1 -type f -name '*.tgz' | wc -l)
@@ -139,9 +143,23 @@ jobs:
           path: |
             artifacts/public-package-tarballs/*.tgz
             artifacts/public-package-tarballs/SHA256SUMS
+            artifacts/public-package-tarballs/packages-commit.txt
+            artifacts/public-package-tarballs/runtime-compatibility-publication.json
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
+
+  consumer-conformance:
+    name: Exact Artifact Skill Consumers
+    needs: verify
+    permissions:
+      contents: read
+    uses: moldea-ai/skill/.github/workflows/release-candidate.yml@c8576dfb9dff3cca9937d72ad3ec816101daf071
+    with:
+      artifact_name: public-package-tarballs
+      packages_ref: ${{ github.sha }}
+      skill_ref: c8576dfb9dff3cca9937d72ad3ec816101daf071
+      skill_version: '7.0.0'
 
   repository-testing-peer-compatibility:
     name: Repository Testing Peers (Vitest ${{ matrix.vitest-version }})
@@ -253,12 +271,16 @@ jobs:
           "${{ runner.temp }}/public-package-tarballs"
 
   cli-runtime-compatibility:
-    name: CLI Runtime (Node.js ${{ matrix.node-version }})
+    name: CLI Runtime (${{ matrix.os }}, Node.js ${{ matrix.node-version }})
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
         node-version:
           - 22.11.0
           - 22.x

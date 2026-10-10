@@ -1,0 +1,108 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`cloudflareAgentsAdapter Core integration > accepts later stable provider majors through minimum-only ranges 1`] = `[]`;
+
+exports[`cloudflareAgentsAdapter Core integration > emits the complete normalized evidence for both supported targets 1`] = `[]`;
+
+exports[`cloudflareAgentsAdapter Core integration > reports declared deferred loading deferLoading as unknown 1`] = `[]`;
+
+exports[`cloudflareAgentsAdapter Core integration > reports declared deferred loading false as disabled 1`] = `[]`;
+
+exports[`cloudflareAgentsAdapter Core integration > reports declared deferred loading true as enabled 1`] = `[]`;
+
+exports[`cloudflareAgentsAdapter Core integration > retains a closed Session context when prompt-store selection repeats 1`] = `[]`;
+
+exports[`cloudflareAgentsAdapter Core integration > retains configured getSystemPrompt evidence when a Session callback is unresolved 1`] = `[]`;
+
+exports[`cloudflareAgentsAdapter Core integration > retains configured getSystemPrompt evidence with a default-backed context block 1`] = `[]`;
+
+exports[`cloudflareAgentsAdapter Core integration > retains prerelease ineligibility before relationship interpretation 1`] = `
+[
+  {
+    "code": "CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "runtime-agent",
+    },
+    "entity": {
+      "adapterId": "cloudflare-agents",
+      "agentId": "support",
+    },
+    "path": "/src/agents.ts",
+  },
+  {
+    "code": "CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-input-schema",
+    },
+    "entity": {
+      "adapterId": "cloudflare-agents",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-output-schema",
+    },
+    "entity": {
+      "adapterId": "cloudflare-agents",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/contracts.ts",
+  },
+  {
+    "code": "CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-implementation",
+    },
+    "entity": {
+      "adapterId": "cloudflare-agents",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/implementations.ts",
+  },
+  {
+    "code": "CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "instruction-loader",
+    },
+    "entity": {
+      "adapterId": "cloudflare-agents",
+      "agentId": "support",
+    },
+    "path": "/src/instructions.ts",
+  },
+  {
+    "code": "CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED",
+    "details": {
+      "reason": "unsupported-source-pattern",
+      "relationship": "tool-registration",
+    },
+    "entity": {
+      "adapterId": "cloudflare-agents",
+      "agentId": "support",
+      "capabilityId": "find-order",
+      "capabilityKind": "tool",
+    },
+    "path": "/src/tools.ts",
+  },
+]
+`;
+
+exports[`cloudflareAgentsAdapter Core integration > retains the shared withContext loader with Think >=0.17.0 1`] = `[]`;
+
+exports[`cloudflareAgentsAdapter Core integration > retains the shared withContext loader with Think 0.17.0 1`] = `[]`;
+
+exports[`cloudflareAgentsAdapter Core integration > retains the shared withContext loader with Think 0.18.0 1`] = `[]`;

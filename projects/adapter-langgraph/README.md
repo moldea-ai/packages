@@ -19,7 +19,7 @@ const core = createCore({ adapters: [langGraphAdapter] });
 
 ## Verified targets
 
-Version `4.0.0` supports Repository Format `1`, `@moldea.ai/core ^5.0.0`, and declared ranges that intersect `@langchain/langgraph >=1.4.12` with companion `@langchain/core >=1.2.9`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution. The targets recognize:
+Version `5.0.0` supports Repository Format `1`, `@moldea.ai/core ^6.0.0`, and declared ranges that intersect `@langchain/langgraph >=1.4.12` with companion `@langchain/core >=1.2.9`. Those minimum versions are verified. Later stable releases are eligible for deterministic inspection on a best-effort basis and must still match the documented source patterns. Qualification evidence records the exact package versions and date used for each execution. The targets recognize:
 
 - directly exported compiled `StateGraph` definitions using supported inline fluent or single-owner module-local builders
 - closed modern Graph API schema initialization and direct input/output schema wiring
@@ -47,6 +47,6 @@ These guides are included in the installed package. Open only the page relevant 
 
 ## Diagnostics
 
-`LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` only when the adapter identifies a declared relationship affected by a recognized but unresolved source candidate. Its safe details identify the relationship and reason; known version-behavior boundaries additionally carry normalized dependency context. Missing local evidence or a newer eligible dependency version alone does not produce this warning. Confirmed diagnostic codes remain errors.
+`LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED` has severity `warning` when an applicable declared relationship remains unverified, including unsupported source patterns, dynamic or mutated wiring, and ranges spanning a relevant behavior change. Its safe details identify the relationship and reason; version-dependent warnings also include normalized dependency context. Independent export checks and proved contradictions remain errors. Warning-only validation is valid with `runtimeInspection: 'incomplete'`; it does not establish launch readiness. A newer eligible dependency version alone does not produce this warning.
 
 `LANGGRAPH_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified.

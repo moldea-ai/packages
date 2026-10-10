@@ -139,7 +139,12 @@ describe('googleGenAiAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence
         .filter(({ kind }) => kind === 'runtime-pattern')
@@ -160,7 +165,12 @@ describe('googleGenAiAdapter Core integration', () => {
   test('emits the complete normalized evidence for the supported target', async () => {
     const result = await inspect();
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
     expect(result.evidence).toEqual(expectedEvidence);
     expect(result.summary).not.toBeNull();
@@ -171,7 +181,12 @@ describe('googleGenAiAdapter Core integration', () => {
       '/package.json': '{"dependencies":{"@google/genai":"3.0.0"}}',
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.valid).toBe(true);
   });
 
@@ -252,19 +267,37 @@ describe('googleGenAiAdapter Core integration', () => {
       ),
     });
 
-    expect(instructionResult.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'GOOGLE_GENAI_INSTRUCTION_LOADER_NOT_WIRED',
-    ]);
-    expect(nameResult.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'GOOGLE_GENAI_TOOL_NAME_INVALID',
-      'GOOGLE_GENAI_TOOL_NAME_MISMATCH',
-    ]);
-    expect(schemaResult.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED',
-    ]);
+    expect(
+      instructionResult.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      instructionResult.diagnostics
+        .filter(({ severity }) => severity === 'error')
+        .map(({ code }) => code),
+    ).toStrictEqual(['GOOGLE_GENAI_INSTRUCTION_LOADER_NOT_WIRED']);
+    expect(
+      nameResult.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      nameResult.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['GOOGLE_GENAI_TOOL_NAME_INVALID', 'GOOGLE_GENAI_TOOL_NAME_MISMATCH']);
+    expect(
+      schemaResult.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      schemaResult.diagnostics
+        .filter(({ severity }) => severity === 'error')
+        .map(({ code }) => code),
+    ).toStrictEqual(['GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED']);
   });
 
-  test('classifies omitted input schemas through existential and ambiguity rules', async () => {
+  test('preserves a declared input-schema omission beside unresolved collection members', async () => {
     const registrationWithoutSchema = getFixtureText('/src/find-order.ts').replace(
       '  parametersJsonSchema: FindOrderInput,\n',
       '',
@@ -294,18 +327,48 @@ describe('googleGenAiAdapter Core integration', () => {
       '/src/find-order.ts': registrationWithoutSchema,
     });
 
-    expect(withoutManifestSchema.diagnostics).toStrictEqual([]);
+    expect(
+      withoutManifestSchema.diagnostics.filter(({ severity }) => severity === 'error'),
+    ).toStrictEqual([]);
+    expect(
+      withoutManifestSchema.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(withoutManifestSchema.evidence.some(({ kind }) => kind === 'tool-registration')).toBe(
       true,
     );
     expect(withoutManifestSchema.evidence.some(({ kind }) => kind === 'schema')).toBe(false);
-    expect(closedOmission.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED',
-    ]);
+    expect(
+      closedOmission.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      closedOmission.diagnostics
+        .filter(({ severity }) => severity === 'error')
+        .map(({ code }) => code),
+    ).toStrictEqual(['GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED']);
     expect(closedOmission.evidence.some(({ kind }) => kind === 'schema')).toBe(false);
-    expect(wiredAlongsideOmission.diagnostics).toStrictEqual([]);
+    expect(
+      wiredAlongsideOmission.diagnostics.filter(({ severity }) => severity === 'error'),
+    ).toStrictEqual([]);
+    expect(
+      wiredAlongsideOmission.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(wiredAlongsideOmission.evidence.some(({ kind }) => kind === 'schema')).toBe(true);
-    expect(omittedAlongsideDynamicCandidate.diagnostics).toStrictEqual([]);
+    expect(
+      omittedAlongsideDynamicCandidate.diagnostics
+        .filter(({ severity }) => severity === 'error')
+        .map(({ code }) => code),
+    ).toStrictEqual(['GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED']);
+    expect(
+      omittedAlongsideDynamicCandidate.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       omittedAlongsideDynamicCandidate.evidence.some(({ kind }) => kind === 'tool-registration'),
     ).toBe(true);
@@ -328,14 +391,27 @@ describe('googleGenAiAdapter Core integration', () => {
       ),
     });
 
-    expect(differentStaticSchema.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED',
-    ]);
-    expect(differentStaticSchema.evidence.some(({ kind }) => kind === 'schema')).toBe(false);
-    expect(dynamicSchema.diagnostics).toStrictEqual([]);
     expect(
-      dynamicSchema.evidence.some(({ kind }) => kind === 'schema' || kind === 'tool-registration'),
-    ).toBe(false);
+      differentStaticSchema.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      differentStaticSchema.diagnostics
+        .filter(({ severity }) => severity === 'error')
+        .map(({ code }) => code),
+    ).toStrictEqual(['GOOGLE_GENAI_TOOL_INPUT_SCHEMA_NOT_WIRED']);
+    expect(differentStaticSchema.evidence.some(({ kind }) => kind === 'schema')).toBe(false);
+    expect(dynamicSchema.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual(
+      [],
+    );
+    expect(
+      dynamicSchema.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(dynamicSchema.evidence.some(({ kind }) => kind === 'tool-registration')).toBe(true);
+    expect(dynamicSchema.evidence.some(({ kind }) => kind === 'schema')).toBe(false);
   });
 
   test('recognizes safe module-local tool, container, and declaration collections', async () => {
@@ -356,7 +432,12 @@ describe('googleGenAiAdapter Core integration', () => {
     });
 
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toEqual(
       expect.arrayContaining(['instruction-loader', 'tool-registration', 'schema']),
     );
@@ -388,12 +469,36 @@ describe('googleGenAiAdapter Core integration', () => {
     expect(result.evidence.some(({ kind }) => kind === 'tool-registration')).toBe(false);
   });
 
+  test.each(['parametersJsonSchema', 'responseJsonSchema'])(
+    'preserves registration identity after only %s is mutated',
+    async (member) => {
+      const result = await inspect({
+        '/src/find-order.ts': `${getFixtureText('/src/find-order.ts')}\nfindOrderDeclaration.${member} = replacement;\n`,
+      });
+      expect(result.valid).toBe(true);
+      expect(result.evidence.some(({ kind }) => kind === 'tool-registration')).toBe(true);
+      expect(result.evidence.some(({ kind }) => kind === 'schema')).toBe(
+        member !== 'parametersJsonSchema',
+      );
+      expect(
+        result.diagnostics
+          .filter(({ severity }) => severity === 'warning')
+          .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+      ).toMatchSnapshot();
+    },
+  );
+
   test('keeps a mutated exported registration unresolved without false relationship evidence', async () => {
     const result = await inspect({
       '/src/find-order.ts': `${getFixtureText('/src/find-order.ts')}\nfindOrderDeclaration.name = 'changed';\n`,
     });
 
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual([]);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(
       result.evidence.some(({ kind }) => kind === 'schema' || kind === 'tool-registration'),
     ).toBe(false);
@@ -410,16 +515,38 @@ describe('googleGenAiAdapter Core integration', () => {
     });
     const distinct = await inspect(createDistinctFunctionCollectionSources(512));
 
-    expect(withinLimit.diagnostics).toStrictEqual([]);
-    expect(overLimit.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED',
-    ]);
-    expect(repeated.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED',
-    ]);
-    expect(distinct.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED',
-    ]);
+    expect(withinLimit.diagnostics.filter(({ severity }) => severity === 'error')).toStrictEqual(
+      [],
+    );
+    expect(
+      withinLimit.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      overLimit.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      overLimit.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED']);
+    expect(
+      repeated.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      repeated.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED']);
+    expect(
+      distinct.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
+    expect(
+      distinct.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['GOOGLE_GENAI_FUNCTION_DECLARATION_LIMIT_EXCEEDED']);
   });
 
   test('keeps dynamic request and configuration candidates conservative', async () => {
@@ -434,8 +561,15 @@ describe('googleGenAiAdapter Core integration', () => {
       ].join('\n'),
     });
 
-    expect(result.valid).toBe(true);
-    expect(result.diagnostics).toStrictEqual([]);
+    expect(result.valid).toBe(false);
+    expect(
+      result.diagnostics.filter(({ severity }) => severity === 'error').map(({ code }) => code),
+    ).toStrictEqual(['GOOGLE_GENAI_INSTRUCTION_LOADER_NOT_WIRED']);
+    expect(
+      result.diagnostics
+        .filter(({ severity }) => severity === 'warning')
+        .map(({ code, path, entity, details }) => ({ code, path, entity, details })),
+    ).toMatchSnapshot();
     expect(result.evidence.map(({ kind }) => kind)).toStrictEqual([
       'language',
       'runtime-package',
