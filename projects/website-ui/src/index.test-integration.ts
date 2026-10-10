@@ -92,7 +92,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.13.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.13.1' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -395,6 +395,19 @@ describe('published website UI package', () => {
             const page = await context.newPage();
             await page.setContent(fixtureHtml.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gu, ''));
             await page.addStyleTag({ content: stylesheet });
+            for (const name of ['Documentation navigation', 'On this page']) {
+              expect(await page.getByRole('complementary', { name, exact: true }).count()).toBe(
+                width === 1440 ? 1 : 0,
+              );
+            }
+            expect(
+              (
+                await new AxeBuilder({ page })
+                  .include('aside')
+                  .withRules(['landmark-unique'])
+                  .analyze()
+              ).violations,
+            ).toStrictEqual([]);
             await page.evaluate((selectedTheme) => {
               document.documentElement.className = selectedTheme;
               document.title = 'Code diff fixture';
