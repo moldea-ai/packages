@@ -88,7 +88,7 @@ export interface ICapabilityGroup {
   title: string;
   description: string;
   coverage: string[];
-  exampleIds: [string, ...string[]];
+  featuredExampleIds: [string, string, string, string];
   reference: { route: string; label: string };
 }
 

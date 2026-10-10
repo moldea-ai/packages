@@ -1,0 +1,44 @@
+---
+import { Layers } from '@lucide/astro';
+import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
+import { getOperationRows } from './utilities.ts';
+
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+if (example.result.kind !== 'inspection' && example.result.kind !== 'reader')
+  throw new Error('Operation illustration requires reader or inspection facts.');
+const rows = getOperationRows(example.result.facts);
+---
+
+<div
+  class="grid min-w-0 gap-2"
+  role="group"
+  aria-label={`${example.title} execution facts`}
+>
+  {
+    rows.map((row) => (
+      <div class="min-w-0 rounded-lg border bg-muted/20 p-3">
+        <p class="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+          <Layers
+            class="size-3.5 shrink-0"
+            aria-hidden="true"
+          />
+          {row.label}
+        </p>
+        <ul class="grid min-w-0 gap-1.5">
+          {row.entries.map((entry) => (
+            <li class="min-w-0 text-sm [overflow-wrap:anywhere] break-words whitespace-pre-wrap">
+              {entry}
+            </li>
+          ))}
+        </ul>
+        {row.detail && <p class="mt-2 text-xs text-muted-foreground">{row.detail}</p>}
+      </div>
+    ))
+  }
+  <p class="text-xs text-muted-foreground">
+    Selected execution facts. View the result for details.
+  </p>
+</div>

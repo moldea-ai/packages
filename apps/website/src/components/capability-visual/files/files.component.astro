@@ -18,39 +18,68 @@ const { example } = Astro.props;
 const diagnostic = example.result.kind === 'validation' ? example.result.diagnostics[0] : undefined;
 const isReference = example.id.startsWith('policy-reference-');
 const isTool = example.id === 'tool-implementation-missing';
+const isSkill = example.id === 'skill-implementation-missing';
+const isConnected = example.id === 'policy-reference-connected';
 const isDirectory =
   diagnostic?.severity === 'error' && diagnostic.details.actualType === 'directory';
 const source = example.files.find(
   ({ path }) => path === (isReference ? '/moldea/project.md' : '/moldea/moldea.yaml'),
 );
-const missingPath =
-  isReference || isTool
+const connectedManifest = example.files.find(({ path }) => path === '/moldea/moldea.yaml');
+const ConnectedManifest = z.object({
+  context: z.record(z.string(), z.object({ bindings: z.array(z.object({ path: z.string() })) })),
+});
+if (isConnected && !connectedManifest)
+  throw new Error('Connected illustration requires its manifest input.');
+const connectedTarget =
+  isConnected && connectedManifest
+    ? ConnectedManifest.parse(parse(connectedManifest.content) as unknown).context[
+        '/moldea/project.md'
+      ]?.bindings[0]?.path
+    : undefined;
+const targetPath = isConnected
+  ? connectedTarget
+  : isReference || isTool || isSkill
     ? diagnostic?.severity === 'error'
       ? diagnostic.details.referencedPath
       : undefined
     : diagnostic?.path;
-if (!source || typeof missingPath !== 'string')
+if (!source || typeof targetPath !== 'string')
   throw new Error('File illustration requires its source and missing path.');
+if (isConnected && !example.files.some(({ path }) => path === targetPath))
+  throw new Error('Connected illustration requires its declared target input.');
 const html = isReference
   ? await renderMarkdownFragment(source.content.replace(/^# .+\n+/u, ''))
   : '';
 const ToolManifest = z.object({
   agents: z.record(
     z.string(),
-    z.object({ tools: z.record(z.string(), z.object({ name: z.string() })) }),
+    z.object({
+      tools: z.record(z.string(), z.object({ name: z.string() })).optional(),
+      skills: z.record(z.string(), z.object({ name: z.string() })).optional(),
+    }),
   ),
 });
-const toolName = isTool
-  ? ToolManifest.parse(parse(source.content) as unknown).agents[diagnostic?.entity?.agentId ?? '']
-      ?.tools[diagnostic?.entity?.capabilityId ?? '']?.name
-  : undefined;
-if (isTool && !toolName) throw new Error('Tool illustration requires its declared name.');
+const toolName =
+  isTool || isSkill
+    ? ToolManifest.parse(parse(source.content) as unknown).agents[
+        diagnostic?.entity?.agentId ?? ''
+      ]?.[isSkill ? 'skills' : 'tools']?.[diagnostic?.entity?.capabilityId ?? '']?.name
+    : undefined;
+if ((isTool || isSkill) && !toolName)
+  throw new Error('Tool illustration requires its declared name.');
 ---
 
 <div class="min-w-0">
   <FilePreview
     path={source.path.slice(1)}
-    label={isReference ? 'Return policy' : isTool ? 'Declared tool' : 'Project map'}
+    label={isReference
+      ? 'Return policy'
+      : isTool
+        ? 'Declared tool'
+        : isSkill
+          ? 'Declared skill'
+          : 'Project map'}
   >
     {
       isReference && (
@@ -61,44 +90,58 @@ if (isTool && !toolName) throw new Error('Tool illustration requires its declare
       )
     }
     {
-      isTool && (
+      (isTool || isSkill) && (
         <p class="px-4 py-4 text-sm leading-7">
           <code class="inline-code break-all">{toolName}</code>
         </p>
       )
     }
   </FilePreview>
-  <ConnectionLabel>
-    <Unlink
-      slot="icon"
-      class="size-4"
-      aria-hidden="true"
-    /><span
+  <ConnectionLabel tone={isConnected ? 'neutral' : 'danger'}>
+    {
+      !isConnected && (
+        <Unlink
+          slot="icon"
+          class="size-4"
+          aria-hidden="true"
+        />
+      )
+    }<span
       >{
-        isReference
-          ? 'Linked in '
-          : isTool
-            ? 'Points to a missing file'
-            : 'Requires a project brief'
+        isConnected
+          ? 'Declared target in '
+          : isReference
+            ? 'Linked in '
+            : isTool || isSkill
+              ? 'Points to a missing file'
+              : 'Requires a project brief'
       }{isReference && <code class="inline-code">moldea.yaml</code>}</span
     >
   </ConnectionLabel>
   <FilePreview
-    path={missingPath.slice(1)}
-    label={isDirectory
-      ? 'Expected a file, found a folder'
-      : isReference
-        ? 'Referenced file: missing'
-        : isTool
-          ? 'Tool implementation: missing'
-          : 'Project brief: missing'}
-    tone="danger"
+    path={targetPath.slice(1)}
+    label={isConnected
+      ? 'Connected implementation'
+      : isDirectory
+        ? 'Expected a file, found a folder'
+        : isReference
+          ? 'Referenced file: missing'
+          : isTool || isSkill
+            ? 'Implementation: missing'
+            : 'Project brief: missing'}
+    tone={isConnected ? 'info' : 'danger'}
   >
-    <span slot="icon">{isDirectory ? <Folder class="size-5" /> : <FileX class="size-5" />}</span>
+    {
+      !isConnected && (
+        <span slot="icon">
+          {isDirectory ? <Folder class="size-5" /> : <FileX class="size-5" />}
+        </span>
+      )
+    }
     <StatusBadge
       slot="status"
-      label={isDirectory ? 'Folder' : 'Missing'}
-      tone="danger"
+      label={isConnected ? 'Found' : isDirectory ? 'Folder' : 'Missing'}
+      tone={isConnected ? 'info' : 'danger'}
       size="sm"
     />
   </FilePreview>

@@ -1,5 +1,6 @@
 ---
-import { ArrowUpRight } from '@lucide/astro';
+import { ArrowUpRight, ChevronDown } from '@lucide/astro';
+import ActionButton from '@moldea.ai/website-ui/action-button';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import { withBase } from '@moldea.ai/website-ui/site';
 
@@ -24,6 +25,7 @@ const { catalog, group, examples, position } = Astro.props;
   id={group.id}
   class="page-shell grid scroll-mt-24 gap-6 border-t py-8 sm:gap-8 sm:py-10 lg:grid-cols-2 lg:items-start lg:gap-x-12 xl:grid-cols-[minmax(0,1fr)_minmax(0,40rem)]"
   aria-labelledby={`${group.id}-heading`}
+  data-capability-section
 >
   <header class="max-w-lg lg:pt-3">
     <p class="eyebrow mb-3">{String(position).padStart(2, '0')} / {group.label}</p>
@@ -47,7 +49,11 @@ const { catalog, group, examples, position } = Astro.props;
     </a>
   </header>
   <div class="min-w-0">
-    <div class="grid min-w-0 gap-2">
+    <div
+      id={`${group.id}-examples`}
+      class="grid min-w-0 gap-4"
+      data-capability-list
+    >
       {
         examples.map((example, index) => (
           <CapabilityExample
@@ -58,6 +64,30 @@ const { catalog, group, examples, position } = Astro.props;
           />
         ))
       }
+    </div>
+    <div
+      class="mt-5 flex flex-col items-center gap-3"
+      data-capability-controls
+      hidden
+    >
+      <p
+        class="text-xs text-muted-foreground"
+        aria-live="polite"
+        aria-atomic="true"
+        data-capability-count
+      >
+      </p>
+      <ActionButton
+        variant="outline"
+        data-capability-load
+        aria-label={`Load more ${group.label.toLowerCase()} examples`}
+        aria-controls={`${group.id}-examples`}
+      >
+        Load more <ChevronDown
+          class="size-4"
+          aria-hidden="true"
+        />
+      </ActionButton>
     </div>
     <p
       class="mt-4 text-xs leading-6 text-muted-foreground"

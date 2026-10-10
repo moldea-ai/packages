@@ -730,10 +730,27 @@ ${'long-line-'.repeat(32)}
   expect(controlCounts.enhanced).toBe(controlCounts.eligible);
   expect(controlCounts.toolbars).toBe(controlCounts.eligible);
 
+  await page.evaluate(() => {
+    const dialog = document.createElement('dialog');
+    const pre = document.createElement('pre');
+    const code = document.createElement('code');
+    dialog.dataset.copyTestFixture = 'closed-dialog';
+    code.textContent = 'const hiddenSource = true;';
+    pre.append(code);
+    dialog.append(pre);
+    document.querySelector('main')?.append(dialog);
+    document.dispatchEvent(new Event('astro:page-load'));
+  });
+  await expect(page.locator('[data-copy-test-fixture="closed-dialog"] pre')).toHaveAttribute(
+    'data-code-copy-enhanced',
+    'true',
+  );
+
   await page.goto(toPublicPath('/capabilities/'));
-  expect(
-    await page.locator('dialog:not([open]) pre[data-code-copy-enhanced="true"]').count(),
-  ).toBeGreaterThan(0);
+  await expect(
+    page.locator('[data-capability-visual="command"] pre[data-code-copy-enhanced="true"]'),
+  ).toHaveCount(10);
+  await expect(page.locator('dialog pre[data-code-copy-enhanced="true"]')).toHaveCount(0);
 });
 
 test('honors code-copy opt-outs without affecting neighboring blocks', async ({ page }) => {

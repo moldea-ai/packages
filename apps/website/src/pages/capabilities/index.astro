@@ -20,13 +20,6 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Capabilities' }];
   {breadcrumbs}
   flushFooter
 >
-  <script slot="head" is:inline data-astro-rerun>
-    if (
-      typeof HTMLDialogElement !== 'undefined' &&
-      typeof HTMLDialogElement.prototype.showModal === 'function'
-    )
-      document.documentElement.dataset.capabilitiesEnhanced = '';
-  </script>
   <section
     class="page-shell pt-8 pb-10 sm:pb-12"
     aria-labelledby="capabilities-title"
@@ -44,7 +37,7 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Capabilities' }];
       </div>
       <p class="max-w-xl text-lg leading-8 text-muted-foreground">
         <InlineBrandText
-          text="Explore how moldea reads project context, inspects decision history, and checks declared connections. Each example shows real package results, including optional runtime-agent tooling."
+          text="Explore how moldea reads project context, inspects decision history, and checks declared connections. Every example runs against the shipped packages. No LLM or provider calls."
         />
       </p>
     </header>
@@ -87,3 +80,7 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Capabilities' }];
     >
   </section>
 </BaseLayout>
+
+<script>
+  import '../../components/capability-section/disclosure.ts';
+</script>

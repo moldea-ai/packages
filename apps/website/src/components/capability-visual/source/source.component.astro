@@ -1,0 +1,59 @@
+---
+import CodeBlock from '@moldea.ai/website-ui/code-block';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
+import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
+
+interface Props {
+  example: ICapabilityCase;
+}
+const { example } = Astro.props;
+const diagnostic = example.result.kind === 'validation' ? example.result.diagnostics[0] : undefined;
+const file =
+  example.files.find(({ path }) => path === diagnostic?.path) ??
+  example.files.find(({ path }) => path === '/moldea/moldea.yaml') ??
+  example.files[0];
+if (!file) throw new Error('Source illustration requires its executed input.');
+const lines = file.content.split('\n');
+const pointerKey = diagnostic?.pointer
+  ?.split('/')
+  .findLast((part) => part !== '' && !/^\d+$/u.test(part));
+const pointerLine = pointerKey ? lines.findIndex((line) => line.includes(`${pointerKey}:`)) : -1;
+const start =
+  file.representation === 'source'
+    ? Math.max(0, (diagnostic?.range?.start.line ?? pointerLine + 1) - 4)
+    : 0;
+const end = Math.min(start + 12, lines.length);
+const excerpt = lines.slice(start, end).join('\n');
+const representation =
+  file.representation === 'bytes'
+    ? 'Byte representation'
+    : file.representation === 'json-string'
+      ? 'JSON-string representation'
+      : 'Inspected input';
+---
+
+<div class="grid min-w-0 gap-3">
+  <FilePreview
+    path={file.path.slice(1)}
+    label={representation}
+    tone={diagnostic?.severity === 'error' ? 'danger' : diagnostic ? 'warning' : 'neutral'}
+  >
+    <div class="p-3">
+      <CodeBlock
+        source={excerpt}
+        language={file.language}
+        variant="plain"
+        copyable={false}
+        ariaLabel={`${representation} for ${example.title}`}
+      />
+    </div>
+  </FilePreview>
+  {
+    (start > 0 || end < lines.length || file.isExcerpt) && (
+      <p class="text-xs text-muted-foreground">
+        Selected input lines. The result comes from the complete executed fixture.
+      </p>
+    )
+  }
+  {diagnostic && <p class="text-xs leading-6 text-muted-foreground">{diagnostic.message}</p>}
+</div>

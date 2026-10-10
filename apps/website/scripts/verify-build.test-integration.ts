@@ -148,13 +148,21 @@ describe('production discovery guards', () => {
     replaceArtifactText('capabilities/index.html', marker, replacement);
     expect(() => verifyProductionBuild(directory)).toThrow(error);
   });
-  test('rejects an unselected example leaking into the curated page', () => {
+  test('rejects an unknown example leaking into the complete catalog', () => {
     replaceArtifactText(
       'capabilities/index.html',
       '</main>',
       '<div data-capability-outcome="extra-example"></div></main>',
     );
-    expect(() => verifyProductionBuild(directory)).toThrow('contains an unselected example');
+    expect(() => verifyProductionBuild(directory)).toThrow('contains an unknown example');
+  });
+  test.each([
+    ['data-capability-visual="files"', 'data-capability-visual="runtime"', 'wrong visual family'],
+    ['data-capability-label="Invalid"', 'data-capability-label="Valid"', 'unsupported outcome'],
+    ['1 missing file', 'All relationships verified', 'unsupported outcome'],
+  ])('rejects an unsupported capability claim %s', (marker, replacement, message) => {
+    replaceArtifactText('capabilities/index.html', marker, replacement);
+    expect(() => verifyProductionBuild(directory)).toThrow(message);
   });
   test('rejects a capability machine-navigation omission', () => {
     replaceArtifactText('llms.txt', '[Capabilities]', '[Removed]');

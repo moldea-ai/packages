@@ -1,5 +1,9 @@
 ---
-import type { ICapabilityCase } from '../../lib/capabilities/index.ts';
+import {
+  getCapabilityVisualFamily,
+  type ICapabilities,
+  type ICapabilityCase,
+} from '../../lib/capabilities/index.ts';
 import { CapabilityAgents } from './agents/index.ts';
 import { CapabilityCommand } from './command/index.ts';
 import { CapabilityDecisions } from './decisions/index.ts';
@@ -9,32 +13,48 @@ import { CapabilityDigests } from './digests/index.ts';
 import { CapabilityRecords } from './records/index.ts';
 import { CapabilityRuntime } from './runtime/index.ts';
 import { CapabilityScope } from './scope/index.ts';
+import { CapabilitySource } from './source/index.ts';
+import { CapabilityOperation } from './operation/index.ts';
 
 // each selected family has a source-backed illustration
 interface Props {
   example: ICapabilityCase;
+  catalog: ICapabilities;
 }
-const { example } = Astro.props;
+const { example, catalog } = Astro.props;
+const family = getCapabilityVisualFamily(example);
 ---
 
-{
-  example.groupId === 'structure' || example.id === 'tool-implementation-missing' ? (
-    <CapabilityFiles {example} />
-  ) : example.groupId === 'agents' ? (
-    <CapabilityAgents {example} />
-  ) : example.groupId === 'decisions' ? (
-    <CapabilityDecisions {example} />
-  ) : example.id === 'inspection-mixed-diagnostics' ? (
-    <CapabilityMixedDiagnostics {example} />
-  ) : example.result.kind === 'adapter' ? (
-    <CapabilityRuntime {example} />
-  ) : example.result.kind === 'reader' ? (
-    <CapabilityRecords {example} />
-  ) : example.result.kind === 'cli' ? (
-    <CapabilityCommand {example} />
-  ) : example.id === 'normalized-digests' ? (
-    <CapabilityDigests {example} />
-  ) : (
-    <CapabilityScope {example} />
-  )
-}
+<div
+  class="min-w-0"
+  data-capability-visual={family}
+>
+  {
+    family === 'files' ? (
+      <CapabilityFiles {example} />
+    ) : family === 'agents' ? (
+      <CapabilityAgents {example} />
+    ) : family === 'decisions' ? (
+      <CapabilityDecisions {example} />
+    ) : family === 'mixed-diagnostics' ? (
+      <CapabilityMixedDiagnostics {example} />
+    ) : family === 'runtime' ? (
+      <CapabilityRuntime
+        {example}
+        {catalog}
+      />
+    ) : family === 'records' ? (
+      <CapabilityRecords {example} />
+    ) : family === 'command' ? (
+      <CapabilityCommand {example} />
+    ) : family === 'digests' ? (
+      <CapabilityDigests {example} />
+    ) : family === 'scope' ? (
+      <CapabilityScope {example} />
+    ) : family === 'operation' ? (
+      <CapabilityOperation {example} />
+    ) : (
+      <CapabilitySource {example} />
+    )
+  }
+</div>
