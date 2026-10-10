@@ -144,7 +144,10 @@ const contentGridClass = hasNavigation
   <div class:list={['mt-7 grid min-w-0 gap-10', contentGridClass]}>
     {
       hasNavigation && (
-        <aside class="hidden lg:block">
+        <aside
+          class="hidden lg:block"
+          aria-label={navigationAriaLabel}
+        >
           <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pe-2">
             <nav
               class="grid gap-6"
@@ -245,7 +248,10 @@ const contentGridClass = hasNavigation
 
     {
       (hasOutline || hasNavigation) && (
-        <aside class="hidden xl:block">
+        <aside
+          class="hidden xl:block"
+          aria-label={outlineLabel}
+        >
           <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pe-2">
             <p class="eyebrow mb-4">
               <InlineBrandText

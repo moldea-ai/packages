@@ -300,6 +300,8 @@ For example, add `size="large" triggerVariant="primary" triggerSize="lg"` to the
 
 Each website owns its dependency and lockfile. Use the documented public component subpaths, shared code-wrapping policy, semantic tones, and supported slots. Verify long code, replay content, keyboard scrolling, and both themes at mobile and desktop widths. Website UI does not modify consumer source files or lockfiles.
 
+`DocumentationShell` names its desktop sidebar landmarks with `navigationAriaLabel` and `outlineLabel`, so assistive navigation can distinguish documentation navigation from the page outline.
+
 ## Development
 
 From the monorepo root:
