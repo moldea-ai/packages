@@ -23,6 +23,7 @@ const initializeDisclosure = (): void => {
     const updateControls = (): void => {
       count.textContent = `${visible} of ${examples.length} examples`;
       button.hidden = visible === examples.length;
+      controls.dataset.complete = String(button.hidden);
     };
     const reveal = (next: number): void => {
       for (let index = visible; index < next; index++) examples[index].hidden = false;
