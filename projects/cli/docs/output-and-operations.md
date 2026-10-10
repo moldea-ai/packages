@@ -18,6 +18,26 @@ Collection and content JSON use a default 65,536-byte page budget and accept exp
 
 Runtime inspection is reported separately from validity as `complete`, `incomplete`, or `not-run`. `complete` means every applicable declaration was accounted for with evidence or a proved error; `incomplete` means scoped unverified warnings remain; `not-run` means universal validation or adapter availability prevented inspection. A project with no applicable runtime relationships is `complete`. Zero errors still produces `valid`, including warning-only results. A valid result with incomplete runtime inspection does not establish launch readiness. Operational failure returns an error without a fabricated completed inspection.
 
+## Resource budgets
+
+These defaults describe CLI `10.0.0` with Core `6.0.0`. Options take byte counts or positive safe-integer counts as appropriate.
+
+| Option                 |               Default | Scope                                                                              |
+| ---------------------- | --------------------: | ---------------------------------------------------------------------------------- |
+| `--max-file-bytes`     |     8 MiB (`8388608`) | One complete file read when required                                               |
+| `--max-manifest-bytes` |     2 MiB (`2097152`) | Canonical manifest                                                                 |
+| `--max-entries`        |              `100000` | Git-selected inventory and Core path accounting, each enforced at its own boundary |
+| `--max-total-bytes`    | 128 MiB (`134217728`) | Core source reads; separately, inventory metadata and filesystem cache budgets     |
+| `--max-diagnostics`    |               `10000` | Produced diagnostics                                                               |
+| `--max-evidence`       |               `10000` | Produced runtime evidence records                                                  |
+| `--max-output-bytes`   |      64 KiB (`65536`) | One newline-terminated JSON page; allowed range 4 KiB through 1 MiB                |
+
+Input limits require `maxManifestBytes <= maxFileBytes <= maxTotalBytes`. The CLI derives logical retained bytes as four times `maxTotalBytes`, capped at JavaScript’s maximum safe integer. The Node boundary reserves 48 MiB of that allowance for transport. Neither this ledger nor the input options guarantee total RAM use or raise the [fixed analysis profile](/packages/core/repository-inspection/#isolated-node-inspection).
+
+The CLI supplies exact Git-selected paths to Repository FS and overrides its raw reader defaults: cache bytes use `maxTotalBytes`; observed entries and directory entries use `maxEntries`; metadata pages use the smaller of `4096` and `maxEntries`; range reads use `maxFileBytes`. The [standalone reader limits](/packages/repository-fs/security-and-limits/#resource-limits) therefore are not additional CLI-wide input limits.
+
+Pagination bounds output, not complete analysis. It does not reset read/entry budgets, bypass source parsing, or divide an oversized complete record. `scope` and `content` use focused paths without loading adapters; `validate` and `inspect` perform the required project inspection. On a refusal, inspect its named dimension and required scope before changing an input budget. Fixed worker failures require reviewing inspection capacity, not raising an input option or repeatedly retrying unchanged source.
+
 ## Status and exit codes
 
 | Outcome                                   | Status                       |               Exit code |

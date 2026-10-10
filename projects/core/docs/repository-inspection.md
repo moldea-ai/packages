@@ -48,6 +48,24 @@ The `unresolved` summary count includes all project-owned and agent-owned requir
 
 Structural repository errors return error diagnostics. Adapters may return scoped warnings for unverified declared runtime relationships without invalidating an otherwise valid project. Reader access failures, snapshot drift, cancellation, resource exhaustion, invalid operation input, and invalid adapter output reject with typed exceptions.
 
+## Resource limits
+
+These defaults describe Core `6.0.0`. They apply independently to each Core operation.
+
+| Limit               |                     Default | Counted scope                                                                                                           |
+| ------------------- | --------------------------: | ----------------------------------------------------------------------------------------------------------------------- |
+| `maxFileBytes`      |     8 MiB (`8388608` bytes) | One complete file read, including runtime source requested by an adapter                                                |
+| `maxManifestBytes`  |     2 MiB (`2097152` bytes) | The canonical manifest read                                                                                             |
+| `maxEntries`        |                    `100000` | Distinct non-root logical paths encountered or requested during the operation, including absent lookups and directories |
+| `maxTotalBytesRead` | 128 MiB (`134217728` bytes) | Source bytes read through the shared operation session, including adapter reads                                         |
+| `maxDiagnostics`    |                     `10000` | Diagnostics produced by the operation                                                                                   |
+| `maxEvidence`       |                     `10000` | Runtime evidence records produced by the operation                                                                      |
+| `maxRetainedBytes`  | 512 MiB (`536870912` bytes) | Logical retained-byte accounting, including prepared records and indexes                                                |
+
+Repeated path observations do not increment the distinct-path count. A file’s presence alone does not consume its complete-file read allowance. The manifest has its own smaller ceiling. Metadata pages and canonical text chunks bound individual responses; continuation does not reset operation budgets or turn full source parsing into streaming analysis.
+
+Callers can supply validated Core limits. These are accounting controls, not a sum or guarantee of total process RAM. The isolated Node boundary reserves 48 MiB of the retained-byte allowance for transport before granting the remainder to Core. The CLI derives its allowance separately; see [CLI resource budgets](/packages/cli/output-and-operations/#resource-budgets).
+
 ## Bounded inspection views
 
 `createProjectInspection` validates the supplied snapshot once and prepares one immutable content-free record set with these views:
@@ -68,6 +86,21 @@ Canonical bodies exist only while the initial validation is being prepared. The 
 Resource refusals expose the exceeded limit name, configured maximum, observed or projected usage, and the stable `reduce-input-or-increase-limit` next action. Callers can therefore explain a refusal without receiving canonical content or implementation diagnostics.
 
 ## Isolated Node inspection
+
+The fixed Core `6.0.0` Node profile is independent of configurable input limits:
+
+| Control                 | Fixed value | Scope                                               |
+| ----------------------- | ----------: | --------------------------------------------------- |
+| Worker old generation   |     512 MiB | V8 worker setting, not total process RSS            |
+| Worker young generation |      24 MiB | V8 worker setting                                   |
+| Attempt lifetime        | 120 seconds | Startup, reads, preparation, paging, and disposal   |
+| Reader requests         |           4 | Outstanding bridge requests                         |
+| File page               |      64 KiB | One bridge file page                                |
+| Message                 |       1 MiB | One serialized bridge message                       |
+| Captured standard I/O   |      32 KiB | Bounded subprocess output                           |
+| Transport reservation   |      48 MiB | Logical allowance for simultaneous transport copies |
+
+The startup-reported `maxAnalysisHeapBytes` is the actual V8 maximum. Increasing input limits does not change these fixed controls. An 8 MiB source allowance does not guarantee that every source shape fits the analysis heap.
 
 `createNodeProjectInspection` from `@moldea.ai/core/node` runs Core and trusted installed adapters in one analysis worker inside one supervised subprocess. The existing environment-neutral operations and synchronous prepared-inspection API remain available.
 

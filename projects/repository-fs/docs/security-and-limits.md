@@ -10,6 +10,8 @@ Filesystem names and content are untrusted. The reader validates closed option a
 
 ## Resource limits
 
+This reference describes `repository-fs` 2.0.3.
+
 | Limit                     |          Default | Meaning                                                       |
 | ------------------------- | ---------------: | ------------------------------------------------------------- |
 | `maxEntries`              |         `131072` | Distinct non-root entries observed during the reader lifetime |
