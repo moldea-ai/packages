@@ -20,6 +20,13 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Capabilities' }];
   {breadcrumbs}
   flushFooter
 >
+  <script slot="head" is:inline data-astro-rerun>
+    if (
+      typeof HTMLDialogElement !== 'undefined' &&
+      typeof HTMLDialogElement.prototype.showModal === 'function'
+    )
+      document.documentElement.dataset.capabilitiesEnhanced = '';
+  </script>
   <section
     class="page-shell pt-8 pb-10 sm:pb-12"
     aria-labelledby="capabilities-title"

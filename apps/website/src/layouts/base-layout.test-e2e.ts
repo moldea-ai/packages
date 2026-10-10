@@ -750,7 +750,9 @@ ${'long-line-'.repeat(32)}
   await expect(
     page.locator('[data-capability-visual="command"] pre[data-code-copy-enhanced="true"]'),
   ).toHaveCount(10);
-  await expect(page.locator('dialog pre[data-code-copy-enhanced="true"]')).toHaveCount(0);
+  await expect(
+    page.locator('dialog[id^="result-"] pre[data-code-copy-enhanced="true"]'),
+  ).toHaveCount(0);
 });
 
 test('honors code-copy opt-outs without affecting neighboring blocks', async ({ page }) => {

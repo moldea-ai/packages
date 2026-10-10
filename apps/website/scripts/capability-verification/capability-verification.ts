@@ -14,7 +14,7 @@ const readText = (node: DefaultTreeAdapterMap['node']): string => {
 };
 
 /**
- * Requires visible capability outcomes and complete discovery, independently of dialog content.
+ * Requires compact outcomes, complete illustrations, and discovery from the static fallback.
  * @throws If a required illustration, result, section, or discovery entry is missing or stale.
  */
 export const verifyCapabilityArtifacts = (
@@ -38,7 +38,9 @@ export const verifyCapabilityArtifacts = (
     if (!node) continue;
     if ('tagName' in node) {
       if (
-        ['dialog', 'script', 'template'].includes(node.tagName) ||
+        ['script', 'template'].includes(node.tagName) ||
+        (node.tagName === 'dialog' &&
+          !node.attrs.some(({ name }) => name === 'data-dialog-fallback-open')) ||
         node.attrs.some(({ name }) => name === 'hidden')
       )
         continue;
@@ -88,6 +90,8 @@ export const verifyCapabilityArtifacts = (
     for (const example of examples) {
       if (!visibleIds.has(example.id) || !outcomes.has(example.id))
         throw new Error(`Capabilities artifact omits visible result ${example.id}.`);
+      if (!html.includes(`id="example-${example.id}"`))
+        throw new Error(`Capabilities artifact omits illustration dialog ${example.id}.`);
       if (visuals.get(example.id) !== getCapabilityVisualFamily(example))
         throw new Error(`Capabilities artifact has the wrong visual family for ${example.id}.`);
       const outcome = getCapabilityOutcome(example, catalog);
