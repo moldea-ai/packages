@@ -80,6 +80,7 @@ const hasLongResultLine = resultSource.split('\n').some((line) => line.length > 
       </div>
       <CodeBlock
         source={resultSource}
+        language="json"
         ariaLabel={`Result excerpt for ${example.title}`}
         overflow="scroll"
         copyable={false}

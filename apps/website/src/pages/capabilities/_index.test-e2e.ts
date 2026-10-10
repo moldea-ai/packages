@@ -5,6 +5,9 @@ import { DEFAULT_BASE_PATH, normalizeBasePath, withBase } from '@moldea.ai/websi
 import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 import { getCapabilityShowcase, getCapabilityVisualFamily } from '../../lib/capabilities/index.ts';
 
+// retain failure traces without copying the complete catalog DOM on every assertion
+test.use({ trace: { mode: 'retain-on-failure', snapshots: false } });
+
 const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const route = withBase('/capabilities/', basePath);
 const catalog = loadWebsiteModel().capabilities;
@@ -35,12 +38,22 @@ for (const width of [320, 768, 1440]) {
       await expect(page.locator('main dialog')).toHaveCount(catalog.cases.length * 2);
       await expect(page.locator('main dialog:modal')).toHaveCount(0);
       await expect(page.locator('[data-capability-visual]:visible')).toHaveCount(0);
+      await expect(page.locator('main')).not.toContainText('Also covers:');
       for (const { group, examples } of showcase) {
         const section = sectionFor(page, group.id);
         await expect(section.locator('[data-capability-example]:visible')).toHaveCount(4);
         await expect(section.locator('[data-capability-count]')).toHaveText(
           `4 of ${examples.length} examples`,
         );
+        const count = section.locator('[data-capability-count]');
+        await expect(count).toHaveAttribute('aria-live', 'polite');
+        await expect(count).toHaveAttribute('aria-atomic', 'true');
+        expect(
+          await count.evaluate((element) => {
+            const bounds = element.getBoundingClientRect();
+            return bounds.width <= 1 && bounds.height <= 1;
+          }),
+        ).toBe(true);
         await expect(section.locator('[data-capability-load]')).toHaveAccessibleName(
           `Load more ${group.label.toLowerCase()} examples`,
         );
@@ -112,6 +125,13 @@ test('reveals four buttons at a time, keeps categories independent, and restores
   await expect(section.locator('[data-capability-count]')).toHaveText(
     `${examples.length} of ${examples.length} examples`,
   );
+  expect(
+    await section.locator('[data-capability-controls]').evaluate((element) => ({
+      marginTop: getComputedStyle(element).marginTop,
+      height: element.getBoundingClientRect().height,
+      isHidden: element.hasAttribute('hidden'),
+    })),
+  ).toStrictEqual({ marginTop: '0px', height: 0, isHidden: false });
   await expect(sectionFor(page, 'agents').locator('[data-capability-example]:visible')).toHaveCount(
     4,
   );
@@ -249,6 +269,20 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await expect(page.locator('dialog:modal')).toHaveCount(2);
     await expect(result).toContainText('warningCount');
     await expect(result).toContainText(example.packageName);
+    const codeRegion = result.getByRole('region', {
+      name: `Result excerpt for ${example.title}`,
+    });
+    await expect(codeRegion).toHaveAttribute('tabindex', '0');
+    await expect(codeRegion.locator('code')).toHaveClass('language-json');
+    expect(await codeRegion.locator('code span').count()).toBeGreaterThan(0);
+    await codeRegion.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect
+      .poll(() => codeRegion.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(0);
+    expect(await result.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+      true,
+    );
     expect(
       (await new AxeBuilder({ page }).include(`#result-${example.id}`).analyze()).violations,
     ).toStrictEqual([]);

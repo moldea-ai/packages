@@ -4,13 +4,36 @@ import {
   getCapabilityShowcase,
   getCapabilityVisualFamily,
   getCapabilityOutcome,
+  getCapabilityResultExcerpt,
   type ICapabilities,
 } from '../../src/lib/capabilities/index.ts';
 
-/** Reads plain text from one already parsed summary, preserving document order. */
-const readText = (node: DefaultTreeAdapterMap['node']): string => {
+/** Reads a parsed subtree, retaining exact code whitespace when the separator is empty. */
+const readText = (node: DefaultTreeAdapterMap['node'], separator = ' '): string => {
   if ('value' in node) return node.value;
-  return 'childNodes' in node ? node.childNodes.map(readText).join(' ') : '';
+  return 'childNodes' in node
+    ? node.childNodes.map((child) => readText(child, separator)).join(separator)
+    : '';
+};
+
+/** Collects standard JSON excerpts even though result dialogs are initially closed. */
+const readResultExcerpts = (dialog: DefaultTreeAdapterMap['node']): string[] => {
+  const excerpts: string[] = [];
+  const pending = [dialog];
+  while (pending.length > 0) {
+    const node = pending.pop();
+    if (!node) continue;
+    if (
+      'tagName' in node &&
+      node.tagName === 'code' &&
+      node.attrs.some(
+        ({ name, value }) => name === 'class' && value.split(/\s+/u).includes('language-json'),
+      )
+    )
+      excerpts.push(readText(node, ''));
+    else if ('childNodes' in node) pending.push(...node.childNodes);
+  }
+  return excerpts;
 };
 
 /**
@@ -31,12 +54,16 @@ export const verifyCapabilityArtifacts = (
   const summaries = new Map<string, string>();
   const visuals = new Map<string, string>();
   const references = new Set<string>();
+  const resultExcerpts = new Map<string, string[]>();
   const showcase = getCapabilityShowcase(catalog);
   const pending: DefaultTreeAdapterMap['node'][] = [parse(html)];
   while (pending.length > 0) {
     const node = pending.pop();
     if (!node) continue;
     if ('tagName' in node) {
+      const attributes = Object.fromEntries(node.attrs.map(({ name, value }) => [name, value]));
+      if (node.tagName === 'dialog' && attributes.id?.startsWith('result-'))
+        resultExcerpts.set(attributes.id, readResultExcerpts(node));
       if (
         ['script', 'template'].includes(node.tagName) ||
         (node.tagName === 'dialog' &&
@@ -44,7 +71,6 @@ export const verifyCapabilityArtifacts = (
         node.attrs.some(({ name }) => name === 'hidden')
       )
         continue;
-      const attributes = Object.fromEntries(node.attrs.map(({ name, value }) => [name, value]));
       if (attributes.id) visibleIds.add(attributes.id);
       if (attributes['data-capability-outcome']) {
         outcomes.add(attributes['data-capability-outcome']);
@@ -102,6 +128,11 @@ export const verifyCapabilityArtifacts = (
         throw new Error(`Capabilities artifact has an unsupported outcome for ${example.id}.`);
       if (!html.includes(`id="result-${example.id}"`))
         throw new Error(`Capabilities artifact omits result dialog ${example.id}.`);
+      const excerpts = resultExcerpts.get(`result-${example.id}`);
+      if (excerpts?.length !== 1)
+        throw new Error(`Capabilities artifact omits standard JSON presentation ${example.id}.`);
+      if (excerpts[0] !== JSON.stringify(getCapabilityResultExcerpt(example.result), null, 2))
+        throw new Error(`Capabilities artifact result does not match execution ${example.id}.`);
     }
     const referencePath = new URL(`..${group.reference.route}`, pageUrl).pathname;
     if (!references.has(referencePath))

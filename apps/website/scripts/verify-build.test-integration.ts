@@ -153,6 +153,18 @@ describe('production discovery guards', () => {
     replaceArtifactText('capabilities/index.html', marker, replacement);
     expect(() => verifyProductionBuild(directory)).toThrow(error);
   });
+  test('rejects capability results without standard JSON presentation', () => {
+    replaceArtifactText('capabilities/index.html', 'language-json', 'language-text');
+    expect(() => verifyProductionBuild(directory)).toThrow('omits standard JSON presentation');
+  });
+  test('rejects rendered capability JSON that differs from the executed excerpt', () => {
+    replaceArtifactText(
+      'capabilities/index.html',
+      '<code class="language-json">',
+      '<code class="language-json">stale',
+    );
+    expect(() => verifyProductionBuild(directory)).toThrow('result does not match execution');
+  });
   test('rejects an unknown example leaking into the complete catalog', () => {
     replaceArtifactText(
       'capabilities/index.html',

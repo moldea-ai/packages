@@ -444,7 +444,7 @@ describe('createLlmsText', () => {
 });
 
 describe('createSearchRecords', () => {
-  test('indexes visible coverage and illustrations while retaining the complete internal catalog', () => {
+  test('indexes category coverage and illustrations while retaining the complete internal catalog', () => {
     const model = getCurrentWebsiteModel();
     expect(model.routes.filter((route) => route === '/capabilities/')).toStrictEqual([
       '/capabilities/',

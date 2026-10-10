@@ -11,7 +11,7 @@ import type {
 } from '../../lib/capabilities/index.ts';
 import { CapabilityExample } from '../capability-example/index.ts';
 
-// every section keeps its explanation, illustrations, and secondary coverage in the same order
+// every section keeps its explanation and illustrations in the authored order
 interface Props {
   catalog: ICapabilities;
   group: ICapabilityGroup;
@@ -66,12 +66,12 @@ const { catalog, group, examples, position } = Astro.props;
       }
     </div>
     <div
-      class="mt-5 flex flex-col items-center gap-3"
+      class="flex flex-col items-center gap-3 data-[complete=false]:mt-5"
       data-capability-controls
       hidden
     >
       <p
-        class="text-xs text-muted-foreground"
+        class="sr-only"
         aria-live="polite"
         aria-atomic="true"
         data-capability-count
@@ -89,12 +89,5 @@ const { catalog, group, examples, position } = Astro.props;
         />
       </ActionButton>
     </div>
-    <p
-      class="mt-4 text-xs leading-6 text-muted-foreground"
-      data-capability-coverage={group.id}
-    >
-      <span class="font-medium text-foreground">Also covers: </span>
-      <InlineBrandText text={`${group.coverage.join('; ')}.`} />
-    </p>
   </div>
 </section>
