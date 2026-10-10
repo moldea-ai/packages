@@ -123,14 +123,15 @@ jobs:
           "$RELEASE_BASE_COMMIT"
 
   verify:
-    name: Verify Release Candidates
+    name: Verify Repository and Release Candidates
     needs: plan
     if: ${{ github.event_name == 'push' || needs.plan.outputs.has_releases == 'true' }}
     permissions:
       contents: read
     uses: ./.github/workflows/ci.yml
     with:
-      release_build: true
+      release_build: ${{ needs.plan.outputs.has_releases == 'true' }}
+      comparison_commit: ${{ github.event.before || '' }}
       release_project: ${{ needs.plan.outputs.project_key }}
 
   release_repository:

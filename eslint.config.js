@@ -5,7 +5,16 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['**/coverage/**', '**/dist/**', '**/node_modules/**', '.turbo/**']),
+  globalIgnores([
+    '**/coverage/**',
+    '**/dist/**',
+    '**/node_modules/**',
+    '.turbo/**',
+    '**/_archive/**',
+    '**/_archives/**',
+    '**/_backup/**',
+    '**/_backups/**',
+  ]),
   {
     files: ['**/*.{js,mjs}'],
     extends: [js.configs.recommended],

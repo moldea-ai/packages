@@ -1,95 +1,8 @@
 import { spawnSync } from 'node:child_process';
 
+import { requireGitCommit } from '../workspace-graph/index.ts';
+
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/u;
-
-const requireCommit = (commit: string): void => {
-  if (!COMMIT_PATTERN.test(commit)) {
-    throw new TypeError('The Git commit is invalid.');
-  }
-};
-
-/**
- * Reads one UTF-8 file from a committed Git tree without changing repository state.
- * @param repositoryRoot The repository containing the committed tree.
- * @param commit The exact source commit.
- * @param filePath The repository-relative file path.
- * @returns The committed file content.
- * @throws
- * - If the commit is invalid or Git cannot read the file safely
- */
-export const readGitFile = (repositoryRoot: URL, commit: string, filePath: string): string => {
-  requireCommit(commit);
-
-  const result = spawnSync('git', ['show', `${commit}:${filePath}`], {
-    cwd: repositoryRoot,
-    encoding: 'utf8',
-  });
-
-  if (result.status !== 0) {
-    throw new Error(`The ${filePath} file could not be read from ${commit}.`);
-  }
-
-  return result.stdout;
-};
-
-/**
- * Reads one UTF-8 file when it exists in a committed Git tree.
- * @param repositoryRoot The repository containing the committed tree.
- * @param commit The exact source commit.
- * @param filePath The repository-relative file path.
- * @returns The committed file content, or null when the path is absent.
- * @throws
- * - If the commit is invalid or Git cannot inspect the tree safely
- */
-export const readOptionalGitFile = (
-  repositoryRoot: URL,
-  commit: string,
-  filePath: string,
-): string | null => {
-  requireCommit(commit);
-
-  const result = spawnSync('git', ['ls-tree', '-z', '--name-only', commit, '--', filePath], {
-    cwd: repositoryRoot,
-    encoding: 'utf8',
-  });
-
-  if (result.status !== 0) {
-    throw new Error(`The ${filePath} file state could not be read from ${commit}.`);
-  }
-
-  if (result.stdout === '') {
-    return null;
-  }
-
-  if (result.stdout !== `${filePath}\0`) {
-    throw new Error(`The ${filePath} file state could not be resolved safely from ${commit}.`);
-  }
-
-  return readGitFile(repositoryRoot, commit, filePath);
-};
-
-/** Lists workspace manifests at the package-directory depth in one committed tree. */
-export const listGitWorkspaceManifestPaths = (repositoryRoot: URL, commit: string): string[] => {
-  requireCommit(commit);
-
-  const result = spawnSync(
-    'git',
-    ['ls-tree', '-r', '-z', '--name-only', commit, '--', 'apps', 'packages', 'projects'],
-    { cwd: repositoryRoot, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 },
-  );
-
-  if (result.status !== 0) {
-    throw new Error(`The ${commit} workspace manifests could not be listed safely.`);
-  }
-
-  return result.stdout
-    .split('\0')
-    .filter((filePath) =>
-      /^(?:apps|packages|projects)\/(?!_archive\/|_archives\/|_backup\/|_backups\/)[^/]+\/package\.json$/u.test(
-        filePath,
-      ),
-    );
-};
 
 /** Detects changes to shared library-build inputs while excluding tests and prose. */
 export const hasGitLibraryBuildConfigChanges = (
@@ -97,8 +10,8 @@ export const hasGitLibraryBuildConfigChanges = (
   baseCommit: string,
   currentCommit: string,
 ): boolean => {
-  requireCommit(baseCommit);
-  requireCommit(currentCommit);
+  requireGitCommit(baseCommit);
+  requireGitCommit(currentCommit);
 
   const result = spawnSync(
     'git',
@@ -153,8 +66,8 @@ export const hasGitProjectChanges = (
   projectDirectory: string,
   publishesDocumentation: boolean,
 ): boolean => {
-  requireCommit(baseCommit);
-  requireCommit(currentCommit);
+  requireGitCommit(baseCommit);
+  requireGitCommit(currentCommit);
 
   const result = spawnSync(
     'git',

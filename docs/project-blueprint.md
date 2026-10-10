@@ -43,6 +43,8 @@ Shared internal packages may support first-class projects but never depend on th
 
 The catalog records approved architecture, not implementation or release status. The built-in `custom` runtime belongs to Core. Public tooling, instruction consumption, and package-backed adapters currently target the Node.js ecosystem; compatibility uses npm packages and node-semver semantics.
 
+`scripts/workspace-graph/` owns exact-commit manifest discovery and shared dependency facts. `scripts/npm-release/` retains release relevance and private-input propagation policy. `scripts/ci/` owns conservative affected selection, validated execution plans, task isolation, and the final job gate. CI follows all downstream consumers; npm release selection stops private-input propagation at public package boundaries. See [affected CI](local-development.md#affected-ci).
+
 ## Boundaries and sources of truth
 
 - **Repository reading:** `@moldea.ai/repository` defines source-neutral logical paths, bounded pages and ranges, deterministic comparisons, snapshot identities, and the reader contract. Its memory reader backs shared conformance tests. `@moldea.ai/repository-fs` supplies lazy, resource-limited local access without an eager repository-wide content inventory.
