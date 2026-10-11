@@ -129,22 +129,22 @@ describe('verifySeoArtifacts', () => {
   });
 
   test('rejects duplicate titles across canonical pages', () => {
-    const firstUrl = `${HOME_URL}adapters/openai/limitations/`;
-    const secondUrl = `${HOME_URL}adapters/anthropic/limitations/`;
+    const firstUrl = `${HOME_URL}packages/core/repository-inspection/`;
+    const secondUrl = `${HOME_URL}packages/cli/output-and-operations/`;
 
     expect(() =>
       verifySeoArtifacts({
         homePageUrl: HOME_URL,
         htmlArtifacts: [
           createIndexableHtml({
-            description: 'OpenAI adapter limitations.',
-            structuredData: createBreadcrumbs('OpenAI limitations'),
+            description: 'Core repository inspection.',
+            structuredData: createBreadcrumbs('Core inspection'),
             title: 'Limitations · moldea packages',
             url: firstUrl,
           }),
           createIndexableHtml({
-            description: 'Anthropic adapter limitations.',
-            structuredData: createBreadcrumbs('Anthropic limitations'),
+            description: 'CLI output and operations.',
+            structuredData: createBreadcrumbs('CLI operations'),
             title: 'Limitations · moldea packages',
             url: secondUrl,
           }),

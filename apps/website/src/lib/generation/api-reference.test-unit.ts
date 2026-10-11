@@ -51,12 +51,12 @@ describe('generateApiReference', () => {
 describe('API fragment identifiers', () => {
   test('qualifies symbol anchors by public entry point', () => {
     expect(createApiEntrypointAnchorId('.')).toBe('entrypoint-root');
-    expect(createApiEntrypointAnchorId('./adapter')).toBe('entrypoint-subpath-adapter');
-    expect(createApiSymbolAnchorId('.', 'IRuntimeAdapterEvidence')).toBe(
-      'api-root-IRuntimeAdapterEvidence',
+    expect(createApiEntrypointAnchorId('./memory')).toBe('entrypoint-subpath-memory');
+    expect(createApiSymbolAnchorId('.', 'IRepositorySnapshot')).toBe(
+      'api-root-IRepositorySnapshot',
     );
-    expect(createApiSymbolAnchorId('./adapter', 'IRuntimeAdapterEvidence')).toBe(
-      'api-subpath-adapter-IRuntimeAdapterEvidence',
+    expect(createApiSymbolAnchorId('./memory', 'IRepositorySnapshot')).toBe(
+      'api-subpath-memory-IRepositorySnapshot',
     );
   });
 

@@ -24,7 +24,7 @@ Binding coverage reports the checks performed on each declared reference: `fileC
 
 The CLI composes `@moldea.ai/repository`, `@moldea.ai/repository-fs` and `@moldea.ai/core`. Runtime IDs select guidance and do not form an executable compatibility registry.
 
-The Agent Skill consumes this local executable as its deterministic package layer. Complete skill installation, workflows, tutorials, target maturity, and qualification presentation belong to the separate public experiences; this documentation covers only the CLI contract.
+The Agent Skill consumes this local executable as its deterministic package layer. Complete skill installation, workflows, tutorials, and release evidence belong to the separate public experiences; this documentation covers only the CLI contract.
 
 ## Boundaries
 
