@@ -216,8 +216,8 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
       ),
       agentCase(
         `${kind}-implementation-present`,
-        `The ${kind} file exists, with runtime wiring unverified`,
-        'The custom runtime has no adapter to verify this relationship. Core reports the uncertainty as a warning.',
+        `The declared ${kind} file exists`,
+        'Core checks the declared implementation file. Runtime wiring remains outside this check.',
         [
           ...createAgentEntries(manifest),
           {
@@ -227,7 +227,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
               'export const explainReturns = () => "Returns are accepted within 30 days of delivery.";\n',
           },
         ],
-        ['CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED'],
+        [],
       ),
     ];
   }),
@@ -345,12 +345,5 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
         ? []
         : [state === 'empty' ? 'MOLDEA_RUNTIME_GUIDANCE_EMPTY' : 'MOLDEA_RUNTIME_GUIDANCE_MISSING'],
     ),
-  ),
-  agentCase(
-    'runtime-adapter-unavailable',
-    'The runtime adapter is not in this composition',
-    'Universal checks do not silently substitute for the requested runtime inspection.',
-    createAgentEntries(AGENT_MANIFEST.replace('id: custom', 'id: openai')),
-    ['MOLDEA_RUNTIME_ADAPTER_UNAVAILABLE'],
   ),
 ];

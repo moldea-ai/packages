@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-// schema 6 is a closed envelope; command results validate only the fields consumed below
+// schema 7 is a closed envelope; command results validate only the fields consumed below
 export const CliEnvelope = z.strictObject({
   cliVersion: z.string(),
   command: z.enum(['validate', 'inspect', 'scope', 'content', 'composition']),
-  schemaVersion: z.literal(6),
+  schemaVersion: z.literal(7),
   status: z.enum(['valid', 'invalid', 'error']),
   error: z
     .object({
@@ -19,44 +19,18 @@ export const CliEnvelope = z.strictObject({
 });
 export type ICliEnvelope = z.infer<typeof CliEnvelope>;
 
-const CliUnverifiedRelationship = z.enum([
-  'runtime-agent',
-  'instruction-loader',
-  'agent-input-schema',
-  'agent-output-schema',
-  'tool-implementation',
-  'tool-registration',
-  'tool-input-schema',
-  'tool-output-schema',
-  'skill-implementation',
-  'skill-registration',
-  'handoff-registration',
-  'routing-description',
-  'variable-provider',
-]);
-const CliWarningDetails = z.union([
-  z.strictObject({
-    relationship: CliUnverifiedRelationship,
-    reason: z.enum(['unsupported-source-pattern', 'dynamic-source-pattern']),
-  }),
-  z.strictObject({
-    relationship: CliUnverifiedRelationship,
-    reason: z.literal('version-dependent-behavior'),
-    packageName: z.string(),
-    declaredRange: z.string().nullable(),
-    boundaryVersion: z.string(),
-  }),
-]);
 const CliDiagnosticFields = {
   code: z.string(),
+  group: z.enum(['discovery', 'manifest', 'references', 'agents', 'mirrors', 'integration']),
   entity: z
     .strictObject({
       agentId: z.string().optional(),
-      adapterId: z.string().optional(),
       capabilityId: z.string().optional(),
       capabilityKind: z.enum(['tool', 'skill']).optional(),
       decisionId: z.string().optional(),
       variableId: z.string().optional(),
+      contextPath: z.string().optional(),
+      integrationPath: z.string().optional(),
     })
     .nullable(),
   key: z.string(),
@@ -77,12 +51,16 @@ const CliDiagnosticRecord = z.union([
   z.strictObject({
     ...CliDiagnosticFields,
     severity: z.literal('warning'),
-    details: CliWarningDetails,
+    subject: z.string(),
+    qualifier: z.string().nullable(),
+    acceptable: z.boolean(),
+    accepted: z.boolean(),
+    reason: z.string().nullable(),
   }),
 ]);
 const CliOtherRecord = z.object({
   agentId: z.string().nullable().optional(),
-  kind: z.enum(['agent', 'evidence', 'metadata', 'match']),
+  kind: z.enum(['agent', 'coverage', 'metadata', 'match']),
   path: z.string().optional(),
   code: z.string().optional(),
   pointer: z.string().nullable().optional(),
@@ -99,13 +77,12 @@ const CliOtherRecord = z.object({
 });
 
 // known metadata and relationship records; additive producer fields are intentionally stripped
-const RuntimeInspectionStatus = z.enum(['complete', 'incomplete', 'not-run']);
 export const CliCollectionResult = z.object({
   valid: z.boolean(),
-  runtimeInspection: RuntimeInspectionStatus.optional(),
   diagnosticCount: z.number().optional(),
   errorCount: z.number().optional(),
   warningCount: z.number().optional(),
+  acceptedWarningCount: z.number().optional(),
   relevant: z.boolean().optional(),
   counts: z
     .object({
@@ -114,7 +91,11 @@ export const CliCollectionResult = z.object({
       decisions: z.number().optional(),
       diagnostics: z.number().optional(),
       errors: z.number().optional(),
-      evidence: z.number().optional(),
+      acceptedWarnings: z.number().optional(),
+      bindings: z.number().optional(),
+      exportsPassed: z.number().optional(),
+      exportsFailed: z.number().optional(),
+      exportsNotChecked: z.number().optional(),
       metadata: z.number().optional(),
       mirrors: z.number().optional(),
       runtimes: z.number().optional(),
@@ -137,10 +118,7 @@ export const CliCollectionResult = z.object({
     records: z.array(z.union([CliDiagnosticRecord, CliOtherRecord])),
   }),
 });
-// validate and inspect expose runtime status; scope shares collection fields without that status
-export const CliInspectionResult = CliCollectionResult.extend({
-  runtimeInspection: RuntimeInspectionStatus,
-});
+export const CliInspectionResult = CliCollectionResult;
 export const CliContentResult = z.object({
   asset: z.object({ path: z.string(), totalBytes: z.number().int().nonnegative() }),
   chunk: z.object({
@@ -151,7 +129,6 @@ export const CliContentResult = z.object({
   cursor: z.string().nullable(),
 });
 export const CliCompositionResult = z.object({
-  adapters: z.array(z.object({ id: z.string(), repositoryFormatVersions: z.array(z.number()) })),
   packages: z.array(z.object({ name: z.string(), version: z.string() })),
   minimumGitVersion: z.string(),
   repositoryFormatVersions: z.array(z.number()),

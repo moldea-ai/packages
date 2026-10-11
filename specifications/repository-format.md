@@ -8,7 +8,7 @@ formatVersion: 1
 
 This document defines the version `1` repository format for a `moldea` project. It is the authoritative contract for the client-owned files under `/moldea/**` and the repository relationships declared in `/moldea/moldea.yaml`.
 
-The format is consumed by humans, coding agents, the open-source `moldea` skill, `@moldea.ai/core`, `moldea` Cloud indexing, runtime adapters, and PR Assurance. A future Node.js instruction-consumption SDK will also conform to this format after its focused specification and release.
+The format is consumed by humans, coding agents, the open-source `moldea` skill, `@moldea.ai/core`, `moldea` Cloud indexing, and PR Assurance. A future Node.js instruction-consumption SDK will also conform to this format after its focused specification and release.
 
 The repository format follows one central rule:
 
@@ -388,7 +388,8 @@ The paths below are the complete version `1` property surface. Braced segments i
 | `unresolved.{requirement-id}.reference`                               | no               | string   | Single-line non-empty external or project-local tracking reference.                                        |
 | `agents`                                                              | no               | mapping  | Registers agents keyed by stable agent ID.                                                                 |
 | `agents.{agent-id}.runtime`                                           | yes              | mapping  | Declares the agent's runtime integration.                                                                  |
-| `agents.{agent-id}.runtime.id`                                        | yes              | string   | Stable supported adapter ID or `custom`.                                                                   |
+| `acceptedWarnings`                                                    | no               | sequence | Explicit warning acceptances with code, subject, optional qualifier, and a required reason.                |
+| `agents.{agent-id}.runtime.id`                                        | yes              | string   | Recognized runtime label or `custom`.                                                                      |
 | `agents.{agent-id}.runtime.guidance`                                  | no               | string   | Optional canonical runtime-guidance path for any runtime, including `custom`.                              |
 | `agents.{agent-id}.context`                                           | no               | sequence | Unique canonical context paths relevant to the agent.                                                      |
 | `agents.{agent-id}.context[]`                                         | yes per entry    | string   | One discovered canonical context path.                                                                     |
@@ -466,7 +467,7 @@ version: 1
 
 Version `1` is closed with respect to manifest property names, canonical locations, and the meanings of existing fields. Adding a manifest property, canonical location, or incompatible interpretation requires a new major format version.
 
-Clarifications, conformance fixtures, compatibility-matrix changes, and additional official adapter IDs may remain within version `1` when they do not change repository syntax or the semantics of existing fields.
+Clarifications, conformance fixtures, runtime-guidance changes, and additional runtime labels may remain within version `1` when they do not change repository syntax or the semantics of existing fields.
 
 A conforming validator that does not support the declared version returns an explicit unsupported-version diagnostic and must not attempt best-effort interpretation.
 
@@ -631,7 +632,7 @@ Project-local runtime guidance lives under:
 
 Every runtime-guidance file must contain at least one non-whitespace Unicode character.
 
-Runtime guidance is optional. It exists when an official adapter alone cannot reliably explain the project's actual runtime integration or when the project uses a custom runtime. In dedicated-repository mode, it may describe relevant conventions in the developer-identified related application repository even though that repository remains outside the canonical snapshot and cannot be referenced by manifest paths.
+Runtime guidance is optional. It records project-specific integration conventions that installed SDK types, explicit bindings, and implementation code do not explain sufficiently. In dedicated-repository mode, it may describe relevant conventions in the developer-identified related application repository even though that repository remains outside the canonical snapshot and cannot be referenced by manifest paths.
 
 Guidance may document project-specific facts such as:
 
@@ -648,16 +649,16 @@ Guidance may document project-specific facts such as:
 
 Runtime guidance must describe the project's actual implementation pattern rather than reproduce generic runtime documentation.
 
-Project-local runtime guidance provides explicit repository-specific semantics about how the customer's runtime is structured. `moldea` uses it together with manifest relationships, adapters, and repository evidence to interpret project behavior, not to judge whether the implementation follows runtime-recommended practices.
+Project-local runtime guidance provides explicit repository-specific semantics about how the customer's runtime is structured. `moldea` uses it together with manifest relationships and repository evidence to interpret project behavior, not to judge whether the implementation follows runtime-recommended practices.
 
 Runtime guidance:
 
-- may supplement an official runtime adapter
+- may supplement the installed runtime SDK types and implementation evidence
 - may provide the primary project-specific interpretation for `custom`
 - may be shared by any number of agents
 - should be created per materially distinct runtime-integration pattern, not per agent by default
 - cannot override `moldea` repository-format, security, authorization, or Assurance rules
-- is never executable adapter code
+- is never executable code
 
 Unreferenced runtime-guidance files are allowed.
 
@@ -725,8 +726,8 @@ Additional rules:
 - `moldea` writers should persist the effective value without leading or trailing Unicode whitespace.
 - Runtime-variable delimiters `{{` and `}}` are prohibited in both files.
 - Validation never silently truncates either value.
-- A runtime adapter may enforce a stricter provider-specific size or formatting limit, but it must not weaken the repository-format maximum.
-- Exceeding the format or adapter limit is an explicit deterministic validation failure.
+- The application must respect provider-specific limits in addition to the repository-format maximum. Core does not validate provider limits.
+- Exceeding the repository-format limit is an explicit deterministic validation failure.
 
 ### Agent instruction
 
@@ -847,39 +848,20 @@ When a material implementation relationship exists but cannot yet be registered 
 
 ## Runtime declaration
 
-Every registered agent declares exactly one runtime adapter. The adapter identifies the deterministic interpretation model for that agent's AI runtime integration; it may represent a direct provider SDK, an agent SDK, an orchestration framework, another supported runtime, or `custom`:
+Every registered agent declares exactly one runtime label:
 
 ```yaml
 runtime:
   id: openai-agents-sdk
 ```
 
-Runtime IDs satisfy the stable-ID lexical and length rules. `custom` has repository-format-defined semantics. Every other ID identifies an official adapter whose availability and supported runtime package versions are determined by the active Runtime Compatibility Matrix. Direct provider integrations use their available official provider adapter when repository evidence matches a verified target; they do not use `custom` merely because no separate agent framework is present.
+Runtime IDs satisfy the stable-ID lexical and length rules. Recognized labels are `amazon-bedrock`, `anthropic`, `cerebras`, `claude-agent-sdk`, `cloudflare-agents`, `cohere`, `convex-agent`, `cursor-sdk`, `deep-agents`, `eve`, `genkit`, `github-copilot-sdk`, `google-adk`, `google-genai`, `groq`, `hugging-face`, `ibm-watsonx-ai`, `langchain`, `langgraph`, `livekit-agents`, `mastra`, `microsoft-foundry`, `mistral`, `node-llama-cpp`, `ollama`, `openai`, `openai-agents-sdk`, `openai-codex`, `opencode-sdk`, `openrouter`, `pi-agent`, `strands-agents`, `tanstack-ai`, `vercel-ai-sdk`, `voltagent`, and `custom`. Core exports this list as `RECOGNIZED_RUNTIME_IDS`.
 
-Adapter selection represents the agent's **primary runtime integration boundary**, not every AI package present in the repository or dependency graph. When supported runtime layers are nested, select the highest-level available official adapter whose verified target actually governs the registered agent's model invocation and, when applicable, instruction loading, capabilities, schemas, routing, or variable provision. Lower-level provider SDKs and other packages used only beneath that boundary are subordinate implementation dependencies rather than competing runtime declarations. A direct-provider adapter such as `openai`, `anthropic`, or `google-genai` is selected only when that provider SDK is itself the primary runtime integration boundary for the registered agent. When two or more runtime layers materially and independently govern the same agent and no single verified official target covers the composition, use `custom` rather than choosing one arbitrarily.
+Labels select guidance for the SDK the agent's code calls directly. When one SDK defines the agent and another carries the request, use the defining SDK's ID. Provider packages beneath a listed framework use that framework's label; OpenAI-compatible providers called through `openai` use `openai`. They do not certify a vendor, SDK version, runtime compatibility, or runtime behavior. Lower-level provider dependencies do not require additional declarations. Use `custom` for an integration without a suitable label or a composition without one primary boundary. A runtime ID outside the recognized list is invalid; Core never substitutes another label.
 
-If an existing agent's adapter later becomes `deprecated`, the declaration remains valid while a published deprecated target still matches. Whether the active inspection composition currently includes that adapter affects deterministic inspection availability, not the canonical meaning of `runtime.id`. Deprecation alone does not require changing `runtime.id` to `custom`. New or materially migrated runtime relationships should use an available replacement when the matrix publishes one whose verified target matches the resulting integration.
+The manifest does not duplicate runtime package versions, programming language, package-manager metadata, or lock information. The coding agent inspects the installed SDK's own type definitions, repository implementation, and real tests for those facts and for runtime wiring. Core applies identical universal file and export checks to every label.
 
-A syntactically valid runtime ID that is neither `custom` nor a recognized official adapter ID is invalid repository state. A conforming manifest parser returns the runtime-ID diagnostic for such an ID. Recognition of an official runtime ID is a document-level format rule and does not require the corresponding adapter package merely to parse the manifest. During complete adapter-aware repository inspection, a recognized official runtime whose adapter is not configured in the active Core composition produces the explicit unavailable-adapter diagnostic and prevents that inspection from being considered valid. Validation must not guess, reinterpret an unsupported declaration as `custom`, or silently select another adapter.
-
-The manifest does not duplicate:
-
-- runtime package version
-- programming language
-- package-manager metadata
-- dependency-lock information
-
-Those facts are inferred from the repository itself.
-
-When project-specific runtime guidance is needed:
-
-```yaml
-runtime:
-  id: openai-agents-sdk
-  guidance: /moldea/runtimes/openai-agents-sdk-api.md
-```
-
-For a proprietary, unsupported, multi-runtime, or otherwise project-specific integration that cannot reliably use an official adapter:
+Optional project-local guidance names an existing regular Markdown file under `/moldea/runtimes/**`:
 
 ```yaml
 runtime:
@@ -887,13 +869,9 @@ runtime:
   guidance: /moldea/runtimes/internal-agent-runtime.md
 ```
 
-`guidance` is optional for both official adapters and `custom`. When it is omitted, the skill and adapter rely on explicit bindings and repository evidence. If the runtime cannot be understood reliably, the skill asks for clarification rather than guessing.
+In dedicated-repository mode, select the actual runtime label even when the implementation resides in the developer-identified related application repository. Core inspects only the supplied canonical repository snapshot. External implementation cannot create cross-repository bindings, references, impact paths, or mirrors in version `1`; its absence from that snapshot is not itself a runtime mismatch. Project-local guidance may preserve its relevant conventions.
 
-A referenced guidance path must point to an existing regular Markdown file under `/moldea/runtimes/**`.
-
-In dedicated-repository mode, the implementation that establishes the agent's runtime may live in a separate application repository. For a new or materially changed runtime relationship, the canonical `moldea` repository still declares the agent's actual primary runtime adapter when an available official adapter has a verified target covering that integration; it does not use `custom` merely because the runtime package or implementation is external to the canonical repository. An existing agent may retain a still-supported deprecated adapter under the lifecycle rule above. When no available verified official target covers a new or migrated relationship and no matching deprecated declaration is being legitimately retained, the ordinary `custom` fallback rules apply. Core and runtime adapters inspect only the repository snapshot supplied to them, so deterministic runtime evidence may be absent or partial when the relevant implementation is outside that snapshot. Absence of an external runtime package, runtime agent, registration, or other implementation artifact from the canonical repository is not by itself a structural runtime mismatch. The skill may use a developer-identified related application repository as semantic evidence to select and maintain `runtime.id`, but version `1` still creates no cross-repository binding, reference, impact path, or mirror.
-
-An agent cannot be structurally registered without a runtime ID. If the runtime choice is genuinely unknown, the skill must resolve that foundational ambiguity before registering the agent rather than inventing a runtime declaration.
+An agent cannot be structurally registered without a runtime ID. Resolve an unknown runtime choice before registering the agent rather than inventing a declaration.
 
 ## Agent context relationships
 
@@ -941,7 +919,7 @@ Repository-reference rules:
 - `path` must resolve to an existing regular repository file.
 - `symbol` is optional.
 - When `symbol` is absent, the reference identifies the entire file.
-- When present, `symbol` is an opaque, non-empty, single-line string with no NUL character. `@moldea.ai/core` validates only this common shape; the selected adapter may validate runtime- or language-specific syntax and existence.
+- When present, `symbol` is an opaque, non-empty, single-line string with no NUL character. Core validates this shape and checks runtime export names under the conservative syntax-only rules below.
 - A reference to a canonical asset under `/moldea/**` must omit `symbol`.
 - Repository references do not use globs.
 - Version `1` has no generic `selector` property.
@@ -952,7 +930,19 @@ Unlike a general repository reference, a binding always identifies implementatio
 
 A binding whose path is inside `/moldea/**` is structurally invalid.
 
-`@moldea.ai/core` always validates the path and the allowed reference shape. An official runtime adapter may additionally resolve and validate a binding's `symbol` deterministically when supported. When symbol resolution cannot be established deterministically, `evaluate` or Assurance handles the relationship semantically rather than inventing a selector syntax.
+`@moldea.ai/core` validates the path and reference shape. For a binding naming a symbol, it checks a syntax-only runtime export inventory for TypeScript (`.ts`, `.tsx`, `.mts`, `.cts`) and JavaScript ESM (`.js`, `.mjs`, `.jsx`). Direct runtime exports, default exports, named re-exports, and namespace re-exports can establish an exported name. Type-only exports, interfaces, and ambient declarations never satisfy a runtime symbol. Imports are not resolved and no application code is executed.
+
+Only a complete inventory can prove an export missing. CommonJS constructs and wildcard re-exports make the inventory inconclusive. `.cjs`, declaration files, and other extensions are unsupported. Unparseable source and a pre-parse capacity refusal remain inconclusive. Core reports a proven missing export as `MOLDEA_REFERENCE_EXPORT_MISSING` (error, `references`) and records the same binding's export check as `failed`.
+
+### Binding coverage
+
+Coverage records name checks performed, not runtime correctness. Each record contains `entity`, `relationship`, `path`, `symbol` (or `null`), `fileCheck: 'passed'`, and `exportCheck: 'passed' | 'failed' | 'not-checked'`. A `not-checked` record also contains `exportNotCheckedReason`: `no-symbol`, `unsupported-file-type`, `unresolved-exports`, `unparseable-source`, or `resource-limit`. Missing or non-regular files produce reference diagnostics without a successful-file coverage record.
+
+The relationship identifies one declared binding: `runtime-agent`, `instruction-loader`, `agent-input-schema`, `agent-output-schema`, `variable-provider`, `tool-implementation`, `tool-registration`, `tool-input-schema`, `tool-output-schema`, `skill-implementation`, `skill-registration`, `context-binding`, or `decision-binding`. Every declared binding, including context and decision bindings, participates. Repeated paths share one parsed inventory per operation.
+
+Validation and every inspection page expose `coverageCounts` containing `bindings`, `exportsPassed`, `exportsFailed`, and `exportsNotChecked`. Prepared inspection offers the bounded `coverage` view. `maxCoverage` defaults to 10,000 records. Coverage never claims that a runtime uses a loader, registers a capability, applies a schema, or behaves correctly. Those relationships require the coding agent's inspection and real application tests.
+
+Source reads obey `maxFileBytes`. Before decoding or parsing, Core reserves `65536 + sourceBytes * (8 + 512)` logical retained bytes for text and syntax nodes. A reservation miss records `resource-limit` without parsing. The source buffer and parsing reservation are released after analysis; only export names remain cached. Operation limits, cancellation, and source failures reject the complete operation; interrupted inspection never returns partial coverage. Manifest-only operations and the standalone `@moldea.ai/core/scope` matcher do not load TypeScript or inspect source files.
 
 ### Agent bindings
 
@@ -994,7 +984,7 @@ bindings:
 
 Each `variableProviders` key must be a declared runtime variable for that agent.
 
-A binding is required when the corresponding relationship is material, exists as a qualifying implementation artifact in the same repository, and cannot be derived reliably enough from the selected runtime adapter. The open-source skill prefers explicit bindings for important runtime agents and executable input/output schemas because they materially improve deterministic indexing and Assurance precision. In dedicated-repository mode, an implementation relationship that is sufficiently established but exists only in a related application repository is not eligible for a version `1` binding and is not made unresolved merely because cross-repository bindings are prohibited; the skill may preserve the project-specific interpretation in runtime guidance and model-facing content while treating the missing deterministic cross-repository traceability as an intentional version `1` limitation.
+A binding is required when the corresponding relationship is material, exists as a qualifying implementation artifact in the same repository, and materially helps establish instruction-code alignment. The open-source skill prefers explicit bindings for important runtime agents and executable input/output schemas because they materially improve deterministic indexing and Assurance precision. In dedicated-repository mode, an implementation relationship that is sufficiently established but exists only in a related application repository is not eligible for a version `1` binding and is not made unresolved merely because cross-repository bindings are prohibited; the skill may preserve the project-specific interpretation in runtime guidance and model-facing content while treating the missing deterministic cross-repository traceability as an intentional version `1` limitation.
 
 Missing or genuinely uncertain implementation must not be represented by a fake path or fake symbol. An unfinished material relationship is represented as an unresolved requirement.
 
@@ -1034,7 +1024,7 @@ A capability description must:
 - remain vendor-independent and model-facing
 - never be silently truncated
 
-The parsed YAML string is the value validated and counted. No Unicode normalization is applied. A runtime adapter may impose a stricter provider-specific size or formatting limit, but it must not weaken the repository-format maximum.
+The parsed YAML string is the value validated and counted. No Unicode normalization is applied. Applications must respect provider-specific limits in addition to the repository-format maximum; Core does not validate those provider limits.
 
 The owning agent's `instruction.md` must materially identify every registered tool and skill by its runtime-facing `name` and communicate its description, intended use conditions, and important agent-specific constraints. The repository format does not require fixed `Tools` or `Skills` headings, exact wording, or byte-for-byte duplication of the manifest description.
 
@@ -1131,7 +1121,7 @@ A skill supports:
 - `registration`: optional exact binding when registration is distinct
 - `affectedBy`: optional non-empty list of impact paths
 
-The exact runtime meaning of a skill is runtime-specific. `moldea` records the capability relationship and relies on the selected adapter, runtime guidance, explicit bindings, and repository evidence rather than imposing one universal skill runtime.
+The exact runtime meaning of a skill is runtime-specific. `moldea` records the capability relationship and relies on runtime guidance, explicit bindings, implementation code, and real tests rather than imposing one universal skill runtime.
 
 The manifest description is authoritative for concise skill metadata. The implementation is authoritative for the skill content or executable behavior, and the instruction is authoritative for what the model is told. These surfaces must remain semantically aligned.
 
@@ -1145,7 +1135,7 @@ Version `1` does not define a `handoffs` manifest property, stable handoff IDs, 
 
 Routing and delegation remain native to the selected runtime and application implementation. The optional target-owned `handoff-description.md` provides portable model-facing routing guidance, but it does not declare which source agents may route to the target or how the runtime performs that routing.
 
-The effective routing description is the canonical derived value for runtime metadata whose semantic purpose is target selection, routing, delegation, or handoff. Runtime integrations, runtime adapters, the skill, `evaluate`, `reconcile`, and PR Assurance classify runtime metadata according to its actual semantic role rather than its property name.
+The effective routing description is the canonical derived value for runtime metadata whose semantic purpose is target selection, routing, delegation, or handoff. Runtime integrations, the skill, `evaluate`, `reconcile`, and PR Assurance classify runtime metadata according to its actual semantic role rather than its property name.
 
 When runtime metadata helps a model, agent, router, or workflow decide whether to select, route to, delegate to, or hand off to a target agent:
 
@@ -1157,22 +1147,16 @@ A runtime property named `description` follows this rule when the runtime uses t
 
 The absence of `handoff-description.md` is therefore not, by itself, missing routing metadata or routing misalignment. The mandatory `description.md` supplies the defined fallback.
 
-Runtime adapters may deterministically inspect runtime-native routing registrations, wrappers, target references, and routing-facing target metadata. They may return routing evidence and diagnostics through the Runtime Adapter Contract, including evidence that an agent is exposed as a target or that supported routing-facing metadata is absent, stale, oversized, or not wired to the effective routing description.
-
-An adapter emits a routing-description error only when a supported deterministic pattern mechanically proves the incorrect relationship. A recognized source candidate that leaves a declared routing-description relationship unverified may instead produce a scoped warning under the Runtime Adapter Contract. Absence of local evidence alone does not produce a warning.
-
-The skill and coding agent combine adapter evidence, project-local runtime guidance, implementation code, agent instructions, canonical descriptions, and developer direction to create or maintain routing behavior. The repository format does not infer or persist routing relationships on their behalf.
+The skill and coding agent combine project-local runtime guidance, implementation code, installed SDK types, agent instructions, canonical descriptions, developer direction, and real application tests to create or maintain routing behavior. Core does not validate runtime-native handoff wiring or infer a routing graph.
 
 Because routing is not manifest-owned:
 
 - `handoffs` is an unknown agent property and is invalid in a version `1` manifest
 - Core performs no universal target-agent relationship validation
 - Core defines no handoff implementation binding or handoff capability ID
-- runtime-native routing changes may still enter semantic relevance analysis through adapter evidence, implementation bindings, or `affectedBy` paths
+- runtime-native routing changes may enter semantic relevance analysis through implementation bindings or `affectedBy` paths
 - `handoff-description.md` remains optional at the universal format level
-- an adapter may enforce a stricter provider-specific size or formatting limit on the effective routing description
-- an adapter may require supported routing-facing runtime metadata to exist and be wired correctly
-- an adapter must not treat the absence of `handoff-description.md` alone as a failure when the `description.md` fallback is valid and correctly used
+- applications must respect provider-specific routing metadata constraints and the effective-routing-description rule
 
 ## Runtime variables
 
@@ -1329,11 +1313,11 @@ Build-generated or transformed instruction outputs are not mirrors in version `1
 
 `moldea` does not enforce runtime orthodoxy.
 
-Repository-format rules govern what constitutes structurally valid `moldea` repository state. Official adapters provide runtime-aware discovery and conventional interpretation. Referenced project-local runtime guidance and explicit manifest relationships provide repository-specific semantics that supplement that baseline. Actual repository implementation and evidence are used to verify those interpretations.
+Repository-format rules govern structurally valid `moldea` state. Project-local runtime guidance and explicit manifest relationships describe repository-specific semantics. Installed SDK types, actual implementation, and real tests establish how those integrations behave.
 
-For example, a repository may use a runtime covered by an official adapter through several internal wrappers, a central tool registry, generated agent definitions, direct provider call wrappers, or a custom instruction loader. `moldea`'s responsibility is to understand those conventions well enough to maintain instruction-code alignment, not to force the repository into the adapter's conventional shape.
+Repositories may use internal wrappers, central registries, generated agent definitions, direct provider calls, or custom instruction loaders. The skill investigates those conventions to maintain instruction-code alignment. Core's file and export checks do not impose a runtime architecture or establish wiring.
 
-Adapters, runtime guidance, manifest relationships, and repository evidence do not form a fixed precedence hierarchy. When they disagree about how the project works, the skill or evaluator investigates and reports the inconsistency rather than silently selecting one source. None may override `moldea` repository-format, security, authorization, or Assurance rules.
+When guidance, manifest relationships, and implementation evidence disagree, the skill or evaluator investigates and reports the inconsistency. None may override repository-format, security, authorization, or Assurance rules.
 
 ## Convention-based discovery versus manifest declaration
 
@@ -1353,7 +1337,7 @@ The repository format deliberately separates discoverable files from semantic re
 The manifest declares information that cannot be inferred safely:
 
 - registered agent identities
-- selected runtime adapter
+- selected runtime label
 - project-local runtime guidance relationships
 - context-to-agent relationships
 - decision-to-agent relationships
@@ -1401,7 +1385,7 @@ Structural validation errors include, at minimum:
 - exact `affectedBy` paths that do not resolve to existing regular files in authoritative committed state
 - path traversal
 - symlinked canonical or bound assets
-- invalid runtime adapter ID syntax or a syntactically valid runtime ID that is neither `custom` nor a recognized official adapter ID
+- invalid runtime ID syntax or a runtime ID outside the recognized label list
 - missing or empty focused context or runtime-guidance files
 - referenced runtime guidance that does not exist
 - unregistered agent directories
@@ -1440,9 +1424,7 @@ Structural validation errors include, at minimum:
 - missing or stale committed mirrors
 - unrecognized canonical files under `/moldea/**`
 
-A complete adapter-aware project inspection additionally reports an explicit inspection diagnostic when a recognized package-backed official runtime adapter is unavailable to the active Core composition or does not support the active repository-format version. Those composition diagnostics prevent the inspection from being valid, but they do not make the recognized `runtime.id` malformed manifest syntax. Any future Node.js instruction-consumption SDK will not be required to load runtime adapters merely to parse the manifest.
-
-Runtime adapters may add deterministic structural or resolution validation for supported runtime constructs, such as proving that a declared symbol exists.
+Core also checks declared runtime export names under the conservative syntax-only rules above. Runtime execution, SDK compatibility, provider limits, instruction loading, capability registration, schemas, variables, and handoffs require semantic inspection and real application tests.
 
 Validation returns explicit, actionable issues. It never silently falls back to another path, previous manifest state, previous instruction, or inferred substitute.
 
@@ -1481,7 +1463,7 @@ Every repository-format diagnostic must be specific enough for a developer or co
 
 A diagnostic should identify, when applicable:
 
-- stable machine-readable diagnostic code and severity
+- stable machine-readable diagnostic code, severity, and group
 - manifest property or canonical asset
 - repository path
 - agent or capability ID
@@ -1491,7 +1473,39 @@ A diagnostic should identify, when applicable:
 
 Generic messages such as `Invalid project` are insufficient when the underlying failure can be identified more precisely. Diagnostics must still follow the privacy and safe-output rules of the active implementation and must not echo arbitrary confidential content merely to identify an invalid value.
 
-The exact diagnostic-code catalog, result shape, ordering rules, and validation-mode behavior belong to the `@moldea.ai/core` package specification. A code assigned to a version `1` rule remains stable for as long as a Core release claims version `1` support. A changed rule is represented under a new repository-format major version, and a version `1` code may be removed only when the Core release drops version `1` support.
+Core diagnostics have `source: 'core'`, `severity: 'error' | 'warning'`, and a `group`: `discovery`, `manifest`, `references`, `agents`, `mirrors`, or `integration`. Errors invalidate a project; warnings do not. The exact diagnostic-code catalog, result shape, ordering rules, and validation-mode behavior belong to the `@moldea.ai/core` package specification. A code assigned to a version `1` rule remains stable for as long as a Core release claims version `1` support. A changed rule is represented under a new repository-format major version, and a version `1` code may be removed only when the Core release drops version `1` support.
+
+### Coding-agent integration warnings
+
+Project validation and inspection check the root `/AGENTS.md` managed region as untrusted text without following symlinks. A missing or non-regular file, absent or malformed marker region, or invalid UTF-8 produces `MOLDEA_INTEGRATION_BLOCK_MISSING`: The AGENTS.md moldea block is missing. Details identify the entry kind and, where relevant, the invalid region or encoding.
+
+The relevance-gate command supplies a relative skill installation path matching `^[A-Za-z0-9._/-]+$`, with no empty, absolute, or traversal segments. An unextractable path or missing or non-regular `SKILL.md`, `scripts/relevance-gate.mjs`, or `assets/managed-agents-block.md` produces `MOLDEA_INTEGRATION_SKILL_MISSING`: The skill installation referenced by the AGENTS.md moldea block was not found. Details identify the reason or referenced installation and missing file.
+
+Core renders the installed asset with `{{skill-path}}` replaced by the extracted path and with the managed region's LF or CRLF line ending. A difference from the complete region including markers, or an invalid asset encoding, produces `MOLDEA_INTEGRATION_BLOCK_STALE`: The AGENTS.md moldea block differs from its skill installation. A current block produces no warning. All three codes belong to `integration`, identify `entity.integrationPath: /AGENTS.md`, and use subject `/AGENTS.md` and qualifier `null`.
+
+The check makes at most two bounded reads and two entry lookups, reserved through the shared resource ledger; only its comparison findings are retained. Access failures, snapshot drift, cancellation, and resource exhaustion reject the operation. Manifest-only operations, the relevance gate, and `scope` do not run this check. Core's main entry exports `parseIntegrationBlock(text)`, returning the installation path or the reason none was found.
+
+### Warning identity and manifest acceptance
+
+`MOLDEA_IMPACT_PATTERN_UNMATCHED` is a warning in `references`: The impact pattern matches no files. It is not a format error because impact patterns may cover future files. The check runs after required validation, uses only the remaining entry budget, shares one bounded traversal for patterns with the same fixed directory prefix, and stops checking each pattern at its first regular-file match. If the optional pass exhausts the entry budget or a reader resource limit, it returns no pattern warnings and is marked incomplete. Cancellation and source failures propagate. Manifest-only operations and `scope` do not run it.
+
+Every warning carries `subject`, `qualifier`, and `acceptable`. Impact-pattern subjects identify the owner's canonical context or decision path; agent, tool, and skill patterns use the owning agent's instruction path. Integration warnings use subject `/AGENTS.md` and qualifier `null`. Pattern qualifiers contain the exact pattern. `ACCEPTABLE_WARNING_CODES`, exported from Core's main entry, contains `MOLDEA_IMPACT_PATTERN_UNMATCHED`, `MOLDEA_INTEGRATION_BLOCK_MISSING`, `MOLDEA_INTEGRATION_SKILL_MISSING`, and `MOLDEA_INTEGRATION_BLOCK_STALE`. Every warning's `acceptable` flag is true exactly when its code appears in that list.
+
+The optional top-level `acceptedWarnings` list is the sole acceptance mechanism:
+
+```yaml
+acceptedWarnings:
+  - code: MOLDEA_IMPACT_PATTERN_UNMATCHED
+    subject: /moldea/project.md
+    qualifier: /future/**
+    reason: This directory is reserved for the next release.
+```
+
+Each closed entry contains an acceptable `code`, a repository-path `subject`, an optional string or `null` `qualifier`, and a reason containing non-whitespace text and at most 256 Unicode scalar values. Omitted and `null` qualifiers represent the same identity. Codes outside the acceptable list, malformed entries, unsupported fields, missing or empty reasons, and duplicate identities produce `MOLDEA_MANIFEST_VALUE_INVALID`, with details naming the entry and field. `maxAcceptedWarnings` defaults to 256; exceeding it rejects the operation with `RESOURCE_LIMIT_EXCEEDED`.
+
+After all checks, Core matches entries on `code`, `subject`, and `qualifier`. A matched warning remains visible with `accepted: true` and its reason. `warningCount` counts only unaccepted warnings; `acceptedWarningCount` counts accepted warnings; `diagnosticCount` is their sum with `errorCount`. Inspection counts expose the same totals as `warnings`, `acceptedWarnings`, `diagnostics`, and `errors`. Acceptance never changes validity or errors.
+
+An acceptance that matches nothing produces `MOLDEA_ACCEPTANCE_UNMATCHED` (warning, `manifest`): The warning acceptance matches no reported warning. Its subject is `/moldea/moldea.yaml`, qualifier is the entry's JSON pointer, and `acceptable` is false. Core tracks completion per warning-producing check. An incomplete check neither matches its acceptances nor reports them as unmatched. The scope matcher parses the list without applying it.
 
 ## Security and secret handling
 
@@ -1671,11 +1685,11 @@ The skill and local tooling may work with temporarily non-conforming working-tre
 
 The open-source skill, `moldea` Cloud, PR Assurance, and any future Node.js instruction-consumption SDK must use the same repository interpretation rather than implementing competing format rules.
 
-New runtime adapters, compatibility-matrix entries, and project-local runtime guidance do not require a repository-format version change when the manifest semantics remain unchanged.
+New runtime labels and project-local runtime guidance do not require a repository-format version change when the manifest semantics remain unchanged.
 
 The repository format should evolve conservatively. Version `1` intentionally excludes features that would add ambiguity before concrete need exists, including:
 
-- multiple runtime adapter declarations for one agent
+- multiple runtime declarations for one agent
 - generic selector languages
 - build-generated mirrors
 - transformed mirrors

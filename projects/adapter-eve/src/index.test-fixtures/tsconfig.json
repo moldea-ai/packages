@@ -1,8 +1,0 @@
-{
-  "extends": "../../../../configs/typescript/node.json",
-  "compilerOptions": {
-    "noEmit": true,
-    "rootDir": "."
-  },
-  "include": ["public-api.test-fixture.mts"]
-}

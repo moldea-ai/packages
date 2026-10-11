@@ -53,7 +53,7 @@ describe('command-line validations', () => {
       areMoldeaCliResourceLimitsConsistent({
         maxDiagnostics: 1,
         maxEntries: 1,
-        maxEvidence: 1,
+        maxCoverage: 1,
         maxFileBytes: 8,
         maxManifestBytes: 4,
         maxTotalBytes: 16,
@@ -63,7 +63,7 @@ describe('command-line validations', () => {
       areMoldeaCliResourceLimitsConsistent({
         maxDiagnostics: 1,
         maxEntries: 1,
-        maxEvidence: 1,
+        maxCoverage: 1,
         maxFileBytes: 8,
         maxManifestBytes: 8,
         maxTotalBytes: 8,
@@ -76,7 +76,7 @@ describe('command-line validations', () => {
       areMoldeaCliResourceLimitsConsistent({
         maxDiagnostics: 1,
         maxEntries: 1,
-        maxEvidence: 1,
+        maxCoverage: 1,
         maxFileBytes: 8,
         maxManifestBytes: 9,
         maxTotalBytes: 16,
@@ -86,7 +86,7 @@ describe('command-line validations', () => {
       areMoldeaCliResourceLimitsConsistent({
         maxDiagnostics: 1,
         maxEntries: 1,
-        maxEvidence: 1,
+        maxCoverage: 1,
         maxFileBytes: 17,
         maxManifestBytes: 8,
         maxTotalBytes: 16,

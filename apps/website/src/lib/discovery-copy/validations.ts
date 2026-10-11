@@ -20,7 +20,7 @@ const validateKeys = (labels: Record<string, unknown>, expected: string[], scope
 };
 
 /**
- * Validates display metadata without mutating canonical package or compatibility records.
+ * Validates display metadata without mutating canonical package records.
  * @throws
  * - If canonical IDs are missing or stale IDs retain display copy.
  * - Discovery copy must not contain empty names or descriptions.
@@ -28,35 +28,13 @@ const validateKeys = (labels: Record<string, unknown>, expected: string[], scope
 export const validateDiscoveryCopy = (
   copy: IDiscoveryCopy,
   packages: Pick<IPublicPackage, 'name'>[],
-  adapters: { id: string; entry: { targets?: { id: string }[] } }[],
 ): void => {
   validateKeys(
     copy.packages,
     packages.map(({ name }) => name),
     'packages',
   );
-  validateKeys(
-    copy.adapters,
-    adapters.map(({ id }) => id),
-    'adapters',
-  );
-
-  for (const adapter of adapters) {
-    validateKeys(
-      copy.adapters[adapter.id].targets,
-      (adapter.entry.targets ?? []).map(({ id }) => id),
-      `${adapter.id} targets`,
-    );
-  }
-
-  const text = [
-    ...Object.values(copy.packages).flatMap(({ name, description }) => [name, description]),
-    ...Object.values(copy.adapters).flatMap(({ name, description, targets }) => [
-      name,
-      description,
-      ...Object.values(targets),
-    ]),
-  ];
+  const text = Object.values(copy.packages).flatMap(({ name, description }) => [name, description]);
   if (text.some((label) => label.trim().length === 0)) {
     throw new Error('Discovery copy must not contain empty names or descriptions.');
   }

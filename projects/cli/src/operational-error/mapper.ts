@@ -22,10 +22,6 @@ const createCoreErrorDetails = (
 ): Readonly<Record<string, string | number | null>> => {
   const details: Record<string, string | number | null> = { operation: error.operation };
 
-  if (error.adapterId !== null) {
-    details['adapterId'] = error.adapterId;
-  }
-
   if (error instanceof CoreOperationException) {
     if (error.agentId !== null) {
       details['agentId'] = error.agentId;

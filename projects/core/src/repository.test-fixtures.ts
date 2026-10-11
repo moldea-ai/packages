@@ -122,3 +122,32 @@ export const createMemoryRepositoryReader = (
     ): Promise<IRepositoryFilePage> => source.readFilePage(path, options),
   });
 };
+
+// a minimal installation keeps unrelated workflow fixtures focused on their own contracts
+export const INTEGRATION_TEST_TEMPLATE =
+  '<!-- moldea:start -->\nnode "<repo-root>/{{skill-path}}/scripts/relevance-gate.mjs" --repository "<repo-root>"\n<!-- moldea:end -->\n';
+export const INTEGRATION_TEST_ENTRIES: readonly IMemoryRepositoryEntry[] = [
+  {
+    path: '/AGENTS.md',
+    type: 'file',
+    content: INTEGRATION_TEST_TEMPLATE.replaceAll('{{skill-path}}', '.agents/skills/moldea'),
+  },
+  { path: '/.agents/skills/moldea/SKILL.md', type: 'file', content: '# Skill\n' },
+  { path: '/.agents/skills/moldea/scripts/relevance-gate.mjs', type: 'file', content: '// Gate\n' },
+  {
+    path: '/.agents/skills/moldea/assets/managed-agents-block.md',
+    type: 'file',
+    content: INTEGRATION_TEST_TEMPLATE,
+  },
+];
+
+/** Creates a real memory reader with a current integration unless a fixture overrides its files. */
+export const createIntegratedMemoryRepositoryReader = (
+  entries: readonly IMemoryRepositoryEntry[],
+): ICoreTestRepositoryReader => {
+  const paths = new Set(entries.map((entry) => entry.path));
+  return createMemoryRepositoryReader([
+    ...INTEGRATION_TEST_ENTRIES.filter((entry) => !paths.has(entry.path)),
+    ...entries,
+  ]);
+};

@@ -197,7 +197,14 @@ export const DECISION_EXAMPLES: ICoreExampleDefinition[] = [
         ? 'An accepted decision informs the source'
         : 'A source relationship points to a proposal',
       'Manifest decision relationships identify accepted decisions, not merely existing documents.',
-      [{ path: originalPath, type: 'file', content: originalContent.replace('accepted', status) }],
+      [
+        { path: originalPath, type: 'file', content: originalContent.replace('accepted', status) },
+        {
+          path: '/src/returns/policy.ts',
+          type: 'file',
+          content: 'export const canReturn = () => true;\n',
+        },
+      ],
       status === 'accepted' ? [] : ['MOLDEA_DECISION_RELATIONSHIP_INACTIVE'],
       `version: 1\ndecisions:\n  ${originalPath}:\n    affectedBy: [/src/returns/**]\n`,
     ),

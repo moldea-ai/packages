@@ -1,7 +1,5 @@
 import type { IRepositoryReader, IRepositorySnapshot } from '@moldea.ai/repository';
 
-import type { IRepositoryFormatVersion } from '../format/index.js';
-
 import type {
   ICoreResourceLimits,
   IProjectInspection,
@@ -9,16 +7,9 @@ import type {
   IProjectInspectionPageResult,
 } from '../contracts/index.js';
 
-// installed adapter identities, without executable functions or repository content
-export interface INodeInspectionAdapter {
-  readonly id: string;
-  readonly supportedRepositoryFormatVersions: readonly IRepositoryFormatVersion[];
-}
-
-// callers own the reader and select a registry from trusted installed code
+// callers own the source-neutral reader
 export interface INodeProjectInspectionInput {
   repository: IRepositoryReader;
-  adapterRegistryUrl: URL;
   limits?: Partial<ICoreResourceLimits>;
   signal?: AbortSignal;
   deadline?: number;
@@ -26,7 +17,6 @@ export interface INodeProjectInspectionInput {
 
 // content-free prepared state retained inside the analysis worker
 export type INodeInspectionMetadata = Omit<IProjectInspection, 'readPage'> & {
-  readonly adapters: readonly INodeInspectionAdapter[];
   readonly maxAnalysisHeapBytes: number;
 };
 
@@ -70,7 +60,6 @@ export interface INodeInspectionFailure {
 export type INodeInspectionMessage = { attemptId: string } & (
   | {
       kind: 'start';
-      registryUrl: string;
       snapshot: IRepositorySnapshot;
       limits: ICoreResourceLimits;
       deadline: number;
@@ -82,6 +71,7 @@ export type INodeInspectionMessage = { attemptId: string } & (
   | { kind: 'page'; requestId: number; result: IProjectInspectionPageResult }
   | { kind: 'reader-request'; requestId: number; request: INodeReaderRequest }
   | { kind: 'reader-response'; requestId: number; result: unknown }
+  | { kind: 'reader-failure'; requestId: number; failure: INodeInspectionFailure }
   | { kind: 'failure'; failure: INodeInspectionFailure }
   | { kind: 'dispose' }
 );

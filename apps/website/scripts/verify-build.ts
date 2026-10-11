@@ -2,10 +2,11 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseSearchDocuments } from '@moldea.ai/website-ui/search';
+import { RUNTIME_CATALOG } from '@moldea.ai/website-ui/runtime-catalog';
 import { DEFAULT_BASE_PATH, normalizeBasePath } from '@moldea.ai/website-ui/site';
 
 import { loadWebsiteModel } from '../src/lib/generation/generation.ts';
-import { serializeRuntimeCompatibilityPublication } from '../src/lib/runtime-compatibility-publication/index.ts';
+import { RETIRED_RUNTIME_ROUTES } from '../src/lib/redirects/index.ts';
 import { DEFAULT_SITE_URL, SITE_NAME } from '../src/lib/site/constants.ts';
 import { verifySeoArtifacts } from './seo-verification/index.ts';
 import { verifyCapabilityArtifacts } from './capability-verification/index.ts';
@@ -229,20 +230,8 @@ export const verifyProductionBuild = (
   }
 
   const runtimeCompatibilityPath = join(distDirectory, 'compatibility', 'runtimes.json');
-  const runtimeCompatibilitySource = readFileSync(runtimeCompatibilityPath, 'utf8');
-  const expectedRuntimeCompatibilitySource = serializeRuntimeCompatibilityPublication(
-    model.runtimeCompatibilityPublication,
-  );
-
-  try {
-    JSON.parse(runtimeCompatibilitySource);
-  } catch {
-    throw new Error('The runtime compatibility publication is not valid JSON.');
-  }
-
-  if (runtimeCompatibilitySource !== expectedRuntimeCompatibilitySource) {
-    throw new Error('The runtime compatibility publication contradicts its canonical sources.');
-  }
+  if (existsSync(runtimeCompatibilityPath))
+    throw new Error('The retired compatibility JSON endpoint remains in the artifact.');
 
   const files = listFiles(distDirectory);
   if (
@@ -263,28 +252,35 @@ export const verifyProductionBuild = (
     throw new Error('The static artifact contains private generation output.');
   }
 
-  // Astro's static redirect is a handoff artifact, not an indexable content page.
-  const compatibilityRedirectPath = join(distDirectory, 'compatibility', 'index.html');
-  const redirectHtml = readFileSync(compatibilityRedirectPath, 'utf8');
-  const adaptersPath = `${basePath}adapters/`;
-  const adaptersUrl = new URL(adaptersPath, siteUrl).href;
-  const refreshTags = [...redirectHtml.matchAll(/<meta\b[^>]*http-equiv="refresh"[^>]*>/giu)];
-  if (
-    refreshTags.length !== 1 ||
-    refreshTags[0][0] !== `<meta http-equiv="refresh" content="0;url=${adaptersPath}">` ||
-    !redirectHtml.includes('<meta name="robots" content="noindex">') ||
-    !redirectHtml.includes(`<link rel="canonical" href="${adaptersUrl}">`) ||
-    !redirectHtml.includes(`<a href="${adaptersPath}">`)
-  ) {
-    throw new Error(
-      'The compatibility redirect must immediately hand off to the canonical adapters directory.',
-    );
+  // redirects are handoff artifacts, excluded from content SEO and sitemap equality
+  const redirectPaths = new Set(
+    RETIRED_RUNTIME_ROUTES.map((route) => routeToArtifactPath(distDirectory, route)),
+  );
+  const runtimesPath = `${basePath}runtimes/`;
+  const runtimesUrl = new URL(runtimesPath, siteUrl).href;
+  for (const redirectPath of redirectPaths) {
+    if (!existsSync(redirectPath))
+      throw new Error(
+        `Retired route has no redirect artifact: ${relative(distDirectory, redirectPath)}.`,
+      );
+    const redirectHtml = readFileSync(redirectPath, 'utf8');
+    const refreshTags = [...redirectHtml.matchAll(/<meta\b[^>]*http-equiv="refresh"[^>]*>/giu)];
+    if (
+      refreshTags.length !== 1 ||
+      refreshTags[0][0] !== `<meta http-equiv="refresh" content="0;url=${runtimesPath}">` ||
+      !redirectHtml.includes('<meta name="robots" content="noindex">') ||
+      !redirectHtml.includes(`<link rel="canonical" href="${runtimesUrl}">`) ||
+      !redirectHtml.includes(`<a href="${runtimesPath}">`)
+    )
+      throw new Error(
+        `Retired route must immediately redirect to the canonical runtimes directory: ${relative(distDirectory, redirectPath)}.`,
+      );
   }
 
   verifySeoArtifacts({
     homePageUrl: new URL(basePath, siteUrl).href,
     htmlArtifacts: htmlPaths
-      .filter((path) => path !== compatibilityRedirectPath)
+      .filter((path) => !redirectPaths.has(path))
       .map((path) => ({
         source: readFileSync(path, 'utf8'),
         url: getDeployedPageUrl(distDirectory, path, basePath, siteUrl).href,
@@ -439,24 +435,20 @@ export const verifyProductionBuild = (
     }
   }
 
-  for (const adapter of model.adapters) {
-    const adapterLine = llmsLines.find((line) => line.startsWith(`- [${adapter.id}](`));
-
-    if (!adapterLine) throw new Error(`llms.txt omits ${adapter.id}.`);
-    if (!adapterLine.includes(`): ${adapter.entry.implementationStatus};`)) {
-      throw new Error(`llms.txt contradicts the matrix status for ${adapter.id}.`);
-    }
-
-    for (const target of adapter.entry.targets ?? []) {
-      if (!adapterLine.includes(`${target.id}: ${target.maturity}`)) {
-        throw new Error(`llms.txt contradicts target maturity for ${adapter.id}/${target.id}.`);
-      }
-    }
-
-    if (!searchDocuments.some((document) => document.url.endsWith(`/adapters/${adapter.id}/`))) {
-      throw new Error(`The production search index omits ${adapter.id}.`);
-    }
+  for (const runtime of RUNTIME_CATALOG) {
+    if (!llmsText.includes(`[${runtime.displayName}](${runtimesUrl}#${runtime.id})`))
+      throw new Error(`llms.txt omits runtime label ${runtime.id}.`);
+    if (!searchDocuments.some(({ url }) => url === `${runtimesPath}#${runtime.id}`))
+      throw new Error(`Search omits runtime label ${runtime.id}.`);
   }
+  if (
+    searchDocuments.some(({ url }) =>
+      RETIRED_RUNTIME_ROUTES.some(
+        (route) => new URL(url, siteUrl).pathname === `${basePath}${route.slice(1)}`,
+      ),
+    )
+  )
+    throw new Error('Search retains a retired runtime route.');
 };
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

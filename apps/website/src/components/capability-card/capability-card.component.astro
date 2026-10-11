@@ -16,7 +16,7 @@ interface Props {
   catalog: ICapabilities;
 }
 const { example, catalog } = Astro.props;
-const outcome = getCapabilityOutcome(example, catalog);
+const outcome = getCapabilityOutcome(example);
 const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAlert : ScanLine;
 ---
 

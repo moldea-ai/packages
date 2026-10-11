@@ -51,7 +51,7 @@ test('heavy checks consume the validated plan and retain conditional complete ar
       "${{ needs.plan.outputs.artifacts == 'true' }}",
     );
   expect(source).not.toContain('run: pnpm docs:check');
-  expect(source).toContain('expected_tarball_count=15');
+  expect(source).toContain('expected_tarball_count=5');
 });
 
 test('each compatibility lane depends on successful checks and its matching selection output', () => {

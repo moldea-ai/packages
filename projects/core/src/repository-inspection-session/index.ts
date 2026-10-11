@@ -12,8 +12,7 @@ import {
 } from '@moldea.ai/repository';
 
 import type { ICoreResourceLimits } from '../contracts/index.js';
-import type { IRuntimeAdapterRepository } from '../adapter/index.js';
-import { registerRuntimeAdapterRetainedByteReservation } from '../adapter-retained-memory/index.js';
+import { registerRetainedMemory } from '../retained-memory/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 
 const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
@@ -45,7 +44,6 @@ export interface IRepositoryInspectionReader {
 
 // private resource state shared by every reader consumer during one validation
 export interface IRepositoryInspectionSession {
-  readonly adapterRepository: IRuntimeAdapterRepository;
   readonly reader: IRepositoryInspectionReader;
 
   /** Returns deterministic logical resource usage for the current validation state. */
@@ -54,7 +52,7 @@ export interface IRepositoryInspectionSession {
   /**
    * Stops work at an inspection boundary when cancellation was requested.
    * @throws
-   * - ABORTED: Repository inspection was aborted.
+   * - ABORTED: The Core operation was aborted.
    */
   throwIfAborted(): void;
 }
@@ -171,7 +169,7 @@ const createSourceOptions = (
  * @param signal Optional cancellation shared by every inspection operation.
  * @returns A session that pages source metadata and range-reads bounded canonical files.
  * @throws
- * - ABORTED: Repository inspection was aborted before the session was created.
+ * - ABORTED: The Core operation was aborted.
  */
 export const createRepositoryInspectionSession = (
   repository: IRepositoryReader,
@@ -183,14 +181,6 @@ export const createRepositoryInspectionSession = (
   let peakRetainedBytes = 0;
   let retainedBytes = 0;
   let totalBytesRead = 0;
-  const adapterLimits = Object.freeze({
-    maxEntries: limits.maxEntries,
-    maxFileBytes: limits.maxFileBytes,
-    maxPageBytes: Math.min(SOURCE_PAGE_BYTES, limits.maxFileBytes),
-    maxPageEntries: Math.min(SOURCE_PAGE_ENTRIES, limits.maxEntries),
-    maxTotalBytesRead: limits.maxTotalBytesRead,
-  });
-
   const createAbortedException = (abortedSignal: AbortSignal): CoreOperationException => {
     return new CoreOperationException({
       cause: abortedSignal.reason,
@@ -359,7 +349,9 @@ export const createRepositoryInspectionSession = (
   const loadFile = async (
     path: IRepositoryPath,
     operationSignal?: AbortSignal,
+    isSource = false,
   ): Promise<Uint8Array> => {
+    const multiplier = isSource ? 1 : CANONICAL_BYTE_RETENTION_MULTIPLIER;
     const fileLimit: IInspectionFileByteLimit =
       path === MANIFEST_PATH ? 'maxManifestBytes' : 'maxFileBytes';
     const availableRetainedBytes = limits.maxRetainedBytes - retainedBytes;
@@ -408,11 +400,9 @@ export const createRepositoryInspectionSession = (
 
     if (
       retainedBytesAvailableForCanonicalContent < 0 ||
-      firstPage.totalBytes >
-        Math.floor(retainedBytesAvailableForCanonicalContent / CANONICAL_BYTE_RETENTION_MULTIPLIER)
+      firstPage.totalBytes > Math.floor(retainedBytesAvailableForCanonicalContent / multiplier)
     ) {
-      const projectedUsage =
-        retainedBytes + firstPageBytes + firstPage.totalBytes * CANONICAL_BYTE_RETENTION_MULTIPLIER;
+      const projectedUsage = retainedBytes + firstPageBytes + firstPage.totalBytes * multiplier;
 
       return throwResourceLimitExceeded(
         'maxRetainedBytes',
@@ -422,10 +412,10 @@ export const createRepositoryInspectionSession = (
     }
 
     reserveReadBytes(firstPage.totalBytes);
-    const canonicalRetainedBytes = firstPage.totalBytes * CANONICAL_BYTE_RETENTION_MULTIPLIER;
+    const canonicalRetainedBytes = firstPage.totalBytes * multiplier;
     observeTransientBytes(canonicalRetainedBytes + firstPageBytes);
     reserveRetainedBytes(canonicalRetainedBytes);
-    canonicalBytes += firstPage.totalBytes;
+    if (!isSource) canonicalBytes += firstPage.totalBytes;
 
     const content = new Uint8Array(firstPage.totalBytes);
     let offset = 0;
@@ -482,10 +472,6 @@ export const createRepositoryInspectionSession = (
       return promise;
     }
 
-    if (callerSignal.aborted) {
-      throw createAbortedException(callerSignal);
-    }
-
     return new Promise<T>((resolve, reject) => {
       const cleanup = (): void => callerSignal.removeEventListener('abort', abort);
       const abort = (): void => {
@@ -493,7 +479,8 @@ export const createRepositoryInspectionSession = (
         reject(createAbortedException(callerSignal));
       };
 
-      callerSignal.addEventListener('abort', abort, { once: true });
+      if (callerSignal.aborted) abort();
+      else callerSignal.addEventListener('abort', abort, { once: true });
       void promise.then(
         (result) => {
           cleanup();
@@ -533,151 +520,43 @@ export const createRepositoryInspectionSession = (
     return content.slice();
   };
 
-  const listAdapterEntriesPage: IRuntimeAdapterRepository['listEntriesPage'] = async (options) => {
-    const prefix =
-      options.prefix === undefined ? REPOSITORY_ROOT : parseRepositoryPath(options.prefix);
-    registerPath(prefix);
-
-    if (
-      !Number.isSafeInteger(options.maxEntries) ||
-      options.maxEntries < 1 ||
-      options.maxEntries > adapterLimits.maxPageEntries
-    ) {
-      return throwResourceLimitExceeded(
-        'maxEntries',
-        adapterLimits.maxPageEntries,
-        options.maxEntries,
-      );
-    }
-
-    throwIfSignalAborted(options.signal);
-    const page = await repository.listEntriesPage({
-      ...(options.cursor === undefined ? {} : { cursor: options.cursor }),
-      maxEntries: options.maxEntries,
-      prefix,
-      ...(createSourceOptions(signal, options.signal) ?? {}),
-    });
-    throwIfSignalAborted(options.signal);
-
-    if (
-      page.snapshot.id !== repository.snapshot.id ||
-      page.entries.length > options.maxEntries ||
-      (page.entries.length === 0 && !page.isComplete) ||
-      (page.isComplete ? page.nextCursor !== null : page.nextCursor === null)
-    ) {
-      return invalidSourceData('list-entries-page', prefix);
-    }
-
-    let previousPath: IRepositoryPath | null = null;
-    const entries = page.entries.map((candidate) => {
-      const entry = copyReaderEntry(candidate, 'list-entries-page', prefix);
-
+  const reader = Object.freeze({ getEntry, iterateEntries, readCompleteFile });
+  registerRetainedMemory(reader, {
+    reserve: reserveRetainedBytes,
+    tryReserve: (bytes): boolean => {
       if (
-        !isStrictDescendant(entry.path, prefix) ||
-        (previousPath !== null && compareRepositoryPaths(previousPath, entry.path) >= 0)
-      ) {
-        return invalidSourceData('list-entries-page', entry.path);
-      }
-
-      previousPath = entry.path;
-      registerPath(entry.path);
-      return entry;
-    });
-
-    return Object.freeze({
-      entries: Object.freeze(entries),
-      isComplete: page.isComplete,
-      nextCursor: page.nextCursor,
-      snapshot: repository.snapshot,
-    });
-  };
-
-  const readAdapterFilePage: IRuntimeAdapterRepository['readFilePage'] = async (path, options) => {
-    const parsedPath = parseRepositoryPath(path);
-
-    if (
-      !Number.isSafeInteger(options.offset) ||
-      options.offset < 0 ||
-      !Number.isSafeInteger(options.maxBytes) ||
-      options.maxBytes < 1 ||
-      options.maxBytes > adapterLimits.maxPageBytes
-    ) {
-      return invalidSourceData('read-file-page', parsedPath);
-    }
-
-    throwIfSignalAborted(options.signal);
-    registerPath(parsedPath);
-    const reservedBytes = Math.min(options.maxBytes, limits.maxTotalBytesRead - totalBytesRead);
-
-    if (reservedBytes < 1) {
-      return throwResourceLimitExceeded(
-        'maxTotalBytesRead',
-        limits.maxTotalBytesRead,
-        totalBytesRead + 1,
-      );
-    }
-
-    observeTransientBytes(reservedBytes);
-    reserveReadBytes(reservedBytes);
-    let page;
-
-    try {
-      page = await repository.readFilePage(parsedPath, {
-        maxBytes: reservedBytes,
-        offset: options.offset,
-        ...(createSourceOptions(signal, options.signal) ?? {}),
-      });
-    } catch (error: unknown) {
-      totalBytesRead -= reservedBytes;
-      throw error;
-    }
-
-    throwIfSignalAborted(options.signal);
-
-    if (
-      page.snapshot.id !== repository.snapshot.id ||
-      page.offset !== options.offset ||
-      !(page.bytes instanceof Uint8Array) ||
-      !Number.isSafeInteger(page.totalBytes) ||
-      page.totalBytes < 0 ||
-      page.totalBytes > limits.maxFileBytes ||
-      page.bytes.byteLength > reservedBytes ||
-      page.bytes.byteLength > page.totalBytes - page.offset ||
-      (page.bytes.byteLength === 0 && !page.isComplete) ||
-      (page.isComplete
-        ? page.nextOffset !== null || page.offset + page.bytes.byteLength !== page.totalBytes
-        : page.nextOffset !== page.offset + page.bytes.byteLength)
-    ) {
-      totalBytesRead -= reservedBytes;
-      return invalidSourceData('read-file-page', parsedPath);
-    }
-
-    totalBytesRead -= reservedBytes - page.bytes.byteLength;
-
-    return Object.freeze({
-      bytes: page.bytes.slice(),
-      isComplete: page.isComplete,
-      nextOffset: page.nextOffset,
-      offset: page.offset,
-      snapshot: repository.snapshot,
-      totalBytes: page.totalBytes,
-    });
-  };
-
-  const adapterRepository: IRuntimeAdapterRepository = Object.freeze({
-    getEntry,
-    limits: adapterLimits,
-    listEntriesPage: listAdapterEntriesPage,
-    readFilePage: readAdapterFilePage,
-    snapshot: repository.snapshot,
+        !Number.isSafeInteger(bytes) ||
+        bytes < 0 ||
+        bytes > limits.maxRetainedBytes - retainedBytes
+      )
+        return false;
+      reserveRetainedBytes(bytes);
+      return true;
+    },
+    release: (bytes): void => {
+      if (!Number.isSafeInteger(bytes) || bytes < 0 || bytes > retainedBytes)
+        throw new TypeError('The retained-memory release is invalid.');
+      retainedBytes -= bytes;
+    },
+    readSourceFile: async (path) => {
+      throwIfSignalAborted();
+      registerPath(path);
+      const bytes = await awaitWithCancellation(loadFile(path, undefined, true));
+      throwIfSignalAborted();
+      let isReleased = false;
+      return {
+        bytes,
+        release: (): void => {
+          if (!isReleased) retainedBytes -= bytes.byteLength;
+          isReleased = true;
+        },
+      };
+    },
   });
-  registerRuntimeAdapterRetainedByteReservation(adapterRepository, reserveRetainedBytes);
-
   return Object.freeze({
-    adapterRepository,
     getResourceUsage: () =>
       Object.freeze({ canonicalBytes, peakRetainedBytes, retainedBytes, totalBytesRead }),
-    reader: Object.freeze({ getEntry, iterateEntries, readCompleteFile }),
+    reader,
     throwIfAborted: throwIfSignalAborted,
   });
 };

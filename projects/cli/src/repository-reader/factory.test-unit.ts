@@ -44,7 +44,7 @@ const createReaderInput = (): IWorkingTreeRepositoryReaderInput => ({
   resourceLimits: Object.freeze({
     maxDiagnostics: 10_000,
     maxEntries: 100_000,
-    maxEvidence: 10_000,
+    maxCoverage: 10_000,
     maxFileBytes: 8_388_608,
     maxManifestBytes: 2_097_152,
     maxTotalBytes: 134_217_728,

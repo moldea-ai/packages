@@ -1,1 +1,8 @@
 @import '@moldea.ai/website-ui/styles.css';
+
+@layer components {
+  /* GitHub's light comment color needs more contrast on the off-white page surface. */
+  html:not(.dark) .prose-moldea .shiki span[style*='--shiki-light:#6E7781'] {
+    color: var(--muted-foreground);
+  }
+}

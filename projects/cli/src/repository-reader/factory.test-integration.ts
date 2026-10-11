@@ -76,7 +76,7 @@ describe('working-tree reader composition with repository-fs', () => {
       resourceLimits: {
         maxDiagnostics: 16,
         maxEntries: 16,
-        maxEvidence: 16,
+        maxCoverage: 16,
         maxFileBytes: 1024,
         maxManifestBytes: 1024,
         maxTotalBytes: 2048,

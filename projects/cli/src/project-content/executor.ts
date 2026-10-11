@@ -5,7 +5,7 @@ import type {
   IMoldeaCliProjectContentExecutor,
 } from './types.js';
 
-/** Creates an adapter-free executor for one bounded canonical content range. */
+/** Creates an executor for one bounded canonical content range. */
 export const createMoldeaCliProjectContentExecutor = (
   coreFactory: IMoldeaCliProjectContentCoreFactory = createCore,
 ): IMoldeaCliProjectContentExecutor => {
@@ -14,7 +14,7 @@ export const createMoldeaCliProjectContentExecutor = (
       limits: Object.freeze({
         maxDiagnostics: input.resourceLimits.maxDiagnostics,
         maxEntries: input.resourceLimits.maxEntries,
-        maxEvidence: input.resourceLimits.maxEvidence,
+        maxCoverage: input.resourceLimits.maxCoverage,
         maxFileBytes: input.resourceLimits.maxFileBytes,
         maxManifestBytes: input.resourceLimits.maxManifestBytes,
         maxTotalBytesRead: input.resourceLimits.maxTotalBytes,
@@ -31,5 +31,5 @@ export const createMoldeaCliProjectContentExecutor = (
   };
 };
 
-/** Executes one adapter-free explicit canonical content range read. */
+/** Executes one explicit canonical content range read. */
 export const executeMoldeaCliProjectContent = createMoldeaCliProjectContentExecutor();

@@ -91,3 +91,11 @@ test.skipIf(process.platform === 'win32')(
     );
   },
 );
+
+test('accepts exact integration filenames without allowing arbitrary uppercase paths', () => {
+  const root = path.resolve('fixture-root');
+  expect(resolveFixturePath(root, '/AGENTS.md')).toBe(path.join(root, 'AGENTS.md'));
+  expect(resolveFixturePath(root, '/.agents/skills/moldea/SKILL.md')).toBe(
+    path.join(root, '.agents', 'skills', 'moldea', 'SKILL.md'),
+  );
+});

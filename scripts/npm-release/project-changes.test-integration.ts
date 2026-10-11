@@ -102,22 +102,6 @@ const createPublishedVersions = (unpublishedProjects: readonly INpmReleaseProjec
   const unpublishedProjectSet = new Set(unpublishedProjects);
 
   return {
-    'adapter-anthropic': unpublishedProjectSet.has('adapter-anthropic') ? [] : ['1.0.0'],
-    'adapter-claude-agent-sdk': unpublishedProjectSet.has('adapter-claude-agent-sdk')
-      ? []
-      : ['1.0.0'],
-    'adapter-google-genai': unpublishedProjectSet.has('adapter-google-genai') ? [] : ['1.0.0'],
-    'adapter-openai': unpublishedProjectSet.has('adapter-openai') ? [] : ['1.0.0'],
-    'adapter-openai-agents-sdk': unpublishedProjectSet.has('adapter-openai-agents-sdk')
-      ? []
-      : ['1.0.0'],
-    'adapter-cloudflare-agents': unpublishedProjectSet.has('adapter-cloudflare-agents')
-      ? []
-      : ['1.0.0'],
-    'adapter-eve': unpublishedProjectSet.has('adapter-eve') ? [] : ['1.0.0'],
-    'adapter-langchain': unpublishedProjectSet.has('adapter-langchain') ? [] : ['1.0.0'],
-    'adapter-langgraph': unpublishedProjectSet.has('adapter-langgraph') ? [] : ['1.0.0'],
-    'adapter-vercel-ai-sdk': unpublishedProjectSet.has('adapter-vercel-ai-sdk') ? [] : ['1.0.0'],
     cli: unpublishedProjectSet.has('cli') ? [] : ['1.0.0'],
     core: unpublishedProjectSet.has('core') ? [] : ['1.0.0'],
     repository: unpublishedProjectSet.has('repository') ? [] : ['1.0.0'],
@@ -144,31 +128,72 @@ afterEach(async () => {
 });
 
 describe('npm release project changes', () => {
-  test('selects public consumers of a changed private development dependency without selecting CLI', async () => {
-    await writeWorkspaceManifest(
-      'packages/adapter-static-analysis',
-      '@moldea.ai/adapter-static-analysis',
-      {
+  test.each(['changed', 'removed'] as const)(
+    'excludes retired public consumers when their private input is %s',
+    async (operation) => {
+      await writeWorkspaceManifest('packages/build-input', '@moldea.ai/build-input', {
         isPrivate: true,
-      },
-    );
-    await writeWorkspaceManifest('projects/adapter-anthropic', '@moldea.ai/adapter-anthropic', {
-      devDependencies: { '@moldea.ai/adapter-static-analysis': 'workspace:*' },
+      });
+      await writeWorkspaceManifest('projects/retired', '@moldea.ai/retired', {
+        devDependencies: { '@moldea.ai/build-input': 'workspace:*' },
+      });
+      await writeWorkspaceManifest('projects/core', '@moldea.ai/core', {
+        devDependencies: { '@moldea.ai/build-input': 'workspace:*' },
+      });
+      const baseCommit = commitWorktree('test: establish shared input and retired consumer');
+
+      await rm(join(repositoryDirectory, 'projects/retired'), { recursive: true });
+      if (operation === 'removed') {
+        await rm(join(repositoryDirectory, 'packages/build-input'), { recursive: true });
+        await writeProjectManifest('core', '1.0.1');
+      } else {
+        await writeRepositoryFile('packages/build-input/src/index.ts', 'export const token = 2;\n');
+      }
+      const currentCommit = commitWorktree('feat: retire a public consumer');
+      const changes = await loadChanges(baseCommit, currentCommit);
+
+      expect(
+        Object.entries(changes)
+          .filter(([, change]) => change.isChanged)
+          .map(([project]) => project),
+      ).toStrictEqual(['core']);
+    },
+  );
+
+  test('rejects an unsupported public consumer that still exists in the current workspace', async () => {
+    await writeWorkspaceManifest('packages/build-input', '@moldea.ai/build-input', {
+      isPrivate: true,
     });
-    await writeWorkspaceManifest('projects/adapter-openai', '@moldea.ai/adapter-openai', {
-      devDependencies: { '@moldea.ai/adapter-static-analysis': 'workspace:*' },
+    await writeWorkspaceManifest('projects/unregistered', '@moldea.ai/unregistered', {
+      devDependencies: { '@moldea.ai/build-input': 'workspace:*' },
+    });
+    const baseCommit = commitWorktree('test: establish an unregistered public consumer');
+    await writeRepositoryFile('packages/build-input/src/index.ts', 'export const token = 2;\n');
+    const currentCommit = commitWorktree('test: change the unregistered consumer input');
+
+    await expect(loadChanges(baseCommit, currentCommit)).rejects.toThrow(
+      '@moldea.ai/unregistered public workspace consumer is not releaseable',
+    );
+  });
+
+  test('selects public consumers of a changed private development dependency without selecting CLI', async () => {
+    await writeWorkspaceManifest('packages/build-input', '@moldea.ai/build-input', {
+      isPrivate: true,
+    });
+    await writeWorkspaceManifest('projects/core', '@moldea.ai/core', {
+      devDependencies: { '@moldea.ai/build-input': 'workspace:*' },
+    });
+    await writeWorkspaceManifest('projects/website-ui', '@moldea.ai/website-ui', {
+      devDependencies: { '@moldea.ai/build-input': 'workspace:*' },
     });
     const baseCommit = commitWorktree('test: establish bundled private input');
 
-    await writeRepositoryFile(
-      'packages/adapter-static-analysis/src/index.ts',
-      'export const token = 2;\n',
-    );
+    await writeRepositoryFile('packages/build-input/src/index.ts', 'export const token = 2;\n');
     const currentCommit = commitWorktree('feat(static-analysis): change bundled source');
     const changes = await loadChanges(baseCommit, currentCommit);
 
-    expect(changes['adapter-anthropic'].isChanged).toBe(true);
-    expect(changes['adapter-openai'].isChanged).toBe(true);
+    expect(changes['core'].isChanged).toBe(true);
+    expect(changes['website-ui'].isChanged).toBe(true);
     expect(changes.cli.isChanged).toBe(false);
     expect(() =>
       createNpmReleaseWorkflowPlan({
@@ -187,7 +212,7 @@ describe('npm release project changes', () => {
       devDependencies: { '@moldea.ai/source': 'workspace:*' },
       isPrivate: true,
     });
-    await writeWorkspaceManifest('projects/adapter-eve', '@moldea.ai/adapter-eve', {
+    await writeWorkspaceManifest('projects/core', '@moldea.ai/core', {
       dependencies: { '@moldea.ai/bundle': 'workspace:*' },
     });
     const baseCommit = commitWorktree('test: establish private dependency chain');
@@ -198,7 +223,7 @@ describe('npm release project changes', () => {
     });
     const currentCommit = commitWorktree('refactor(source): move private package');
 
-    expect((await loadChanges(baseCommit, currentCommit))['adapter-eve'].isChanged).toBe(true);
+    expect((await loadChanges(baseCommit, currentCommit))['core'].isChanged).toBe(true);
   });
 
   test('selects a consumer when its private input is replaced', async () => {
@@ -207,7 +232,7 @@ describe('npm release project changes', () => {
       devDependencies: { '@moldea.ai/first': 'workspace:*' },
       isPrivate: true,
     });
-    await writeWorkspaceManifest('projects/adapter-eve', '@moldea.ai/adapter-eve', {
+    await writeWorkspaceManifest('projects/core', '@moldea.ai/core', {
       devDependencies: { '@moldea.ai/bundle': 'workspace:*' },
     });
     const baseCommit = commitWorktree('test: establish replaceable private input');
@@ -220,13 +245,13 @@ describe('npm release project changes', () => {
     });
     const currentCommit = commitWorktree('refactor(bundle): replace private input');
 
-    expect((await loadChanges(baseCommit, currentCommit))['adapter-eve'].isChanged).toBe(true);
+    expect((await loadChanges(baseCommit, currentCommit))['core'].isChanged).toBe(true);
   });
 
   test('rejects missing and cyclic private workspace graphs', async () => {
     const baseCommit = runGit(['rev-parse', 'HEAD']);
 
-    await writeWorkspaceManifest('projects/adapter-eve', '@moldea.ai/adapter-eve', {
+    await writeWorkspaceManifest('projects/core', '@moldea.ai/core', {
       devDependencies: { '@moldea.ai/missing': 'workspace:*' },
     });
     const missingCommit = commitWorktree('test: introduce missing workspace dependency');
@@ -242,7 +267,7 @@ describe('npm release project changes', () => {
       devDependencies: { '@moldea.ai/first': 'workspace:*' },
       isPrivate: true,
     });
-    await writeProjectManifest('adapter-eve', '1.0.0');
+    await writeProjectManifest('core', '1.0.0');
     const cyclicCommit = commitWorktree('test: introduce private workspace cycle');
     await expect(loadChanges(baseCommit, cyclicCommit)).rejects.toThrow(
       'private workspace dependency graph is cyclic',
@@ -291,52 +316,39 @@ describe('npm release project changes', () => {
   });
 
   test('ignores test and nonshipped documentation changes within a private package', async () => {
-    await writeWorkspaceManifest(
-      'packages/adapter-static-analysis',
-      '@moldea.ai/adapter-static-analysis',
-      {
-        isPrivate: true,
-      },
-    );
-    await writeWorkspaceManifest('projects/adapter-anthropic', '@moldea.ai/adapter-anthropic', {
-      devDependencies: { '@moldea.ai/adapter-static-analysis': 'workspace:*' },
+    await writeWorkspaceManifest('packages/build-input', '@moldea.ai/build-input', {
+      isPrivate: true,
+    });
+    await writeWorkspaceManifest('projects/core', '@moldea.ai/core', {
+      devDependencies: { '@moldea.ai/build-input': 'workspace:*' },
     });
     const baseCommit = commitWorktree('test: establish private development input');
 
-    await writeRepositoryFile(
-      'packages/adapter-static-analysis/src/index.test-unit.ts',
-      'export {};\n',
-    );
-    await writeRepositoryFile('packages/adapter-static-analysis/docs/guide.md', '# Guide\n');
+    await writeRepositoryFile('packages/build-input/src/index.test-unit.ts', 'export {};\n');
+    await writeRepositoryFile('packages/build-input/docs/guide.md', '# Guide\n');
     const currentCommit = commitWorktree('test(static-analysis): change unshipped inputs');
 
-    expect((await loadChanges(baseCommit, currentCommit))['adapter-anthropic'].isChanged).toBe(
-      false,
-    );
+    expect((await loadChanges(baseCommit, currentCommit))['core'].isChanged).toBe(false);
   });
 
-  test('matches private source selection to changed real packed adapter behavior', async () => {
+  test('matches private source selection to changed real packed package behavior', async () => {
     const { build } = await import('vite');
-    await writeWorkspaceManifest(
-      'packages/adapter-static-analysis',
-      '@moldea.ai/adapter-static-analysis',
-      {
-        isPrivate: true,
-      },
-    );
-    await writeWorkspaceManifest('projects/adapter-anthropic', '@moldea.ai/adapter-anthropic', {
-      devDependencies: { '@moldea.ai/adapter-static-analysis': 'workspace:*' },
+    await writeWorkspaceManifest('packages/build-input', '@moldea.ai/build-input', {
+      isPrivate: true,
+    });
+    await writeWorkspaceManifest('projects/core', '@moldea.ai/core', {
+      devDependencies: { '@moldea.ai/build-input': 'workspace:*' },
     });
     await writeRepositoryFile(
-      'projects/adapter-anthropic/src/index.ts',
-      "import { token } from '../../../packages/adapter-static-analysis/src/index.js';\nexport const getToken = () => token;\n",
+      'projects/core/src/index.ts',
+      "import { token } from '../../../packages/build-input/src/index.js';\nexport const getToken = () => token;\n",
     );
     await writeRepositoryFile(
-      'packages/adapter-static-analysis/src/index.ts',
+      'packages/build-input/src/index.ts',
       "export const token = 'before';\n",
     );
     const baseCommit = commitWorktree('test: establish packed private input');
-    const projectDirectory = join(repositoryDirectory, 'projects/adapter-anthropic');
+    const projectDirectory = join(repositoryDirectory, 'projects/core');
     const packDirectory = join(repositoryDirectory, 'artifacts');
 
     const buildAndPack = async (label: string): Promise<Buffer> => {
@@ -385,10 +397,10 @@ describe('npm release project changes', () => {
     await rm(join(projectDirectory, 'dist'), { recursive: true });
     await rm(packDirectory, { recursive: true });
     await writeRepositoryFile(
-      'packages/adapter-static-analysis/src/index.ts',
+      'packages/build-input/src/index.ts',
       "export const token = 'after';\n",
     );
-    const currentCommit = commitWorktree('feat(static-analysis): change shipped adapter input');
+    const currentCommit = commitWorktree('feat(static-analysis): change shipped package input');
     const afterArtifact = await buildAndPack('after');
     const changes = await loadChanges(baseCommit, currentCommit);
 
@@ -397,7 +409,7 @@ describe('npm release project changes', () => {
     expect(gunzipSync(beforeArtifact).includes(Buffer.from('after'))).toBe(false);
     expect(gunzipSync(afterArtifact).includes(Buffer.from('after'))).toBe(true);
     expect(gunzipSync(afterArtifact).includes(Buffer.from('before'))).toBe(false);
-    expect(changes['adapter-anthropic'].isChanged).toBe(true);
+    expect(changes['core'].isChanged).toBe(true);
     expect(changes.cli.isChanged).toBe(false);
   });
 
@@ -411,56 +423,6 @@ describe('npm release project changes', () => {
     const changes = await loadChanges(baseCommit, currentCommit);
 
     expect(changes).toStrictEqual({
-      'adapter-anthropic': {
-        currentVersion: '1.0.0',
-        isChanged: false,
-        previousVersion: '1.0.0',
-      },
-      'adapter-claude-agent-sdk': {
-        currentVersion: '1.0.0',
-        isChanged: false,
-        previousVersion: '1.0.0',
-      },
-      'adapter-google-genai': {
-        currentVersion: '1.0.0',
-        isChanged: false,
-        previousVersion: '1.0.0',
-      },
-      'adapter-openai': {
-        currentVersion: '1.0.0',
-        isChanged: false,
-        previousVersion: '1.0.0',
-      },
-      'adapter-openai-agents-sdk': {
-        currentVersion: '1.0.0',
-        isChanged: false,
-        previousVersion: '1.0.0',
-      },
-      'adapter-cloudflare-agents': {
-        currentVersion: '1.0.0',
-        isChanged: false,
-        previousVersion: '1.0.0',
-      },
-      'adapter-eve': {
-        currentVersion: '1.0.0',
-        isChanged: false,
-        previousVersion: '1.0.0',
-      },
-      'adapter-langchain': {
-        currentVersion: '1.0.0',
-        isChanged: false,
-        previousVersion: '1.0.0',
-      },
-      'adapter-langgraph': {
-        currentVersion: '1.0.0',
-        isChanged: false,
-        previousVersion: '1.0.0',
-      },
-      'adapter-vercel-ai-sdk': {
-        currentVersion: '1.0.0',
-        isChanged: false,
-        previousVersion: '1.0.0',
-      },
       cli: { currentVersion: '1.0.0', isChanged: false, previousVersion: '1.0.0' },
       core: { currentVersion: '1.0.1', isChanged: true, previousVersion: '1.0.0' },
       repository: { currentVersion: '1.0.0', isChanged: false, previousVersion: '1.0.0' },
@@ -478,25 +440,28 @@ describe('npm release project changes', () => {
   });
 
   test('selects a newly introduced public project without a base package version', async () => {
-    const projectDirectory = NPM_RELEASE_PROJECTS['adapter-claude-agent-sdk'].projectDirectory;
+    const projectDirectory = NPM_RELEASE_PROJECTS['website-ui'].projectDirectory;
 
     await rm(join(repositoryDirectory, projectDirectory), { recursive: true });
     const baseCommit = commitWorktree('test: establish the tree before the new project');
 
-    await writeProjectManifest('adapter-claude-agent-sdk', '1.0.0');
-    await writeRepositoryFile(`${projectDirectory}/src/index.ts`, 'export const adapter = true;\n');
+    await writeProjectManifest('website-ui', '1.0.0');
+    await writeRepositoryFile(
+      `${projectDirectory}/src/index.ts`,
+      'export const artifact = true;\n',
+    );
 
-    const currentCommit = commitWorktree('feat(adapter-claude-agent-sdk): introduce the project');
+    const currentCommit = commitWorktree('feat(website-ui): introduce the project');
     const projectChanges = await loadChanges(baseCommit, currentCommit);
     const plan = createNpmReleaseWorkflowPlan({
       eventName: 'push',
       mode: '',
       project: '',
       projectChanges,
-      publishedVersions: createPublishedVersions(['adapter-claude-agent-sdk']),
+      publishedVersions: createPublishedVersions(['website-ui']),
     });
 
-    expect(projectChanges['adapter-claude-agent-sdk']).toStrictEqual({
+    expect(projectChanges['website-ui']).toStrictEqual({
       currentVersion: '1.0.0',
       isChanged: true,
       previousVersion: null,
@@ -504,23 +469,13 @@ describe('npm release project changes', () => {
     expect(plan).toStrictEqual({
       mode: 'trusted',
       previousVersions: {
-        'adapter-anthropic': null,
-        'adapter-claude-agent-sdk': null,
-        'adapter-google-genai': null,
-        'adapter-openai': null,
-        'adapter-openai-agents-sdk': null,
-        'adapter-cloudflare-agents': null,
-        'adapter-eve': null,
-        'adapter-langchain': null,
-        'adapter-langgraph': null,
-        'adapter-vercel-ai-sdk': null,
         cli: null,
         core: null,
         repository: null,
         'repository-fs': null,
         'website-ui': null,
       },
-      projects: ['adapter-claude-agent-sdk'],
+      projects: ['website-ui'],
       trigger: 'automatic',
     });
   });
@@ -591,22 +546,22 @@ describe('npm release project changes', () => {
 
   test.each(['modify', 'delete'] as const)('selects a shipped-document %s', async (operation) => {
     await writeRepositoryFile(
-      'projects/adapter-eve/package.json',
+      'projects/core/package.json',
       JSON.stringify({
-        name: '@moldea.ai/adapter-eve',
+        name: '@moldea.ai/core',
         version: '1.0.0',
         files: ['dist', 'docs'],
       }),
     );
-    await writeRepositoryFile('projects/adapter-eve/docs/index.md', '# Original guide\n');
+    await writeRepositoryFile('projects/core/docs/index.md', '# Original guide\n');
     const baseCommit = commitWorktree('test: establish shipped documentation');
     if (operation === 'delete') {
-      await rm(join(repositoryDirectory, 'projects/adapter-eve/docs/index.md'));
+      await rm(join(repositoryDirectory, 'projects/core/docs/index.md'));
     } else {
-      await writeRepositoryFile('projects/adapter-eve/docs/index.md', '# Corrected guide\n');
+      await writeRepositoryFile('projects/core/docs/index.md', '# Corrected guide\n');
     }
-    const currentCommit = commitWorktree(`docs(adapter-eve): ${operation} guide`);
-    expect((await loadChanges(baseCommit, currentCommit))['adapter-eve'].isChanged).toBe(true);
+    const currentCommit = commitWorktree(`docs(core): ${operation} guide`);
+    expect((await loadChanges(baseCommit, currentCommit))['core'].isChanged).toBe(true);
   });
 
   test('rejects malformed npm file selection instead of silently excluding docs', async () => {

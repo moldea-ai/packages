@@ -1,4 +1,5 @@
 import type { IDiagnostic } from '@moldea.ai/core';
+import { parseRepositoryPath } from '@moldea.ai/repository';
 
 // exact reviewed diagnostics, including source ranges; never regenerated during website builds
 export const CORE_EXPECTED_RESULTS: Record<
@@ -10,6 +11,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_TEXT_INVALID_UTF8',
+        group: 'discovery',
         details: {},
         entity: null,
         message: 'The text document is not valid UTF-8.',
@@ -26,6 +28,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_TEXT_INVALID_UNICODE',
+        group: 'discovery',
         details: {},
         entity: null,
         message: 'The text document contains an invalid Unicode scalar representation.',
@@ -42,6 +45,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_TEXT_NUL_FORBIDDEN',
+        group: 'discovery',
         details: {},
         entity: null,
         message: 'The text document contains a forbidden NUL character.',
@@ -73,6 +77,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_YAML_MALFORMED',
+        group: 'manifest',
         details: {
           reason: 'syntax',
         },
@@ -102,6 +107,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_YAML_DUPLICATE_KEY',
+        group: 'manifest',
         details: {},
         entity: null,
         message: 'The YAML document contains a duplicate mapping key.',
@@ -129,6 +135,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_MANIFEST_VERSION_UNSUPPORTED',
+        group: 'manifest',
         details: {},
         entity: null,
         message: 'The manifest version is unsupported.',
@@ -156,6 +163,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_MANIFEST_PROPERTY_UNKNOWN',
+        group: 'manifest',
         details: {},
         entity: null,
         message: 'The manifest contains an unknown property.',
@@ -183,6 +191,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_MANIFEST_VALUE_INVALID',
+        group: 'manifest',
         details: {
           reason: 'mapping-required',
         },
@@ -212,6 +221,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_ID_INVALID',
+        group: 'manifest',
         details: {},
         entity: {
           agentId: 'Support',
@@ -241,6 +251,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_ID_RESERVED',
+        group: 'manifest',
         details: {},
         entity: {
           agentId: 'con',
@@ -270,6 +281,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_PATH_INVALID',
+        group: 'manifest',
         details: {},
         entity: null,
         message: 'The manifest logical path is invalid.',
@@ -297,6 +309,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_GLOB_INVALID',
+        group: 'manifest',
         details: {},
         entity: null,
         message: 'The impact pattern is invalid.',
@@ -324,6 +337,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_PATH_DUPLICATE',
+        group: 'manifest',
         details: {},
         entity: null,
         message: 'The path is duplicated.',
@@ -351,6 +365,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_PATTERN_DUPLICATE',
+        group: 'manifest',
         details: {},
         entity: null,
         message: 'The impact pattern is duplicated.',
@@ -378,6 +393,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_SYMBOL_FORBIDDEN',
+        group: 'references',
         details: {},
         entity: null,
         message: 'A canonical moldea reference must not include a symbol.',
@@ -405,6 +421,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_PROJECT_FILE_MISSING',
+        group: 'discovery',
         details: {},
         entity: null,
         message: 'The project file is missing.',
@@ -421,6 +438,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_MANIFEST_MISSING',
+        group: 'manifest',
         details: {},
         entity: null,
         message: 'The project manifest is missing.',
@@ -437,6 +455,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_CANONICAL_PATH_UNRECOGNIZED',
+        group: 'discovery',
         details: {
           entryType: 'file',
         },
@@ -455,6 +474,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_ENTRY_TYPE_INVALID',
+        group: 'discovery',
         details: {
           actualType: 'directory',
           expectedType: 'file',
@@ -478,10 +498,11 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_REFERENCE_MISSING',
+        group: 'references',
         details: {
           referencedPath: '/src/returns/policy.ts',
         },
-        entity: null,
+        entity: { contextPath: parseRepositoryPath('/moldea/project.md') },
         message: 'The referenced repository path does not exist.',
         path: '/moldea/moldea.yaml',
         pointer: '/context/~1moldea~1project.md/bindings/0',
@@ -496,11 +517,12 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_REFERENCE_NOT_FILE',
+        group: 'references',
         details: {
           actualType: 'directory',
           referencedPath: '/src/returns',
         },
-        entity: null,
+        entity: { contextPath: parseRepositoryPath('/moldea/project.md') },
         message: 'The referenced repository path is not a regular file.',
         path: '/moldea/moldea.yaml',
         pointer: '/context/~1moldea~1project.md/bindings/0',
@@ -515,10 +537,11 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_IMPACT_PATH_MISSING',
+        group: 'references',
         details: {
           impactPath: '/src/returns/policy.ts',
         },
-        entity: null,
+        entity: { contextPath: parseRepositoryPath('/moldea/project.md') },
         message: 'The exact impact path does not exist.',
         path: '/moldea/moldea.yaml',
         pointer: '/context/~1moldea~1project.md/affectedBy/0',
@@ -533,11 +556,12 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_IMPACT_PATH_NOT_FILE',
+        group: 'references',
         details: {
           actualType: 'directory',
           impactPath: '/src/returns',
         },
-        entity: null,
+        entity: { contextPath: parseRepositoryPath('/moldea/project.md') },
         message: 'The exact impact path is not a regular file.',
         path: '/moldea/moldea.yaml',
         pointer: '/context/~1moldea~1project.md/affectedBy/0',
@@ -552,11 +576,12 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_RUNTIME_ID_INVALID',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
         },
-        message: 'The runtime adapter ID is invalid.',
+        message: 'The runtime ID is invalid.',
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/runtime/id',
         range: {
@@ -585,6 +610,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_CONTEXT_FILE_EMPTY',
+        group: 'references',
         details: {},
         entity: null,
         message: 'The focused context file is empty.',
@@ -601,6 +627,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_REFERENCE_MISSING',
+        group: 'references',
         details: {
           referencedPath: '/moldea/context/returns.md',
         },
@@ -625,6 +652,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_AGENT_DIRECTORY_MISSING',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
@@ -643,6 +671,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_AGENT_DIRECTORY_UNREGISTERED',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
@@ -661,6 +690,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_AGENT_IDENTITY_INVALID',
+        group: 'agents',
         details: {
           reason: 'missing',
         },
@@ -681,6 +711,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_AGENT_INSTRUCTION_MISSING',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
@@ -699,6 +730,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_AGENT_INSTRUCTION_EMPTY',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
@@ -717,6 +749,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_AGENT_DESCRIPTION_MISSING',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
@@ -735,6 +768,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_AGENT_DESCRIPTION_INVALID',
+        group: 'agents',
         details: {
           reason: 'runtime-variable-delimiter',
         },
@@ -755,6 +789,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_AGENT_HANDOFF_DESCRIPTION_INVALID',
+        group: 'agents',
         details: {
           reason: 'empty',
         },
@@ -775,6 +810,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_VARIABLE_UNDECLARED',
+        group: 'agents',
         details: {
           occurrences: 1,
         },
@@ -807,6 +843,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_VARIABLE_UNUSED',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
@@ -826,6 +863,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_VARIABLE_PLACEHOLDER_MALFORMED',
+        group: 'agents',
         details: {
           reason: 'unmatched-opening',
         },
@@ -857,6 +895,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_VARIABLE_PROVIDER_UNDECLARED',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
@@ -887,6 +926,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_CAPABILITY_DESCRIPTION_INVALID',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
@@ -918,6 +958,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
+        group: 'agents',
         details: {
           reason: 'missing',
           referencedPath: '/src/returns.ts',
@@ -936,32 +977,13 @@ export const CORE_EXPECTED_RESULTS: Record<
       },
     ],
   },
-  'tool-implementation-present': {
-    valid: true,
-    diagnostics: [
-      {
-        code: 'CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED',
-        details: { relationship: 'tool-implementation', reason: 'unsupported-source-pattern' },
-        entity: {
-          agentId: 'support',
-          capabilityKind: 'tool',
-          capabilityId: 'returns',
-          adapterId: 'custom',
-        },
-        message: 'The declared runtime relationship could not be verified.',
-        path: '/src/returns.ts',
-        pointer: null,
-        range: null,
-        severity: 'warning',
-        source: 'custom',
-      },
-    ],
-  },
+  'tool-implementation-present': { valid: true, diagnostics: [] },
   'skill-description-invalid': {
     valid: false,
     diagnostics: [
       {
         code: 'MOLDEA_CAPABILITY_DESCRIPTION_INVALID',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
@@ -993,6 +1015,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_SKILL_IMPLEMENTATION_MISSING',
+        group: 'agents',
         details: {
           reason: 'missing',
           referencedPath: '/src/returns.ts',
@@ -1011,32 +1034,13 @@ export const CORE_EXPECTED_RESULTS: Record<
       },
     ],
   },
-  'skill-implementation-present': {
-    valid: true,
-    diagnostics: [
-      {
-        code: 'CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED',
-        details: { relationship: 'skill-implementation', reason: 'unsupported-source-pattern' },
-        entity: {
-          agentId: 'support',
-          capabilityKind: 'skill',
-          capabilityId: 'returns',
-          adapterId: 'custom',
-        },
-        message: 'The declared runtime relationship could not be verified.',
-        path: '/src/returns.ts',
-        pointer: null,
-        range: null,
-        severity: 'warning',
-        source: 'custom',
-      },
-    ],
-  },
+  'skill-implementation-present': { valid: true, diagnostics: [] },
   'capability-description-missing': {
     valid: false,
     diagnostics: [
       {
         code: 'MOLDEA_CAPABILITY_DESCRIPTION_MISSING',
+        group: 'agents',
         details: {},
         entity: {
           agentId: 'support',
@@ -1061,6 +1065,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_MIRROR_STALE',
+        group: 'mirrors',
         details: {
           mirrorPath: '/instructions/support.md',
         },
@@ -1081,6 +1086,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_MIRROR_MISSING',
+        group: 'mirrors',
         details: {
           mirrorPath: '/instructions/support.md',
         },
@@ -1101,6 +1107,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_MIRROR_NOT_FILE',
+        group: 'mirrors',
         details: {
           actualType: 'directory',
           mirrorPath: '/instructions/support.md',
@@ -1122,6 +1129,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_MIRROR_PATH_INSIDE_MOLDEA',
+        group: 'mirrors',
         details: {},
         entity: {
           agentId: 'support',
@@ -1151,6 +1159,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_MIRROR_PATH_DUPLICATE',
+        group: 'mirrors',
         details: {},
         entity: {
           agentId: 'support',
@@ -1184,6 +1193,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_RUNTIME_GUIDANCE_EMPTY',
+        group: 'references',
         details: {},
         entity: null,
         message: 'The runtime guidance is empty.',
@@ -1200,6 +1210,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_RUNTIME_GUIDANCE_MISSING',
+        group: 'references',
         details: {
           referencedPath: '/moldea/runtimes/service.md',
         },
@@ -1215,41 +1226,12 @@ export const CORE_EXPECTED_RESULTS: Record<
       },
     ],
   },
-  'runtime-adapter-unavailable': {
-    valid: false,
-    diagnostics: [
-      {
-        code: 'MOLDEA_RUNTIME_ADAPTER_UNAVAILABLE',
-        details: {},
-        entity: {
-          agentId: 'support',
-          adapterId: 'openai',
-        },
-        message: 'The declared runtime adapter is unavailable.',
-        path: '/moldea/moldea.yaml',
-        pointer: '/agents/support/runtime/id',
-        range: {
-          end: {
-            column: 26,
-            line: 4,
-            offset: 55,
-          },
-          start: {
-            column: 20,
-            line: 4,
-            offset: 49,
-          },
-        },
-        severity: 'error',
-        source: 'core',
-      },
-    ],
-  },
   'decision-frontmatter-invalid': {
     valid: false,
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_FRONTMATTER_INVALID',
+        group: 'references',
         details: {
           reason: 'mapping-required',
         },
@@ -1285,6 +1267,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_FILENAME_INVALID',
+        group: 'references',
         details: {},
         entity: null,
         message: 'The decision path or filename is invalid.',
@@ -1301,6 +1284,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_FRONTMATTER_MISSING',
+        group: 'references',
         details: {},
         entity: {
           decisionId: '1767225600000',
@@ -1330,6 +1314,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_TIMESTAMP_MISMATCH',
+        group: 'references',
         details: {},
         entity: {
           decisionId: '1767225600000',
@@ -1359,6 +1344,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_CREATED_AT_INVALID',
+        group: 'references',
         details: {},
         entity: {
           decisionId: '1767225600000',
@@ -1388,6 +1374,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_BODY_EMPTY',
+        group: 'references',
         details: {},
         entity: {
           decisionId: '1767225600000',
@@ -1421,6 +1408,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_REFERENCE_MISSING',
+        group: 'references',
         details: {
           referencedDecisionId: '1767225600000',
         },
@@ -1441,6 +1429,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_SELF_SUPERSESSION',
+        group: 'references',
         details: {},
         entity: {
           decisionId: '1767312000000',
@@ -1470,6 +1459,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_SUPERSESSION_STATUS_INVALID',
+        group: 'references',
         details: {
           referencedDecisionId: '1767225600000',
           sourceStatus: 'accepted',
@@ -1492,6 +1482,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_SUPERSEDED_ORPHAN',
+        group: 'references',
         details: {},
         entity: {
           decisionId: '1767225600000',
@@ -1510,6 +1501,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_SUPERSESSION_CYCLE',
+        group: 'references',
         details: {
           cycleRepresentativeDecisionId: '1767225600000',
           cycleSize: 2,
@@ -1526,6 +1518,7 @@ export const CORE_EXPECTED_RESULTS: Record<
       },
       {
         code: 'MOLDEA_DECISION_SUPERSESSION_CYCLE',
+        group: 'references',
         details: {
           cycleRepresentativeDecisionId: '1767225600000',
           cycleSize: 2,
@@ -1547,6 +1540,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_ID_DUPLICATE',
+        group: 'references',
         details: {
           occurrences: 2,
         },
@@ -1562,6 +1556,7 @@ export const CORE_EXPECTED_RESULTS: Record<
       },
       {
         code: 'MOLDEA_DECISION_ID_DUPLICATE',
+        group: 'references',
         details: {
           occurrences: 2,
         },
@@ -1586,6 +1581,7 @@ export const CORE_EXPECTED_RESULTS: Record<
     diagnostics: [
       {
         code: 'MOLDEA_DECISION_RELATIONSHIP_INACTIVE',
+        group: 'references',
         details: {
           referencedPath: '/moldea/decisions/1767225600000-return-window.md',
           targetStatus: 'proposed',

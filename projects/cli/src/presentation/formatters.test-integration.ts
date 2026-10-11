@@ -69,7 +69,7 @@ const inspectCompleteProject = async (): Promise<IProjectInspectionPageResult> =
     resourceLimits: {
       maxDiagnostics: 10_000,
       maxEntries: 100_000,
-      maxEvidence: 10_000,
+      maxCoverage: 10_000,
       maxFileBytes: 8_388_608,
       maxManifestBytes: 2_097_152,
       maxTotalBytes: 134_217_728,
@@ -78,7 +78,7 @@ const inspectCompleteProject = async (): Promise<IProjectInspectionPageResult> =
 };
 
 describe('CLI inspection presentation through Core and the memory repository reader', () => {
-  test('emits bounded metadata without canonical bodies or adapter detail payloads', async () => {
+  test('emits bounded metadata without canonical bodies or arbitrary diagnostic details', async () => {
     const inspection = await inspectCompleteProject();
     const execution = createMoldeaCliInspectExecutionResult(
       inspection,
@@ -97,7 +97,7 @@ describe('CLI inspection presentation through Core and the memory repository rea
 
     expect(execution.exitCode).toBe(0);
     expect(Buffer.byteLength(execution.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
-    expect(envelope.schemaVersion).toBe(6);
+    expect(envelope.schemaVersion).toBe(7);
     expect(envelope.result.counts).toMatchObject({ agents: 2, context: 2, decisions: 1 });
     expect(envelope.result.page.records.map(({ kind }) => kind)).toContain('metadata');
     expect(execution.stdout).not.toContain('Universal project.');

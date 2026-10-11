@@ -148,7 +148,9 @@ test('keeps pointer reading position and repeated initialization correct on Astr
   const before = (await button.boundingBox())!.y;
   await button.click();
   await expect(section.locator('[data-capability-example]:visible')).toHaveCount(8);
-  expect(Math.abs((await page.locator(`#${fifth.id}`).boundingBox())!.y - before)).toBeLessThan(8);
+  await expect
+    .poll(async () => Math.abs((await page.locator(`#${fifth.id}`).boundingBox())!.y - before))
+    .toBeLessThan(8);
   await page
     .getByRole('banner')
     .getByRole('link', { name: 'moldea packages home', exact: true })
@@ -164,13 +166,13 @@ test('keeps pointer reading position and repeated initialization correct on Astr
 test('reveals and opens direct, search, and history targets beyond two batches', async ({
   page,
 }) => {
-  const examples = showcase.find(({ group }) => group.id === 'runtime-wiring')!.examples;
+  const examples = showcase.find(({ group }) => group.id === 'agents')!.examples;
   const target = examples[12];
   await page.goto(`${route}#${target.id}`);
   await expect(page.locator(`#example-${target.id}`)).toBeVisible();
-  await expect(
-    sectionFor(page, 'runtime-wiring').locator('[data-capability-example]:visible'),
-  ).toHaveCount(16);
+  await expect(sectionFor(page, 'agents').locator('[data-capability-example]:visible')).toHaveCount(
+    16,
+  );
   await expect(
     sectionFor(page, 'structure').locator('[data-capability-example]:visible'),
   ).toHaveCount(4);
@@ -234,17 +236,11 @@ test('opens every executed illustration once with its truthful visual and result
     ['canonical-content-pages', 'Bytes 3 to 7'],
     ['reader-cancellation', 'Read cancelled'],
     ['policy-reference-connected', 'Declared target in moldea.yaml'],
-    ['openai-loader-disconnected', 'Not connected to this loader'],
     ['cli-composition', 'Command completed'],
   ])
     await expect(page.locator(`#${id}`)).toContainText(text);
-  for (const [id, text] of [
-    ['anthropic-messages', 'client.messages.create'],
-    ['claude-query', 'query({'],
-    ['google-generate-content', 'models.generateContent'],
-    ['eve-markdown-instruction', 'You are the `support` agent.'],
-  ])
-    await expect(page.locator(`#${id} [data-capability-visual] pre`)).toContainText(text);
+  await expect(page.locator('#binding-export-passed')).toContainText('A declared export exists');
+  await expect(page.locator('#binding-commonjs')).toContainText('Not checked');
   expect((await new AxeBuilder({ page }).include('main').analyze()).violations).toStrictEqual([]);
 });
 
@@ -256,7 +252,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
     await page.goto(route);
     await revealAll(page, 'command-line');
-    const example = catalog.cases.find(({ id }) => id === 'cli-version-warning')!;
+    const example = catalog.cases.find(({ id }) => id === 'cli-pattern-warning')!;
     const trigger = triggerFor(page, example.id);
     await trigger.click();
     const illustration = page.locator(`#example-${example.id}`);

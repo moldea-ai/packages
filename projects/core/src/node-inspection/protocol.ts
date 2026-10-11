@@ -37,21 +37,12 @@ const isSnapshot = (input: unknown): boolean =>
   input['sourceKind'].length > 0;
 const isOptionalString = (input: Record<string, unknown>, key: string): boolean =>
   !Object.hasOwn(input, key) || typeof input[key] === 'string';
-const isRegistryUrl = (input: unknown): boolean => {
-  if (typeof input !== 'string') return false;
-  try {
-    const url = new URL(input);
-    return url.protocol === 'file:' && url.search === '' && url.hash === '';
-  } catch {
-    return false;
-  }
-};
 const isPageInput = (input: unknown): boolean =>
   isRecord(input) &&
   hasKeys(input, ['maxItems', 'view'], ['cursor']) &&
   isInteger(input['maxItems']) &&
   input['maxItems'] > 0 &&
-  ['all', 'diagnostics', 'evidence', 'metadata'].includes(String(input['view'])) &&
+  ['all', 'diagnostics', 'coverage', 'metadata'].includes(String(input['view'])) &&
   isOptionalString(input, 'cursor');
 const isLimits = (input: unknown): input is ICoreResourceLimits =>
   isRecord(input) &&
@@ -62,7 +53,8 @@ const isLimits = (input: unknown): input is ICoreResourceLimits =>
     'maxManifestBytes',
     'maxRetainedBytes',
     'maxDiagnostics',
-    'maxEvidence',
+    'maxCoverage',
+    'maxAcceptedWarnings',
   ]) &&
   Object.values(input).every((limit) => isInteger(limit) && limit > 0);
 const isCounts = (input: unknown): boolean =>
@@ -77,7 +69,8 @@ const isCounts = (input: unknown): boolean =>
     'diagnostics',
     'errors',
     'warnings',
-    'evidence',
+    'acceptedWarnings',
+    'coverage',
     'metadata',
   ]) &&
   Object.values(input).every(isInteger);
@@ -101,16 +94,23 @@ const isSummary = (input: unknown): boolean =>
     isRepositoryPath(input['projectPath']));
 const isInspectionBase = (input: Record<string, unknown>): boolean =>
   isCounts(input['counts']) &&
+  isRecord(input['coverageCounts']) &&
+  hasKeys(input['coverageCounts'], [
+    'bindings',
+    'exportsPassed',
+    'exportsFailed',
+    'exportsNotChecked',
+  ]) &&
+  Object.values(input['coverageCounts']).every(isInteger) &&
   typeof input['valid'] === 'boolean' &&
-  ['complete', 'incomplete', 'not-run'].includes(String(input['runtimeInspection'])) &&
   (input['formatVersion'] === null || input['formatVersion'] === 1) &&
   typeof input['inspectionDigest'] === 'string' &&
   isSnapshot(input['source']) &&
   isSummary(input['summary']);
 const INSPECTION_KEYS = [
   'counts',
+  'coverageCounts',
   'valid',
-  'runtimeInspection',
   'formatVersion',
   'inspectionDigest',
   'source',
@@ -118,7 +118,7 @@ const INSPECTION_KEYS = [
 ];
 const isMetadata = (input: unknown): boolean =>
   isRecord(input) &&
-  hasKeys(input, [...INSPECTION_KEYS, 'resourceUsage', 'adapters', 'maxAnalysisHeapBytes']) &&
+  hasKeys(input, [...INSPECTION_KEYS, 'resourceUsage', 'maxAnalysisHeapBytes']) &&
   isInspectionBase(input) &&
   isInteger(input['maxAnalysisHeapBytes']) &&
   input['maxAnalysisHeapBytes'] > 0 &&
@@ -130,23 +130,12 @@ const isMetadata = (input: unknown): boolean =>
     'retainedBytes',
     'totalBytesRead',
   ]) &&
-  Object.values(input['resourceUsage']).every(isInteger) &&
-  Array.isArray(input['adapters']) &&
-  input['adapters'].every(
-    (adapter: unknown) =>
-      isRecord(adapter) &&
-      hasKeys(adapter, ['id', 'supportedRepositoryFormatVersions']) &&
-      typeof adapter['id'] === 'string' &&
-      Array.isArray(adapter['supportedRepositoryFormatVersions']) &&
-      adapter['supportedRepositoryFormatVersions'].every(
-        (version: unknown) => isInteger(version) && version > 0,
-      ),
-  );
+  Object.values(input['resourceUsage']).every(isInteger);
 const isPage = (input: unknown): boolean =>
   isRecord(input) &&
   hasKeys(input, [...INSPECTION_KEYS, 'page', 'view']) &&
   isInspectionBase(input) &&
-  ['all', 'diagnostics', 'evidence', 'metadata'].includes(String(input['view'])) &&
+  ['all', 'diagnostics', 'coverage', 'metadata'].includes(String(input['view'])) &&
   isRecord(input['page']) &&
   hasKeys(input['page'], ['isComplete', 'records', 'nextCursor', 'totalItems']) &&
   typeof input['page']['isComplete'] === 'boolean' &&
@@ -160,7 +149,7 @@ const isPage = (input: unknown): boolean =>
       (record['nextCursor'] === null || typeof record['nextCursor'] === 'string') &&
       isRecord(record['item']) &&
       typeof record['item']['kind'] === 'string' &&
-      ['agent', 'diagnostic', 'evidence', 'metadata'].includes(record['item']['kind']) &&
+      ['agent', 'diagnostic', 'coverage', 'metadata'].includes(record['item']['kind']) &&
       hasKeys(record['item'], ['kind', record['item']['kind']]) &&
       isRecord(record['item'][record['item']['kind']]),
   );
@@ -204,8 +193,7 @@ const isMessage = (input: unknown): input is INodeInspectionMessage => {
   switch (input['kind']) {
     case 'start':
       return (
-        hasKeys(input, [...keys, 'registryUrl', 'snapshot', 'limits', 'deadline']) &&
-        isRegistryUrl(input['registryUrl']) &&
+        hasKeys(input, [...keys, 'snapshot', 'limits', 'deadline']) &&
         isSnapshot(input['snapshot']) &&
         isLimits(input['limits']) &&
         isInteger(input['deadline'])
@@ -241,9 +229,15 @@ const isMessage = (input: unknown): input is INodeInspectionMessage => {
       );
     case 'reader-response':
       return hasKeys(input, [...keys, 'requestId', 'result']) && isInteger(input['requestId']);
+    case 'reader-failure':
     case 'failure':
       return (
-        hasKeys(input, [...keys, 'failure']) &&
+        hasKeys(input, [
+          ...keys,
+          'failure',
+          ...(input['kind'] === 'reader-failure' ? ['requestId'] : []),
+        ]) &&
+        (input['kind'] !== 'reader-failure' || isInteger(input['requestId'])) &&
         isRecord(input['failure']) &&
         hasKeys(input['failure'], ['family', 'options']) &&
         ['configuration', 'operation', 'repository', 'path'].includes(

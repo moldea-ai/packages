@@ -1,5 +1,6 @@
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
+import type { ACCEPTABLE_WARNING_CODES } from '../constants/index.js';
 import type { IIndexedTextAsset } from '../contracts/index.js';
 
 // supported repository-format major version and exact repository reference
@@ -77,9 +78,18 @@ export interface IAgentManifestEntry {
   readonly unresolved?: Readonly<Record<string, IUnresolvedRequirementManifestEntry>>;
 }
 
+// an explicit, reasoned acceptance of one stable warning identity
+export interface IAcceptedWarningManifestEntry {
+  readonly code: (typeof ACCEPTABLE_WARNING_CODES)[number];
+  readonly subject: IRepositoryPath;
+  readonly qualifier?: string | null;
+  readonly reason: string;
+}
+
 // normalized repository-format version 1 manifest
 export interface IMoldeaManifestV1 {
   readonly version: 1;
+  readonly acceptedWarnings?: readonly IAcceptedWarningManifestEntry[];
   readonly context?: Readonly<Record<string, IRelationshipManifestEntry>>;
   readonly decisions?: Readonly<Record<string, IRelationshipManifestEntry>>;
   readonly unresolved?: Readonly<Record<string, IUnresolvedRequirementManifestEntry>>;

@@ -164,7 +164,7 @@ const handleParentMessage = (frame: unknown): void => {
     if (message.kind === 'run') {
       if (heapMaximum === undefined || hasRun) throw createInspectionProcessFailure();
       hasRun = true;
-    } else if (message.kind === 'reader-response') {
+    } else if (message.kind === 'reader-response' || message.kind === 'reader-failure') {
       if (!readerRequests.delete(message.requestId)) throw createInspectionProcessFailure();
     } else if (message.kind !== 'read-page' || !hasRun) throw createInspectionProcessFailure();
     worker.postMessage(encodeInspectionMessage(message));

@@ -10,11 +10,7 @@ import { createCoreDiagnosticCollector } from '../diagnostic-utilities/index.js'
 import type { ICoreOperation } from '../exceptions/index.js';
 import { isCanonicalManifestPath } from '../format-validation/index.js';
 import { freezeRecursively } from '../immutable/index.js';
-import {
-  detectSupportedManifestVersion,
-  validateManifest,
-  type IRuntimeManifestLocation,
-} from '../manifest-validation/index.js';
+import { detectSupportedManifestVersion, validateManifest } from '../manifest-validation/index.js';
 import { createSourceLocator } from '../source-location/index.js';
 import { calculateNormalizedTextDigest, normalizeTextDocument } from '../text/index.js';
 import { parseStrictYaml } from '../yaml/index.js';
@@ -22,13 +18,12 @@ import { parseStrictYaml } from '../yaml/index.js';
 // richer manifest parse state retained only by repository inspection
 export interface IManifestDocumentInspectionResult extends IManifestParseResult {
   readonly formatVersion: 1 | null;
-  readonly runtimeLocations: readonly IRuntimeManifestLocation[];
 }
 
 /**
  * Inspects one complete manifest while retaining an independently trustworthy supported version.
  * @param input The canonical logical path and exact manifest text or bytes.
- * @param options The immutable Core limits and adapter snapshots.
+ * @param options The immutable Core limit snapshot.
  * @param operation The owning public or repository-level operation for typed failures.
  * @returns Frozen inspection state with all-or-nothing manifest assets and values.
  * @throws
@@ -63,7 +58,6 @@ export const inspectManifestDocument = async (
       diagnostics: diagnostics.finalize(),
       formatVersion: null,
       manifest: null,
-      runtimeLocations: [],
       valid: false,
     });
   }
@@ -71,10 +65,9 @@ export const inspectManifestDocument = async (
   const locator = createSourceLocator(normalized.text.value);
   const parsed = parseStrictYaml(normalized.text.value, path, locator, diagnostics);
   const formatVersion = parsed.value === null ? null : detectSupportedManifestVersion(parsed.value);
-  const runtimeLocations: IRuntimeManifestLocation[] = [];
   const manifest =
     parsed.valid && parsed.value !== null
-      ? validateManifest(parsed.value, path, diagnostics, runtimeLocations)
+      ? validateManifest(parsed.value, path, diagnostics, options.limits, operation)
       : null;
 
   if (manifest === null || diagnostics.size > 0) {
@@ -83,7 +76,6 @@ export const inspectManifestDocument = async (
       diagnostics: diagnostics.finalize(),
       formatVersion,
       manifest: null,
-      runtimeLocations,
       valid: false,
     });
   }
@@ -102,7 +94,6 @@ export const inspectManifestDocument = async (
     diagnostics: diagnostics.finalize(),
     formatVersion,
     manifest,
-    runtimeLocations,
     valid: true,
   });
 };
@@ -110,7 +101,7 @@ export const inspectManifestDocument = async (
 /**
  * Parses and validates one complete version 1 manifest document.
  * @param input The canonical logical path and exact manifest text or bytes.
- * @param options The immutable Core limits and adapter snapshots.
+ * @param options The immutable Core limit snapshot.
  * @returns A frozen all-or-nothing manifest parse result.
  * @throws
  * - INVALID_REPOSITORY_PATH: The repository path is invalid.

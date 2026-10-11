@@ -15,7 +15,6 @@ const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url));
 const entry = fileURLToPath(new URL('./run.ts', import.meta.url));
 const packageManager = process.env['npm_execpath'];
 const turboCli = fileURLToPath(new URL('../../node_modules/turbo/bin/turbo', import.meta.url));
-const checker = new URL('../runtime-compatibility/check.ts', import.meta.url).href;
 let directory: string;
 const git = (...args: string[]) =>
   execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim();
@@ -62,7 +61,6 @@ beforeEach(async () => {
       'website:prepare',
       'test:root:unit',
       'test:root:integration',
-      'upstream:check',
       'format:check',
       'lint:root',
       'typecheck:root',
@@ -75,7 +73,7 @@ beforeEach(async () => {
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.9.0',
-      scripts: { ...scripts, 'compatibility:check': 'node compatibility.mjs' },
+      scripts,
     }),
   );
   await write('pnpm-workspace.yaml', 'packages:\n  - apps/*\n  - projects/*\n  - packages/*\n');
@@ -99,10 +97,6 @@ beforeEach(async () => {
   await write(
     'root.mjs',
     `import {appendFileSync,writeFileSync} from 'node:fs'; appendFileSync('execution.log',process.argv[2]+'\\n'); if(process.argv[2]==='website:prepare')writeFileSync('prepared','yes');`,
-  );
-  await write(
-    'compatibility.mjs',
-    `import {readFileSync,appendFileSync} from 'node:fs'; readFileSync('prepared'); appendFileSync('execution.log','compatibility:check\\n'); await import(${JSON.stringify(checker)});`,
   );
   for (const [path, name, dependencies] of [
     ['projects/website-ui', '@moldea.ai/website-ui', {}],
@@ -153,9 +147,8 @@ test('real Turbo builds dependencies but never executes their unselected tests o
     expect(log).toContain(`@moldea.ai/packages-website:${task}`);
     expect(log).not.toContain(`@moldea.ai/website-ui:${task}`);
   }
-  expect(log).toContain('website:prepare\ncompatibility:check\n');
+  expect(log).toContain('website:prepare\n');
   expect(log).not.toMatch(/test:root:integration|upstream:check/u);
-  expect(result.stdout).toContain('Runtime compatibility sources are valid and synchronized.');
 });
 
 test.each([
@@ -163,10 +156,13 @@ test.each([
   [['apps/website/_archive/ignored.ts']],
   [['apps/website/page.astro']],
   [['packages/runtime/source.ts']],
-])('checks retain the real compatibility command after preparation for %o', (paths) => {
+])('checks retain root verification after preparation for %o', async (paths) => {
   const result = run(planFor(paths));
   expect(result.status, result.stdout + result.stderr).toBe(0);
-  expect(result.stdout).toContain('Runtime compatibility sources are valid and synchronized.');
+  const log = await readFile(join(directory, 'execution.log'), 'utf8');
+  expect(log).toContain(
+    'website:prepare\ntest:root:unit\nformat:check\nlint:root\ntypecheck:root\n',
+  );
 });
 
 test('cross-platform runner executes selected correctness tasks and propagates real Turbo failures', async () => {
@@ -184,14 +180,12 @@ test('full verification includes root integration and propagates a selected depe
   expect(result.status).not.toBe(0);
   const log = await readFile(join(directory, 'execution.log'), 'utf8');
   expect(log).toContain('test:root:integration');
-  expect(log).toContain('upstream:check');
   expect(log.indexOf('@moldea.ai/website-ui:test:unit')).toBeLessThan(
     log.indexOf('test:root:integration'),
   );
   expect(log.indexOf('test:root:integration')).toBeLessThan(
     log.indexOf('@moldea.ai/website-ui:test:integration'),
   );
-  expect(result.stdout).toContain('Runtime compatibility sources are valid and synchronized.');
 });
 
 test('runner refuses a stale commit or unknown workspace before starting any task', async () => {

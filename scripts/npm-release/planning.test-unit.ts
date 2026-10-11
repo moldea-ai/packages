@@ -9,16 +9,6 @@ import type {
 import { createNpmReleaseWorkflowOutputs, createNpmReleaseWorkflowPlan } from './planning.ts';
 
 const NO_PREVIOUS_VERSIONS = {
-  'adapter-anthropic': null,
-  'adapter-claude-agent-sdk': null,
-  'adapter-google-genai': null,
-  'adapter-openai': null,
-  'adapter-openai-agents-sdk': null,
-  'adapter-cloudflare-agents': null,
-  'adapter-eve': null,
-  'adapter-langchain': null,
-  'adapter-langgraph': null,
-  'adapter-vercel-ai-sdk': null,
   cli: null,
   core: null,
   repository: null,
@@ -30,25 +20,7 @@ const createProjectChanges = (
   overrides: Partial<Record<INpmReleaseProject, Partial<INpmReleaseProjectChange>>> = {},
 ): INpmReleaseWorkflowPlanSources['projectChanges'] =>
   Object.fromEntries(
-    (
-      [
-        'adapter-anthropic',
-        'adapter-claude-agent-sdk',
-        'adapter-google-genai',
-        'adapter-openai',
-        'adapter-openai-agents-sdk',
-        'adapter-cloudflare-agents',
-        'adapter-eve',
-        'adapter-langchain',
-        'adapter-langgraph',
-        'adapter-vercel-ai-sdk',
-        'cli',
-        'core',
-        'repository',
-        'repository-fs',
-        'website-ui',
-      ] as const
-    ).map((project) => [
+    (['cli', 'core', 'repository', 'repository-fs', 'website-ui'] as const).map((project) => [
       project,
       {
         currentVersion: '1.0.0',
@@ -63,25 +35,10 @@ const createPublishedVersions = (
   overrides: Partial<Record<INpmReleaseProject, readonly string[]>> = {},
 ): INpmReleaseWorkflowPlanSources['publishedVersions'] =>
   Object.fromEntries(
-    (
-      [
-        'adapter-anthropic',
-        'adapter-claude-agent-sdk',
-        'adapter-google-genai',
-        'adapter-openai',
-        'adapter-openai-agents-sdk',
-        'adapter-cloudflare-agents',
-        'adapter-eve',
-        'adapter-langchain',
-        'adapter-langgraph',
-        'adapter-vercel-ai-sdk',
-        'cli',
-        'core',
-        'repository',
-        'repository-fs',
-        'website-ui',
-      ] as const
-    ).map((project) => [project, overrides[project] ?? ['1.0.0']]),
+    (['cli', 'core', 'repository', 'repository-fs', 'website-ui'] as const).map((project) => [
+      project,
+      overrides[project] ?? ['1.0.0'],
+    ]),
   ) as INpmReleaseWorkflowPlanSources['publishedVersions'];
 
 describe('npm release workflow planning', () => {
@@ -109,100 +66,25 @@ describe('npm release workflow planning', () => {
         mode: '',
         project: '',
         projectChanges: createProjectChanges({
-          'adapter-anthropic': { currentVersion: '1.0.1', isChanged: true },
-          'adapter-claude-agent-sdk': {
-            currentVersion: '1.0.0',
-            isChanged: true,
-            previousVersion: null,
-          },
-          'adapter-google-genai': {
-            currentVersion: '1.0.0',
-            isChanged: true,
-            previousVersion: null,
-          },
-          'adapter-openai': { currentVersion: '1.0.1', isChanged: true },
-          'adapter-openai-agents-sdk': {
-            currentVersion: '1.0.0',
-            isChanged: true,
-            previousVersion: null,
-          },
-          'adapter-cloudflare-agents': {
-            currentVersion: '1.0.0',
-            isChanged: true,
-            previousVersion: null,
-          },
-          'adapter-eve': {
-            currentVersion: '1.0.0',
-            isChanged: true,
-            previousVersion: null,
-          },
-          'adapter-langchain': {
-            currentVersion: '1.0.0',
-            isChanged: true,
-            previousVersion: null,
-          },
-          'adapter-langgraph': {
-            currentVersion: '1.0.0',
-            isChanged: true,
-            previousVersion: null,
-          },
-          'adapter-vercel-ai-sdk': {
-            currentVersion: '1.0.0',
-            isChanged: true,
-            previousVersion: null,
-          },
           cli: { currentVersion: '1.0.1', isChanged: true },
           repository: { currentVersion: '1.1.0', isChanged: true },
           'repository-fs': { currentVersion: '2.0.0', isChanged: true },
           'website-ui': { currentVersion: '1.0.0', isChanged: true, previousVersion: null },
         }),
         publishedVersions: createPublishedVersions({
-          'adapter-google-genai': [],
-          'adapter-claude-agent-sdk': [],
-          'adapter-openai-agents-sdk': [],
-          'adapter-cloudflare-agents': [],
-          'adapter-eve': [],
-          'adapter-langchain': [],
-          'adapter-langgraph': [],
-          'adapter-vercel-ai-sdk': [],
           'website-ui': [],
         }),
       }),
     ).toStrictEqual({
       mode: 'trusted',
       previousVersions: {
-        'adapter-anthropic': '1.0.0',
-        'adapter-claude-agent-sdk': null,
-        'adapter-google-genai': null,
-        'adapter-openai': '1.0.0',
-        'adapter-openai-agents-sdk': null,
-        'adapter-cloudflare-agents': null,
-        'adapter-eve': null,
-        'adapter-langchain': null,
-        'adapter-langgraph': null,
-        'adapter-vercel-ai-sdk': null,
         cli: '1.0.0',
         core: null,
         repository: '1.0.0',
         'repository-fs': '1.0.0',
         'website-ui': null,
       },
-      projects: [
-        'repository',
-        'repository-fs',
-        'adapter-anthropic',
-        'adapter-google-genai',
-        'adapter-openai',
-        'adapter-openai-agents-sdk',
-        'adapter-claude-agent-sdk',
-        'adapter-cloudflare-agents',
-        'adapter-eve',
-        'adapter-langchain',
-        'adapter-langgraph',
-        'adapter-vercel-ai-sdk',
-        'cli',
-        'website-ui',
-      ],
+      projects: ['repository', 'repository-fs', 'cli', 'website-ui'],
       trigger: 'automatic',
     });
   });
@@ -214,18 +96,18 @@ describe('npm release workflow planning', () => {
         mode: '',
         project: '',
         projectChanges: createProjectChanges({
-          'adapter-anthropic': {
+          core: {
             currentVersion: '1.0.0',
             isChanged: true,
             previousVersion: null,
           },
         }),
-        publishedVersions: createPublishedVersions({ 'adapter-anthropic': [] }),
+        publishedVersions: createPublishedVersions({ core: [] }),
       }),
     ).toStrictEqual({
       mode: 'trusted',
       previousVersions: NO_PREVIOUS_VERSIONS,
-      projects: ['adapter-anthropic'],
+      projects: ['core'],
       trigger: 'automatic',
     });
   });
@@ -254,7 +136,7 @@ describe('npm release workflow planning', () => {
         mode: '',
         project: '',
         projectChanges: createProjectChanges({
-          'adapter-google-genai': {
+          repository: {
             currentVersion: '1.0.2',
             previousVersion: '1.0.2',
           },
@@ -262,7 +144,7 @@ describe('npm release workflow planning', () => {
           'website-ui': { currentVersion: '1.1.2', previousVersion: '1.1.2' },
         }),
         publishedVersions: createPublishedVersions({
-          'adapter-google-genai': ['1.0.0'],
+          repository: ['1.0.0'],
           cli: ['3.0.1', '2.0.0'],
           'website-ui': ['1.0.0', '1.1.2'],
         }),
@@ -270,23 +152,13 @@ describe('npm release workflow planning', () => {
     ).toStrictEqual({
       mode: 'trusted',
       previousVersions: {
-        'adapter-anthropic': null,
-        'adapter-claude-agent-sdk': null,
-        'adapter-google-genai': '1.0.0',
-        'adapter-openai': null,
-        'adapter-openai-agents-sdk': null,
-        'adapter-cloudflare-agents': null,
-        'adapter-eve': null,
-        'adapter-langchain': null,
-        'adapter-langgraph': null,
-        'adapter-vercel-ai-sdk': null,
+        repository: '1.0.0',
         cli: '3.0.1',
         core: null,
-        repository: null,
         'repository-fs': null,
         'website-ui': null,
       },
-      projects: ['adapter-google-genai', 'cli'],
+      projects: ['repository', 'cli'],
       trigger: 'automatic',
     });
   });
@@ -337,16 +209,6 @@ describe('npm release workflow planning', () => {
     ).toStrictEqual({
       mode: 'trusted',
       previousVersions: {
-        'adapter-anthropic': null,
-        'adapter-claude-agent-sdk': null,
-        'adapter-google-genai': null,
-        'adapter-openai': null,
-        'adapter-openai-agents-sdk': null,
-        'adapter-cloudflare-agents': null,
-        'adapter-eve': null,
-        'adapter-langchain': null,
-        'adapter-langgraph': null,
-        'adapter-vercel-ai-sdk': null,
         cli: null,
         core: '1.0.0',
         repository: null,
@@ -371,26 +233,6 @@ describe('npm release workflow planning', () => {
     });
 
     expect(createNpmReleaseWorkflowOutputs(plan)).toStrictEqual({
-      adapter_anthropic: 'false',
-      adapter_anthropic_previous_version: '',
-      adapter_claude_agent_sdk: 'false',
-      adapter_claude_agent_sdk_previous_version: '',
-      adapter_cloudflare_agents: 'false',
-      adapter_cloudflare_agents_previous_version: '',
-      adapter_eve: 'false',
-      adapter_eve_previous_version: '',
-      adapter_langchain: 'false',
-      adapter_langchain_previous_version: '',
-      adapter_langgraph: 'false',
-      adapter_langgraph_previous_version: '',
-      adapter_google_genai: 'false',
-      adapter_google_genai_previous_version: '',
-      adapter_openai: 'false',
-      adapter_openai_previous_version: '',
-      adapter_openai_agents_sdk: 'false',
-      adapter_openai_agents_sdk_previous_version: '',
-      adapter_vercel_ai_sdk: 'false',
-      adapter_vercel_ai_sdk_previous_version: '',
       cli: 'false',
       cli_previous_version: '',
       core: 'true',
@@ -437,9 +279,9 @@ describe('npm release workflow planning', () => {
         mode: '',
         project: '',
         projectChanges: createProjectChanges({
-          'adapter-anthropic': { currentVersion, isChanged: true, previousVersion: null },
+          core: { currentVersion, isChanged: true, previousVersion: null },
         }),
-        publishedVersions: createPublishedVersions({ 'adapter-anthropic': [] }),
+        publishedVersions: createPublishedVersions({ core: [] }),
       }),
     ).toThrow('must declare a greater stable package version');
   });

@@ -7,7 +7,7 @@ export type IMoldeaCliCommand = (typeof MOLDEA_CLI_COMMANDS)[keyof typeof MOLDEA
 export interface IMoldeaCliResourceLimits {
   readonly maxDiagnostics: number;
   readonly maxEntries: number;
-  readonly maxEvidence: number;
+  readonly maxCoverage: number;
   readonly maxFileBytes: number;
   readonly maxManifestBytes: number;
   readonly maxTotalBytes: number;

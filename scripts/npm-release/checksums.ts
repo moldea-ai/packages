@@ -31,7 +31,7 @@ if (operation === 'create') {
   if (operation === 'verify-consumers') {
     const [actual, consumer] = await Promise.all([
       readFile(path.join(artifactDirectory, NPM_RELEASE_CHECKSUM_FILE_NAME), 'utf8'),
-      readFile(new URL('compatibility/consumers/SHA256SUMS', repositoryRoot), 'utf8'),
+      readFile(new URL('consumers/SHA256SUMS', repositoryRoot), 'utf8'),
     ]);
     verifyNpmReleaseConsumerChecksums(
       actual,

@@ -16,19 +16,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 
+import type { IMoldeaCliValidateResult } from '../presentation/index.js';
+
 import { createGitProcessEnvironment } from '../git-process/index.js';
 
 import {
-  ADAPTER_ANTHROPIC_PROJECT_DIRECTORY,
-  ADAPTER_CLAUDE_AGENT_SDK_PROJECT_DIRECTORY,
-  ADAPTER_CLOUDFLARE_AGENTS_PROJECT_DIRECTORY,
-  ADAPTER_EVE_PROJECT_DIRECTORY,
-  ADAPTER_GOOGLE_GENAI_PROJECT_DIRECTORY,
-  ADAPTER_LANGCHAIN_PROJECT_DIRECTORY,
-  ADAPTER_LANGGRAPH_PROJECT_DIRECTORY,
-  ADAPTER_OPENAI_AGENTS_SDK_PROJECT_DIRECTORY,
-  ADAPTER_OPENAI_PROJECT_DIRECTORY,
-  ADAPTER_VERCEL_AI_SDK_PROJECT_DIRECTORY,
   CLI_DISTRIBUTION_PATH,
   CLI_PROJECT_DIRECTORY,
   CORE_PROJECT_DIRECTORY,
@@ -275,7 +267,7 @@ describe('published CLI package and executable', () => {
     const manifest = readCliPackageManifest();
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '10.0.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '11.0.0' });
     expect(packedPaths).toContain('dist/moldea.js');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
@@ -292,22 +284,7 @@ describe('published CLI package and executable', () => {
       ),
     ).toBe(true);
     expect(packedPaths.every((filePath) => !filePath.includes('.test-'))).toBe(true);
-    expectPackageManifest(
-      manifest,
-      'workspace:^6.0.0',
-      'workspace:^6.0.0',
-      'workspace:^5.0.0',
-      'workspace:^5.0.0',
-      'workspace:^5.0.0',
-      'workspace:^5.0.0',
-      'workspace:^6.0.0',
-      'workspace:^5.0.0',
-      'workspace:^5.0.0',
-      'workspace:^5.0.0',
-      'workspace:^5.0.0',
-      'workspace:^2.0.0',
-      'workspace:^2.0.3',
-    );
+    expectPackageManifest(manifest, 'workspace:^7.0.0', 'workspace:^2.0.0', 'workspace:^2.0.3');
     const executable = readFileSync(CLI_DISTRIBUTION_PATH, 'utf8');
     const executableChunks = packedPaths
       .filter((filePath) => filePath.startsWith('dist/chunks/') && filePath.endsWith('.js'))
@@ -315,18 +292,7 @@ describe('published CLI package and executable', () => {
       .join('\n');
 
     expect(executable.startsWith('#!/usr/bin/env node\n')).toBe(true);
-    expect(executable).not.toContain('@moldea.ai/adapter-openai');
     expect(executable).toContain('import("./chunks/');
-    expect(executableChunks).toContain('@moldea.ai/adapter-openai');
-    expect(executableChunks).toContain('@moldea.ai/adapter-openai-agents-sdk');
-    expect(executableChunks).toContain('@moldea.ai/adapter-anthropic');
-    expect(executableChunks).toContain('@moldea.ai/adapter-claude-agent-sdk');
-    expect(executableChunks).toContain('@moldea.ai/adapter-cloudflare-agents');
-    expect(executableChunks).toContain('@moldea.ai/adapter-eve');
-    expect(executableChunks).toContain('@moldea.ai/adapter-google-genai');
-    expect(executableChunks).toContain('@moldea.ai/adapter-langchain');
-    expect(executableChunks).toContain('@moldea.ai/adapter-langgraph');
-    expect(executableChunks).toContain('@moldea.ai/adapter-vercel-ai-sdk');
     expect(executableChunks).toContain('minimumGitVersion');
   });
 
@@ -351,24 +317,8 @@ describe('published CLI package and executable', () => {
       ) as IMoldeaCliPackageManifest;
       const executable = readTarEntry(tarball, 'package/dist/moldea.js').toString('utf8');
 
-      expectPackageManifest(
-        manifest,
-        '^6.0.0',
-        '^6.0.0',
-        '^5.0.0',
-        '^5.0.0',
-        '^5.0.0',
-        '^5.0.0',
-        '^6.0.0',
-        '^5.0.0',
-        '^5.0.0',
-        '^5.0.0',
-        '^5.0.0',
-        '^2.0.0',
-        '^2.0.3',
-      );
+      expectPackageManifest(manifest, '^7.0.0', '^2.0.0', '^2.0.3');
       expect(executable.startsWith('#!/usr/bin/env node\n')).toBe(true);
-      expect(executable).not.toContain('@moldea.ai/adapter-openai');
       expect(executable).toContain('import("./chunks/');
     } finally {
       rmSync(packDirectory, { force: true, recursive: true });
@@ -418,72 +368,12 @@ describe('published CLI package and executable', () => {
         CORE_PROJECT_DIRECTORY,
         consumerDirectory,
       );
-      const adapterAnthropicTarballName = packPackageTarball(
-        packageManagerEntrypoint,
-        ADAPTER_ANTHROPIC_PROJECT_DIRECTORY,
-        consumerDirectory,
-      );
-      const adapterClaudeAgentSdkTarballName = packPackageTarball(
-        packageManagerEntrypoint,
-        ADAPTER_CLAUDE_AGENT_SDK_PROJECT_DIRECTORY,
-        consumerDirectory,
-      );
-      const adapterGoogleGenAiTarballName = packPackageTarball(
-        packageManagerEntrypoint,
-        ADAPTER_GOOGLE_GENAI_PROJECT_DIRECTORY,
-        consumerDirectory,
-      );
-      const adapterCloudflareAgentsTarballName = packPackageTarball(
-        packageManagerEntrypoint,
-        ADAPTER_CLOUDFLARE_AGENTS_PROJECT_DIRECTORY,
-        consumerDirectory,
-      );
-      const adapterEveTarballName = packPackageTarball(
-        packageManagerEntrypoint,
-        ADAPTER_EVE_PROJECT_DIRECTORY,
-        consumerDirectory,
-      );
-      const adapterLangChainTarballName = packPackageTarball(
-        packageManagerEntrypoint,
-        ADAPTER_LANGCHAIN_PROJECT_DIRECTORY,
-        consumerDirectory,
-      );
-      const adapterLangGraphTarballName = packPackageTarball(
-        packageManagerEntrypoint,
-        ADAPTER_LANGGRAPH_PROJECT_DIRECTORY,
-        consumerDirectory,
-      );
-      const adapterOpenAiTarballName = packPackageTarball(
-        packageManagerEntrypoint,
-        ADAPTER_OPENAI_PROJECT_DIRECTORY,
-        consumerDirectory,
-      );
-      const adapterOpenAiAgentsSdkTarballName = packPackageTarball(
-        packageManagerEntrypoint,
-        ADAPTER_OPENAI_AGENTS_SDK_PROJECT_DIRECTORY,
-        consumerDirectory,
-      );
-      const adapterVercelAiSdkTarballName = packPackageTarball(
-        packageManagerEntrypoint,
-        ADAPTER_VERCEL_AI_SDK_PROJECT_DIRECTORY,
-        consumerDirectory,
-      );
       const cliTarballName = packPackageTarball(
         packageManagerEntrypoint,
         CLI_PROJECT_DIRECTORY,
         consumerDirectory,
       );
       const packageTarballs = {
-        '@moldea.ai/adapter-anthropic': `file:./${adapterAnthropicTarballName}`,
-        '@moldea.ai/adapter-claude-agent-sdk': `file:./${adapterClaudeAgentSdkTarballName}`,
-        '@moldea.ai/adapter-cloudflare-agents': `file:./${adapterCloudflareAgentsTarballName}`,
-        '@moldea.ai/adapter-eve': `file:./${adapterEveTarballName}`,
-        '@moldea.ai/adapter-google-genai': `file:./${adapterGoogleGenAiTarballName}`,
-        '@moldea.ai/adapter-langchain': `file:./${adapterLangChainTarballName}`,
-        '@moldea.ai/adapter-langgraph': `file:./${adapterLangGraphTarballName}`,
-        '@moldea.ai/adapter-openai': `file:./${adapterOpenAiTarballName}`,
-        '@moldea.ai/adapter-openai-agents-sdk': `file:./${adapterOpenAiAgentsSdkTarballName}`,
-        '@moldea.ai/adapter-vercel-ai-sdk': `file:./${adapterVercelAiSdkTarballName}`,
         '@moldea.ai/cli': `file:./${cliTarballName}`,
         '@moldea.ai/core': `file:./${coreTarballName}`,
         '@moldea.ai/repository': `file:./${repositoryTarballName}`,
@@ -536,242 +426,193 @@ describe('published CLI package and executable', () => {
           cwd: consumerDirectory,
           encoding: 'utf8',
         }),
-      ).toBe('10.0.0\n');
+      ).toBe('11.0.0\n');
 
       const warningRepositoryDirectory = path.join(testDirectory, 'warning-repository');
-      const warningFixture = JSON.parse(
-        readFileSync(
-          new URL('../../../../fixtures/adapter-anthropic/cases.json', import.meta.url),
-          'utf8',
-        ),
-      ) as {
-        readonly manifest: string;
-        readonly entries: readonly { readonly path: string; readonly text: string }[];
-      };
-      const warningSourcePath = path.join(warningRepositoryDirectory, 'src', 'agent.ts');
-
-      mkdirSync(warningRepositoryDirectory);
+      mkdirSync(path.join(warningRepositoryDirectory, 'moldea'), { recursive: true });
+      mkdirSync(path.join(warningRepositoryDirectory, 'src'));
       execFileSync('git', ['init', '--quiet'], {
         cwd: warningRepositoryDirectory,
         env: gitEnvironment,
       });
       const warningManifestPath = path.join(warningRepositoryDirectory, 'moldea', 'moldea.yaml');
-      mkdirSync(path.dirname(warningManifestPath), { recursive: true });
-      writeFileSync(warningManifestPath, warningFixture.manifest, 'utf8');
-      for (const entry of warningFixture.entries) {
-        const entryPath = path.join(warningRepositoryDirectory, entry.path.slice(1));
-        mkdirSync(path.dirname(entryPath), { recursive: true });
-        writeFileSync(
-          entryPath,
-          entry.path === '/src/agent.ts'
-            ? entry.text.replace('system: readInstruction()', 'system: dynamicSystem')
-            : entry.text,
-          'utf8',
-        );
-      }
-      execFileSync('git', ['add', '--all'], {
-        cwd: warningRepositoryDirectory,
-        env: gitEnvironment,
-      });
-      const executeWarningCase = (command: 'inspect' | 'validate') =>
-        spawnSync(process.execPath, [installedExecutablePath, command, '--json'], {
+      const warningSourcePath = path.join(warningRepositoryDirectory, 'src', 'agent.ts');
+      const warningManifest = {
+        version: 1,
+        context: {
+          '/moldea/project.md': {
+            affectedBy: ['/future/**'],
+            bindings: [
+              { path: '/src/agent.ts', symbol: 'supportAgent' },
+              { path: '/src/other.cjs', symbol: 'other' },
+            ],
+          },
+        },
+        acceptedWarnings: [
+          {
+            code: 'MOLDEA_INTEGRATION_BLOCK_MISSING',
+            subject: '/AGENTS.md',
+            reason: 'This fixture deliberately has no installed coding agent.',
+          },
+        ],
+      };
+      writeFileSync(warningManifestPath, JSON.stringify(warningManifest));
+      writeFileSync(path.join(warningRepositoryDirectory, 'moldea', 'project.md'), '# Project\n');
+      writeFileSync(warningSourcePath, 'export const supportAgent = () => null;\n');
+      writeFileSync(
+        path.join(warningRepositoryDirectory, 'src', 'other.cjs'),
+        'exports.other = 1;\n',
+      );
+      const executeWarningCase = (
+        command: 'inspect' | 'validate',
+        options: string[] = ['--json'],
+      ) =>
+        spawnSync(process.execPath, [installedExecutablePath, command, ...options], {
           cwd: warningRepositoryDirectory,
           encoding: 'utf8',
           env: gitEnvironment,
         });
       const warningValidation = executeWarningCase('validate');
       expect(warningValidation.status).toBe(0);
-      expect(JSON.parse(warningValidation.stdout)).toMatchObject({
-        command: 'validate',
+      const warningResult = JSON.parse(warningValidation.stdout) as {
+        result: IMoldeaCliValidateResult;
+      };
+      expect(warningResult).toMatchObject({
+        schemaVersion: 7,
+        status: 'valid',
         result: {
           errorCount: 0,
-          warningCount: 2,
-          runtimeInspection: 'incomplete',
-          page: {
-            records: [
-              {
-                kind: 'diagnostic',
-                code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
-                details: {
-                  reason: 'dynamic-source-pattern',
-                  relationship: 'instruction-loader',
-                },
-                severity: 'warning',
-              },
-              {
-                kind: 'diagnostic',
-                code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
-                details: {
-                  reason: 'unsupported-source-pattern',
-                  relationship: 'tool-implementation',
-                },
-                severity: 'warning',
-              },
-            ],
-          },
+          warningCount: 1,
+          acceptedWarningCount: 1,
+          diagnosticCount: 2,
+          coverageCounts: { bindings: 2, exportsPassed: 1, exportsFailed: 0, exportsNotChecked: 1 },
         },
-        schemaVersion: 6,
-        status: 'valid',
       });
+      expect(warningResult.result.page.records).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'diagnostic',
+            group: 'integration',
+            severity: 'warning',
+            subject: '/AGENTS.md',
+            qualifier: null,
+            acceptable: true,
+            accepted: true,
+            reason: warningManifest.acceptedWarnings[0]?.reason,
+          }),
+          expect.objectContaining({
+            kind: 'diagnostic',
+            group: 'references',
+            severity: 'warning',
+            subject: '/moldea/project.md',
+            qualifier: '/future/**',
+            acceptable: true,
+            accepted: false,
+            reason: null,
+          }),
+          expect.objectContaining({
+            kind: 'coverage',
+            path: '/src/agent.ts',
+            fileCheck: 'passed',
+            exportCheck: 'passed',
+          }),
+          expect.objectContaining({
+            kind: 'coverage',
+            path: '/src/other.cjs',
+            fileCheck: 'passed',
+            exportCheck: 'not-checked',
+            exportNotCheckedReason: 'unsupported-file-type',
+          }),
+        ]),
+      );
       const warningInspection = executeWarningCase('inspect');
       expect(warningInspection.status).toBe(0);
-      const warningInspectionResult = JSON.parse(warningInspection.stdout) as {
-        readonly result: {
-          readonly counts: { readonly errors: number; readonly warnings: number };
-          readonly page: { readonly records: readonly { readonly evidenceKind?: string }[] };
-        };
-      };
-      expect(warningInspectionResult.result.counts).toMatchObject({ errors: 0, warnings: 2 });
-      expect(warningInspectionResult.result).toHaveProperty('runtimeInspection', 'incomplete');
-      expect(
-        warningInspectionResult.result.page.records.some(
-          (record) => record.evidenceKind === 'instruction-loader',
-        ),
-      ).toBe(false);
-
-      writeFileSync(
-        warningSourcePath,
-        readFileSync(warningSourcePath, 'utf8').replace(
-          'tools: [registeredFindOrder]',
-          'tools: []',
-        ),
-        'utf8',
+      expect(JSON.parse(warningInspection.stdout)).toMatchObject({
+        schemaVersion: 7,
+        result: {
+          counts: { errors: 0, warnings: 1, acceptedWarnings: 1, diagnostics: 2, coverage: 2 },
+          coverageCounts: warningResult.result.coverageCounts,
+        },
+      });
+      const humanWarnings = executeWarningCase('validate', []);
+      expect(humanWarnings.stdout).toContain(
+        'Coverage: 2 bindings, 1 exports confirmed, 0 exports missing, 1 not checked\n',
       );
+      expect(humanWarnings.stdout).toContain('1 accepted warning\n');
+      expect(humanWarnings.stdout).toContain(
+        '  subject: /moldea/project.md\n  qualifier: /future/**\n',
+      );
+      expect(humanWarnings.stdout).not.toContain('MOLDEA_INTEGRATION_BLOCK_MISSING');
+      const coverageLimit = executeWarningCase('validate', ['--json', '--max-coverage', '1']);
+      expect(coverageLimit.status).toBe(3);
+      expect(JSON.parse(coverageLimit.stdout)).toMatchObject({
+        status: 'error',
+        error: { code: 'RESOURCE_LIMIT_EXCEEDED' },
+      });
+      writeFileSync(warningSourcePath, 'export const otherAgent = () => null;\n');
       const mixedValidation = executeWarningCase('validate');
       expect(mixedValidation.status).toBe(1);
       expect(JSON.parse(mixedValidation.stdout)).toMatchObject({
-        result: { errorCount: 1, warningCount: 2, runtimeInspection: 'incomplete' },
         status: 'invalid',
-      });
-      const mixedInspection = executeWarningCase('inspect');
-      expect(mixedInspection.status).toBe(1);
-      const mixedInspectionResult = JSON.parse(mixedInspection.stdout) as {
-        readonly result: {
-          readonly counts: { readonly errors: number; readonly warnings: number };
-          readonly page: {
-            readonly records: readonly { readonly code?: string; readonly severity?: string }[];
-          };
-        };
-      };
-      expect(mixedInspectionResult.result.counts).toMatchObject({ errors: 1, warnings: 2 });
-      expect(mixedInspectionResult.result).toHaveProperty('runtimeInspection', 'incomplete');
-      expect(
-        mixedInspectionResult.result.page.records
-          .filter((record) => record.severity !== undefined)
-          .map(({ code, severity }) => ({ code, severity })),
-      ).toStrictEqual(
-        expect.arrayContaining([
-          {
-            code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
-            severity: 'warning',
-          },
-          { code: 'ANTHROPIC_TOOL_REGISTRATION_NOT_WIRED', severity: 'error' },
-        ]),
-      );
-
-      writeFileSync(
-        warningSourcePath,
-        readFileSync(warningSourcePath, 'utf8')
-          .replace('system: dynamicSystem', "system: 'Other instruction.'")
-          .replace('tools: []', 'tools: [registeredFindOrder]'),
-        'utf8',
-      );
-      const confirmedFailure = executeWarningCase('validate');
-      expect(confirmedFailure.status).toBe(1);
-      expect(JSON.parse(confirmedFailure.stdout)).toMatchObject({
         result: {
           errorCount: 1,
           warningCount: 1,
-          runtimeInspection: 'incomplete',
-          page: {
-            records: [
-              {
-                kind: 'diagnostic',
-                code: 'ANTHROPIC_INSTRUCTION_LOADER_NOT_WIRED',
-                severity: 'error',
-              },
-              {
-                kind: 'diagnostic',
-                code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
-                severity: 'warning',
-                details: {
-                  reason: 'unsupported-source-pattern',
-                  relationship: 'tool-implementation',
-                },
-              },
-            ],
-          },
+          acceptedWarningCount: 1,
+          diagnosticCount: 3,
+          coverageCounts: { bindings: 2, exportsPassed: 0, exportsFailed: 1, exportsNotChecked: 1 },
         },
-        status: 'invalid',
       });
-
-      const thinkRepositoryDirectory = path.join(testDirectory, 'think-warning-repository');
-      const thinkFixture = JSON.parse(
-        readFileSync(
-          new URL('../../../../fixtures/adapter-cloudflare-agents/cases.json', import.meta.url),
-          'utf8',
-        ),
-      ) as {
-        readonly manifest: string;
-        readonly entries: readonly { readonly path: string; readonly text: string }[];
-      };
-      mkdirSync(thinkRepositoryDirectory);
-      execFileSync('git', ['init', '--quiet'], {
-        cwd: thinkRepositoryDirectory,
-        env: gitEnvironment,
-      });
-      for (const entry of [
-        { path: '/moldea/moldea.yaml', text: thinkFixture.manifest },
-        ...thinkFixture.entries,
-      ]) {
-        const entryPath = path.join(thinkRepositoryDirectory, entry.path.slice(1));
-        mkdirSync(path.dirname(entryPath), { recursive: true });
-        writeFileSync(
-          entryPath,
-          entry.path === '/package.json'
-            ? entry.text.replace('^0.16.0', '>=0.17.0')
-            : entry.path === '/src/agents.ts'
-              ? entry.text.replace(
-                  'getSystemPrompt() { return loadSupportInstruction(); }',
-                  "configureContext() { return [{ label: 'soul', provider: { get: () => loadSupportInstruction() } }]; }",
-                )
-              : entry.text,
-          'utf8',
-        );
-      }
-      execFileSync('git', ['add', '--all'], {
-        cwd: thinkRepositoryDirectory,
-        env: gitEnvironment,
-      });
-      const thinkValidation = spawnSync(
-        process.execPath,
-        [installedExecutablePath, 'validate', '--json'],
-        { cwd: thinkRepositoryDirectory, encoding: 'utf8', env: gitEnvironment },
+      expect(
+        (JSON.parse(mixedValidation.stdout) as { result: IMoldeaCliValidateResult }).result.page
+          .records,
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
+            severity: 'error',
+            group: 'references',
+          }),
+          expect.objectContaining({ kind: 'coverage', exportCheck: 'failed' }),
+        ]),
       );
-      expect(thinkValidation.status).toBe(0);
-      expect(JSON.parse(thinkValidation.stdout)).toMatchObject({
-        result: {
-          errorCount: 0,
-          warningCount: 1,
-          runtimeInspection: 'incomplete',
-          page: {
-            records: [
-              {
-                code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
-                details: {
-                  boundaryVersion: '0.18.0',
-                  declaredRange: '>=0.17.0',
-                  packageName: '@cloudflare/think',
-                  reason: 'version-dependent-behavior',
-                  relationship: 'instruction-loader',
-                },
-                severity: 'warning',
-              },
-            ],
-          },
-        },
-        status: 'valid',
-      });
+
+      warningManifest.context['/moldea/project.md'].bindings = Array.from(
+        { length: 64 },
+        (_, index) => ({ path: '/src/agent.ts', symbol: `entry${index}` }),
+      );
+      writeFileSync(warningManifestPath, JSON.stringify(warningManifest));
+      writeFileSync(
+        warningSourcePath,
+        Array.from({ length: 64 }, (_, index) => `export const entry${index} = ${index};`).join(
+          '\n',
+        ),
+      );
+      const coverageKeys = new Set<string>();
+      let coverageCursor: string | null = null;
+      let coveragePages = 0;
+      do {
+        const options = ['--json', '--max-output-bytes', '4096'];
+        if (coverageCursor !== null) options.push('--cursor', coverageCursor);
+        const response = executeWarningCase('validate', options);
+        expect(response.status).toBe(0);
+        expect(Buffer.byteLength(response.stdout)).toBeLessThanOrEqual(4096);
+        const envelope = JSON.parse(response.stdout) as { result: IMoldeaCliValidateResult };
+        expect(envelope.result.coverageCounts).toStrictEqual({
+          bindings: 64,
+          exportsPassed: 64,
+          exportsFailed: 0,
+          exportsNotChecked: 0,
+        });
+        expect(envelope.result.diagnosticCount).toBe(2);
+        for (const record of envelope.result.page.records) {
+          expect(coverageKeys.has(record.key)).toBe(false);
+          coverageKeys.add(record.key);
+        }
+        coverageCursor = envelope.result.page.cursor;
+        expect(++coveragePages).toBeLessThanOrEqual(64);
+      } while (coverageCursor !== null);
+      expect(coveragePages).toBeGreaterThan(1);
+      expect(coverageKeys.size).toBe(66);
 
       const topLevelHelp = runPackageManager(
         packageManagerEntrypoint,
@@ -853,18 +694,8 @@ describe('published CLI package and executable', () => {
       expect(humanComposition.status).toBe(0);
       expect(humanComposition.stderr).toBe('');
       expect(humanComposition.stdout).toContain(
-        'The installed CLI composition state is valid.\nCLI version: 10.0.0\n',
+        'The installed CLI composition state is valid.\nCLI version: 11.0.0\n',
       );
-      expect(humanComposition.stdout).toContain('custom: repository formats 1\n');
-      expect(humanComposition.stdout).toContain('anthropic: repository formats 1\n');
-      expect(humanComposition.stdout).toContain('claude-agent-sdk: repository formats 1\n');
-      expect(humanComposition.stdout).toContain('eve: repository formats 1\n');
-      expect(humanComposition.stdout).toContain('google-genai: repository formats 1\n');
-      expect(humanComposition.stdout).toContain('langchain: repository formats 1\n');
-      expect(humanComposition.stdout).toContain('langgraph: repository formats 1\n');
-      expect(humanComposition.stdout).toContain('openai: repository formats 1\n');
-      expect(humanComposition.stdout).toContain('openai-agents-sdk: repository formats 1\n');
-      expect(humanComposition.stdout).toContain('vercel-ai-sdk: repository formats 1\n');
 
       const jsonComposition = spawnPackageManager(
         packageManagerEntrypoint,
@@ -874,10 +705,6 @@ describe('published CLI package and executable', () => {
       const compositionEnvelope = JSON.parse(jsonComposition.stdout) as {
         readonly command: string;
         readonly result: {
-          readonly adapters: readonly {
-            readonly id: string;
-            readonly repositoryFormatVersions: readonly number[];
-          }[];
           readonly packages: readonly { readonly name: string; readonly version: string }[];
         };
         readonly status: string;
@@ -891,16 +718,6 @@ describe('published CLI package and executable', () => {
       });
       expect(compositionEnvelope.result.packages).toStrictEqual(
         [
-          ADAPTER_ANTHROPIC_PROJECT_DIRECTORY,
-          ADAPTER_CLAUDE_AGENT_SDK_PROJECT_DIRECTORY,
-          ADAPTER_CLOUDFLARE_AGENTS_PROJECT_DIRECTORY,
-          ADAPTER_EVE_PROJECT_DIRECTORY,
-          ADAPTER_GOOGLE_GENAI_PROJECT_DIRECTORY,
-          ADAPTER_LANGCHAIN_PROJECT_DIRECTORY,
-          ADAPTER_LANGGRAPH_PROJECT_DIRECTORY,
-          ADAPTER_OPENAI_PROJECT_DIRECTORY,
-          ADAPTER_OPENAI_AGENTS_SDK_PROJECT_DIRECTORY,
-          ADAPTER_VERCEL_AI_SDK_PROJECT_DIRECTORY,
           CORE_PROJECT_DIRECTORY,
           REPOSITORY_PROJECT_DIRECTORY,
           REPOSITORY_FILESYSTEM_PROJECT_DIRECTORY,
@@ -912,10 +729,6 @@ describe('published CLI package and executable', () => {
           return { name, version };
         }),
       );
-      expect(compositionEnvelope.result.adapters).toHaveLength(11);
-      for (const adapter of compositionEnvelope.result.adapters) {
-        expect(adapter.repositoryFormatVersions).toStrictEqual([1]);
-      }
 
       const jsonUsageFailure = spawnPackageManager(
         packageManagerEntrypoint,
@@ -926,7 +739,7 @@ describe('published CLI package and executable', () => {
       expect(jsonUsageFailure.status).toBe(2);
       expect(jsonUsageFailure.stderr).toBe('');
       expect(jsonUsageFailure.stdout).toBe(
-        '{"cliVersion":"10.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":6,"status":"error"}\n',
+        '{"cliVersion":"11.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const nonRepositoryCommand = spawnPackageManager(
@@ -974,16 +787,17 @@ describe('published CLI package and executable', () => {
       expect(discoveredRepositoryCommand.stderr).toBe('');
       expect(discoveredRepositoryCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(discoveredRepositoryCommand.stdout)).toMatchObject({
-        cliVersion: '10.0.0',
+        cliVersion: '11.0.0',
         command: 'inspect',
         result: {
-          counts: { diagnostics: 2 },
+          counts: { diagnostics: 3, errors: 2, warnings: 1, acceptedWarnings: 0 },
           formatVersion: null,
-          runtimeInspection: 'not-run',
-          page: { records: [{ kind: 'diagnostic' }, { kind: 'diagnostic' }] },
+          page: {
+            records: [{ kind: 'diagnostic' }, { kind: 'diagnostic' }, { kind: 'diagnostic' }],
+          },
           project: null,
         },
-        schemaVersion: 6,
+        schemaVersion: 7,
         status: 'invalid',
       });
 
@@ -998,15 +812,16 @@ describe('published CLI package and executable', () => {
       expect(invalidValidationCommand.stderr).toBe('');
       expect(invalidValidationCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(invalidValidationCommand.stdout)).toMatchObject({
-        cliVersion: '10.0.0',
+        cliVersion: '11.0.0',
         command: 'validate',
         result: {
-          diagnosticCount: 2,
+          diagnosticCount: 3,
           formatVersion: null,
-          runtimeInspection: 'not-run',
-          page: { records: [{ kind: 'diagnostic' }, { kind: 'diagnostic' }] },
+          page: {
+            records: [{ kind: 'diagnostic' }, { kind: 'diagnostic' }, { kind: 'diagnostic' }],
+          },
         },
-        schemaVersion: 6,
+        schemaVersion: 7,
         status: 'invalid',
       });
 
@@ -1062,6 +877,23 @@ describe('published CLI package and executable', () => {
         },
       );
 
+      const integrationTemplate =
+        '<!-- moldea:start -->\nnode "<repo-root>/{{skill-path}}/scripts/relevance-gate.mjs" --repository "<repo-root>"\n<!-- moldea:end -->\n';
+      for (const [name, content] of [
+        ['AGENTS.md', integrationTemplate.replaceAll('{{skill-path}}', '.agents/skills/moldea')],
+        ['.agents/skills/moldea/SKILL.md', '# Skill\n'],
+        ['.agents/skills/moldea/scripts/relevance-gate.mjs', '// Gate\n'],
+        ['.agents/skills/moldea/assets/managed-agents-block.md', integrationTemplate],
+      ]) {
+        const entryPath = path.join(consumerDirectory, name!);
+        mkdirSync(path.dirname(entryPath), { recursive: true });
+        writeFileSync(entryPath, content!);
+        execFileSync('git', ['add', '--force', '--', name!], {
+          cwd: consumerDirectory,
+          env: gitEnvironment,
+        });
+      }
+
       const repositoryStatusBefore = execFileSync('git', ['status', '--porcelain=v2', '-z'], {
         cwd: consumerDirectory,
         encoding: 'buffer',
@@ -1110,7 +942,7 @@ process.exit(0);
       expect(validHumanValidationCommand.status).toBe(0);
       expect(validHumanValidationCommand.stderr).toBe('');
       expect(validHumanValidationCommand.stdout).toBe(
-        'The moldea project is valid.\nRepository format: 1\nRuntime inspection: complete\nDiagnostics: 0\nErrors: 0\nWarnings: 0\n',
+        'The moldea project is valid.\nRepository format: 1\nCoverage: 0 bindings, 0 exports confirmed, 0 exports missing, 0 not checked\nDiagnostics: 0\nErrors: 0\nWarnings: 0\n0 accepted warnings\n',
       );
 
       const validJsonValidationCommand = spawnPackageManager(
@@ -1123,15 +955,14 @@ process.exit(0);
       expect(validJsonValidationCommand.status).toBe(0);
       expect(validJsonValidationCommand.stderr).toBe('');
       expect(JSON.parse(validJsonValidationCommand.stdout)).toMatchObject({
-        cliVersion: '10.0.0',
+        cliVersion: '11.0.0',
         command: 'validate',
         result: {
           diagnosticCount: 0,
           formatVersion: 1,
           page: { cursor: null, records: [] },
-          runtimeInspection: 'complete',
         },
-        schemaVersion: 6,
+        schemaVersion: 7,
         status: 'valid',
       });
 
@@ -1147,18 +978,20 @@ process.exit(0);
       expect(validHumanInspectionCommand.stdout).toBe(
         `The moldea project is valid.
 Repository format: 1
-Runtime inspection: complete
+Coverage: 0 bindings, 0 exports confirmed, 0 exports missing, 0 not checked
+0 accepted warnings
 agents: 1
 context: 0
 decisions: 0
 diagnostics: 0
 errors: 0
-evidence: 0
+coverage: 0
 metadata: 4
 mirrors: 0
 runtimes: 0
 unresolved: 4
 warnings: 0
+acceptedWarnings: 0
 `,
       );
 
@@ -1185,7 +1018,7 @@ warnings: 0
       expect(validJsonInspectionCommand.status).toBe(0);
       expect(validJsonInspectionCommand.stderr).toBe('');
       expect(validInspectionEnvelope).toMatchObject({
-        cliVersion: '10.0.0',
+        cliVersion: '11.0.0',
         command: 'inspect',
         error: null,
         result: {
@@ -1194,14 +1027,13 @@ warnings: 0
             context: 0,
             decisions: 0,
             diagnostics: 0,
-            evidence: 0,
+            coverage: 0,
             metadata: 4,
             mirrors: 0,
             runtimes: 0,
             unresolved: 4,
           },
           formatVersion: 1,
-          runtimeInspection: 'complete',
           page: {
             cursor: null,
             records: [
@@ -1218,7 +1050,7 @@ warnings: 0
           },
           source: { kind: 'git-working-tree' },
         },
-        schemaVersion: 6,
+        schemaVersion: 7,
         status: 'valid',
       });
       expect(validInspectionEnvelope.result.project).not.toBeNull();
@@ -1236,7 +1068,7 @@ warnings: 0
       expect(unrelatedScopeCommand.stderr).toBe('');
       expect(Buffer.byteLength(unrelatedScopeCommand.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
       expect(JSON.parse(unrelatedScopeCommand.stdout)).toMatchObject({
-        cliVersion: '10.0.0',
+        cliVersion: '11.0.0',
         command: 'scope',
         result: {
           counts: { declarations: 0, inputPaths: 1, matches: 0 },
@@ -1244,7 +1076,7 @@ warnings: 0
           relevant: false,
           valid: true,
         },
-        schemaVersion: 6,
+        schemaVersion: 7,
         status: 'valid',
       });
 
@@ -1264,7 +1096,7 @@ warnings: 0
       expect(JSON.parse(stdinScopeCommand.stdout)).toMatchObject({
         command: 'scope',
         result: { relevant: false, valid: true },
-        schemaVersion: 6,
+        schemaVersion: 7,
       });
 
       for (const pathsInput of ['path', 'stdin'] as const) {
@@ -1285,9 +1117,9 @@ warnings: 0
         expect(invalidScope.status).toBe(3);
         expect(invalidScope.stderr).toBe('');
         expect(JSON.parse(invalidScope.stdout)).toStrictEqual({
-          cliVersion: '10.0.0',
+          cliVersion: '11.0.0',
           command: 'scope',
-          schemaVersion: 6,
+          schemaVersion: 7,
           status: 'error',
           result: null,
           error: {
@@ -1343,14 +1175,14 @@ warnings: 0
       expect(explicitContentCommand.status).toBe(0);
       expect(explicitContentCommand.stderr).toBe('');
       expect(JSON.parse(explicitContentCommand.stdout)).toMatchObject({
-        cliVersion: '10.0.0',
+        cliVersion: '11.0.0',
         command: 'content',
         result: {
           asset: { path: '/moldea/project.md' },
           chunk: { byteEnd: 10, byteStart: 0, content: '# Project\n' },
           cursor: null,
         },
-        schemaVersion: 6,
+        schemaVersion: 7,
         status: 'valid',
       });
 
@@ -1367,7 +1199,7 @@ warnings: 0
         command: 'content',
         error: { code: 'CONTENT_PATH_INVALID' },
         result: null,
-        schemaVersion: 6,
+        schemaVersion: 7,
         status: 'error',
       });
 
@@ -1486,7 +1318,14 @@ warnings: 0
         expect(pageResult.stderr).toBe('');
         expect(Buffer.byteLength(pageResult.stdout, 'utf8')).toBeLessThanOrEqual(4096);
         expect(pageResult.stdout).not.toContain('private-canonical-body');
-        expect(envelope.result.counts).toMatchObject({ context: 32 });
+        expect(envelope.result.counts).toMatchObject({
+          context: 32,
+          warnings: 32,
+          diagnostics: 32,
+          errors: 0,
+          acceptedWarnings: 0,
+          coverage: 0,
+        });
 
         for (const record of envelope.result.page.records) {
           expect(inspectedRecordKeys.has(record.key)).toBe(false);
@@ -1499,7 +1338,7 @@ warnings: 0
 
       expect(inspectCursor).toBeNull();
       expect(inspectPageCount).toBeGreaterThan(1);
-      expect(inspectedRecordKeys.size).toBe(37);
+      expect(inspectedRecordKeys.size).toBe(69);
 
       const relevantScopeCommand = spawnPackageManager(
         packageManagerEntrypoint,
@@ -1528,7 +1367,7 @@ warnings: 0
           relevant: true,
           valid: true,
         },
-        schemaVersion: 6,
+        schemaVersion: 7,
       });
 
       let contentCursor: string | null = null;
@@ -1624,7 +1463,7 @@ warnings: 0
         command: 'content',
         error: { code: 'CURSOR_SNAPSHOT_CHANGED', retryable: true },
         result: null,
-        schemaVersion: 6,
+        schemaVersion: 7,
         status: 'error',
       });
       writeFileSync(path.join(contextDirectory, 'context-00.md'), largeCanonicalBody, 'utf8');
@@ -1640,7 +1479,7 @@ warnings: 0
       expect(inventoryLimitCommand.status).toBe(3);
       expect(inventoryLimitCommand.stderr).toBe('');
       expect(inventoryLimitCommand.stdout).toBe(
-        '{"cliVersion":"10.0.0","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":6,"status":"error"}\n',
+        '{"cliVersion":"11.0.0","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const environmentWithoutPath = Object.fromEntries(
@@ -1662,7 +1501,7 @@ warnings: 0
       expect(missingGitResult.status).toBe(3);
       expect(missingGitResult.stderr).toBe('');
       expect(missingGitResult.stdout).toBe(
-        '{"cliVersion":"10.0.0","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":6,"status":"error"}\n',
+        '{"cliVersion":"11.0.0","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const compositionWithoutGit = spawnSync(

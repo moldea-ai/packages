@@ -39,18 +39,20 @@ const sortDecisions = (decisions: readonly IParsedDecision[]): IParsedDecision[]
  * Reads, parses, and validates every discovered decision through one repository snapshot.
  * @param repository The coherent source-neutral repository reader.
  * @param paths The decision candidates retained by canonical discovery.
- * @param options The immutable Core limits and adapter snapshots.
+ * @param options The immutable Core limit snapshot.
  * @param signal Optional cancellation forwarded to every repository read.
  * @returns A deeply immutable internal decision set and its deterministic diagnostics.
  * @throws
- * - ENTRY_NOT_FOUND: A discovered decision disappeared from the reader snapshot.
- * - ENTRY_NOT_FILE: A discovered decision is no longer a regular file.
+ * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+ * - ENTRY_NOT_FILE: The requested repository entry is not a file.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
- * - SNAPSHOT_CHANGED: The repository snapshot changed during decision reads.
- * - INVALID_SOURCE_DATA: The repository reader returned invalid contract data.
- * - RESOURCE_LIMIT_EXCEEDED: A Core or repository resource limit was exceeded.
- * - ABORTED: Decision inspection or a repository operation was aborted.
+ * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+ * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ * - ABORTED: The repository operation was aborted.
  */
 export const readDecisionGraph = async (
   repository: IRepositoryInspectionReader,

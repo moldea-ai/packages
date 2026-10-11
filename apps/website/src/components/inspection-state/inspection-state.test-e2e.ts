@@ -136,7 +136,7 @@ for (const width of [320, 1440]) {
 test('keeps result dialogs usable after client navigation and browser history', async ({
   page,
 }) => {
-  await page.goto(withBase('/adapters/', basePath));
+  await page.goto(withBase('/runtimes/', basePath));
   await page
     .locator('header')
     .getByRole('link', { name: 'moldea packages home', exact: true })
@@ -150,7 +150,9 @@ test('keeps result dialogs usable after client navigation and browser history', 
     for (const animation of element.getAnimations()) animation.pause();
   });
   await page.goBack();
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Runtime knowledge');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    'Choose a label. Keep the checks explicit.',
+  );
   await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
   await page.goForward();
   await expect(dialog).toHaveCount(0);

@@ -8,19 +8,19 @@ order: 30
 
 ## JSON envelope
 
-`--json` writes one deterministic schema 6 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`. No command mixes a partial success result with an operational error.
+`--json` writes one deterministic schema 7 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`. No command mixes a partial success result with an operational error.
 
-`validate`, `inspect`, `scope`, and `composition` are recursively content-free. `inspect` projects only allowlisted records and splits unbounded collections into independent keys. Its `agent` record contains exactly one canonical `agentId` and manifest-declared `runtimeId`; it remains distinct from installed composition and runtime evidence. `content` is the only command allowed to return a `content` property, and it does so only for one explicitly selected canonical asset.
+`validate`, `inspect`, `scope`, and `composition` are recursively content-free. `inspect` projects only allowlisted records and splits unbounded collections into independent keys. Its `agent` record contains exactly one canonical `agentId` and manifest-declared `runtimeId`; it remains distinct from installed composition and binding coverage. `content` is the only command allowed to return a `content` property, and it does so only for one explicitly selected canonical asset.
 
-Validation diagnostics carry required severity. Warning-only results use `valid` and exit `0`; confirmed errors use `invalid` and exit `1`. Complete error and warning counts appear on every collection page. The CLI projects only the closed relationship, reason, and safe version context of an unverified warning; arbitrary adapter error details remain private. Human warnings identify the affected relationship without implying successful verification or broken wiring.
+Every diagnostic has `severity` and `group`. Warnings also have `subject`, nullable `qualifier`, `acceptable`, boolean `accepted`, and nullable `reason` (non-null only for an accepted warning). `warningCount` excludes accepted warnings; `diagnosticCount` equals `errorCount + warningCount + acceptedWarningCount`. Inspection exposes the same totals as `counts.errors`, `counts.warnings`, `counts.acceptedWarnings` and `counts.diagnostics`. Both commands return `coverageCounts` and paged `coverage` records. Zero errors produce `valid`, including warning-only results. Human output prints unaccepted warning identities, a coverage summary and an accepted-warning count.
 
 Collection and content JSON use a default 65,536-byte page budget and accept explicit budgets from 4,096 through 1,048,576 bytes. Byte accounting measures the final newline-terminated UTF-8 serialization after escaping. Opaque keyset cursors bind their format version, command, filters, source snapshot, last key, and checksum. Pages can traverse a large repository without gaps or duplicate records; a changed snapshot fails instead of mixing states.
 
-Runtime inspection is reported separately from validity as `complete`, `incomplete`, or `not-run`. `complete` means every applicable declaration was accounted for with evidence or a proved error; `incomplete` means scoped unverified warnings remain; `not-run` means universal validation or adapter availability prevented inspection. A project with no applicable runtime relationships is `complete`. Zero errors still produces `valid`, including warning-only results. A valid result with incomplete runtime inspection does not establish launch readiness. Operational failure returns an error without a fabricated completed inspection.
+Binding coverage reports the checks performed on each declared reference: `fileCheck`, `exportCheck`, and a reason when an export could not be checked. TypeScript and JavaScript ESM use conservative syntax-only export inventories; CommonJS, unsupported extensions and inconclusive syntax remain not checked. A passed export check does not establish runtime wiring or SDK compatibility. Interrupted operations return an error without a partial coverage result.
 
 ## Resource budgets
 
-These defaults describe CLI `10.0.0` with Core `6.0.0`. Options take byte counts or positive safe-integer counts as appropriate.
+These defaults describe CLI `11.0.0` with Core `7.0.0`. Options take byte counts or positive safe-integer counts as appropriate.
 
 | Option                 |               Default | Scope                                                                              |
 | ---------------------- | --------------------: | ---------------------------------------------------------------------------------- |
@@ -29,14 +29,14 @@ These defaults describe CLI `10.0.0` with Core `6.0.0`. Options take byte counts
 | `--max-entries`        |              `100000` | Git-selected inventory and Core path accounting, each enforced at its own boundary |
 | `--max-total-bytes`    | 128 MiB (`134217728`) | Core source reads; separately, inventory metadata and filesystem cache budgets     |
 | `--max-diagnostics`    |               `10000` | Produced diagnostics                                                               |
-| `--max-evidence`       |               `10000` | Produced runtime evidence records                                                  |
+| `--max-coverage`       |               `10000` | Produced binding coverage records                                                  |
 | `--max-output-bytes`   |      64 KiB (`65536`) | One newline-terminated JSON page; allowed range 4 KiB through 1 MiB                |
 
 Input limits require `maxManifestBytes <= maxFileBytes <= maxTotalBytes`. The CLI derives logical retained bytes as four times `maxTotalBytes`, capped at JavaScript’s maximum safe integer. The Node boundary reserves 48 MiB of that allowance for transport. Neither this ledger nor the input options guarantee total RAM use or raise the [fixed analysis profile](/packages/core/repository-inspection/#isolated-node-inspection).
 
 The CLI supplies exact Git-selected paths to Repository FS and overrides its raw reader defaults: cache bytes use `maxTotalBytes`; observed entries and directory entries use `maxEntries`; metadata pages use the smaller of `4096` and `maxEntries`; range reads use `maxFileBytes`. The [standalone reader limits](/packages/repository-fs/security-and-limits/#resource-limits) therefore are not additional CLI-wide input limits.
 
-Pagination bounds output, not complete analysis. It does not reset read/entry budgets, bypass source parsing, or divide an oversized complete record. `scope` and `content` use focused paths without loading adapters; `validate` and `inspect` perform the required project inspection. On a refusal, inspect its named dimension and required scope before changing an input budget. Fixed worker failures require reviewing inspection capacity, not raising an input option or repeatedly retrying unchanged source.
+Pagination bounds output, not complete analysis. It does not reset read/entry budgets, bypass source parsing, or divide an oversized complete record. `scope` and `content` use focused paths without loading the export checker; `validate` and `inspect` perform the required project inspection. On a refusal, inspect its named dimension and required scope before changing an input budget. Fixed worker failures require reviewing inspection capacity, not raising an input option or repeatedly retrying unchanged source.
 
 ## Status and exit codes
 
@@ -54,7 +54,7 @@ Pagination bounds output, not complete analysis. It does not reset read/entry bu
 
 Known repository and Core exceptions retain their source, code, retryability, safe logical path when applicable, and non-confidential metadata. Git and CLI errors use a closed stable registry. Unexpected failures become `cli:INTERNAL_ERROR` without raw causes, stack traces, host paths, or process diagnostics.
 
-Schema 6 includes these stable CLI-owned contracts:
+Schema 7 includes these stable CLI-owned contracts:
 
 | Code                      | Stable message                                                                                                |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -69,6 +69,6 @@ Isolated inspection adds `core:INSPECTION_BUSY` (retryable, `Project inspection 
 
 ## Cancellation and read-only guarantees
 
-One operation-scoped abort signal reaches Git processes, inventory, filesystem reader creation, repository reads, Core, and adapters. A signal discards an unwritten provisional result and stops further snapshot retries. The supervised inspection has a fixed 120-second lifetime covering reads, preparation, paging, and disposal. Cleanup awaits actual repository reads and child closure before source post-checks or successful output. A private skill-launcher IPC disconnect follows the same cancellation path; standalone CLI invocation remains supported.
+One operation-scoped abort signal reaches Git processes, inventory, filesystem reader creation, repository reads, Core. A signal discards an unwritten provisional result and stops further snapshot retries. The supervised inspection has a fixed 120-second lifetime covering reads, preparation, paging, and disposal. Cleanup awaits actual repository reads and child closure before source post-checks or successful output. A private skill-launcher IPC disconnect follows the same cancellation path; standalone CLI invocation remains supported.
 
-The executable does not modify the working tree, real index, refs or `HEAD`, Git configuration, attributes, submodules, object database, filters, or runtime environment. It never uses a temporary index or object-writing plumbing. `scope` and `content` do not load adapter modules. Before `validate`, `inspect`, and `composition`, installation-integrity checks compare installed package identities, exact resolved versions, compatible-major dependency declarations, actual active adapters, Core formats, and executable constants so a contradictory installation cannot report a misleading result. Compatible patch and minor resolutions are accepted; prerelease or breaking-major substitutions fail closed.
+The executable does not modify the working tree, real index, refs or `HEAD`, Git configuration, attributes, submodules, object database, filters, or runtime environment. It never uses a temporary index or object-writing plumbing. `scope` and `content` do not load the export checker. Before `validate`, `inspect`, and `composition`, installation-integrity checks compare installed package identities, exact resolved versions, compatible-major dependency declarations, Core formats, and executable constants so a contradictory installation cannot report a misleading result. Compatible patch and minor resolutions are accepted; prerelease or breaking-major substitutions fail closed.

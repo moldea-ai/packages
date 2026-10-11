@@ -18,16 +18,12 @@ export const REPOSITORY_SOURCE_ERROR_MESSAGES = Object.freeze({
 
 // safe messages for Core configuration failures
 export const CORE_CONFIGURATION_ERROR_MESSAGES = Object.freeze({
-  DUPLICATE_ADAPTER_ID: 'A runtime adapter ID is registered more than once.',
-  INVALID_ADAPTER_DEFINITION: 'A runtime adapter definition is invalid.',
   INVALID_RESOURCE_LIMIT: 'A Core resource limit is invalid.',
-  RESERVED_ADAPTER_ID: 'A reserved runtime adapter ID was supplied.',
 } as const satisfies Readonly<Record<ICoreConfigurationErrorCode, string>>);
 
 // safe messages for Core operation failures
 export const CORE_OPERATION_ERROR_MESSAGES = Object.freeze({
   ABORTED: 'The Core operation was aborted.',
-  ADAPTER_EXECUTION_FAILED: 'A runtime adapter failed during inspection.',
   CONTENT_INVALID: 'The requested canonical content is invalid.',
   INVALID_ARGUMENT: 'The Core operation received an invalid argument.',
   INSPECTION_BUSY: 'Project inspection capacity is busy. Try again shortly.',

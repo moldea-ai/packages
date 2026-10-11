@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.12.0
+pnpm add @moldea.ai/website-ui@1.14.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -79,6 +79,22 @@ import { isDarkTheme } from '@moldea.ai/website-ui/theme';
 
 Set `shouldFocusOnLoad` on a dedicated search page to focus its input without scrolling on direct loads and Astro client navigation. It defaults to `false` for embedded searches. Opt in at most one search per page; consumers do not need a separate focus script.
 
+## Runtime labels
+
+`@moldea.ai/website-ui/runtime-catalog` exports `RUNTIME_CATALOG` and `IRuntimeCatalogEntry`. Its 35 entries contain a runtime `id`, `displayName`, package-exported `logoPath`, and optional `darkLogoPath`. `custom` has no catalog entry. These are guidance labels, without a runtime compatibility or certification claim. Core is a development dependency used only to check catalog synchronization.
+
+```astro
+---
+import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';
+---
+
+<RuntimeGrid hrefBase="/runtimes/" />
+```
+
+`RuntimeGrid` renders a static, keyboard-accessible list of links to `${hrefBase}#${id}`. `hrefBase` defaults to `https://packages.moldea.ai/runtimes/`; use an empty string for anchors on the current page. `ariaLabel` defaults to “Runtime labels.” Logos have empty alternative text because each link already contains its visible runtime name. The component uses the shared tokens, works from 320px in both themes, and sends no client JavaScript. SVGs are resolved at build time and loaded lazily with explicit dimensions. Vendor-provided dark variants are used where available; other marks retain a light backing for contrast.
+
+The `@moldea.ai/website-ui/runtime-logos/*` export exposes static SVGs for other frameworks. Consumer bundlers should import the named file through that public path. SVG safety and catalog synchronization are checked by unit tests. Logo provenance, fallback choices, and pre-launch permission follow-ups are maintained in the repository's [runtime logo record](../../docs/runtime-logos.md), which is not shipped in the package.
+
 ## Components
 
 Every component has a dedicated public subpath:
@@ -104,6 +120,7 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/markdown`
 - `@moldea.ai/website-ui/navigation-progress`
 - `@moldea.ai/website-ui/result-summary`
+- `@moldea.ai/website-ui/runtime-grid`
 - `@moldea.ai/website-ui/site-footer`
 - `@moldea.ai/website-ui/site-header`
 - `@moldea.ai/website-ui/status-badge`

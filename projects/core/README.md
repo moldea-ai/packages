@@ -4,20 +4,20 @@
 
 Source-neutral, deterministic, content-safe interpretation of the `moldea` repository format.
 
-Version 6 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. The main, format, and adapter entry points remain environment-neutral. Repository access belongs to the caller-supplied reader. Project validation returns content-free summaries, diagnostics, evidence, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
+Version 7 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. The main, format, and scope entry points remain environment-neutral. Repository access belongs to the caller-supplied reader. Project validation returns content-free summaries, diagnostics, binding coverage, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
 
 ## Install
 
 ```bash
-pnpm add @moldea.ai/core@6 @moldea.ai/repository@2
+pnpm add @moldea.ai/core@7 @moldea.ai/repository@2
 ```
 
 ## Public entry points
 
 - `@moldea.ai/core` exposes Core construction, operations, results, diagnostics, limits, and exceptions.
 - `@moldea.ai/core/format` exposes repository-format contracts.
-- `@moldea.ai/core/adapter` exposes the per-agent runtime-adapter contract and bounded reader utilities.
-- `@moldea.ai/core/node` exposes supervised Node inspection with asynchronous paging and disposal. It imports only a caller-selected trusted installed adapter registry, never project application code. Its frozen `NODE_INSPECTION_PROFILE` reports the fixed heap, lifetime, bridge and transport settings for authenticated consumer state; it does not configure them. Each inspection handle separately reports the runtime's actual V8 heap limit.
+- `@moldea.ai/core/scope` exposes the standalone manifest-only relationship matcher without source analysis or TypeScript.
+- `@moldea.ai/core/node` exposes supervised Node inspection with asynchronous paging and disposal. It runs fixed Core code and never imports project application code. Its frozen `NODE_INSPECTION_PROFILE` reports the fixed heap, lifetime, bridge and transport settings for authenticated consumer state; it does not configure them. Each inspection handle separately reports the runtime's actual V8 heap limit.
 
 ## Text and document parsing
 
@@ -52,7 +52,7 @@ const result = await core.matchManifestScope({
 });
 ```
 
-`matchManifestScope` parses only the supplied manifest and matches sorted, deduplicated changed paths against exact relationships and supported globs. It reads no other repository file, returns no canonical content, and invokes no adapter. This is the preactivation boundary for callers that already know the changed paths.
+`matchManifestScope` parses only the supplied manifest and matches sorted, deduplicated changed paths against exact relationships and supported globs. It reads no other repository file, returns no canonical content, and loads no TypeScript. This is the preactivation boundary for callers that already know the changed paths.
 
 ## Content-free project validation
 
@@ -66,29 +66,23 @@ const repository = createMemoryRepositoryReader([
 const result = await core.validateProject({ repository });
 ```
 
-`validateProject` returns validity, runtime-inspection status, format version, source identity, summary counts and digests, diagnostics, and runtime evidence. It never returns manifest, project, context, decision, runtime-guidance, mirror, description, or instruction bodies.
+`validateProject` returns validity, format version, source identity, summary counts and digests, diagnostics, binding coverage, and aggregate `coverageCounts`. It never returns manifest, project, context, decision, runtime-guidance, mirror, description, instruction, or source bodies. Validity means zero error diagnostics.
 
-`runtimeInspection` is `complete` when applicable runtime checks finish without unverified relationships, `incomplete` when any relationship remains unverified, and `not-run` when universal checks or adapter availability prevent runtime inspection. Validity remains based on errors. Warning-only results are valid, and projects without runtime relationships are complete. Every prepared inspection and page preserves the same aggregate status.
-
-`createProjectInspection` validates the snapshot once, prepares one immutable content-free record set, and returns synchronous bounded page reads for the `metadata`, `diagnostics`, `evidence`, and `all` views. The `metadata` and `all` views include one independently keyed `agent` record per canonical agent with exactly its `agentId` and manifest-declared `runtimeId`, distinct from asset metadata and adapter evidence. Each page uses a semantic continuation cursor tied to the complete inspection digest and view. Page reads perform no repository access, revalidation, sorting, digesting, or adapter execution.
+`createProjectInspection` validates the snapshot once and prepares immutable content-free records for the `metadata`, `diagnostics`, `coverage`, and `all` views. Metadata includes an `agent` record with exactly its canonical `agentId` and manifest-declared `runtimeId`. Every inspection and page carries the same aggregate counts. Semantic cursors bind continuation to the complete inspection digest and view. Page reads perform no repository access, revalidation, sorting, digesting, or source analysis.
 
 The prepared inspection retains only its content-free records, summary, source identity, deterministic resource accounting, and page indexes. Core preflights the complete logical cost before it constructs the prepared collections, indexes, or digest. It does not retain canonical document bodies. `readCanonicalContentPage` is the only Core project operation that returns a body, and it requires an explicit canonical `/moldea/**` file path, byte offset, and byte bound. Returned chunks end at a complete UTF-8 scalar.
 
-## Per-agent runtime adapters
+## Binding coverage
 
-Universal validation must succeed before adapters run. Core invokes a configured package adapter once for each matching agent, in deterministic adapter and agent order. Each invocation receives only that agent, a bounded reader, a shared cancellation signal, the remaining operation-wide diagnostic/evidence allowance as `outputBudget`, and an exact same-runtime `resolveAgent(reference)` function for bindings that genuinely require another agent. It never receives the complete agent collection.
+Core checks each declared binding's file and, when a symbol is named, its syntax-only runtime export inventory. TypeScript and JavaScript ESM are recognized conservatively. A proven missing export is an error and a `failed` coverage record. CommonJS, declaration files, wildcard exports, malformed source, and insufficient parsing capacity remain `not-checked`, with a reason. Coverage names the checks performed; it does not establish runtime wiring, behavior, provider compatibility, or business correctness.
 
-Adapters use `createRuntimeAdapterResultCollector(context)` from `@moldea.ai/core/adapter`. Its `diagnostics.add(factory)` and `evidence.add(factory)` methods reserve raw admission before constructing records; `finalize()` returns the existing `{ evidence, diagnostics }` result. Earlier invocations consume the allowance before deduplication. Exhaustion raises `RESOURCE_LIMIT_EXCEEDED`, and Core still checks the complete raw result independently.
+`RECOGNIZED_RUNTIME_IDS` contains 35 runtime labels plus `custom`. Labels select agent guidance. Core applies the same universal checks to every label and does not interpret SDK calls. Use the installed SDK's type definitions and real application tests to establish runtime behavior. Handoffs remain runtime-native behavior.
 
-For the reserved `custom` runtime, Core reports `CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED` warnings for declared bindings, capabilities, schemas, and variable providers. Core registers no custom adapter and infers no SDK or native handoff graph.
-
-Adapter evidence and diagnostics are validated, normalized, deduplicated, sorted, and limited before exposure. An unexpected adapter failure or invalid output rejects the complete operation with `ADAPTER_EXECUTION_FAILED`.
-
-Every diagnostic has a required `severity`. Structural and confirmed adapter failures are errors. An adapter may identify a specific declared relationship whose recognized source is unverified with a warning carrying closed, source-safe context. Validation remains valid when it has warnings but no errors; `errorCount` and `warningCount` describe the complete result. Prepared inspection reports the same totals on every page as `counts.errors` and `counts.warnings`. A warning establishes neither the relationship nor a wiring failure.
+Every diagnostic has `severity`, `group`, and stable `source: 'core'`. The groups are `discovery`, `manifest`, `references`, `agents`, `mirrors`, and `integration`. The result reports complete `errorCount`, unaccepted `warningCount`, `acceptedWarningCount`, and `diagnosticCount`; warnings do not invalidate a project. Manifest `acceptedWarnings` match a warning's code, subject, and qualifier and require a non-empty reason. Accepted findings remain visible. Unmatched impact patterns are best-effort warnings; a skipped check never makes an acceptance obsolete. Validation and inspection also check the root `/AGENTS.md` managed block against its referenced skill installation, reporting missing blocks, missing installation files, or drift as acceptable integration warnings. `parseIntegrationBlock(text)` extracts the safe relative installation path or a reason it could not be found. Manifest-only operations and `scope` do not read the integration.
 
 ## Resource and trust boundaries
 
-Core uses independent limits for distinct entries, total bytes read, per-file bytes, manifest bytes, logical retained bytes, diagnostics, and evidence. The default logical retained-memory ceiling is 512 MiB. Project inspection accounts for canonical validation state, complete adapter file buffers, transient read pages, and prepared content-free records before completing, and reports deterministic logical usage without exposing document bodies. A complete adapter buffer is reserved before allocation and remains charged for the inspection lifetime. The adapter-facing repository adds per-page entry and byte limits. Core executes no repository code, follows no symlink, receives no host path or source credential, and returns logical paths only.
+Core uses independent limits for distinct entries, total bytes read, per-file bytes, manifest bytes, logical retained bytes, diagnostics, and coverage records. The default logical retained-memory ceiling is 512 MiB. Before parsing a supported source, Core reserves `65536 + sourceBytes * (8 + 512)` bytes for text and syntax nodes. A reservation miss records `resource-limit` without parsing; a source read, cancellation, or operation budget failure rejects the whole operation. Each distinct source is parsed at most once per operation. Source buffers and syntax reservations are released after analysis; only export names remain in the inventory cache. Core executes no repository code, follows no symlink, receives no host path or source credential, and returns logical paths only.
 
 Every `RESOURCE_LIMIT_EXCEEDED` exception identifies the exceeded limit, its configured maximum, the observed or projected usage, and the stable `reduce-input-or-increase-limit` next action. Core refuses the operation before allocating retained state beyond the applicable ceiling.
 

@@ -6,7 +6,7 @@ import { describe, expect, test } from 'vitest';
 
 import { parseRepositoryPath, RepositoryPathException } from '@moldea.ai/repository';
 
-import type { IRuntimeAdapterResult } from '../adapter/index.js';
+import { RECOGNIZED_RUNTIME_IDS } from '../constants/index.js';
 import { createCore } from '../core/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 
@@ -363,28 +363,13 @@ describe('Core manifest parsing', () => {
     expect(result.diagnostics).toStrictEqual([]);
   });
 
-  test('recognizes official runtime IDs independently from configured adapters', async () => {
-    let inspectionCount = 0;
-    const inspect = (): Promise<IRuntimeAdapterResult> => {
-      inspectionCount += 1;
-      return Promise.resolve({ diagnostics: [], evidence: [] });
-    };
-    const content = [
-      'version: 1',
-      'agents:',
-      '  assistant:',
-      '    runtime:',
-      '      id: openai',
-      '',
-    ].join('\n');
-    const unconfigured = await createCore().parseManifest({ content, path: manifestPath });
-    const configured = await createCore({
-      adapters: [{ id: 'openai', inspect, supportedRepositoryFormatVersions: [1] }],
-    }).parseManifest({ content, path: manifestPath });
-
-    expect(unconfigured.valid).toBe(true);
-    expect(configured.valid).toBe(true);
-    expect(inspectionCount).toBe(0);
+  test.each(RECOGNIZED_RUNTIME_IDS)('recognizes the %s runtime label', async (runtimeId) => {
+    const result = await createCore().parseManifest({
+      content: `version: 1\nagents:\n  assistant:\n    runtime: { id: ${runtimeId} }\n`,
+      path: manifestPath,
+    });
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
   });
 
   test.each(['external', 'pydantic-ai'])(
@@ -441,5 +426,121 @@ describe('Core manifest parsing', () => {
       valid: true,
     });
     expect(JSON.stringify(result)).not.toContain('srcToken');
+  });
+});
+
+const acceptedWarning = {
+  code: 'MOLDEA_IMPACT_PATTERN_UNMATCHED',
+  subject: '/moldea/project.md',
+  qualifier: '/future/**',
+  reason: 'Reserved for future implementation.',
+};
+
+describe('manifest warning acceptance contracts', () => {
+  test.each([
+    [{ ...acceptedWarning, code: 'MOLDEA_REFERENCE_MISSING' }, 'code'],
+    [{ ...acceptedWarning, code: 'MOLDEA_ACCEPTANCE_UNMATCHED' }, 'code'],
+    [{ code: acceptedWarning.code, subject: acceptedWarning.subject }, 'reason'],
+    [{ ...acceptedWarning, reason: '' }, 'reason'],
+    [{ ...acceptedWarning, reason: '   ' }, 'reason'],
+    [{ ...acceptedWarning, reason: 'a'.repeat(257) }, 'reason'],
+    [{ ...acceptedWarning, subject: '../outside' }, 'subject'],
+    [{ ...acceptedWarning, qualifier: 'line\nbreak' }, 'qualifier'],
+    [{ ...acceptedWarning, extra: true }, 'extra'],
+    ['not-an-entry', 'entry'],
+  ])('rejects invalid acceptance %o at field %s', async (entry, field) => {
+    const result = await createCore().parseManifest({
+      path: manifestPath,
+      content: JSON.stringify({ version: 1, acceptedWarnings: [entry] }),
+    });
+    expect(result.valid).toBe(false);
+    expect(result.manifest).toBeNull();
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'MOLDEA_MANIFEST_VALUE_INVALID',
+        details: { entry: 0, field },
+        pointer: `/acceptedWarnings/0/${field}`,
+      },
+    ]);
+  });
+
+  test('accepts a 256-scalar reason, preserves it, and normalizes an omitted qualifier', async () => {
+    const reason = '😀'.repeat(256);
+    const result = await createCore().parseManifest({
+      path: manifestPath,
+      content: JSON.stringify({
+        version: 1,
+        acceptedWarnings: [
+          { code: acceptedWarning.code, subject: acceptedWarning.subject, reason },
+        ],
+      }),
+    });
+    expect(result.valid).toBe(true);
+    expect(result.manifest?.acceptedWarnings).toStrictEqual([
+      { code: acceptedWarning.code, subject: acceptedWarning.subject, reason },
+    ]);
+  });
+
+  test('rejects duplicate identities even when their reasons differ', async () => {
+    const result = await createCore().parseManifest({
+      path: manifestPath,
+      content: JSON.stringify({
+        version: 1,
+        acceptedWarnings: [acceptedWarning, { ...acceptedWarning, reason: 'Another reason.' }],
+      }),
+    });
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'MOLDEA_MANIFEST_VALUE_INVALID',
+        details: { entry: 1, field: 'code', reason: 'duplicate-identity' },
+      },
+    ]);
+  });
+
+  test('treats omitted and null qualifiers as the same acceptance identity', async () => {
+    const base = {
+      code: acceptedWarning.code,
+      subject: acceptedWarning.subject,
+      reason: acceptedWarning.reason,
+    };
+    const result = await createCore().parseManifest({
+      path: manifestPath,
+      content: JSON.stringify({
+        version: 1,
+        acceptedWarnings: [base, { ...base, qualifier: null }],
+      }),
+    });
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics).toMatchObject([{ details: { reason: 'duplicate-identity' } }]);
+  });
+
+  test('enforces the configured acceptance count before processing entries', async () => {
+    await expect(
+      createCore({ limits: { maxAcceptedWarnings: 1 } }).parseManifest({
+        path: manifestPath,
+        content: JSON.stringify({
+          version: 1,
+          acceptedWarnings: [acceptedWarning, { ...acceptedWarning, qualifier: '/later/**' }],
+        }),
+      }),
+    ).rejects.toMatchObject({
+      code: 'RESOURCE_LIMIT_EXCEEDED',
+      limit: 'maxAcceptedWarnings',
+      limitMaximum: 1,
+      observedUsage: 2,
+    });
+  });
+
+  test('rejects a non-list acceptance value with a field-specific diagnostic', async () => {
+    const result = await createCore().parseManifest({
+      path: manifestPath,
+      content: JSON.stringify({ version: 1, acceptedWarnings: {} }),
+    });
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'MOLDEA_MANIFEST_VALUE_INVALID',
+        details: { entry: null, field: 'acceptedWarnings' },
+      },
+    ]);
   });
 });

@@ -2,6 +2,7 @@ import { parseRepositoryPath, type IRepositoryEntry } from '@moldea.ai/repositor
 
 import { inspectAgentAssets, type IInspectedAgentAssets } from '../agent-assets/index.js';
 import { discoverCanonicalAssets } from '../canonical-discovery/index.js';
+import type { IBindingCoverage } from '../binding-coverage/index.js';
 import type { IIndexedManifest, IMoldeaProjectIndex } from '../contracts/index.js';
 import { readDecisionGraph } from '../decision-graph/index.js';
 import {
@@ -13,7 +14,9 @@ import type { IRepositoryFormatVersion } from '../format/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import { validateManifestRelationships } from '../manifest-relationship-validation/index.js';
 import { inspectManifestDocument } from '../manifest/index.js';
-import type { IRuntimeManifestLocation } from '../manifest-validation/index.js';
+import { inspectCodingAgentIntegration } from '../integration-validation/index.js';
+import { inspectImpactPatterns } from '../impact-pattern-validation/index.js';
+import { applyWarningAcceptances } from '../warning-acceptance/index.js';
 import { inspectMirrors, type IAgentMirrorInspection } from '../mirrors/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
 import { readProjectAssets, readProjectFile } from '../project-assets/index.js';
@@ -26,12 +29,12 @@ const MOLDEA_ROOT = parseRepositoryPath('/moldea');
 const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
 const PROJECT_PATH = parseRepositoryPath('/moldea/project.md');
 
-// internal all-or-nothing universal result retained for later adapter execution
+// internal universal validation result and checked bindings
 export interface IUniversalProjectInspectionResult {
   readonly formatVersion: IRepositoryFormatVersion | null;
   readonly project: IMoldeaProjectIndex | null;
   readonly diagnostics: readonly ICoreDiagnostic[];
-  readonly runtimeLocations: readonly IRuntimeManifestLocation[];
+  readonly coverage: readonly IBindingCoverage[];
 }
 
 // shared inspection state supplied by the public repository-level orchestrator
@@ -50,21 +53,23 @@ const addDiagnostics = (
 };
 
 /**
- * Executes every universal repository-format phase before runtime adapter validation.
+ * Executes every universal repository-format phase with syntax-only export checks.
  * @param context The shared inspection session and optional cancellation signal.
  * @param options The immutable Core configuration snapshot.
  * @returns The frozen provisional index only when no universal diagnostic remains.
  * @throws
- * - INVALID_REPOSITORY_PATH: A repository path is invalid.
- * - ENTRY_NOT_FOUND: A discovered file disappeared from the reader snapshot.
- * - ENTRY_NOT_FILE: A discovered file changed type during inspection.
- * - ENTRY_NOT_DIRECTORY: A discovered directory changed type during inspection.
+ * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+ * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+ * - ENTRY_NOT_FILE: The requested repository entry is not a file.
+ * - ENTRY_NOT_DIRECTORY: The requested repository entry is not a directory.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
- * - SNAPSHOT_CHANGED: The repository snapshot changed during inspection.
- * - INVALID_SOURCE_DATA: The repository reader returned invalid contract data.
- * - RESOURCE_LIMIT_EXCEEDED: A Core or repository resource limit was exceeded.
- * - ABORTED: Project inspection or a repository operation was aborted.
+ * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+ * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ * - ABORTED: The repository operation was aborted.
  */
 export const inspectUniversalProject = async (
   context: IUniversalProjectInspectionContext,
@@ -72,6 +77,7 @@ export const inspectUniversalProject = async (
 ): Promise<IUniversalProjectInspectionResult> => {
   options = createCoreOperationOptionsSnapshot(options);
   const { session, signal } = context;
+  const coverage: IBindingCoverage[] = [];
   const collector = createCoreDiagnosticCollector(options.limits, 'validate-project');
   const operationOptions = signal === undefined ? undefined : { signal };
   const moldeaRoot = await session.reader.getEntry(MOLDEA_ROOT, operationOptions);
@@ -80,7 +86,6 @@ export const inspectUniversalProject = async (
 
   let indexedManifest: IIndexedManifest | null = null;
   let formatVersion: IRepositoryFormatVersion | null = null;
-  let runtimeLocations: readonly IRuntimeManifestLocation[] = [];
 
   if (moldeaRoot?.type === 'directory') {
     manifestEntry = await session.reader.getEntry(MANIFEST_PATH, operationOptions);
@@ -93,7 +98,6 @@ export const inspectUniversalProject = async (
         'validate-project',
       );
       formatVersion = parsedManifest.formatVersion;
-      runtimeLocations = parsedManifest.runtimeLocations;
       addDiagnostics(collector, parsedManifest.diagnostics);
 
       if (parsedManifest.asset !== null && parsedManifest.manifest !== null) {
@@ -186,6 +190,7 @@ export const inspectUniversalProject = async (
         discovery,
         options.limits,
         signal,
+        coverage,
       ),
     );
 
@@ -201,9 +206,33 @@ export const inspectUniversalProject = async (
   }
 
   session.throwIfAborted();
-  const diagnostics = collector.finalize();
+  addDiagnostics(
+    collector,
+    await inspectCodingAgentIntegration(session.reader, options.limits, signal),
+  );
+  const patterns =
+    indexedManifest === null
+      ? { completed: false, diagnostics: [] }
+      : await inspectImpactPatterns(session.reader, indexedManifest.value, options.limits, signal);
+  session.throwIfAborted();
+  addDiagnostics(collector, patterns.diagnostics);
+  const diagnostics = applyWarningAcceptances(
+    collector.finalize(),
+    indexedManifest?.value.acceptedWarnings ?? [],
+    new Set([
+      ...([
+        'MOLDEA_INTEGRATION_BLOCK_MISSING',
+        'MOLDEA_INTEGRATION_SKILL_MISSING',
+        'MOLDEA_INTEGRATION_BLOCK_STALE',
+      ] as const),
+      ...(patterns.completed ? ['MOLDEA_IMPACT_PATTERN_UNMATCHED' as const] : []),
+    ]),
+    options.limits,
+  );
   const project =
-    diagnostics.length === 0 && indexedManifest !== null && projectAssets.project !== null
+    !diagnostics.some((diagnostic) => diagnostic.severity === 'error') &&
+    indexedManifest !== null &&
+    projectAssets.project !== null
       ? createProjectIndex({
           agentMirrors,
           agents,
@@ -217,8 +246,8 @@ export const inspectUniversalProject = async (
 
   return freezeRecursively({
     diagnostics,
+    coverage,
     formatVersion,
     project,
-    runtimeLocations,
   });
 };

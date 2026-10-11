@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { lstat, opendir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
@@ -82,34 +83,60 @@ const waitForOwnedExit = async (pid) => {
 export const verifyPackedNodeInspection = async (consumerDirectory, environment) => {
   const crashBaseline = await observeCrashArtifacts(consumerDirectory);
   const markerPath = path.join(consumerDirectory, 'node-worker-ready.json');
-  const blockedRegistryPath = path.join(consumerDirectory, 'node-blocked-registry.mjs');
-  const emptyRegistryPath = path.join(consumerDirectory, 'node-empty-registry.mjs');
-  const heapRegistryPath = path.join(consumerDirectory, 'node-heap-registry.mjs');
+  const preloadPath = path.join(consumerDirectory, 'node-worker-preload.mjs');
+  const workerPath = path.join(consumerDirectory, 'node-failure-worker.mjs');
   const probePath = path.join(consumerDirectory, 'node-inspection-probe.mjs');
   const parentPath = path.join(consumerDirectory, 'node-inspection-parent.mjs');
   const privateMarker = 'moldea-private-worker-capacity-fixture';
-  const imports = `
-    import { createNodeProjectInspection } from '@moldea.ai/core/node';
-    import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
-  `;
-  await writeFile(emptyRegistryPath, 'export const adapters = [];\n');
+  // Inject only the worker's failure workload; the packed supervisor, IPC and cleanup remain real.
   await writeFile(
-    blockedRegistryPath,
+    preloadPath,
     `
+    import workerThreads from 'node:worker_threads';
+    import { syncBuiltinESMExports } from 'node:module';
+    const OriginalWorker = workerThreads.Worker;
+    workerThreads.Worker = class extends OriginalWorker {
+      constructor(filename, options) {
+        super(new URL(${JSON.stringify(pathToFileURL(workerPath).href)}), {...options, env: {
+          ...options.env, MOLDEA_TEST_ACTUAL_WORKER_URL: String(filename),
+        }});
+      }
+    };
+    syncBuiltinESMExports();
+  `,
+  );
+  await writeFile(
+    workerPath,
+    `
+    import { parentPort } from 'node:worker_threads';
     import { writeFileSync } from 'node:fs';
-    writeFileSync(${JSON.stringify(markerPath)}, JSON.stringify({ pid: process.pid }));
-    while (true) {}
-    export const adapters = [];
+    parentPort.on('message', () => {
+      if (process.env.MOLDEA_TEST_WORKER_MODE === 'blocked') {
+        writeFileSync(${JSON.stringify(markerPath)}, JSON.stringify({pid: process.pid}));
+        while (true) {}
+      }
+      if (process.env.MOLDEA_TEST_WORKER_MODE === 'heap') {
+        const retained = [];
+        while (true) retained.push(new Array(16_384).fill(${JSON.stringify(privateMarker)}));
+      }
+    });
+    await import(process.env.MOLDEA_TEST_ACTUAL_WORKER_URL);
   `,
   );
-  await writeFile(
-    heapRegistryPath,
-    `
-    const retained = [];
-    while (true) retained.push(new Array(16_384).fill(${JSON.stringify(privateMarker)}));
-    export const adapters = [];
-  `,
-  );
+  const imports = `
+    import childProcess from 'node:child_process';
+    import { syncBuiltinESMExports } from 'node:module';
+    import { pathToFileURL } from 'node:url';
+    let mode = 'normal';
+    const realFork = childProcess.fork;
+    childProcess.fork = (filename, args, options) => realFork(filename, args, {...options,
+      execArgv: [...options.execArgv, '--import', pathToFileURL(${JSON.stringify(preloadPath)}).href],
+      env: {...options.env, MOLDEA_TEST_WORKER_MODE: mode},
+    });
+    syncBuiltinESMExports();
+    const { createNodeProjectInspection } = await import('@moldea.ai/core/node');
+    const { createMemoryRepositoryReader } = await import('@moldea.ai/repository/memory');
+  `;
   await writeFile(
     probePath,
     `
@@ -117,25 +144,23 @@ export const verifyPackedNodeInspection = async (consumerDirectory, environment)
     import { unlink } from 'node:fs/promises';
     ${imports}
     const repository = createMemoryRepositoryReader([]);
-    const adapterRegistryUrl = new URL('./node-empty-registry.mjs', import.meta.url);
-    const inspection = await createNodeProjectInspection({ repository, adapterRegistryUrl });
+    const inspection = await createNodeProjectInspection({ repository });
     try {
       assert.ok(inspection.maxAnalysisHeapBytes > 0);
-      await assert.rejects(createNodeProjectInspection({ repository, adapterRegistryUrl }),
+      await assert.rejects(createNodeProjectInspection({ repository }),
         { code: 'INSPECTION_BUSY', retryable: true });
       const page = await inspection.readPage({ view: 'metadata', maxItems: 1 });
       assert.equal(page.inspectionDigest, inspection.inspectionDigest);
     } finally { await inspection.dispose(); }
     await inspection.dispose();
+    mode = 'blocked';
     await assert.rejects(createNodeProjectInspection({ repository,
-      adapterRegistryUrl: new URL('./node-blocked-registry.mjs', import.meta.url),
       deadline: Date.now() + 5_000,
     }), { code: 'INSPECTION_TIMEOUT', retryable: true });
     await unlink(${JSON.stringify(markerPath)});
+    mode = 'heap';
     let actualHeap;
-    await assert.rejects(createNodeProjectInspection({ repository,
-      adapterRegistryUrl: new URL('./node-heap-registry.mjs', import.meta.url),
-    }), error => {
+    await assert.rejects(createNodeProjectInspection({ repository }), error => {
       assert.equal(error.code, 'RESOURCE_LIMIT_EXCEEDED');
       assert.equal(error.limit, 'maxAnalysisHeapBytes');
       assert.equal(error.observedUsage, null);
@@ -144,7 +169,8 @@ export const verifyPackedNodeInspection = async (consumerDirectory, environment)
       actualHeap = error.limitMaximum;
       return true;
     });
-    const next = await createNodeProjectInspection({ repository, adapterRegistryUrl });
+    mode = 'normal';
+    const next = await createNodeProjectInspection({ repository });
     await next.dispose();
     process.stdout.write(JSON.stringify({ actualHeap }));
   `,
@@ -153,9 +179,8 @@ export const verifyPackedNodeInspection = async (consumerDirectory, environment)
     parentPath,
     `
     ${imports}
-    await createNodeProjectInspection({ repository: createMemoryRepositoryReader([]),
-      adapterRegistryUrl: new URL('./node-blocked-registry.mjs', import.meta.url),
-    });
+    mode = 'blocked';
+    await createNodeProjectInspection({ repository: createMemoryRepositoryReader([]) });
   `,
   );
   let parent;
@@ -184,14 +209,7 @@ export const verifyPackedNodeInspection = async (consumerDirectory, environment)
       cleanupFailure = error;
     }
     const removals = await Promise.allSettled(
-      [
-        markerPath,
-        blockedRegistryPath,
-        emptyRegistryPath,
-        heapRegistryPath,
-        probePath,
-        parentPath,
-      ].map(async (ownedPath) => {
+      [markerPath, preloadPath, workerPath, probePath, parentPath].map(async (ownedPath) => {
         try {
           await unlink(ownedPath);
         } catch (error) {

@@ -25,6 +25,7 @@ const collectPrivatePackageConsumers = (
   snapshot: Map<string, IWorkspacePackageState>,
   changedPrivateNames: ReadonlySet<string>,
   selectedProjects: Set<INpmReleaseProject>,
+  currentWorkspaceNames: ReadonlySet<string>,
 ): void => {
   const dependents = new Map<string, string[]>();
 
@@ -61,6 +62,9 @@ const collectPrivatePackageConsumers = (
       const project = PUBLIC_PROJECT_BY_PACKAGE_NAME.get(consumerName);
 
       if (project === undefined) {
+        if (!currentWorkspaceNames.has(consumerName)) {
+          continue;
+        }
         throw new TypeError(`The ${consumerName} public workspace consumer is not releaseable.`);
       }
 
@@ -104,8 +108,19 @@ const loadPrivateInputProjects = (
   }
 
   const selectedProjects = new Set<INpmReleaseProject>();
-  collectPrivatePackageConsumers(previous, changedPrivateNames, selectedProjects);
-  collectPrivatePackageConsumers(current, changedPrivateNames, selectedProjects);
+  const currentWorkspaceNames = new Set(current.keys());
+  collectPrivatePackageConsumers(
+    previous,
+    changedPrivateNames,
+    selectedProjects,
+    currentWorkspaceNames,
+  );
+  collectPrivatePackageConsumers(
+    current,
+    changedPrivateNames,
+    selectedProjects,
+    currentWorkspaceNames,
+  );
 
   return selectedProjects;
 };

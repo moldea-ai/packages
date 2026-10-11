@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/website-ui",
-  "version": "1.13.1",
+  "version": "1.14.0",
   "description": "Shared Astro foundations for moldea public websites.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/website-ui#readme",
   "bugs": {
@@ -21,6 +21,7 @@
   "files": [
     "cover.png",
     "dist",
+    "runtime-logos",
     "src/**/*.astro",
     "src/**/*.css",
     "src/exceptions.ts",
@@ -142,7 +143,15 @@
     "./code-presentation": {
       "types": "./dist/code-presentation/index.d.ts",
       "import": "./dist/code-presentation.js"
-    }
+    },
+    "./runtime-catalog": {
+      "types": "./dist/runtime-catalog/index.d.ts",
+      "import": "./dist/runtime-catalog.js"
+    },
+    "./runtime-grid": {
+      "import": "./src/components/runtime-grid/runtime-grid.component.astro"
+    },
+    "./runtime-logos/*": "./runtime-logos/*"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -166,6 +175,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
+    "@moldea.ai/core": "workspace:^7.0.0",
     "@playwright/test": "1.62.1",
     "@shikijs/rehype": "4.4.3",
     "@types/node": "22.20.1",

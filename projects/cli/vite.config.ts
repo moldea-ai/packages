@@ -5,23 +5,8 @@ import { createLibraryConfig } from '../../configs/vite/library.config.js';
 const libraryConfig = createLibraryConfig({
   entry: {
     moldea: 'src/bin/index.ts',
-    'adapter-registry': 'src/core-composition/registry.ts',
   },
-  externalPackages: [
-    '@moldea.ai/adapter-anthropic',
-    '@moldea.ai/adapter-claude-agent-sdk',
-    '@moldea.ai/adapter-cloudflare-agents',
-    '@moldea.ai/adapter-eve',
-    '@moldea.ai/adapter-google-genai',
-    '@moldea.ai/adapter-langchain',
-    '@moldea.ai/adapter-langgraph',
-    '@moldea.ai/adapter-openai',
-    '@moldea.ai/adapter-openai-agents-sdk',
-    '@moldea.ai/adapter-vercel-ai-sdk',
-    '@moldea.ai/core',
-    '@moldea.ai/repository',
-    '@moldea.ai/repository-fs',
-  ],
+  externalPackages: ['@moldea.ai/core', '@moldea.ai/repository', '@moldea.ai/repository-fs'],
   platform: 'node',
   rootDirectory: import.meta.dirname,
 });

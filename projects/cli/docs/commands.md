@@ -19,15 +19,15 @@ Top-level and command help, `moldea --version`, strict option parsing, and deter
 
 ## `validate`
 
-Validates the complete selected repository through Core and active runtime adapters. Human and JSON output contain ordered diagnostics but deliberately omit the project index, canonical content, and adapter evidence. Zero errors produce `valid`, including warning-only results; confirmed errors produce `invalid`. Every JSON page includes complete error and warning counts.
+Validates the selected repository through Core. Human and JSON output report diagnostics and binding coverage without canonical content. Zero errors produce `valid`, including warning-only results. Every page includes complete error, unaccepted-warning and accepted-warning counts.
 
 ## `inspect`
 
-Runs the same full snapshot and inspection path. Human output reports format and complete counts. The `unresolved` count includes project-owned and agent-owned requirements of every effect, counting identical IDs separately across owners; these readiness gaps do not themselves make structural validation fail. JSON output contains a deterministic page of allowlisted records, including one independent `agentId` and `runtimeId` assignment per canonical agent. It never includes canonical bodies or arbitrary adapter evidence details.
+Runs the same full snapshot and inspection path. Human output reports format and complete counts. The `unresolved` count includes project-owned and agent-owned requirements of every effect, counting identical IDs separately across owners; these readiness gaps do not themselves make structural validation fail. JSON output contains a deterministic page of allowlisted records, including one independent `agentId` and `runtimeId` assignment per canonical agent. It never includes canonical bodies or arbitrary diagnostic details.
 
 ## `scope`
 
-Matches changed repository paths to manifest relationships without loading adapters or inspecting project documents. Supply one leading-slash repository-logical path through `--path`, or pass NUL-delimited UTF-8 paths with the same grammar to `--paths-stdin`. Invalid paths return `PATH_INPUT_INVALID` before repository discovery; relative paths are not normalized. The result includes relevance, complete counts and digests, and paged match or diagnostic records. An empty relationship manifest returns `relevant: false` without scanning the repository.
+Matches changed repository paths to manifest relationships without loading the export checker or inspecting project documents. Supply one leading-slash repository-logical path through `--path`, or pass NUL-delimited UTF-8 paths with the same grammar to `--paths-stdin`. Invalid paths return `PATH_INPUT_INVALID` before repository discovery; relative paths are not normalized. The result includes relevance, complete counts and digests, and paged match or diagnostic records. An empty relationship manifest returns `relevant: false` without scanning the repository.
 
 ## `content`
 
@@ -35,11 +35,11 @@ Reads one explicitly selected canonical moldea text asset. Accepted paths are th
 
 ## `composition`
 
-Reports the installed CLI version, JSON schema version, supported Node.js range, minimum Git version, exact package versions, Core repository-format versions, and active executable adapters. It performs release-integrity validation but does not invoke Git, discover a repository, read client files, or use the network. It does not report the Runtime Compatibility Matrix or target maturity; current published compatibility is available from [`https://packages.moldea.ai/compatibility/runtimes.json`](https://packages.moldea.ai/compatibility/runtimes.json).
+Reports the installed CLI version, JSON schema version, supported Node.js range, minimum Git version, exact foundational package versions and Core repository-format versions. It validates installation integrity without invoking Git, discovering a repository, reading client files or accessing the network.
 
 ## Repository and output options
 
-Repository-backed commands accept `--repository <path>`, `--json`, `--no-color`, and positive safe-integer overrides for `--max-entries`, `--max-file-bytes`, and `--max-total-bytes`. `validate`, `inspect`, and `scope` also accept `--max-manifest-bytes` and `--max-diagnostics`; only adapter-backed `validate` and `inspect` accept `--max-evidence`.
+Repository-backed commands accept `--repository <path>`, `--json`, `--no-color`, and positive safe-integer overrides for `--max-entries`, `--max-file-bytes`, and `--max-total-bytes`. `validate`, `inspect`, and `scope` also accept `--max-manifest-bytes` and `--max-diagnostics`; only `validate` and `inspect` accept `--max-coverage`.
 
 JSON collection and content commands accept `--max-output-bytes <integer>` from 4,096 through 1,048,576, defaulting to 65,536, and `--cursor <opaque-cursor>` for continuation. Output budgets bound each final UTF-8 page, not repository size. Cursors are valid only for the same command, normalized filters, and repository snapshot.
 

@@ -1,0 +1,145 @@
+---
+import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
+import CodeBlock from '@moldea.ai/website-ui/code-block';
+import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';
+import { RUNTIME_CATALOG } from '@moldea.ai/website-ui/runtime-catalog';
+import { withBase } from '@moldea.ai/website-ui/site';
+
+import BaseLayout from '../../layouts/base-layout.astro';
+
+const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Runtimes' }];
+const binding = `context:
+  /moldea/context/returns.md:
+    bindings:
+      - { path: /src/returns.ts, symbol: canReturn }`;
+---
+
+<BaseLayout
+  title="Runtime labels and binding checks"
+  description="Choose runtime guidance and understand exactly what Core checks in declared files and exports."
+  {breadcrumbs}
+>
+  <section class="page-shell pt-8 pb-section-gap">
+    <Breadcrumbs items={breadcrumbs} />
+    <header class="max-w-4xl pt-16 pb-10">
+      <p class="eyebrow mb-5">Runtime guidance</p>
+      <h1 class="page-title">Choose a label. Keep the checks explicit.</h1>
+      <p class="mt-7 text-xl leading-9 text-muted-foreground">
+        The runtime ID in your manifest selects guidance for your coding agent. It does not select a
+        compatibility checker or certify an SDK integration.
+      </p>
+    </header>
+    <RuntimeGrid hrefBase="" />
+    <p class="mt-5 text-xs leading-6 text-muted-foreground">
+      Names and marks belong to their respective owners. Labels do not imply SDK compatibility,
+      certification, or vendor endorsement.
+    </p>
+
+    <div class="mt-section-gap grid gap-10 lg:grid-cols-2 lg:gap-16">
+      <section
+        aria-labelledby="binding-checks-title"
+        class="min-w-0"
+      >
+        <p class="eyebrow mb-4">Core checks</p><h2
+          id="binding-checks-title"
+          class="section-title"
+        >
+          Declared files and exports.
+        </h2>
+        <p class="mt-6 leading-8 text-muted-foreground">
+          Core checks that declared files exist. When a binding names a symbol, it checks explicit
+          TypeScript and JavaScript ESM exports if the source allows a conclusion.
+        </p>
+        <div class="mt-6">
+          <CodeBlock
+            source={binding}
+            language="yaml"
+            ariaLabel="A declared file and export binding"
+          />
+        </div>
+        <p class="mt-5 leading-8 text-muted-foreground">
+          A missing export is an error only when the file's export list is complete. CommonJS,
+          unsupported file types, unresolved exports, malformed source, and per-file resource limits
+          leave the export not checked.
+        </p>
+        <p class="mt-5 leading-8 text-muted-foreground">
+          Coverage records report the file check, export check, and any reason an export could not
+          be checked. Interrupted inspections fail the operation; they do not return partial
+          coverage.
+        </p>
+        <a
+          class="mt-5 inline-block text-link"
+          href={withBase('/packages/core/repository-inspection/', import.meta.env.BASE_URL)}
+          >Read the coverage contract</a
+        >
+      </section>
+      <section
+        aria-labelledby="agent-guidance-title"
+        class="min-w-0"
+      >
+        <p class="eyebrow mb-4">Agent review</p><h2
+          id="agent-guidance-title"
+          class="section-title"
+        >
+          Follow the installed SDK.
+        </h2>
+        <p class="mt-6 leading-8 text-muted-foreground">
+          Your coding agent reads the installed SDK's type definitions, then reviews how the
+          application loads instructions, registers tools, supplies schemas, and connects handoffs.
+          It uses your project's declarations and runtime guidance as context.
+        </p>
+        <p class="mt-5 leading-8 text-muted-foreground">
+          Core does not check runtime wiring, SDK behavior, code semantics, or the agent's behavior.
+          A valid result means the completed checks found no errors. Review coverage and warnings
+          alongside that result.
+        </p>
+        <p class="mt-5 leading-8 text-muted-foreground">
+          Accepted warnings remain visible with their identity and recorded reason. Accepting a
+          warning does not convert an unchecked export into a passed check.
+        </p>
+        <a
+          class="mt-5 inline-block text-link"
+          href={withBase('/capabilities/#binding-coverage', import.meta.env.BASE_URL)}
+          >Explore executed binding and warning examples</a
+        >
+        <p class="mt-5 leading-8 text-muted-foreground">
+          For another runtime, use <code class="inline-code">custom</code> and record project-specific
+          guidance in <code class="inline-code break-all">/moldea/runtimes/custom.md</code>.
+        </p>
+      </section>
+    </div>
+    <section
+      class="mt-section-gap"
+      aria-labelledby="runtime-ids-title"
+    >
+      <h2
+        id="runtime-ids-title"
+        class="section-title"
+      >
+        Manifest runtime IDs.
+      </h2>
+      <p class="mt-5 max-w-3xl leading-8 text-muted-foreground">
+        Use the label that describes your integration. The same declared binding checks apply to
+        every label.
+      </p>
+      <ul
+        class="mt-8 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3"
+        aria-label="Manifest runtime IDs"
+      >
+        {
+          RUNTIME_CATALOG.map((runtime) => (
+            <li
+              id={runtime.id}
+              class="scroll-mt-24 border-b py-4"
+            >
+              <>
+                <h3 class="font-semibold">{runtime.displayName}</h3>
+                <code class="mt-2 block text-sm break-all text-muted-foreground">{runtime.id}</code>
+              </>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </section>
+</BaseLayout>

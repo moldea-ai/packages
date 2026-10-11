@@ -13,7 +13,8 @@
         "pointer": null,
         "range": null,
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -44,7 +45,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -75,7 +77,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -106,7 +109,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -139,7 +143,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -170,7 +175,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -190,7 +196,8 @@
         "pointer": "/status",
         "range": null,
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -221,7 +228,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -252,7 +260,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -283,7 +292,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -316,7 +326,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -349,7 +360,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -380,7 +392,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -411,7 +424,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -442,7 +456,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -471,7 +486,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   }

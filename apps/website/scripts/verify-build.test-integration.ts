@@ -7,6 +7,8 @@ import { DEFAULT_BASE_PATH, normalizeBasePath } from '@moldea.ai/website-ui/site
 
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 
+import { RETIRED_RUNTIME_ROUTES } from '../src/lib/redirects/index.ts';
+
 import { verifyProductionBuild } from './verify-build.ts';
 
 describe('verifyProductionBuild', () => {
@@ -100,15 +102,30 @@ describe('production discovery guards', () => {
   test.each([
     ['http-equiv="refresh"', 'http-equiv="invalid"'],
     ['content="0;url=', 'content="2;url='],
-    ['adapters/', 'packages/'],
+    ['runtimes/', 'packages/'],
     ['content="noindex"', 'content="index"'],
     ['rel="canonical"', 'rel="alternate"'],
     ['<a href=', '<a data-href='],
   ])('rejects a compatibility redirect with altered %s', (original, replacement) => {
     replaceArtifactText('compatibility/index.html', original, replacement);
     expect(() => verifyProductionBuild(directory)).toThrow(
-      'compatibility redirect must immediately hand off',
+      'Retired route must immediately redirect',
     );
+  });
+  test.each(RETIRED_RUNTIME_ROUTES)('rejects an invalid retired-route redirect at %s', (route) => {
+    replaceArtifactText(`${route.slice(1)}index.html`, 'content="noindex"', 'content="index"');
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'Retired route must immediately redirect',
+    );
+  });
+  test('rejects a retired compatibility JSON endpoint', () => {
+    const path = join(directory, 'compatibility', 'runtimes.json');
+    writeFileSync(path, '{}');
+    try {
+      expect(() => verifyProductionBuild(directory)).toThrow('retired compatibility JSON endpoint');
+    } finally {
+      rmSync(path);
+    }
   });
   test('rejects test-file leakage in the static artifact', () => {
     const path = join(directory, '_index.test-e2e.js');
@@ -145,9 +162,9 @@ describe('production discovery guards', () => {
       'omits result dialog mirror-stale',
     ],
     [
-      'data-capability-outcome="openai-responses"',
-      'data-removed="openai-responses"',
-      'omits visible result openai-responses',
+      'data-capability-outcome="binding-export-passed"',
+      'data-removed="binding-export-passed"',
+      'omits visible result binding-export-passed',
     ],
   ])('rejects missing capability marker %s', (marker, replacement, error) => {
     replaceArtifactText('capabilities/index.html', marker, replacement);

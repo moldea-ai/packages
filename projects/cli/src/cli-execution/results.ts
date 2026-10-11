@@ -116,13 +116,14 @@ export const createMoldeaCliValidateExecutionResult = (
 ): IMoldeaCliExecutionResult => {
   const projection = createMoldeaCliValidateProjection(inspection);
   const createResult = (page: IMoldeaCliValidateResult['page']): IMoldeaCliValidateResult => ({
-    diagnosticCount: projection.diagnostics.length,
+    diagnosticCount: projection.diagnosticCount,
+    acceptedWarningCount: projection.acceptedWarningCount,
     errorCount: projection.errorCount,
     formatVersion: projection.formatVersion,
     page,
     snapshotDigest: projection.snapshotDigest,
     source: projection.source,
-    runtimeInspection: projection.runtimeInspection,
+    coverageCounts: projection.coverageCounts,
     valid: projection.valid,
     warningCount: projection.warningCount,
   });
@@ -139,7 +140,7 @@ export const createMoldeaCliValidateExecutionResult = (
         (page) => formatMoldeaCliJsonValidateResult(createResult(page), cliVersion),
         (page) => formatMoldeaCliHumanValidateResult(createResult(page)),
       ),
-    records: projection.diagnostics,
+    records: projection.records,
     snapshotDigest: projection.snapshotDigest,
   });
   const result = Object.freeze(createResult(page));
@@ -179,7 +180,7 @@ export const createMoldeaCliInspectExecutionResult = (
     project: projection.project,
     snapshotDigest: projection.snapshotDigest,
     source: projection.source,
-    runtimeInspection: projection.runtimeInspection,
+    coverageCounts: projection.coverageCounts,
     valid: projection.valid,
     view: projection.view,
   });

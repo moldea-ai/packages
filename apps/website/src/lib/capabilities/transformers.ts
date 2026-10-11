@@ -1,106 +1,62 @@
-import type { IAdapterDiagnostic, IDiagnostic, IRuntimeAdapterEvidence } from '@moldea.ai/core';
+import type { IDiagnostic } from '@moldea.ai/core';
 import type { IRepositoryEntry } from '@moldea.ai/repository';
 import type { IMemoryRepositoryEntry } from '@moldea.ai/repository/memory';
 
 import type { ICapabilityFile } from './types.ts';
 
-/** Copies the diagnostic contract explicitly, excluding unexpected additive fields. */
-export const projectDiagnostics = (diagnostics: readonly IDiagnostic[]): IAdapterDiagnostic[] =>
-  diagnostics.map((diagnostic): IAdapterDiagnostic => {
-    const projected = {
-      code: diagnostic.code,
-      source: diagnostic.source,
-      message: diagnostic.message,
-      path: diagnostic.path,
-      pointer: diagnostic.pointer,
+/** Copies only public diagnostic fields, excluding additive process metadata. */
+export const projectDiagnostics = (diagnostics: readonly IDiagnostic[]): IDiagnostic[] =>
+  diagnostics.map((diagnostic): IDiagnostic => {
+    const { source, group, message, path, pointer, entity, range, details } = diagnostic;
+    const base = {
+      source,
+      group,
+      message,
+      path,
+      pointer,
+      details: { ...details },
+      entity:
+        entity === null
+          ? null
+          : {
+              ...(entity.agentId === undefined ? {} : { agentId: entity.agentId }),
+              ...(entity.capabilityId === undefined ? {} : { capabilityId: entity.capabilityId }),
+              ...(entity.capabilityKind === undefined
+                ? {}
+                : { capabilityKind: entity.capabilityKind }),
+              ...(entity.decisionId === undefined ? {} : { decisionId: entity.decisionId }),
+              ...(entity.variableId === undefined ? {} : { variableId: entity.variableId }),
+              ...(entity.contextPath === undefined ? {} : { contextPath: entity.contextPath }),
+              ...(entity.integrationPath === undefined
+                ? {}
+                : { integrationPath: entity.integrationPath }),
+            },
       range:
-        diagnostic.range === null
+        range === null
           ? null
           : {
               start: {
-                line: diagnostic.range.start.line,
-                column: diagnostic.range.start.column,
-                offset: diagnostic.range.start.offset,
+                line: range.start.line,
+                column: range.start.column,
+                offset: range.start.offset,
               },
-              end: {
-                line: diagnostic.range.end.line,
-                column: diagnostic.range.end.column,
-                offset: diagnostic.range.end.offset,
-              },
-            },
-      entity:
-        diagnostic.entity === null
-          ? null
-          : {
-              ...(diagnostic.entity.agentId === undefined
-                ? {}
-                : { agentId: diagnostic.entity.agentId }),
-              ...(diagnostic.entity.capabilityId === undefined
-                ? {}
-                : { capabilityId: diagnostic.entity.capabilityId }),
-              ...(diagnostic.entity.capabilityKind === undefined
-                ? {}
-                : { capabilityKind: diagnostic.entity.capabilityKind }),
-              ...(diagnostic.entity.decisionId === undefined
-                ? {}
-                : { decisionId: diagnostic.entity.decisionId }),
-              ...(diagnostic.entity.variableId === undefined
-                ? {}
-                : { variableId: diagnostic.entity.variableId }),
-              ...(diagnostic.entity.adapterId === undefined
-                ? {}
-                : { adapterId: diagnostic.entity.adapterId }),
+              end: { line: range.end.line, column: range.end.column, offset: range.end.offset },
             },
     };
-
-    if (diagnostic.severity === 'warning') {
-      const details =
-        diagnostic.details.reason === 'version-dependent-behavior'
-          ? {
-              relationship: diagnostic.details.relationship,
-              reason: diagnostic.details.reason,
-              packageName: diagnostic.details.packageName,
-              declaredRange: diagnostic.details.declaredRange,
-              boundaryVersion: diagnostic.details.boundaryVersion,
-            }
-          : {
-              relationship: diagnostic.details.relationship,
-              reason: diagnostic.details.reason,
-            };
-
-      return { ...projected, details, severity: 'warning' };
-    }
-
-    return { ...projected, details: { ...diagnostic.details }, severity: 'error' };
+    if (diagnostic.severity === 'error')
+      return { ...base, code: diagnostic.code, severity: diagnostic.severity };
+    const warning = {
+      ...base,
+      code: diagnostic.code,
+      severity: diagnostic.severity,
+      subject: diagnostic.subject,
+      qualifier: diagnostic.qualifier,
+      acceptable: diagnostic.acceptable,
+    };
+    return diagnostic.accepted === true
+      ? { ...warning, accepted: true, reason: diagnostic.reason }
+      : warning;
   });
-
-/** Retains the public relationship fields, never the reader snapshot or executable source. */
-export const projectEvidence = (
-  evidence: readonly IRuntimeAdapterEvidence[],
-): IRuntimeAdapterEvidence[] =>
-  evidence.map(
-    ({
-      source,
-      kind,
-      agentId,
-      capabilityId,
-      capabilityKind,
-      runtimeName,
-      references,
-      details,
-    }) => ({
-      source,
-      kind,
-      agentId,
-      capabilityId,
-      capabilityKind,
-      runtimeName,
-      references: references.map(({ path, symbol }) =>
-        symbol === undefined ? { path } : { path, symbol },
-      ),
-      details: { ...details },
-    }),
-  );
 
 /** Publishes logical entry metadata without opaque content identities. */
 export const projectEntry = ({ path, type, byteLength }: IRepositoryEntry) => ({
@@ -137,9 +93,11 @@ export const projectFile = (
     ? 'yaml'
     : entry.path.endsWith('.json')
       ? 'json'
-      : entry.path.endsWith('.ts')
-        ? 'typescript'
-        : 'markdown';
+      : entry.path.endsWith('.js') || entry.path.endsWith('.mjs') || entry.path.endsWith('.cjs')
+        ? 'javascript'
+        : entry.path.endsWith('.ts')
+          ? 'typescript'
+          : 'markdown';
   const lines = entry.content.split('\n');
   const maxLines = options.maxLines ?? 16;
   return {

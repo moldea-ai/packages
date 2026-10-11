@@ -23,6 +23,7 @@ import type {
   IManifestScopeRelationshipField,
 } from './types.js';
 import { measureUtf8ByteLength } from './validations.js';
+import { matchesRepositoryGlob } from './patterns.js';
 
 interface IManifestScopeRelationshipDeclaration {
   readonly owner: IManifestScopeOwner;
@@ -310,7 +311,7 @@ const addAgentDeclarations = (
 };
 
 /** Collects every version 1 declaration that can establish changed-path relevance. */
-const collectDeclarations = (
+export const collectManifestScopeDeclarations = (
   manifest: IMoldeaManifestV1,
 ): readonly IManifestScopeRelationshipDeclaration[] => {
   const declarations: IManifestScopeRelationshipDeclaration[] = [];
@@ -356,79 +357,12 @@ const collectDeclarations = (
   return declarations.sort(compareDeclarations);
 };
 
-/** Tests a single-segment wildcard without regular-expression interpretation. */
-const matchesSegment = (pattern: string, value: string): boolean => {
-  let patternIndex = 0;
-  let valueIndex = 0;
-  let starIndex = -1;
-  let starValueIndex = -1;
-
-  while (valueIndex < value.length) {
-    if (pattern[patternIndex] === value[valueIndex]) {
-      patternIndex += 1;
-      valueIndex += 1;
-      continue;
-    }
-
-    if (pattern[patternIndex] === '*') {
-      starIndex = patternIndex;
-      starValueIndex = valueIndex;
-      patternIndex += 1;
-      continue;
-    }
-
-    if (starIndex === -1) {
-      return false;
-    }
-
-    patternIndex = starIndex + 1;
-    starValueIndex += 1;
-    valueIndex = starValueIndex;
-  }
-
-  while (pattern[patternIndex] === '*') {
-    patternIndex += 1;
-  }
-
-  return patternIndex === pattern.length;
-};
-
-/** Matches validated simple-glob segments with zero-or-more-segment globstars. */
-const matchesGlob = (patternSegments: readonly string[], path: IRepositoryPath): boolean => {
-  const pathSegments = path.slice(1).split('/');
-  let reachable = new Uint8Array(pathSegments.length + 1);
-  reachable[0] = 1;
-
-  for (const patternSegment of patternSegments) {
-    const next = new Uint8Array(pathSegments.length + 1);
-
-    if (patternSegment === '**') {
-      let canReach = false;
-
-      for (let index = 0; index < reachable.length; index += 1) {
-        canReach ||= reachable[index] === 1;
-        next[index] = canReach ? 1 : 0;
-      }
-    } else {
-      for (let index = 0; index < pathSegments.length; index += 1) {
-        if (reachable[index] === 1 && matchesSegment(patternSegment, pathSegments[index] ?? '')) {
-          next[index + 1] = 1;
-        }
-      }
-    }
-
-    reachable = next;
-  }
-
-  return reachable[pathSegments.length] === 1;
-};
-
 /** Builds exact and first-segment glob indexes once for one parsed manifest. */
 const compileManifestScope = (
   manifest: IMoldeaManifestV1,
   limits: ICoreResourceLimits,
 ): ICompiledManifestScope => {
-  const declarations = collectDeclarations(manifest);
+  const declarations = collectManifestScopeDeclarations(manifest);
 
   if (declarations.length > limits.maxEntries) {
     throw new CoreOperationException({
@@ -522,7 +456,7 @@ const addGlobMatches = (
   limits: ICoreResourceLimits,
 ): void => {
   for (const compiled of declarations) {
-    if (matchesGlob(compiled.segments, inputPath)) {
+    if (matchesRepositoryGlob(compiled.segments, inputPath)) {
       addMatch(matches, inputPath, compiled.declaration, limits);
     }
   }
@@ -548,7 +482,7 @@ export const calculateManifestScopeInputDigest = async (
  * @param limits The immutable Core operation limits.
  * @returns Frozen content-free matches and stable aggregate counts.
  * @throws
- * - RESOURCE_LIMIT_EXCEEDED: The declaration or match count exceeded `maxEntries`.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
  */
 export const matchParsedManifestScope = (
   manifest: IMoldeaManifestV1,

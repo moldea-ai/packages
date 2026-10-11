@@ -1,8 +1,0 @@
-{
-  "extends": "../../configs/typescript/node.json",
-  "compilerOptions": {
-    "rootDir": "../.."
-  },
-  "include": ["src/**/*.ts", "vite.config.ts", "vitest/**/*.ts"],
-  "exclude": ["dist", "node_modules"]
-}

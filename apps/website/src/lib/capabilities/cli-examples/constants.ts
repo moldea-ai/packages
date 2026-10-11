@@ -1,7 +1,14 @@
+import { MANAGED_INTEGRATION_ENTRIES } from '../integration-fixture/index.ts';
+
 import type { IFixtureFile } from '../fixture-workspace/index.ts';
 
 // tracked, untracked, and ignored canonical files distinguish Git selection from directory selection
 export const CLI_FIXTURE_FILES: IFixtureFile[] = [
+  ...MANAGED_INTEGRATION_ENTRIES.flatMap((entry) =>
+    entry.type === 'file' && typeof entry.content === 'string'
+      ? [{ path: entry.path, content: entry.content }]
+      : [],
+  ),
   {
     path: '/moldea/moldea.yaml',
     content: 'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy: [/src/returns/**]\n',

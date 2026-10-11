@@ -1,5 +1,6 @@
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
+import { ACCEPTABLE_WARNING_CODES } from '../constants/index.js';
 import type { ICoreResourceLimits } from '../contracts/index.js';
 import type {
   ICoreDiagnostic,
@@ -48,10 +49,7 @@ const CORE_DIAGNOSTIC_MESSAGES: Record<ICoreDiagnosticCode, string> = {
   MOLDEA_DECISION_TIMESTAMP_MISMATCH:
     'The decision filename timestamp and createdAt value do not match.',
   MOLDEA_ENTRY_TYPE_INVALID: 'The repository entry type is invalid.',
-  MOLDEA_RUNTIME_ADAPTER_FORMAT_UNSUPPORTED:
-    'The configured runtime adapter does not support the repository format version.',
-  MOLDEA_RUNTIME_ADAPTER_UNAVAILABLE: 'The declared runtime adapter is unavailable.',
-  MOLDEA_RUNTIME_ID_INVALID: 'The runtime adapter ID is invalid.',
+  MOLDEA_RUNTIME_ID_INVALID: 'The runtime ID is invalid.',
   MOLDEA_GLOB_INVALID: 'The impact pattern is invalid.',
   MOLDEA_ID_DUPLICATE: 'An ID is duplicated within its required scope.',
   MOLDEA_ID_INVALID: 'The ID is invalid.',
@@ -78,6 +76,13 @@ const CORE_DIAGNOSTIC_MESSAGES: Record<ICoreDiagnosticCode, string> = {
   MOLDEA_PATTERN_DUPLICATE: 'The impact pattern is duplicated.',
   MOLDEA_PROJECT_FILE_EMPTY: 'The project file is empty.',
   MOLDEA_PROJECT_FILE_MISSING: 'The project file is missing.',
+  MOLDEA_INTEGRATION_BLOCK_MISSING: 'The AGENTS.md moldea block is missing.',
+  MOLDEA_INTEGRATION_SKILL_MISSING:
+    'The skill installation referenced by the AGENTS.md moldea block was not found.',
+  MOLDEA_INTEGRATION_BLOCK_STALE: 'The AGENTS.md moldea block differs from its skill installation.',
+  MOLDEA_IMPACT_PATTERN_UNMATCHED: 'The impact pattern matches no files.',
+  MOLDEA_ACCEPTANCE_UNMATCHED: 'The warning acceptance matches no reported warning.',
+  MOLDEA_REFERENCE_EXPORT_MISSING: 'The referenced export is missing.',
   MOLDEA_REFERENCE_MISSING: 'The referenced repository path does not exist.',
   MOLDEA_REFERENCE_NOT_FILE: 'The referenced repository path is not a regular file.',
   MOLDEA_REFERENCE_SYMLINK: 'The referenced repository path is a symlink.',
@@ -111,7 +116,8 @@ const ENTITY_KEYS = [
   'capabilityId',
   'decisionId',
   'variableId',
-  'adapterId',
+  'contextPath',
+  'integrationPath',
 ] as const satisfies readonly (keyof IDiagnosticEntity)[];
 
 // private normalized diagnostic construction contracts
@@ -122,6 +128,8 @@ export interface ICoreDiagnosticInput {
   readonly path: IRepositoryPath | null;
   readonly pointer?: string | null;
   readonly range?: ISourceRange | null;
+  readonly subject?: IRepositoryPath;
+  readonly qualifier?: string | null;
 }
 
 export interface ICoreDiagnosticCollector {
@@ -163,14 +171,12 @@ export const registerCoreDiagnosticCandidates = (
   amount: number,
   operation: ICoreOperation,
   fallbackCount = 0,
-  adapterId?: string,
 ): number => {
   const budget = (limits as ICoreOperationResourceLimits)[CORE_DIAGNOSTIC_BUDGET];
   const currentCount = budget?.count ?? fallbackCount;
 
   if (amount > limits.maxDiagnostics - currentCount) {
     throw new CoreOperationException({
-      ...(adapterId === undefined ? {} : { adapterId }),
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxDiagnostics',
       limitMaximum: limits.maxDiagnostics,
@@ -262,6 +268,14 @@ const serializeDiagnostic = (diagnostic: IDiagnostic): string => {
   return JSON.stringify([
     diagnostic.code,
     diagnostic.severity,
+    diagnostic.severity === 'warning'
+      ? [
+          diagnostic.subject,
+          diagnostic.qualifier,
+          diagnostic.accepted ?? false,
+          diagnostic.reason ?? null,
+        ]
+      : null,
     serializeDiagnosticDetails(diagnostic.details),
     entity,
     diagnostic.message,
@@ -307,6 +321,24 @@ const compareDiagnostics = (left: IDiagnostic, right: IDiagnostic): number => {
     compareExactStrings(left.code, right.code) ||
     compareExactStrings(left.severity, right.severity) ||
     compareExactStrings(
+      left.severity === 'warning'
+        ? JSON.stringify([
+            left.subject,
+            left.qualifier,
+            left.accepted ?? false,
+            left.reason ?? null,
+          ])
+        : '',
+      right.severity === 'warning'
+        ? JSON.stringify([
+            right.subject,
+            right.qualifier,
+            right.accepted ?? false,
+            right.reason ?? null,
+          ])
+        : '',
+    ) ||
+    compareExactStrings(
       readEntityValue(left.entity, 'agentId'),
       readEntityValue(right.entity, 'agentId'),
     ) ||
@@ -327,8 +359,12 @@ const compareDiagnostics = (left: IDiagnostic, right: IDiagnostic): number => {
       readEntityValue(right.entity, 'variableId'),
     ) ||
     compareExactStrings(
-      readEntityValue(left.entity, 'adapterId'),
-      readEntityValue(right.entity, 'adapterId'),
+      readEntityValue(left.entity, 'contextPath'),
+      readEntityValue(right.entity, 'contextPath'),
+    ) ||
+    compareExactStrings(
+      readEntityValue(left.entity, 'integrationPath'),
+      readEntityValue(right.entity, 'integrationPath'),
     ) ||
     compareExactStrings(
       serializeDiagnosticDetails(left.details),
@@ -336,6 +372,19 @@ const compareDiagnostics = (left: IDiagnostic, right: IDiagnostic): number => {
     ) ||
     compareExactStrings(left.message, right.message)
   );
+};
+
+/** Classifies every catalog code by its documented validation responsibility. */
+const getDiagnosticGroup = (code: ICoreDiagnosticCode): ICoreDiagnostic['group'] => {
+  if (code.startsWith('MOLDEA_INTEGRATION_')) return 'integration';
+  if (code.startsWith('MOLDEA_MIRROR_')) return 'mirrors';
+  if (/^MOLDEA_(REFERENCE|IMPACT|SYMBOL|CONTEXT|DECISION|RUNTIME_GUIDANCE)_/.test(code))
+    return 'references';
+  if (code === 'MOLDEA_VARIABLE_ID_INVALID') return 'manifest';
+  if (/^MOLDEA_(AGENT|VARIABLE|CAPABILITY|TOOL|SKILL|RUNTIME)_/.test(code)) return 'agents';
+  if (/^MOLDEA_(MANIFEST_MISSING|PROJECT_FILE|ENTRY_TYPE|CANONICAL|TEXT)_/.test(code))
+    return 'discovery';
+  return 'manifest';
 };
 
 /**
@@ -350,7 +399,7 @@ export const createCoreDiagnostic = (input: ICoreDiagnosticInput): ICoreDiagnost
     throw new TypeError('The requested Core diagnostic is not implemented.');
   }
 
-  return freezeRecursively({
+  const base = {
     code: input.code,
     details: normalizeDiagnosticDetails(input.details),
     entity: normalizeDiagnosticEntity(input.entity),
@@ -358,13 +407,31 @@ export const createCoreDiagnostic = (input: ICoreDiagnosticInput): ICoreDiagnost
     path: input.path,
     pointer: input.pointer ?? null,
     range: input.range ?? null,
-    severity: 'error' as const,
+    group: getDiagnosticGroup(input.code),
     source: 'core' as const,
-  });
+  };
+  if (
+    input.code === 'MOLDEA_IMPACT_PATTERN_UNMATCHED' ||
+    input.code === 'MOLDEA_ACCEPTANCE_UNMATCHED' ||
+    input.code === 'MOLDEA_INTEGRATION_BLOCK_MISSING' ||
+    input.code === 'MOLDEA_INTEGRATION_SKILL_MISSING' ||
+    input.code === 'MOLDEA_INTEGRATION_BLOCK_STALE'
+  ) {
+    if (input.subject === undefined) throw new TypeError('A warning subject is required.');
+    return freezeRecursively({
+      ...base,
+      code: input.code,
+      severity: 'warning' as const,
+      subject: input.subject,
+      qualifier: input.qualifier ?? null,
+      acceptable: ACCEPTABLE_WARNING_CODES.some((code) => code === input.code),
+    });
+  }
+  return freezeRecursively({ ...base, code: input.code, severity: 'error' as const });
 };
 
 /**
- * Deduplicates and sorts already-normalized Core and adapter diagnostics.
+ * Deduplicates and sorts already-normalized Core diagnostics.
  * @param candidates The immutable diagnostics to combine.
  * @returns A frozen deterministic diagnostic collection.
  */
@@ -389,19 +456,27 @@ export const normalizeDiagnostics = (
 /** Counts the complete normalized diagnostic result by severity once. */
 export const countDiagnosticsBySeverity = (
   diagnostics: readonly IDiagnostic[],
-): { readonly errorCount: number; readonly warningCount: number } => {
+): {
+  readonly errorCount: number;
+  readonly warningCount: number;
+  readonly acceptedWarningCount: number;
+  readonly diagnosticCount: number;
+} => {
   let errorCount = 0;
   let warningCount = 0;
+  let acceptedWarningCount = 0;
 
   for (const diagnostic of diagnostics) {
     if (diagnostic.severity === 'error') {
       errorCount += 1;
+    } else if (diagnostic.accepted === true) {
+      acceptedWarningCount += 1;
     } else {
       warningCount += 1;
     }
   }
 
-  return { errorCount, warningCount };
+  return { errorCount, warningCount, acceptedWarningCount, diagnosticCount: diagnostics.length };
 };
 
 /**
@@ -435,8 +510,7 @@ export const createCoreDiagnosticCollector = (
       retain(input);
     },
     merge: retain,
-    finalize: (): readonly ICoreDiagnostic[] =>
-      normalizeDiagnostics([...diagnostics.values()]) as readonly ICoreDiagnostic[],
+    finalize: (): readonly ICoreDiagnostic[] => normalizeDiagnostics([...diagnostics.values()]),
     get size(): number {
       return proposalCount;
     },

@@ -4,13 +4,14 @@ import { expect, test } from 'vitest';
 import type { IDiagnostic } from '@moldea.ai/core';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
-import { projectDiagnostics, projectEntry, projectEvidence, projectFile } from './transformers.ts';
+import { projectDiagnostics, projectEntry, projectFile } from './transformers.ts';
 
 test('drops additive process fields from diagnostics, positions, and entities', () => {
   const expected: IDiagnostic = {
     code: 'MOLDEA_VARIABLE_UNDECLARED',
     severity: 'error',
     source: 'core',
+    group: 'agents',
     message: 'The agent instruction references an undeclared runtime variable.',
     path: parseRepositoryPath('/moldea/agents/support/instruction.md'),
     pointer: null,
@@ -33,38 +34,6 @@ test('drops additive process fields from diagnostics, positions, and entities', 
   expect(projected).toStrictEqual([expected]);
   expect(JSON.stringify(projected)).not.toContain('not-for-publication');
   expect(projected[0]?.details).not.toBe(diagnostic.details);
-});
-
-test('keeps evidence relationships without additive process or reference fields', () => {
-  const evidence = {
-    source: 'openai',
-    kind: 'instruction-loader' as const,
-    agentId: 'support',
-    capabilityId: null,
-    capabilityKind: null,
-    runtimeName: null,
-    references: [
-      {
-        path: parseRepositoryPath('/src/instructions.ts'),
-        symbol: 'loadInstruction',
-        hostPath: 'not-for-publication',
-      },
-    ],
-    details: { loader: 'direct' },
-    snapshotIdentity: 'not-for-publication',
-  };
-  expect(projectEvidence([evidence])).toStrictEqual([
-    {
-      source: 'openai',
-      kind: 'instruction-loader',
-      agentId: 'support',
-      capabilityId: null,
-      capabilityKind: null,
-      runtimeName: null,
-      references: [{ path: '/src/instructions.ts', symbol: 'loadInstruction' }],
-      details: { loader: 'direct' },
-    },
-  ]);
 });
 
 test('entry metadata omits opaque content identities', () => {

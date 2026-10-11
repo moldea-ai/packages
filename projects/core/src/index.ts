@@ -1,9 +1,16 @@
-// runtime adapter evidence contracts
-export type { IRuntimeAdapterEvidence, IRuntimeAdapterEvidenceKind } from './adapter/index.js';
+// binding check contracts
+export type {
+  IBindingRelationship,
+  IExportNotCheckedReason,
+  IBindingCoverage,
+  IBindingCoverageCounts,
+} from './binding-coverage/index.js';
 
 // supported versions and default resource limits
 export {
   DEFAULT_CORE_RESOURCE_LIMITS,
+  RECOGNIZED_RUNTIME_IDS,
+  ACCEPTABLE_WARNING_CODES,
   SUPPORTED_REPOSITORY_FORMAT_VERSIONS,
 } from './constants/index.js';
 
@@ -36,7 +43,6 @@ export type {
   IProjectValidationInput,
   IProjectValidationResult,
   IProjectValidationSummary,
-  IRuntimeInspectionStatus,
   ITextDocumentContent,
   ITextDocumentInput,
   ITextNormalizationResult,
@@ -61,9 +67,6 @@ export { createCore } from './core/index.js';
 
 // diagnostic contracts
 export type {
-  IAdapterDiagnostic,
-  IAdapterErrorDiagnostic,
-  IAdapterWarningDiagnostic,
   ICoreDiagnostic,
   ICoreDiagnosticCode,
   IDiagnostic,
@@ -71,8 +74,6 @@ export type {
   IDiagnosticEntity,
   ISourcePosition,
   ISourceRange,
-  IUnverifiedRelationship,
-  IUnverifiedRelationshipDetails,
 } from './diagnostics/index.js';
 
 // exception contracts
@@ -87,3 +88,7 @@ export type {
 
 // exceptions
 export { CoreConfigurationException, CoreOperationException } from './exceptions/index.js';
+
+// coding-agent integration parser
+export type { IIntegrationBlockResult } from './integration-validation/index.js';
+export { parseIntegrationBlock } from './integration-validation/index.js';

@@ -1,17 +1,12 @@
 import { Exception } from 'error-message-utils';
 
 // stable configuration and operation failure codes
-export type ICoreConfigurationErrorCode =
-  | 'DUPLICATE_ADAPTER_ID'
-  | 'RESERVED_ADAPTER_ID'
-  | 'INVALID_ADAPTER_DEFINITION'
-  | 'INVALID_RESOURCE_LIMIT';
+export type ICoreConfigurationErrorCode = 'INVALID_RESOURCE_LIMIT';
 
 export type ICoreOperationErrorCode =
   | 'INVALID_ARGUMENT'
   | 'ABORTED'
   | 'RESOURCE_LIMIT_EXCEEDED'
-  | 'ADAPTER_EXECUTION_FAILED'
   | 'INSPECTION_BUSY'
   | 'INSPECTION_TIMEOUT'
   | 'INSPECTION_PROCESS_FAILED'
@@ -27,7 +22,6 @@ const CORE_OPERATIONS = [
   'create-project-inspection',
   'read-canonical-content-page',
   'validate-project',
-  'validate-adapter',
 ] as const;
 
 export type ICoreOperation = (typeof CORE_OPERATIONS)[number];
@@ -36,13 +30,11 @@ export type ICoreOperation = (typeof CORE_OPERATIONS)[number];
 export interface ICoreConfigurationExceptionOptions {
   readonly code: ICoreConfigurationErrorCode;
   readonly operation: ICoreOperation;
-  readonly adapterId?: string;
   readonly cause?: unknown;
 }
 
 interface ICoreOperationExceptionOptionsBase {
   readonly operation: ICoreOperation;
-  readonly adapterId?: string;
   readonly agentId?: string;
   readonly cause?: unknown;
 }
@@ -84,15 +76,11 @@ export type ICoreOperationExceptionOptions = ICoreOperationExceptionOptionsBase 
   );
 
 const CONFIGURATION_ERROR_MESSAGES = {
-  DUPLICATE_ADAPTER_ID: 'A runtime adapter ID is registered more than once.',
-  INVALID_ADAPTER_DEFINITION: 'A runtime adapter definition is invalid.',
   INVALID_RESOURCE_LIMIT: 'A Core resource limit is invalid.',
-  RESERVED_ADAPTER_ID: 'A reserved runtime adapter ID was supplied.',
 } as const satisfies Readonly<Record<ICoreConfigurationErrorCode, string>>;
 
 const OPERATION_ERROR_MESSAGES = {
   ABORTED: 'The Core operation was aborted.',
-  ADAPTER_EXECUTION_FAILED: 'A runtime adapter failed during inspection.',
   CONTENT_INVALID: 'The canonical content is not valid UTF-8 text.',
   INVALID_ARGUMENT: 'The Core operation received an invalid argument.',
   INSPECTION_BUSY: 'Project inspection capacity is busy. Try again shortly.',
@@ -103,7 +91,6 @@ const OPERATION_ERROR_MESSAGES = {
 
 const OPERATION_ERROR_RETRYABILITY = {
   ABORTED: true,
-  ADAPTER_EXECUTION_FAILED: false,
   CONTENT_INVALID: false,
   INVALID_ARGUMENT: false,
   INSPECTION_BUSY: true,
@@ -145,15 +132,12 @@ export class CoreConfigurationException extends Exception {
 
   public readonly operation: ICoreOperation;
 
-  public readonly adapterId: string | null;
-
-  /** Creates a configuration exception with safe adapter metadata. */
+  /** Creates a configuration exception with safe operation metadata. */
   public constructor(options: ICoreConfigurationExceptionOptions) {
     super(CONFIGURATION_ERROR_MESSAGES[options.code], options.code);
     this.code = options.code;
     this.name = 'CoreConfigurationException';
     this.operation = options.operation;
-    this.adapterId = options.adapterId ?? null;
     attachCause(this, options.cause);
   }
 }
@@ -165,8 +149,6 @@ export class CoreOperationException extends Exception {
   public readonly operation: ICoreOperation;
 
   public readonly retryable: boolean;
-
-  public readonly adapterId: string | null;
 
   public readonly agentId: string | null;
 
@@ -185,7 +167,6 @@ export class CoreOperationException extends Exception {
     this.name = 'CoreOperationException';
     this.operation = options.operation;
     this.retryable = OPERATION_ERROR_RETRYABILITY[options.code];
-    this.adapterId = options.adapterId ?? null;
     this.agentId = options.agentId ?? null;
     this.limit = options.limit ?? null;
     this.limitMaximum = options.limitMaximum ?? null;

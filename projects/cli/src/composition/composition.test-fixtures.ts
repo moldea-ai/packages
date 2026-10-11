@@ -1,22 +1,10 @@
-import type { IRuntimeAdapter } from '@moldea.ai/core/adapter';
-
 import type { IMoldeaCliPackageMetadata } from '../package-metadata/index.js';
 
 import { MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES } from './constants.js';
 import type { IMoldeaCliCompositionStateInput } from './types.js';
 
 const PACKAGE_VERSIONS = {
-  '@moldea.ai/adapter-anthropic': '6.0.0',
-  '@moldea.ai/adapter-claude-agent-sdk': '5.0.0',
-  '@moldea.ai/adapter-cloudflare-agents': '5.0.0',
-  '@moldea.ai/adapter-eve': '5.0.0',
-  '@moldea.ai/adapter-google-genai': '5.0.0',
-  '@moldea.ai/adapter-langchain': '5.0.0',
-  '@moldea.ai/adapter-langgraph': '5.0.0',
-  '@moldea.ai/adapter-openai': '6.0.0',
-  '@moldea.ai/adapter-openai-agents-sdk': '5.0.0',
-  '@moldea.ai/adapter-vercel-ai-sdk': '5.0.0',
-  '@moldea.ai/core': '6.0.0',
+  '@moldea.ai/core': '7.0.0',
   '@moldea.ai/repository': '2.0.0',
   '@moldea.ai/repository-fs': '2.0.3',
 } as const;
@@ -33,35 +21,13 @@ export const INSTALLED_PACKAGE_METADATA: IMoldeaCliPackageMetadata = Object.free
   ),
   installedPackageVersions: Object.freeze({ ...PACKAGE_VERSIONS }),
   supportedNodeRange: '>=22.11.0',
-  version: '10.0.0',
-});
-
-/** Creates one minimal runtime adapter for composition tests. */
-export const createTestRuntimeAdapter = (
-  id: string,
-  supportedRepositoryFormatVersions: readonly 1[] = [1],
-): IRuntimeAdapter => ({
-  id,
-  inspect: () => Promise.resolve(Object.freeze({ diagnostics: [], evidence: [] })),
-  supportedRepositoryFormatVersions,
+  version: '11.0.0',
 });
 
 /** Creates the exact valid current runtime composition state. */
 export const createTestCompositionState = (): IMoldeaCliCompositionStateInput => ({
-  activeAdapters: [
-    createTestRuntimeAdapter('anthropic'),
-    createTestRuntimeAdapter('claude-agent-sdk'),
-    createTestRuntimeAdapter('cloudflare-agents'),
-    createTestRuntimeAdapter('eve'),
-    createTestRuntimeAdapter('google-genai'),
-    createTestRuntimeAdapter('langchain'),
-    createTestRuntimeAdapter('langgraph'),
-    createTestRuntimeAdapter('openai'),
-    createTestRuntimeAdapter('openai-agents-sdk'),
-    createTestRuntimeAdapter('vercel-ai-sdk'),
-  ],
   coreSupportedRepositoryFormatVersions: [1],
   minimumGitVersion: '2.30.0',
-  outputSchemaVersion: 6,
+  outputSchemaVersion: 7,
   packageMetadata: INSTALLED_PACKAGE_METADATA,
 });

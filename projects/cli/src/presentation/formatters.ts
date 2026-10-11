@@ -1,4 +1,4 @@
-import type { IDiagnosticEntity } from '@moldea.ai/core';
+import type { IDiagnosticEntity, IBindingCoverageCounts } from '@moldea.ai/core';
 
 import { MOLDEA_CLI_COMMANDS, type IMoldeaCliCommand } from '../command-line/index.js';
 import type { IMoldeaCliCompositionResult } from '../composition/index.js';
@@ -24,7 +24,8 @@ const DIAGNOSTIC_ENTITY_KEYS = [
   'capabilityId',
   'decisionId',
   'variableId',
-  'adapterId',
+  'contextPath',
+  'integrationPath',
 ] as const satisfies readonly (keyof IDiagnosticEntity)[];
 
 /** Formats one diagnostic entity in the canonical Core field order. */
@@ -54,14 +55,8 @@ const formatMoldeaCliHumanDiagnostic = (diagnostic: IMoldeaCliDiagnosticRecord):
   }
 
   if (diagnostic.severity === 'warning') {
-    lines.push(`  unverified relationship: ${diagnostic.details.relationship}`);
-    lines.push(`  reason: ${diagnostic.details.reason.replaceAll('-', ' ')}`);
-
-    if (diagnostic.details.reason === 'version-dependent-behavior') {
-      lines.push(`  package: ${diagnostic.details.packageName}`);
-      lines.push(`  declared range: ${diagnostic.details.declaredRange ?? 'unavailable'}`);
-      lines.push(`  behavior boundary: ${diagnostic.details.boundaryVersion}`);
-    }
+    lines.push(`  subject: ${diagnostic.subject}`);
+    if (diagnostic.qualifier !== null) lines.push(`  qualifier: ${diagnostic.qualifier}`);
   }
 
   return lines.join('\n');
@@ -99,7 +94,7 @@ export const formatMoldeaCliHelp = (command: IMoldeaCliCommand | null): string =
 export const formatMoldeaCliHumanError = (error: IMoldeaCliError): string =>
   `${error.source}:${error.code} ${error.message}\n`;
 
-/** Formats any strict schema 6 JSON envelope. */
+/** Formats any strict schema 7 JSON envelope. */
 export const formatMoldeaCliJsonResult = <TResult>(
   command: IMoldeaCliCommand | null,
   result: TResult | null,
@@ -108,7 +103,7 @@ export const formatMoldeaCliJsonResult = <TResult>(
   cliVersion: string,
 ): string => serializeMoldeaCliJsonEnvelope({ cliVersion, command, error, result, status });
 
-/** Formats one safe schema 6 JSON error envelope. */
+/** Formats one safe schema 7 JSON error envelope. */
 export const formatMoldeaCliJsonError = (
   error: IMoldeaCliError,
   command: IMoldeaCliCommand | null,
@@ -129,22 +124,21 @@ export const formatMoldeaCliHumanCompositionResult = (
     `Repository formats: ${result.repositoryFormatVersions.join(', ')}`,
     'Packages:',
     ...result.packages.map(({ name, version }) => `  ${name}: ${version}`),
-    'Adapters:',
-    ...result.adapters.map(
-      ({ id, repositoryFormatVersions }) =>
-        `  ${id}: repository formats ${repositoryFormatVersions.join(', ')}`,
-    ),
   ];
 
   return `${lines.join('\n')}\n`;
 };
 
-/** Formats one composition result in the strict schema 6 envelope. */
+/** Formats one composition result in the strict schema 7 envelope. */
 export const formatMoldeaCliJsonCompositionResult = (
   result: IMoldeaCliCompositionResult,
   cliVersion: string,
 ): string =>
   formatMoldeaCliJsonResult(MOLDEA_CLI_COMMANDS.Composition, result, null, 'valid', cliVersion);
+
+/** Describes completed checks without claiming runtime wiring. */
+const formatCoverage = (counts: IBindingCoverageCounts): string =>
+  `Coverage: ${counts.bindings} bindings, ${counts.exportsPassed} exports confirmed, ${counts.exportsFailed} exports missing, ${counts.exportsNotChecked} not checked`;
 
 /** Formats one completed validation result for human stdout. */
 export const formatMoldeaCliHumanValidateResult = (result: IMoldeaCliValidateResult): string => {
@@ -154,24 +148,28 @@ export const formatMoldeaCliHumanValidateResult = (result: IMoldeaCliValidateRes
     result.warningCount,
   );
 
-  lines.push(`Runtime inspection: ${result.runtimeInspection}`);
+  lines.push(formatCoverage(result.coverageCounts));
 
-  for (const diagnostic of result.page.records) {
-    lines.push(formatMoldeaCliHumanDiagnostic(diagnostic));
+  for (const record of result.page.records) {
+    if (record.kind === 'diagnostic' && !(record.severity === 'warning' && record.accepted))
+      lines.push(formatMoldeaCliHumanDiagnostic(record));
   }
 
   lines.push(formatMoldeaCliHumanCount(result.diagnosticCount, 'Diagnostic', 'Diagnostics'));
   lines.push(formatMoldeaCliHumanCount(result.errorCount, 'Error', 'Errors'));
   lines.push(formatMoldeaCliHumanCount(result.warningCount, 'Warning', 'Warnings'));
+  lines.push(
+    `${result.acceptedWarningCount} accepted ${result.acceptedWarningCount === 1 ? 'warning' : 'warnings'}`,
+  );
 
   if (result.page.cursor !== null) {
-    lines.push('Additional diagnostics are available through JSON pagination.');
+    lines.push('Additional records are available through JSON pagination.');
   }
 
   return `${lines.join('\n')}\n`;
 };
 
-/** Formats one validation result in the strict schema 6 envelope. */
+/** Formats one validation result in the strict schema 7 envelope. */
 export const formatMoldeaCliJsonValidateResult = (
   result: IMoldeaCliValidateResult,
   cliVersion: string,
@@ -192,7 +190,13 @@ export const formatMoldeaCliHumanInspectResult = (result: IMoldeaCliInspectResul
     result.counts.warnings,
   );
 
-  lines.push(`Runtime inspection: ${result.runtimeInspection}`);
+  lines.push(formatCoverage(result.coverageCounts));
+  lines.push(
+    `${result.counts.acceptedWarnings} accepted ${result.counts.acceptedWarnings === 1 ? 'warning' : 'warnings'}`,
+  );
+  for (const record of result.page.records)
+    if (record.kind === 'diagnostic' && !(record.severity === 'warning' && record.accepted))
+      lines.push(formatMoldeaCliHumanDiagnostic(record));
 
   for (const [label, count] of Object.entries(result.counts)) {
     lines.push(`${label}: ${count}`);
@@ -201,7 +205,7 @@ export const formatMoldeaCliHumanInspectResult = (result: IMoldeaCliInspectResul
   return `${lines.join('\n')}\n`;
 };
 
-/** Formats one metadata inspection in the strict schema 6 envelope. */
+/** Formats one metadata inspection in the strict schema 7 envelope. */
 export const formatMoldeaCliJsonInspectResult = (
   result: IMoldeaCliInspectResult,
   cliVersion: string,
@@ -225,7 +229,7 @@ export const formatMoldeaCliHumanScopeResult = (result: IMoldeaCliScopeResult): 
   return `${lines.join('\n')}\n`;
 };
 
-/** Formats one changed-path scope result in the strict schema 6 envelope. */
+/** Formats one changed-path scope result in the strict schema 7 envelope. */
 export const formatMoldeaCliJsonScopeResult = (
   result: IMoldeaCliScopeResult,
   cliVersion: string,
@@ -255,7 +259,7 @@ export const formatMoldeaCliHumanContentResult = (result: IMoldeaCliContentResul
   return `${lines.join('\n')}\n`;
 };
 
-/** Formats one explicit canonical content chunk in the strict schema 6 envelope. */
+/** Formats one explicit canonical content chunk in the strict schema 7 envelope. */
 export const formatMoldeaCliJsonContentResult = (
   result: IMoldeaCliContentResult,
   cliVersion: string,

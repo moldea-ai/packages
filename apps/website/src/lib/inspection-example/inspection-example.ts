@@ -4,6 +4,8 @@ import { parseDocument } from 'yaml';
 import { createCore } from '@moldea.ai/core';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
+import { MANAGED_INTEGRATION_ENTRIES } from '../capabilities/integration-fixture/index.ts';
+
 import { INSPECTION_SNAPSHOTS } from './constants.ts';
 import type { IInspectionExampleState, IInspectionSnapshot } from './types.ts';
 
@@ -31,6 +33,7 @@ export const createInspectionExample = async (
 
   for (const snapshot of snapshots) {
     const repository = createMemoryRepositoryReader([
+      ...MANAGED_INTEGRATION_ENTRIES,
       { path: '/moldea/moldea.yaml', type: 'file', content: snapshot.manifest },
       { path: '/moldea/project.md', type: 'file', content: snapshot.project },
       { path: snapshot.sourcePath, type: 'file', content: snapshot.source },
@@ -55,9 +58,10 @@ export const createInspectionExample = async (
               path: '/moldea/moldea.yaml',
               pointer: '/context/~1moldea~1project.md/bindings/0',
               details: { referencedPath: '/src/refund-policy.ts' },
-              entity: null,
+              entity: { contextPath: '/moldea/project.md' },
               range: null,
               severity: 'error',
+              group: 'references',
               source: 'core',
             },
           ]

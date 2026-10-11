@@ -3,10 +3,7 @@ import { describe, expect, test } from 'vitest';
 
 import type { IMoldeaCliCompositionStateInput } from './types.js';
 import { isMoldeaCliCompositionStateValid } from './validations.js';
-import {
-  createTestCompositionState,
-  createTestRuntimeAdapter,
-} from './composition.test-fixtures.js';
+import { createTestCompositionState } from './composition.test-fixtures.js';
 
 describe('isMoldeaCliCompositionStateValid', () => {
   test('accepts the compatible declared and exact installed composition', () => {
@@ -39,17 +36,17 @@ describe('isMoldeaCliCompositionStateValid', () => {
       'an invalid JSON schema version',
       (state: IMoldeaCliCompositionStateInput): IMoldeaCliCompositionStateInput => ({
         ...state,
-        outputSchemaVersion: 1 as 6,
+        outputSchemaVersion: 1 as 7,
       }),
     ],
   ])('rejects %s', (_description, mutate) => {
     expect(isMoldeaCliCompositionStateValid(mutate(createTestCompositionState()))).toBe(false);
   });
 
-  test('requires the exact foundational and active-adapter dependency set', () => {
+  test('requires the exact foundational dependency set', () => {
     const state = createTestCompositionState();
     const dependencies = { ...(state.packageMetadata.dependencies ?? {}) };
-    delete dependencies['@moldea.ai/adapter-openai'];
+    delete dependencies['@moldea.ai/core'];
 
     expect(
       isMoldeaCliCompositionStateValid({
@@ -60,8 +57,8 @@ describe('isMoldeaCliCompositionStateValid', () => {
   });
 
   test.each([
-    ['a future breaking major', '7.0.0'],
-    ['a prerelease', '6.0.0-rc.1'],
+    ['a future breaking major', '8.0.0'],
+    ['a prerelease', '7.0.0-rc.1'],
   ])('rejects %s for a first-party package', (_description, version) => {
     const state = createTestCompositionState();
 
@@ -89,7 +86,7 @@ describe('isMoldeaCliCompositionStateValid', () => {
           ...state.packageMetadata,
           installedPackageVersions: {
             ...(state.packageMetadata.installedPackageVersions ?? {}),
-            '@moldea.ai/core': '6.9.9',
+            '@moldea.ai/core': '7.9.9',
           },
         },
       }),
@@ -131,26 +128,4 @@ describe('isMoldeaCliCompositionStateValid', () => {
       ).toBe(false);
     },
   );
-
-  test.each([
-    ['duplicate IDs', [createTestRuntimeAdapter('openai'), createTestRuntimeAdapter('openai')]],
-    ['the built-in custom ID', [createTestRuntimeAdapter('custom')]],
-    ['an invalid ID', [createTestRuntimeAdapter('OpenAI')]],
-    ['an unsupported format', [createTestRuntimeAdapter('openai', [2 as 1])]],
-  ])('rejects active adapters with %s', (_description, activeAdapters) => {
-    const state = createTestCompositionState();
-
-    expect(isMoldeaCliCompositionStateValid({ ...state, activeAdapters })).toBe(false);
-  });
-
-  test('treats active adapter order as semantically irrelevant', () => {
-    const state = createTestCompositionState();
-
-    expect(
-      isMoldeaCliCompositionStateValid({
-        ...state,
-        activeAdapters: [...state.activeAdapters].reverse(),
-      }),
-    ).toBe(true);
-  });
 });

@@ -1,0 +1,66 @@
+---
+import { RUNTIME_CATALOG, type IRuntimeCatalogEntry } from '@moldea.ai/website-ui/runtime-catalog';
+
+export interface Props {
+  ariaLabel?: string;
+  hrefBase?: string;
+}
+
+const { ariaLabel = 'Runtime labels', hrefBase = 'https://packages.moldea.ai/runtimes/' } =
+  Astro.props;
+const logoSources = import.meta.glob<string>('../../../runtime-logos/*.svg', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+});
+const packagePrefix = '@moldea.ai/website-ui/runtime-logos/';
+const logoSource = (packagePath: string) =>
+  logoSources[`../../../runtime-logos/${packagePath.slice(packagePrefix.length)}`];
+const runtimes: IRuntimeCatalogEntry[] = [...RUNTIME_CATALOG];
+---
+
+<ul
+  class="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-5 lg:grid-cols-5 xl:grid-cols-7"
+  aria-label={ariaLabel}
+  data-runtime-grid
+>
+  {
+    runtimes.map((runtime) => (
+      <li class="min-w-0">
+        <a
+          class="flex h-full min-w-0 flex-col items-center gap-3 rounded-lg surface-link px-2 py-3 text-center text-sm font-medium text-foreground"
+          href={`${hrefBase}#${runtime.id}`}
+        >
+          <span
+            class:list={[
+              'flex h-14 w-full max-w-32 items-center justify-center rounded-md bg-primary-foreground px-3',
+              runtime.darkLogoPath && 'dark:bg-secondary',
+            ]}
+          >
+            <img
+              class:list={['h-8 w-full object-contain', runtime.darkLogoPath && 'dark:hidden']}
+              src={logoSource(runtime.logoPath)}
+              width="104"
+              height="32"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+            {runtime.darkLogoPath && (
+              <img
+                class="hidden h-8 w-full object-contain dark:block"
+                src={logoSource(runtime.darkLogoPath)}
+                width="104"
+                height="32"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+            )}
+          </span>
+          <span class="min-w-0 break-words">{runtime.displayName}</span>
+        </a>
+      </li>
+    ))
+  }
+</ul>

@@ -15,82 +15,12 @@ export const NPM_RELEASE_PROJECT_ORDER = [
   'repository',
   'repository-fs',
   'core',
-  'adapter-anthropic',
-  'adapter-google-genai',
-  'adapter-openai',
-  'adapter-openai-agents-sdk',
-  'adapter-claude-agent-sdk',
-  'adapter-cloudflare-agents',
-  'adapter-eve',
-  'adapter-langchain',
-  'adapter-langgraph',
-  'adapter-vercel-ai-sdk',
   'cli',
   'website-ui',
 ] as const satisfies readonly INpmReleaseProject[];
 
 // public package identities currently eligible for release
 export const NPM_RELEASE_PROJECTS = {
-  'adapter-anthropic': {
-    artifactPrefix: 'moldea.ai-adapter-anthropic',
-    packageName: '@moldea.ai/adapter-anthropic',
-    projectDirectory: 'projects/adapter-anthropic',
-    tagPrefix: 'adapter-anthropic-v',
-  },
-  'adapter-claude-agent-sdk': {
-    artifactPrefix: 'moldea.ai-adapter-claude-agent-sdk',
-    packageName: '@moldea.ai/adapter-claude-agent-sdk',
-    projectDirectory: 'projects/adapter-claude-agent-sdk',
-    tagPrefix: 'adapter-claude-agent-sdk-v',
-  },
-  'adapter-google-genai': {
-    artifactPrefix: 'moldea.ai-adapter-google-genai',
-    packageName: '@moldea.ai/adapter-google-genai',
-    projectDirectory: 'projects/adapter-google-genai',
-    tagPrefix: 'adapter-google-genai-v',
-  },
-  'adapter-openai': {
-    artifactPrefix: 'moldea.ai-adapter-openai',
-    packageName: '@moldea.ai/adapter-openai',
-    projectDirectory: 'projects/adapter-openai',
-    tagPrefix: 'adapter-openai-v',
-  },
-  'adapter-openai-agents-sdk': {
-    artifactPrefix: 'moldea.ai-adapter-openai-agents-sdk',
-    packageName: '@moldea.ai/adapter-openai-agents-sdk',
-    projectDirectory: 'projects/adapter-openai-agents-sdk',
-    tagPrefix: 'adapter-openai-agents-sdk-v',
-  },
-  'adapter-vercel-ai-sdk': {
-    artifactPrefix: 'moldea.ai-adapter-vercel-ai-sdk',
-    packageName: '@moldea.ai/adapter-vercel-ai-sdk',
-    projectDirectory: 'projects/adapter-vercel-ai-sdk',
-    tagPrefix: 'adapter-vercel-ai-sdk-v',
-  },
-  'adapter-cloudflare-agents': {
-    artifactPrefix: 'moldea.ai-adapter-cloudflare-agents',
-    packageName: '@moldea.ai/adapter-cloudflare-agents',
-    projectDirectory: 'projects/adapter-cloudflare-agents',
-    tagPrefix: 'adapter-cloudflare-agents-v',
-  },
-  'adapter-eve': {
-    artifactPrefix: 'moldea.ai-adapter-eve',
-    packageName: '@moldea.ai/adapter-eve',
-    projectDirectory: 'projects/adapter-eve',
-    tagPrefix: 'adapter-eve-v',
-  },
-  'adapter-langchain': {
-    artifactPrefix: 'moldea.ai-adapter-langchain',
-    packageName: '@moldea.ai/adapter-langchain',
-    projectDirectory: 'projects/adapter-langchain',
-    tagPrefix: 'adapter-langchain-v',
-  },
-  'adapter-langgraph': {
-    artifactPrefix: 'moldea.ai-adapter-langgraph',
-    packageName: '@moldea.ai/adapter-langgraph',
-    projectDirectory: 'projects/adapter-langgraph',
-    tagPrefix: 'adapter-langgraph-v',
-  },
   cli: {
     artifactPrefix: 'moldea.ai-cli',
     packageName: '@moldea.ai/cli',

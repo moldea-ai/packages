@@ -1,6 +1,8 @@
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
-import { RECOGNIZED_RUNTIME_ADAPTER_IDS } from '../constants/index.js';
+import type { ICoreResourceLimits } from '../contracts/index.js';
+import { CoreOperationException, type ICoreOperation } from '../exceptions/index.js';
+import { ACCEPTABLE_WARNING_CODES, RECOGNIZED_RUNTIME_IDS } from '../constants/index.js';
 import {
   escapeJsonPointerSegment,
   type ICoreDiagnosticCollector,
@@ -8,6 +10,7 @@ import {
 import type { IDiagnosticEntity, ISourceRange } from '../diagnostics/index.js';
 import {
   compareExactStrings,
+  countUnicodeScalars,
   hasNonWhitespace,
   hasUnsupportedGlobMetacharacter,
   isCanonicalMoldeaPath,
@@ -26,6 +29,7 @@ import {
   sortRepositoryReferences,
 } from '../format-validation/index.js';
 import type {
+  IAcceptedWarningManifestEntry,
   IAgentBindingsManifestEntry,
   IAgentManifestEntry,
   IRuntimeManifestEntry,
@@ -46,16 +50,8 @@ interface IManifestValidationContext {
   readonly diagnostics: ICoreDiagnosticCollector;
   readonly mirrorPaths: Set<string>;
   readonly path: IRepositoryPath;
-  readonly runtimeLocations: IRuntimeManifestLocation[];
-}
-
-// private source location retained for repository-level adapter preflight
-export interface IRuntimeManifestLocation {
-  readonly adapterId: string;
-  readonly agentId: string;
-  readonly path: IRepositoryPath;
-  readonly pointer: string;
-  readonly range: ISourceRange;
+  readonly limits: ICoreResourceLimits;
+  readonly operation: ICoreOperation;
 }
 
 interface IMappingEntry {
@@ -558,19 +554,11 @@ const readRuntime = (
   if (
     !isStableId(id) ||
     isReservedId(id) ||
-    !(RECOGNIZED_RUNTIME_ADAPTER_IDS as readonly string[]).includes(id)
+    !(RECOGNIZED_RUNTIME_IDS as readonly string[]).includes(id)
   ) {
     context.diagnostics.add({
       code: 'MOLDEA_RUNTIME_ID_INVALID',
       entity,
-      path: context.path,
-      pointer: childPointer(pointer, 'id'),
-      range: idEntry.value.range,
-    });
-  } else {
-    context.runtimeLocations.push({
-      adapterId: id,
-      agentId,
       path: context.path,
       pointer: childPointer(pointer, 'id'),
       range: idEntry.value.range,
@@ -1284,24 +1272,159 @@ const readAgents = (
 };
 
 /**
+ * Validates the closed warning-acceptance contract with field-specific diagnostics.
+ * @returns Valid acceptance entries; diagnostics invalidate the complete manifest on any bad entry.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ */
+const readAcceptedWarnings = (
+  node: IYamlNode,
+  context: IManifestValidationContext,
+): IAcceptedWarningManifestEntry[] | null => {
+  const report = (
+    entry: number | null,
+    field: string,
+    range: ISourceRange,
+    reason: string,
+  ): void => {
+    context.diagnostics.add({
+      code: 'MOLDEA_MANIFEST_VALUE_INVALID',
+      path: context.path,
+      pointer:
+        entry === null
+          ? '/acceptedWarnings'
+          : `/acceptedWarnings/${entry}/${escapeJsonPointerSegment(field)}`,
+      range,
+      details: { entry, field, reason },
+    });
+  };
+  if (node.kind !== 'sequence') {
+    report(null, 'acceptedWarnings', node.range, 'sequence-required');
+    return null;
+  }
+  if (node.items.length > context.limits.maxAcceptedWarnings)
+    throw new CoreOperationException({
+      code: 'RESOURCE_LIMIT_EXCEEDED',
+      operation: context.operation,
+      limit: 'maxAcceptedWarnings',
+      limitMaximum: context.limits.maxAcceptedWarnings,
+      observedUsage: node.items.length,
+      nextAction: 'reduce-input-or-increase-limit',
+    });
+  const accepted: IAcceptedWarningManifestEntry[] = [];
+  const identities = new Set<string>();
+  for (const [index, item] of node.items.entries()) {
+    if (item.kind !== 'mapping') {
+      report(index, 'entry', item.range, 'mapping-required');
+      continue;
+    }
+    const fields = new Map<string, IYamlNode>();
+    let isValid = true;
+    for (const entry of item.entries) {
+      if (
+        entry.key.kind !== 'scalar' ||
+        typeof entry.key.value !== 'string' ||
+        !['code', 'subject', 'qualifier', 'reason'].includes(entry.key.value)
+      ) {
+        report(
+          index,
+          entry.key.kind === 'scalar' && typeof entry.key.value === 'string'
+            ? entry.key.value
+            : 'key',
+          entry.key.range,
+          'unknown-field',
+        );
+        isValid = false;
+      } else fields.set(entry.key.value, entry.value);
+    }
+    const scalar = (field: string): string | null => {
+      const value = fields.get(field);
+      if (
+        value?.kind !== 'scalar' ||
+        typeof value.value !== 'string' ||
+        !hasNonWhitespace(value.value)
+      ) {
+        report(
+          index,
+          field,
+          value?.range ?? item.range,
+          value === undefined ? 'required' : 'non-empty-string-required',
+        );
+        isValid = false;
+        return null;
+      }
+      return value.value;
+    };
+    const code = scalar('code');
+    const subjectText = scalar('subject');
+    const reason = scalar('reason');
+    const subject = subjectText === null ? null : parseManifestPath(subjectText);
+    const qualifierNode = fields.get('qualifier');
+    let qualifier: string | null = null;
+    if (
+      qualifierNode !== undefined &&
+      !(qualifierNode.kind === 'scalar' && qualifierNode.value === null)
+    ) {
+      qualifier = scalar('qualifier');
+      if (qualifier !== null && !isNonEmptySingleLine(qualifier)) {
+        report(index, 'qualifier', qualifierNode.range, 'single-line-required');
+        isValid = false;
+      }
+    }
+    const acceptedCode = ACCEPTABLE_WARNING_CODES.find((candidate) => candidate === code);
+    if (code !== null && acceptedCode === undefined) {
+      report(index, 'code', fields.get('code')!.range, 'code-not-acceptable');
+      isValid = false;
+    }
+    if (subjectText !== null && subject === null) {
+      report(index, 'subject', fields.get('subject')!.range, 'repository-path-required');
+      isValid = false;
+    }
+    if (reason !== null && countUnicodeScalars(reason) > 256) {
+      report(index, 'reason', fields.get('reason')!.range, 'maximum-256-characters');
+      isValid = false;
+    }
+    if (!isValid || acceptedCode === undefined || subject === null || reason === null) continue;
+    const identity = JSON.stringify([acceptedCode, subject, qualifier]);
+    if (identities.has(identity)) {
+      report(index, 'code', fields.get('code')!.range, 'duplicate-identity');
+      continue;
+    }
+    identities.add(identity);
+    accepted.push({
+      code: acceptedCode,
+      subject,
+      ...(qualifierNode === undefined ? {} : { qualifier }),
+      reason,
+    });
+  }
+  return accepted;
+};
+
+/**
  * Validates and normalizes a strict YAML document as a version 1 moldea manifest.
  * @param node The parser-neutral YAML root node.
  * @param path The canonical or caller-supplied logical manifest path.
  * @param diagnostics The operation diagnostic collector.
- * @param runtimeLocations Mutable private source locations populated for repository inspection.
+ * @param limits The immutable operation limits, including the acceptance-list bound.
+ * @param operation The public operation receiving resource failures.
  * @returns The normalized manifest when its supported version can be interpreted.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
  */
 export const validateManifest = (
   node: IYamlNode,
   path: IRepositoryPath,
   diagnostics: ICoreDiagnosticCollector,
-  runtimeLocations: IRuntimeManifestLocation[],
+  limits: ICoreResourceLimits,
+  operation: ICoreOperation,
 ): IMoldeaManifestV1 | null => {
   const context: IManifestValidationContext = {
     diagnostics,
+    operation,
+    limits,
     mirrorPaths: new Set(),
     path,
-    runtimeLocations,
   };
 
   if (node.kind !== 'mapping') {
@@ -1341,7 +1464,7 @@ export const validateManifest = (
   const entries = readMapping(
     node,
     '',
-    new Set(['agents', 'context', 'decisions', 'unresolved', 'version']),
+    new Set(['acceptedWarnings', 'agents', 'context', 'decisions', 'unresolved', 'version']),
     context,
   );
 
@@ -1349,6 +1472,11 @@ export const validateManifest = (
     return null;
   }
 
+  const acceptedWarningsEntry = entries.get('acceptedWarnings');
+  const acceptedWarnings =
+    acceptedWarningsEntry === undefined
+      ? null
+      : readAcceptedWarnings(acceptedWarningsEntry.value, context);
   const contextEntry = entries.get('context');
   const contextRelationships =
     contextEntry === undefined
@@ -1370,6 +1498,7 @@ export const validateManifest = (
 
   return {
     version: 1,
+    ...(acceptedWarnings === null ? {} : { acceptedWarnings }),
     ...(contextRelationships === null ? {} : { context: contextRelationships }),
     ...(decisionRelationships === null ? {} : { decisions: decisionRelationships }),
     ...(unresolved === null ? {} : { unresolved }),

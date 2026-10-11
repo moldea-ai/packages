@@ -75,7 +75,7 @@ describe('parseMoldeaCliArguments', () => {
       '4',
       '--max-diagnostics',
       '64',
-      '--max-evidence',
+      '--max-coverage',
       '128',
     ];
     const originalArguments = [...commandLineArguments];
@@ -94,7 +94,7 @@ describe('parseMoldeaCliArguments', () => {
           resourceLimits: {
             maxDiagnostics: 64,
             maxEntries: 32,
-            maxEvidence: 128,
+            maxCoverage: 128,
             maxFileBytes: 8,
             maxManifestBytes: 4,
             maxTotalBytes: 16,
@@ -179,10 +179,10 @@ describe('parseMoldeaCliArguments', () => {
     [['content'], 'content', false],
     [['content', '--paths-stdin'], 'content', false],
     [['content', '--path', '/moldea/project.md', '--paths-stdin'], 'content', false],
-    [['scope', '--path', '/src/a.ts', '--max-evidence', '1'], 'scope', false],
+    [['scope', '--path', '/src/a.ts', '--max-coverage', '1'], 'scope', false],
     [['content', '--path', '/moldea/project.md', '--max-manifest-bytes', '1'], 'content', false],
     [['content', '--path', '/moldea/project.md', '--max-diagnostics', '1'], 'content', false],
-    [['content', '--path', '/moldea/project.md', '--max-evidence', '1'], 'content', false],
+    [['content', '--path', '/moldea/project.md', '--max-coverage', '1'], 'content', false],
     [['validate', '--path', '/src/a.ts'], 'validate', false],
     [['inspect', '--cursor', 'opaque_cursor'], 'inspect', false],
     [['inspect', '--max-output-bytes', '4096'], 'inspect', false],

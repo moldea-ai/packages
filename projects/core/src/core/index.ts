@@ -19,12 +19,9 @@ import { calculateContentDigest, normalizeTextDocument } from '../text/index.js'
 
 /**
  * Creates one immutable Core instance from detached configuration snapshots.
- * @param options Optional runtime adapters and resource-limit overrides.
+ * @param options Optional resource-limit overrides.
  * @returns A frozen Core instance safe for concurrent independent operations.
  * @throws
- * - DUPLICATE_ADAPTER_ID: A runtime adapter ID is registered more than once.
- * - RESERVED_ADAPTER_ID: A reserved runtime adapter ID was supplied.
- * - INVALID_ADAPTER_DEFINITION: A runtime adapter definition is invalid.
  * - INVALID_RESOURCE_LIMIT: A Core resource limit is invalid.
  */
 export const createCore = (options?: ICoreOptions): ICore => {

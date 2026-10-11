@@ -11,7 +11,7 @@ import {
   getCapabilityResultExcerpt,
 } from './presentation.ts';
 import { CAPABILITY_GROUPS } from './catalog.ts';
-import type { ICapabilities, ICapabilityCase, ICapabilityResult } from './types.ts';
+import type { ICapabilityCase, ICapabilityResult } from './types.ts';
 
 const example: ICapabilityCase = {
   id: 'example',
@@ -25,17 +25,15 @@ const example: ICapabilityCase = {
   files: [],
   result: { kind: 'validation', valid: true, diagnostics: [] },
 };
-const catalog: Pick<ICapabilities, 'runtimeTargets'> = { runtimeTargets: [] };
-const noDiagnostics = { errorCount: 0, warningCount: 0 };
 const cliEnvelopeExcerpt = (
   status: Extract<ICapabilityResult, { kind: 'cli' }>['status'],
   command: string,
 ) => ({
-  cliVersion: '10.0.0',
+  cliVersion: '11.0.0',
   command,
   error: null,
   result: {},
-  schemaVersion: 6 as const,
+  schemaVersion: 7 as const,
   status,
 });
 
@@ -88,31 +86,23 @@ test.each([
   ['reader-entry-pages', 'reader', 'operation'],
   ['snapshot-comparison', 'reader', 'records'],
   ['canonical-content-pages', 'inspection', 'operation'],
-  ['example', 'adapter', 'runtime'],
 ] as const)('selects a truthful visual family for %s (%s) -> %s', (id, kind, family) => {
   const result: ICapabilityResult =
-    kind === 'validation'
-      ? { kind, valid: true, diagnostics: [] }
-      : kind === 'adapter'
-        ? { kind, valid: true, ...noDiagnostics, diagnostics: [], evidence: [] }
-        : { kind, facts: {} };
+    kind === 'validation' ? { kind, valid: true, diagnostics: [] } : { kind, facts: {} };
   expect(getCapabilityVisualFamily({ ...example, id, result })).toBe(family);
 });
 
 describe('getCapabilityOutcome', () => {
   test('keeps a paginated warning distinct from a confirmed error', () => {
     expect(
-      getCapabilityOutcome(
-        {
-          ...example,
-          id: 'inspection-mixed-diagnostics',
-          result: {
-            kind: 'inspection',
-            facts: { counts: { diagnostics: 3, errors: 1, warnings: 2 } },
-          },
+      getCapabilityOutcome({
+        ...example,
+        id: 'inspection-mixed-diagnostics',
+        result: {
+          kind: 'inspection',
+          facts: { counts: { diagnostics: 3, errors: 1, warnings: 2 } },
         },
-        catalog,
-      ),
+      }),
     ).toMatchObject({
       title: '2 warnings and 1 error across three pages',
       label: 'Mixed results',
@@ -120,55 +110,70 @@ describe('getCapabilityOutcome', () => {
     });
   });
 
-  test('shows a valid runtime result with an unverified relationship as a warning', () => {
-    const result: ICapabilityResult = {
-      kind: 'adapter',
-      valid: true,
-      errorCount: 0,
-      warningCount: 1,
-      diagnostics: [
-        {
-          code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
-          details: { relationship: 'instruction-loader', reason: 'dynamic-source-pattern' },
-          entity: { agentId: 'support' },
-          message: 'The declared runtime relationship could not be verified.',
-          path: parseRepositoryPath('/src/agent.ts'),
-          pointer: null,
-          range: null,
-          severity: 'warning',
-          source: 'anthropic',
-        },
-      ],
-      evidence: [],
+  test('distinguishes warnings, accepted warnings, and unchecked exports', () => {
+    const warning = {
+      code: 'MOLDEA_INTEGRATION_BLOCK_MISSING' as const,
+      group: 'integration' as const,
+      severity: 'warning' as const,
+      source: 'core' as const,
+      message: 'The AGENTS.md moldea block is missing.',
+      path: parseRepositoryPath('/AGENTS.md'),
+      subject: parseRepositoryPath('/AGENTS.md'),
+      qualifier: null,
+      acceptable: true,
+      pointer: null,
+      range: null,
+      entity: null,
+      details: {},
     };
-
-    expect(getCapabilityOutcome({ ...example, result }, catalog)).toMatchObject({
-      label: 'Warnings',
-      title: '1 runtime relationship unverified',
-      tone: 'warning',
-    });
+    expect(
+      getCapabilityOutcome({
+        ...example,
+        result: { kind: 'validation', valid: true, warningCount: 1, diagnostics: [warning] },
+      }),
+    ).toMatchObject({ label: 'Warnings', title: '1 warning', tone: 'warning' });
+    expect(
+      getCapabilityOutcome({
+        ...example,
+        result: {
+          kind: 'validation',
+          valid: true,
+          warningCount: 0,
+          acceptedWarningCount: 1,
+          diagnostics: [{ ...warning, accepted: true, reason: 'Synthetic hosted repository.' }],
+        },
+      }),
+    ).toMatchObject({ label: 'Accepted warnings', tone: 'info' });
+    expect(
+      getCapabilityOutcome({
+        ...example,
+        result: {
+          kind: 'validation',
+          valid: true,
+          diagnostics: [],
+          coverageCounts: { bindings: 1, exportsPassed: 0, exportsFailed: 0, exportsNotChecked: 1 },
+        },
+      }),
+    ).toMatchObject({ label: 'Not checked', tone: 'neutral' });
   });
 
   test('shows a successful CLI warning without labelling it fully verified', () => {
     expect(
-      getCapabilityOutcome(
-        {
-          ...example,
-          result: {
-            kind: 'cli',
-            status: 'valid',
-            schemaVersion: 6,
-            exitStatus: 0,
-            command: 'moldea validate --json',
-            facts: { warningCount: 1 },
-            envelopeExcerpt: cliEnvelopeExcerpt('valid', 'validate'),
-          },
+      getCapabilityOutcome({
+        ...example,
+        result: {
+          kind: 'cli',
+          status: 'valid',
+          schemaVersion: 7,
+          exitStatus: 0,
+          command: 'moldea validate --json',
+          facts: { warningCount: 1 },
+          envelopeExcerpt: cliEnvelopeExcerpt('valid', 'validate'),
         },
-        catalog,
-      ),
+      }),
     ).toMatchObject({
       label: 'Warnings',
-      title: '1 runtime relationship unverified',
+      title: '1 warning',
       tone: 'warning',
     });
   });
@@ -176,11 +181,6 @@ describe('getCapabilityOutcome', () => {
   test.each([
     [{ kind: 'validation', valid: true, diagnostics: [] }, 'Valid', 'success'],
     [{ kind: 'validation', valid: false, diagnostics: [] }, 'Invalid', 'danger'],
-    [
-      { kind: 'adapter', valid: true, ...noDiagnostics, diagnostics: [], evidence: [] },
-      'Inspected',
-      'info',
-    ],
     [{ kind: 'reader', facts: { code: 'SNAPSHOT_CHANGED' } }, 'Refused', 'warning'],
     [{ kind: 'inspection', facts: { code: 'RESOURCE_LIMIT_EXCEEDED' } }, 'Refused', 'warning'],
     [{ kind: 'inspection', facts: { valid: true, relevant: false } }, 'Returned', 'info'],
@@ -188,7 +188,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'valid',
-        schemaVersion: 6,
+        schemaVersion: 7,
         exitStatus: 0,
         command: 'moldea inspect --json',
         facts: {},
@@ -201,7 +201,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'invalid',
-        schemaVersion: 6,
+        schemaVersion: 7,
         exitStatus: 1,
         command: 'moldea validate --json',
         facts: {},
@@ -214,7 +214,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'error',
-        schemaVersion: 6,
+        schemaVersion: 7,
         exitStatus: 3,
         command: 'moldea content --json',
         facts: {},
@@ -226,123 +226,45 @@ describe('getCapabilityOutcome', () => {
   ] satisfies [ICapabilityResult, string, string][])(
     'getCapabilityOutcome(%o) -> %s',
     (result, label, tone) => {
-      expect(getCapabilityOutcome({ ...example, result }, catalog)).toMatchObject({
+      expect(getCapabilityOutcome({ ...example, result })).toMatchObject({
         label,
         tone,
         description: example.description,
       });
     },
   );
-
-  test('does not equate a valid adapter result with an established connection', () => {
-    const withAbsence: Pick<ICapabilities, 'runtimeTargets'> = {
-      runtimeTargets: [
-        {
-          adapterId: 'custom',
-          scopeRoute: '/adapters/custom/',
-          target: {
-            id: 'custom',
-            kind: 'custom',
-            language: 'any',
-            maturity: 'supported',
-            lastVerifiedAt: '2026-09-01',
-            qualificationEvidence: { url: 'https://example.com/evidence/' },
-          },
-          patterns: [
-            {
-              id: 'example',
-              proofs: [
-                {
-                  caseId: 'example',
-                  source: { path: '/src/agent.ts', contains: 'prepareCall' },
-                  witness: {
-                    kind: 'absence',
-                    agentId: 'support',
-                    evidenceKind: 'instruction-loader',
-                  },
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    };
-    expect(
-      getCapabilityOutcome(
-        {
-          ...example,
-          result: { kind: 'adapter', valid: true, ...noDiagnostics, diagnostics: [], evidence: [] },
-        },
-        withAbsence,
-      ),
-    ).toMatchObject({ label: 'Not established', tone: 'warning' });
-    expect(
-      getCapabilityOutcome(
-        {
-          ...example,
-          id: 'different',
-          result: { kind: 'adapter', valid: true, ...noDiagnostics, diagnostics: [], evidence: [] },
-        },
-        withAbsence,
-      ).label,
-    ).toBe('Inspected');
-    expect(
-      getCapabilityOutcome(
-        {
-          ...example,
-          result: {
-            kind: 'adapter',
-            valid: false,
-            errorCount: 1,
-            warningCount: 0,
-            diagnostics: [],
-            evidence: [],
-          },
-        },
-        withAbsence,
-      ).label,
-    ).toBe('Invalid');
-    expect(
-      getCapabilityOutcome(
-        {
-          ...example,
-          id: 'vercel-dynamic-preparation',
-          result: { kind: 'adapter', valid: true, ...noDiagnostics, diagnostics: [], evidence: [] },
-        },
-        catalog,
-      ).label,
-    ).toBe('Not established');
-  });
 });
 
-test('selects bounded evidence without mutating the recorded result', () => {
-  const result: Extract<ICapabilityResult, { kind: 'adapter' }> = {
-    kind: 'adapter',
+test('publishes coverage and accepted-warning counts without mutating the result', () => {
+  const result: ICapabilityResult = {
+    kind: 'validation',
     valid: true,
-    ...noDiagnostics,
+    errorCount: 0,
+    warningCount: 0,
+    acceptedWarningCount: 0,
     diagnostics: [],
-    evidence: Array.from({ length: 8 }, (_, index) => ({
-      source: 'custom',
-      kind: 'language',
-      agentId: `agent-${index}`,
-      capabilityId: null,
-      capabilityKind: null,
-      runtimeName: null,
-      references: [{ path: parseRepositoryPath('/src/agent.ts') }],
-      details: { language: 'typescript' },
-    })),
+    coverage: [
+      {
+        entity: { contextPath: parseRepositoryPath('/moldea/project.md') },
+        relationship: 'context-binding',
+        path: '/src/returns.cjs',
+        symbol: 'canReturn',
+        fileCheck: 'passed',
+        exportCheck: 'not-checked',
+        exportNotCheckedReason: 'unsupported-file-type',
+      },
+    ],
+    coverageCounts: { bindings: 1, exportsPassed: 0, exportsFailed: 0, exportsNotChecked: 1 },
   };
   const before = structuredClone(result);
   expect(getCapabilityResultExcerpt(result)).toStrictEqual({
     valid: true,
-    ...noDiagnostics,
+    errorCount: 0,
+    warningCount: 0,
+    acceptedWarningCount: 0,
     diagnostics: [],
-    evidence: result.evidence.slice(0, 4).map(({ kind, agentId, runtimeName, references }) => ({
-      kind,
-      agentId,
-      runtimeName,
-      references,
-    })),
+    coverage: result.coverage,
+    coverageCounts: result.coverageCounts,
   });
   expect(result).toStrictEqual(before);
   expect(getCapabilityResultExcerpt({ kind: 'reader', facts: { code: 'ABORTED' } })).toStrictEqual({

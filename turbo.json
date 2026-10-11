@@ -13,8 +13,6 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/specifications/repository-format.md",
-        "$TURBO_ROOT$/compatibility/runtimes.yaml",
-        "$TURBO_ROOT$/scripts/runtime-compatibility/**",
         "$TURBO_ROOT$/projects/*/package.json",
         "$TURBO_ROOT$/projects/*/docs/**/*.md",
         "$TURBO_ROOT$/projects/*/src/**",
@@ -36,8 +34,7 @@
     },
     "@moldea.ai/website-ui#test:integration": {
       "dependsOn": ["build", "^test:integration"],
-      "env": ["PLAYWRIGHT_BROWSERS_PATH"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/configs/package-documentation/*.ts"]
+      "env": ["PLAYWRIGHT_BROWSERS_PATH"]
     },
     "build": {
       "dependsOn": ["^build"],
@@ -55,27 +52,23 @@
       "outputs": [".generated/**"]
     },
     "lint": {
-      "dependsOn": ["^build", "^lint"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/configs/package-documentation/*.ts"]
+      "dependsOn": ["^build", "^lint"]
     },
     "test": {
-      "dependsOn": ["^test"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/configs/package-documentation/*.ts"]
+      "dependsOn": ["^test"]
     },
     "test:e2e": {
       "dependsOn": ["build", "^build"],
       "env": ["PLAYWRIGHT_BROWSERS_PATH"]
     },
     "test:integration": {
-      "dependsOn": ["build", "^test:integration"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/configs/package-documentation/*.ts"]
+      "dependsOn": ["build", "^test:integration"]
     },
     "test:unit": {
       "dependsOn": ["^build"]
     },
     "typecheck": {
-      "dependsOn": ["^build", "^typecheck"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/configs/package-documentation/*.ts"]
+      "dependsOn": ["^build", "^typecheck"]
     }
   }
 }

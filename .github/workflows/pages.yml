@@ -7,12 +7,11 @@ on:
     paths:
       - .github/workflows/pages.yml
       - apps/website/**
-      - compatibility/**
+      - consumers/**
       - configs/**
       - docs/**
       - packages/**
       - projects/**
-      - scripts/runtime-compatibility/**
       - scripts/npm-release/**
       - scripts/website/**
       - specifications/repository-format.md
@@ -74,9 +73,6 @@ jobs:
 
       - name: Install website browser
         run: pnpm --filter @moldea.ai/packages-website exec playwright install --with-deps chromium
-
-      - name: Check runtime compatibility
-        run: pnpm compatibility:check
 
       - name: Check documentation sources
         run: pnpm docs:check

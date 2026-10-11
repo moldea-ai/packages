@@ -7,19 +7,13 @@ import BaseLayout from '../../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 
 const model = loadWebsiteModel();
-const toolingPackages = model.packages.filter(({ family }) => family === 'skill-core-tooling');
-const adapterPackages = model.packages.filter(({ family }) => family === 'runtime-adapters');
-const adapterIdByPackageSlug = new Map(
-  model.adapters.flatMap(({ id, implementedPackageSlug }) =>
-    implementedPackageSlug ? ([[implementedPackageSlug, id]] as const) : [],
-  ),
-);
+const toolingPackages = model.packages;
 const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Packages' }];
 ---
 
 <BaseLayout
   title="Open-source packages"
-  description="Explore the public moldea packages for repository access, deterministic Core interpretation, CLI composition, and runtime adapters."
+  description="Explore the public moldea packages for repository access, deterministic Core interpretation, and CLI composition."
   {breadcrumbs}
 >
   <section class="page-shell pt-8 pb-section-gap">
@@ -29,7 +23,7 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Packages' }];
       <h1 class="page-title">One foundation. Explicit responsibilities.</h1>
       <p class="mt-7 max-w-3xl text-xl leading-9 text-muted-foreground">
         Start with the CLI to check an adopted repository. Choose Core and repository readers when
-        building your own tools, or an adapter for a specific runtime integration.
+        building your own tools.
       </p>
       <a
         class="mt-5 inline-block text-link"
@@ -41,12 +35,12 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Packages' }];
     <section aria-labelledby="tooling-title">
       <div class="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p class="eyebrow mb-3">Package family</p>
+          <p class="eyebrow mb-3">Read-only tools</p>
           <h2
             id="tooling-title"
             class="section-title"
           >
-            Skill & Core Tooling
+            CLI and libraries
           </h2>
         </div>
         <p class="max-w-lg text-sm leading-6 text-muted-foreground">
@@ -64,43 +58,6 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Packages' }];
           ))
         }
       </div>
-    </section>
-
-    <section
-      class="mt-section-gap"
-      aria-labelledby="adapter-packages-title"
-    >
-      <div class="mb-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p class="eyebrow mb-3">Package family</p>
-          <h2
-            id="adapter-packages-title"
-            class="section-title"
-          >
-            Runtime Adapters
-          </h2>
-        </div>
-        <p class="max-w-lg text-sm leading-6 text-muted-foreground">
-          Only implemented public adapter packages appear here. The complete official adapter
-          inventory, including planned work and Core's built-in custom runtime, lives under
-          Adapters.
-        </p>
-      </div>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {
-          adapterPackages.map((packageModel) => (
-            <PackageCard
-              adapterId={adapterIdByPackageSlug.get(packageModel.slug)}
-              packageModel={packageModel}
-              copy={model.discoveryCopy.packages[packageModel.name]}
-            />
-          ))
-        }
-      </div>
-      <p class="mt-5 text-xs leading-5 text-muted-foreground">
-        Company names and marks belong to their respective owners. Compatibility does not imply
-        endorsement.
-      </p>
     </section>
   </section>
 </BaseLayout>

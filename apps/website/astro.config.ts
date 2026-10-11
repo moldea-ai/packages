@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
 import { DEFAULT_BASE_PATH, normalizeBasePath, withBase } from '@moldea.ai/website-ui/site';
 
+import { RETIRED_RUNTIME_ROUTES } from './src/lib/redirects/index.ts';
 import { DEFAULT_SITE_URL } from './src/lib/site/constants.ts';
 
 const site = process.env.SITE_URL ?? DEFAULT_SITE_URL;
@@ -13,8 +14,15 @@ export default defineConfig({
   base,
   output: 'static',
   trailingSlash: 'always',
-  redirects: { '/compatibility/': withBase('/adapters/', base) },
-  integrations: [sitemap()],
+  redirects: Object.fromEntries(
+    RETIRED_RUNTIME_ROUTES.map((route) => [route, withBase('/runtimes/', base)]),
+  ),
+  integrations: [
+    sitemap({
+      filter: (page) =>
+        !RETIRED_RUNTIME_ROUTES.some((route) => new URL(page).pathname === withBase(route, base)),
+    }),
+  ],
   markdown: {
     shikiConfig: {
       themes: {

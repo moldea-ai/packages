@@ -25,7 +25,7 @@ const COMMAND_NAMES = new Set<IMoldeaCliCommand>(Object.values(MOLDEA_CLI_COMMAN
 const RESOURCE_OPTION_FIELDS = {
   [MOLDEA_CLI_OPTIONS.MaxDiagnostics]: 'maxDiagnostics',
   [MOLDEA_CLI_OPTIONS.MaxEntries]: 'maxEntries',
-  [MOLDEA_CLI_OPTIONS.MaxEvidence]: 'maxEvidence',
+  [MOLDEA_CLI_OPTIONS.MaxCoverage]: 'maxCoverage',
   [MOLDEA_CLI_OPTIONS.MaxFileBytes]: 'maxFileBytes',
   [MOLDEA_CLI_OPTIONS.MaxManifestBytes]: 'maxManifestBytes',
   [MOLDEA_CLI_OPTIONS.MaxTotalBytes]: 'maxTotalBytes',
@@ -47,7 +47,7 @@ const isMoldeaCliCommand = (input: string | undefined): input is IMoldeaCliComma
 };
 
 /**
- * Parses the complete schema 6 command grammar without mutating caller arguments.
+ * Parses the complete schema 7 command grammar without mutating caller arguments.
  * @param commandLineArguments The process arguments after the executable path.
  * @returns A normalized command, informational request, or safe invocation error.
  */
@@ -219,7 +219,7 @@ export const parseMoldeaCliArguments = (
     return createArgumentError('INVALID_ARGUMENT', command, isJson);
   }
 
-  if (isScope && seenOptions.has(MOLDEA_CLI_OPTIONS.MaxEvidence)) {
+  if (isScope && seenOptions.has(MOLDEA_CLI_OPTIONS.MaxCoverage)) {
     return createArgumentError('INVALID_ARGUMENT', command, isJson);
   }
 
@@ -227,7 +227,7 @@ export const parseMoldeaCliArguments = (
     isContent &&
     [
       MOLDEA_CLI_OPTIONS.MaxDiagnostics,
-      MOLDEA_CLI_OPTIONS.MaxEvidence,
+      MOLDEA_CLI_OPTIONS.MaxCoverage,
       MOLDEA_CLI_OPTIONS.MaxManifestBytes,
     ].some((option) => seenOptions.has(option))
   ) {

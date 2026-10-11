@@ -18,7 +18,7 @@ interface Props {
   total: number;
 }
 const { example, catalog, position, total } = Astro.props;
-const outcome = getCapabilityOutcome(example, catalog);
+const outcome = getCapabilityOutcome(example);
 const dialogId = `example-${example.id}`;
 const positionLabel = `Example ${position} of ${total}`;
 ---

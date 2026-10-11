@@ -11,7 +11,6 @@ import { CapabilityFiles } from './files/index.ts';
 import { CapabilityMixedDiagnostics } from './mixed-diagnostics/index.ts';
 import { CapabilityDigests } from './digests/index.ts';
 import { CapabilityRecords } from './records/index.ts';
-import { CapabilityRuntime } from './runtime/index.ts';
 import { CapabilityScope } from './scope/index.ts';
 import { CapabilitySource } from './source/index.ts';
 import { CapabilityOperation } from './operation/index.ts';
@@ -21,7 +20,7 @@ interface Props {
   example: ICapabilityCase;
   catalog: ICapabilities;
 }
-const { example, catalog } = Astro.props;
+const { example } = Astro.props;
 const family = getCapabilityVisualFamily(example);
 ---
 
@@ -38,11 +37,6 @@ const family = getCapabilityVisualFamily(example);
       <CapabilityDecisions {example} />
     ) : family === 'mixed-diagnostics' ? (
       <CapabilityMixedDiagnostics {example} />
-    ) : family === 'runtime' ? (
-      <CapabilityRuntime
-        {example}
-        {catalog}
-      />
     ) : family === 'records' ? (
       <CapabilityRecords {example} />
     ) : family === 'command' ? (

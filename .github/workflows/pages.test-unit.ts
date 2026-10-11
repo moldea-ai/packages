@@ -30,10 +30,10 @@ test('retains main-only automatic deployment and manual dispatch', () => {
 
 test.each([
   'specifications/repository-format.md',
-  'packages/adapter-static-analysis/src/index.ts',
+  'projects/core/src/index.ts',
   'projects/website-ui/src/components/dialog/dialog.component.astro',
   'apps/website/content/getting-started.md',
-  'compatibility/runtimes.yaml',
+  'consumers/SHA256SUMS',
   'scripts/npm-release/availability.ts',
 ])('deploys when %s changes alone', (sourcePath) => {
   expect(workflow.on.push.paths.some((pattern) => posix.matchesGlob(sourcePath, pattern))).toBe(

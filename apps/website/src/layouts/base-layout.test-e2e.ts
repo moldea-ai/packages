@@ -207,13 +207,13 @@ for (const width of [320, 1440]) {
     test(`matches platform interaction roles at ${width}px in ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
-      await page.goto(toPublicPath('/adapters/'));
+      await page.goto(toPublicPath('/runtimes/'));
       const target = page.getByRole('link', {
-        name: 'Create agent, typescript-create-agent-1-5, supported',
+        name: 'OpenAI',
         exact: true,
       });
       const textLink = page.getByRole('link', {
-        name: 'machine-readable compatibility JSON',
+        name: 'Read the coverage contract',
         exact: true,
       });
       const footerLink = page
@@ -243,7 +243,7 @@ for (const width of [320, 1440]) {
       }, theme);
       await expect(textLink).toHaveCSS('text-decoration-line', 'underline');
       await expect(textLink).toHaveCSS('color', platformColors.prose);
-      await expect(textLink.locator('[data-external-link-icon]')).toBeVisible();
+      await expect(textLink.locator('[data-external-link-icon]')).toHaveCount(0);
       await expect(footerLink).toHaveCSS('text-decoration-line', 'none');
       const foreground = await page
         .locator('body')
@@ -302,7 +302,7 @@ for (const width of [320, 1440]) {
         name: width < 1024 ? 'Mobile navigation' : 'Primary navigation',
         exact: true,
       });
-      const current = navigation.getByRole('link', { name: 'Adapters', exact: true });
+      const current = navigation.getByRole('link', { name: 'Runtimes', exact: true });
       const inactive = navigation.getByRole('link', { name: 'Packages', exact: true });
       await expect(current).toHaveAttribute('aria-current', 'page');
       await expect(current).toHaveCSS('background-color', platformColors.navigationSelected);
@@ -336,9 +336,9 @@ const REPRESENTATIVE_PATHS = [
   '/packages/core/',
   '/packages/core/api/',
   '/packages/core/diagnostics/',
-  '/adapters/',
-  '/adapters/openai/',
-  '/adapters/openai/api/',
+  '/runtimes/',
+  '/packages/repository/api/',
+  '/packages/core/repository-inspection/',
   '/repository-format/',
   '/search/',
 ] as const;
@@ -472,16 +472,16 @@ test('publishes unique canonical, social, and structured search metadata', async
     await expect(homeStructuredData).toHaveCount(0);
   }
 
-  const limitationsRoute = '/adapters/openai/limitations/';
+  const limitationsRoute = '/packages/core/repository-inspection/';
   const limitationsUrl = new URL(toPublicPath(limitationsRoute), siteUrl).href;
 
   await page.goto(toPublicPath(limitationsRoute));
   await expect(page).toHaveTitle(
-    'Boundaries and limitations · @moldea.ai/adapter-openai · moldea packages',
+    'Repository validation and inspection · @moldea.ai/core · moldea packages',
   );
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
-    /^@moldea\.ai\/adapter-openai: /u,
+    /^@moldea\.ai\/core: /u,
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', limitationsUrl);
 
@@ -516,7 +516,7 @@ test('renders standalone moldea references as inline code in visible prose', asy
   const description = page.locator('article > header > p').first();
 
   await expect(description.locator('code')).toHaveText('moldea');
-  await expect(description).toContainText('composition for moldea repositories.');
+  await expect(description).toContainText('binding coverage for moldea repositories.');
 });
 
 test('formats the brand in homepage copy and the guide heading without changing its text', async ({
@@ -749,7 +749,7 @@ ${'long-line-'.repeat(32)}
   await page.goto(toPublicPath('/capabilities/'));
   await expect(
     page.locator('[data-capability-visual="command"] pre[data-code-copy-enhanced="true"]'),
-  ).toHaveCount(10);
+  ).toHaveCount(11);
   await expect(
     page.locator('dialog[id^="result-"] pre[data-code-copy-enhanced="true"]'),
   ).toHaveCount(0);
@@ -1120,20 +1120,20 @@ test('cleans up progress after failed and interrupted navigation and across brow
     .click();
 
   await expect(progress).toBeVisible();
-  await page.getByRole('link', { name: 'Adapters', exact: true }).first().click();
-  await expect(page).toHaveURL(toPublicPath('/adapters/'));
+  await page.getByRole('link', { name: 'Runtimes', exact: true }).first().click();
+  await expect(page).toHaveURL(toPublicPath('/runtimes/'));
   await expect(progress).toBeHidden();
 
   interruptedRequest.resolve();
   await interruptedNavigation;
-  await expect(page).toHaveURL(toPublicPath('/adapters/'));
+  await expect(page).toHaveURL(toPublicPath('/runtimes/'));
 
   await page.getByRole('link', { name: 'Packages', exact: true }).first().click();
   await expect(page).toHaveURL(toPublicPath('/packages/'));
   await expect(progress).toBeHidden();
 
   await page.goBack();
-  await expect(page).toHaveURL(toPublicPath('/adapters/'));
+  await expect(page).toHaveURL(toPublicPath('/runtimes/'));
   await expect(progress).toBeHidden();
 
   await page.goForward();
@@ -1236,7 +1236,7 @@ test('marks the current desktop and mobile navigation destinations', async ({ pa
 
   const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
   const activeDesktopLink = primaryNavigation.locator('a[aria-current="page"]');
-  const inactiveDesktopLink = primaryNavigation.getByRole('link', { name: 'Adapters' });
+  const inactiveDesktopLink = primaryNavigation.getByRole('link', { name: 'Runtimes' });
 
   await expect(activeDesktopLink).toHaveText('Packages');
   expect(
@@ -1260,14 +1260,14 @@ test('marks the current desktop and mobile navigation destinations', async ({ pa
   );
 
   await page.setViewportSize({ height: 740, width: 320 });
-  await page.goto(toPublicPath('/adapters/openai/api/'));
+  await page.goto(toPublicPath('/runtimes/'));
   await page.getByRole('banner').locator('summary').click();
 
   const mobileNavigation = page.getByRole('navigation', { name: 'Mobile navigation' });
   const activeMobileLink = mobileNavigation.locator('a[aria-current="page"]');
   const inactiveMobileLink = mobileNavigation.getByRole('link', { name: 'Packages' });
 
-  await expect(activeMobileLink).toHaveText('Adapters');
+  await expect(activeMobileLink).toHaveText('Runtimes');
   expect(
     await activeMobileLink.evaluate((element) => getComputedStyle(element).backgroundColor),
   ).not.toBe(
@@ -1275,110 +1275,14 @@ test('marks the current desktop and mobile navigation destinations', async ({ pa
   );
 });
 
-test('presents available runtime adapters without promoting planned inventory', async ({
-  page,
-}) => {
-  await page.goto(toPublicPath('/'));
-
-  const adapterSection = page.locator('section[aria-labelledby="available-adapters-title"]');
-
-  await expect(
-    adapterSection.getByRole('heading', {
-      level: 2,
-      name: 'Find your runtime.',
-    }),
-  ).toBeVisible();
-  await expect(
-    adapterSection.getByRole('link', { name: /Anthropic company logo Anthropic/ }),
-  ).toBeVisible();
-  await expect(adapterSection.getByText('Anthropic', { exact: true })).toBeVisible();
-  await expect(adapterSection.getByText('Claude Agent SDK', { exact: true })).toBeVisible();
-  await expect(adapterSection.getByText('Custom runtime', { exact: true })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /Custom runtime/ })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /OpenAI/ })).toHaveCount(2);
-  await expect(adapterSection.getByAltText('Anthropic company logo')).toHaveCount(2);
-  await expect(adapterSection.getByRole('img', { name: 'Custom adapter icon' })).toBeVisible();
-  await expect(adapterSection.getByAltText('OpenAI company logo')).toHaveCount(2);
-  await expect(adapterSection.getByRole('link', { name: /Claude Agent SDK/ })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /Cloudflare Agents/ })).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /Eve/ })).toBeVisible();
-  await expect(
-    adapterSection.getByRole('link', { name: /LangChain company logo LangChain/ }),
-  ).toBeVisible();
-  await expect(
-    adapterSection.getByRole('link', { name: /LangChain company logo LangGraph/ }),
-  ).toBeVisible();
-  await expect(adapterSection.getByRole('link', { name: /Vercel AI SDK/ })).toBeVisible();
-  await expect(adapterSection.getByAltText('Vercel company logo')).toHaveCount(2);
-  await expect(adapterSection.getByRole('link', { name: 'View all adapters' })).toHaveAttribute(
-    'href',
-    toPublicPath('/adapters/'),
-  );
-});
-
-test('omits the planned adapter inventory when every adapter is available', async ({ page }) => {
-  await page.goto(toPublicPath('/adapters/'));
-
-  await expect(page.getByText('Matrix-approved inventory', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('heading', { level: 2, name: 'Planned and evolving' })).toHaveCount(
-    0,
-  );
-});
-
-test('shows company marks for provider adapters and keeps the custom adapter icon', async ({
-  page,
-}) => {
-  await page.goto(toPublicPath('/adapters/'));
-
-  for (const [companyName, expectedCount] of [
-    ['Anthropic', 2],
-    ['Cloudflare', 1],
-    ['Google', 1],
-    ['LangChain', 2],
-    ['OpenAI', 2],
-    ['Vercel', 2],
-  ] as const) {
-    await expect(page.getByAltText(`${companyName} company logo`)).toHaveCount(expectedCount);
-  }
-
-  const companyMarks = page.locator('img[alt$=" company logo"]');
-
-  await expect(companyMarks).toHaveCount(10);
-  await companyMarks.last().scrollIntoViewIfNeeded();
-  await expect
-    .poll(() =>
-      companyMarks.evaluateAll((images) =>
-        images.every(
-          (image) => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
-        ),
-      ),
-    )
-    .toBe(true);
-
-  const customAdapterCard = page.getByRole('link', { name: /Custom adapter icon/ });
-
-  await expect(customAdapterCard.getByRole('img', { name: 'Custom adapter icon' })).toBeVisible();
-  await expect(customAdapterCard.locator('img')).toHaveCount(0);
-
-  await page.getByRole('button', { name: 'Use dark theme' }).click();
-  await expect(page.locator('html')).toHaveClass(/dark/);
-  expect(
-    await page
-      .getByAltText('OpenAI company logo')
-      .first()
-      .evaluate((element) => getComputedStyle(element).filter),
-  ).not.toBe('none');
-});
-
-test('shows company marks for runtime adapters on the packages page', async ({ page }) => {
+test('lists the four public packages without the retired adapter family', async ({ page }) => {
   await page.goto(toPublicPath('/packages/'));
-
-  const runtimeAdapters = page.locator('section[aria-labelledby="adapter-packages-title"]');
-
-  await expect(runtimeAdapters.getByAltText('Anthropic company logo')).toHaveCount(2);
-  await expect(runtimeAdapters.getByAltText('LangChain company logo')).toHaveCount(2);
-  await expect(runtimeAdapters.getByAltText('OpenAI company logo')).toHaveCount(2);
-  await expect(runtimeAdapters.getByRole('img', { name: 'Custom adapter icon' })).toHaveCount(0);
+  for (const slug of ['cli', 'core', 'repository', 'repository-fs']) {
+    await expect(
+      page.getByRole('link', { name: new RegExp(`@moldea\\.ai/${slug} `) }),
+    ).toHaveAttribute('href', toPublicPath(`/packages/${slug}/`));
+  }
+  await expect(page.locator('a[href*="/adapters/"]')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Website Foundations' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: /@moldea.ai\/website-ui/ })).toHaveCount(0);
 });
@@ -1648,7 +1552,7 @@ test('renders product names safely in search results and keeps the latest reques
 });
 
 test('left-aligns generated API signatures without indentation whitespace', async ({ page }) => {
-  for (const path of ['/packages/core/api/', '/adapters/openai/api/']) {
+  for (const path of ['/packages/core/api/', '/packages/repository/api/']) {
     await page.goto(toPublicPath(path));
     const signature = page.locator('pre').first();
 

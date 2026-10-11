@@ -6,21 +6,19 @@ import { CoreConfigurationException, CoreOperationException } from './index.js';
 
 describe('Core exceptions', () => {
   test('constructs a configuration exception with safe documented fields', () => {
-    const cause = new Error('private adapter state');
+    const cause = new Error('private configuration state');
     const exception = new CoreConfigurationException({
-      adapterId: 'eve',
       cause,
-      code: 'INVALID_ADAPTER_DEFINITION',
+      code: 'INVALID_RESOURCE_LIMIT',
       operation: 'create-core',
     });
 
     expect(exception).toBeInstanceOf(Exception);
     expect(exception).toBeInstanceOf(Error);
     expect(exception).toMatchObject({
-      adapterId: 'eve',
       cause,
-      code: 'INVALID_ADAPTER_DEFINITION',
-      message: 'A runtime adapter definition is invalid.',
+      code: 'INVALID_RESOURCE_LIMIT',
+      message: 'A Core resource limit is invalid.',
       name: 'CoreConfigurationException',
       operation: 'create-core',
     });
@@ -40,7 +38,6 @@ describe('Core exceptions', () => {
 
     expect(exception).toBeInstanceOf(Exception);
     expect(exception).toMatchObject({
-      adapterId: null,
       agentId: null,
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxFileBytes',
@@ -60,7 +57,7 @@ describe('Core exceptions', () => {
     ).toMatchObject({ retryable: true });
     expect(
       new CoreOperationException({
-        code: 'ADAPTER_EXECUTION_FAILED',
+        code: 'INVALID_ARGUMENT',
         operation: 'validate-project',
       }),
     ).toMatchObject({ retryable: false });

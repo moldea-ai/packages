@@ -9,7 +9,7 @@ import {
   type IRepositoryPath,
 } from '@moldea.ai/repository';
 import {
-  createMemoryRepositoryReader,
+  createIntegratedMemoryRepositoryReader,
   overrideCoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
 } from '../repository.test-fixtures.js';
@@ -127,7 +127,7 @@ const getFixtureCase = (name: string): IProjectIndexFixture['cases'][number] => 
 describe('Core universal project inspection through the memory repository reader', () => {
   test.each(fixture.cases)('returns exact all-or-nothing results for $name', async (case_) => {
     const result = await inspectUniversalProject(
-      { repository: createMemoryRepositoryReader(createEntries(case_)) },
+      { repository: createIntegratedMemoryRepositoryReader(createEntries(case_)) },
       options,
     );
 
@@ -137,19 +137,14 @@ describe('Core universal project inspection through the memory repository reader
       throw new TypeError(`The ${case_.name} diagnostic golden is required.`);
     }
 
-    const { runtimeLocations, ...universalResult } = result;
+    const { coverage, ...universalResult } = result;
 
     expect(toJsonValue(universalResult)).toStrictEqual({
       diagnostics: expectedDiagnostics,
       formatVersion: case_.expectedFormatVersion,
       project: readExpectedProject(case_),
     });
-    expect(Object.isFrozen(runtimeLocations)).toBe(true);
-    expect(
-      runtimeLocations.every(
-        ({ pointer }) => pointer.startsWith('/agents/') && pointer.endsWith('/runtime/id'),
-      ),
-    ).toBe(true);
+    expect(Object.isFrozen(coverage)).toBe(true);
     expect(Object.isFrozen(result)).toBe(true);
     expect(Object.isFrozen(result.diagnostics)).toBe(true);
     expect(result.project === null || Object.isFrozen(result.project)).toBe(true);
@@ -158,7 +153,7 @@ describe('Core universal project inspection through the memory repository reader
   test('creates the complete deterministic JSON-safe project index', async () => {
     const case_ = getFixtureCase('complete universal project');
     const result = await inspectUniversalProject(
-      { repository: createMemoryRepositoryReader(createEntries(case_)) },
+      { repository: createIntegratedMemoryRepositoryReader(createEntries(case_)) },
       options,
     );
     const project = result.project;
@@ -342,11 +337,11 @@ describe('Core universal project inspection through the memory repository reader
     const case_ = getFixtureCase('complete universal project');
     const entries = createEntries(case_);
     const expected = await inspectUniversalProject(
-      { repository: createMemoryRepositoryReader(entries) },
+      { repository: createIntegratedMemoryRepositoryReader(entries) },
       options,
     );
     const reordered = await inspectUniversalProject(
-      { repository: createMemoryRepositoryReader([...entries].reverse()) },
+      { repository: createIntegratedMemoryRepositoryReader([...entries].reverse()) },
       options,
     );
 
@@ -355,7 +350,7 @@ describe('Core universal project inspection through the memory repository reader
 
   test('reads each indexed source file once through the shared inspection session', async () => {
     const case_ = getFixtureCase('complete universal project');
-    const repository = createMemoryRepositoryReader(createEntries(case_));
+    const repository = createIntegratedMemoryRepositoryReader(createEntries(case_));
     const readCounts = new Map<IRepositoryPath, number>();
     const observedRepository = overrideCoreTestRepositoryReader(repository, {
       getEntry: (path, operationOptions) => repository.getEntry(path, operationOptions),
@@ -369,6 +364,8 @@ describe('Core universal project inspection through the memory repository reader
     await inspectUniversalProject({ repository: observedRepository }, options);
 
     expect(Object.fromEntries(readCounts)).toStrictEqual({
+      '/AGENTS.md': 1,
+      '/.agents/skills/moldea/assets/managed-agents-block.md': 1,
       '/apps/alpha.md': 1,
       '/moldea/agents/alpha/description.md': 1,
       '/moldea/agents/alpha/handoff-description.md': 1,
@@ -381,13 +378,14 @@ describe('Core universal project inspection through the memory repository reader
       '/moldea/moldea.yaml': 1,
       '/moldea/project.md': 1,
       '/moldea/runtimes/node.md': 1,
+      '/src/agents.ts': 1,
     });
   });
 
   test('skips manifest-dependent agent interpretation after manifest failure', async () => {
     const case_ = getFixtureCase('invalid manifest with independent failures');
     const result = await inspectUniversalProject(
-      { repository: createMemoryRepositoryReader(createEntries(case_)) },
+      { repository: createIntegratedMemoryRepositoryReader(createEntries(case_)) },
       options,
     );
 
@@ -405,20 +403,23 @@ describe('Core universal project inspection through the memory repository reader
     const controller = new AbortController();
     controller.abort(new Error('test cancellation'));
     let hasAccessedRepository = false;
-    const repository = overrideCoreTestRepositoryReader(createMemoryRepositoryReader([]), {
-      getEntry: () => {
-        hasAccessedRepository = true;
-        return Promise.resolve(null);
+    const repository = overrideCoreTestRepositoryReader(
+      createIntegratedMemoryRepositoryReader([]),
+      {
+        getEntry: () => {
+          hasAccessedRepository = true;
+          return Promise.resolve(null);
+        },
+        iterateEntries: () => {
+          hasAccessedRepository = true;
+          throw new TypeError('The aborted repository must not be listed.');
+        },
+        readCompleteFile: () => {
+          hasAccessedRepository = true;
+          return Promise.resolve(new Uint8Array());
+        },
       },
-      iterateEntries: () => {
-        hasAccessedRepository = true;
-        throw new TypeError('The aborted repository must not be listed.');
-      },
-      readCompleteFile: () => {
-        hasAccessedRepository = true;
-        return Promise.resolve(new Uint8Array());
-      },
-    });
+    );
 
     await expect(
       inspectUniversalProject({ repository, signal: controller.signal }, options),
@@ -437,19 +438,22 @@ describe('Core universal project inspection through the memory repository reader
       path: parseRepositoryPath('/moldea'),
       retryable: true,
     });
-    const repository = overrideCoreTestRepositoryReader(createMemoryRepositoryReader([]), {
-      getEntry: () => Promise.reject(sourceFailure),
-      iterateEntries: () => {
-        throw new TypeError('The failed repository must not be listed.');
+    const repository = overrideCoreTestRepositoryReader(
+      createIntegratedMemoryRepositoryReader([]),
+      {
+        getEntry: () => Promise.reject(sourceFailure),
+        iterateEntries: () => {
+          throw new TypeError('The failed repository must not be listed.');
+        },
+        readCompleteFile: () => Promise.resolve(new Uint8Array()),
       },
-      readCompleteFile: () => Promise.resolve(new Uint8Array()),
-    });
+    );
 
     await expect(inspectUniversalProject({ repository }, options)).rejects.toBe(sourceFailure);
   });
 
   test('reads and parses foundation files before canonical enumeration', async () => {
-    const repository = createMemoryRepositoryReader([
+    const repository = createIntegratedMemoryRepositoryReader([
       { content: 'version: 1\n', path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
     ]);
@@ -478,11 +482,15 @@ describe('Core universal project inspection through the memory repository reader
       'get:/moldea/project.md',
       'read:/moldea/project.md',
       'list:/moldea',
+      'read:/AGENTS.md',
+      'get:/.agents/skills/moldea/SKILL.md',
+      'get:/.agents/skills/moldea/scripts/relevance-gate.mjs',
+      'read:/.agents/skills/moldea/assets/managed-agents-block.md',
     ]);
   });
 
   test('preserves a manifest read failure without starting canonical enumeration', async () => {
-    const repository = createMemoryRepositoryReader([
+    const repository = createIntegratedMemoryRepositoryReader([
       { content: 'version: 1\n', path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
     ]);
@@ -513,7 +521,7 @@ describe('Core universal project inspection through the memory repository reader
 
   test('enforces the diagnostic limit across independently valid phases', async () => {
     const manifest = 'version: 1\n';
-    const repository = createMemoryRepositoryReader([
+    const repository = createIntegratedMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: ' ', path: '/moldea/project.md', type: 'file' },
       { content: ' ', path: '/moldea/runtimes/empty.md', type: 'file' },
@@ -538,7 +546,7 @@ describe('Core universal project inspection through the memory repository reader
   });
 
   test('attributes manifest diagnostic overflow to project inspection', async () => {
-    const sourceRepository = createMemoryRepositoryReader([
+    const sourceRepository = createIntegratedMemoryRepositoryReader([
       {
         content: 'version: 1\nfirst: true\nsecond: true\n',
         path: manifestPath,

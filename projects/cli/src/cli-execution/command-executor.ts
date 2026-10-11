@@ -38,7 +38,7 @@ import {
 } from './results.js';
 import type { IMoldeaCliCommandExecutor, IMoldeaCliExecutionResult } from './types.js';
 
-/** Loads adapter-backed Core inspection only for commands that need it. */
+/** Loads isolated Core inspection only for commands that need it. */
 const executeLazyCoreInspection: IMoldeaCliCoreInspectionExecutor = async (input) => {
   const { executeMoldeaCliCoreInspection } = await import('../core-composition/index.js');
 
@@ -50,10 +50,6 @@ type IMoldeaCliCompositionLoader = (
 ) => ReturnType<IMoldeaCliCompositionResolver> | Promise<ReturnType<IMoldeaCliCompositionResolver>>;
 
 const loadInstalledComposition: IMoldeaCliCompositionLoader = async (input) => {
-  if (input.verifyRuntime === true) {
-    const { inspectMoldeaCliComposition } = await import('../core-composition/index.js');
-    return inspectMoldeaCliComposition(input);
-  }
   const { resolveInstalledMoldeaCliComposition } = await import('../composition/index.js');
 
   return resolveInstalledMoldeaCliComposition(input);
@@ -73,14 +69,14 @@ const createOperationalErrorResult = (
   );
 
 /**
- * Creates command dispatch with lazy adapter composition and bounded working-tree snapshots.
+ * Creates command dispatch with lazy Core loading and bounded working-tree snapshots.
  * @param workingTreeDiscovery The Git working-tree discovery operation.
  * @param workingTreeSnapshotExecutor The complete working-tree snapshot operation.
- * @param coreInspectionExecutor The adapter-backed Core inspection operation.
+ * @param coreInspectionExecutor The isolated Core inspection operation.
  * @param compositionLoader The installed executable-integrity composition boundary.
- * @param projectScopeExecutor The adapter-free manifest scope operation.
- * @param projectContentExecutor The adapter-free canonical content operation.
- * @returns A command executor for the schema 6 CLI.
+ * @param projectScopeExecutor The manifest-only manifest scope operation.
+ * @param projectContentExecutor The manifest-only canonical content operation.
+ * @returns A command executor for the schema 7 CLI.
  */
 export const createMoldeaCliCommandExecutor = (
   workingTreeDiscovery: IGitWorkingTreeDiscovery = discoverGitWorkingTree,
@@ -102,7 +98,6 @@ export const createMoldeaCliCommandExecutor = (
       ) {
         const compositionResolution = await compositionLoader({
           packageMetadata: input.packageMetadata,
-          verifyRuntime: command === MOLDEA_CLI_COMMANDS.Composition,
           ...(input.signal === undefined ? {} : { signal: input.signal }),
         });
 

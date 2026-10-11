@@ -1,6 +1,5 @@
 // types
 export type {
-  IMoldeaCliAdapterComposition,
   IMoldeaCliCompositionResolution,
   IMoldeaCliCompositionResolver,
   IMoldeaCliCompositionResult,

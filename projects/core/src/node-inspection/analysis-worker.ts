@@ -3,7 +3,6 @@ import { parentPort, workerData } from 'node:worker_threads';
 
 import { RepositorySourceException, type IRepositoryReader } from '@moldea.ai/repository';
 
-import type { IRuntimeAdapter } from '../adapter/index.js';
 import type { IProjectInspection } from '../contracts/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 import { normalizeCoreOptions } from '../options/index.js';
@@ -13,7 +12,7 @@ import {
   NODE_INSPECTION_MAX_REQUESTS,
   NODE_INSPECTION_TRANSPORT_BYTES,
 } from './constants.js';
-import { serializeInspectionFailure } from './errors.js';
+import { deserializeInspectionFailure, serializeInspectionFailure } from './errors.js';
 import {
   createInspectionProcessFailure,
   decodeInspectionMessage,
@@ -97,21 +96,10 @@ const repository: IRepositoryReader = {
     ),
 };
 
-/** Imports only the caller-selected installed registry, after the parent acknowledges the heap. */
+/** Prepares the fixed Core implementation after the parent acknowledges the heap. */
 const prepare = async (): Promise<void> => {
-  const registry: unknown = await import(start.registryUrl);
-  if (
-    registry === null ||
-    typeof registry !== 'object' ||
-    !('adapters' in registry) ||
-    !Array.isArray(registry.adapters)
-  )
-    throw createInspectionProcessFailure();
-  // Core remains the authoritative validator for every executable adapter definition.
-  const adapters = registry.adapters as IRuntimeAdapter[];
   const { createCore } = await import('../core/index.js');
   const options = normalizeCoreOptions({
-    adapters,
     limits: {
       ...start.limits,
       maxRetainedBytes: start.limits.maxRetainedBytes - NODE_INSPECTION_TRANSPORT_BYTES,
@@ -123,8 +111,8 @@ const prepare = async (): Promise<void> => {
     source: inspection.source,
     formatVersion: inspection.formatVersion,
     valid: inspection.valid,
-    runtimeInspection: inspection.runtimeInspection,
     counts: inspection.counts,
+    coverageCounts: inspection.coverageCounts,
     summary: inspection.summary,
     resourceUsage: inspection.resourceUsage,
     inspectionDigest: inspection.inspectionDigest,
@@ -135,10 +123,6 @@ const prepare = async (): Promise<void> => {
     inspection: {
       ...metadata,
       maxAnalysisHeapBytes,
-      adapters: options.adapters.map((adapter) => ({
-        id: adapter.id,
-        supportedRepositoryFormatVersions: [...adapter.supportedRepositoryFormatVersions],
-      })),
       resourceUsage: {
         ...metadata.resourceUsage,
         retainedBytes: metadata.resourceUsage.retainedBytes + NODE_INSPECTION_TRANSPORT_BYTES,
@@ -176,11 +160,13 @@ port.on('message', (frame: unknown) => {
       if (hasRun) throw createInspectionProcessFailure();
       hasRun = true;
       void prepare().catch(fail);
-    } else if (message.kind === 'reader-response') {
+    } else if (message.kind === 'reader-response' || message.kind === 'reader-failure') {
       const request = pending.get(message.requestId);
       if (request === undefined) throw createInspectionProcessFailure();
       pending.delete(message.requestId);
-      request.resolve(message.result);
+      if (message.kind === 'reader-failure')
+        request.reject(deserializeInspectionFailure(message.failure));
+      else request.resolve(message.result);
     } else if (message.kind === 'read-page') {
       if (inspection === undefined || isReadingPage) throw createInspectionProcessFailure();
       isReadingPage = true;

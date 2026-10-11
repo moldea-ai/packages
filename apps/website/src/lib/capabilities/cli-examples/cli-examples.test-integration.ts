@@ -17,61 +17,64 @@ beforeAll(async () => {
   examples = await createCliExamples(repositoryRoot, packages);
 });
 
-test('executes every public command with actual schema 6 status and process outcomes', () => {
-  expect(examples).toHaveLength(10);
+test('executes every public command with actual schema 7 status and process outcomes', () => {
+  expect(examples).toHaveLength(11);
   expect(
     examples.map(({ result }) =>
       result.kind === 'cli' ? [result.schemaVersion, result.status, result.exitStatus] : null,
     ),
   ).toStrictEqual([
-    [6, 'valid', 0],
-    [6, 'valid', 0],
-    [6, 'valid', 0],
-    [6, 'valid', 0],
-    [6, 'valid', 0],
-    [6, 'valid', 0],
-    [6, 'error', 3],
-    [6, 'valid', 0],
-    [6, 'invalid', 1],
-    [6, 'valid', 0],
+    [7, 'valid', 0],
+    [7, 'valid', 0],
+    [7, 'valid', 0],
+    [7, 'valid', 0],
+    [7, 'valid', 0],
+    [7, 'valid', 0],
+    [7, 'error', 3],
+    [7, 'valid', 0],
+    [7, 'invalid', 1],
+    [7, 'valid', 0],
+    [7, 'valid', 0],
   ]);
 });
 
-test('publishes the executed schema 6 version warning without a false failure', () => {
-  expect(examples.find(({ id }) => id === 'cli-version-warning')?.result).toMatchObject({
-    kind: 'cli',
-    schemaVersion: 6,
-    status: 'valid',
-    exitStatus: 0,
-    facts: {
-      valid: true,
-      runtimeInspection: 'incomplete',
-      diagnosticCount: 1,
-      errorCount: 0,
-      warningCount: 1,
-      diagnostics: [
-        {
-          code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
-          severity: 'warning',
-          details: {
-            relationship: 'instruction-loader',
-            reason: 'version-dependent-behavior',
-            packageName: '@cloudflare/think',
-            declaredRange: '>=0.17.0',
-            boundaryVersion: '0.18.0',
+test.each([
+  ['cli-pattern-warning', 1, 0],
+  ['cli-accepted-warning', 0, 1],
+])(
+  'publishes %s with a successful exit and separate warning counts',
+  (id, warningCount, acceptedWarningCount) => {
+    expect(examples.find((example) => example.id === id)?.result).toMatchObject({
+      kind: 'cli',
+      schemaVersion: 7,
+      status: 'valid',
+      exitStatus: 0,
+      facts: {
+        valid: true,
+        diagnosticCount: 1,
+        errorCount: 0,
+        warningCount,
+        acceptedWarningCount,
+        diagnostics: [
+          {
+            code: 'MOLDEA_IMPACT_PATTERN_UNMATCHED',
+            group: 'references',
+            subject: '/moldea/project.md',
+            qualifier: '/src/future/**',
+            acceptable: true,
+            accepted: acceptedWarningCount === 1,
           },
-        },
-      ],
-    },
-  });
-});
-
-test('distinguishes a project failure that prevented runtime inspection', () => {
+        ],
+      },
+    });
+  },
+);
+test('distinguishes a failed check from an operational refusal', () => {
   expect(examples.find(({ id }) => id === 'cli-invalid-project')?.result).toMatchObject({
     kind: 'cli',
     status: 'invalid',
     exitStatus: 1,
-    facts: { valid: false, runtimeInspection: 'not-run' },
+    facts: { valid: false },
   });
 });
 

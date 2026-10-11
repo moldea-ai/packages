@@ -45,10 +45,10 @@ export const getOperationRows = (facts: Record<string, ICapabilityFact>): IOpera
       return {
         label: `Page ${index + 1}`,
         entries: records.map((record) => {
-          const identity = record.path ?? record.code ?? record.agentId ?? record.evidenceKind;
+          const identity = record.path ?? record.code ?? record.agentId;
           if (typeof identity !== 'string')
             throw new Error('Page illustration requires a record identity.');
-          const kind = record.evidenceKind ?? record.type ?? record.kind;
+          const kind = record.relationship ?? record.type ?? record.kind;
           return `${identity}${typeof kind === 'string' ? ` (${kind})` : ''}`;
         }),
         detail: page.hasContinuation === true ? 'More pages follow' : 'Final page',
