@@ -9,6 +9,7 @@ const libraryConfig = createLibraryConfig({
     'evaluation-replay': 'src/evaluation-replay/index.ts',
     index: 'src/index.ts',
     markdown: 'src/markdown/index.ts',
+    'runtime-catalog': 'src/runtime-catalog/index.ts',
     search: 'src/search/index.ts',
     site: 'src/site/index.ts',
     theme: 'src/theme/index.ts',

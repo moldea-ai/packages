@@ -37,6 +37,7 @@ The catalog records the five public packages. Core treats runtime IDs as guidanc
 ## Boundaries and sources of truth
 
 - **Repository reading:** `@moldea.ai/repository` defines source-neutral logical paths, bounded pages and ranges, deterministic comparisons, snapshot identities, and the reader contract. Its memory reader backs shared conformance tests. `@moldea.ai/repository-fs` supplies lazy, resource-limited local access without an eager repository-wide content inventory.
+- **Public website presentation:** Website UI owns shared tokens, Astro components, and the plain runtime-label catalog with static logo assets. Its development-only Core dependency keeps the 35 labels synchronized; consumers do not load Core through the catalog. Logo provenance and launch follow-ups live in [runtime logos](runtime-logos.md).
 - **Format interpretation:** Core validates canonical structure, declared file references and supported runtime exports. It owns paged binding coverage, diagnostics with severity and group, accepted warnings, coding-agent integration checks, and manifest-only changed-path matching. Errors invalidate a project; warnings and accepted warnings remain visible without changing validity.
 
 ## Documentation ownership

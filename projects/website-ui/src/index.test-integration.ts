@@ -92,7 +92,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.13.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.14.0' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -104,6 +104,10 @@ describe('published website UI package', () => {
     expect(packedPaths).toContain('src/components/hero-backdrop/hero-backdrop.component.astro');
     expect(packedPaths).toContain('dist/evaluation-replay.js');
     expect(packedPaths).toContain('dist/index.js');
+    expect(packedPaths).toContain('dist/runtime-catalog.js');
+    expect(packedPaths).toContain('dist/runtime-catalog/index.d.ts');
+    expect(packedPaths).toContain('runtime-logos/fallback.svg');
+    expect(packedPaths).toContain('src/components/runtime-grid/runtime-grid.component.astro');
     expect(packedPaths).toContain('dist/code-diff.js');
     expect(packedPaths).toContain('dist/code-presentation.js');
     expect(packedPaths).toContain('dist/code-presentation/index.d.ts');
@@ -226,6 +230,7 @@ describe('published website UI package', () => {
         "import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';",
         "import LocalSearch from '@moldea.ai/website-ui/local-search';",
         "import NavigationProgress from '@moldea.ai/website-ui/navigation-progress';",
+        "import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';",
         "import ResultSummary from '@moldea.ai/website-ui/result-summary';",
         "import SiteFooter from '@moldea.ai/website-ui/site-footer';",
         "import SiteHeader from '@moldea.ai/website-ui/site-header';",
@@ -327,6 +332,7 @@ describe('published website UI package', () => {
         '    <EvaluationReplay id="fixture-replay" replay={replay} />',
         '    <DocumentationShell breadcrumbs={[{ href: "/", label: "Home" }, { label: "moldea Docs" }]} currentRoute="/docs/" headings={rendered.headings} navigationGroups={[{ label: "moldea Guides", items: [{ href: "/docs/", label: "moldea Start" }] }]} previousPage={{ href: "/previous/", label: "Previous moldea guide" }} nextPage={{ href: "/next/", label: "Next moldea guide" }}><div class="prose-moldea" set:html={rendered.html} /></DocumentationShell>',
         '    <p>{tree[0]?.name}</p>',
+        '    <section data-runtime-fixture><h2>Runtime labels</h2><RuntimeGrid hrefBase="/runtimes/" /></section>',
         '    <ThemeControl storageKey="fixture-theme" />',
         '    <LocalSearch action="/search/" failureMessage="Search unavailable." initialPrompt="Enter a query." placeholder="e.g. repository snapshots" searchIndexUrl="/search-index.json" shouldFocusOnLoad />',
         '    <SiteFooter hasTopSpacing={false}><p slot="brand">Fixture footer</p><nav slot="primary-navigation" aria-label="Fixture documentation">Docs</nav><nav slot="secondary-navigation" aria-label="Fixture project">Project</nav></SiteFooter>',
@@ -340,6 +346,21 @@ describe('published website UI package', () => {
       packageManagerEntrypoint,
       ['install', '--prefer-offline', '--ignore-scripts', '--frozen-lockfile=false'],
       { cwd: fixtureDirectory, encoding: 'utf8' },
+    );
+    writeFileSync(
+      path.join(pagesDirectory, 'runtimes.astro'),
+      [
+        '---',
+        "import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';",
+        "import { RUNTIME_CATALOG } from '@moldea.ai/website-ui/runtime-catalog';",
+        "import fallbackLogo from '@moldea.ai/website-ui/runtime-logos/fallback.svg?url';",
+        "import '../styles.css';",
+        '---',
+        '<html lang="en"><head><title>Runtime labels</title></head><body>',
+        '<main data-runtime-count={RUNTIME_CATALOG.length}><RuntimeGrid hrefBase="" />',
+        '<img src={fallbackLogo} width="32" height="32" alt="Neutral document glyph" /></main>',
+        '</body></html>',
+      ].join('\n'),
     );
     runPackageManager(packageManagerEntrypoint, ['exec', 'astro', 'check'], {
       cwd: fixtureDirectory,
@@ -366,6 +387,13 @@ describe('published website UI package', () => {
       'Result content',
     );
     const fixtureHtml = readFileSync(path.join(fixtureDirectory, 'dist', 'index.html'), 'utf8');
+    const runtimeHtml = readFileSync(
+      path.join(fixtureDirectory, 'dist', 'runtimes', 'index.html'),
+      'utf8',
+    );
+    expect(runtimeHtml).toContain('data-runtime-count="35"');
+    expect(runtimeHtml).toContain('href="#openai"');
+    expect(runtimeHtml).not.toMatch(/<script\b/u);
     expect(fixtureHtml).toContain('Consumer hero');
     expect(fixtureHtml).toContain('data-code-diff="unified"');
     expect(fixtureHtml).toContain('data-code-diff="split"');
@@ -393,8 +421,58 @@ describe('published website UI package', () => {
           });
           try {
             const page = await context.newPage();
-            await page.setContent(fixtureHtml.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gu, ''));
+            await page.route('https://runtime-fixture.example/**', async (route) => {
+              const assetName = new URL(route.request().url()).pathname.split('/').at(-1);
+              if (assetName === undefined || !/^[a-zA-Z0-9_.-]+\.svg$/u.test(assetName)) {
+                await route.abort();
+                return;
+              }
+              await route.fulfill({
+                contentType: 'image/svg+xml',
+                body: readFileSync(path.join(fixtureDirectory, 'dist', '_astro', assetName)),
+              });
+            });
+            await page.setContent(
+              fixtureHtml
+                .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gu, '')
+                .replaceAll('src="/_astro/', 'src="https://runtime-fixture.example/_astro/'),
+            );
             await page.addStyleTag({ content: stylesheet });
+            await page.evaluate((selectedTheme) => {
+              document.documentElement.className = selectedTheme;
+            }, theme);
+            const runtimeGrid = page.getByRole('list', { name: 'Runtime labels', exact: true });
+            expect(await runtimeGrid.getByRole('link').count()).toBe(35);
+            const runtimeLink = runtimeGrid.getByRole('link', { name: 'OpenAI', exact: true });
+            expect(await runtimeLink.getAttribute('href')).toBe('/runtimes/#openai');
+            await runtimeLink.focus();
+            expect(await runtimeLink.evaluate((node) => getComputedStyle(node).boxShadow)).not.toBe(
+              'none',
+            );
+            await page.keyboard.press('Tab');
+            expect(
+              await runtimeGrid
+                .getByRole('link', { name: 'OpenAI Agents SDK', exact: true })
+                .evaluate((node) => node === document.activeElement),
+            ).toBe(true);
+            await runtimeGrid.scrollIntoViewIfNeeded();
+            for (const image of await runtimeGrid.locator('img').all()) {
+              expect(await image.getAttribute('loading')).toBe('lazy');
+              expect(await image.getAttribute('decoding')).toBe('async');
+              expect(await image.getAttribute('alt')).toBe('');
+              expect(await image.getAttribute('width')).toBe('104');
+              expect(await image.getAttribute('height')).toBe('32');
+              if (await image.isVisible()) {
+                await image.scrollIntoViewIfNeeded();
+                await image.evaluate((node) => (node as HTMLImageElement).decode());
+                expect(
+                  await image.evaluate((node) => (node as HTMLImageElement).naturalWidth),
+                ).toBeGreaterThan(0);
+              }
+            }
+            expect(
+              (await new AxeBuilder({ page }).include('[data-runtime-grid]').analyze()).violations,
+            ).toStrictEqual([]);
             for (const name of ['Documentation navigation', 'On this page']) {
               expect(await page.getByRole('complementary', { name, exact: true }).count()).toBe(
                 width === 1440 ? 1 : 0,
@@ -416,7 +494,7 @@ describe('published website UI package', () => {
               heading.textContent = 'File comparison examples';
               const examples = Array.from(
                 document.querySelectorAll(
-                  '[data-code-diff], [data-code-block], [data-wrapping-fixtures]',
+                  '[data-code-diff], [data-code-block], [data-wrapping-fixtures], [data-runtime-fixture]',
                 ),
               ).filter(
                 (element) =>
