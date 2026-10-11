@@ -25,11 +25,11 @@ Cloud is optional. The Agent Skill, CLI, and packages can be used locally withou
 
 ## Check an adopted repository locally
 
-Use the [CLI overview and installation guide](/packages/cli/) for the current prerequisites and commands. The CLI composes Core, a filesystem reader, and the packaged runtime adapters, so you normally do not need to assemble them yourself.
+Use the [CLI overview and installation guide](/packages/cli/) for the current prerequisites and commands. The CLI composes Core and a filesystem reader, so you normally do not need to assemble them yourself.
 
 The CLI reads only the explicitly selected repository. It does not write repository files, call models, make network requests, or send telemetry. These statements describe the local CLI, not every coding-agent or Agent Skill workflow.
 
-A passing structural check confirms the declared structure and references, not that code follows a policy or that an agent behaves correctly. If a connection breaks, update the repository deliberately and run the check again. Checks do not repair it automatically.
+A passing structural check means the completed checks found no errors. Review coverage and warnings to see what was checked. Code semantics and agent behavior need separate evaluation. If a connection breaks, update the repository deliberately and run the check again. Checks do not repair it automatically.
 
 ## Build a programmatic integration
 
@@ -37,14 +37,14 @@ Use [Core](/packages/core/) when you need structural checks and inspection insid
 
 These are read-only building blocks. Your application owns content acquisition and any workflow that acts on the results.
 
-## Check your runtime's exact support
+## Choose runtime guidance
 
-Browse [runtime adapters and compatibility](/adapters/), then open a target for its exact package range, recognized patterns, limitations, and qualification evidence. A recognizable runtime name is not a claim that every version or coding pattern is supported.
+Browse [runtime labels and guidance](/runtimes/). A runtime ID selects guidance for your coding agent, which reads the installed SDK's type definitions and reviews the application's integration.
 
-Maturity belongs to each published target. Custom runtime declarations use the path built into Core, not a separate adapter package.
+Core checks declared file existence and explicit TypeScript and JavaScript ESM exports. Coverage records state which checks ran and which could not run. They do not establish runtime wiring or SDK compatibility.
 
 ## Understand the repository files
 
 The [Repository Format specification](/repository-format/) defines the contract. Every adopted repository has `/moldea/moldea.yaml` and `/moldea/project.md`. Additional context, decision records, and agent instructions are optional, according to the needs of the project.
 
-These open-source packages provide structural checks and runtime-specific evidence. They are not semantic assurance, hosted Cloud services, or a future client SDK.
+These open-source packages provide structural checks and declared binding coverage. They are not semantic assurance, hosted Cloud services, or a future client SDK.

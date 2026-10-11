@@ -72,18 +72,18 @@ test('orders the homepage from purpose and a real check to tools and boundaries'
     'A file moves.The connection breaks.',
     'The structure behind every evaluation.',
     'Start with the task.',
-    'Find your runtime.',
+    'Guidance for your runtime.',
     'Know what a check tells you.',
   ]);
-  await expect(page.getByRole('region', { name: 'Available runtimes' })).toHaveCount(0);
-  await expect(page.getByRole('list', { name: 'Available runtimes' })).toHaveCount(1);
+  await expect(page.getByRole('region', { name: 'Runtime labels' })).toHaveCount(0);
+  await expect(page.getByRole('list', { name: 'Runtime labels' })).toHaveCount(1);
 });
 
 for (const width of [320, 768, 1024, 1440]) {
   test(`aligns architecture and runtime introductions at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(toPublicPath('/'));
-    for (const title of ['The structure behind every evaluation.', 'Find your runtime.']) {
+    for (const title of ['The structure behind every evaluation.', 'Guidance for your runtime.']) {
       const section = page.getByRole('region', { name: title, exact: true });
       const header = section.locator('header').first();
       const heading = await header.getByRole('heading', { level: 2 }).boundingBox();

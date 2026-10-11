@@ -7,9 +7,9 @@ import { CliCollectionResult } from './types.ts';
 import { assertCliResultExcerpt, parseCliExecution } from './validations.ts';
 
 const envelope = {
-  cliVersion: '10.0.0',
+  cliVersion: '11.0.0',
   command: 'validate',
-  schemaVersion: 6,
+  schemaVersion: 7,
   status: 'valid',
   error: null,
   result: { valid: true },
@@ -56,12 +56,12 @@ test.each([
       : null,
   };
   expect(
-    parseCliExecution({ stdout: JSON.stringify(output), exitStatus }, 'validate', '10.0.0'),
+    parseCliExecution({ stdout: JSON.stringify(output), exitStatus }, 'validate', '11.0.0'),
   ).toStrictEqual(output);
 });
 
 test.each([
-  [{ schemaVersion: 3 }, 0],
+  [{ schemaVersion: 6 }, 0],
   [{ status: 'invalid' }, 0],
   [{ status: 'valid' }, 1],
   [{ command: 'scope' }, 0],
@@ -74,7 +74,7 @@ test.each([
     parseCliExecution(
       { stdout: JSON.stringify({ ...envelope, ...changes }), exitStatus },
       'validate',
-      '10.0.0',
+      '11.0.0',
     ),
   ).toThrow();
 });
@@ -97,7 +97,7 @@ test('refuses partial success alongside an operational error', () => {
         exitStatus: 3,
       },
       'validate',
-      '10.0.0',
+      '11.0.0',
     ),
   ).toThrow('unexpected facts');
 });
@@ -123,23 +123,22 @@ test('retains selected command facts and strips unknown host/process fields', ()
 });
 
 const warningRecord = {
-  code: 'ANTHROPIC_RUNTIME_RELATIONSHIP_UNVERIFIED',
-  details: {
-    boundaryVersion: '1.2.3',
-    declaredRange: null,
-    packageName: '@anthropic-ai/sdk',
-    reason: 'version-dependent-behavior',
-    relationship: 'instruction-loader',
-  },
-  entity: { agentId: 'support' },
+  code: 'MOLDEA_IMPACT_PATTERN_UNMATCHED',
+  group: 'references',
+  subject: '/moldea/project.md',
+  qualifier: '/src/future/**',
+  acceptable: true,
+  accepted: false,
+  reason: null,
+  entity: { contextPath: '/moldea/project.md' },
   key: 'warning-1',
   kind: 'diagnostic',
-  message: 'The declared runtime relationship could not be verified.',
-  path: '/src/agent.ts',
+  message: 'The impact pattern matches no files.',
+  path: '/moldea/moldea.yaml',
   pointer: null,
   range: null,
   severity: 'warning',
-  source: 'anthropic',
+  source: 'core',
 };
 
 test('accepts the closed warning record and complete validation counts', () => {
@@ -161,10 +160,10 @@ test('accepts the closed warning record and complete validation counts', () => {
 
 test.each([
   ['missing severity', { severity: undefined }],
-  ['error severity with warning details', { severity: 'error' }],
-  ['missing warning details', { details: undefined }],
-  ['extra warning detail', { details: { ...warningRecord.details, sourceText: 'private' } }],
-  ['unknown relationship', { details: { ...warningRecord.details, relationship: 'provider-run' } }],
+  ['error severity with warning fields', { severity: 'error' }],
+  ['missing subject', { subject: undefined }],
+  ['extra private field', { sourceText: 'private' }],
+  ['unknown group', { group: 'provider-run' }],
 ])('rejects a diagnostic record with %s', (_description, changes) => {
   expect(() =>
     CliCollectionResult.parse({

@@ -4,6 +4,8 @@ import { stringify } from 'yaml';
 import { createCore } from '@moldea.ai/core';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
+import { MANAGED_INTEGRATION_ENTRIES } from '../capabilities/integration-fixture/index.ts';
+
 import { INSTRUCTION_SNAPSHOT } from './constants.ts';
 import type { IInstructionExample, IInstructionSnapshot } from './types.ts';
 
@@ -18,6 +20,7 @@ export const createInstructionExample = async (
 ): Promise<IInstructionExample> => {
   const instructionPath = '/moldea/agents/support/instruction.md';
   const repository = createMemoryRepositoryReader([
+    ...MANAGED_INTEGRATION_ENTRIES,
     {
       path: '/moldea/moldea.yaml',
       type: 'file',
@@ -72,6 +75,7 @@ export const createInstructionExample = async (
         details: { reason: 'missing', referencedPath: '/src/orders/tracking.ts' },
         range: null,
         severity: 'error',
+        group: 'agents',
         source: 'core',
       },
     ])

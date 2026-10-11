@@ -120,7 +120,7 @@ export const verifyCapabilityArtifacts = (
         throw new Error(`Capabilities artifact omits illustration dialog ${example.id}.`);
       if (visuals.get(example.id) !== getCapabilityVisualFamily(example))
         throw new Error(`Capabilities artifact has the wrong visual family for ${example.id}.`);
-      const outcome = getCapabilityOutcome(example, catalog);
+      const outcome = getCapabilityOutcome(example);
       if (
         labels.get(example.id) !== outcome.label ||
         summaries.get(example.id) !== `${outcome.title} ${outcome.label}`

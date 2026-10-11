@@ -20,25 +20,23 @@ interface Props {
 export const getStaticPaths = () => {
   const model = loadWebsiteModel();
 
-  return model.packages
-    .filter(({ family }) => family !== 'runtime-adapters')
-    .flatMap((packageModel) => {
-      const documentPaths = packageModel.documents.map((document) => ({
-        params: { package: packageModel.slug, path: document.slug || undefined },
-        props: { document, kind: 'document' as const, packageModel },
-      }));
-      const apiPath =
-        packageModel.api.length > 0
-          ? [
-              {
-                params: { package: packageModel.slug, path: 'api' },
-                props: { document: null, kind: 'api' as const, packageModel },
-              },
-            ]
-          : [];
+  return model.packages.flatMap((packageModel) => {
+    const documentPaths = packageModel.documents.map((document) => ({
+      params: { package: packageModel.slug, path: document.slug || undefined },
+      props: { document, kind: 'document' as const, packageModel },
+    }));
+    const apiPath =
+      packageModel.api.length > 0
+        ? [
+            {
+              params: { package: packageModel.slug, path: 'api' },
+              props: { document: null, kind: 'api' as const, packageModel },
+            },
+          ]
+        : [];
 
-      return [...documentPaths, ...apiPath];
-    });
+    return [...documentPaths, ...apiPath];
+  });
 };
 
 const { document, kind, packageModel } = Astro.props;

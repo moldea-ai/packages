@@ -8,10 +8,8 @@ export type {
   ICapabilityGroup,
   ICapabilityResult,
   ICapabilityOutcome,
-  ICapabilityRuntimeTarget,
   ICoreOperation,
   IDiagnosticCoverage,
-  IRuntimePatternProof,
 } from './types.ts';
 
 // catalog generation
@@ -27,11 +25,9 @@ export {
 } from './presentation.ts';
 
 // shared example projection and assertion boundaries
-export { projectDiagnostics, projectEntry, projectEvidence, projectFile } from './transformers.ts';
+export { projectDiagnostics, projectEntry, projectFile } from './transformers.ts';
 export {
   assertCapabilityFacts,
   captureOperationalRefusal,
   validateCapabilities,
-  validateRuntimeSourceProofs,
-  validateRuntimeWitness,
 } from './validations.ts';

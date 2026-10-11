@@ -8,9 +8,9 @@ test('renders documentation tables with one consistent scroll-frame perimeter', 
   page,
 }) => {
   await page.setViewportSize({ height: 740, width: 320 });
-  await page.goto(toPublicPath('/adapters/anthropic/evidence-and-diagnostics/'));
+  await page.goto(toPublicPath('/packages/core/diagnostics/'));
 
-  const table = page.getByRole('table');
+  const table = page.getByRole('table').first();
   const scrollFrame = table.locator('..');
 
   await expect(table).toBeVisible();
@@ -32,14 +32,9 @@ test('identifies API reference pages in breadcrumbs and documentation navigation
       path: '/packages/core/api/',
     },
     {
-      packageName: '@moldea.ai/adapter-anthropic',
-      packageRoute: '/adapters/anthropic/',
-      path: '/adapters/anthropic/api/',
-    },
-    {
-      packageName: '@moldea.ai/adapter-openai',
-      packageRoute: '/adapters/openai/',
-      path: '/adapters/openai/api/',
+      packageName: '@moldea.ai/repository',
+      packageRoute: '/packages/repository/',
+      path: '/packages/repository/api/',
     },
   ]) {
     await page.goto(toPublicPath(path));

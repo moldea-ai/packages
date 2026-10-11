@@ -6,12 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 
-import { parseRuntimeCompatibilityMatrix } from '../../../../../scripts/runtime-compatibility/index.ts';
-import type { IRuntimeCompatibilityMatrix } from '../../../../../scripts/runtime-compatibility/types.ts';
+import { RUNTIME_CATALOG } from '@moldea.ai/website-ui/runtime-catalog';
 
+import { RETIRED_RUNTIME_ROUTES } from '../redirects/index.ts';
 import { generateApiReference } from './api-reference.ts';
 import type {
-  IAdapterPage,
   IPackageDocument,
   IPublicPackage,
   ISearchRecord,
@@ -21,11 +20,6 @@ import {
   loadRepositoryFormatSpecification,
   type IRepositoryFormatSpecification,
 } from '../repository-format-specification/index.ts';
-import {
-  createRuntimeCompatibilityPublication,
-  type IRuntimeCompatibilityPublicationV1,
-} from '../runtime-compatibility-publication/index.ts';
-import { parseRuntimeTargetMaturity } from '../runtime-target-maturity/index.ts';
 import {
   DISCOVERY_COPY,
   validateDiscoveryCopy,
@@ -43,7 +37,7 @@ import {
 const REPOSITORY_URL = 'https://github.com/moldea-ai/packages';
 const EXCLUDED_DIRECTORY_NAMES = new Set(['_archive', '_archives', '_backup', '_backups']);
 const GENERATED_NOTICE =
-  'Generated from project manifests, package-owned documentation, public exports, specifications/repository-format.md, compatibility/runtimes.yaml, website-owned content and display metadata, and real Core, adapter, reader, and CLI operations on synthetic examples. Do not edit generated output.';
+  'Generated from project manifests, package-owned documentation, public exports, specifications/repository-format.md, website-owned content and display metadata, and real Core, reader, and CLI operations on synthetic examples. Do not edit generated output.';
 
 const PackageManifestSchema = z.object({
   bin: z.record(z.string(), z.string()).optional(),
@@ -143,7 +137,7 @@ export const discoverPublicPackages = (repositoryRoot: string): IPublicPackage[]
       const projectDirectory = join(projectsDirectory, entry.name);
       const manifestPath = join(projectDirectory, 'package.json');
 
-      if (!existsSync(manifestPath)) return [];
+      if (!existsSync(manifestPath) || entry.name === 'website-ui') return [];
 
       const manifest = PackageManifestSchema.parse(parseJsonFile(manifestPath));
 
@@ -161,13 +155,7 @@ export const discoverPublicPackages = (repositoryRoot: string): IPublicPackage[]
         throw new Error(`${manifest.name} contradicts project identity ${expectedName}.`);
       }
 
-      const family = manifest.name.startsWith('@moldea.ai/adapter-')
-        ? 'runtime-adapters'
-        : 'skill-core-tooling';
-      const route =
-        family === 'runtime-adapters'
-          ? `/adapters/${entry.name.replace(/^adapter-/, '')}/`
-          : `/packages/${entry.name}/`;
+      const route = `/packages/${entry.name}/`;
 
       const docsDirectory = join(projectDirectory, 'docs');
 
@@ -200,7 +188,6 @@ export const discoverPublicPackages = (repositoryRoot: string): IPublicPackage[]
           description: manifest.description,
           documents,
           engines: manifest.engines ?? {},
-          family,
           name: manifest.name,
           npmUrl: `https://www.npmjs.com/package/${manifest.name}`,
           repositoryDirectory: manifest.repository.directory,
@@ -229,64 +216,9 @@ export const discoverPublicPackages = (repositoryRoot: string): IPublicPackage[]
   return discovered;
 };
 
-const loadCompatibilityMatrix = (repositoryRoot: string): IRuntimeCompatibilityMatrix => {
-  const source = readFileSync(join(repositoryRoot, 'compatibility/runtimes.yaml'), 'utf8');
-  const result = parseRuntimeCompatibilityMatrix(source);
-
-  if (!result.valid) {
-    throw new Error(
-      `Runtime Compatibility Matrix is invalid: ${result.issues
-        .map((issue) => `${issue.path}: ${issue.message}`)
-        .join('; ')}`,
-    );
-  }
-
-  return result.matrix;
-};
-
-/** Transforms the canonical matrix into validated public adapter status routes. */
-export const buildAdapterPages = (
-  publication: IRuntimeCompatibilityPublicationV1,
-  packages: IPublicPackage[],
-): IAdapterPage[] => {
-  const packageByName = new Map(packages.map((packageModel) => [packageModel.name, packageModel]));
-
-  return Object.entries(publication.adapters)
-    .map(([id, entry]): IAdapterPage => {
-      const implementedPackage =
-        entry.implementation.kind === 'package'
-          ? packageByName.get(entry.implementation.package)
-          : undefined;
-
-      if (entry.implementationStatus === 'available' && entry.implementation.kind === 'package') {
-        if (!implementedPackage) {
-          throw new Error(`Available adapter ${id} has no implemented public package.`);
-        }
-        if (implementedPackage.family !== 'runtime-adapters') {
-          throw new Error(`Adapter ${id} implementation is not categorized as a runtime adapter.`);
-        }
-      }
-
-      if (implementedPackage && entry.implementationStatus === 'planned') {
-        throw new Error(
-          `Implemented adapter package ${implementedPackage.name} is planned in the matrix.`,
-        );
-      }
-
-      return {
-        entry,
-        id,
-        implementedPackageSlug: implementedPackage?.slug ?? null,
-        route: `/adapters/${id}/`,
-      };
-    })
-    .sort((left, right) => left.id.localeCompare(right.id));
-};
-
 /** Creates the unique deterministic route manifest for generated and authored pages. */
 export const createRouteManifest = (
   packages: IPublicPackage[],
-  adapters: IAdapterPage[],
   gettingStarted: IPackageDocument,
 ): string[] => {
   const routes = new Set<string>();
@@ -298,10 +230,8 @@ export const createRouteManifest = (
   for (const route of [
     '/',
     '/404.html',
-    '/adapters/',
+    '/runtimes/',
     '/capabilities/',
-    '/compatibility/',
-    '/compatibility/runtimes.json',
     '/llms.txt',
     '/packages/',
     '/repository-format/',
@@ -319,15 +249,7 @@ export const createRouteManifest = (
     if (packageModel.api.length > 0) addRoute(`${packageModel.route}api/`);
   }
 
-  for (const adapter of adapters) {
-    if (adapter.implementedPackageSlug) {
-      if (!routes.has(adapter.route)) {
-        throw new Error(`Implemented adapter ${adapter.id} has no package-owned canonical route.`);
-      }
-    } else {
-      addRoute(adapter.route);
-    }
-  }
+  for (const route of RETIRED_RUNTIME_ROUTES) addRoute(route);
 
   return [...routes].sort();
 };
@@ -338,18 +260,9 @@ const normalizeSearchText = (source: string): string =>
     .replaceAll(/\s+/g, ' ')
     .trim();
 
-const describeAdapter = (adapter: IAdapterPage): string => {
-  if (adapter.entry.implementation.kind === 'built-in') {
-    return `${adapter.id} is an ${adapter.entry.implementationStatus} runtime adapter built into @moldea.ai/core.`;
-  }
-
-  return `${adapter.id} is an ${adapter.entry.implementationStatus} package-backed runtime adapter.`;
-};
-
 /** Creates deterministic public search records without maintaining a parallel content inventory. */
 export const createSearchRecords = (
   packages: IPublicPackage[],
-  adapters: IAdapterPage[],
   specification: IRepositoryFormatSpecification,
   gettingStarted: IPackageDocument,
   discoveryCopy: IDiscoveryCopy,
@@ -399,28 +312,6 @@ export const createSearchRecords = (
     }
   }
 
-  for (const adapter of adapters) {
-    const existingRecord = recordsByRoute.get(adapter.route);
-    const compatibilityText = normalizeSearchText(JSON.stringify(adapter.entry));
-
-    recordsByRoute.set(adapter.route, {
-      description: existingRecord?.description ?? describeAdapter(adapter),
-      route: adapter.route,
-      searchText: [
-        existingRecord?.searchText,
-        adapter.id,
-        discoveryCopy.adapters[adapter.id].name,
-        discoveryCopy.adapters[adapter.id].description,
-        ...Object.values(discoveryCopy.adapters[adapter.id].targets),
-        adapter.entry.implementationStatus,
-        compatibilityText,
-      ]
-        .filter((part): part is string => Boolean(part))
-        .join(' '),
-      title: existingRecord?.title ?? `${adapter.id} runtime adapter`,
-    });
-  }
-
   recordsByRoute.set(specification.route, {
     description: specification.description,
     route: specification.route,
@@ -441,31 +332,30 @@ export const createSearchRecords = (
     title: gettingStarted.title,
   });
 
-  recordsByRoute.set('/adapters/', {
-    description:
-      'Find your runtime, compare target maturity, and open its exact compatibility scope.',
-    route: '/adapters/',
-    searchText: normalizeSearchText(
-      [
-        'Runtime adapters compatibility supported targets versions limitations qualification',
-        ...adapters
-          .flatMap(({ id }) => [
-            discoveryCopy.adapters[id].name,
-            ...Object.values(discoveryCopy.adapters[id].targets),
-          ])
-          .sort(),
-      ].join(' '),
-    ),
-    title: 'Runtime adapters and compatibility',
+  recordsByRoute.set('/runtimes/', {
+    route: '/runtimes/',
+    title: 'Runtimes',
+    description: 'Runtime labels, declared binding checks, coverage, and agent guidance.',
+    searchText:
+      'Runtime labels binding file existence export syntax coverage agent SDK type definitions',
   });
+  for (const runtime of RUNTIME_CATALOG) {
+    const route = `/runtimes/#${runtime.id}`;
+    recordsByRoute.set(route, {
+      route,
+      title: runtime.displayName,
+      description: 'A runtime label selects guidance for your coding agent.',
+      searchText: `${runtime.displayName} ${runtime.id} runtime label guidance`,
+    });
+  }
 
   recordsByRoute.set('/capabilities/', {
     route: '/capabilities/',
     title: 'Capabilities',
     description:
-      'Executable examples of project context, structural checks, decisions, and runtime connections.',
+      'Executable examples of project context, structural checks, decisions, and declared binding checks.',
     searchText:
-      'Capabilities project context knowledge structure decisions agents runtime wiring repository access command line deterministic checks',
+      'Capabilities project context knowledge structure decisions agents binding coverage repository access command line deterministic checks',
   });
   for (const group of capabilities.groups) {
     const route = `/capabilities/#${group.id}`;
@@ -480,7 +370,7 @@ export const createSearchRecords = (
   }
   for (const example of getCapabilityShowcase(capabilities).flatMap(({ examples }) => examples)) {
     const route = `/capabilities/#${example.id}`;
-    const outcome = getCapabilityOutcome(example, capabilities);
+    const outcome = getCapabilityOutcome(example);
     recordsByRoute.set(route, {
       route,
       title: example.title,
@@ -509,7 +399,6 @@ export const createSearchRecords = (
 /** Creates the concise machine-oriented ecosystem map from generated public models. */
 export const createLlmsText = (
   packages: IPublicPackage[],
-  adapters: IAdapterPage[],
   specification: IRepositoryFormatSpecification,
   gettingStarted: IPackageDocument,
 ): string => {
@@ -518,39 +407,23 @@ export const createLlmsText = (
     '',
     '> Open-source CLI and TypeScript packages for project context, decision records, and structural checks in Git.',
     '',
-    'These tools read project knowledge and validate structure and declared references. Runtime-agent instructions and adapters are optional; checks do not establish code semantics or agent behavior.',
+    'These tools read project knowledge, check declared files, and inspect explicit TypeScript and JavaScript ESM exports. Coverage states which checks ran. Runtime wiring, code semantics, and agent behavior are not checked.',
     '',
     `- [${gettingStarted.title}](${gettingStarted.route}): ${gettingStarted.description}`,
-    '- [Capabilities](/capabilities/): Executable examples of project context, structure, decisions, optional runtime-agent connections, repository inspection, and CLI operations.',
+    '- [Capabilities](/capabilities/): Executable examples of project context, structure, decisions, declared binding checks, repository inspection, and CLI operations.',
     '- [moldea Agent Skill](https://skill.moldea.ai/): Repository adoption, installation, workflows, and tutorials.',
     '',
-    '## Skill & Core Tooling',
+    '## Packages',
     '',
   ];
 
   const orderedPackages = [...packages].sort((left, right) => left.name.localeCompare(right.name));
-  const orderedAdapters = [...adapters].sort((left, right) => left.id.localeCompare(right.id));
 
-  for (const packageModel of orderedPackages.filter(
-    ({ family }) => family === 'skill-core-tooling',
-  )) {
+  for (const packageModel of orderedPackages) {
     const overview = packageModel.documents.find(({ slug }) => slug === '');
     lines.push(
       `- [${packageModel.name}](${packageModel.route}): ${overview?.description ?? packageModel.description}`,
     );
-  }
-
-  const adapterPackages = orderedPackages.filter(({ family }) => family === 'runtime-adapters');
-
-  if (adapterPackages.length > 0) {
-    lines.push('', '## Runtime Adapter Packages', '');
-
-    for (const packageModel of adapterPackages) {
-      const overview = packageModel.documents.find(({ slug }) => slug === '');
-      lines.push(
-        `- [${packageModel.name}](${packageModel.route}): ${overview?.description ?? packageModel.description}`,
-      );
-    }
   }
 
   lines.push('', '## Package architecture', '');
@@ -567,29 +440,23 @@ export const createLlmsText = (
     );
   }
 
-  lines.push('', '## Runtime Adapters', '');
-
-  for (const adapter of orderedAdapters) {
-    const targetSummary =
-      adapter.entry.targets?.map((target) => `${target.id}: ${target.maturity}`).join(', ') ??
-      'no verified targets';
-    const implementation =
-      adapter.entry.implementation.kind === 'built-in'
-        ? 'built into @moldea.ai/core'
-        : adapter.entry.implementation.package;
-
-    lines.push(
-      `- [${adapter.id}](${adapter.route}): ${adapter.entry.implementationStatus}; ${implementation}; ${targetSummary}.`,
-    );
-  }
+  lines.push(
+    '',
+    '## Runtimes',
+    '',
+    'Runtime IDs select agent guidance. Labels do not claim SDK compatibility, certification, or vendor endorsement.',
+    'The coding agent reads the installed SDK type definitions and reviews how the application uses its declarations.',
+    '',
+  );
+  for (const runtime of RUNTIME_CATALOG)
+    lines.push(`- [${runtime.displayName}](/runtimes/#${runtime.id}): ${runtime.id}`);
 
   lines.push(
     '',
     '## Canonical references',
     '',
     `- [Repository Format specification](${specification.route}): Official version ${specification.formatVersion} repository contract.`,
-    '- [Runtime adapters and compatibility](/adapters/)',
-    '- [Machine-readable runtime compatibility](/compatibility/runtimes.json)',
+    '- [Runtimes](/runtimes/)',
     `- [Source repository](${REPOSITORY_URL})`,
     '',
   );
@@ -608,18 +475,8 @@ export const createWebsiteModel = async (): Promise<IWebsiteModel> => {
   const repositoryRoot = getRepositoryRoot();
   const packages = discoverPublicPackages(repositoryRoot);
   const repositoryFormatSpecification = loadRepositoryFormatSpecification();
-  const matrix = loadCompatibilityMatrix(repositoryRoot);
-  const targetMaturities = parseRuntimeTargetMaturity(
-    readFileSync(join(repositoryRoot, 'apps/website/content/runtime-target-maturity.yaml'), 'utf8'),
-    matrix,
-  );
-  const runtimeCompatibilityPublication = createRuntimeCompatibilityPublication(
-    matrix,
-    targetMaturities,
-  );
-  const adapters = buildAdapterPages(runtimeCompatibilityPublication, packages);
   const discoveryCopy = structuredClone(DISCOVERY_COPY);
-  validateDiscoveryCopy(discoveryCopy, packages, adapters);
+  validateDiscoveryCopy(discoveryCopy, packages);
   const contentDirectory = join(repositoryRoot, 'apps/website/content');
   const gettingStarted = parseDocument(
     join(contentDirectory, 'getting-started.md'),
@@ -629,15 +486,10 @@ export const createWebsiteModel = async (): Promise<IWebsiteModel> => {
   );
   const inspectionExample = await createInspectionExample();
   const instructionExample = await createInstructionExample();
-  const capabilities = await createCapabilities(
-    repositoryRoot,
-    packages,
-    runtimeCompatibilityPublication,
-  );
-  const routes = createRouteManifest(packages, adapters, gettingStarted);
+  const capabilities = await createCapabilities(repositoryRoot, packages);
+  const routes = createRouteManifest(packages, gettingStarted);
   const searchRecords = createSearchRecords(
     packages,
-    adapters,
     repositoryFormatSpecification,
     gettingStarted,
     discoveryCopy,
@@ -645,18 +497,16 @@ export const createWebsiteModel = async (): Promise<IWebsiteModel> => {
   );
 
   return {
-    adapters,
     capabilities,
     discoveryCopy,
     generatedNotice: GENERATED_NOTICE,
     gettingStarted,
     inspectionExample,
     instructionExample,
-    llmsText: createLlmsText(packages, adapters, repositoryFormatSpecification, gettingStarted),
+    llmsText: createLlmsText(packages, repositoryFormatSpecification, gettingStarted),
     packages,
     repositoryFormatSpecification,
     routes,
-    runtimeCompatibilityPublication,
     searchRecords,
   };
 };

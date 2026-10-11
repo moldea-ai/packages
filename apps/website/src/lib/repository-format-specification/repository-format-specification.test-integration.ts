@@ -7,6 +7,8 @@ import { createCore } from '@moldea.ai/core';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 import { describe, expect, test } from 'vitest';
 
+import { MANAGED_INTEGRATION_ENTRIES } from '../capabilities/integration-fixture/index.ts';
+
 import {
   loadRepositoryFormatSpecification,
   parseRepositoryFormatSpecification,
@@ -37,6 +39,7 @@ const EXPECTED_MANIFEST_PROPERTY_PATHS = [
   'unresolved.{requirement-id}.reference',
   'agents',
   'agents.{agent-id}.runtime',
+  'acceptedWarnings',
   'agents.{agent-id}.runtime.id',
   'agents.{agent-id}.runtime.guidance',
   'agents.{agent-id}.context',
@@ -122,13 +125,14 @@ describe('Repository Format specification', () => {
 
     for (const example of specification.completeExamples) {
       const result = await createCore().validateProject({
-        repository: createMemoryRepositoryReader(
-          example.files.map((file) => ({
+        repository: createMemoryRepositoryReader([
+          ...MANAGED_INTEGRATION_ENTRIES,
+          ...example.files.map((file) => ({
             content: file.content,
             path: file.path,
             type: 'file' as const,
           })),
-        ),
+        ]),
       });
 
       expect(result.valid, example.id).toBe(true);

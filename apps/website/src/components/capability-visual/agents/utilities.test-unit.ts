@@ -41,6 +41,7 @@ const example: ICapabilityCase = {
     diagnostics: [
       {
         code: 'MOLDEA_VARIABLE_UNDECLARED',
+        group: 'agents',
         severity: 'error',
         source: 'core',
         message: 'The agent instruction references an undeclared runtime variable.',
@@ -169,6 +170,7 @@ test('shows the diagnosed owner and only the first instruction line for an ident
       diagnostics: [
         {
           code: 'MOLDEA_AGENT_IDENTITY_INVALID',
+          group: 'agents',
           severity: 'error',
           source: 'core',
           message: 'The agent instruction identity is invalid.',

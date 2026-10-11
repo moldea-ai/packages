@@ -12,7 +12,7 @@ import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';
 import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import { withBase } from '@moldea.ai/website-ui/site';
 
-import AdapterCard from '../components/adapter-card.astro';
+import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';
 import { InspectionExample } from '../components/inspection-example/index.ts';
 import PackageCard from '../components/package-card.astro';
 import { RepositoryCheckPreview } from '../components/repository-check-preview/index.ts';
@@ -22,10 +22,7 @@ import { loadWebsiteModel } from '../lib/generation/generation.ts';
 import { SITE_GHOST_LINK_CLASS_NAME } from '../lib/site/index.ts';
 
 const model = loadWebsiteModel();
-const toolingPackages = model.packages.filter(({ family }) => family === 'skill-core-tooling');
-const availableAdapters = model.adapters.filter(
-  ({ entry }) => entry.implementationStatus === 'available',
-);
+const toolingPackages = model.packages;
 const basePath = import.meta.env.BASE_URL;
 ---
 
@@ -159,57 +156,44 @@ const basePath = import.meta.env.BASE_URL;
       </div>
       <p class="mt-7 max-w-4xl text-sm leading-7 text-muted-foreground">
         For an adopted local repository, the CLI is the usual entry point. It already combines a
-        filesystem reader, Core, and runtime adapters. Use the libraries directly when you are
-        building your own integration.
+        filesystem reader and Core. Use the libraries directly when you are building your own
+        integration.
       </p>
     </div>
   </section>
 
   <section
     class="page-shell py-12 sm:py-16"
-    aria-labelledby="available-adapters-title"
+    aria-labelledby="runtimes-title"
   >
     <header class="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-end">
       <div>
-        <p class="eyebrow mb-4">Runtime-specific evidence</p><h2
-          id="available-adapters-title"
+        <p class="eyebrow mb-4">Runtime labels</p><h2
+          id="runtimes-title"
           class="section-title"
         >
-          Find your runtime.
+          Guidance for your runtime.
         </h2>
       </div>
       <p class="text-lg leading-8 text-muted-foreground">
-        Choose your runtime. Check the exact versions and code patterns its adapter can inspect.
+        A runtime label selects guidance for your coding agent. Core checks declared files and
+        exports; your agent reviews how the application uses them.
       </p>
     </header>
-    <ul
-      class="grid gap-x-4 sm:grid-cols-2 sm:gap-y-4 lg:grid-cols-3"
-      aria-label="Available runtimes"
-    >
-      {
-        availableAdapters.map((adapter) => (
-          <li class="min-w-0">
-            <AdapterCard
-              {adapter}
-              copy={model.discoveryCopy.adapters[adapter.id]}
-            />
-          </li>
-        ))
-      }
-    </ul>
-    <div class="mt-6 flex flex-wrap gap-5">
+    <RuntimeGrid hrefBase={withBase('/runtimes/', basePath)} />
+    <div class="mt-6">
       <ActionLink
-        href={withBase('/adapters/', basePath)}
+        href={withBase('/runtimes/', basePath)}
         variant="link"
-        >View all adapters <ArrowRight
+        >Explore runtime guidance <ArrowRight
           class="size-4"
           aria-hidden="true"
         /></ActionLink
       >
     </div>
     <p class="mt-5 text-xs leading-5 text-muted-foreground">
-      Company names and marks belong to their respective owners. Compatibility does not imply
-      endorsement.
+      Names and marks belong to their respective owners. Labels do not imply SDK compatibility,
+      certification, or vendor endorsement.
     </p>
   </section>
 
@@ -232,7 +216,9 @@ const basePath = import.meta.env.BASE_URL;
           <ul class="mt-5 divide-y text-base leading-7">
             <li class="py-3">Your repository follows the declared format.</li>
             <li class="py-3">A referenced file exists at its declared path.</li>
-            <li class="py-3">An adapter recognizes a published code pattern.</li>
+            <li class="py-3">
+              An explicit export is present in a declared TypeScript or JavaScript ESM file.
+            </li>
           </ul>
         </div>
         <div class="border-t-2 border-border pt-5">

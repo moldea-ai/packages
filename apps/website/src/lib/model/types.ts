@@ -1,7 +1,3 @@
-import type {
-  IRuntimeCompatibilityPublicationAdapter,
-  IRuntimeCompatibilityPublicationV1,
-} from '../runtime-compatibility-publication/index.ts';
 import type { IRepositoryFormatSpecification } from '../repository-format-specification/index.ts';
 import type { IDiscoveryCopy } from '../discovery-copy/index.ts';
 import type { IInspectionExampleState } from '../inspection-example/index.ts';
@@ -43,7 +39,6 @@ export interface IPublicPackage {
   description: string;
   documents: IPackageDocument[];
   engines: Record<string, string>;
-  family: 'runtime-adapters' | 'skill-core-tooling';
   name: string;
   npmUrl: string;
   repositoryDirectory: string;
@@ -51,14 +46,6 @@ export interface IPublicPackage {
   slug: string;
   sourceUrl: string;
   version: string;
-}
-
-// one official technical adapter and its optional implemented project
-export interface IAdapterPage {
-  entry: IRuntimeCompatibilityPublicationAdapter;
-  id: string;
-  implementedPackageSlug: string | null;
-  route: string;
 }
 
 // public search record derived from canonical website content
@@ -71,7 +58,6 @@ export interface ISearchRecord {
 
 // deterministic website model generated exclusively from repository-owned sources
 export interface IWebsiteModel {
-  adapters: IAdapterPage[];
   capabilities: ICapabilities;
   discoveryCopy: IDiscoveryCopy;
   generatedNotice: string;
@@ -82,6 +68,5 @@ export interface IWebsiteModel {
   packages: IPublicPackage[];
   repositoryFormatSpecification: IRepositoryFormatSpecification;
   routes: string[];
-  runtimeCompatibilityPublication: IRuntimeCompatibilityPublicationV1;
   searchRecords: ISearchRecord[];
 }

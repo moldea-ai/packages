@@ -20,7 +20,7 @@ export const resolveFixturePath = (directory: string, logicalPath: string): stri
     logicalPath.length > 160 ||
     components.some(
       (component) =>
-        !/^[a-z0-9._-]+$/u.test(component) ||
+        (!/^[a-z0-9._-]+$/u.test(component) && !['AGENTS.md', 'SKILL.md'].includes(component)) ||
         component.length > 64 ||
         component === '.' ||
         component === '..' ||

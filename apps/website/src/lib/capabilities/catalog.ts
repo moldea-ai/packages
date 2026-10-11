@@ -58,22 +58,24 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
     reference: { route: '/repository-format/', label: 'Explore decision records' },
   },
   {
-    id: 'runtime-wiring',
-    label: 'Runtime',
-    title: 'See how the code is connected.',
-    description: 'See how supported code connects instructions and tools, without running it.',
+    id: 'binding-coverage',
+    label: 'Bindings',
+    title: 'See what was checked.',
+    description:
+      'Check declared files and explicit exports, with a separate result for each check.',
     coverage: [
-      'instruction and tool connections',
-      'schemas, handoffs and workflows',
-      'version-sensitive behavior and scoped warnings',
+      'file existence',
+      'TypeScript and JavaScript ESM exports',
+      'checks that could not run',
+      'warnings and accepted warnings',
     ],
     featuredExampleIds: [
-      'openai-responses',
-      'openai-loader-disconnected',
-      'openai-agent-handoffs',
-      'langgraph-workflows',
+      'binding-export-passed',
+      'binding-export-missing',
+      'binding-commonjs',
+      'warning-accepted',
     ],
-    reference: { route: '/adapters/', label: 'Find your runtime and its scope' },
+    reference: { route: '/runtimes/', label: 'Explore runtime labels and binding checks' },
   },
   {
     id: 'repository-access',
@@ -105,7 +107,7 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
     coverage: [
       'validation, inspection, content and scope',
       'JSON output and exit codes',
-      'installed packages and adapters',
+      'installed packages',
     ],
     featuredExampleIds: [
       'cli-invalid-project',

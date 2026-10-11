@@ -5,7 +5,9 @@ import { parseRepositoryPath } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import type { ICapabilityCase } from '../index.ts';
-import { projectDiagnostics, projectFile, validateRuntimeSourceProofs } from '../index.ts';
+import { projectDiagnostics, projectFile } from '../index.ts';
+
+import { MANAGED_INTEGRATION_ENTRIES } from '../integration-fixture/index.ts';
 
 import { AGENT_EXAMPLES } from './agents.ts';
 import { DECISION_EXAMPLES } from './decisions.ts';
@@ -29,11 +31,13 @@ export const createCoreExamples = async (
   const examples: ICapabilityCase[] = [];
   for (const definition of definitions) {
     const { text, operation } = definition;
-    validateRuntimeSourceProofs(definition.id, definition.entries);
     const result =
       operation === 'validateProject'
         ? await core.validateProject({
-            repository: createMemoryRepositoryReader(definition.entries),
+            repository: createMemoryRepositoryReader([
+              ...MANAGED_INTEGRATION_ENTRIES,
+              ...definition.entries,
+            ]),
           })
         : text === undefined
           ? null
@@ -51,7 +55,7 @@ export const createCoreExamples = async (
         definition.expectedCodes,
       )
     ) {
-      throw new Error('A capability example produced unexpected Core results.');
+      throw new Error(`A capability example produced unexpected Core results: ${definition.id}.`);
     }
     const entries = text === undefined ? definition.entries : [{ ...text, type: 'file' as const }];
     examples.push({

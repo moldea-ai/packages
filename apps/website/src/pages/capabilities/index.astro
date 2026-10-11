@@ -16,7 +16,7 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Capabilities' }];
 
 <BaseLayout
   title="Capabilities"
-  description="Explore project context, decision records, structural checks, and optional runtime-agent connections through real package results."
+  description="Explore project context, decision records, structural checks, and declared binding coverage through real package results."
   {breadcrumbs}
   flushFooter
 >
@@ -79,8 +79,8 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Capabilities' }];
     aria-label="Check boundaries and next step"
   >
     <p class="max-w-2xl text-sm leading-7 text-muted-foreground">
-      These checks verify structure and supported source connections. They do not run your agents,
-      judge their answers, or repair your files.
+      These checks inspect declared structure, files, and explicit exports. They do not check
+      runtime wiring, run your agents, judge their answers, or repair your files.
     </p>
     <ActionLink href={withBase('/getting-started/', import.meta.env.BASE_URL)}
       >Get started</ActionLink

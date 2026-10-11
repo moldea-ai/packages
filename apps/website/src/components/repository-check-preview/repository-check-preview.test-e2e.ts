@@ -94,11 +94,7 @@ for (const width of [320, 768, 1024, 1440]) {
         );
         expect(previewBounds!.x).toBeGreaterThan(headingBounds!.x + headingBounds!.width);
         await expect(preview).toBeInViewport({ ratio: 1 });
-        for (const titleId of [
-          'inspection-title',
-          'repository-contents-title',
-          'available-adapters-title',
-        ]) {
+        for (const titleId of ['inspection-title', 'repository-contents-title', 'runtimes-title']) {
           const headerBottoms = await page.locator(`#${titleId}`).evaluate((element) => {
             const header = element.closest('header');
             const [titleColumn, descriptionColumn] = header?.children ?? [];

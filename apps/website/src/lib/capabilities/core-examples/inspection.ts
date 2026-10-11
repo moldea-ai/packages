@@ -5,7 +5,7 @@ import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 import type { ICapabilityCase, ICapabilityFact } from '../index.ts';
 import { assertCapabilityFacts, captureOperationalRefusal } from '../index.ts';
 import { projectFile } from '../index.ts';
-import { RUNTIME_EXAMPLES } from '../runtime-examples/index.ts';
+import { MANAGED_INTEGRATION_ENTRIES } from '../integration-fixture/index.ts';
 
 import { createCoreEntries, MANIFEST_PATH, PROJECT_PATH } from './constants.ts';
 
@@ -48,14 +48,16 @@ const operationCase = (
 
 /** Shows that every diagnostic page keeps complete counts while preserving each severity. */
 const createMixedDiagnosticExample = async (): Promise<ICapabilityCase> => {
-  const runtime = RUNTIME_EXAMPLES.find(({ id }) => id === 'openai-loader-unverified');
-  if (runtime === undefined) throw new Error('The mixed diagnostic fixture is missing.');
-  const files = runtime.files.map((entry) =>
-    entry.path === '/src/agent.ts' && entry.type === 'file' && typeof entry.content === 'string'
-      ? { ...entry, content: entry.content.replace('tools: [registeredFindOrder]', 'tools: []') }
-      : entry,
+  const files = createCoreEntries(
+    `version: 1
+context:
+  /moldea/project.md:
+    bindings: [{ path: /src/returns.ts, symbol: canReturn }]
+    affectedBy: [/src/future/**]
+`,
+    [{ path: '/src/returns.ts', type: 'file', content: 'export const otherRule = () => true;\n' }],
   );
-  const inspection = await createCore({ adapters: [runtime.adapter] }).createProjectInspection({
+  const inspection = await createCore().createProjectInspection({
     repository: createMemoryRepositoryReader(files),
   });
   const first = inspection.readPage({ view: 'diagnostics', maxItems: 1 });
@@ -66,7 +68,6 @@ const createMixedDiagnosticExample = async (): Promise<ICapabilityCase> => {
     const page = inspection.readPage({ view: 'diagnostics', maxItems: 1, cursor });
     assertCapabilityFacts(page.counts, first.counts);
     assertCapabilityFacts(page.inspectionDigest, first.inspectionDigest);
-    assertCapabilityFacts(page.runtimeInspection, first.runtimeInspection);
     diagnosticPages.push(page);
     cursor = page.page.nextCursor;
   }
@@ -77,22 +78,21 @@ const createMixedDiagnosticExample = async (): Promise<ICapabilityCase> => {
     }),
     hasContinuation: page.page.nextCursor !== null,
   }));
-  assertCapabilityFacts(first.runtimeInspection, 'incomplete');
   assertCapabilityFacts(
     [first.counts.diagnostics, first.counts.errors, first.counts.warnings],
     [3, 1, 2],
   );
   assertCapabilityFacts(pages, [
     {
-      records: [{ code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED', severity: 'warning' }],
+      records: [{ code: 'MOLDEA_IMPACT_PATTERN_UNMATCHED', severity: 'warning' }],
       hasContinuation: true,
     },
     {
-      records: [{ code: 'OPENAI_RUNTIME_RELATIONSHIP_UNVERIFIED', severity: 'warning' }],
+      records: [{ code: 'MOLDEA_INTEGRATION_BLOCK_MISSING', severity: 'warning' }],
       hasContinuation: true,
     },
     {
-      records: [{ code: 'OPENAI_TOOL_REGISTRATION_NOT_WIRED', severity: 'error' }],
+      records: [{ code: 'MOLDEA_REFERENCE_EXPORT_MISSING', severity: 'error' }],
       hasContinuation: false,
     },
   ]);
@@ -101,7 +101,7 @@ const createMixedDiagnosticExample = async (): Promise<ICapabilityCase> => {
     'inspection-mixed-diagnostics',
     'createProjectInspection',
     'Warnings and errors across three pages',
-    'Every page retains complete counts. A disconnected tool fails, while the dynamic instruction and tool implementation remain unverified.',
+    'Every page retains complete counts. The missing export is an error; the absent integration block and unmatched impact pattern are warnings.',
     {
       counts: {
         diagnostics: first.counts.diagnostics,
@@ -171,14 +171,29 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
     ),
   );
 
-  const runtime = RUNTIME_EXAMPLES.find(({ id }) => id === 'openai-loader-disconnected');
-  if (runtime === undefined) throw new Error('The Core inspection runtime fixture is missing.');
-  const inspectedRepository = createMemoryRepositoryReader(runtime.files);
-  const inspectionCore = createCore({ adapters: [runtime.adapter] });
-  const preparedInspection = await inspectionCore.createProjectInspection({
-    repository: inspectedRepository,
+  const preparedInspection = await core.createProjectInspection({
+    repository: createMemoryRepositoryReader([
+      ...MANAGED_INTEGRATION_ENTRIES,
+      ...createCoreEntries(
+        `version: 1
+context:
+  /moldea/project.md:
+    bindings:
+      - { path: /src/returns.ts, symbol: canReturn }
+      - { path: /src/returns.ts, symbol: otherRule }
+    affectedBy: [/src/future/**]
+`,
+        [
+          {
+            path: '/src/returns.ts',
+            type: 'file',
+            content: 'export const canReturn = () => true;\nexport * from "./policy.js";\n',
+          },
+        ],
+      ),
+    ]),
   });
-  for (const view of ['metadata', 'diagnostics', 'evidence'] as const) {
+  for (const view of ['metadata', 'diagnostics', 'coverage'] as const) {
     const pages: ICapabilityFact[] = [];
     let cursor: string | undefined;
     let recordCount = 0;
@@ -187,7 +202,7 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
     do {
       const result = preparedInspection.readPage({
         view,
-        maxItems: 2,
+        maxItems: 1,
         ...(cursor === undefined ? {} : { cursor }),
       });
       const records = result.page.records.map(({ item }): ICapabilityFact =>
@@ -209,12 +224,11 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
               ? { kind: item.kind, code: item.diagnostic.code, path: item.diagnostic.path }
               : {
                   kind: item.kind,
-                  evidenceKind: item.evidence.kind,
-                  agentId: item.evidence.agentId,
-                  references: item.evidence.references.map(({ path, symbol }) => ({
-                    path,
-                    symbol: symbol ?? null,
-                  })),
+                  relationship: item.coverage.relationship,
+                  path: item.coverage.path,
+                  symbol: item.coverage.symbol,
+                  fileCheck: item.coverage.fileCheck,
+                  exportCheck: item.coverage.exportCheck,
                 },
       );
       if (digest !== null) assertCapabilityFacts(result.inspectionDigest, digest);
@@ -231,12 +245,12 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
       cursor = result.page.nextCursor ?? undefined;
     } while (cursor !== undefined);
     assertCapabilityFacts(recordCount, totalItems);
-    assertCapabilityFacts(totalItems, view === 'diagnostics' ? 2 : 5);
+    assertCapabilityFacts(totalItems, view === 'diagnostics' ? 1 : 2);
     examples.push(
       operationCase(
         `inspection-${view}`,
         'createProjectInspection',
-        `${view === 'metadata' ? 'Assignments and asset metadata' : view === 'diagnostics' ? 'Diagnostics' : 'Runtime evidence'} in bounded pages`,
+        `${view === 'metadata' ? 'Assignments and asset metadata' : view === 'diagnostics' ? 'Diagnostics' : 'Binding coverage'} in bounded pages`,
         'The requested view returns records and a stable inspection digest, without canonical document bodies.',
         { view, totalItems, inspectionDigest: digest, pages },
       ),

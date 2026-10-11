@@ -3,15 +3,14 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
+import { RUNTIME_CATALOG } from '@moldea.ai/website-ui/runtime-catalog';
 import { afterEach, beforeAll, describe, expect, test } from 'vitest';
 
-import type { IRuntimeCompatibilityMatrix } from '../../../../../scripts/runtime-compatibility/types.ts';
 import type { IWebsiteModel } from '../model/types.ts';
-import { createRuntimeCompatibilityPublication } from '../runtime-compatibility-publication/index.ts';
+import { RETIRED_RUNTIME_ROUTES } from '../redirects/index.ts';
 import { getCapabilityShowcase } from '../capabilities/index.ts';
 
 import {
-  buildAdapterPages,
   createLlmsText,
   createRouteManifest,
   createSearchRecords,
@@ -90,60 +89,13 @@ afterEach(() => {
 });
 
 describe('discoverPublicPackages', () => {
-  test('discovers the current visitor-facing implementation set and package families', () => {
-    const model = getCurrentWebsiteModel();
-
-    expect(model.packages.map(({ name }) => name)).toStrictEqual([
-      '@moldea.ai/adapter-anthropic',
-      '@moldea.ai/adapter-claude-agent-sdk',
-      '@moldea.ai/adapter-cloudflare-agents',
-      '@moldea.ai/adapter-eve',
-      '@moldea.ai/adapter-google-genai',
-      '@moldea.ai/adapter-langchain',
-      '@moldea.ai/adapter-langgraph',
-      '@moldea.ai/adapter-openai',
-      '@moldea.ai/adapter-openai-agents-sdk',
-      '@moldea.ai/adapter-vercel-ai-sdk',
+  test('discovers exactly the four visitor-facing packages', () => {
+    expect(getCurrentWebsiteModel().packages.map(({ name }) => name)).toStrictEqual([
       '@moldea.ai/cli',
       '@moldea.ai/core',
       '@moldea.ai/repository',
       '@moldea.ai/repository-fs',
     ]);
-    expect(model.packages.find(({ slug }) => slug === 'adapter-openai')?.family).toBe(
-      'runtime-adapters',
-    );
-    expect(model.packages.find(({ slug }) => slug === 'adapter-claude-agent-sdk')?.family).toBe(
-      'runtime-adapters',
-    );
-    expect(model.packages.find(({ slug }) => slug === 'adapter-openai-agents-sdk')?.family).toBe(
-      'runtime-adapters',
-    );
-    expect(model.packages.find(({ slug }) => slug === 'adapter-cloudflare-agents')?.family).toBe(
-      'runtime-adapters',
-    );
-    expect(model.packages.find(({ slug }) => slug === 'adapter-eve')?.family).toBe(
-      'runtime-adapters',
-    );
-    expect(model.packages.find(({ slug }) => slug === 'adapter-langchain')?.family).toBe(
-      'runtime-adapters',
-    );
-    expect(model.packages.find(({ slug }) => slug === 'adapter-langgraph')?.family).toBe(
-      'runtime-adapters',
-    );
-    expect(model.packages.find(({ slug }) => slug === 'adapter-vercel-ai-sdk')?.family).toBe(
-      'runtime-adapters',
-    );
-    expect(model.packages.find(({ slug }) => slug === 'adapter-anthropic')?.family).toBe(
-      'runtime-adapters',
-    );
-    expect(model.packages.find(({ slug }) => slug === 'adapter-google-genai')?.family).toBe(
-      'runtime-adapters',
-    );
-    expect(
-      model.packages
-        .filter(({ family }) => family === 'skill-core-tooling')
-        .map(({ slug }) => slug),
-    ).toStrictEqual(['cli', 'core', 'repository', 'repository-fs']);
   });
 
   test('excludes Website UI before reading its repository-only documentation', () => {
@@ -285,83 +237,7 @@ describe('discoverPublicPackages', () => {
   });
 });
 
-describe('adapter and route generation', () => {
-  test('preserves available implementations with supported qualified targets', () => {
-    const model = getCurrentWebsiteModel();
-    const custom = model.adapters.find(({ id }) => id === 'custom');
-    const openAi = model.adapters.find(({ id }) => id === 'openai');
-    const anthropic = model.adapters.find(({ id }) => id === 'anthropic');
-
-    expect(custom).toMatchObject({
-      implementedPackageSlug: null,
-      entry: { implementationStatus: 'available', implementation: { kind: 'built-in' } },
-    });
-    expect(custom?.entry.targets?.[0]?.qualificationEvidence).toStrictEqual({
-      url: 'https://skill.moldea.ai/evidence/qualification/custom/custom/',
-    });
-    expect(openAi).toMatchObject({
-      implementedPackageSlug: 'adapter-openai',
-      entry: {
-        implementationStatus: 'available',
-        targets: [
-          {
-            maturity: 'supported',
-            qualificationEvidence: {
-              url: 'https://skill.moldea.ai/evidence/qualification/openai/typescript-responses-api-7/',
-            },
-          },
-        ],
-      },
-    });
-    expect(anthropic).toMatchObject({
-      implementedPackageSlug: 'adapter-anthropic',
-      entry: {
-        implementationStatus: 'available',
-        targets: [
-          {
-            maturity: 'supported',
-            qualificationEvidence: {
-              url: 'https://skill.moldea.ai/evidence/qualification/anthropic/typescript-messages-api-0-117/',
-            },
-          },
-        ],
-      },
-    });
-  });
-
-  test('rejects an available package-backed adapter without an implemented package', () => {
-    const matrix: IRuntimeCompatibilityMatrix = {
-      version: 2,
-      adapters: {
-        missing: {
-          implementation: {
-            distribution: 'public',
-            kind: 'package',
-            package: '@moldea.ai/adapter-missing',
-          },
-          implementationStatus: 'available',
-        },
-      },
-    };
-
-    expect(() => buildAdapterPages(createRuntimeCompatibilityPublication(matrix, {}), [])).toThrow(
-      'Available adapter missing has no implemented public package.',
-    );
-  });
-
-  test('uses one combined publication for adapter pages and the machine route', () => {
-    const model = getCurrentWebsiteModel();
-
-    expect(model.runtimeCompatibilityPublication).toMatchObject({
-      matrixVersion: 2,
-      schemaVersion: 1,
-    });
-    expect(model.adapters.map(({ id, entry }) => [id, entry])).toStrictEqual(
-      Object.entries(model.runtimeCompatibilityPublication.adapters),
-    );
-    expect(model.routes).toContain('/compatibility/runtimes.json');
-  });
-
+describe('route generation', () => {
   test('rejects two package documents resolving to one route', () => {
     const model = getCurrentWebsiteModel();
     const first = {
@@ -375,72 +251,37 @@ describe('adapter and route generation', () => {
       documents: [{ ...model.packages[1].documents[0], route: '/collision/' }],
     };
 
-    expect(() => createRouteManifest([first, second], [], model.gettingStarted)).toThrow(
+    expect(() => createRouteManifest([first, second], model.gettingStarted)).toThrow(
       'Two public content items resolve to /collision/.',
     );
   });
 });
 
-describe('createLlmsText', () => {
-  test('is deterministic under reversed source enumeration', () => {
-    const model = getCurrentWebsiteModel();
-
-    expect(
-      createLlmsText(
-        [...model.packages].reverse(),
-        [...model.adapters].reverse(),
-        model.repositoryFormatSpecification,
-        model.gettingStarted,
-      ),
-    ).toBe(
-      createLlmsText(
-        model.packages,
-        model.adapters,
-        model.repositoryFormatSpecification,
-        model.gettingStarted,
-      ),
-    );
-  });
-
-  test('represents every public package and canonical adapter without exposing the website package', () => {
-    const model = getCurrentWebsiteModel();
-    const text = createLlmsText(
-      model.packages,
-      model.adapters,
+test('keeps machine discovery deterministic and represents every package and runtime label', () => {
+  const model = getCurrentWebsiteModel();
+  const text = createLlmsText(
+    model.packages,
+    model.repositoryFormatSpecification,
+    model.gettingStarted,
+  );
+  expect(
+    createLlmsText(
+      [...model.packages].reverse(),
       model.repositoryFormatSpecification,
       model.gettingStarted,
-    );
-    const lines = text.split('\n');
-
-    for (const packageModel of model.packages) {
-      const overview = packageModel.documents.find(({ slug }) => slug === '');
-
-      expect(text).toContain(
-        `- [${packageModel.name}](${packageModel.route}): ${overview?.description}`,
-      );
-    }
-
-    for (const adapter of model.adapters) {
-      const line = lines.find((candidate) => candidate.startsWith(`- [${adapter.id}](`));
-
-      expect(line).toContain(`): ${adapter.entry.implementationStatus};`);
-      for (const target of adapter.entry.targets ?? []) {
-        expect(line).toContain(`${target.id}: ${target.maturity}`);
-      }
-    }
-
-    const internalLinks = [...text.matchAll(/\[[^\]]+\]\((\/[^)\s]+)\)/g)].map((match) => match[1]);
-
-    expect(internalLinks.length).toBeGreaterThan(0);
-    for (const route of internalLinks) expect(model.routes).toContain(route);
-    expect(text).not.toContain('@moldea.ai/packages-website');
-    expect(text).toContain('available; built into @moldea.ai/core; custom: supported');
-    expect(text).toContain('typescript-messages-api-0-117: supported');
-    expect(text).toContain('typescript-responses-api-7: supported');
+    ),
+  ).toBe(text);
+  for (const pkg of model.packages)
     expect(text).toContain(
-      `[Repository Format specification](${model.repositoryFormatSpecification.route})`,
+      `[${pkg.name}](${pkg.route}): ${pkg.documents.find(({ slug }) => slug === '')?.description}`,
     );
-  });
+  for (const runtime of RUNTIME_CATALOG)
+    expect(text).toContain(`[${runtime.displayName}](/runtimes/#${runtime.id})`);
+  for (const [, route] of text.matchAll(/\[[^\]]+\]\((\/[^)\s]+)\)/g))
+    expect(model.routes).toContain(route.split('#')[0]);
+  expect(text).not.toMatch(
+    /@moldea.ai\/(?:packages-website|adapter-|website-ui)|\/compatibility\//,
+  );
 });
 
 describe('createSearchRecords', () => {
@@ -494,79 +335,36 @@ describe('createSearchRecords', () => {
     expect(JSON.stringify(capabilityRecords)).not.toContain('export async function');
     expect(JSON.stringify(capabilityRecords)).not.toContain('boundaryVersion');
   });
-  test('publishes one combined runtime directory and keeps the JSON handoff', () => {
+  test('indexes runtime labels without retaining retired discovery routes', () => {
     const model = getCurrentWebsiteModel();
-    const directory = model.searchRecords.filter(({ route }) => route === '/adapters/');
-    expect(directory).toHaveLength(1);
-    expect(directory[0].title).toBe('Runtime adapters and compatibility');
-    expect(directory[0].searchText).toContain('compatibility');
-    expect(model.searchRecords.some(({ route }) => route === '/compatibility/')).toBe(false);
-    expect(model.llmsText).toContain('[Runtime adapters and compatibility](/adapters/)');
-    expect(model.llmsText).toContain('(/compatibility/runtimes.json)');
-    expect(model.llmsText).not.toContain('(/compatibility/)');
-  });
-  test('represents every public package and canonical adapter', () => {
-    const model = getCurrentWebsiteModel();
-    const searchRecords = createSearchRecords(
-      model.packages,
-      model.adapters,
-      model.repositoryFormatSpecification,
-      model.gettingStarted,
-      model.discoveryCopy,
-      model.capabilities,
-    );
-
-    for (const packageModel of model.packages) {
+    for (const runtime of RUNTIME_CATALOG)
       expect(
-        searchRecords.some(
-          (record) =>
-            record.title.includes(packageModel.name) ||
-            record.searchText.includes(packageModel.name),
-        ),
-      ).toBe(true);
-    }
-
-    for (const adapter of model.adapters) {
-      expect(searchRecords.some(({ route }) => route === adapter.route)).toBe(true);
-    }
-
-    expect(
-      searchRecords.some(({ route }) => route === model.repositoryFormatSpecification.route),
-    ).toBe(true);
-
-    expect(searchRecords.some(({ searchText }) => searchText.includes('supported'))).toBe(true);
-    expect(JSON.stringify(searchRecords)).not.toContain('@moldea.ai/packages-website');
+        model.searchRecords.filter(({ route }) => route === `/runtimes/#${runtime.id}`),
+      ).toHaveLength(1);
+    expect(model.searchRecords.filter(({ route }) => route === '/runtimes/')).toHaveLength(1);
+    expect(model.searchRecords.some(({ route }) => RETIRED_RUNTIME_ROUTES.includes(route))).toBe(
+      false,
+    );
+    expect(model.routes).toEqual(expect.arrayContaining(RETIRED_RUNTIME_ROUTES));
+    expect(model.routes).not.toContain('/compatibility/runtimes.json');
   });
-
-  test('is deterministic under reversed source enumeration', () => {
+  test('keeps search deterministic when packages are discovered in reverse order', () => {
     const model = getCurrentWebsiteModel();
-
     expect(
       createSearchRecords(
         [...model.packages].reverse(),
-        [...model.adapters].reverse(),
         model.repositoryFormatSpecification,
         model.gettingStarted,
         model.discoveryCopy,
         model.capabilities,
       ),
-    ).toStrictEqual(
-      createSearchRecords(
-        model.packages,
-        model.adapters,
-        model.repositoryFormatSpecification,
-        model.gettingStarted,
-        model.discoveryCopy,
-        model.capabilities,
-      ),
-    );
+    ).toStrictEqual(model.searchRecords);
   });
 });
 
-test('publishes one authored guide across routes, search, and llms with Skill and Cloud handoffs', () => {
+test('uses the authored guide and excludes Website UI from public discovery', () => {
   const model = getCurrentWebsiteModel();
   const guide = model.gettingStarted;
-
   expect(guide.route).toBe('/getting-started/');
   expect(guide.sourcePath).toBe('apps/website/content/getting-started.md');
   expect(model.routes.filter((route) => route === guide.route)).toStrictEqual([guide.route]);
@@ -575,52 +373,24 @@ test('publishes one authored guide across routes, search, and llms with Skill an
   expect(records[0]).toMatchObject({ title: guide.title, description: guide.description });
   expect(records[0].searchText).toContain('Check an adopted repository locally');
   expect(records[0].searchText).toContain('Collaborate in Cloud');
-  expect(guide.markdown).toContain('[`moldea Cloud`](https://moldea.ai)');
   expect(model.llmsText).toContain(`[${guide.title}](${guide.route}): ${guide.description}`);
   expect(model.llmsText).toContain('[moldea Agent Skill](https://skill.moldea.ai/)');
-  expect(model.searchRecords.every(({ route }) => route.startsWith('/'))).toBe(true);
-  expect(() =>
-    createRouteManifest(
-      [],
-      [{ ...model.adapters[0], implementedPackageSlug: null, route: guide.route }],
-      guide,
-    ),
-  ).toThrow('Two public content items resolve to /getting-started/.');
-});
-
-test('keeps Website UI documentation out of every public discovery surface', () => {
-  const model = getCurrentWebsiteModel();
-
-  expect(model.packages.some(({ name }) => name === '@moldea.ai/website-ui')).toBe(false);
-  expect(model.routes.some((route) => route.startsWith('/packages/website-ui/'))).toBe(false);
-  expect(model.searchRecords.some(({ route }) => route.startsWith('/packages/website-ui/'))).toBe(
-    false,
-  );
-  expect(model.llmsText).not.toContain('@moldea.ai/website-ui');
-  expect(model.llmsText).not.toContain('Website Foundations');
+  expect(model.gettingStarted.markdown).toContain('[`moldea Cloud`](https://moldea.ai)');
+  expect(
+    JSON.stringify({ routes: model.routes, search: model.searchRecords, llms: model.llmsText }),
+  ).not.toContain('/packages/website-ui/');
   expect(model.discoveryCopy.packages).not.toHaveProperty('@moldea.ai/website-ui');
 });
-
-test('keeps display metadata separate from canonical compatibility and model generation deterministic', async () => {
+test('regenerates the same source-backed model with Core 7 examples', async () => {
   const model = getCurrentWebsiteModel();
-  expect(model).toStrictEqual(await createWebsiteModel());
-  expect(model.capabilities.cases).toHaveLength(151);
-  expect(model.capabilities.runtimeTargets).toHaveLength(14);
-  expect(model.routes).toContain('/capabilities/');
+  expect(await createWebsiteModel()).toStrictEqual(model);
+  expect(model.capabilities.cases).toHaveLength(117);
   expect(model.inspectionExample.map(({ result }) => result.valid)).toStrictEqual([
     true,
     false,
     true,
   ]);
-  expect(model.instructionExample.result.valid).toBe(false);
   expect(model.instructionExample.result.diagnostics.map(({ code }) => code)).toStrictEqual([
     'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
   ]);
-  const canonical = structuredClone(model.runtimeCompatibilityPublication);
-  model.discoveryCopy.adapters.openai.name = 'A display-only label';
-  expect(model.runtimeCompatibilityPublication).toStrictEqual(canonical);
-  expect(JSON.stringify(canonical)).not.toContain('Responses API integration');
-  const openAiRecord = model.searchRecords.find(({ route }) => route === '/adapters/openai/');
-  expect(openAiRecord?.searchText).toContain('Responses API');
-  expect(openAiRecord?.searchText).toContain('typescript-responses-api-7');
 });

@@ -9,7 +9,6 @@ import type { ICapabilityCase, ICapabilityFact } from '../index.ts';
 import { withFixtureWorkspace } from '../fixture-workspace/index.ts';
 import { assertCapabilityFacts } from '../index.ts';
 import { projectFile } from '../index.ts';
-import { RUNTIME_EXAMPLES } from '../runtime-examples/index.ts';
 
 import { CLI_FIXTURE_FILES } from './constants.ts';
 import {
@@ -158,7 +157,7 @@ const commandCase = (
 
 /**
  * Executes the declared CLI bin in an isolated Git fixture and verifies its read-only behavior.
- * @returns Validated schema 6 excerpts with real exit statuses and no host-specific identities.
+ * @returns Validated schema 7 excerpts with real exit statuses and no host-specific identities.
  * @throws
  * - A CLI result excerpt does not match the executed response.
  */
@@ -215,7 +214,6 @@ export const createCliExamples = async (
     const examples: ICapabilityCase[] = [];
     const validation = await run(['validate']);
     const validationResult = CliInspectionResult.parse(validation.envelope.result);
-    assertCapabilityFacts(validationResult.runtimeInspection, 'complete');
     assertCapabilityFacts(
       [
         validationResult.valid,
@@ -236,14 +234,12 @@ export const createCliExamples = async (
         validation.exitStatus,
         {
           valid: validationResult.valid,
-          runtimeInspection: validationResult.runtimeInspection,
           diagnosticCount: validationResult.diagnosticCount ?? 0,
           errorCount: validationResult.errorCount ?? 0,
           warningCount: validationResult.warningCount ?? 0,
         },
         {
           valid: validationResult.valid,
-          runtimeInspection: validationResult.runtimeInspection,
           diagnosticCount: validationResult.diagnosticCount ?? 0,
           errorCount: validationResult.errorCount ?? 0,
           warningCount: validationResult.warningCount ?? 0,
@@ -253,7 +249,6 @@ export const createCliExamples = async (
     );
     const inspection = await run(['inspect']);
     const inspectionResult = CliInspectionResult.parse(inspection.envelope.result);
-    assertCapabilityFacts(inspectionResult.runtimeInspection, 'complete');
     const paths = inspectionResult.page.records.flatMap(({ path }) =>
       typeof path === 'string' ? [path] : [],
     );
@@ -274,13 +269,11 @@ export const createCliExamples = async (
         inspection.exitStatus,
         {
           paths,
-          runtimeInspection: inspectionResult.runtimeInspection,
           counts: inspectionResult.counts ?? {},
           hasContinuation: inspectionResult.page.cursor !== null,
         },
         {
           valid: inspectionResult.valid,
-          runtimeInspection: inspectionResult.runtimeInspection,
           counts: inspectionResult.counts ?? {},
           page: { records: paths.map((path) => ({ path })) },
         },
@@ -310,7 +303,7 @@ export const createCliExamples = async (
           useStdin ? 'Match a set of changed paths' : 'Ask which knowledge a path affects',
           useStdin
             ? 'NUL-delimited input accepts several logical paths. The unrelated logo does not create a match.'
-            : 'The scope operation uses manifest declarations without running adapters.',
+            : 'The scope operation matches changed paths using only manifest declarations.',
           `moldea ${args.join(' ')} --json`,
           execution.envelope,
           execution.exitStatus,
@@ -436,13 +429,6 @@ export const createCliExamples = async (
         published.version,
         packages.find(({ name }) => name === published.name)?.version,
       );
-    const adapterIds = packages
-      .filter(({ family }) => family === 'runtime-adapters')
-      .map(({ slug }) => slug.replace(/^adapter-/u, ''));
-    assertCapabilityFacts(
-      compositionResult.adapters.map(({ id }) => id),
-      [...adapterIds, 'custom'].sort(),
-    );
     assertCapabilityFacts(
       compositionResult.packages.map(({ name }) => name),
       packages
@@ -454,13 +440,12 @@ export const createCliExamples = async (
       commandCase(
         'cli-composition',
         'Inspect the installed composition',
-        'The executable reports its actual packages, active adapters, supported formats, and runtime requirements. This is not target maturity.',
+        'The executable reports its actual packages, repository formats, and runtime requirements.',
         'moldea composition --json',
         composition.envelope,
         composition.exitStatus,
         { ...compositionResult },
         {
-          adapters: compositionResult.adapters.slice(0, 2),
           packages: compositionResult.packages.slice(0, 2),
           minimumGitVersion: compositionResult.minimumGitVersion,
           repositoryFormatVersions: compositionResult.repositoryFormatVersions,
@@ -475,7 +460,6 @@ export const createCliExamples = async (
     const beforeInvalid = await captureFixtureState(workspace.directory);
     const invalid = await run(['validate']);
     const invalidResult = CliInspectionResult.parse(invalid.envelope.result);
-    assertCapabilityFacts(invalidResult.runtimeInspection, 'not-run');
     assertCapabilityFacts(
       [
         invalid.exitStatus,
@@ -505,7 +489,6 @@ export const createCliExamples = async (
       invalid.exitStatus,
       {
         valid: invalidResult.valid,
-        runtimeInspection: invalidResult.runtimeInspection,
         diagnosticCount: invalidResult.diagnosticCount ?? 0,
         errorCount: invalidResult.errorCount ?? 0,
         warningCount: invalidResult.warningCount ?? 0,
@@ -517,7 +500,6 @@ export const createCliExamples = async (
       },
       {
         valid: invalidResult.valid,
-        runtimeInspection: invalidResult.runtimeInspection,
         diagnosticCount: invalidResult.diagnosticCount ?? 0,
         errorCount: invalidResult.errorCount ?? 0,
         warningCount: invalidResult.warningCount ?? 0,
@@ -544,78 +526,93 @@ export const createCliExamples = async (
     examples.push(invalidCase);
     assertCapabilityFacts(await captureFixtureState(workspace.directory), beforeInvalid);
 
-    const warningRuntime = RUNTIME_EXAMPLES.find(
-      ({ id }) => id === 'cloudflare-think-ambiguous-context',
-    );
-    if (warningRuntime === undefined) throw new Error('The CLI warning fixture is missing.');
-    for (const entry of warningRuntime.files) {
-      if (entry.type !== 'file' || typeof entry.content !== 'string')
-        throw new Error('The CLI warning fixture contains a non-file entry.');
-      await workspace.write({ path: entry.path, content: entry.content });
+    for (const accepted of [false, true]) {
+      const acceptance = accepted
+        ? `acceptedWarnings:
+  - code: MOLDEA_IMPACT_PATTERN_UNMATCHED
+    subject: /moldea/project.md
+    qualifier: /src/future/**
+    reason: The future module is documented before implementation.
+`
+        : '';
+      await workspace.write({
+        path: '/moldea/moldea.yaml',
+        content: `version: 1
+context:
+  /moldea/project.md:
+    affectedBy: [/src/future/**]
+${acceptance}`,
+      });
+      const beforeWarning = await captureFixtureState(workspace.directory);
+      const warning = await run(['validate']);
+      const result = CliInspectionResult.parse(warning.envelope.result);
+      assertCapabilityFacts(
+        [
+          warning.exitStatus,
+          result.valid,
+          result.diagnosticCount,
+          result.errorCount,
+          result.warningCount,
+          result.acceptedWarningCount,
+        ],
+        [0, true, 1, 0, accepted ? 0 : 1, accepted ? 1 : 0],
+      );
+      const [record] = result.page.records;
+      if (record?.kind !== 'diagnostic' || record.severity !== 'warning')
+        throw new Error('The CLI warning fixture did not produce its warning.');
+      assertCapabilityFacts(
+        [
+          record.code,
+          record.group,
+          record.subject,
+          record.qualifier,
+          record.acceptable,
+          record.accepted,
+          record.reason,
+        ],
+        [
+          'MOLDEA_IMPACT_PATTERN_UNMATCHED',
+          'references',
+          '/moldea/project.md',
+          '/src/future/**',
+          true,
+          accepted,
+          accepted ? 'The future module is documented before implementation.' : null,
+        ],
+      );
+      const diagnostic = {
+        code: record.code,
+        group: record.group,
+        severity: record.severity,
+        subject: record.subject,
+        qualifier: record.qualifier,
+        acceptable: record.acceptable,
+        accepted: record.accepted,
+        reason: record.reason,
+      };
+      const counts = {
+        valid: result.valid,
+        diagnosticCount: result.diagnosticCount ?? 0,
+        errorCount: result.errorCount ?? 0,
+        warningCount: result.warningCount ?? 0,
+        acceptedWarningCount: result.acceptedWarningCount ?? 0,
+      };
+      examples.push(
+        commandCase(
+          accepted ? 'cli-accepted-warning' : 'cli-pattern-warning',
+          accepted ? 'An accepted warning stays visible' : 'A warning exits successfully',
+          accepted
+            ? 'The CLI separates accepted warnings from outstanding warnings and preserves the recorded reason.'
+            : 'An unmatched pattern is a warning. It does not turn a completed check into an invalid project.',
+          'moldea validate --json',
+          warning.envelope,
+          warning.exitStatus,
+          { ...counts, diagnostics: [diagnostic] },
+          { ...counts, page: { records: [{ kind: 'diagnostic', ...diagnostic }] } },
+        ),
+      );
+      assertCapabilityFacts(await captureFixtureState(workspace.directory), beforeWarning);
     }
-    const beforeWarning = await captureFixtureState(workspace.directory);
-    const warning = await run(['validate']);
-    const warningResult = CliInspectionResult.parse(warning.envelope.result);
-    assertCapabilityFacts(warningResult.runtimeInspection, 'incomplete');
-    assertCapabilityFacts(
-      [
-        warning.exitStatus,
-        warningResult.valid,
-        warningResult.diagnosticCount,
-        warningResult.errorCount,
-        warningResult.warningCount,
-      ],
-      [0, true, 1, 0, 1],
-    );
-    assertCapabilityFacts(warningResult.page.records.length, 1);
-    const [warningRecord] = warningResult.page.records;
-    if (warningRecord?.kind !== 'diagnostic' || warningRecord.severity !== 'warning')
-      throw new Error('The CLI warning fixture did not produce a warning diagnostic.');
-    const diagnostic = {
-      code: warningRecord.code,
-      severity: warningRecord.severity,
-      details: warningRecord.details,
-    };
-    assertCapabilityFacts(diagnostic, {
-      code: 'CLOUDFLARE_AGENTS_RUNTIME_RELATIONSHIP_UNVERIFIED',
-      severity: 'warning',
-      details: {
-        relationship: 'instruction-loader',
-        reason: 'version-dependent-behavior',
-        packageName: '@cloudflare/think',
-        declaredRange: '>=0.17.0',
-        boundaryVersion: '0.18.0',
-      },
-    });
-    examples.push(
-      commandCase(
-        'cli-version-warning',
-        'A version range leaves one connection unverified',
-        'The declared Think range spans two instruction APIs. Validation reports a warning and exits successfully without claiming the loader is connected.',
-        'moldea validate --json',
-        warning.envelope,
-        warning.exitStatus,
-        {
-          valid: warningResult.valid,
-          runtimeInspection: warningResult.runtimeInspection,
-          diagnosticCount: warningResult.diagnosticCount ?? 0,
-          errorCount: warningResult.errorCount ?? 0,
-          warningCount: warningResult.warningCount ?? 0,
-          diagnostics: [diagnostic],
-        },
-        {
-          valid: warningResult.valid,
-          runtimeInspection: warningResult.runtimeInspection,
-          diagnosticCount: warningResult.diagnosticCount ?? 0,
-          errorCount: warningResult.errorCount ?? 0,
-          warningCount: warningResult.warningCount ?? 0,
-          page: {
-            records: [{ kind: warningRecord.kind, ...diagnostic }],
-          },
-        },
-      ),
-    );
-    assertCapabilityFacts(await captureFixtureState(workspace.directory), beforeWarning);
     return examples;
   });
 };

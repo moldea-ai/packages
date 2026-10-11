@@ -15,6 +15,7 @@ test('derives the hero from the real instruction, manifest, and Core diagnostic'
   expect(example.result.diagnostics).toStrictEqual([
     {
       code: 'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
+      group: 'agents',
       message: 'The registered tool implementation is missing.',
       path: '/moldea/moldea.yaml',
       pointer: '/agents/support/tools/get-delivery-status/implementation',

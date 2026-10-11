@@ -2,15 +2,13 @@ import type {
   ICore,
   ICoreDiagnosticCode,
   IDiagnostic,
-  IRuntimeAdapterEvidence,
-  IRuntimeAdapterEvidenceKind,
+  IBindingCoverage,
+  IBindingCoverageCounts,
 } from '@moldea.ai/core';
-
-import type { IRuntimeCompatibilityPublicationTarget } from '../runtime-compatibility-publication/index.ts';
 
 // release-owned groups, operations, and explicitly selected display facts
 export type ICapabilityGroupId =
-  'structure' | 'agents' | 'decisions' | 'runtime-wiring' | 'repository-access' | 'command-line';
+  'structure' | 'agents' | 'decisions' | 'binding-coverage' | 'repository-access' | 'command-line';
 export type ICoreOperation = keyof ICore;
 export type ICapabilityFact =
   | string
@@ -29,15 +27,10 @@ export type ICapabilityResult =
       valid: boolean;
       errorCount?: number;
       warningCount?: number;
+      acceptedWarningCount?: number;
+      coverage?: IBindingCoverage[];
+      coverageCounts?: IBindingCoverageCounts;
       diagnostics: IDiagnostic[];
-    }
-  | {
-      kind: 'adapter';
-      valid: boolean;
-      errorCount: number;
-      warningCount: number;
-      diagnostics: IDiagnostic[];
-      evidence: IRuntimeAdapterEvidence[];
     }
   | { kind: 'inspection'; facts: Record<string, ICapabilityFact> }
   | { kind: 'reader'; facts: Record<string, ICapabilityFact> }
@@ -45,7 +38,7 @@ export type ICapabilityResult =
       kind: 'cli';
       command: string;
       exitStatus: number;
-      schemaVersion: 6;
+      schemaVersion: 7;
       status: 'valid' | 'invalid' | 'error';
       facts: Record<string, ICapabilityFact>;
       envelopeExcerpt: {
@@ -53,7 +46,7 @@ export type ICapabilityResult =
         command: string;
         error: ICapabilityFact;
         result: ICapabilityFact;
-        schemaVersion: 6;
+        schemaVersion: 7;
         status: 'valid' | 'invalid' | 'error';
       };
     };
@@ -100,23 +93,6 @@ export interface ICapabilityOutcome {
   tone: 'danger' | 'info' | 'neutral' | 'success' | 'warning';
 }
 
-// a claimed source form and its independent, executed public-result witness
-export interface IRuntimePatternProof {
-  caseId: string;
-  source: { path: string; contains: string };
-  witness:
-    | {
-        kind: 'evidence';
-        evidenceKind: IRuntimeAdapterEvidenceKind;
-        agentId: string;
-        details?: Record<string, string | number | boolean>;
-        runtimeName?: string;
-      }
-    | { kind: 'absence'; evidenceKind: IRuntimeAdapterEvidenceKind; agentId: string }
-    | { kind: 'diagnostic'; code: string }
-    | { kind: 'validation' };
-}
-
 // accounting distinguishes exact demonstrated diagnostics from documented, unexecuted variants
 export interface IDiagnosticCoverage {
   caseIds: string[];
@@ -125,19 +101,10 @@ export interface IDiagnosticCoverage {
   sourcePath: string;
 }
 
-// target support and maturity are copied from the authoritative publication model
-export interface ICapabilityRuntimeTarget {
-  adapterId: string;
-  target: IRuntimeCompatibilityPublicationTarget;
-  scopeRoute: string;
-  patterns: { id: string; proofs: IRuntimePatternProof[] }[];
-}
-
 // internal generated content model, not a separately published capability API
 export interface ICapabilities {
   groups: ICapabilityGroup[];
   cases: ICapabilityCase[];
   coreOperations: Record<ICoreOperation, string[]>;
   diagnostics: Record<ICoreDiagnosticCode, IDiagnosticCoverage>;
-  runtimeTargets: ICapabilityRuntimeTarget[];
 }

@@ -16,7 +16,6 @@ const DIAGNOSTIC_TITLES: Record<string, string> = {
   'foundation-missing': 'Project brief not found',
   'decision-cycle': 'Circular replacement links',
   'decision-reference-missing': '1 missing decision',
-  'openai-loader-disconnected': 'Instruction loader not connected',
 };
 const COMMAND_TITLES: Record<string, string> = {
   'cli-invalid-project': 'Broken reference caught by validation',
@@ -83,20 +82,16 @@ export const getCapabilityVisualFamily = (example: ICapabilityCase) => {
   if (example.id === 'snapshot-comparison') return 'records';
   if (example.id === 'normalized-digests') return 'digests';
   if (example.id === 'manifest-change-relevance') return 'scope';
-  if (example.result.kind === 'adapter') return 'runtime';
   if (example.result.kind === 'cli') return 'command';
   if (example.result.kind === 'inspection' || example.result.kind === 'reader') return 'operation';
   return 'source';
 };
 
 /** Distinguishes a failed check, absent evidence, and an operation that could not complete. */
-export const getCapabilityOutcome = (
-  example: ICapabilityCase,
-  catalog: Pick<ICapabilities, 'runtimeTargets'>,
-): ICapabilityOutcome => {
+export const getCapabilityOutcome = (example: ICapabilityCase): ICapabilityOutcome => {
   const result = example.result;
   const description = example.description;
-  if (result.kind === 'validation' || result.kind === 'adapter') {
+  if (result.kind === 'validation') {
     if (!result.valid) {
       return {
         title:
@@ -107,61 +102,59 @@ export const getCapabilityOutcome = (
         tone: 'danger',
       };
     }
-    const warningCount = result.diagnostics.filter(({ severity }) => severity === 'warning').length;
+    const warningCount = result.diagnostics.filter(
+      (diagnostic) => diagnostic.severity === 'warning' && diagnostic.accepted !== true,
+    ).length;
     if (warningCount > 0) {
       return {
-        title: `${warningCount} runtime relationship${warningCount === 1 ? '' : 's'} unverified`,
+        title: `${warningCount} warning${warningCount === 1 ? '' : 's'}`,
         description,
         label: 'Warnings',
         tone: 'warning',
       };
     }
-    const hasAbsentEvidence =
-      result.kind === 'adapter' &&
-      (catalog.runtimeTargets.some(({ patterns }) =>
-        patterns.some(({ proofs }) =>
-          proofs.some((proof) => proof.caseId === example.id && proof.witness.kind === 'absence'),
-        ),
-      ) ||
-        (example.id === 'vercel-dynamic-preparation' &&
-          !result.evidence.some(
-            ({ agentId, kind }) => agentId === 'support' && kind === 'instruction-loader',
-          )));
-    if (hasAbsentEvidence)
+    const accepted = result.acceptedWarningCount ?? 0;
+    if (accepted > 0)
       return {
-        title: 'Some connections are not established',
+        title: `${accepted} accepted warning${accepted === 1 ? '' : 's'}`,
         description,
-        label: 'Not established',
-        tone: 'warning',
+        label: 'Accepted warnings',
+        tone: 'info',
       };
-    return result.kind === 'adapter'
-      ? {
-          title:
-            example.id === 'openai-responses'
-              ? 'Instruction and tool connections found'
-              : `${result.evidence.length} source facts found`,
-          description,
-          label: 'Inspected',
-          tone: 'info',
-        }
-      : {
-          title:
-            example.id === 'decision-replacement-chain'
-              ? 'Decision chain checks pass'
-              : 'Structure checks pass',
-          description,
-          label: 'Valid',
-          tone: 'success',
-        };
+    const notChecked = result.coverageCounts?.exportsNotChecked ?? 0;
+    if (notChecked > 0)
+      return {
+        title: `${notChecked} export check${notChecked === 1 ? '' : 's'} could not run`,
+        description,
+        label: 'Not checked',
+        tone: 'neutral',
+      };
+    return {
+      title:
+        example.id === 'decision-replacement-chain'
+          ? 'Decision chain checks pass'
+          : 'Declared checks pass',
+      description,
+      label: 'Valid',
+      tone: 'success',
+    };
   }
   if (result.kind === 'cli') {
     const warningCount = result.facts.warningCount;
     if (result.status === 'valid' && typeof warningCount === 'number' && warningCount > 0)
       return {
-        title: `${warningCount} runtime relationship${warningCount === 1 ? '' : 's'} unverified`,
+        title: `${warningCount} warning${warningCount === 1 ? '' : 's'}`,
         description,
         label: 'Warnings',
         tone: 'warning',
+      };
+    const accepted = result.facts.acceptedWarningCount;
+    if (result.status === 'valid' && typeof accepted === 'number' && accepted > 0)
+      return {
+        title: `${accepted} accepted warning${accepted === 1 ? '' : 's'}`,
+        description,
+        label: 'Accepted warnings',
+        tone: 'info',
       };
     return {
       title:
@@ -214,20 +207,13 @@ export const getCapabilityResultExcerpt = (result: ICapabilityResult): unknown =
       ...(result.errorCount === undefined
         ? {}
         : { errorCount: result.errorCount, warningCount: result.warningCount }),
+      ...(result.acceptedWarningCount === undefined
+        ? {}
+        : { acceptedWarningCount: result.acceptedWarningCount }),
+      ...(result.coverage === undefined
+        ? {}
+        : { coverage: result.coverage, coverageCounts: result.coverageCounts }),
       diagnostics: result.diagnostics,
-    };
-  if (result.kind === 'adapter')
-    return {
-      valid: result.valid,
-      errorCount: result.errorCount,
-      warningCount: result.warningCount,
-      diagnostics: result.diagnostics,
-      evidence: result.evidence.slice(0, 4).map(({ kind, agentId, runtimeName, references }) => ({
-        kind,
-        agentId,
-        runtimeName,
-        references,
-      })),
     };
   return result.kind === 'cli' ? result.envelopeExcerpt : result.facts;
 };
