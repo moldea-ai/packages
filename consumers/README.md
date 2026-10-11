@@ -1,17 +1,21 @@
 # Consumer conformance artifacts
 
-The `consumer-conformance` CI lane gives the skill manager and launcher the exact checksummed CLI closure built by packages CI. `SHA256SUMS` is the reviewed selection; changed bytes require fresh consumer verification before updating it.
+The `consumer-conformance` CI lane gives the skill manager and closed launcher the exact checksummed CLI closure built by packages CI. `SHA256SUMS` is the reviewed selection; changed bytes require fresh consumer verification before updating it.
 
-The evidence below describes the previous Core 6 / CLI 10 release. It does not establish current assurance for Core 7 / CLI 11. The new selection is recorded only after its release-candidate checks pass.
+## Recorded verification
 
-## Historical qualification
+The selected closure contains CLI `11.0.0`, Core `7.0.0`, Repository `2.0.0`, and Repository FS `2.0.3`. The tarballs came from packages commit `9931db0c3a1a53702f79cb3393b1c03e7a172602` and the [release-candidate workflow run 38137841399](https://github.com/moldea-ai/skill/actions/runs/38137841399). The workflow used skill tooling commit `fc8d91aab06323bb3295f8d84275df67a2e25b27`, prepared skill `8.0.0` with CLI 11/Core 7, and passed all fourteen manager selections. Its producer used Node `24.15.0` and pnpm `11.9.0`.
 
-`SHA256SUMS` records the complete CLI 10.0.0 runtime closure qualified for the coordinated Core 6 release. Repository 2.0.0 remains in that closure; Website UI 1.13.0 has its separate website checks. Trusted CI must reproduce every listed byte before publication and runs the skill's reusable manager/launcher checks against its own immutable artifact.
+| Manager | Verified selections                                                                        |
+| ------- | ------------------------------------------------------------------------------------------ |
+| npm     | `7.0.0`, `8.0.0`, `9.0.0`, `10.0.0`, `11.0.0`, `12.0.2`                                    |
+| pnpm    | `8.3.1`, `9.0.0`, `10.0.0`, `11.0.0`, `12.3.1`, and `11.21.0` with existing Vitest `3.2.4` |
+| Yarn    | `4.14.1`, `4.18.0`                                                                         |
 
-The recorded tarballs were produced from packages commit `3759d160e928c02b644ff1846678db7ee81b471d`. Skill candidate workflow [38000134870](https://github.com/moldea-ai/skill/actions/runs/38000134870), at skill commit `147613e8f61a165df45d4cf7c3dccb8d51016dac`, passed all fourteen supported manager selections. Its fourteen tarballs match the locally retained candidate byte for byte. The producer used Node 24.15.0 and pnpm 11.9.0. These checks establish deterministic tooling mechanics, not fresh model-based repair effectiveness.
+These checks exercise repository-local installation, lifecycle suppression, closed-launcher composition/validation/inspection, broken-installation recovery, interrupted installation, and preservation of project files and the locked dependency graph during same-target recovery. They establish deterministic tooling mechanics, not runtime wiring or model-based repair effectiveness.
 
-Platform consumer and actual-worker verification used the same executable package files and the frozen Core Node profile: 512 MiB worker old generation, 24 MiB young generation, and a 120-second complete-attempt lifetime. The existing 8 MiB general-file allowance is unchanged. Twenty-seven cold worker samples passed in the 4 GiB, two-CPU, zero-swap lane. The sampled aggregate process-group peak was 1,814,097,920 bytes; observations are workload-specific and are not universal device guarantees. The compiled platform closure's 3,349-file digest was `c4505f95ba220061428bfeb301eb8f04885413abc613dc4715547113f15500af` (SHA-256 of sorted relative POSIX path, NUL, file SHA-256, and LF).
+Trusted packages CI must reproduce every selected tarball byte before publication. It supplies its immutable public-package artifact and exact source commit to the skill workflow pinned above, without repacking. Website UI is checked in that public artifact and has its own website verification; it remains outside the CLI consumer closure.
 
-The initial platform Core tarball differs from this final selection only in `README.md` and `dist/chunks/errors-BQI1DEqf.js.map`; every executable file is identical. The final candidate was then installed through the real scoped registry and verified against every packed Core file. The platform Assurance suite passed 95 unit and 121 integration tests, and the complete installed skill's closed-launcher composition check passed with CLI 10/schema 6. Its 55 tracked Assurance source files match platform commit `ddd78bec2f679e081fc0aab7dfe7e40f242023ea`, with digest `f01df1ad46b26f8bb5fc5a90e56035af00377cf01fcfaad69720fdb4aa0d3557` (the same sorted path/file SHA-256 method). Final registry installation and broader consumer regressions remain separate release gates. The platform's earlier live provider-backed Assurance and GitHub reader checks exercised real registered test infrastructure; hosted deployment and operator cutover were not performed.
+## Refreshing the selection
 
-Any changed consumer artifact invalidates this checksum selection. Qualify the new bytes, update the selection and its evidence together, and let trusted CI compare them again. Never replace an already published version or move its release tag.
+Any changed consumer artifact invalidates this selection. Verify the new exact bytes through the candidate workflow, update the checksums and their source evidence together, and let trusted CI compare them again. Never replace an already published version or move its release tag.

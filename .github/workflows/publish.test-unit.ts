@@ -123,7 +123,7 @@ describe('npm release workflow', () => {
         artifact_name: 'public-package-tarballs',
         packages_ref: '${{ github.sha }}',
         skill_ref: skillCommit,
-        skill_version: '7.0.0',
+        skill_version: '8.0.0',
       },
     });
     expect(ciSource).toContain('pnpm release:checksums verify-consumers');
