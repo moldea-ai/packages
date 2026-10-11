@@ -128,6 +128,54 @@ afterEach(async () => {
 });
 
 describe('npm release project changes', () => {
+  test.each(['changed', 'removed'] as const)(
+    'excludes retired public consumers when their private input is %s',
+    async (operation) => {
+      await writeWorkspaceManifest('packages/build-input', '@moldea.ai/build-input', {
+        isPrivate: true,
+      });
+      await writeWorkspaceManifest('projects/retired', '@moldea.ai/retired', {
+        devDependencies: { '@moldea.ai/build-input': 'workspace:*' },
+      });
+      await writeWorkspaceManifest('projects/core', '@moldea.ai/core', {
+        devDependencies: { '@moldea.ai/build-input': 'workspace:*' },
+      });
+      const baseCommit = commitWorktree('test: establish shared input and retired consumer');
+
+      await rm(join(repositoryDirectory, 'projects/retired'), { recursive: true });
+      if (operation === 'removed') {
+        await rm(join(repositoryDirectory, 'packages/build-input'), { recursive: true });
+        await writeProjectManifest('core', '1.0.1');
+      } else {
+        await writeRepositoryFile('packages/build-input/src/index.ts', 'export const token = 2;\n');
+      }
+      const currentCommit = commitWorktree('feat: retire a public consumer');
+      const changes = await loadChanges(baseCommit, currentCommit);
+
+      expect(
+        Object.entries(changes)
+          .filter(([, change]) => change.isChanged)
+          .map(([project]) => project),
+      ).toStrictEqual(['core']);
+    },
+  );
+
+  test('rejects an unsupported public consumer that still exists in the current workspace', async () => {
+    await writeWorkspaceManifest('packages/build-input', '@moldea.ai/build-input', {
+      isPrivate: true,
+    });
+    await writeWorkspaceManifest('projects/unregistered', '@moldea.ai/unregistered', {
+      devDependencies: { '@moldea.ai/build-input': 'workspace:*' },
+    });
+    const baseCommit = commitWorktree('test: establish an unregistered public consumer');
+    await writeRepositoryFile('packages/build-input/src/index.ts', 'export const token = 2;\n');
+    const currentCommit = commitWorktree('test: change the unregistered consumer input');
+
+    await expect(loadChanges(baseCommit, currentCommit)).rejects.toThrow(
+      '@moldea.ai/unregistered public workspace consumer is not releaseable',
+    );
+  });
+
   test('selects public consumers of a changed private development dependency without selecting CLI', async () => {
     await writeWorkspaceManifest('packages/build-input', '@moldea.ai/build-input', {
       isPrivate: true,
