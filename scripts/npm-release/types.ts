@@ -2,22 +2,7 @@
 export type INpmReleaseMode = 'bootstrap' | 'trusted';
 
 // public projects currently eligible for npm publication
-export type INpmReleaseProject =
-  | 'adapter-anthropic'
-  | 'adapter-claude-agent-sdk'
-  | 'adapter-cloudflare-agents'
-  | 'adapter-eve'
-  | 'adapter-langchain'
-  | 'adapter-langgraph'
-  | 'adapter-google-genai'
-  | 'adapter-openai'
-  | 'adapter-openai-agents-sdk'
-  | 'adapter-vercel-ai-sdk'
-  | 'cli'
-  | 'core'
-  | 'repository'
-  | 'repository-fs'
-  | 'website-ui';
+export type INpmReleaseProject = 'cli' | 'core' | 'repository' | 'repository-fs' | 'website-ui';
 
 // immutable package identity and artifact naming owned by one project
 export interface INpmReleaseProjectConfiguration {

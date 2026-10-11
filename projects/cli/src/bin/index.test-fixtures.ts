@@ -12,40 +12,6 @@ import { expect } from 'vitest';
 // package and build paths shared by the installed-executable tests
 export const CLI_PROJECT_DIRECTORY = path.resolve(import.meta.dirname, '..', '..');
 const projectsDirectory = path.dirname(CLI_PROJECT_DIRECTORY);
-export const ADAPTER_ANTHROPIC_PROJECT_DIRECTORY = path.join(
-  projectsDirectory,
-  'adapter-anthropic',
-);
-export const ADAPTER_CLAUDE_AGENT_SDK_PROJECT_DIRECTORY = path.join(
-  projectsDirectory,
-  'adapter-claude-agent-sdk',
-);
-export const ADAPTER_GOOGLE_GENAI_PROJECT_DIRECTORY = path.join(
-  projectsDirectory,
-  'adapter-google-genai',
-);
-export const ADAPTER_OPENAI_PROJECT_DIRECTORY = path.join(projectsDirectory, 'adapter-openai');
-export const ADAPTER_OPENAI_AGENTS_SDK_PROJECT_DIRECTORY = path.join(
-  projectsDirectory,
-  'adapter-openai-agents-sdk',
-);
-export const ADAPTER_CLOUDFLARE_AGENTS_PROJECT_DIRECTORY = path.join(
-  projectsDirectory,
-  'adapter-cloudflare-agents',
-);
-export const ADAPTER_EVE_PROJECT_DIRECTORY = path.join(projectsDirectory, 'adapter-eve');
-export const ADAPTER_LANGCHAIN_PROJECT_DIRECTORY = path.join(
-  projectsDirectory,
-  'adapter-langchain',
-);
-export const ADAPTER_LANGGRAPH_PROJECT_DIRECTORY = path.join(
-  projectsDirectory,
-  'adapter-langgraph',
-);
-export const ADAPTER_VERCEL_AI_SDK_PROJECT_DIRECTORY = path.join(
-  projectsDirectory,
-  'adapter-vercel-ai-sdk',
-);
 export const CORE_PROJECT_DIRECTORY = path.join(projectsDirectory, 'core');
 export const REPOSITORY_PROJECT_DIRECTORY = path.join(projectsDirectory, 'repository');
 export const REPOSITORY_FILESYSTEM_PROJECT_DIRECTORY = path.join(
@@ -163,16 +129,6 @@ export const readTarEntry = (tarball: Buffer, entryPath: string): Buffer => {
 export const expectPackageManifest = (
   manifest: IMoldeaCliPackageManifest,
   coreRange: string,
-  anthropicAdapterRange: string,
-  claudeAgentSdkAdapterRange: string,
-  googleGenAiAdapterRange: string,
-  langChainAdapterRange: string,
-  langGraphAdapterRange: string,
-  openAiAdapterRange: string,
-  openAiAgentsSdkAdapterRange: string,
-  cloudflareAgentsAdapterRange: string,
-  eveAdapterRange: string,
-  vercelAiSdkAdapterRange: string,
   repositoryRange: string,
   repositoryFilesystemRange: string,
 ): void => {
@@ -184,19 +140,9 @@ export const expectPackageManifest = (
     name: '@moldea.ai/cli',
     preferUnplugged: true,
     type: 'module',
-    version: '10.0.0',
+    version: '11.0.0',
   });
   expect(manifest.dependencies).toStrictEqual({
-    '@moldea.ai/adapter-anthropic': anthropicAdapterRange,
-    '@moldea.ai/adapter-claude-agent-sdk': claudeAgentSdkAdapterRange,
-    '@moldea.ai/adapter-google-genai': googleGenAiAdapterRange,
-    '@moldea.ai/adapter-langchain': langChainAdapterRange,
-    '@moldea.ai/adapter-langgraph': langGraphAdapterRange,
-    '@moldea.ai/adapter-openai': openAiAdapterRange,
-    '@moldea.ai/adapter-openai-agents-sdk': openAiAgentsSdkAdapterRange,
-    '@moldea.ai/adapter-cloudflare-agents': cloudflareAgentsAdapterRange,
-    '@moldea.ai/adapter-eve': eveAdapterRange,
-    '@moldea.ai/adapter-vercel-ai-sdk': vercelAiSdkAdapterRange,
     '@moldea.ai/core': coreRange,
     '@moldea.ai/repository': repositoryRange,
     '@moldea.ai/repository-fs': repositoryFilesystemRange,

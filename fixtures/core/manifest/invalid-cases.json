@@ -23,7 +23,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -40,7 +41,8 @@
         "pointer": "/version",
         "range": null,
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -68,7 +70,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -96,7 +99,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -124,7 +128,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -154,7 +159,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       },
       {
         "code": "MOLDEA_YAML_FEATURE_UNSUPPORTED",
@@ -178,7 +184,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -206,7 +213,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -237,7 +245,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "agents"
       }
     ]
   },
@@ -269,7 +278,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "agents"
       }
     ]
   },
@@ -299,7 +309,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -329,7 +340,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -357,7 +369,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -385,7 +398,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -415,7 +429,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -445,7 +460,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -475,7 +491,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "mirrors"
       }
     ]
   },
@@ -505,7 +522,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -536,7 +554,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -557,7 +576,8 @@
         "pointer": "/agents/agent/skills/process/implementation",
         "range": null,
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "agents"
       }
     ]
   },
@@ -587,7 +607,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -617,7 +638,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -647,7 +669,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -677,7 +700,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -707,7 +731,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "manifest"
       }
     ]
   },
@@ -735,7 +760,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "references"
       }
     ]
   },
@@ -749,7 +775,7 @@
         "entity": {
           "agentId": "agent"
         },
-        "message": "The runtime adapter ID is invalid.",
+        "message": "The runtime ID is invalid.",
         "path": "/moldea/moldea.yaml",
         "pointer": "/agents/agent/runtime/id",
         "range": {
@@ -765,7 +791,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "agents"
       }
     ]
   },
@@ -786,7 +813,8 @@
         "pointer": "/agents/agent/tools/lookup/description",
         "range": null,
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "agents"
       }
     ]
   },
@@ -816,7 +844,8 @@
           }
         },
         "severity": "error",
-        "source": "core"
+        "source": "core",
+        "group": "mirrors"
       }
     ]
   }

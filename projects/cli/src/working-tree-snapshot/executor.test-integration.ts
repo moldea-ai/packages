@@ -84,7 +84,7 @@ describe('working-tree snapshot integration', () => {
         resourceLimits: {
           maxDiagnostics: 16,
           maxEntries: 16,
-          maxEvidence: 16,
+          maxCoverage: 16,
           maxFileBytes: 1024,
           maxManifestBytes: 1024,
           maxTotalBytes: 4096,
@@ -162,7 +162,7 @@ describe('working-tree snapshot integration', () => {
         resourceLimits: {
           maxDiagnostics: 16,
           maxEntries: 16,
-          maxEvidence: 16,
+          maxCoverage: 16,
           maxFileBytes: 1024,
           maxManifestBytes: 1024,
           maxTotalBytes: 4096,
@@ -204,7 +204,7 @@ describe('working-tree snapshot integration', () => {
           resourceLimits: {
             maxDiagnostics: 16,
             maxEntries: 16,
-            maxEvidence: 16,
+            maxCoverage: 16,
             maxFileBytes: 1024,
             maxManifestBytes: 1024,
             maxTotalBytes: 4096,
@@ -274,7 +274,7 @@ describe('working-tree snapshot integration', () => {
         resourceLimits: {
           maxDiagnostics: 16,
           maxEntries: 16,
-          maxEvidence: 16,
+          maxCoverage: 16,
           maxFileBytes: 1024,
           maxManifestBytes: 1024,
           maxTotalBytes: 4096,

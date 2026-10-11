@@ -13,18 +13,6 @@ export const CI_COMPATIBILITY_LANES = [
   'cli-testing-peer-compatibility',
   'repository-fs-runtime-compatibility',
   'cli-runtime-compatibility',
-  ...[
-    'anthropic',
-    'google-genai',
-    'openai',
-    'openai-agents-sdk',
-    'claude-agent-sdk',
-    'cloudflare-agents',
-    'eve',
-    'langchain',
-    'langgraph',
-    'vercel-ai-sdk',
-  ].map((id) => `adapter-${id}-runtime-compatibility`),
 ];
 const WEBSITE = '@moldea.ai/packages-website';
 // literal lowercase identifiers prevent Turbo filter expressions from entering a plan

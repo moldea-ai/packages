@@ -66,10 +66,8 @@ const readDistributionFiles = (extension: string): readonly string[] => {
 };
 
 /** Follows actual emitted static and dynamic imports instead of excluding Node-named chunks. */
-const readNeutralImportGraphs = (): string => {
-  const pending = ['index.js', 'format.js', 'adapter.js'].map((name) =>
-    path.join(distributionDirectory, name),
-  );
+const readNeutralImportGraphs = (entries = ['index.js', 'format.js', 'scope.js']): string => {
+  const pending = entries.map((name) => path.join(distributionDirectory, name));
   const visited = new Set<string>();
   const contents: string[] = [];
   while (pending.length > 0) {
@@ -192,11 +190,11 @@ describe('published Core package artifacts', () => {
     ) as { readonly dependencies?: Readonly<Record<string, string>> };
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '6.0.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '7.0.0' });
     for (const entryName of [
       'index',
       'format',
-      'adapter',
+      'scope',
       'node',
       'node-runner',
       'analysis-worker',
@@ -205,7 +203,7 @@ describe('published Core package artifacts', () => {
     }
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/format/index.d.ts');
-    expect(packedPaths).toContain('dist/adapter/index.d.ts');
+    expect(packedPaths).toContain('dist/scope/index.d.ts');
     expect(packedPaths).toContain('dist/node/index.d.ts');
     expect(
       packedPaths.some((filePath) => /\.test-(?:unit|integration|e2e|bench)\./u.test(filePath)),
@@ -228,6 +226,7 @@ describe('published Core package artifacts', () => {
       '@moldea.ai/repository': 'workspace:^2.0.0',
       'error-message-utils': '1.2.11',
       yaml: '2.9.0',
+      typescript: '6.0.3',
     });
   });
 
@@ -240,28 +239,27 @@ describe('published Core package artifacts', () => {
         [
           "const root = await import('@moldea.ai/core');",
           "const format = await import('@moldea.ai/core/format');",
-          "const adapter = await import('@moldea.ai/core/adapter');",
+          "const scope = await import('@moldea.ai/core/scope');",
           "const node = await import('@moldea.ai/core/node');",
-          'console.log(JSON.stringify({ root: Object.keys(root).sort(), format: Object.keys(format).sort(), adapter: Object.keys(adapter).sort(), node: Object.keys(node).sort() }));',
+          'console.log(JSON.stringify({ root: Object.keys(root).sort(), format: Object.keys(format).sort(), scope: Object.keys(scope).sort(), node: Object.keys(node).sort() }));',
         ].join(''),
       ],
       { cwd: projectDirectory, encoding: 'utf8' },
     );
 
     expect(JSON.parse(output)).toStrictEqual({
-      adapter: [
-        'createRuntimeAdapterResultCollector',
-        'iterateRuntimeAdapterEntries',
-        'readRuntimeAdapterFile',
-      ],
+      scope: ['matchManifestScope'],
       format: [],
       node: ['NODE_INSPECTION_PROFILE', 'createNodeProjectInspection'],
       root: [
+        'ACCEPTABLE_WARNING_CODES',
         'CoreConfigurationException',
         'CoreOperationException',
         'DEFAULT_CORE_RESOURCE_LIMITS',
+        'RECOGNIZED_RUNTIME_IDS',
         'SUPPORTED_REPOSITORY_FORMAT_VERSIONS',
         'createCore',
+        'parseIntegrationBlock',
       ],
     });
   });
@@ -297,6 +295,7 @@ describe('published Core package artifacts', () => {
         '@moldea.ai/repository': '^2.0.0',
         'error-message-utils': '1.2.11',
         yaml: '2.9.0',
+        typescript: '6.0.3',
       });
     } finally {
       rmSync(packDirectory, { force: true, recursive: true });
@@ -313,13 +312,13 @@ describe('published Core package artifacts', () => {
       path.join(distributionDirectory, 'format', 'index.d.ts'),
       'utf8',
     );
-    const adapterDeclaration = readFileSync(
-      path.join(distributionDirectory, 'adapter', 'index.d.ts'),
+    const scopeDeclaration = readFileSync(
+      path.join(distributionDirectory, 'scope', 'index.d.ts'),
       'utf8',
     );
     const allDeclarations = readDistributionFiles('.d.ts').join('\n');
 
-    expect(indexDeclaration).toContain('IRuntimeAdapterEvidence');
+    expect(indexDeclaration).toContain('IBindingCoverage');
     expect(indexDeclaration).toContain('createCore');
     expect(contractsDeclaration).toContain('validateProject');
     expect(contractsDeclaration).not.toMatch(/\binspectProject\(/u);
@@ -327,8 +326,8 @@ describe('published Core package artifacts', () => {
     expect(formatDeclaration).toContain('IMoldeaManifestV1');
     expect(formatDeclaration).toContain('IParsedDecision');
     expect(formatDeclaration).not.toContain('IHandoffManifestEntry');
-    expect(adapterDeclaration).toContain('inspect(');
-    expect(adapterDeclaration).toContain('IRuntimeAdapterEvidence');
+    expect(scopeDeclaration).toContain('matchManifestScope');
+    expect(scopeDeclaration).toContain('IManifestScopeInput');
     expect(allDeclarations).not.toMatch(/from ['"]@moldea\.ai\/(?!repository(?:['"/]))/u);
     expect(allDeclarations).not.toMatch(/from ['"]yaml['"]/u);
     expect(allDeclarations).not.toContain('ParsedNode');
@@ -421,10 +420,7 @@ describe('published Core package artifacts', () => {
             "import { parseRepositoryPath } from '@moldea.ai/repository';",
             "import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';",
             "import { createNodeProjectInspection } from '@moldea.ai/core/node';",
-            "import { writeFileSync } from 'node:fs';",
-            "const registryUrl = new URL('./registry.mjs', import.meta.url);",
-            "writeFileSync(registryUrl, 'export const adapters = [];');",
-            'const isolated = await createNodeProjectInspection({ repository: createMemoryRepositoryReader([]), adapterRegistryUrl: registryUrl });',
+            'const isolated = await createNodeProjectInspection({ repository: createMemoryRepositoryReader([]) });',
             "const page = await isolated.readPage({ maxItems: 1, view: 'diagnostics' });",
             'const isolatedResult = { hasHeap: isolated.maxAnalysisHeapBytes > 0, hasDiagnostics: page.page.records.length > 0 };',
             'await isolated.dispose(); await isolated.dispose();',
@@ -490,7 +486,39 @@ describe('published Core package artifacts', () => {
     }
   });
 
-  test('keeps main, format and adapter import graphs environment-neutral', () => {
+  test('keeps the scope graph free of export analysis and TypeScript', () => {
+    const javascript = readNeutralImportGraphs(['scope.js']);
+    expect(javascript).not.toContain('typescript');
+    expect(javascript).not.toContain('readExportInventory');
+    expect(javascript).not.toContain('inventoryExports');
+  });
+
+  test('runs manifest-only operations while TypeScript loading is rejected', () => {
+    const output = execFileSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `
+      import {registerHooks} from 'node:module';
+      registerHooks({resolve(specifier, context, nextResolve) {
+        if (specifier === 'typescript') throw new Error('Unexpected TypeScript loading');
+        return nextResolve(specifier, context);
+      }});
+      const {createCore} = await import('@moldea.ai/core');
+      const {matchManifestScope} = await import('@moldea.ai/core/scope');
+      const manifest = {path: '/moldea/moldea.yaml', content: 'version: 1\\n'};
+      const parsed = await createCore().parseManifest(manifest);
+      const matched = await matchManifestScope({manifest, paths: ['/src/entry.ts']});
+      process.stdout.write(JSON.stringify({parsed: parsed.valid, matched: matched.valid}));
+    `,
+      ],
+      { cwd: projectDirectory, encoding: 'utf8' },
+    );
+    expect(JSON.parse(output)).toStrictEqual({ parsed: true, matched: true });
+  });
+
+  test('keeps main, format and scope import graphs environment-neutral', () => {
     const javascript = readNeutralImportGraphs();
 
     expect(javascript).not.toMatch(/from ['"]node:/u);

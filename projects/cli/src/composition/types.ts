@@ -1,5 +1,3 @@
-import type { IRuntimeAdapter } from '@moldea.ai/core/adapter';
-
 import type { IMoldeaCliPackageMetadata } from '../package-metadata/index.js';
 
 // one exact installed package version reported by the composition command
@@ -8,15 +6,8 @@ export interface IMoldeaCliPackageComposition {
   readonly version: string;
 }
 
-// one executable adapter and the repository formats accepted by its implementation
-export interface IMoldeaCliAdapterComposition {
-  readonly id: string;
-  readonly repositoryFormatVersions: readonly number[];
-}
-
 // compact technical composition state derived by the installed CLI
 export interface IMoldeaCliCompositionResult {
-  readonly adapters: readonly IMoldeaCliAdapterComposition[];
   readonly minimumGitVersion: string;
   readonly packages: readonly IMoldeaCliPackageComposition[];
   readonly repositoryFormatVersions: readonly number[];
@@ -25,21 +16,15 @@ export interface IMoldeaCliCompositionResult {
 
 // actual runtime and package state checked before any command produces a result
 export interface IMoldeaCliCompositionStateInput {
-  readonly activeAdapters: readonly Pick<
-    IRuntimeAdapter,
-    'id' | 'supportedRepositoryFormatVersions'
-  >[];
   readonly coreSupportedRepositoryFormatVersions: readonly number[];
   readonly minimumGitVersion: string;
-  readonly outputSchemaVersion: 6;
+  readonly outputSchemaVersion: 7;
   readonly packageMetadata: IMoldeaCliPackageMetadata;
 }
 
 // installed input resolved through the executable's fixed runtime composition
 export interface IMoldeaCliInstalledCompositionInput {
   readonly packageMetadata: IMoldeaCliPackageMetadata;
-  readonly activeAdapters?: IMoldeaCliCompositionStateInput['activeAdapters'];
-  readonly verifyRuntime?: boolean;
   readonly signal?: AbortSignal;
 }
 

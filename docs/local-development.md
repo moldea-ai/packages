@@ -6,42 +6,38 @@ The root [README](../README.md#getting-started) owns repository purpose, require
 
 Run commands from the repository root.
 
-| Command                       | Purpose                                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------------------- |
-| `pnpm format:check`           | Check formatting across repository-maintained files.                                              |
-| `pnpm lint`                   | Lint root configuration and every workspace lint task.                                            |
-| `pnpm typecheck`              | Type-check root configuration and every workspace typecheck task.                                 |
-| `pnpm build`                  | Build the complete workspace in dependency order.                                                 |
-| `pnpm test`                   | Run unit, integration, and end-to-end correctness suites in that order.                           |
-| `pnpm test:root`              | Run root unit and integration tests.                                                              |
-| `pnpm test:unit`              | Run root and workspace unit tests.                                                                |
-| `pnpm test:integration`       | Run root and workspace integration tests serially.                                                |
-| `pnpm test:e2e`               | Build and run installed-package end-to-end tests serially.                                        |
-| `pnpm format`                 | Format repository-maintained files.                                                               |
-| `pnpm compatibility:generate` | Regenerate technical compatibility documentation from the canonical matrix.                       |
-| `pnpm compatibility:check`    | Verify matrix, package, and generated-artifact synchronization.                                   |
-| `pnpm upstream:check`         | Type-check exact pinned minimum/current SDK consumers and check controlled request preparation.   |
-| `pnpm upstream:check:latest`  | Resolve stable npm latest SDK releases and test them without changing the pinned targets.         |
-| `pnpm docs:generate`          | Build required packages and generate the ignored website content model.                           |
-| `pnpm docs:check`             | Build required packages and validate package discovery, docs, exports, routes, and compatibility. |
-| `pnpm website:prepare`        | Build CLI and its dependency closure plus Website UI for direct website tasks.                    |
-| `pnpm website:dev`            | Prepare the website, generate content, and run Astro locally.                                     |
-| `pnpm website:build`          | Build, index, and validate the complete static website through Turbo.                             |
-| `pnpm website:check`          | Prepare and run website docs, tests, types, lint, build, and artifact checks.                     |
+| Command                 | Purpose                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------- |
+| `pnpm format:check`     | Check formatting across repository-maintained files.                               |
+| `pnpm lint`             | Lint root configuration and every workspace lint task.                             |
+| `pnpm typecheck`        | Type-check root configuration and every workspace typecheck task.                  |
+| `pnpm build`            | Build the complete workspace in dependency order.                                  |
+| `pnpm test`             | Run unit, integration, and end-to-end correctness suites in that order.            |
+| `pnpm test:root`        | Run root unit and integration tests.                                               |
+| `pnpm test:unit`        | Run root and workspace unit tests.                                                 |
+| `pnpm test:integration` | Run root and workspace integration tests serially.                                 |
+| `pnpm test:e2e`         | Build and run installed-package end-to-end tests serially.                         |
+| `pnpm format`           | Format repository-maintained files.                                                |
+| `pnpm docs:generate`    | Build required packages and generate the ignored website content model.            |
+| `pnpm docs:check`       | Build required packages and validate package discovery, docs, exports, and routes. |
+| `pnpm website:prepare`  | Build CLI and its dependency closure plus Website UI for direct website tasks.     |
+| `pnpm website:dev`      | Prepare the website, generate content, and run Astro locally.                      |
+| `pnpm website:build`    | Build, index, and validate the complete static website through Turbo.              |
+| `pnpm website:check`    | Prepare and run website docs, tests, types, lint, build, and artifact checks.      |
 
 Direct website-package commands are lower-level tasks and require `pnpm website:prepare` first. Root `docs:check`, `docs:generate`, `website:dev`, and `website:check` perform that preparation automatically; `website:build` retains Turbo dependency ordering. See the [packages website README](../apps/website/README.md#commands) for application-specific inputs, cache behavior, focused browser checks, and alternate-origin verification.
 
-The upstream check installs exact SDK versions in disposable consumers with lifecycle scripts disabled, verifies package integrity, type-checks source fixtures against their real exports, and checks Anthropic/OpenAI request-body precedence through controlled transport. It runs serially and removes each consumer after use. A latest check is a maintenance signal: inspect source-owned release notes and changed declarations, reproduce any changed contract in its owning adapter and fixture, run focused and broader regressions, then release only affected packages. The latest command never rewrites compatibility ranges or asserts that every future version has today's behavior. Provider requests, credentials, process agents, and cloud execution are outside this check.
+The packed CLI corpus exercises universal bindings, shared and distinct sources, bounded syntax inspection, and large diagnostic collections without installing runtime SDKs.
 
 ## Affected CI
 
 `pnpm ci:plan` compares `CI_BASE_COMMIT` with the actual checkout and writes its validated plan to `GITHUB_OUTPUT` when supplied. `CI_TESTED_COMMIT` must match the checkout. `CI_RELEASE_BUILD=true` forces complete verification. Pull requests compare the target SHA with the tested merge commit; package-version checks separately compare target and head SHAs. Main pushes pass their exact `before` SHA through the release orchestrator.
 
-`pnpm ci:run checks` consumes `MOLDEA_CI_PLAN`, rejects stale commits, unknown workspaces, and Turbo filter expressions, prepares CLI/UI builds, and always runs the real compatibility consistency check, root unit/lint/type checks, and formatting. Selected workspaces build with their dependencies, then run only their own lint, types, unit, integration, and end-to-end tasks. Turbo `--only` prevents prerequisite test/quality tasks from expanding the selection. Integration and end-to-end execution stays serial. A selected website build performs the same source-model validation as `docs:check`; local documentation commands remain available.
+`pnpm ci:run checks` consumes `MOLDEA_CI_PLAN`, rejects stale commits, unknown workspaces, and Turbo filter expressions, prepares CLI/UI builds, and always runs root unit/lint/type checks, and formatting. Selected workspaces build with their dependencies, then run only their own lint, types, unit, integration, and end-to-end tasks. Turbo `--only` prevents prerequisite test/quality tasks from expanding the selection. Integration and end-to-end execution stays serial. A selected website build performs the same source-model validation as `docs:check`; local documentation commands remain available.
 
-Selection follows all downstream `dependencies` and `devDependencies` consumers in both committed workspace graphs, including test-only inputs, moved/deleted workspaces, and removed edges. Website/UI-only changes skip root integration, upstream SDK checks, and unrelated runtime matrices. Runtime inputs select their existing compatibility lanes and root integration/upstream checks. Shared/root tooling, canonical compatibility inputs, unknown paths, missing comparison commits, and release candidates select complete verification. Excluded archive/backup paths never select work or have their contents read.
+Selection follows all downstream `dependencies` and `devDependencies` consumers in both committed workspace graphs, including test-only inputs, moved/deleted workspaces, and removed edges. Website/UI-only changes skip root integration and unrelated runtime matrices. Runtime inputs select their existing compatibility lanes and root integration. Shared/root tooling, consumer checksum inputs, unknown paths, missing comparison commits, and release candidates select complete verification. Excluded archive/backup paths never select work or have their contents read.
 
-`pnpm ci:run test` retains selected macOS/Windows correctness coverage. Those jobs start after selection and run alongside Linux checks; only artifact consumers wait for the Linux artifact. `node scripts/ci/run.ts gate` requires successful planning, Linux checks, and every selected lane; missing results, failure, cancellation, or unexpected skips fail the stable **Verify Repository** gate. When a runtime lane needs tarballs, CI retains the complete public inventory, checksums, compatibility publication, and exact source identity. No-release main pushes use affected verification; actual releases and registry recovery use the full trusted boundary.
+`pnpm ci:run test` retains selected macOS/Windows correctness coverage. Those jobs start after selection and run alongside Linux checks; only artifact consumers wait for the Linux artifact. `node scripts/ci/run.ts gate` requires successful planning, Linux checks, and every selected lane; missing results, failure, cancellation, or unexpected skips fail the stable **Verify Repository** gate. When a runtime lane needs tarballs, CI retains the complete public inventory, checksums and exact source identity. No-release main pushes use affected verification; actual releases and registry recovery use the full trusted boundary.
 
 ## Build conventions
 
@@ -63,8 +59,8 @@ Tests must remain excluded from production artifacts while still participating i
 
 ## Packed-consumer verification
 
-Real tarball installation and execution are the release boundary for every package version. Repository FS, every official runtime adapter, and CLI runtime composition have packed-consumer coverage. CI builds public tarballs on the pinned development runtime, then installs and executes them with package scripts disabled and strict engine validation on Node.js `22.11.0`, the latest Node.js 22, Node.js `24.11.0`, the latest Node.js 24, and Node.js `26.8.1`.
+Real tarball installation and execution are the release boundary for every package version. Repository FS and CLI composition have packed-consumer coverage. CI builds public tarballs on the pinned development runtime, then installs and executes them with package scripts disabled and strict engine validation on Node.js `22.11.0`, the latest Node.js 22, Node.js `24.11.0`, the latest Node.js 24, and Node.js `26.8.1`.
 
-Adapter harnesses exercise each installed public export and inspection boundary. The CLI harness verifies installed package identities and real `version`, `composition`, `validate`, `inspect`, `scope`, and `content` commands through the packed composition. Repository's optional testing subpath is exercised with strict peers on Vitest `1.0.0`, `2.0.0`, `3.2.4`, and `4.1.10`; a separate pnpm `11.21.0` consumer verifies that installing the complete CLI closure preserves an existing root Vitest `3.2.4`. These consumer guarantees remain independent from the newer runtime required by repository development tooling.
+The CLI harness verifies installed package identities and real `version`, `composition`, `validate`, `inspect`, `scope`, and `content` commands through the packed composition. Repository's optional testing subpath is exercised with strict peers on Vitest `1.0.0`, `2.0.0`, `3.2.4`, and `4.1.10`; a separate pnpm `11.21.0` consumer verifies that installing the complete CLI closure preserves an existing root Vitest `3.2.4`. These consumer guarantees remain independent from the newer runtime required by repository development tooling.
 
 Package integration and end-to-end tasks run serially because they create real tarballs and isolated consumer installations whose package-manager and filesystem work is unreliable under shared-runner concurrency. The [npm release guide](npm-releases.md) owns release selection, publication ordering, trusted publishing, and recovery.

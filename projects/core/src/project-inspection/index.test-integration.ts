@@ -8,13 +8,13 @@ import { createCore } from '../core/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 import type { IUnresolvedRequirementManifestEntry } from '../format/index.js';
 import {
-  createMemoryRepositoryReader,
+  createIntegratedMemoryRepositoryReader,
   overrideCoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
 } from '../repository.test-fixtures.js';
 
 const createValidRepository = (projectContent: string) =>
-  createMemoryRepositoryReader([
+  createIntegratedMemoryRepositoryReader([
     {
       content: 'version: 1\n',
       path: parseRepositoryPath('/moldea/moldea.yaml'),
@@ -73,7 +73,7 @@ const createAgentRepository = (
     );
   }
 
-  return createMemoryRepositoryReader(entries);
+  return createIntegratedMemoryRepositoryReader(entries);
 };
 
 describe('prepared project inspection', () => {
@@ -201,15 +201,7 @@ describe('prepared project inspection', () => {
   });
 
   test('returns one independent runtime assignment record per canonical agent', async () => {
-    const core = createCore({
-      adapters: [
-        {
-          id: 'openai',
-          inspect: () => Promise.resolve({ diagnostics: [], evidence: [] }),
-          supportedRepositoryFormatVersions: [1],
-        },
-      ],
-    });
+    const core = createCore();
     const inspection = await core.createProjectInspection({
       repository: createAgentRepository([
         { agentId: 'agent-a', runtimeId: 'custom' },

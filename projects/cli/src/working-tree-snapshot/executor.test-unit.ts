@@ -27,7 +27,7 @@ const REPOSITORY_ROOT = '/workspace';
 const RESOURCE_LIMITS: IMoldeaCliResourceLimits = {
   maxDiagnostics: 16,
   maxEntries: 32,
-  maxEvidence: 16,
+  maxCoverage: 16,
   maxFileBytes: 1024,
   maxManifestBytes: 1024,
   maxTotalBytes: 4096,

@@ -6,13 +6,13 @@ order: 30
 
 # Diagnostics
 
-Diagnostics describe repository findings from a completed inspection. Errors mark invalid structure or confirmed runtime contradictions; warnings identify declared runtime relationships whose recognized source could not establish either proof or a failure. Operational exceptions mean that configuration was invalid or inspection could not be completed reliably.
+Diagnostics describe repository findings from a completed inspection. Errors mark invalid structure or a proven missing declared file or runtime export. Operational exceptions mean that configuration was invalid or inspection could not complete reliably.
 
-Every diagnostic has required `severity`, stable `source` and `code`, a human message, a logical path or `null`, optional JSON Pointer and scalar-based normalized source range, optional entity identity, and JSON-safe details. Consumers should branch on severity, source, and code, not message text. Structural diagnostics are errors. A result is valid when it has no errors, even if warnings remain; complete `errorCount` and `warningCount` values accompany validation, and every prepared-inspection page carries `counts.errors` and `counts.warnings` for the complete result.
+Every diagnostic has required `severity: 'error' | 'warning'`, `group`, stable `source: 'core'` and `code`, a human message, a logical path or `null`, optional JSON Pointer and scalar-based normalized source range, optional entity identity, and JSON-safe details. Consumers should branch on these fields rather than message text. A result is valid when it has no errors. Complete `errorCount` and `warningCount` accompany validation; prepared-inspection pages report `counts.errors` and `counts.warnings` for the complete result. Accepted warnings are counted separately as described below.
 
 ## Diagnostic catalog
 
-The public `ICoreDiagnosticCode` union is the machine-readable catalog. The groups below make that catalog navigable without changing its exact exported values.
+The public `ICoreDiagnosticCode` union is the machine-readable catalog. The headings below correspond to the `discovery`, `manifest`, `references`, `agents`, `mirrors`, and `integration` groups.
 
 ### [Discovery and text](#discovery-and-text)
 
@@ -28,28 +28,63 @@ Missing or invalid references, context relationships, runtime guidance, and deci
 
 ### [Agents and capabilities](#agents-and-capabilities)
 
-Agent directories, identity, descriptions, instructions, variables, runtime availability, tools, and skills use `MOLDEA_AGENT_*`, `MOLDEA_RUNTIME_*`, `MOLDEA_VARIABLE_*`, `MOLDEA_CAPABILITY_*`, `MOLDEA_TOOL_*`, and `MOLDEA_SKILL_*` codes.
-
-`CUSTOM_RUNTIME_RELATIONSHIP_UNVERIFIED`: The declared runtime relationship could not be verified. Core emits this warning with source `custom` and the declared relationship's identity. It does not register a custom adapter or infer a provider. Warning-only validity remains successful while `runtimeInspection` is `incomplete`.
+Agent directories, identity, descriptions, instructions, variables, runtime labels, tools, and skills use `MOLDEA_AGENT_*`, `MOLDEA_RUNTIME_*`, `MOLDEA_VARIABLE_*`, `MOLDEA_CAPABILITY_*`, `MOLDEA_TOOL_*`, and `MOLDEA_SKILL_*` codes.
 
 ### [Mirrors](#mirrors)
 
 Mirror path validity, presence, type, and digest coherence use `MOLDEA_MIRROR_*` codes.
 
+### [Coding-agent integration](#coding-agent-integration)
+
+Validation and inspection check `/AGENTS.md` as untrusted text, without following symlinks. Integration warnings identify that repository integration with `entity.integrationPath` and `subject` set to `/AGENTS.md`, and `qualifier: null`.
+
+- `MOLDEA_INTEGRATION_BLOCK_MISSING`: The AGENTS.md moldea block is missing. Details report a missing, non-regular, or regular entry and, where relevant, an invalid managed region or invalid UTF-8.
+- `MOLDEA_INTEGRATION_SKILL_MISSING`: The skill installation referenced by the AGENTS.md moldea block was not found. Details identify an unextractable installation path or the referenced installation and missing or non-regular contract file.
+- `MOLDEA_INTEGRATION_BLOCK_STALE`: The AGENTS.md moldea block differs from its skill installation. Details identify the referenced installation and an invalid asset encoding where applicable.
+
+The installation must have regular `SKILL.md`, `scripts/relevance-gate.mjs`, and `assets/managed-agents-block.md` files. Core renders the installed asset with the relative skill path and the managed region's line ending before comparison. A current block produces no warning. These checks do not run during manifest-only operations or scope matching.
+
+## Warning identity and acceptance
+
+Warnings carry `subject` (a canonical repository path), `qualifier` (a pattern or acceptance-entry pointer, otherwise `null`), and `acceptable`. The flag is true exactly for codes exported in `ACCEPTABLE_WARNING_CODES`. The list contains `MOLDEA_IMPACT_PATTERN_UNMATCHED`, `MOLDEA_INTEGRATION_BLOCK_MISSING`, `MOLDEA_INTEGRATION_SKILL_MISSING`, and `MOLDEA_INTEGRATION_BLOCK_STALE`.
+
+`MOLDEA_IMPACT_PATTERN_UNMATCHED`: The impact pattern matches no files. This `references` warning identifies an owner and a pattern. Its subject is the owning context or decision path, or the owning agent's canonical instruction path for agent, tool, and skill impacts. Patterns can intentionally cover future files. They are checked after required validation, sharing one traversal per fixed directory prefix and stopping when every pattern has found a regular file. Entry-budget exhaustion or a reader resource refusal suppresses this optional pass's findings and marks it incomplete. Cancellation and source failures still propagate.
+
+The manifest may accept a warning with a reason:
+
+```yaml
+acceptedWarnings:
+  - code: MOLDEA_IMPACT_PATTERN_UNMATCHED
+    subject: /moldea/project.md
+    qualifier: /future/**
+    reason: This directory is reserved for the next release.
+```
+
+Entries match `code`, `subject`, and `qualifier` exactly. Omitted and `null` qualifiers mean the same identity. Each reason must contain non-whitespace text and at most 256 Unicode scalar values. Unknown fields, unsupported codes, malformed entries, missing reasons, and duplicate identities produce `MOLDEA_MANIFEST_VALUE_INVALID` with `entry`, `field`, and `reason` details. `maxAcceptedWarnings` defaults to 256 entries; exceeding that operation limit raises `RESOURCE_LIMIT_EXCEEDED`.
+
+A match retains the warning with `accepted: true` and its reason. `warningCount` includes only unaccepted warnings; `acceptedWarningCount` counts accepted warnings; `diagnosticCount` equals `errorCount + warningCount + acceptedWarningCount`. Inspection counts use `warnings`, `acceptedWarnings`, `errors`, and `diagnostics`. Acceptance never changes validity or errors.
+
+`MOLDEA_ACCEPTANCE_UNMATCHED`: The warning acceptance matches no reported warning. This `manifest` warning has subject `/moldea/moldea.yaml`, qualifier `/acceptedWarnings/<index>`, and `acceptable: false`. It is emitted only when the relevant warning-producing check completed. Skipped checks neither apply nor invalidate their acceptances. The standalone scope matcher validates the acceptance list but runs neither warning check nor acceptance matching.
+
 ## Ordering and limits
 
-Core normalizes diagnostics into deterministic order using their source location and identity fields rather than discovery or adapter completion timing. `maxDiagnostics` bounds raw diagnostic production; exceeding it raises `RESOURCE_LIMIT_EXCEEDED` instead of silently truncating the invalid state.
+Core normalizes diagnostics into deterministic order using their source location and identity fields rather than discovery timing. `maxDiagnostics` bounds raw diagnostic production; exceeding it raises `RESOURCE_LIMIT_EXCEEDED` instead of silently truncating the invalid state.
 
-Adapter diagnostics use the same normalized shape but retain the adapter ID as `source` and adapter-owned string codes. `*_RUNTIME_RELATIONSHIP_UNVERIFIED` is reserved for a warning about one declared relationship. Its closed details identify the relationship and either an unsupported or dynamic source reason, or safe dependency-range context for a known behavior boundary. Core validates that payload but leaves SDK interpretation to the adapter. Other adapter codes are errors. Their exact catalogs belong to the adapter packages, such as the [Anthropic adapter diagnostics](/adapters/anthropic/evidence-and-diagnostics/) and [OpenAI adapter diagnostics](/adapters/openai/evidence-and-diagnostics/).
+`MOLDEA_REFERENCE_EXPORT_MISSING`: The referenced export is missing. This error belongs to `references` and is emitted only when a complete syntax-only inventory proves absence. Its details identify the path, symbol, and binding relationship. The same binding has a `failed` coverage record. An unsupported or inconclusive inventory produces `not-checked` coverage rather than an error.
 
 ## Operational exceptions
 
-`CoreConfigurationException` reports invalid limits or adapter registration. `CoreOperationException` reports invalid operation arguments, resource exhaustion, cancellation, or adapter execution failure. Repository reader exceptions propagate through the inspection boundary. None of these are converted into content diagnostics.
+`CoreConfigurationException` reports invalid limits. `CoreOperationException` reports invalid operation arguments, resource exhaustion, cancellation, or isolated-process failure. Repository access, snapshot, cancellation, and resource exceptions propagate through the inspection boundary. Expected missing or non-file integration reads produce the integration warnings above; a reader resource refusal during the optional impact-pattern pass suppresses only that pass. Other operational failures never become content diagnostics.
 
-The opt-in Node inspection boundary adds these operation contracts:
+Core owns these stable exception contracts:
 
 | Code                        | Stable message                                          |
 | --------------------------- | ------------------------------------------------------- |
+| `INVALID_RESOURCE_LIMIT`    | A Core resource limit is invalid.                       |
+| `INVALID_ARGUMENT`          | The Core operation received an invalid argument.        |
+| `ABORTED`                   | The Core operation was aborted.                         |
+| `CONTENT_INVALID`           | The canonical content is not valid UTF-8 text.          |
+| `RESOURCE_LIMIT_EXCEEDED`   | A Core resource limit was exceeded.                     |
 | `INSPECTION_BUSY`           | Project inspection capacity is busy. Try again shortly. |
 | `INSPECTION_TIMEOUT`        | The isolated project inspection timed out.              |
 | `INSPECTION_PROCESS_FAILED` | The isolated project inspection failed.                 |

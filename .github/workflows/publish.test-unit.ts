@@ -81,20 +81,7 @@ describe('npm release workflow', () => {
     expect(ciSource).toContain('name: public-package-tarballs');
     expect(ciSource).toContain('SHA256SUMS');
     expect(ciSource).not.toContain('playwright install --with-deps chromium');
-    expect(ciSource.match(/^\s+name: public-package-tarballs$/gmu)).toHaveLength(13);
-    expect(ciSource).toContain(
-      'node projects/adapter-cloudflare-agents/scripts/runtime-compatibility/index.mjs',
-    );
-    expect(ciSource).toContain('node projects/adapter-eve/scripts/runtime-compatibility/index.mjs');
-    expect(ciSource).toContain(
-      'node projects/adapter-langchain/scripts/runtime-compatibility/index.mjs',
-    );
-    expect(ciSource).toContain(
-      'node projects/adapter-langgraph/scripts/runtime-compatibility/index.mjs',
-    );
-    expect(ciSource).toContain(
-      'node projects/adapter-vercel-ai-sdk/scripts/runtime-compatibility/index.mjs',
-    );
+    expect(ciSource.match(/^\s+name: public-package-tarballs$/gmu)).toHaveLength(3);
     expect(ciWorkflow.jobs?.['checks']?.container).toStrictEqual({
       image: `mcr.microsoft.com/playwright:v${websitePackageManifest.devDependencies?.['@playwright/test']}-noble`,
       options: '--ipc=host --init',
@@ -143,9 +130,6 @@ describe('npm release workflow', () => {
     expect(ciSource).toContain(
       'git rev-parse HEAD > "$public_packages_directory/packages-commit.txt"',
     );
-    expect(ciSource).toContain(
-      'artifacts/public-package-tarballs/runtime-compatibility-publication.json',
-    );
   });
 
   test('plans automatic main releases while retaining manual bootstrap and recovery', () => {
@@ -162,58 +146,12 @@ describe('npm release workflow', () => {
           },
           project: {
             description: 'Public package project to bootstrap or recover.',
-            options: [
-              'repository',
-              'repository-fs',
-              'core',
-              'adapter-anthropic',
-              'adapter-google-genai',
-              'adapter-openai',
-              'adapter-openai-agents-sdk',
-              'adapter-claude-agent-sdk',
-              'adapter-cloudflare-agents',
-              'adapter-eve',
-              'adapter-langchain',
-              'adapter-langgraph',
-              'adapter-vercel-ai-sdk',
-              'cli',
-              'website-ui',
-            ],
+            options: ['repository', 'repository-fs', 'core', 'cli', 'website-ui'],
             required: true,
             type: 'choice',
           },
         },
       },
-    });
-    expect(publishWorkflow.jobs?.['plan']).toMatchObject({
-      outputs: {
-        adapter_anthropic_previous_version:
-          '${{ steps.release.outputs.adapter_anthropic_previous_version }}',
-        adapter_claude_agent_sdk_previous_version:
-          '${{ steps.release.outputs.adapter_claude_agent_sdk_previous_version }}',
-        adapter_cloudflare_agents_previous_version:
-          '${{ steps.release.outputs.adapter_cloudflare_agents_previous_version }}',
-        adapter_eve_previous_version: '${{ steps.release.outputs.adapter_eve_previous_version }}',
-        adapter_langchain_previous_version:
-          '${{ steps.release.outputs.adapter_langchain_previous_version }}',
-        adapter_langgraph_previous_version:
-          '${{ steps.release.outputs.adapter_langgraph_previous_version }}',
-        adapter_google_genai_previous_version:
-          '${{ steps.release.outputs.adapter_google_genai_previous_version }}',
-        adapter_openai_previous_version:
-          '${{ steps.release.outputs.adapter_openai_previous_version }}',
-        adapter_openai_agents_sdk_previous_version:
-          '${{ steps.release.outputs.adapter_openai_agents_sdk_previous_version }}',
-        adapter_vercel_ai_sdk_previous_version:
-          '${{ steps.release.outputs.adapter_vercel_ai_sdk_previous_version }}',
-        cli_previous_version: '${{ steps.release.outputs.cli_previous_version }}',
-        core_previous_version: '${{ steps.release.outputs.core_previous_version }}',
-        repository_previous_version: '${{ steps.release.outputs.repository_previous_version }}',
-        repository_fs_previous_version:
-          '${{ steps.release.outputs.repository_fs_previous_version }}',
-        website_ui_previous_version: '${{ steps.release.outputs.website_ui_previous_version }}',
-      },
-      permissions: { contents: 'read' },
     });
     expect(publishSource).toContain('fetch-depth: 0');
     expect(publishSource).toContain('pnpm release:plan');
@@ -247,158 +185,14 @@ describe('npm release workflow', () => {
       'release_repository',
       'release_repository_fs',
     ]);
-    expect(publishWorkflow.jobs?.['release_adapter_anthropic']?.needs).toStrictEqual([
-      'plan',
-      'verify',
-      'release_repository',
-      'release_repository_fs',
-      'release_core',
-    ]);
-    expect(publishWorkflow.jobs?.['release_adapter_openai']?.needs).toStrictEqual([
-      'plan',
-      'verify',
-      'release_repository',
-      'release_repository_fs',
-      'release_core',
-      'release_adapter_anthropic',
-      'release_adapter_google_genai',
-    ]);
-    expect(publishWorkflow.jobs?.['release_adapter_google_genai']?.needs).toStrictEqual([
-      'plan',
-      'verify',
-      'release_repository',
-      'release_repository_fs',
-      'release_core',
-      'release_adapter_anthropic',
-    ]);
-    expect(publishWorkflow.jobs?.['release_adapter_openai_agents_sdk']?.needs).toStrictEqual([
-      'plan',
-      'verify',
-      'release_repository',
-      'release_repository_fs',
-      'release_core',
-      'release_adapter_anthropic',
-      'release_adapter_google_genai',
-      'release_adapter_openai',
-    ]);
-    expect(publishWorkflow.jobs?.['release_adapter_claude_agent_sdk']?.needs).toStrictEqual([
-      'plan',
-      'verify',
-      'release_repository',
-      'release_repository_fs',
-      'release_core',
-      'release_adapter_anthropic',
-      'release_adapter_google_genai',
-      'release_adapter_openai',
-      'release_adapter_openai_agents_sdk',
-    ]);
-    expect(publishWorkflow.jobs?.['release_cli']?.needs).toStrictEqual([
-      'plan',
-      'verify',
-      'release_repository',
-      'release_repository_fs',
-      'release_core',
-      'release_adapter_anthropic',
-      'release_adapter_google_genai',
-      'release_adapter_openai',
-      'release_adapter_openai_agents_sdk',
-      'release_adapter_claude_agent_sdk',
-      'release_adapter_cloudflare_agents',
-      'release_adapter_eve',
-      'release_adapter_langchain',
-      'release_adapter_langgraph',
-      'release_adapter_vercel_ai_sdk',
-    ]);
-    expect(publishWorkflow.jobs?.['release_adapter_vercel_ai_sdk']?.needs).toStrictEqual([
-      'plan',
-      'verify',
-      'release_repository',
-      'release_repository_fs',
-      'release_core',
-      'release_adapter_anthropic',
-      'release_adapter_google_genai',
-      'release_adapter_openai',
-      'release_adapter_openai_agents_sdk',
-      'release_adapter_claude_agent_sdk',
-      'release_adapter_cloudflare_agents',
-      'release_adapter_eve',
-      'release_adapter_langchain',
-      'release_adapter_langgraph',
-    ]);
-    expect(publishWorkflow.jobs?.['release_adapter_langgraph']?.needs).toStrictEqual([
-      'plan',
-      'verify',
-      'release_repository',
-      'release_repository_fs',
-      'release_core',
-      'release_adapter_anthropic',
-      'release_adapter_google_genai',
-      'release_adapter_openai',
-      'release_adapter_openai_agents_sdk',
-      'release_adapter_claude_agent_sdk',
-      'release_adapter_cloudflare_agents',
-      'release_adapter_eve',
-      'release_adapter_langchain',
-    ]);
-    expect(publishWorkflow.jobs?.['release_adapter_langchain']?.needs).toStrictEqual([
-      'plan',
-      'verify',
-      'release_repository',
-      'release_repository_fs',
-      'release_core',
-      'release_adapter_anthropic',
-      'release_adapter_google_genai',
-      'release_adapter_openai',
-      'release_adapter_openai_agents_sdk',
-      'release_adapter_claude_agent_sdk',
-      'release_adapter_cloudflare_agents',
-      'release_adapter_eve',
-    ]);
-    expect(publishWorkflow.jobs?.['release_adapter_eve']?.needs).toStrictEqual([
-      'plan',
-      'verify',
-      'release_repository',
-      'release_repository_fs',
-      'release_core',
-      'release_adapter_anthropic',
-      'release_adapter_google_genai',
-      'release_adapter_openai',
-      'release_adapter_openai_agents_sdk',
-      'release_adapter_claude_agent_sdk',
-      'release_adapter_cloudflare_agents',
-    ]);
     expect(publishWorkflow.jobs?.['release_repository_fs']?.with?.['previous_version']).toBe(
       '${{ needs.plan.outputs.repository_fs_previous_version }}',
     );
     expect(publishWorkflow.jobs?.['release_core']?.with?.['previous_version']).toBe(
       '${{ needs.plan.outputs.core_previous_version }}',
     );
-    expect(publishWorkflow.jobs?.['release_adapter_anthropic']?.with?.['previous_version']).toBe(
-      '${{ needs.plan.outputs.adapter_anthropic_previous_version }}',
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_openai']?.with?.['previous_version']).toBe(
-      '${{ needs.plan.outputs.adapter_openai_previous_version }}',
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_google_genai']?.with?.['previous_version']).toBe(
-      '${{ needs.plan.outputs.adapter_google_genai_previous_version }}',
-    );
-    expect(
-      publishWorkflow.jobs?.['release_adapter_openai_agents_sdk']?.with?.['previous_version'],
-    ).toBe('${{ needs.plan.outputs.adapter_openai_agents_sdk_previous_version }}');
-    expect(
-      publishWorkflow.jobs?.['release_adapter_claude_agent_sdk']?.with?.['previous_version'],
-    ).toBe('${{ needs.plan.outputs.adapter_claude_agent_sdk_previous_version }}');
-    expect(
-      publishWorkflow.jobs?.['release_adapter_vercel_ai_sdk']?.with?.['previous_version'],
-    ).toBe('${{ needs.plan.outputs.adapter_vercel_ai_sdk_previous_version }}');
-    expect(publishWorkflow.jobs?.['release_adapter_eve']?.with?.['previous_version']).toBe(
-      '${{ needs.plan.outputs.adapter_eve_previous_version }}',
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_langchain']?.with?.['previous_version']).toBe(
-      '${{ needs.plan.outputs.adapter_langchain_previous_version }}',
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_langgraph']?.with?.['previous_version']).toBe(
-      '${{ needs.plan.outputs.adapter_langgraph_previous_version }}',
+    expect(publishWorkflow.jobs?.['release_cli']?.if).toContain(
+      "needs.release_core.result == 'success'",
     );
     expect(publishWorkflow.jobs?.['release_cli']?.with?.['previous_version']).toBe(
       '${{ needs.plan.outputs.cli_previous_version }}',
@@ -418,36 +212,6 @@ describe('npm release workflow', () => {
     );
     expect(publishWorkflow.jobs?.['release_core']?.if).toContain(
       "needs.release_repository_fs.result == 'success'",
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_anthropic']?.if).toContain(
-      "needs.release_core.result == 'success'",
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_openai']?.if).toContain(
-      "needs.release_adapter_google_genai.result == 'success'",
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_google_genai']?.if).toContain(
-      "needs.release_adapter_anthropic.result == 'success'",
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_openai_agents_sdk']?.if).toContain(
-      "needs.release_adapter_openai.result == 'success'",
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_claude_agent_sdk']?.if).toContain(
-      "needs.release_adapter_openai_agents_sdk.result == 'success'",
-    );
-    expect(publishWorkflow.jobs?.['release_cli']?.if).toContain(
-      "needs.release_adapter_vercel_ai_sdk.result == 'success'",
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_vercel_ai_sdk']?.if).toContain(
-      "needs.release_adapter_langgraph.result == 'success'",
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_langgraph']?.if).toContain(
-      "needs.release_adapter_langchain.result == 'success'",
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_langchain']?.if).toContain(
-      "needs.release_adapter_eve.result == 'success'",
-    );
-    expect(publishWorkflow.jobs?.['release_adapter_eve']?.if).toContain(
-      "needs.release_adapter_cloudflare_agents.result == 'success'",
     );
   });
 

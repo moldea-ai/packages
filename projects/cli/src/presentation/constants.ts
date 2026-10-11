@@ -160,7 +160,7 @@ const PAGINATION_OPTIONS_HELP = `  --max-output-bytes <integer>       Bound JSON
   --cursor <opaque-cursor>           Continue a prior JSON result page.
 `;
 
-const COMPLETE_INSPECTION_OPTIONS_HELP = `${REPOSITORY_OPTIONS_HELP}${INSPECTION_RESOURCE_OPTIONS_HELP}  --max-evidence <integer>           Override the adapter evidence count limit.
+const COMPLETE_INSPECTION_OPTIONS_HELP = `${REPOSITORY_OPTIONS_HELP}${INSPECTION_RESOURCE_OPTIONS_HELP}  --max-coverage <integer>           Override the binding coverage count limit.
 ${PAGINATION_OPTIONS_HELP}`;
 
 const SCOPE_OPTIONS_HELP = `${REPOSITORY_OPTIONS_HELP}${INSPECTION_RESOURCE_OPTIONS_HELP}${PAGINATION_OPTIONS_HELP}`;

@@ -56,9 +56,7 @@ if (stage === 'gate') validateCiJobResults(plan, process.env['GITHUB_NEEDS'] ?? 
 else {
   if (stage === 'checks') {
     runPnpm(['website:prepare']);
-    runPnpm(['compatibility:check']);
     runPnpm(['test:root:unit']);
-    if (plan.rootIntegration) runPnpm(['upstream:check']);
     runPnpm(['format:check']);
     runPnpm(['lint:root']);
     runPnpm(['typecheck:root']);

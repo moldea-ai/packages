@@ -5,6 +5,10 @@ import {
   type IRepositoryPath,
 } from '@moldea.ai/repository';
 
+import type { IBindingCoverage, IBindingRelationship } from '../binding-coverage/index.js';
+import { readExportInventory, type IExportInventory } from '../export-inventory/index.js';
+import { CoreOperationException } from '../exceptions/index.js';
+import { reserveRetainedBytesIfTracked } from '../retained-memory/index.js';
 import type { ICanonicalDiscoveryResult } from '../canonical-discovery/index.js';
 import type { ICoreResourceLimits } from '../contracts/index.js';
 import {
@@ -38,6 +42,8 @@ interface IRepositoryCandidate {
   readonly kind: IRepositoryCandidateKind;
   readonly path: IRepositoryPath;
   readonly pointer: string;
+  readonly symbol?: string;
+  readonly relationship?: IBindingRelationship;
 }
 
 const childPointer = (pointer: string, segment: string): string => {
@@ -64,6 +70,7 @@ const addReferenceCandidates = (
   references: readonly IRepositoryReference[] | undefined,
   pointer: string,
   entity: IDiagnosticEntity | null,
+  relationship?: IBindingRelationship,
 ): void => {
   for (const [index, reference] of [...(references ?? [])].sort(compareReferences).entries()) {
     candidates.push({
@@ -71,6 +78,8 @@ const addReferenceCandidates = (
       kind: 'reference',
       path: reference.path,
       pointer: childPointer(pointer, String(index)),
+      ...(relationship === undefined ? {} : { relationship }),
+      ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
     });
   }
 };
@@ -108,6 +117,7 @@ const addRelationshipCandidates = (
     relationship.bindings,
     childPointer(pointer, 'bindings'),
     entity,
+    pointer.startsWith('/context/') ? 'context-binding' : 'decision-binding',
   );
   addImpactCandidates(
     candidates,
@@ -158,6 +168,10 @@ const addCapabilityCandidates = (
   candidates.push({
     entity: capabilityEntity,
     kind: `${capabilityKind}-implementation`,
+    relationship: `${capabilityKind}-implementation`,
+    ...(capability.implementation.symbol === undefined
+      ? {}
+      : { symbol: capability.implementation.symbol }),
     path: capability.implementation.path,
     pointer: childPointer(capabilityPointer, 'implementation'),
   });
@@ -172,6 +186,9 @@ const addCapabilityCandidates = (
         kind: 'reference',
         path: reference.path,
         pointer: childPointer(capabilityPointer, property),
+        relationship:
+          `${capabilityKind}-${property === 'inputSchema' ? 'input-schema' : property === 'outputSchema' ? 'output-schema' : 'registration'}` as IBindingRelationship,
+        ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
       });
     }
   }
@@ -210,6 +227,15 @@ const addAgentCandidates = (
         kind: 'reference',
         path: reference.path,
         pointer: childPointer(bindingsPointer, property),
+        relationship: (
+          {
+            runtimeAgent: 'runtime-agent',
+            inputSchema: 'agent-input-schema',
+            outputSchema: 'agent-output-schema',
+            instructionLoader: 'instruction-loader',
+          } as const
+        )[property],
+        ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
       });
     }
   }
@@ -222,6 +248,8 @@ const addAgentCandidates = (
     if (reference !== undefined) {
       candidates.push({
         entity: { agentId, variableId },
+        relationship: 'variable-provider',
+        ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
         kind: 'reference',
         path: reference.path,
         pointer: childPointer(childPointer(bindingsPointer, 'variableProviders'), variableId),
@@ -292,7 +320,7 @@ const collectCandidates = (manifest: IMoldeaManifestV1): readonly IRepositoryCan
         candidates,
         relationship,
         pointer,
-        decisionId === null ? null : { decisionId },
+        decisionId === null ? { contextPath: parseRepositoryPath(referencedPath) } : { decisionId },
       );
     }
   }
@@ -408,15 +436,20 @@ const validateCandidate = (
  * @param discovery Canonical discovery state used to suppress dependent path diagnostics.
  * @param limits The resource limits applied to emitted diagnostics.
  * @param signal Optional cancellation forwarded to exact repository lookups.
+ * @param coverage Operation-owned binding coverage populated only for regular files.
  * @returns Deeply immutable deterministic repository-reference diagnostics.
  * @throws
- * - INVALID_REPOSITORY_PATH: A repository path is invalid.
+ * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+ * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+ * - ENTRY_NOT_FILE: The requested repository entry is not a file.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
- * - SNAPSHOT_CHANGED: The repository snapshot changed during validation.
- * - INVALID_SOURCE_DATA: The repository reader returned invalid contract data.
- * - RESOURCE_LIMIT_EXCEEDED: A Core or repository resource limit was exceeded.
- * - ABORTED: Repository inspection or a repository lookup was aborted.
+ * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+ * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ * - ABORTED: The repository operation was aborted.
  */
 export const validateRepositoryReferences = async (
   repository: IRepositoryInspectionReader,
@@ -425,6 +458,7 @@ export const validateRepositoryReferences = async (
   discovery: ICanonicalDiscoveryResult,
   limits: ICoreResourceLimits,
   signal?: AbortSignal,
+  coverage: IBindingCoverage[] = [],
 ): Promise<readonly ICoreDiagnostic[]> => {
   const collector = createCoreDiagnosticCollector(limits, 'validate-project');
   const blockedPaths = new Set(
@@ -432,6 +466,7 @@ export const validateRepositoryReferences = async (
       diagnostic.path === null ? [] : [diagnostic.path],
     ),
   );
+  const inventories = new Map<IRepositoryPath, IExportInventory>();
   const entryCache = new Map<IRepositoryPath, Promise<IRepositoryEntry | null>>();
   const operationOptions: IRepositoryOperationOptions | undefined =
     signal === undefined ? undefined : { signal };
@@ -448,7 +483,61 @@ export const validateRepositoryReferences = async (
       entryCache.set(candidate.path, entryPromise);
     }
 
-    validateCandidate(candidate, await entryPromise, manifestPath, collector);
+    const entry = await entryPromise;
+    validateCandidate(candidate, entry, manifestPath, collector);
+    if (entry?.type !== 'file' || candidate.relationship === undefined) continue;
+    if (coverage.length >= limits.maxCoverage)
+      throw new CoreOperationException({
+        code: 'RESOURCE_LIMIT_EXCEEDED',
+        operation: 'validate-project',
+        limit: 'maxCoverage',
+        limitMaximum: limits.maxCoverage,
+        observedUsage: coverage.length + 1,
+        nextAction: 'reduce-input-or-increase-limit',
+      });
+    const base = {
+      entity: candidate.entity ?? {},
+      relationship: candidate.relationship,
+      path: candidate.path,
+      symbol: candidate.symbol ?? null,
+      fileCheck: 'passed' as const,
+    };
+    let record: IBindingCoverage;
+    if (candidate.symbol === undefined) {
+      record = { ...base, exportCheck: 'not-checked', exportNotCheckedReason: 'no-symbol' };
+    } else {
+      let inventory = inventories.get(candidate.path);
+      if (inventory === undefined) {
+        inventory = await readExportInventory(repository, candidate.path);
+        inventories.set(candidate.path, inventory);
+      }
+      if (inventory.kind === 'not-checked')
+        record = { ...base, exportCheck: 'not-checked', exportNotCheckedReason: inventory.reason };
+      else if (!inventory.complete)
+        record = {
+          ...base,
+          exportCheck: 'not-checked',
+          exportNotCheckedReason: 'unresolved-exports',
+        };
+      else if (inventory.names.has(candidate.symbol)) record = { ...base, exportCheck: 'passed' };
+      else {
+        record = { ...base, exportCheck: 'failed' };
+        collector.add({
+          code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
+          entity: candidate.entity,
+          path: manifestPath,
+          pointer: candidate.pointer,
+          details: {
+            referencedPath: candidate.path,
+            symbol: candidate.symbol,
+            relationship: candidate.relationship,
+          },
+        });
+      }
+    }
+    // Coverage admission is bounded independently from diagnostics and source parsing.
+    reserveRetainedBytesIfTracked(repository, 512 + JSON.stringify(record).length * 2);
+    coverage.push(record);
   }
 
   return collector.finalize();

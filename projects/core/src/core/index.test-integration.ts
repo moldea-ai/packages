@@ -58,8 +58,7 @@ describe('Core with the immutable memory repository reader', () => {
     });
   });
 
-  test('matches manifest scope without repository reads, project bodies, or adapter execution', async () => {
-    let adapterExecutions = 0;
+  test('matches manifest scope without repository reads, project bodies, or source parsing', async () => {
     const manifestContent = [
       'version: 1',
       'context:',
@@ -76,18 +75,7 @@ describe('Core with the immutable memory repository reader', () => {
       '      - /src/agent.ts',
       '',
     ].join('\n');
-    const core = createCore({
-      adapters: [
-        {
-          id: 'openai',
-          inspect: () => {
-            adapterExecutions += 1;
-            return Promise.resolve({ diagnostics: [], evidence: [] });
-          },
-          supportedRepositoryFormatVersions: [1],
-        },
-      ],
-    });
+    const core = createCore();
     const result = await core.matchManifestScope({
       manifest: {
         content: manifestContent,
@@ -115,7 +103,6 @@ describe('Core with the immutable memory repository reader', () => {
       '/src/bound.ts',
     ]);
     expect(JSON.stringify(result)).not.toContain(manifestContent);
-    expect(adapterExecutions).toBe(0);
   });
 
   test('returns structural manifest diagnostics without manufacturing relevance', async () => {

@@ -5,7 +5,7 @@ import { INSTALLED_PACKAGE_METADATA } from '../composition/composition.test-fixt
 
 import { runMoldeaCli } from './runner.js';
 
-test('reports composition from the real isolated installed adapters', async () => {
+test('reports composition from the resolved installed package versions', async () => {
   const result = await runMoldeaCli({
     commandLineArguments: ['composition', '--json'],
     invocationDirectory: process.cwd(),
@@ -14,9 +14,9 @@ test('reports composition from the real isolated installed adapters', async () =
   expect(result.exitCode).toBe(0);
   expect(result.stderr).toBe('');
   expect(JSON.parse(result.stdout)).toMatchObject({
-    cliVersion: '10.0.0',
+    cliVersion: '11.0.0',
     command: 'composition',
-    schemaVersion: 6,
+    schemaVersion: 7,
     result: { repositoryFormatVersions: [1] },
     status: 'valid',
   });

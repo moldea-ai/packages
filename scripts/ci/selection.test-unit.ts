@@ -1,11 +1,7 @@
 // @vitest-environment node
 import { expect, test } from 'vitest';
 
-import {
-  getGitHead,
-  loadGitWorkspaceSnapshot,
-  type IWorkspacePackageState,
-} from '../workspace-graph/index.ts';
+import { getGitHead, type IWorkspacePackageState } from '../workspace-graph/index.ts';
 
 import {
   CI_COMPATIBILITY_LANES,
@@ -17,7 +13,30 @@ import {
 
 const root = new URL('../../', import.meta.url);
 const commit = getGitHead(root);
-const current = loadGitWorkspaceSnapshot(root, commit);
+const current = new Map<string, IWorkspacePackageState>(
+  (
+    [
+      ['repository', []],
+      ['repository-fs', ['repository']],
+      ['core', ['repository']],
+      ['cli', ['core', 'repository', 'repository-fs']],
+      ['website-ui', []],
+      ['packages-website', ['cli', 'core', 'repository', 'repository-fs', 'website-ui']],
+    ] satisfies [string, string[]][]
+  ).map(([id, dependencies]) => {
+    const name = `@moldea.ai/${id}`;
+    return [
+      name,
+      {
+        name,
+        directory: id === 'packages-website' ? 'apps/website' : `projects/${id}`,
+        workspaceDependencies: dependencies.map((dependency) => `@moldea.ai/${dependency}`),
+        isPrivate: id === 'packages-website',
+        scripts: [],
+      },
+    ];
+  }),
+);
 const select = (changedPaths: string[]) =>
   createCiPlan({
     testedCommit: commit,
@@ -35,8 +54,8 @@ test.each([
     ['@moldea.ai/packages-website', '@moldea.ai/website-ui'],
   ],
   [
-    'projects/adapter-openai/src/example.test-integration.ts',
-    ['@moldea.ai/adapter-openai', '@moldea.ai/cli', '@moldea.ai/packages-website'],
+    'projects/core/src/example.test-integration.ts',
+    ['@moldea.ai/cli', '@moldea.ai/core', '@moldea.ai/packages-website'],
   ],
   ['projects/cli/src/example.ts', ['@moldea.ai/cli', '@moldea.ai/packages-website']],
   [
@@ -50,18 +69,16 @@ test.each([
   expect(parseCiPlan(JSON.stringify(plan))).toStrictEqual(plan);
 });
 
-test.each([
-  'projects/repository/src/a.ts',
-  'projects/core/src/a.test-unit.ts',
-  'packages/adapter-static-analysis/src/a.ts',
-])('createCiPlan(%s) preserves foundational and private fan-out', (path) => {
-  const plan = select([path]);
-  expect(plan.workspaces).toContain('@moldea.ai/cli');
-  expect(plan.workspaces).toContain('@moldea.ai/packages-website');
-  expect(plan.workspaces).toContain('@moldea.ai/adapter-openai');
-  expect(plan.rootIntegration).toBe(true);
-  expect(plan.artifacts).toBe(true);
-});
+test.each(['projects/repository/src/a.ts', 'projects/core/src/a.test-unit.ts'])(
+  'createCiPlan(%s) preserves foundational and private fan-out',
+  (path) => {
+    const plan = select([path]);
+    expect(plan.workspaces).toContain('@moldea.ai/cli');
+    expect(plan.workspaces).toContain('@moldea.ai/packages-website');
+    expect(plan.rootIntegration).toBe(true);
+    expect(plan.artifacts).toBe(true);
+  },
+);
 
 test.each([
   'package.json',
@@ -72,9 +89,9 @@ test.each([
   'configs/vite/example.ts',
   '.github/workflows/ci.yml',
   'scripts/ci/run.ts',
-  'compatibility/runtimes.yaml',
-  'scripts/runtime-compatibility/check.ts',
-  'docs/runtime-compatibility.md',
+  'consumers/SHA256SUMS',
+  'scripts/npm-release/checksums.ts',
+  'docs/npm-releases.md',
   'unknown/input.ts',
 ])('createCiPlan(%s) conservatively selects full verification', (path) => {
   expect(select([path])).toMatchObject({
@@ -171,7 +188,7 @@ test.each([
 test.each(['success', 'skipped', 'failure', 'cancelled'])(
   'final gate enforces the selected job result (%s)',
   (result) => {
-    const plan = select(['projects/adapter-openai/src/a.ts']);
+    const plan = select(['projects/core/src/a.ts']);
     const results = Object.fromEntries(
       ['plan', 'checks', ...CI_COMPATIBILITY_LANES, 'test-cross-platform'].map((name) => [
         name,
@@ -224,46 +241,29 @@ test('large mixed path sets produce a bounded deterministic explanation without 
   expect(plan.workspaces).toStrictEqual([...current.keys()].sort());
 });
 
-test('mixed adapter and website changes deduplicate consumers without enabling unrelated lanes', () => {
+test('mixed Core and website changes deduplicate consumers without enabling unrelated lanes', () => {
   const plan = select([
     'apps/website/page.astro',
-    'projects/adapter-openai/test.test-unit.ts',
-    'projects/adapter-anthropic/src/a.ts',
+    'projects/core/test.test-unit.ts',
+    'projects/cli/src/a.ts',
   ]);
   expect(plan.workspaces).toStrictEqual([
-    '@moldea.ai/adapter-anthropic',
-    '@moldea.ai/adapter-openai',
     '@moldea.ai/cli',
+    '@moldea.ai/core',
     '@moldea.ai/packages-website',
   ]);
   expect(plan.lanes).toStrictEqual([
     'consumer-conformance',
     'cli-testing-peer-compatibility',
     'cli-runtime-compatibility',
-    'adapter-anthropic-runtime-compatibility',
-    'adapter-openai-runtime-compatibility',
   ]);
 });
 
 test.each([
-  ['projects/repository/src/a.ts', ['@moldea.ai/website-ui', '@moldea.ai/adapter-static-analysis']],
+  ['projects/repository/src/a.ts', ['@moldea.ai/website-ui']],
   [
     'projects/core/src/a.ts',
-    [
-      '@moldea.ai/website-ui',
-      '@moldea.ai/adapter-static-analysis',
-      '@moldea.ai/repository',
-      '@moldea.ai/repository-fs',
-    ],
-  ],
-  [
-    'packages/adapter-static-analysis/src/a.ts',
-    [
-      '@moldea.ai/website-ui',
-      '@moldea.ai/core',
-      '@moldea.ai/repository',
-      '@moldea.ai/repository-fs',
-    ],
+    ['@moldea.ai/website-ui', '@moldea.ai/repository', '@moldea.ai/repository-fs'],
   ],
 ])(
   'foundational selection (%s) excludes packages outside its downstream graph',

@@ -4,7 +4,7 @@ import type {
   IRepositorySnapshot,
 } from '@moldea.ai/repository';
 
-import type { IRuntimeAdapter, IRuntimeAdapterEvidence } from '../adapter/index.js';
+import type { IBindingCoverage, IBindingCoverageCounts } from '../binding-coverage/index.js';
 import type { ICoreDiagnostic, IDiagnostic } from '../diagnostics/index.js';
 import type {
   IAgentManifestEntry,
@@ -24,11 +24,11 @@ export interface ICoreResourceLimits {
   readonly maxManifestBytes: number;
   readonly maxRetainedBytes: number;
   readonly maxDiagnostics: number;
-  readonly maxEvidence: number;
+  readonly maxCoverage: number;
+  readonly maxAcceptedWarnings: number;
 }
 
 export interface ICoreOptions {
-  readonly adapters?: readonly IRuntimeAdapter[];
   readonly limits?: Partial<ICoreResourceLimits>;
 }
 
@@ -115,7 +115,7 @@ export interface IProjectAgentAssignmentItem {
 }
 
 // closed content-free views supported by prepared project inspection
-export type IProjectInspectionView = 'all' | 'diagnostics' | 'evidence' | 'metadata';
+export type IProjectInspectionView = 'all' | 'diagnostics' | 'coverage' | 'metadata';
 
 export type IProjectInspectionInput = IProjectValidationInput;
 
@@ -128,7 +128,7 @@ export interface IProjectInspectionPageInput {
 export type IProjectInspectionItem =
   | { readonly agent: IProjectAgentAssignmentItem; readonly kind: 'agent' }
   | { readonly diagnostic: IDiagnostic; readonly kind: 'diagnostic' }
-  | { readonly evidence: IRuntimeAdapterEvidence; readonly kind: 'evidence' }
+  | { readonly coverage: IBindingCoverage; readonly kind: 'coverage' }
   | { readonly kind: 'metadata'; readonly metadata: IProjectMetadataItem };
 
 export interface IProjectInspectionPageRecord {
@@ -161,18 +161,17 @@ export interface IProjectValidationSummary {
   readonly projectPath: IRepositoryPath;
 }
 
-// completeness of the applicable runtime checks, independent from error-based validity
-export type IRuntimeInspectionStatus = 'complete' | 'incomplete' | 'not-run';
-
 export interface IProjectValidationResult {
   readonly valid: boolean;
-  readonly runtimeInspection: IRuntimeInspectionStatus;
   readonly errorCount: number;
   readonly warningCount: number;
+  readonly acceptedWarningCount: number;
+  readonly diagnosticCount: number;
   readonly formatVersion: IRepositoryFormatVersion | null;
   readonly summary: IProjectValidationSummary | null;
   readonly source: IRepositorySnapshot;
-  readonly evidence: readonly IRuntimeAdapterEvidence[];
+  readonly coverage: readonly IBindingCoverage[];
+  readonly coverageCounts: IBindingCoverageCounts;
   readonly diagnostics: readonly IDiagnostic[];
 }
 
@@ -180,7 +179,8 @@ export interface IProjectInspectionCounts extends IProjectSummaryCounts {
   readonly diagnostics: number;
   readonly errors: number;
   readonly warnings: number;
-  readonly evidence: number;
+  readonly acceptedWarnings: number;
+  readonly coverage: number;
   readonly metadata: number;
 }
 
@@ -194,8 +194,8 @@ export interface IProjectInspectionResourceUsage {
 }
 
 export interface IProjectInspection {
+  readonly coverageCounts: IBindingCoverageCounts;
   readonly counts: IProjectInspectionCounts;
-  readonly runtimeInspection: IRuntimeInspectionStatus;
   readonly formatVersion: IRepositoryFormatVersion | null;
   readonly inspectionDigest: string;
   readonly resourceUsage: IProjectInspectionResourceUsage;
@@ -214,8 +214,8 @@ export interface IProjectInspection {
 }
 
 export interface IProjectInspectionPageResult {
+  readonly coverageCounts: IBindingCoverageCounts;
   readonly counts: IProjectInspectionCounts;
-  readonly runtimeInspection: IRuntimeInspectionStatus;
   readonly formatVersion: IRepositoryFormatVersion | null;
   readonly inspectionDigest: string;
   readonly page: IProjectInspectionPage;
@@ -384,7 +384,6 @@ export interface ICore {
    * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
    * - ABORTED: The repository operation was aborted.
    * - ABORTED: The Core operation was aborted.
-   * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
    */
   createProjectInspection(input: IProjectInspectionInput): Promise<IProjectInspection>;
 
@@ -408,7 +407,7 @@ export interface ICore {
   readCanonicalContentPage(input: ICanonicalContentPageInput): Promise<ICanonicalContentPageResult>;
 
   /**
-   * Inspects one coherent repository snapshot through universal and configured adapter validation.
+   * Inspects one coherent repository snapshot through universal file and export validation.
    * @param input The source-neutral reader and optional shared cancellation signal.
    * @returns A promise resolving to the frozen content-free project validation result.
    * @throws
@@ -426,7 +425,6 @@ export interface ICore {
    * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
    * - ABORTED: The repository operation was aborted.
    * - ABORTED: The Core operation was aborted.
-   * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
    */
   validateProject(input: IProjectValidationInput): Promise<IProjectValidationResult>;
 }

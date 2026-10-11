@@ -5,7 +5,7 @@
       "manifest": "version: 1\ncontext:\n  /moldea/project.md:\n    bindings:\n      - path: /src/shared.ts\n        symbol: projectBinding\n    affectedBy:\n      - /src/**\n      - /src/exact.ts\nunresolved:\n  architecture:\n    category: design\n    effect: informational\n    description: Architecture remains open.\n    resolution: Record the decision.\n    related:\n      - path: /src/shared.ts\nagents:\n  reviewer:\n    runtime:\n      id: custom\n    variables:\n      REGION:\n        description: Deployment region.\n    bindings:\n      runtimeAgent:\n        path: /src/shared.ts\n      variableProviders:\n        REGION:\n          path: /src/shared.ts\n    tools:\n      deploy:\n        name: deploy\n        description: Deploys changes when release approval is granted.\n        implementation:\n          path: /src/shared.ts\n          symbol: deploy\n        registration:\n          path: /src/shared.ts\n          symbol: deployTool\n        affectedBy:\n          - /tools/**\n          - /src/exact.ts\n    skills:\n      audit:\n        name: audit\n        description: Audits changes when repository verification is required.\n        implementation:\n          path: /src/shared.ts\n        affectedBy:\n          - /skills/**\n          - /src/exact.ts\n    affectedBy:\n      - /agents/**\n      - /src/exact.ts\n    unresolved:\n      verification:\n        category: testing\n        effect: warning\n        description: Verification remains incomplete.\n        resolution: Complete verification.\n        related:\n          - path: /src/shared.ts\n",
       "entries": [
         {
-          "content": "export const shared = true;\n",
+          "content": "export const shared = true;\nexport const projectBinding = true;\nexport const deploy = true;\nexport const deployTool = true;\n",
           "path": "/src/shared.ts",
           "type": "file"
         },
@@ -77,7 +77,9 @@
           "details": {
             "impactPath": "/impact/a-missing.ts"
           },
-          "entity": null,
+          "entity": {
+            "contextPath": "/moldea/project.md"
+          },
           "path": "/moldea/moldea.yaml",
           "pointer": "/context/~1moldea~1project.md/affectedBy/1"
         },
@@ -87,7 +89,9 @@
             "actualType": "directory",
             "impactPath": "/impact/b-directory"
           },
-          "entity": null,
+          "entity": {
+            "contextPath": "/moldea/project.md"
+          },
           "path": "/moldea/moldea.yaml",
           "pointer": "/context/~1moldea~1project.md/affectedBy/2"
         },
@@ -97,7 +101,9 @@
             "actualType": "symlink",
             "impactPath": "/impact/c-link.ts"
           },
-          "entity": null,
+          "entity": {
+            "contextPath": "/moldea/project.md"
+          },
           "path": "/moldea/moldea.yaml",
           "pointer": "/context/~1moldea~1project.md/affectedBy/3"
         },
@@ -107,7 +113,9 @@
             "actualType": "directory",
             "referencedPath": "/src/a-directory"
           },
-          "entity": null,
+          "entity": {
+            "contextPath": "/moldea/project.md"
+          },
           "path": "/moldea/moldea.yaml",
           "pointer": "/context/~1moldea~1project.md/bindings/0"
         },
@@ -116,7 +124,9 @@
           "details": {
             "referencedPath": "/src/b-missing.ts"
           },
-          "entity": null,
+          "entity": {
+            "contextPath": "/moldea/project.md"
+          },
           "path": "/moldea/moldea.yaml",
           "pointer": "/context/~1moldea~1project.md/bindings/1"
         },
@@ -126,7 +136,9 @@
             "actualType": "symlink",
             "referencedPath": "/src/c-link.ts"
           },
-          "entity": null,
+          "entity": {
+            "contextPath": "/moldea/project.md"
+          },
           "path": "/moldea/moldea.yaml",
           "pointer": "/context/~1moldea~1project.md/bindings/2"
         }

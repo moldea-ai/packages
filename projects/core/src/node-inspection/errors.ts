@@ -25,7 +25,6 @@ export const serializeInspectionFailure = (error: unknown): INodeInspectionFailu
       options: {
         code: error.code,
         operation: error.operation,
-        ...(error.adapterId === null ? {} : { adapterId: error.adapterId }),
       },
     };
   if (error instanceof CoreOperationException)
@@ -34,7 +33,6 @@ export const serializeInspectionFailure = (error: unknown): INodeInspectionFailu
       options: {
         code: error.code,
         operation: error.operation,
-        ...(error.adapterId === null ? {} : { adapterId: error.adapterId }),
         ...(error.agentId === null ? {} : { agentId: error.agentId }),
         ...(error.code !== 'RESOURCE_LIMIT_EXCEEDED'
           ? {}
@@ -100,26 +98,15 @@ export const deserializeInspectionFailure = (failure: INodeInspectionFailure): E
   const options = failure.options;
   const allowed =
     failure.family === 'configuration'
-      ? ['code', 'operation', 'adapterId']
+      ? ['code', 'operation']
       : failure.family === 'operation'
-        ? [
-            'code',
-            'operation',
-            'adapterId',
-            'agentId',
-            'limit',
-            'limitMaximum',
-            'nextAction',
-            'observedUsage',
-          ]
+        ? ['code', 'operation', 'agentId', 'limit', 'limitMaximum', 'nextAction', 'observedUsage']
         : failure.family === 'repository'
           ? ['code', 'operation', 'path', 'retryable', 'resource']
           : [];
   if (
     Object.keys(options).some((key) => !allowed.includes(key)) ||
-    ['adapterId', 'agentId'].some(
-      (key) => Object.hasOwn(options, key) && typeof options[key] !== 'string',
-    )
+    (Object.hasOwn(options, 'agentId') && typeof options['agentId'] !== 'string')
   )
     throw createInspectionProcessFailure();
   if (
@@ -131,7 +118,6 @@ export const deserializeInspectionFailure = (failure: INodeInspectionFailure): E
     operation: isCoreOperation(options['operation'])
       ? options['operation']
       : ('create-project-inspection' as const),
-    ...(typeof options['adapterId'] === 'string' ? { adapterId: options['adapterId'] } : {}),
     ...(typeof options['agentId'] === 'string' ? { agentId: options['agentId'] } : {}),
   };
   if (failure.family === 'path' && Object.keys(options).length === 0)

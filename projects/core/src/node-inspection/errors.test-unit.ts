@@ -62,15 +62,13 @@ describe('safe isolated inspection failures', () => {
 
   test('preserves the original Core operation across the worker boundary', () => {
     const error = new CoreOperationException({
-      code: 'ADAPTER_EXECUTION_FAILED',
-      operation: 'validate-adapter',
-      adapterId: 'openai',
+      code: 'INVALID_ARGUMENT',
+      operation: 'validate-project',
       agentId: 'support',
     });
     expect(deserializeInspectionFailure(serializeInspectionFailure(error))).toMatchObject({
       code: error.code,
-      operation: 'validate-adapter',
-      adapterId: 'openai',
+      operation: 'validate-project',
       agentId: 'support',
     });
   });

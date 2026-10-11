@@ -9,38 +9,18 @@ import type { IMoldeaCliCommandExecutor } from './types.js';
 const INVOCATION_DIRECTORY = '/workspace';
 const INSTALLED_PACKAGE_METADATA = Object.freeze({
   dependencies: Object.freeze({
-    '@moldea.ai/adapter-anthropic': 'workspace:^6.0.0',
-    '@moldea.ai/adapter-claude-agent-sdk': 'workspace:^5.0.0',
-    '@moldea.ai/adapter-cloudflare-agents': 'workspace:^5.0.0',
-    '@moldea.ai/adapter-eve': 'workspace:^5.0.0',
-    '@moldea.ai/adapter-google-genai': 'workspace:^5.0.0',
-    '@moldea.ai/adapter-langchain': 'workspace:^5.0.0',
-    '@moldea.ai/adapter-langgraph': 'workspace:^5.0.0',
-    '@moldea.ai/adapter-openai': 'workspace:^6.0.0',
-    '@moldea.ai/adapter-openai-agents-sdk': 'workspace:^5.0.0',
-    '@moldea.ai/adapter-vercel-ai-sdk': 'workspace:^5.0.0',
-    '@moldea.ai/core': 'workspace:^6.0.0',
+    '@moldea.ai/core': 'workspace:^7.0.0',
     '@moldea.ai/repository': 'workspace:^2.0.0',
     '@moldea.ai/repository-fs': 'workspace:^2.0.3',
     semver: '7.8.5',
   }),
   installedPackageVersions: Object.freeze({
-    '@moldea.ai/adapter-anthropic': '6.0.0',
-    '@moldea.ai/adapter-claude-agent-sdk': '5.0.0',
-    '@moldea.ai/adapter-cloudflare-agents': '5.0.0',
-    '@moldea.ai/adapter-eve': '5.0.0',
-    '@moldea.ai/adapter-google-genai': '5.0.0',
-    '@moldea.ai/adapter-langchain': '5.0.0',
-    '@moldea.ai/adapter-langgraph': '5.0.0',
-    '@moldea.ai/adapter-openai': '6.0.0',
-    '@moldea.ai/adapter-openai-agents-sdk': '5.0.0',
-    '@moldea.ai/adapter-vercel-ai-sdk': '5.0.0',
-    '@moldea.ai/core': '6.0.0',
+    '@moldea.ai/core': '7.0.0',
     '@moldea.ai/repository': '2.0.0',
     '@moldea.ai/repository-fs': '2.0.3',
   }),
   supportedNodeRange: '>=22.11.0',
-  version: '10.0.0',
+  version: '11.0.0',
 });
 
 describe('runMoldeaCli', () => {
@@ -78,7 +58,7 @@ Options:
   --max-total-bytes <integer>        Override the total cached-byte limit.
   --max-manifest-bytes <integer>     Override the manifest byte limit.
   --max-diagnostics <integer>        Override the diagnostic count limit.
-  --max-evidence <integer>           Override the adapter evidence count limit.
+  --max-coverage <integer>           Override the binding coverage count limit.
   --max-output-bytes <integer>       Bound JSON output from 4096 to 1048576 bytes.
   --cursor <opaque-cursor>           Continue a prior JSON result page.
   --help                             Show this help.
@@ -99,7 +79,7 @@ Options:
   --max-total-bytes <integer>        Override the total cached-byte limit.
   --max-manifest-bytes <integer>     Override the manifest byte limit.
   --max-diagnostics <integer>        Override the diagnostic count limit.
-  --max-evidence <integer>           Override the adapter evidence count limit.
+  --max-coverage <integer>           Override the binding coverage count limit.
   --max-output-bytes <integer>       Bound JSON output from 4096 to 1048576 bytes.
   --cursor <opaque-cursor>           Continue a prior JSON result page.
   --help                             Show this help.
@@ -141,7 +121,7 @@ Options:
         invocationDirectory: INVOCATION_DIRECTORY,
         packageMetadata: INSTALLED_PACKAGE_METADATA,
       }),
-    ).resolves.toStrictEqual({ exitCode: 0, stderr: '', stdout: '10.0.0\n' });
+    ).resolves.toStrictEqual({ exitCode: 0, stderr: '', stdout: '11.0.0\n' });
     expect(executeCommand).not.toHaveBeenCalled();
   });
 
@@ -170,7 +150,7 @@ Options:
       exitCode: 2,
       stderr: '',
       stdout:
-        '{"cliVersion":"10.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":6,"status":"error"}\n',
+        '{"cliVersion":"11.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
     });
   });
 
@@ -204,7 +184,7 @@ Options:
           resourceLimits: {
             maxDiagnostics: 10_000,
             maxEntries: 100_000,
-            maxEvidence: 10_000,
+            maxCoverage: 10_000,
             maxFileBytes: 8_388_608,
             maxManifestBytes: 2_097_152,
             maxTotalBytes: 134_217_728,
@@ -232,7 +212,7 @@ Options:
       exitCode: 3,
       stderr: '',
       stdout:
-        '{"cliVersion":"10.0.0","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":6,"status":"error"}\n',
+        '{"cliVersion":"11.0.0","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
     });
   });
 });

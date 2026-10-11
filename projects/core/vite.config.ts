@@ -2,7 +2,7 @@ import { createLibraryConfig } from '../../configs/vite/library.config.js';
 
 export default createLibraryConfig({
   entry: {
-    adapter: 'src/adapter/index.ts',
+    scope: 'src/scope/index.ts',
     format: 'src/format/index.ts',
     index: 'src/index.ts',
     node: 'src/node/index.ts',
@@ -13,6 +13,7 @@ export default createLibraryConfig({
     '@moldea.ai/repository',
     'error-message-utils',
     'yaml',
+    'typescript',
     'node:buffer',
     'node:child_process',
     'node:crypto',

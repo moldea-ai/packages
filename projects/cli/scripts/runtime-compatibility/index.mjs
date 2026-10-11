@@ -68,56 +68,6 @@ const executeFixtureGit = (consumerDirectory, hooksDirectory, environment, argum
 const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
   const tarballNames = await readdir(artifactDirectory);
   const packageTarballNames = {
-    '@moldea.ai/adapter-anthropic': selectPackageTarball(
-      tarballNames,
-      /^moldea\.ai-adapter-anthropic-.+\.tgz$/u,
-      '@moldea.ai/adapter-anthropic',
-    ),
-    '@moldea.ai/adapter-claude-agent-sdk': selectPackageTarball(
-      tarballNames,
-      /^moldea\.ai-adapter-claude-agent-sdk-.+\.tgz$/u,
-      '@moldea.ai/adapter-claude-agent-sdk',
-    ),
-    '@moldea.ai/adapter-google-genai': selectPackageTarball(
-      tarballNames,
-      /^moldea\.ai-adapter-google-genai-.+\.tgz$/u,
-      '@moldea.ai/adapter-google-genai',
-    ),
-    '@moldea.ai/adapter-langchain': selectPackageTarball(
-      tarballNames,
-      /^moldea\.ai-adapter-langchain-.+\.tgz$/u,
-      '@moldea.ai/adapter-langchain',
-    ),
-    '@moldea.ai/adapter-langgraph': selectPackageTarball(
-      tarballNames,
-      /^moldea\.ai-adapter-langgraph-.+\.tgz$/u,
-      '@moldea.ai/adapter-langgraph',
-    ),
-    '@moldea.ai/adapter-openai': selectPackageTarball(
-      tarballNames,
-      /^moldea\.ai-adapter-openai-(?!agents-sdk-).+\.tgz$/u,
-      '@moldea.ai/adapter-openai',
-    ),
-    '@moldea.ai/adapter-openai-agents-sdk': selectPackageTarball(
-      tarballNames,
-      /^moldea\.ai-adapter-openai-agents-sdk-.+\.tgz$/u,
-      '@moldea.ai/adapter-openai-agents-sdk',
-    ),
-    '@moldea.ai/adapter-cloudflare-agents': selectPackageTarball(
-      tarballNames,
-      /^moldea\.ai-adapter-cloudflare-agents-.+\.tgz$/u,
-      '@moldea.ai/adapter-cloudflare-agents',
-    ),
-    '@moldea.ai/adapter-eve': selectPackageTarball(
-      tarballNames,
-      /^moldea\.ai-adapter-eve-.+\.tgz$/u,
-      '@moldea.ai/adapter-eve',
-    ),
-    '@moldea.ai/adapter-vercel-ai-sdk': selectPackageTarball(
-      tarballNames,
-      /^moldea\.ai-adapter-vercel-ai-sdk-.+\.tgz$/u,
-      '@moldea.ai/adapter-vercel-ai-sdk',
-    ),
     '@moldea.ai/cli': selectPackageTarball(
       tarballNames,
       /^moldea\.ai-cli-.+\.tgz$/u,
@@ -221,16 +171,6 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       'The CLI runtime range is invalid.',
     );
     for (const packageName of [
-      '@moldea.ai/adapter-anthropic',
-      '@moldea.ai/adapter-claude-agent-sdk',
-      '@moldea.ai/adapter-google-genai',
-      '@moldea.ai/adapter-langchain',
-      '@moldea.ai/adapter-langgraph',
-      '@moldea.ai/adapter-openai',
-      '@moldea.ai/adapter-openai-agents-sdk',
-      '@moldea.ai/adapter-cloudflare-agents',
-      '@moldea.ai/adapter-eve',
-      '@moldea.ai/adapter-vercel-ai-sdk',
       '@moldea.ai/core',
       '@moldea.ai/repository',
       '@moldea.ai/repository-fs',
@@ -282,7 +222,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(
       compositionEnvelope.cliVersion === cliVersion &&
         compositionEnvelope.command === 'composition' &&
-        compositionEnvelope.schemaVersion === 6,
+        compositionEnvelope.schemaVersion === 7,
       'The composition envelope is invalid.',
     );
     assertRuntimeInvariant(
@@ -294,25 +234,6 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
             .sort((left, right) => left.name.localeCompare(right.name, 'en')),
         ),
       'The composition package list is invalid.',
-    );
-    assertRuntimeInvariant(
-      JSON.stringify(compositionEnvelope.result?.adapters) ===
-        JSON.stringify(
-          [
-            'anthropic',
-            'claude-agent-sdk',
-            'cloudflare-agents',
-            'custom',
-            'eve',
-            'google-genai',
-            'langchain',
-            'langgraph',
-            'openai',
-            'openai-agents-sdk',
-            'vercel-ai-sdk',
-          ].map((id) => ({ id, repositoryFormatVersions: [1] })),
-        ),
-      'The executable adapter list is invalid.',
     );
 
     executeFixtureGit(consumerDirectory, hooksDirectory, environment, ['init']);
@@ -429,36 +350,33 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(inspectResult.status === 0, 'The installed CLI inspection failed.');
     assertRuntimeInvariant(inspectResult.stderr === '', 'The inspection command wrote stderr.');
     assertRuntimeInvariant(
-      inspectEnvelope.schemaVersion === 6 &&
+      inspectEnvelope.schemaVersion === 7 &&
         inspectEnvelope.result?.project?.project?.path === '/moldea/project.md' &&
         !inspectResult.stdout.includes('# Project') &&
         !inspectResult.stdout.includes('"content"'),
-      'Inspection did not preserve the content-free schema 6 contract.',
+      'Inspection did not preserve the content-free schema 7 contract.',
     );
     assertRuntimeInvariant(
-      JSON.stringify(
-        inspectEnvelope.result?.page?.records
-          ?.filter(({ kind }) => kind === 'evidence')
-          .map(({ evidenceKind, source }) => ({ evidenceKind, source })),
-      ) ===
-        JSON.stringify([
-          { evidenceKind: 'language', source: 'claude-agent-sdk' },
-          { evidenceKind: 'runtime-package', source: 'claude-agent-sdk' },
-          { evidenceKind: 'runtime-pattern', source: 'claude-agent-sdk' },
-        ]),
-      'Inspection omitted the Claude Agent SDK evidence summaries.',
+      inspectEnvelope.result?.coverageCounts?.exportsPassed === 1 &&
+        inspectEnvelope.result?.page?.records?.some(
+          (record) =>
+            record.kind === 'coverage' &&
+            record.path === '/src/agent.ts' &&
+            record.exportCheck === 'passed',
+        ),
+      'Inspection omitted the successful binding export check.',
     );
     assertRuntimeInvariant(
       scopeResult.status === 0 &&
         scopeResult.stderr === '' &&
-        scopeEnvelope.schemaVersion === 6 &&
+        scopeEnvelope.schemaVersion === 7 &&
         scopeEnvelope.result?.relevant === true,
       'The installed CLI scope command failed.',
     );
     assertRuntimeInvariant(
       contentResult.status === 0 &&
         contentResult.stderr === '' &&
-        contentEnvelope.schemaVersion === 6 &&
+        contentEnvelope.schemaVersion === 7 &&
         contentEnvelope.result?.asset?.path === '/moldea/project.md' &&
         contentEnvelope.result?.chunk?.content === '# Project\n',
       'The installed CLI content command failed.',

@@ -10,16 +10,6 @@ const EXPECTED_PNPM_VERSION = '11.21.0';
 const EXPECTED_VITEST_VERSION = '3.2.4';
 const PEER_WARNING_PATTERN = /(?:unmet peer|peer dependenc(?:y|ies)|ERR_PNPM_PEER_DEP_ISSUES)/iu;
 const TARBALL_PATTERNS = {
-  '@moldea.ai/adapter-anthropic': /^moldea\.ai-adapter-anthropic-.+\.tgz$/u,
-  '@moldea.ai/adapter-claude-agent-sdk': /^moldea\.ai-adapter-claude-agent-sdk-.+\.tgz$/u,
-  '@moldea.ai/adapter-cloudflare-agents': /^moldea\.ai-adapter-cloudflare-agents-.+\.tgz$/u,
-  '@moldea.ai/adapter-eve': /^moldea\.ai-adapter-eve-.+\.tgz$/u,
-  '@moldea.ai/adapter-google-genai': /^moldea\.ai-adapter-google-genai-.+\.tgz$/u,
-  '@moldea.ai/adapter-langchain': /^moldea\.ai-adapter-langchain-.+\.tgz$/u,
-  '@moldea.ai/adapter-langgraph': /^moldea\.ai-adapter-langgraph-.+\.tgz$/u,
-  '@moldea.ai/adapter-openai': /^moldea\.ai-adapter-openai-(?!agents-sdk-).+\.tgz$/u,
-  '@moldea.ai/adapter-openai-agents-sdk': /^moldea\.ai-adapter-openai-agents-sdk-.+\.tgz$/u,
-  '@moldea.ai/adapter-vercel-ai-sdk': /^moldea\.ai-adapter-vercel-ai-sdk-.+\.tgz$/u,
   '@moldea.ai/cli': /^moldea\.ai-cli-.+\.tgz$/u,
   '@moldea.ai/core': /^moldea\.ai-core-.+\.tgz$/u,
   '@moldea.ai/repository': /^moldea\.ai-repository-(?!fs-).+\.tgz$/u,
@@ -197,7 +187,7 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
   assertCompatibilityInvariant(
     compositionEnvelope.cliVersion === cliVersion &&
       compositionEnvelope.command === 'composition' &&
-      compositionEnvelope.schemaVersion === 6 &&
+      compositionEnvelope.schemaVersion === 7 &&
       compositionEnvelope.status === 'valid' &&
       compositionEnvelope.result?.supportedNodeRange === '>=22.11.0',
     'The installed CLI composition envelope is invalid.',
@@ -327,36 +317,30 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
     'The installed CLI inspection failed.',
   );
   assertCompatibilityInvariant(
-    inspectEnvelope.schemaVersion === 6 &&
+    inspectEnvelope.schemaVersion === 7 &&
       inspectEnvelope.result?.project?.project?.path === '/moldea/project.md' &&
       !inspectResult.stdout.includes('# Project') &&
       !inspectResult.stdout.includes('"content"'),
-    'The installed CLI inspection did not preserve the content-free schema 6 contract.',
+    'The installed CLI inspection did not preserve the content-free schema 7 contract.',
   );
   assertCompatibilityInvariant(
-    JSON.stringify(
-      inspectEnvelope.result?.page?.records
-        ?.filter(({ kind }) => kind === 'evidence')
-        .map(({ evidenceKind, source }) => ({ evidenceKind, source })),
-    ) ===
-      JSON.stringify([
-        { evidenceKind: 'language', source: 'claude-agent-sdk' },
-        { evidenceKind: 'runtime-package', source: 'claude-agent-sdk' },
-        { evidenceKind: 'runtime-pattern', source: 'claude-agent-sdk' },
-      ]),
-    'The installed CLI inspection did not preserve provider evidence summaries.',
+    inspectEnvelope.result?.coverageCounts?.exportsPassed === 1 &&
+      inspectEnvelope.result?.page?.records?.some(
+        (record) => record.kind === 'coverage' && record.exportCheck === 'passed',
+      ),
+    'The installed CLI inspection omitted the export coverage.',
   );
   assertCompatibilityInvariant(
     scopeResult.status === 0 &&
       scopeResult.stderr === '' &&
-      scopeEnvelope.schemaVersion === 6 &&
+      scopeEnvelope.schemaVersion === 7 &&
       scopeEnvelope.result?.relevant === true,
     'The installed CLI scope command failed.',
   );
   assertCompatibilityInvariant(
     contentResult.status === 0 &&
       contentResult.stderr === '' &&
-      contentEnvelope.schemaVersion === 6 &&
+      contentEnvelope.schemaVersion === 7 &&
       contentEnvelope.result?.asset?.path === '/moldea/project.md' &&
       contentEnvelope.result?.chunk?.content === '# Project\n',
     'The installed CLI content command failed.',

@@ -9,16 +9,6 @@ import type {
 import { isNpmReleaseMode, isNpmReleaseProject } from './validations.ts';
 
 const NO_PREVIOUS_VERSIONS = Object.freeze({
-  'adapter-anthropic': null,
-  'adapter-claude-agent-sdk': null,
-  'adapter-google-genai': null,
-  'adapter-openai': null,
-  'adapter-openai-agents-sdk': null,
-  'adapter-cloudflare-agents': null,
-  'adapter-eve': null,
-  'adapter-langchain': null,
-  'adapter-langgraph': null,
-  'adapter-vercel-ai-sdk': null,
   cli: null,
   core: null,
   repository: null,
@@ -122,29 +112,6 @@ export const createNpmReleaseWorkflowOutputs = (plan: INpmReleaseWorkflowPlan) =
   const selectedProjects = new Set(plan.projects);
 
   return {
-    adapter_anthropic: String(selectedProjects.has('adapter-anthropic')),
-    adapter_anthropic_previous_version: plan.previousVersions['adapter-anthropic'] ?? '',
-    adapter_claude_agent_sdk: String(selectedProjects.has('adapter-claude-agent-sdk')),
-    adapter_claude_agent_sdk_previous_version:
-      plan.previousVersions['adapter-claude-agent-sdk'] ?? '',
-    adapter_google_genai: String(selectedProjects.has('adapter-google-genai')),
-    adapter_google_genai_previous_version: plan.previousVersions['adapter-google-genai'] ?? '',
-    adapter_openai: String(selectedProjects.has('adapter-openai')),
-    adapter_openai_previous_version: plan.previousVersions['adapter-openai'] ?? '',
-    adapter_openai_agents_sdk: String(selectedProjects.has('adapter-openai-agents-sdk')),
-    adapter_openai_agents_sdk_previous_version:
-      plan.previousVersions['adapter-openai-agents-sdk'] ?? '',
-    adapter_cloudflare_agents: String(selectedProjects.has('adapter-cloudflare-agents')),
-    adapter_cloudflare_agents_previous_version:
-      plan.previousVersions['adapter-cloudflare-agents'] ?? '',
-    adapter_eve: String(selectedProjects.has('adapter-eve')),
-    adapter_eve_previous_version: plan.previousVersions['adapter-eve'] ?? '',
-    adapter_langchain: String(selectedProjects.has('adapter-langchain')),
-    adapter_langchain_previous_version: plan.previousVersions['adapter-langchain'] ?? '',
-    adapter_langgraph: String(selectedProjects.has('adapter-langgraph')),
-    adapter_langgraph_previous_version: plan.previousVersions['adapter-langgraph'] ?? '',
-    adapter_vercel_ai_sdk: String(selectedProjects.has('adapter-vercel-ai-sdk')),
-    adapter_vercel_ai_sdk_previous_version: plan.previousVersions['adapter-vercel-ai-sdk'] ?? '',
     cli: String(selectedProjects.has('cli')),
     cli_previous_version: plan.previousVersions.cli ?? '',
     core: String(selectedProjects.has('core')),

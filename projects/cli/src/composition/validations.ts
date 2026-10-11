@@ -1,14 +1,10 @@
 import { satisfies as doesVersionSatisfy, valid as isValidVersion, validRange } from 'semver';
 
 import {
-  MOLDEA_CLI_ADAPTER_PACKAGE_PREFIX,
-  MOLDEA_CLI_CUSTOM_ADAPTER_ID,
   MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES,
   MOLDEA_CLI_FOUNDATIONAL_PACKAGE_NAMES,
 } from './constants.js';
 import type { IMoldeaCliCompositionStateInput } from './types.js';
-
-const ADAPTER_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
 const hasExactStringSet = (left: readonly string[], right: readonly string[]): boolean => {
   if (
@@ -28,34 +24,9 @@ const hasUniquePositiveIntegers = (entries: readonly number[]): boolean =>
   entries.every((entry) => Number.isSafeInteger(entry) && entry > 0) &&
   new Set(entries).size === entries.length;
 
-const createActiveAdapterMap = (
-  adapters: IMoldeaCliCompositionStateInput['activeAdapters'],
-  coreRepositoryFormatVersions: readonly number[],
-): ReadonlyMap<string, IMoldeaCliCompositionStateInput['activeAdapters'][number]> | null => {
-  const adapterMap = new Map<string, IMoldeaCliCompositionStateInput['activeAdapters'][number]>();
-
-  for (const adapter of adapters) {
-    if (
-      adapterMap.has(adapter.id) ||
-      adapter.id === MOLDEA_CLI_CUSTOM_ADAPTER_ID ||
-      !ADAPTER_ID_PATTERN.test(adapter.id) ||
-      !hasUniquePositiveIntegers(adapter.supportedRepositoryFormatVersions) ||
-      adapter.supportedRepositoryFormatVersions.some(
-        (version) => !coreRepositoryFormatVersions.includes(version),
-      )
-    ) {
-      return null;
-    }
-
-    adapterMap.set(adapter.id, adapter);
-  }
-
-  return adapterMap;
-};
-
 /**
- * Verifies the installed package manifest and actual executable adapter composition.
- * @param input The installed package, Core, adapter, Git, and JSON-schema state.
+ * Verifies the installed package manifest and resolved package composition.
+ * @param input The installed package, Core, Git, and JSON-schema state.
  * @returns Whether every runtime composition invariant is satisfied.
  */
 export const isMoldeaCliCompositionStateValid = (
@@ -69,7 +40,7 @@ export const isMoldeaCliCompositionStateValid = (
     supportedNodeRange === null ||
     validRange(supportedNodeRange) === null ||
     isValidVersion(input.minimumGitVersion) === null ||
-    input.outputSchemaVersion !== 6 ||
+    input.outputSchemaVersion !== 7 ||
     dependencies === null ||
     installedPackageVersions === null ||
     !hasUniquePositiveIntegers(input.coreSupportedRepositoryFormatVersions)
@@ -77,21 +48,7 @@ export const isMoldeaCliCompositionStateValid = (
     return false;
   }
 
-  const activeAdapterMap = createActiveAdapterMap(
-    input.activeAdapters,
-    input.coreSupportedRepositoryFormatVersions,
-  );
-
-  if (activeAdapterMap === null) {
-    return false;
-  }
-
-  const expectedPackageNames = [
-    ...MOLDEA_CLI_FOUNDATIONAL_PACKAGE_NAMES,
-    ...[...activeAdapterMap.keys()].map(
-      (adapterId) => `${MOLDEA_CLI_ADAPTER_PACKAGE_PREFIX}${adapterId}`,
-    ),
-  ];
+  const expectedPackageNames = [...MOLDEA_CLI_FOUNDATIONAL_PACKAGE_NAMES];
   const declaredPackageNames = Object.keys(dependencies).filter((packageName) =>
     packageName.startsWith('@moldea.ai/'),
   );
@@ -107,10 +64,7 @@ export const isMoldeaCliCompositionStateValid = (
   return expectedPackageNames.every((packageName) => {
     const resolvedVersion = installedPackageVersions[packageName];
     const declaredRange = dependencies[packageName];
-    const supportedRange =
-      MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES[
-        packageName as keyof typeof MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES
-      ];
+    const supportedRange = MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES[packageName];
 
     return (
       resolvedVersion !== undefined &&

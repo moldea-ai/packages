@@ -26,35 +26,11 @@ const createManifest = (project: INpmReleaseProject): Record<string, unknown> =>
             }
           : project === 'cli'
             ? {
-                '@moldea.ai/adapter-anthropic': 'workspace:1.0.0',
-                '@moldea.ai/adapter-claude-agent-sdk': 'workspace:1.0.0',
-                '@moldea.ai/adapter-google-genai': 'workspace:1.0.0',
-                '@moldea.ai/adapter-openai': 'workspace:1.0.0',
-                '@moldea.ai/adapter-openai-agents-sdk': 'workspace:1.0.0',
-                '@moldea.ai/adapter-cloudflare-agents': 'workspace:1.0.0',
-                '@moldea.ai/adapter-eve': 'workspace:1.0.0',
-                '@moldea.ai/adapter-langchain': 'workspace:1.0.0',
-                '@moldea.ai/adapter-langgraph': 'workspace:1.0.0',
-                '@moldea.ai/adapter-vercel-ai-sdk': 'workspace:1.0.0',
                 '@moldea.ai/core': 'workspace:1.0.0',
                 '@moldea.ai/repository': 'workspace:1.0.0',
                 '@moldea.ai/repository-fs': 'workspace:1.0.0',
               }
-            : project === 'adapter-anthropic' ||
-                project === 'adapter-claude-agent-sdk' ||
-                project === 'adapter-google-genai' ||
-                project === 'adapter-openai' ||
-                project === 'adapter-openai-agents-sdk' ||
-                project === 'adapter-cloudflare-agents' ||
-                project === 'adapter-eve' ||
-                project === 'adapter-langchain' ||
-                project === 'adapter-langgraph' ||
-                project === 'adapter-vercel-ai-sdk'
-              ? {
-                  '@moldea.ai/core': 'workspace:^1.0.0',
-                  '@moldea.ai/repository': 'workspace:^1.0.0',
-                }
-              : { '@moldea.ai/repository': 'workspace:^1.0.0' },
+            : { '@moldea.ai/repository': 'workspace:^1.0.0' },
     name: packageName,
     publishConfig: { access: 'public' },
     repository: {
@@ -91,36 +67,6 @@ describe('npm release validation', () => {
     ['repository', 'moldea.ai-repository-1.0.0.tgz', 'repository-v1.0.0'],
     ['repository-fs', 'moldea.ai-repository-fs-1.0.0.tgz', 'repository-fs-v1.0.0'],
     ['core', 'moldea.ai-core-1.0.0.tgz', 'core-v1.0.0'],
-    ['adapter-anthropic', 'moldea.ai-adapter-anthropic-1.0.0.tgz', 'adapter-anthropic-v1.0.0'],
-    [
-      'adapter-claude-agent-sdk',
-      'moldea.ai-adapter-claude-agent-sdk-1.0.0.tgz',
-      'adapter-claude-agent-sdk-v1.0.0',
-    ],
-    [
-      'adapter-google-genai',
-      'moldea.ai-adapter-google-genai-1.0.0.tgz',
-      'adapter-google-genai-v1.0.0',
-    ],
-    ['adapter-openai', 'moldea.ai-adapter-openai-1.0.0.tgz', 'adapter-openai-v1.0.0'],
-    [
-      'adapter-openai-agents-sdk',
-      'moldea.ai-adapter-openai-agents-sdk-1.0.0.tgz',
-      'adapter-openai-agents-sdk-v1.0.0',
-    ],
-    [
-      'adapter-cloudflare-agents',
-      'moldea.ai-adapter-cloudflare-agents-1.0.0.tgz',
-      'adapter-cloudflare-agents-v1.0.0',
-    ],
-    ['adapter-eve', 'moldea.ai-adapter-eve-1.0.0.tgz', 'adapter-eve-v1.0.0'],
-    ['adapter-langchain', 'moldea.ai-adapter-langchain-1.0.0.tgz', 'adapter-langchain-v1.0.0'],
-    ['adapter-langgraph', 'moldea.ai-adapter-langgraph-1.0.0.tgz', 'adapter-langgraph-v1.0.0'],
-    [
-      'adapter-vercel-ai-sdk',
-      'moldea.ai-adapter-vercel-ai-sdk-1.0.0.tgz',
-      'adapter-vercel-ai-sdk-v1.0.0',
-    ],
     ['cli', 'moldea.ai-cli-1.0.0.tgz', 'cli-v1.0.0'],
     ['website-ui', 'moldea.ai-website-ui-1.0.0.tgz', 'website-ui-v1.0.0'],
   ] as const)('createNpmReleaseIdentity(%s) -> %s and %s', (project, artifactName, tag) => {

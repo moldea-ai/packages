@@ -9,5 +9,4 @@ export type {
 export {
   createMoldeaCliCoreInspectionExecutor,
   executeMoldeaCliCoreInspection,
-  inspectMoldeaCliComposition,
 } from './executor.js';

@@ -1,3 +1,4 @@
+import { matchManifestScope } from '@moldea.ai/core/scope';
 import { parseRepositoryPath, type IRepositoryReader } from '@moldea.ai/repository';
 // @ts-expect-error The Core package has no default root export.
 import coreDefault from '@moldea.ai/core';
@@ -7,7 +8,6 @@ import {
   DEFAULT_CORE_RESOURCE_LIMITS,
   SUPPORTED_REPOSITORY_FORMAT_VERSIONS,
   createCore,
-  type IAdapterDiagnostic,
   type ICanonicalContentPageInput,
   type ICanonicalContentPageResult,
   type IContentDigest,
@@ -29,8 +29,6 @@ import {
   type IDiagnosticEntity,
   type IExactManifestScopeDeclaration,
   type IGlobManifestScopeDeclaration,
-  type IRuntimeAdapterEvidence,
-  type IRuntimeAdapterEvidenceKind,
   type IManifestParseResult,
   type IManifestScopeCounts,
   type IManifestScopeDeclaration,
@@ -63,33 +61,8 @@ import {
   type ITextDocumentInput,
   type ITextNormalizationResult,
 } from '@moldea.ai/core';
-// @ts-expect-error Runtime adapter contracts belong to the adapter subpath.
-import type { IRuntimeAdapter as IRootRuntimeAdapter } from '@moldea.ai/core';
 // @ts-expect-error Repository-format contracts belong to the format subpath.
 import type { IMoldeaManifestV1 as IRootManifest } from '@moldea.ai/core';
-// @ts-expect-error The adapter subpath has no default export.
-import adapterDefault from '@moldea.ai/core/adapter';
-import { iterateRuntimeAdapterEntries, readRuntimeAdapterFile } from '@moldea.ai/core/adapter';
-import type {
-  IAdapterDiagnostic as IAdapterSubpathDiagnostic,
-  IRuntimeAdapter,
-  IRuntimeAdapterContext,
-  IRuntimeAdapterEvidence as IAdapterSubpathEvidence,
-  IRuntimeAdapterEvidenceKind as IAdapterSubpathEvidenceKind,
-  IRuntimeAdapterResult,
-  IRuntimeAdapterRepository,
-  IRuntimeAdapterRepositoryLimits,
-  IRuntimeAdapterAgentResolution,
-  IRuntimeAdapterResolvedAgent,
-  IIndexedAgent,
-  IIndexedContextAsset,
-  IIndexedDecision,
-  IIndexedDescriptionAsset,
-  IIndexedManifest,
-  IIndexedMirror,
-  IIndexedRuntimeGuidance,
-  IIndexedTextAsset,
-} from '@moldea.ai/core/adapter';
 // @ts-expect-error The format subpath has no default export.
 import formatDefault from '@moldea.ai/core/format';
 import type {
@@ -112,7 +85,6 @@ import type {
 import type { IHandoffManifestEntry } from '@moldea.ai/core/format';
 
 type IRootSurface = readonly [
-  IAdapterDiagnostic,
   ICanonicalContentPageInput,
   ICanonicalContentPageResult,
   IContentDigest,
@@ -134,8 +106,6 @@ type IRootSurface = readonly [
   IDiagnosticEntity,
   IExactManifestScopeDeclaration,
   IGlobManifestScopeDeclaration,
-  IRuntimeAdapterEvidence,
-  IRuntimeAdapterEvidenceKind,
   IManifestParseResult,
   IManifestScopeCounts,
   IManifestScopeDeclaration,
@@ -186,59 +156,18 @@ type IFormatSurface = readonly [
   IUnresolvedRequirementManifestEntry,
 ];
 
-type IAdapterSurface = readonly [
-  IAdapterSubpathDiagnostic,
-  IRuntimeAdapter,
-  IRuntimeAdapterContext,
-  IAdapterSubpathEvidence,
-  IAdapterSubpathEvidenceKind,
-  IRuntimeAdapterResult,
-  IRuntimeAdapterRepository,
-  IRuntimeAdapterRepositoryLimits,
-  IRuntimeAdapterAgentResolution,
-  IRuntimeAdapterResolvedAgent,
-  IIndexedAgent,
-  IIndexedContextAsset,
-  IIndexedDecision,
-  IIndexedDescriptionAsset,
-  IIndexedManifest,
-  IIndexedMirror,
-  IIndexedRuntimeGuidance,
-  IIndexedTextAsset,
-];
-
 type IRemovedHandoffSurface = IHandoffManifestEntry;
-type IWrongRootAdapterSurface = IRootRuntimeAdapter;
 type IWrongRootFormatSurface = IRootManifest;
 type ICapabilityKind = NonNullable<IDiagnosticEntity['capabilityKind']>;
 
 declare const rootSurface: IRootSurface;
 declare const formatSurface: IFormatSurface;
-declare const adapterSurface: IAdapterSurface;
 declare const removedHandoffSurface: IRemovedHandoffSurface;
-declare const wrongRootAdapterSurface: IWrongRootAdapterSurface;
 declare const wrongRootFormatSurface: IWrongRootFormatSurface;
 declare const repository: IRepositoryReader;
 
 const path = parseRepositoryPath('/moldea/project.md');
-const adapter: IRuntimeAdapter = {
-  id: 'openai',
-  inspect: (context) => {
-    const adapterRepository: IRuntimeAdapterRepository = context.repository;
-    const adapterResult: IRuntimeAdapterResult = { diagnostics: [], evidence: [] };
-
-    void adapterRepository;
-
-    return Promise.resolve(adapterResult);
-  },
-  supportedRepositoryFormatVersions: [1],
-};
-// @ts-expect-error Runtime adapters require an inspect operation.
-const incompleteAdapter: IRuntimeAdapter = {
-  id: 'incomplete-adapter',
-  supportedRepositoryFormatVersions: [1],
-};
-const options: ICoreOptions = { adapters: [adapter], limits: { maxFileBytes: 1024 } };
+const options: ICoreOptions = { limits: { maxFileBytes: 1024 } };
 const core: ICore = createCore(options);
 const input: ITextDocumentInput = { content: 'project\n', path };
 const normalized: ITextNormalizationResult = core.normalizeText(input);
@@ -284,7 +213,6 @@ const operationException = new CoreOperationException({
 const repositoryFormatVersion: IRepositoryFormatVersion = 1;
 const decisionStatus: IDecisionStatus = 'accepted';
 const unresolvedEffect: IUnresolvedRequirementEffect = 'warning';
-const evidenceKind: IRuntimeAdapterEvidenceKind = 'tool-registration';
 const capabilityKind: ICapabilityKind = 'tool';
 const diagnosticCode: ICoreDiagnosticCode = 'MOLDEA_TEXT_EMPTY';
 const configurationErrorCode: ICoreConfigurationErrorCode = 'INVALID_RESOURCE_LIMIT';
@@ -299,8 +227,6 @@ const unsupportedRepositoryFormatVersion: IRepositoryFormatVersion = 2;
 const unsupportedDecisionStatus: IDecisionStatus = 'active';
 // @ts-expect-error Unresolved-requirement effects are a closed public union.
 const unsupportedUnresolvedEffect: IUnresolvedRequirementEffect = 'error';
-// @ts-expect-error Adapter evidence kinds are a closed public union.
-const unsupportedEvidenceKind: IRuntimeAdapterEvidenceKind = 'unknown';
 // @ts-expect-error Diagnostic capability kinds are limited to tools and skills.
 const unsupportedCapabilityKind: ICapabilityKind = 'handoff';
 // @ts-expect-error Built-in diagnostic codes are closed for this Core major version.
@@ -311,8 +237,6 @@ const unsupportedConfigurationErrorCode: ICoreConfigurationErrorCode = 'UNKNOWN'
 const unsupportedOperationErrorCode: ICoreOperationErrorCode = 'UNKNOWN';
 // @ts-expect-error Core operations are a closed public union.
 const unsupportedOperation: ICoreOperation = 'unknown-operation';
-// @ts-expect-error Core options expose a read-only adapter collection.
-options.adapters = [];
 // @ts-expect-error Core diagnostics expose a read-only result collection.
 normalized.diagnostics.push();
 
@@ -323,8 +247,6 @@ if (SUPPORTED_REPOSITORY_FORMAT_VERSIONS[0] !== 1) {
 void [
   rootSurface,
   formatSurface,
-  adapterSurface,
-  adapterDefault,
   capabilityKind,
   configurationErrorCode,
   coreDefault,
@@ -332,15 +254,13 @@ void [
   decisionStatus,
   diagnosticCode,
   digested,
-  evidenceKind,
   formatDefault,
-  incompleteAdapter,
   inspection,
-  iterateRuntimeAdapterEntries,
   contentPage,
   inspectionPage,
   inspectedProject,
   matchedScope,
+  matchManifestScope,
   normalized,
   operation,
   operationErrorCode,
@@ -348,7 +268,6 @@ void [
   scopeOperation,
   parsedDecision,
   parsedManifest,
-  readRuntimeAdapterFile,
   configurationException,
   operationException,
   removedHandoffSurface,
@@ -358,11 +277,9 @@ void [
   unsupportedConfigurationErrorCode,
   unsupportedDecisionStatus,
   unsupportedDiagnosticCode,
-  unsupportedEvidenceKind,
   unsupportedOperation,
   unsupportedOperationErrorCode,
   unsupportedRepositoryFormatVersion,
   unsupportedUnresolvedEffect,
-  wrongRootAdapterSurface,
   wrongRootFormatSurface,
 ];

@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import { DEFAULT_CORE_RESOURCE_LIMITS } from '../constants/index.js';
-import type { IAdapterDiagnostic } from '../diagnostics/index.js';
+import type { ICoreDiagnostic } from '../diagnostics/index.js';
 
 import {
   createCoreDiagnostic,
@@ -27,6 +27,7 @@ describe('Core diagnostic normalization', () => {
       pointer: null,
       range: null,
       severity: 'error',
+      group: 'discovery',
       source: 'core',
     });
     expect(Object.isFrozen(diagnostic)).toBe(true);
@@ -109,7 +110,7 @@ describe('Core diagnostic normalization', () => {
     expect(outer.size).toBe(2);
   });
 
-  test('combines Core and adapter diagnostics in deterministic public order', () => {
+  test('combines Core diagnostics in deterministic public order', () => {
     const collector = createCoreDiagnosticCollector(
       DEFAULT_CORE_RESOURCE_LIMITS,
       'validate-project',
@@ -118,39 +119,44 @@ describe('Core diagnostic normalization', () => {
       code: 'MOLDEA_MANIFEST_PATH_INVALID',
       path: parseRepositoryPath('/zeta'),
     });
-    const adapterDiagnostic: IAdapterDiagnostic = {
-      code: 'ALPHA_INVALID',
+    const exportDiagnostic: ICoreDiagnostic = {
+      code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
       details: normalizeDiagnosticDetails({ zeta: -0, alpha: true }),
       entity: null,
-      message: 'The adapter observation is invalid.',
+      message: 'The referenced export is missing.',
       path: null,
       pointer: null,
       range: null,
       severity: 'error',
-      source: 'alpha',
+      group: 'references',
+      source: 'core',
     };
     const diagnostics = normalizeDiagnostics([
       collector.finalize()[0]!,
-      adapterDiagnostic,
-      adapterDiagnostic,
+      exportDiagnostic,
+      exportDiagnostic,
     ]);
 
-    expect(diagnostics.map(({ source }) => source)).toStrictEqual(['alpha', 'core']);
+    expect(diagnostics.map(({ code }) => code)).toStrictEqual([
+      'MOLDEA_REFERENCE_EXPORT_MISSING',
+      'MOLDEA_MANIFEST_PATH_INVALID',
+    ]);
     expect(diagnostics).toHaveLength(2);
     expect({ ...diagnostics[0]?.details }).toStrictEqual({ alpha: true, zeta: 0 });
   });
 
   test('orders tied ranges by their exclusive end coordinates', () => {
-    const baseDiagnostic: IAdapterDiagnostic = {
-      code: 'OPENAI_INVALID',
+    const baseDiagnostic: ICoreDiagnostic = {
+      code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
       details: normalizeDiagnosticDetails(undefined),
       entity: null,
-      message: 'The adapter observation is invalid.',
+      message: 'The referenced export is missing.',
       path: parseRepositoryPath('/source.ts'),
       pointer: null,
       range: null,
       severity: 'error',
-      source: 'openai',
+      group: 'references',
+      source: 'core',
     };
     const createRange = (endColumn: number) => ({
       end: { column: endColumn, line: 1, offset: endColumn - 1 },
@@ -165,16 +171,17 @@ describe('Core diagnostic normalization', () => {
   });
 
   test('orders integer-like detail keys by exact code point', () => {
-    const createDiagnostic = (key: string): IAdapterDiagnostic => ({
-      code: 'OPENAI_INVALID',
+    const createDiagnostic = (key: string): ICoreDiagnostic => ({
+      code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
       details: normalizeDiagnosticDetails({ [key]: true }),
       entity: null,
-      message: 'The adapter observation is invalid.',
+      message: 'The referenced export is missing.',
       path: null,
       pointer: null,
       range: null,
       severity: 'error',
-      source: 'openai',
+      group: 'references',
+      source: 'core',
     });
     const diagnostics = normalizeDiagnostics([createDiagnostic('2'), createDiagnostic('10')]);
 

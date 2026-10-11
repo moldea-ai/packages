@@ -1,4 +1,4 @@
-// schema 6 command names accepted by the executable
+// schema 7 command names accepted by the executable
 export const MOLDEA_CLI_COMMANDS = {
   Composition: 'composition',
   Content: 'content',
@@ -7,14 +7,14 @@ export const MOLDEA_CLI_COMMANDS = {
   Validate: 'validate',
 } as const;
 
-// option names supported by the schema 6 command grammar
+// option names supported by the schema 7 command grammar
 export const MOLDEA_CLI_OPTIONS = {
   Help: '--help',
   Json: '--json',
   Cursor: '--cursor',
   MaxDiagnostics: '--max-diagnostics',
   MaxEntries: '--max-entries',
-  MaxEvidence: '--max-evidence',
+  MaxCoverage: '--max-coverage',
   MaxFileBytes: '--max-file-bytes',
   MaxManifestBytes: '--max-manifest-bytes',
   MaxOutputBytes: '--max-output-bytes',
@@ -30,7 +30,7 @@ export const MOLDEA_CLI_OPTIONS = {
 export const DEFAULT_MOLDEA_CLI_RESOURCE_LIMITS = Object.freeze({
   maxDiagnostics: 10_000,
   maxEntries: 100_000,
-  maxEvidence: 10_000,
+  maxCoverage: 10_000,
   maxFileBytes: 8_388_608,
   maxManifestBytes: 2_097_152,
   maxTotalBytes: 134_217_728,

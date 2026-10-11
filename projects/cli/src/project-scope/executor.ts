@@ -99,7 +99,7 @@ const readBoundedManifest = async (input: IMoldeaCliProjectScopeInput): Promise<
   return manifestBytes;
 };
 
-/** Creates an adapter-free manifest-only Core scope executor. */
+/** Creates an manifest-only Core scope executor. */
 export const createMoldeaCliProjectScopeExecutor = (
   coreFactory: IMoldeaCliProjectScopeCoreFactory = createCore,
 ): IMoldeaCliProjectScopeExecutor => {
@@ -109,7 +109,7 @@ export const createMoldeaCliProjectScopeExecutor = (
       limits: Object.freeze({
         maxDiagnostics: input.resourceLimits.maxDiagnostics,
         maxEntries: input.resourceLimits.maxEntries,
-        maxEvidence: input.resourceLimits.maxEvidence,
+        maxCoverage: input.resourceLimits.maxCoverage,
         maxFileBytes: input.resourceLimits.maxFileBytes,
         maxManifestBytes: input.resourceLimits.maxManifestBytes,
         maxTotalBytesRead: input.resourceLimits.maxTotalBytes,
@@ -127,5 +127,5 @@ export const createMoldeaCliProjectScopeExecutor = (
   };
 };
 
-/** Executes one adapter-free manifest-only changed-path scope match. */
+/** Executes one manifest-only changed-path scope match. */
 export const executeMoldeaCliProjectScope = createMoldeaCliProjectScopeExecutor();

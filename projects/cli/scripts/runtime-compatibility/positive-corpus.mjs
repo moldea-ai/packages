@@ -13,29 +13,20 @@ const executeFile = promisify(execFile);
 
 // expected diagnostic totals belong to the reviewed synthetic fixture contracts
 const EXPECTED_COUNTS = {
-  ordinary: [0, 1],
-  'shared-source-many-agent': [64, 1],
-  'broad-tool': [0, 65],
-  'deep-eve': [0, 0],
-  'broad-eve': [0, 0],
-  'dense-eve-8': [0, 0],
-  'dense-eve-16': [0, 0],
-  'dense-eve-32': [0, 0],
-  'dense-diagnostic': [64, 66],
-  'large-source': [0, 1],
-  'multi-page': [64, 1],
-  'distinct-source': [64, 1],
-  'over-capacity': [64, 1],
-  'cyclic-alias': [0, 2],
-  'deep-syntax': [0, 1],
-  'large-syntax': [0, 1],
-  'mixed-adapters': [0, 325],
-  'imported-mutation': [64, 1],
-  'large-comment': [0, 1],
-  'large-template': [0, 1],
-  'large-regex': [0, 1],
-  'large-jsx': [0, 1],
-  'large-function-comment': [0, 1],
+  ordinary: [0, 0],
+  'shared-source-many-agent': [0, 0],
+  'broad-tool': [0, 0],
+  'dense-diagnostic': [64, 0],
+  'large-source': [0, 0],
+  'multi-page': [0, 0],
+  'distinct-source': [0, 0],
+  'deep-syntax': [0, 0],
+  'large-syntax': [0, 0],
+  'large-comment': [0, 0],
+  'large-template': [0, 0],
+  'large-regex': [0, 0],
+  'large-jsx': [0, 0],
+  'large-function-comment': [0, 0],
   'maximum-diagnostic': [10_000, 0],
 };
 
@@ -44,7 +35,7 @@ const EXPECTED_COUNTS = {
  * @returns Completion after the fixture's files and CLI declaration are written.
  */
 const writeFixture = async (root, workload, cliVersion) => {
-  const sourceBytes = workload === 'mixed-adapters' ? 2_097_152 : 4_194_304;
+  const sourceBytes = 4_194_304;
   let hasManifest = false;
   for (const entry of createCalibrationEntries(workload, sourceBytes)) {
     assert.equal(entry.type, 'file');
@@ -106,21 +97,14 @@ const verifyPositiveCorpus = async (consumerDirectory, executablePath) => {
           }
           assert.equal(execution.stderr, '');
           const envelope = JSON.parse(execution.stdout);
-          assert.equal(envelope.schemaVersion, 6);
+          assert.equal(envelope.schemaVersion, 7);
           assert.equal(envelope.status, errors === 0 ? 'valid' : 'invalid');
           assert.equal(envelope.result.valid, errors === 0);
           assert.equal(envelope.result.errorCount, errors);
           assert.equal(envelope.result.warningCount, warnings);
           assert.equal(envelope.result.diagnosticCount, errors + warnings);
           assert.equal(envelope.result.formatVersion, 1);
-          assert.equal(
-            envelope.result.runtimeInspection,
-            workload === 'maximum-diagnostic'
-              ? 'not-run'
-              : warnings === 0
-                ? 'complete'
-                : 'incomplete',
-          );
+          assert.equal(envelope.result.acceptedWarningCount, 0);
           process.stdout.write(
             JSON.stringify({
               workload,

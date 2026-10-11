@@ -22,7 +22,7 @@ import { parseStrictYaml } from '../yaml/index.js';
 /**
  * Parses and validates one complete decision document without resolving cross-file relationships.
  * @param input The canonical logical path and exact decision text or bytes.
- * @param options The immutable Core limits and adapter snapshots.
+ * @param options The immutable Core limit snapshot.
  * @param operation The owning public or repository-level operation for typed failures.
  * @returns A frozen all-or-nothing decision parse result.
  * @throws

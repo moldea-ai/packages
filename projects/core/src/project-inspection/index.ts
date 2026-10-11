@@ -26,7 +26,7 @@ type IInspectionViews = Readonly<Record<IProjectInspectionView, readonly IKeyedI
 
 interface IPreparedProjectInspectionInput {
   readonly counts: IProjectInspection['counts'];
-  readonly runtimeInspection: IProjectInspection['runtimeInspection'];
+  readonly coverageCounts: IProjectInspection['coverageCounts'];
   readonly formatVersion: IProjectInspection['formatVersion'];
   readonly items: readonly IKeyedInspectionItem[];
   readonly maxEntries: number;
@@ -42,7 +42,7 @@ interface IPreparedProjectInspectionInput {
   readonly valid: boolean;
 }
 
-const CURSOR_PREFIX = 'core6';
+const CURSOR_PREFIX = 'core7';
 const PREPARED_FIXED_BYTES = 512;
 const PREPARED_ITEM_FIXED_BYTES = 64;
 const PREPARED_TEXT_BYTE_MULTIPLIER = 2;
@@ -125,10 +125,10 @@ const createItemBaseKey = (item: IProjectInspectionItem): string => {
 
   return [
     '2',
-    item.evidence.source,
-    item.evidence.kind,
-    item.evidence.agentId ?? '',
-    createIdentity([serializeDeterministically(item.evidence)]),
+    item.coverage.path,
+    item.coverage.relationship,
+    item.coverage.entity.agentId ?? '',
+    createIdentity([serializeDeterministically(item.coverage)]),
   ].join(':');
 };
 
@@ -181,7 +181,7 @@ const decodeCursor = (
   }
 
   const match =
-    /^core6:(all|diagnostics|evidence|metadata):([^:]+):(sha256:[0-9a-f]{64}):(sha256:[0-9a-f]{64})$/u.exec(
+    /^core7:(all|diagnostics|coverage|metadata):([^:]+):(sha256:[0-9a-f]{64}):(sha256:[0-9a-f]{64})$/u.exec(
       cursor,
     );
 
@@ -208,7 +208,7 @@ const createViews = (items: readonly IKeyedInspectionItem[]): IInspectionViews =
   freezeRecursively({
     all: items,
     diagnostics: items.filter(({ item }) => item.kind === 'diagnostic'),
-    evidence: items.filter(({ item }) => item.kind === 'evidence'),
+    coverage: items.filter(({ item }) => item.kind === 'coverage'),
     metadata: items.filter(({ item }) => item.kind === 'metadata' || item.kind === 'agent'),
   });
 
@@ -249,8 +249,8 @@ const iterateProjectInspectionItems = function* (
     yield { diagnostic, kind: 'diagnostic' };
   }
 
-  for (const evidence of state.result.evidence) {
-    yield { evidence, kind: 'evidence' };
+  for (const coverage of state.result.coverage) {
+    yield { coverage, kind: 'coverage' };
   }
 
   if (state.project !== null) {
@@ -299,12 +299,13 @@ const estimatePreparedProjectInspection = (
     decisions: baseCounts.decisions,
     diagnostics: baseCounts.diagnostics,
     errors: baseCounts.errors,
-    evidence: baseCounts.evidence,
+    coverage: baseCounts.coverage,
     metadata: metadataCount,
     mirrors: baseCounts.mirrors,
     runtimes: baseCounts.runtimes,
     unresolved: baseCounts.unresolved,
     warnings: baseCounts.warnings,
+    acceptedWarnings: baseCounts.acceptedWarnings,
   };
   bytes = addRetainedBytes(
     bytes,
@@ -312,7 +313,6 @@ const estimatePreparedProjectInspection = (
       serializeDeterministically({
         counts,
         formatVersion: state.result.formatVersion,
-        runtimeInspection: state.result.runtimeInspection,
         inspectionDigest: 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
         source: state.result.source,
         summary: state.result.summary,
@@ -329,19 +329,19 @@ const estimatePreparedProjectInspection = (
 /** Creates the inspection digest without materializing a project-sized key projection. */
 const createInspectionDigest = (
   counts: IProjectInspection['counts'],
+  coverageCounts: IProjectInspection['coverageCounts'],
   formatVersion: IProjectInspection['formatVersion'],
   items: readonly IKeyedInspectionItem[],
   summary: IProjectInspection['summary'],
-  runtimeInspection: IProjectInspection['runtimeInspection'],
   valid: boolean,
 ): string =>
   createIdentity(
     (function* (): IterableIterator<string> {
-      yield 'core6-prepared-inspection';
+      yield 'core7-prepared-inspection';
       yield serializeDeterministically({
         counts,
+        coverageCounts,
         formatVersion,
-        runtimeInspection,
         summary,
         valid,
       });
@@ -388,8 +388,8 @@ const createPreparedProjectInspection = (
 ): IProjectInspection => {
   const {
     counts,
+    coverageCounts,
     formatVersion,
-    runtimeInspection,
     items,
     maxEntries,
     preparedBytes,
@@ -401,10 +401,10 @@ const createPreparedProjectInspection = (
   const views = createViews(items);
   const inspectionDigest = createInspectionDigest(
     counts,
+    coverageCounts,
     formatVersion,
     items,
     summary,
-    runtimeInspection,
     valid,
   );
   const resourceUsage: IProjectInspectionResourceUsage = freezeRecursively({
@@ -431,7 +431,7 @@ const createPreparedProjectInspection = (
       (pageInput.cursor !== undefined && typeof pageInput.cursor !== 'string') ||
       (pageInput.view !== 'all' &&
         pageInput.view !== 'diagnostics' &&
-        pageInput.view !== 'evidence' &&
+        pageInput.view !== 'coverage' &&
         pageInput.view !== 'metadata')
     ) {
       return invalidArgument();
@@ -453,8 +453,8 @@ const createPreparedProjectInspection = (
 
     return freezeRecursively({
       counts,
+      coverageCounts,
       formatVersion,
-      runtimeInspection,
       inspectionDigest,
       page: {
         isComplete: nextCursor === null,
@@ -471,8 +471,8 @@ const createPreparedProjectInspection = (
 
   return freezeRecursively({
     counts,
+    coverageCounts,
     formatVersion,
-    runtimeInspection,
     inspectionDigest,
     readPage,
     resourceUsage,
@@ -485,7 +485,7 @@ const createPreparedProjectInspection = (
 /**
  * Prepares one immutable content-free inspection for synchronous bounded page reads.
  * @param input The source-neutral reader and optional cancellation signal.
- * @param options The immutable adapter registry and operation limits.
+ * @param options The immutable operation limits.
  * @returns A promise resolving to the complete prepared inspection.
  * @throws
  * - INVALID_ARGUMENT: The Core operation received an invalid argument.
@@ -502,7 +502,6 @@ const createPreparedProjectInspection = (
  * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
  * - ABORTED: The repository operation was aborted.
  * - ABORTED: The Core operation was aborted.
- * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
  */
 export const createProjectInspection = async (
   input: IProjectInspectionInput,
@@ -515,11 +514,12 @@ export const createProjectInspection = async (
     decisions: state.result.summary?.counts.decisions ?? 0,
     diagnostics: state.result.diagnostics.length,
     errors: state.result.errorCount,
-    evidence: state.result.evidence.length,
+    coverage: state.result.coverage.length,
     mirrors: state.result.summary?.counts.mirrors ?? 0,
     runtimes: state.result.summary?.counts.runtimes ?? 0,
     unresolved: state.result.summary?.counts.unresolved ?? 0,
     warnings: state.result.warningCount,
+    acceptedWarnings: state.result.acceptedWarningCount,
   };
   const estimate = estimatePreparedProjectInspection(
     state,
@@ -531,8 +531,8 @@ export const createProjectInspection = async (
 
   return createPreparedProjectInspection({
     counts,
+    coverageCounts: state.result.coverageCounts,
     formatVersion: state.result.formatVersion,
-    runtimeInspection: state.result.runtimeInspection,
     items,
     maxEntries: options.limits.maxEntries,
     preparedBytes: estimate.preparedBytes,

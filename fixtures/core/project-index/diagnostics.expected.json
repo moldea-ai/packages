@@ -11,7 +11,8 @@
       "pointer": null,
       "range": null,
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "references"
     },
     {
       "code": "MOLDEA_TEXT_INVALID_UTF8",
@@ -22,7 +23,8 @@
       "pointer": null,
       "range": null,
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "discovery"
     },
     {
       "code": "MOLDEA_TEXT_NUL_FORBIDDEN",
@@ -44,7 +46,8 @@
         }
       },
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "discovery"
     },
     {
       "code": "MOLDEA_DECISION_BODY_EMPTY",
@@ -68,7 +71,8 @@
         }
       },
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "references"
     },
     {
       "code": "MOLDEA_PROJECT_FILE_EMPTY",
@@ -79,7 +83,8 @@
       "pointer": null,
       "range": null,
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "discovery"
     },
     {
       "code": "MOLDEA_RUNTIME_GUIDANCE_EMPTY",
@@ -90,7 +95,8 @@
       "pointer": null,
       "range": null,
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "references"
     }
   ],
   "invalid manifest with independent failures": [
@@ -103,7 +109,8 @@
       "pointer": null,
       "range": null,
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "references"
     },
     {
       "code": "MOLDEA_DECISION_SUPERSEDED_ORPHAN",
@@ -116,7 +123,8 @@
       "pointer": null,
       "range": null,
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "references"
     },
     {
       "code": "MOLDEA_MANIFEST_PROPERTY_UNKNOWN",
@@ -138,7 +146,8 @@
         }
       },
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "manifest"
     },
     {
       "code": "MOLDEA_PROJECT_FILE_EMPTY",
@@ -149,7 +158,8 @@
       "pointer": null,
       "range": null,
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "discovery"
     },
     {
       "code": "MOLDEA_RUNTIME_GUIDANCE_EMPTY",
@@ -160,7 +170,8 @@
       "pointer": null,
       "range": null,
       "severity": "error",
-      "source": "core"
+      "source": "core",
+      "group": "references"
     }
   ],
   "minimal context-only project": []

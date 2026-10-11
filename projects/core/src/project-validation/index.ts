@@ -1,7 +1,6 @@
 import type { IRepositoryReader } from '@moldea.ai/repository';
 
-import { validateRuntimeAdapterAvailability } from '../adapter-availability/index.js';
-import { inspectRuntimeAdapters } from '../adapter-execution/index.js';
+import { countBindingCoverage } from '../binding-coverage/index.js';
 import type {
   IMoldeaProjectIndex,
   IProjectValidationInput,
@@ -92,7 +91,7 @@ export interface IProjectValidationState {
 }
 
 /**
- * Inspects one coherent repository snapshot through universal and adapter validation.
+ * Inspects one coherent repository snapshot through universal file and export validation.
  * @param input The untrusted source-neutral reader and optional cancellation signal.
  * @param options The immutable Core configuration snapshot.
  * @returns A promise resolving to the frozen all-or-nothing project inspection result.
@@ -111,7 +110,6 @@ export interface IProjectValidationState {
  * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
  * - ABORTED: The repository operation was aborted.
  * - ABORTED: The Core operation was aborted.
- * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
  */
 export const validateProjectState = async (
   input: IProjectValidationInput,
@@ -132,73 +130,20 @@ export const validateProjectState = async (
     operationOptions,
   );
 
-  if (universal.project === null) {
-    const counts = countDiagnosticsBySeverity(universal.diagnostics);
-
-    return freezeRecursively({
-      project: null,
-      resourceUsage: session.getResourceUsage(),
-      result: {
-        diagnostics: universal.diagnostics,
-        ...counts,
-        evidence: [],
-        formatVersion: universal.formatVersion,
-        runtimeInspection: 'not-run',
-        source: validatedInput.repository.snapshot,
-        summary: null,
-        valid: false,
-      },
-    });
-  }
-
-  const projectSummary = createProjectSummary(universal.project);
-
-  const availabilityDiagnostics = validateRuntimeAdapterAvailability(
-    universal.runtimeLocations,
-    universal.project.formatVersion,
-    operationOptions,
-  );
-
-  if (availabilityDiagnostics.length > 0) {
-    const counts = countDiagnosticsBySeverity(availabilityDiagnostics);
-
-    return freezeRecursively({
-      project: universal.project,
-      resourceUsage: session.getResourceUsage(),
-      result: {
-        diagnostics: availabilityDiagnostics,
-        ...counts,
-        evidence: [],
-        formatVersion: universal.formatVersion,
-        runtimeInspection: 'not-run',
-        source: validatedInput.repository.snapshot,
-        summary: projectSummary,
-        valid: false,
-      },
-    });
-  }
-
-  const adapterInspection = await inspectRuntimeAdapters(
-    universal.project,
-    session,
-    operationOptions,
-    validatedInput.signal,
-  );
-  const counts = countDiagnosticsBySeverity(adapterInspection.diagnostics);
-  const valid = counts.errorCount === 0;
-
+  session.throwIfAborted();
+  const counts = countDiagnosticsBySeverity(universal.diagnostics);
   return freezeRecursively({
     project: universal.project,
     resourceUsage: session.getResourceUsage(),
     result: {
-      diagnostics: adapterInspection.diagnostics,
+      diagnostics: universal.diagnostics,
       ...counts,
-      evidence: adapterInspection.evidence,
+      coverage: universal.coverage,
+      coverageCounts: countBindingCoverage(universal.coverage),
       formatVersion: universal.formatVersion,
-      runtimeInspection: counts.warningCount === 0 ? 'complete' : 'incomplete',
       source: validatedInput.repository.snapshot,
-      summary: projectSummary,
-      valid,
+      summary: universal.project === null ? null : createProjectSummary(universal.project),
+      valid: counts.errorCount === 0,
     },
   });
 };
@@ -206,7 +151,7 @@ export const validateProjectState = async (
 /**
  * Validates one project without returning canonical document bodies.
  * @param input The source-neutral reader and optional cancellation signal.
- * @param options The immutable adapter registry and operation limits.
+ * @param options The immutable operation limits.
  * @returns A promise resolving to the complete validation result.
  * @throws
  * - INVALID_ARGUMENT: The Core operation received an invalid argument.
@@ -223,7 +168,6 @@ export const validateProjectState = async (
  * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
  * - ABORTED: The repository operation was aborted.
  * - ABORTED: The Core operation was aborted.
- * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
  */
 export const validateProject = async (
   input: IProjectValidationInput,

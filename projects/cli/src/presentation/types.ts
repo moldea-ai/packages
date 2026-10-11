@@ -6,9 +6,8 @@ import type {
   IProjectInspectionCounts,
   IProjectInspectionView,
   IProjectMetadataKind,
-  IRuntimeAdapterEvidenceKind,
-  IRuntimeInspectionStatus,
-  IUnverifiedRelationshipDetails,
+  IBindingCoverage,
+  IBindingCoverageCounts,
 } from '@moldea.ai/core';
 import type { IRepositoryPath, IRepositorySourceErrorCode } from '@moldea.ai/repository';
 
@@ -52,7 +51,7 @@ export interface IMoldeaCliAssetIdentity {
   readonly path: IRepositoryPath;
 }
 
-// canonical assignment record kept distinct from runtime evidence and installed composition
+// canonical assignment record kept distinct from source coverage and installed composition
 export interface IMoldeaCliAgentRecord extends IMoldeaCliOutputRecord {
   readonly agentId: string;
   readonly kind: 'agent';
@@ -61,6 +60,7 @@ export interface IMoldeaCliAgentRecord extends IMoldeaCliOutputRecord {
 
 interface IMoldeaCliDiagnosticRecordBase extends IMoldeaCliOutputRecord {
   readonly code: string;
+  readonly group: IDiagnostic['group'];
   readonly entity: IDiagnosticEntity | null;
   readonly kind: 'diagnostic';
   readonly message: string;
@@ -73,7 +73,14 @@ interface IMoldeaCliDiagnosticRecordBase extends IMoldeaCliOutputRecord {
 export type IMoldeaCliDiagnosticRecord = IMoldeaCliDiagnosticRecordBase &
   (
     | { readonly severity: 'error' }
-    | { readonly severity: 'warning'; readonly details: IUnverifiedRelationshipDetails }
+    | {
+        readonly severity: 'warning';
+        readonly subject: string;
+        readonly qualifier: string | null;
+        readonly acceptable: boolean;
+        readonly accepted: boolean;
+        readonly reason: string | null;
+      }
   );
 
 export interface IMoldeaCliMetadataRecord extends IMoldeaCliOutputRecord {
@@ -88,26 +95,16 @@ export interface IMoldeaCliMetadataRecord extends IMoldeaCliOutputRecord {
   readonly scalarLength: number | null;
 }
 
-export interface IMoldeaCliEvidenceReference {
-  readonly path: IRepositoryPath;
-  readonly symbol: string | null;
-}
+// one content-free record identifies the checks Core actually performed
+export type IMoldeaCliCoverageRecord = IMoldeaCliOutputRecord &
+  IBindingCoverage & { kind: 'coverage' };
 
-export interface IMoldeaCliEvidenceRecord extends IMoldeaCliOutputRecord {
-  readonly agentId: string | null;
-  readonly capabilityId: string | null;
-  readonly capabilityKind: 'skill' | 'tool' | null;
-  readonly evidenceKind: IRuntimeAdapterEvidenceKind;
-  readonly kind: 'evidence';
-  readonly references: readonly IMoldeaCliEvidenceReference[];
-  readonly runtimeName: string | null;
-  readonly source: string;
-}
+export type IMoldeaCliValidateRecord = IMoldeaCliDiagnosticRecord | IMoldeaCliCoverageRecord;
 
 export type IMoldeaCliInspectRecord =
   | IMoldeaCliAgentRecord
   | IMoldeaCliDiagnosticRecord
-  | IMoldeaCliEvidenceRecord
+  | IMoldeaCliCoverageRecord
   | IMoldeaCliMetadataRecord;
 
 export interface IMoldeaCliInspectProjectMetadata {
@@ -116,7 +113,7 @@ export interface IMoldeaCliInspectProjectMetadata {
 }
 
 export interface IMoldeaCliInspectProjection {
-  readonly runtimeInspection: IRuntimeInspectionStatus;
+  readonly coverageCounts: IBindingCoverageCounts;
   readonly counts: IProjectInspectionCounts;
   readonly formatVersion: number | null;
   readonly getSourceCursor: (record: IMoldeaCliInspectRecord) => string | null;
@@ -129,7 +126,7 @@ export interface IMoldeaCliInspectProjection {
 }
 
 export interface IMoldeaCliInspectResult {
-  readonly runtimeInspection: IRuntimeInspectionStatus;
+  readonly coverageCounts: IBindingCoverageCounts;
   readonly counts: IProjectInspectionCounts;
   readonly formatVersion: number | null;
   readonly page: IMoldeaCliOutputPage<IMoldeaCliInspectRecord>;
@@ -141,8 +138,10 @@ export interface IMoldeaCliInspectResult {
 }
 
 export interface IMoldeaCliValidateProjection {
-  readonly runtimeInspection: IRuntimeInspectionStatus;
-  readonly diagnostics: readonly IMoldeaCliDiagnosticRecord[];
+  readonly coverageCounts: IBindingCoverageCounts;
+  readonly records: readonly IMoldeaCliValidateRecord[];
+  readonly diagnosticCount: number;
+  readonly acceptedWarningCount: number;
   readonly errorCount: number;
   readonly formatVersion: number | null;
   readonly snapshotDigest: string;
@@ -152,11 +151,12 @@ export interface IMoldeaCliValidateProjection {
 }
 
 export interface IMoldeaCliValidateResult {
-  readonly runtimeInspection: IRuntimeInspectionStatus;
+  readonly coverageCounts: IBindingCoverageCounts;
   readonly diagnosticCount: number;
+  readonly acceptedWarningCount: number;
   readonly errorCount: number;
   readonly formatVersion: number | null;
-  readonly page: IMoldeaCliOutputPage<IMoldeaCliDiagnosticRecord>;
+  readonly page: IMoldeaCliOutputPage<IMoldeaCliValidateRecord>;
   readonly snapshotDigest: string;
   readonly source: IMoldeaCliSource;
   readonly valid: boolean;

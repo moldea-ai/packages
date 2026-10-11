@@ -140,16 +140,15 @@ describe('mapMoldeaCliOperationalError', () => {
   test('maps Core configuration failures with safe non-null metadata', () => {
     const mapped = mapMoldeaCliOperationalError(
       new CoreConfigurationException({
-        adapterId: 'openai',
-        code: 'INVALID_ADAPTER_DEFINITION',
+        code: 'INVALID_RESOURCE_LIMIT',
         operation: 'create-core',
       }),
     );
 
     expect(mapped).toStrictEqual({
-      code: 'INVALID_ADAPTER_DEFINITION',
-      details: { adapterId: 'openai', operation: 'create-core' },
-      message: 'A runtime adapter definition is invalid.',
+      code: 'INVALID_RESOURCE_LIMIT',
+      details: { operation: 'create-core' },
+      message: 'A Core resource limit is invalid.',
       path: null,
       retryable: false,
       source: 'core',
@@ -159,29 +158,27 @@ describe('mapMoldeaCliOperationalError', () => {
 
   test('maps Core operation failures with documented retryability and safe metadata', () => {
     const operationError = new CoreOperationException({
-      adapterId: 'openai',
       agentId: 'reviewer',
       code: 'RESOURCE_LIMIT_EXCEEDED',
-      limit: 'maxEvidence',
+      limit: 'maxCoverage',
       limitMaximum: 8,
       nextAction: 'reduce-input-or-increase-limit',
       observedUsage: 9,
-      operation: 'validate-adapter',
+      operation: 'validate-project',
     });
 
-    operationError.message = 'Private adapter path: /tmp/private';
+    operationError.message = 'Private source path: /tmp/private';
     const mapped = mapMoldeaCliOperationalError(operationError);
 
     expect(mapped).toStrictEqual({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       details: {
-        adapterId: 'openai',
         agentId: 'reviewer',
-        limit: 'maxEvidence',
+        limit: 'maxCoverage',
         limitMaximum: 8,
         nextAction: 'reduce-input-or-increase-limit',
         observedUsage: 9,
-        operation: 'validate-adapter',
+        operation: 'validate-project',
       },
       message: 'A Core resource limit was exceeded.',
       path: null,

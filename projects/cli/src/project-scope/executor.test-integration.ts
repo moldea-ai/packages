@@ -7,7 +7,7 @@ import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 import { createMoldeaCliProjectScopeExecutor } from './executor.js';
 
 describe('project scope execution', () => {
-  test('reads only the manifest and matches relationships without adapters', async () => {
+  test('reads only the manifest and matches relationships without export inspection', async () => {
     const manifestPath = parseRepositoryPath('/moldea/moldea.yaml');
     const projectPath = parseRepositoryPath('/moldea/project.md');
     const manifestContent = [
@@ -39,7 +39,7 @@ describe('project scope execution', () => {
       resourceLimits: {
         maxDiagnostics: 16,
         maxEntries: 16,
-        maxEvidence: 16,
+        maxCoverage: 16,
         maxFileBytes: 1024,
         maxManifestBytes: 1024,
         maxTotalBytes: 4096,

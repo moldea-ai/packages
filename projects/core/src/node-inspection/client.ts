@@ -2,6 +2,8 @@ import { fork } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
+import { RepositorySourceException } from '@moldea.ai/repository';
+
 import { CoreOperationException } from '../exceptions/index.js';
 import { freezeRecursively } from '../immutable/index.js';
 import { normalizeCoreOptions } from '../options/index.js';
@@ -12,7 +14,7 @@ import {
   NODE_INSPECTION_STDIO_BYTES,
   NODE_INSPECTION_TRANSPORT_BYTES,
 } from './constants.js';
-import { deserializeInspectionFailure } from './errors.js';
+import { deserializeInspectionFailure, serializeInspectionFailure } from './errors.js';
 import {
   createInspectionEnvironment,
   createInspectionSender,
@@ -59,12 +61,8 @@ const aborted = (cause?: unknown): CoreOperationException =>
  * @throws
  * - INVALID_ARGUMENT: The Core operation received an invalid argument.
  * - INVALID_RESOURCE_LIMIT: A Core resource limit is invalid.
- * - DUPLICATE_ADAPTER_ID: A runtime adapter ID is registered more than once.
- * - RESERVED_ADAPTER_ID: A reserved runtime adapter ID was supplied.
- * - INVALID_ADAPTER_DEFINITION: A runtime adapter definition is invalid.
  * - ABORTED: The Core operation was aborted.
  * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
- * - ADAPTER_EXECUTION_FAILED: A runtime adapter failed during inspection.
  * - INSPECTION_BUSY: Project inspection capacity is busy. Try again shortly.
  * - INSPECTION_TIMEOUT: The isolated project inspection timed out.
  * - INSPECTION_PROCESS_FAILED: The isolated project inspection failed.
@@ -123,13 +121,7 @@ export const createNodeProjectInspection = async (
   const { limits } = normalizeCoreOptions({
     ...(input.limits === undefined ? {} : { limits: input.limits }),
   });
-  if (
-    !(input.adapterRegistryUrl instanceof URL) ||
-    input.adapterRegistryUrl.protocol !== 'file:' ||
-    input.adapterRegistryUrl.search !== '' ||
-    input.adapterRegistryUrl.hash !== '' ||
-    (input.deadline !== undefined && (!Number.isSafeInteger(input.deadline) || input.deadline < 0))
-  )
+  if (input.deadline !== undefined && (!Number.isSafeInteger(input.deadline) || input.deadline < 0))
     throw new CoreOperationException({
       code: 'INVALID_ARGUMENT',
       operation: 'create-project-inspection',
@@ -302,7 +294,23 @@ export const createNodeProjectInspection = async (
                 result,
               });
           } catch (cause) {
-            fail(cause);
+            // Core decides whether absence or a reader resource refusal is recoverable at this check.
+            if (
+              cause instanceof RepositorySourceException &&
+              ['ENTRY_NOT_FOUND', 'ENTRY_NOT_FILE', 'RESOURCE_LIMIT_EXCEEDED'].includes(cause.code)
+            ) {
+              try {
+                if (!isClosing)
+                  await send({
+                    attemptId,
+                    kind: 'reader-failure',
+                    requestId: message.requestId,
+                    failure: serializeInspectionFailure(cause),
+                  });
+              } catch (transportFailure) {
+                fail(transportFailure);
+              }
+            } else fail(cause);
           } finally {
             readerWork.delete(work);
           }
@@ -331,7 +339,6 @@ export const createNodeProjectInspection = async (
     await send({
       attemptId,
       kind: 'start',
-      registryUrl: input.adapterRegistryUrl.href,
       snapshot,
       limits,
       deadline,
@@ -356,7 +363,7 @@ export const createNodeProjectInspection = async (
           !Number.isSafeInteger(pageInput.maxItems) ||
           pageInput.maxItems < 1 ||
           pageInput.maxItems > limits.maxEntries ||
-          !['all', 'diagnostics', 'evidence', 'metadata'].includes(pageInput.view) ||
+          !['all', 'diagnostics', 'coverage', 'metadata'].includes(pageInput.view) ||
           (pageInput.cursor !== undefined && typeof pageInput.cursor !== 'string')
         )
           throw new CoreOperationException({

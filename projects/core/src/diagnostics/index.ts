@@ -21,40 +21,11 @@ export interface IDiagnosticEntity {
   readonly capabilityId?: string;
   readonly decisionId?: string;
   readonly variableId?: string;
-  readonly adapterId?: string;
+  readonly contextPath?: IRepositoryPath;
+  readonly integrationPath?: IRepositoryPath;
 }
 
 export type IDiagnosticDetails = Readonly<Record<string, string | number | boolean | null>>;
-
-// relationships that a runtime adapter can identify without claiming proof
-export type IUnverifiedRelationship =
-  | 'runtime-agent'
-  | 'instruction-loader'
-  | 'agent-input-schema'
-  | 'agent-output-schema'
-  | 'tool-implementation'
-  | 'tool-registration'
-  | 'tool-input-schema'
-  | 'tool-output-schema'
-  | 'skill-implementation'
-  | 'skill-registration'
-  | 'handoff-registration'
-  | 'routing-description'
-  | 'variable-provider';
-
-// closed, source-safe context for one unverified declared relationship
-export type IUnverifiedRelationshipDetails =
-  | {
-      readonly relationship: IUnverifiedRelationship;
-      readonly reason: 'unsupported-source-pattern' | 'dynamic-source-pattern';
-    }
-  | {
-      readonly relationship: IUnverifiedRelationship;
-      readonly reason: 'version-dependent-behavior';
-      readonly packageName: string;
-      readonly declaredRange: string | null;
-      readonly boundaryVersion: string;
-    };
 
 // closed repository-format version 1 structural diagnostic catalog
 export type ICoreDiagnosticCode =
@@ -87,8 +58,14 @@ export type ICoreDiagnosticCode =
   | 'MOLDEA_GLOB_INVALID'
   | 'MOLDEA_PATH_DUPLICATE'
   | 'MOLDEA_PATTERN_DUPLICATE'
+  | 'MOLDEA_INTEGRATION_BLOCK_MISSING'
+  | 'MOLDEA_INTEGRATION_SKILL_MISSING'
+  | 'MOLDEA_INTEGRATION_BLOCK_STALE'
+  | 'MOLDEA_IMPACT_PATTERN_UNMATCHED'
+  | 'MOLDEA_ACCEPTANCE_UNMATCHED'
   | 'MOLDEA_IMPACT_PATH_MISSING'
   | 'MOLDEA_IMPACT_PATH_NOT_FILE'
+  | 'MOLDEA_REFERENCE_EXPORT_MISSING'
   | 'MOLDEA_REFERENCE_MISSING'
   | 'MOLDEA_REFERENCE_NOT_FILE'
   | 'MOLDEA_REFERENCE_SYMLINK'
@@ -123,8 +100,6 @@ export type ICoreDiagnosticCode =
   | 'MOLDEA_AGENT_IDENTITY_INVALID'
   | 'MOLDEA_AGENT_HANDOFF_DESCRIPTION_INVALID'
   | 'MOLDEA_RUNTIME_ID_INVALID'
-  | 'MOLDEA_RUNTIME_ADAPTER_UNAVAILABLE'
-  | 'MOLDEA_RUNTIME_ADAPTER_FORMAT_UNSUPPORTED'
   | 'MOLDEA_VARIABLE_PLACEHOLDER_MALFORMED'
   | 'MOLDEA_VARIABLE_UNDECLARED'
   | 'MOLDEA_VARIABLE_UNUSED'
@@ -141,11 +116,10 @@ export type ICoreDiagnosticCode =
   | 'MOLDEA_MIRROR_SYMLINK'
   | 'MOLDEA_MIRROR_STALE';
 
-// Core-owned and adapter-owned diagnostic shapes
-export interface ICoreDiagnostic {
+// content-free Core diagnostic shapes
+interface ICoreDiagnosticBase {
   readonly source: 'core';
-  readonly severity: 'error';
-  readonly code: ICoreDiagnosticCode;
+  readonly group: 'discovery' | 'manifest' | 'references' | 'agents' | 'mirrors' | 'integration';
   readonly message: string;
   readonly path: IRepositoryPath | null;
   readonly pointer: string | null;
@@ -154,26 +128,26 @@ export interface ICoreDiagnostic {
   readonly details: IDiagnosticDetails;
 }
 
-interface IAdapterDiagnosticBase {
-  readonly source: string;
-  readonly code: string;
-  readonly message: string;
-  readonly path: IRepositoryPath | null;
-  readonly pointer: string | null;
-  readonly range: ISourceRange | null;
-  readonly entity: IDiagnosticEntity | null;
-}
+// warnings always expose their stable identity and acceptance policy
+export type ICoreWarningCode =
+  | 'MOLDEA_IMPACT_PATTERN_UNMATCHED'
+  | 'MOLDEA_ACCEPTANCE_UNMATCHED'
+  | 'MOLDEA_INTEGRATION_BLOCK_MISSING'
+  | 'MOLDEA_INTEGRATION_SKILL_MISSING'
+  | 'MOLDEA_INTEGRATION_BLOCK_STALE';
+export type ICoreDiagnostic = ICoreDiagnosticBase &
+  (
+    | { readonly severity: 'error'; readonly code: Exclude<ICoreDiagnosticCode, ICoreWarningCode> }
+    | ({
+        readonly severity: 'warning';
+        readonly code: ICoreWarningCode;
+        readonly subject: IRepositoryPath;
+        readonly qualifier: string | null;
+        readonly acceptable: boolean;
+      } & (
+        | { readonly accepted: true; readonly reason: string }
+        | { readonly accepted?: false; readonly reason?: never }
+      ))
+  );
 
-export interface IAdapterErrorDiagnostic extends IAdapterDiagnosticBase {
-  readonly severity: 'error';
-  readonly details: IDiagnosticDetails;
-}
-
-export interface IAdapterWarningDiagnostic extends IAdapterDiagnosticBase {
-  readonly severity: 'warning';
-  readonly details: IUnverifiedRelationshipDetails;
-}
-
-export type IAdapterDiagnostic = IAdapterErrorDiagnostic | IAdapterWarningDiagnostic;
-
-export type IDiagnostic = ICoreDiagnostic | IAdapterDiagnostic;
+export type IDiagnostic = ICoreDiagnostic;

@@ -1,5 +1,6 @@
 import type {
   IDiagnostic,
+  IBindingCoverage,
   IProjectInspectionItem,
   IProjectInspectionPageResult,
   IProjectValidationResult,
@@ -12,7 +13,7 @@ import { MOLDEA_CLI_GIT_WORKING_TREE_SOURCE } from './constants.js';
 import type {
   IMoldeaCliAgentRecord,
   IMoldeaCliDiagnosticRecord,
-  IMoldeaCliEvidenceRecord,
+  IMoldeaCliCoverageRecord,
   IMoldeaCliInspectProjection,
   IMoldeaCliInspectProjectMetadata,
   IMoldeaCliInspectRecord,
@@ -29,7 +30,14 @@ const assertProjectValidationInvariant = (validation: IProjectValidationResult):
     Number.isSafeInteger(validation.errorCount) &&
     Number.isSafeInteger(validation.warningCount) &&
     validation.errorCount === observedErrorCount &&
-    validation.warningCount === validation.diagnostics.length - observedErrorCount &&
+    validation.acceptedWarningCount ===
+      validation.diagnostics.filter(
+        (diagnostic) => diagnostic.severity === 'warning' && diagnostic.accepted === true,
+      ).length &&
+    validation.warningCount ===
+      validation.diagnostics.length - observedErrorCount - validation.acceptedWarningCount &&
+    validation.diagnosticCount ===
+      validation.errorCount + validation.warningCount + validation.acceptedWarningCount &&
     validation.valid === (validation.summary !== null && validation.errorCount === 0) &&
     (validation.valid || validation.errorCount > 0);
 
@@ -49,6 +57,7 @@ export const createMoldeaCliDiagnosticRecord = (
 ): IMoldeaCliDiagnosticRecord => {
   const record = {
     code: diagnostic.code,
+    group: diagnostic.group,
     entity: diagnostic.entity,
     key: createRecordKey(
       'diagnostic',
@@ -57,7 +66,14 @@ export const createMoldeaCliDiagnosticRecord = (
       diagnostic.code,
       diagnostic.path,
       diagnostic.pointer,
-      diagnostic.severity === 'warning' ? diagnostic.details : null,
+      diagnostic.severity === 'warning'
+        ? [
+            diagnostic.subject,
+            diagnostic.qualifier,
+            diagnostic.accepted === true,
+            diagnostic.accepted === true ? diagnostic.reason : null,
+          ]
+        : null,
       occurrence,
     ),
     kind: 'diagnostic' as const,
@@ -69,27 +85,51 @@ export const createMoldeaCliDiagnosticRecord = (
   };
 
   if (diagnostic.severity === 'warning') {
-    const details =
-      diagnostic.details.reason === 'version-dependent-behavior'
-        ? Object.freeze({
-            boundaryVersion: diagnostic.details.boundaryVersion,
-            declaredRange: diagnostic.details.declaredRange,
-            packageName: diagnostic.details.packageName,
-            reason: diagnostic.details.reason,
-            relationship: diagnostic.details.relationship,
-          })
-        : Object.freeze({
-            reason: diagnostic.details.reason,
-            relationship: diagnostic.details.relationship,
-          });
-
-    return Object.freeze({ ...record, details, severity: 'warning' as const });
+    return Object.freeze({
+      ...record,
+      severity: 'warning' as const,
+      subject: diagnostic.subject,
+      qualifier: diagnostic.qualifier,
+      acceptable: diagnostic.acceptable,
+      accepted: diagnostic.accepted === true,
+      reason: diagnostic.accepted === true ? diagnostic.reason : null,
+    });
   }
 
   return Object.freeze({ ...record, severity: 'error' as const });
 };
 
-/** Projects one bounded Core inspection item through the schema 6 allowlist. */
+/** Projects a binding's file and export checks with a stable record key. */
+const createCoverageRecord = (
+  coverage: IBindingCoverage,
+  index: number,
+  order = 'coverage',
+): IMoldeaCliCoverageRecord =>
+  Object.freeze({
+    entity: coverage.entity,
+    relationship: coverage.relationship,
+    path: coverage.path,
+    symbol: coverage.symbol,
+    fileCheck: coverage.fileCheck,
+    ...(coverage.exportCheck === 'not-checked'
+      ? {
+          exportCheck: coverage.exportCheck,
+          exportNotCheckedReason: coverage.exportNotCheckedReason,
+        }
+      : { exportCheck: coverage.exportCheck }),
+    key: createRecordKey(
+      order,
+      'coverage',
+      coverage.relationship,
+      coverage.entity,
+      coverage.path,
+      coverage.symbol,
+      index,
+    ),
+    kind: 'coverage' as const,
+  });
+
+/** Projects one bounded Core inspection item through the schema 7 allowlist. */
 const createInspectRecord = (
   item: IProjectInspectionItem,
   index: number,
@@ -116,40 +156,12 @@ const createInspectRecord = (
         item.diagnostic.source,
         item.diagnostic.severity,
         item.diagnostic.code,
-        item.diagnostic.severity === 'warning' ? item.diagnostic.details : null,
+        createMoldeaCliDiagnosticRecord(item.diagnostic, index).key,
       ),
     });
   }
 
-  if (item.kind === 'evidence') {
-    const evidence = item.evidence;
-    const record: IMoldeaCliEvidenceRecord = {
-      agentId: evidence.agentId,
-      capabilityId: evidence.capabilityId,
-      capabilityKind: evidence.capabilityKind,
-      evidenceKind: evidence.kind,
-      key: createRecordKey(
-        order,
-        'evidence',
-        evidence.source,
-        evidence.kind,
-        evidence.agentId,
-        evidence.capabilityKind,
-        evidence.capabilityId,
-        evidence.runtimeName,
-      ),
-      kind: 'evidence',
-      references: Object.freeze(
-        evidence.references.map((reference) =>
-          Object.freeze({ path: reference.path, symbol: reference.symbol ?? null }),
-        ),
-      ),
-      runtimeName: evidence.runtimeName,
-      source: evidence.source,
-    };
-
-    return Object.freeze(record);
-  }
+  if (item.kind === 'coverage') return createCoverageRecord(item.coverage, index, order);
 
   const metadata = item.metadata;
   const record: IMoldeaCliMetadataRecord = {
@@ -178,29 +190,38 @@ export const createMoldeaCliValidateProjection = (
       .map((diagnostic, index) => createMoldeaCliDiagnosticRecord(diagnostic, index))
       .sort((left, right) => (left.key < right.key ? -1 : left.key > right.key ? 1 : 0)),
   );
+  const records = Object.freeze(
+    [
+      ...diagnostics,
+      ...validation.coverage.map((coverage, index) => createCoverageRecord(coverage, index)),
+    ].sort((left, right) => (left.key < right.key ? -1 : left.key > right.key ? 1 : 0)),
+  );
   const snapshotDigest = calculateMoldeaCliJsonDigest({
-    diagnostics,
+    records,
+    coverageCounts: validation.coverageCounts,
+    acceptedWarningCount: validation.acceptedWarningCount,
     errorCount: validation.errorCount,
     formatVersion: validation.formatVersion,
     summary: validation.summary,
-    runtimeInspection: validation.runtimeInspection,
     valid: validation.valid,
     warningCount: validation.warningCount,
   } as unknown as IJsonValue);
 
   return Object.freeze({
-    diagnostics,
+    records,
+    diagnosticCount: validation.diagnosticCount,
+    acceptedWarningCount: validation.acceptedWarningCount,
+    coverageCounts: validation.coverageCounts,
     errorCount: validation.errorCount,
     formatVersion: validation.formatVersion,
     snapshotDigest,
     source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
-    runtimeInspection: validation.runtimeInspection,
     valid: validation.valid,
     warningCount: validation.warningCount,
   });
 };
 
-/** Projects one bounded Core page through the content-free schema 6 allowlist. */
+/** Projects one bounded Core page through the content-free schema 7 allowlist. */
 export const createMoldeaCliInspectProjection = (
   inspection: IProjectInspectionPageResult,
 ): IMoldeaCliInspectProjection => {
@@ -242,7 +263,7 @@ export const createMoldeaCliInspectProjection = (
     records,
     snapshotDigest,
     source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
-    runtimeInspection: inspection.runtimeInspection,
+    coverageCounts: inspection.coverageCounts,
     valid: inspection.valid,
     view: inspection.view,
   });
