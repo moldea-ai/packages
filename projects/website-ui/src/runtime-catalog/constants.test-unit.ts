@@ -90,6 +90,12 @@ describe('runtime catalog', () => {
         );
         expect(logoNames).toContain(assetPath.split('/').at(-1));
       }
+      const destination = new URL(runtime.websiteUrl);
+      expect(destination.protocol).toBe('https:');
+      expect(destination.hash).toBe('');
+      expect(destination.username).toBe('');
+      expect(destination.password).toBe('');
+      expect(destination.hostname).not.toBe('packages.moldea.ai');
       expect(runtime.displayName.trim()).toBe(runtime.displayName);
       expect(runtime.displayName.length).toBeGreaterThan(0);
     }

@@ -1,6 +1,6 @@
 ---
+import Accordion from '@moldea.ai/website-ui/accordion';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
-import CodeBlock from '@moldea.ai/website-ui/code-block';
 import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';
 import { withBase } from '@moldea.ai/website-ui/site';
 
@@ -9,19 +9,15 @@ import BaseLayout from '../../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 
 const model = loadWebsiteModel();
-const example = model.capabilities.cases.find(({ id }) => id === 'binding-export-missing');
-if (!example) throw new Error('Missing binding guidance example.');
-
+const connected = model.capabilities.cases.find(({ id }) => id === 'runtime-guidance-present');
+const missing = model.capabilities.cases.find(({ id }) => id === 'runtime-guidance-missing');
+if (!connected || !missing) throw new Error('Missing executed runtime guidance examples.');
 const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Runtimes' }];
-const binding = `context:
-  /moldea/context/returns.md:
-    bindings:
-      - { path: /src/returns.ts, symbol: canReturn }`;
 ---
 
 <BaseLayout
-  title="Runtime labels and binding checks"
-  description="Choose runtime guidance and understand exactly what Core checks in declared files and exports."
+  title="Runtime guidance"
+  description="Choose a runtime ID, connect project guidance, and see what Core checks."
   {breadcrumbs}
 >
   <section class="page-shell pt-8 pb-section-gap">
@@ -29,107 +25,110 @@ const binding = `context:
     <div class="grid items-center gap-10 pt-12 pb-14 lg:grid-cols-2 lg:gap-16">
       <header>
         <p class="eyebrow mb-5">Runtime guidance</p>
-        <h1 class="page-title">Choose a label. Keep the checks explicit.</h1>
+        <h1 class="page-title">Guidance for the runtime you use.</h1>
         <p class="mt-7 text-xl leading-9 text-muted-foreground">
-          The runtime ID in your manifest selects guidance for your coding agent. It does not select
-          a compatibility checker or certify an SDK integration.
+          Declare your runtime in the manifest. Your coding agent uses that label and the installed
+          SDK's types to review how your application connects instructions and tools.
+        </p>
+        <p class="mt-5 text-sm leading-7 text-muted-foreground">
+          This support agent selects OpenAI and adds a project-owned guidance document. The example
+          runs through Core during the website build.
         </p>
       </header>
       <section
-        aria-labelledby={`example-${example.id}-title`}
+        aria-labelledby={`example-${connected.id}-title`}
         class="min-w-0 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
       >
         <h2
-          id={`example-${example.id}-title`}
+          id={`example-${connected.id}-title`}
           class="mb-6 text-lg font-semibold"
         >
-          {example.title}
+          {connected.title}
         </h2>
         <CapabilityCard
-          {example}
+          example={connected}
           catalog={model.capabilities}
         />
       </section>
     </div>
-    <h2 class="section-title mb-8">Find your runtime.</h2>
-    <RuntimeGrid hrefBase="" />
+    <h2 class="section-title mb-3">Find your runtime.</h2>
+    <p class="mb-6 max-w-2xl leading-7 text-muted-foreground">
+      Use the ID shown below in your manifest. Each link opens the runtime's official website or
+      repository.
+    </p>
+    <RuntimeGrid />
     <p class="mt-5 text-xs leading-6 text-muted-foreground">
       Names and marks belong to their respective owners. Labels do not imply SDK compatibility,
       certification, or vendor endorsement.
     </p>
 
-    <div class="mt-section-gap grid gap-10 lg:grid-cols-2 lg:gap-16">
-      <section
-        aria-labelledby="binding-checks-title"
-        class="min-w-0"
-      >
-        <p class="eyebrow mb-4">Core checks</p><h2
-          id="binding-checks-title"
+    <section
+      class="mt-section-gap grid items-start gap-10 border-t pt-section-gap lg:grid-cols-2 lg:gap-16"
+      aria-labelledby="runtime-checks-title"
+    >
+      <div class="min-w-0">
+        <p class="eyebrow mb-4">Core checks</p>
+        <h2
+          id="runtime-checks-title"
           class="section-title"
         >
-          Declared files and exports.
+          A declared document must exist.
         </h2>
         <p class="mt-6 leading-8 text-muted-foreground">
-          Core checks that declared files exist. When a binding names a symbol, it checks explicit
-          TypeScript and JavaScript ESM exports if the source allows a conclusion.
+          Remove the OpenAI guidance file from the same repository and Core reports the broken
+          reference. An empty guidance file also produces an error.
+        </p>
+        <p class="mt-5 leading-8 text-muted-foreground">
+          Core does not check runtime wiring or SDK behavior. Your coding agent reviews those
+          connections using the installed SDK and your project context.
         </p>
         <div class="mt-6">
-          <CodeBlock
-            source={binding}
-            language="yaml"
-            ariaLabel="A declared file and export binding"
-          />
+          <Accordion
+            id="runtime-check-boundaries"
+            title="What else do the checks cover?"
+          >
+            <div class="grid gap-4 text-sm leading-7 text-muted-foreground">
+              <p>
+                Core also checks declared code files and explicit TypeScript and JavaScript ESM
+                exports. Coverage records say which checks ran and why an export could not be
+                checked.
+              </p>
+              <p>
+                A missing export is an error only when the file's export list is complete. CommonJS,
+                unresolved exports, malformed source, and per-file resource limits leave the export
+                not checked. Interrupted inspections fail the operation.
+              </p>
+              <p>
+                Accepted warnings retain their identity and recorded reason. They do not turn an
+                unchecked export into a passed check.
+              </p>
+              <a
+                class="text-link"
+                href={withBase('/packages/core/repository-inspection/', import.meta.env.BASE_URL)}
+                >Read the coverage contract</a
+              >
+            </div>
+          </Accordion>
         </div>
-        <p class="mt-5 leading-8 text-muted-foreground">
-          A missing export is an error only when the file's export list is complete. CommonJS,
-          unsupported file types, unresolved exports, malformed source, and per-file resource limits
-          leave the export not checked.
+        <p class="mt-5 text-sm leading-7 text-muted-foreground">
+          For another runtime, use <code class="inline-code">custom</code> and add your project's guidance.
         </p>
-        <p class="mt-5 leading-8 text-muted-foreground">
-          Coverage records report the file check, export check, and any reason an export could not
-          be checked. Interrupted inspections fail the operation; they do not return partial
-          coverage.
-        </p>
-        <a
-          class="mt-5 inline-block text-link"
-          href={withBase('/packages/core/repository-inspection/', import.meta.env.BASE_URL)}
-          >Read the coverage contract</a
-        >
-      </section>
+      </div>
       <section
-        aria-labelledby="agent-guidance-title"
-        class="min-w-0"
+        aria-labelledby={`example-${missing.id}-title`}
+        class="min-w-0 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
       >
-        <p class="eyebrow mb-4">Agent review</p><h2
-          id="agent-guidance-title"
-          class="section-title"
+        <h3
+          id={`example-${missing.id}-title`}
+          class="mb-6 text-lg font-semibold"
         >
-          Follow the installed SDK.
-        </h2>
-        <p class="mt-6 leading-8 text-muted-foreground">
-          Your coding agent reads the installed SDK's type definitions, then reviews how the
-          application loads instructions, registers tools, supplies schemas, and connects handoffs.
-          It uses your project's declarations and runtime guidance as context.
-        </p>
-        <p class="mt-5 leading-8 text-muted-foreground">
-          Core does not check runtime wiring, SDK behavior, code semantics, or the agent's behavior.
-          A valid result means the completed checks found no errors. Review coverage and warnings
-          alongside that result.
-        </p>
-        <p class="mt-5 leading-8 text-muted-foreground">
-          Accepted warnings remain visible with their identity and recorded reason. Accepting a
-          warning does not convert an unchecked export into a passed check.
-        </p>
-        <a
-          class="mt-5 inline-block text-link"
-          href={withBase('/capabilities/#binding-coverage', import.meta.env.BASE_URL)}
-          >Explore executed binding and warning examples</a
-        >
-        <p class="mt-5 leading-8 text-muted-foreground">
-          For another runtime, use <code class="inline-code">custom</code> and record project-specific
-          guidance in <code class="inline-code break-all">/moldea/runtimes/custom.md</code>.
-        </p>
+          {missing.title}
+        </h3>
+        <CapabilityCard
+          example={missing}
+          catalog={model.capabilities}
+        />
       </section>
-    </div>
+    </section>
   </section>
 </BaseLayout>

@@ -208,8 +208,11 @@ for (const width of [320, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await page.goto(toPublicPath('/runtimes/'));
+      const loadMore = page.getByRole('button', { name: 'Load more runtimes' });
+      while (await loadMore.isVisible()) await loadMore.click();
+      await page.locator('#runtime-check-boundaries > summary').click();
       const target = page.getByRole('link', {
-        name: 'OpenAI openai',
+        name: 'OpenAI openai (opens in a new tab)',
         exact: true,
       });
       const textLink = page.getByRole('link', {

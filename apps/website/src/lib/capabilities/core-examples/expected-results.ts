@@ -1197,7 +1197,7 @@ export const CORE_EXPECTED_RESULTS: Record<
         details: {},
         entity: null,
         message: 'The runtime guidance is empty.',
-        path: '/moldea/runtimes/service.md',
+        path: '/moldea/runtimes/openai.md',
         pointer: null,
         range: null,
         severity: 'error',
@@ -1212,7 +1212,7 @@ export const CORE_EXPECTED_RESULTS: Record<
         code: 'MOLDEA_RUNTIME_GUIDANCE_MISSING',
         group: 'references',
         details: {
-          referencedPath: '/moldea/runtimes/service.md',
+          referencedPath: '/moldea/runtimes/openai.md',
         },
         entity: {
           agentId: 'support',
