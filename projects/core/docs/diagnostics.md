@@ -26,6 +26,8 @@ Malformed or unsupported YAML and invalid Repository Format fields use `MOLDEA_Y
 
 Missing or invalid references, context relationships, runtime guidance, and decision files or graphs use `MOLDEA_IMPACT_*`, `MOLDEA_REFERENCE_*`, `MOLDEA_SYMBOL_*`, `MOLDEA_CONTEXT_*`, `MOLDEA_RUNTIME_GUIDANCE_*`, and `MOLDEA_DECISION_*` codes.
 
+`MOLDEA_REFERENCE_EXPORT_MISSING`: The referenced export is missing. This error is emitted only when a complete syntax-only inventory proves absence. Its details identify the path, symbol, and binding relationship. The same binding has a `failed` coverage record. An unsupported or inconclusive inventory produces `not-checked` coverage rather than an error.
+
 ### [Agents and capabilities](#agents-and-capabilities)
 
 Agent directories, identity, descriptions, instructions, variables, runtime labels, tools, and skills use `MOLDEA_AGENT_*`, `MOLDEA_RUNTIME_*`, `MOLDEA_VARIABLE_*`, `MOLDEA_CAPABILITY_*`, `MOLDEA_TOOL_*`, and `MOLDEA_SKILL_*` codes.
@@ -48,7 +50,7 @@ The installation must have regular `SKILL.md`, `scripts/relevance-gate.mjs`, and
 
 Warnings carry `subject` (a canonical repository path), `qualifier` (a pattern or acceptance-entry pointer, otherwise `null`), and `acceptable`. The flag is true exactly for codes exported in `ACCEPTABLE_WARNING_CODES`. The list contains `MOLDEA_IMPACT_PATTERN_UNMATCHED`, `MOLDEA_INTEGRATION_BLOCK_MISSING`, `MOLDEA_INTEGRATION_SKILL_MISSING`, and `MOLDEA_INTEGRATION_BLOCK_STALE`.
 
-`MOLDEA_IMPACT_PATTERN_UNMATCHED`: The impact pattern matches no files. This `references` warning identifies an owner and a pattern. Its subject is the owning context or decision path, or the owning agent's canonical instruction path for agent, tool, and skill impacts. Patterns can intentionally cover future files. They are checked after required validation, sharing one traversal per fixed directory prefix and stopping when every pattern has found a regular file. Entry-budget exhaustion or a reader resource refusal suppresses this optional pass's findings and marks it incomplete. Cancellation and source failures still propagate.
+`MOLDEA_IMPACT_PATTERN_UNMATCHED`: The impact pattern matches no files. This `references` warning identifies an owner and a pattern. Its subject is the owning context or decision path, or the owning agent's canonical instruction path for agent, tool, and skill impacts. Patterns can intentionally cover future files. They are checked after required validation, sharing one traversal per fixed directory prefix and stopping when every pattern has found a regular file. A Core or reader resource refusal suppresses this optional pass's findings and marks it incomplete. Cancellation and source failures still propagate.
 
 The manifest may accept a warning with a reason:
 
@@ -68,9 +70,7 @@ A match retains the warning with `accepted: true` and its reason. `warningCount`
 
 ## Ordering and limits
 
-Core normalizes diagnostics into deterministic order using their source location and identity fields rather than discovery timing. `maxDiagnostics` bounds raw diagnostic production; exceeding it raises `RESOURCE_LIMIT_EXCEEDED` instead of silently truncating the invalid state.
-
-`MOLDEA_REFERENCE_EXPORT_MISSING`: The referenced export is missing. This error belongs to `references` and is emitted only when a complete syntax-only inventory proves absence. Its details identify the path, symbol, and binding relationship. The same binding has a `failed` coverage record. An unsupported or inconclusive inventory produces `not-checked` coverage rather than an error.
+Core normalizes diagnostics into deterministic order using their source location and identity fields rather than discovery timing. A manifest JSON Pointer retains the entry's authored array position. `maxDiagnostics` bounds raw diagnostic production; exceeding it raises `RESOURCE_LIMIT_EXCEEDED` instead of silently truncating the invalid state.
 
 ## Operational exceptions
 

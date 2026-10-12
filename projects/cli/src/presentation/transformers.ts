@@ -185,17 +185,23 @@ export const createMoldeaCliValidateProjection = (
   validation: IProjectValidationResult,
 ): IMoldeaCliValidateProjection => {
   assertProjectValidationInvariant(validation);
-  const diagnostics = Object.freeze(
-    validation.diagnostics
-      .map((diagnostic, index) => createMoldeaCliDiagnosticRecord(diagnostic, index))
-      .sort((left, right) => (left.key < right.key ? -1 : left.key > right.key ? 1 : 0)),
-  );
-  const records = Object.freeze(
-    [
-      ...diagnostics,
-      ...validation.coverage.map((coverage, index) => createCoverageRecord(coverage, index)),
-    ].sort((left, right) => (left.key < right.key ? -1 : left.key > right.key ? 1 : 0)),
-  );
+  const diagnostics = validation.diagnostics.map((diagnostic, index) => {
+    const record = createMoldeaCliDiagnosticRecord(diagnostic, index);
+    return Object.freeze({
+      ...record,
+      key: createRecordKey(index.toString().padStart(6, '0'), 'diagnostic', record.key),
+    });
+  });
+  const records = Object.freeze([
+    ...diagnostics,
+    ...validation.coverage.map((coverage, index) =>
+      createCoverageRecord(
+        coverage,
+        index,
+        (diagnostics.length + index).toString().padStart(6, '0'),
+      ),
+    ),
+  ]);
   const snapshotDigest = calculateMoldeaCliJsonDigest({
     records,
     coverageCounts: validation.coverageCounts,

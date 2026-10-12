@@ -104,7 +104,7 @@ const addExactDeclaration = (
   });
 };
 
-/** Adds sorted repository references while preserving normalized declaration pointers. */
+/** Adds repository references with their authored declaration pointers. */
 const addReferenceDeclarations = (
   declarations: IManifestScopeRelationshipDeclaration[],
   references: readonly IRepositoryReference[] | undefined,
@@ -123,7 +123,7 @@ const addReferenceDeclarations = (
   }
 };
 
-/** Adds exact and simple-glob impact relationships in normalized array order. */
+/** Adds exact and simple-glob impact relationships in authored array order. */
 const addAffectedByDeclarations = (
   declarations: IManifestScopeRelationshipDeclaration[],
   affectedBy: readonly string[] | undefined,

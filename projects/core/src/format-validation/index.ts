@@ -1,7 +1,5 @@
 import { isRepositoryPath, parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 
-import type { IRepositoryReference } from '../format/index.js';
-
 const STABLE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const VARIABLE_ID_PATTERN = /^[A-Z][A-Z0-9_]*$/u;
 const WINDOWS_RESERVED_ID_PATTERN = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$/u;
@@ -249,16 +247,4 @@ export const isRepositorySymbol = (value: string): boolean => {
 /** Determines whether a canonical moldea reference incorrectly carries a symbol. */
 export const isCanonicalMoldeaPath = (path: IRepositoryPath): boolean => {
   return path === '/moldea' || path.startsWith('/moldea/');
-};
-
-/** Sorts repository references by path and then optional symbol. */
-export const sortRepositoryReferences = (
-  references: readonly IRepositoryReference[],
-): IRepositoryReference[] => {
-  return [...references].sort((left, right) => {
-    return (
-      compareExactStrings(left.path, right.path) ||
-      compareExactStrings(left.symbol ?? '', right.symbol ?? '')
-    );
-  });
 };

@@ -4,7 +4,7 @@ import { MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES } from './constants.js';
 import type { IMoldeaCliCompositionStateInput } from './types.js';
 
 const PACKAGE_VERSIONS = {
-  '@moldea.ai/core': '7.0.0',
+  '@moldea.ai/core': '7.0.2',
   '@moldea.ai/repository': '2.0.0',
   '@moldea.ai/repository-fs': '2.0.3',
 } as const;
@@ -21,7 +21,7 @@ export const INSTALLED_PACKAGE_METADATA: IMoldeaCliPackageMetadata = Object.free
   ),
   installedPackageVersions: Object.freeze({ ...PACKAGE_VERSIONS }),
   supportedNodeRange: '>=22.11.0',
-  version: '11.0.0',
+  version: '11.0.2',
 });
 
 /** Creates the exact valid current runtime composition state. */

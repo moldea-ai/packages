@@ -127,7 +127,7 @@ importers:
   projects/cli:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^7.0.0
+        specifier: workspace:^7.0.2
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^2.0.0

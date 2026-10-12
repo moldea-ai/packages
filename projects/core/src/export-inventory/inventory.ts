@@ -1,4 +1,4 @@
-import type { IRepositoryPath } from '@moldea.ai/repository';
+import { RepositorySourceException, type IRepositoryPath } from '@moldea.ai/repository';
 
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { getRetainedMemory } from '../retained-memory/index.js';
@@ -13,7 +13,7 @@ export const isSupportedExportSource = (path: string): boolean =>
   !/\.d\.(?:ts|tsx|mts|cts)$/.test(path) && /\.(?:ts|tsx|mts|cts|js|mjs|jsx)$/.test(path);
 
 /**
- * Reads and parses a declared source once, retaining only its export-name set.
+ * Checks a declared source when budgets allow, retaining only its export-name set.
  * @returns A conclusive inventory or the precise reason analysis could not run.
  * @throws
  * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
@@ -30,15 +30,28 @@ export const isSupportedExportSource = (path: string): boolean =>
 export const readExportInventory = async (
   reader: IRepositoryInspectionReader,
   path: IRepositoryPath,
+  byteLength: number,
+  maxFileBytes: number,
 ): Promise<IExportInventory> => {
   if (!isSupportedExportSource(path))
     return { kind: 'not-checked', reason: 'unsupported-file-type' };
   const ledger = getRetainedMemory(reader);
-  const source = await ledger.readSourceFile(path);
-  const reservation = 65_536 + source.bytes.byteLength * (8 + NODE_BYTES_PER_SOURCE_BYTE);
+  const reservation = 65_536 + byteLength * (8 + NODE_BYTES_PER_SOURCE_BYTE);
+  // source bytes and the first page coexist with the syntax reservation during the read
+  const readHeadroom = Math.max(1, byteLength + Math.min(65_536, byteLength));
+  if (byteLength > maxFileBytes || !ledger.tryReserve(reservation + readHeadroom))
+    return { kind: 'not-checked', reason: 'resource-limit' };
+  ledger.release(readHeadroom);
   try {
-    if (!ledger.tryReserve(reservation)) return { kind: 'not-checked', reason: 'resource-limit' };
+    const source = await ledger.readSourceFile(path);
     try {
+      if (source.bytes.byteLength !== byteLength)
+        throw new RepositorySourceException({
+          code: 'INVALID_SOURCE_DATA',
+          operation: 'read-file-page',
+          path,
+          retryable: false,
+        });
       const { inventoryExports } = await import('./syntax.js');
       const result = inventoryExports(path, source.bytes);
       if (result.kind === 'parsed') {
@@ -49,9 +62,9 @@ export const readExportInventory = async (
       }
       return result;
     } finally {
-      ledger.release(reservation);
+      source.release();
     }
   } finally {
-    source.release();
+    ledger.release(reservation);
   }
 };

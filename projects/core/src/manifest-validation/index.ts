@@ -26,7 +26,6 @@ import {
   isStableId,
   isVariableId,
   parseManifestPath,
-  sortRepositoryReferences,
 } from '../format-validation/index.js';
 import type {
   IAcceptedWarningManifestEntry,
@@ -296,7 +295,7 @@ const readReferenceList = (
     references.push(reference);
   });
 
-  return sortRepositoryReferences(references);
+  return references;
 };
 
 const readAffectedBy = (
@@ -350,7 +349,7 @@ const readAffectedBy = (
     values.push(item.value);
   });
 
-  return values.sort(compareExactStrings);
+  return values;
 };
 
 const readRelationship = (

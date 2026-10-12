@@ -272,6 +272,40 @@ describe('bounded impact warnings and manifest acceptance through Core', () => {
     expect(result.diagnostics).toStrictEqual([]);
   });
 
+  test('completes validation when retained memory is exhausted during pattern inspection', async () => {
+    const source = createRepository(
+      ['/src/missing*'],
+      [acceptance('/src/missing*')],
+      Array.from({ length: 64 }, (_, index) => ({
+        path: `/src/existing-${index}.ts`,
+        type: 'file' as const,
+        content: '',
+      })),
+    );
+    let patternLookups = 0;
+    const repository = {
+      ...source,
+      getEntry: (
+        path: Parameters<typeof source.getEntry>[0],
+        options: Parameters<typeof source.getEntry>[1],
+      ) => {
+        if (path === '/src') patternLookups += 1;
+        return source.getEntry(path, options);
+      },
+    };
+    const result = await createCore({ limits: { maxRetainedBytes: 8192 } }).validateProject({
+      repository,
+    });
+    expect(result.valid).toBe(true);
+    expect(patternLookups).toBeGreaterThan(0);
+    expect(
+      result.diagnostics.filter(
+        ({ code }) =>
+          code === 'MOLDEA_IMPACT_PATTERN_UNMATCHED' || code === 'MOLDEA_ACCEPTANCE_UNMATCHED',
+      ),
+    ).toStrictEqual([]);
+  });
+
   test('skips pattern warnings and acceptances on a reader resource refusal', async () => {
     const source = createRepository(
       ['/src/missing*'],

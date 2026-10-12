@@ -158,7 +158,6 @@ describe('mapMoldeaCliOperationalError', () => {
 
   test('maps Core operation failures with documented retryability and safe metadata', () => {
     const operationError = new CoreOperationException({
-      agentId: 'reviewer',
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxCoverage',
       limitMaximum: 8,
@@ -173,7 +172,6 @@ describe('mapMoldeaCliOperationalError', () => {
     expect(mapped).toStrictEqual({
       code: 'RESOURCE_LIMIT_EXCEEDED',
       details: {
-        agentId: 'reviewer',
         limit: 'maxCoverage',
         limitMaximum: 8,
         nextAction: 'reduce-input-or-increase-limit',

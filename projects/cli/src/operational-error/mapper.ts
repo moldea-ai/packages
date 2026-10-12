@@ -23,10 +23,6 @@ const createCoreErrorDetails = (
   const details: Record<string, string | number | null> = { operation: error.operation };
 
   if (error instanceof CoreOperationException) {
-    if (error.agentId !== null) {
-      details['agentId'] = error.agentId;
-    }
-
     if (error.limit !== null) {
       details['limit'] = error.limit;
     }

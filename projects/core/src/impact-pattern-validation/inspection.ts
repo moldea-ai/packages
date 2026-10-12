@@ -107,9 +107,7 @@ export const inspectImpactPatterns = async (
     }
   } catch (error) {
     if (
-      (error instanceof CoreOperationException &&
-        error.code === 'RESOURCE_LIMIT_EXCEEDED' &&
-        error.limit === 'maxEntries') ||
+      (error instanceof CoreOperationException && error.code === 'RESOURCE_LIMIT_EXCEEDED') ||
       (error instanceof RepositorySourceException && error.code === 'RESOURCE_LIMIT_EXCEEDED')
     )
       return { completed: false, diagnostics: [] };
