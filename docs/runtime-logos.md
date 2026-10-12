@@ -4,7 +4,7 @@ The 35 runtime labels use recognizable project or company icons. They identify g
 
 ## Public-launch responsibility
 
-Before public launch, the developer must resolve the agreed permission review for Anthropic, OpenAI, Google, and IBM, and check the restrictions published by AWS, Microsoft, and GitHub. Shipping an asset here does not establish permission. Permission requests and decisions remain the developer's responsibility. Preserve attribution, clear space, proportions, colors, and any conditions attached to permission. Do not mechanically recolor or invert a mark to create a dark variant.
+Permission review remains a deferred developer-owned follow-up for Anthropic, OpenAI, Google, and IBM, together with the restrictions published by AWS, Microsoft, and GitHub. Shipping an asset here does not establish permission. Permission requests and decisions remain the developer's responsibility. Preserve attribution, clear space, proportions, colors, and any conditions attached to permission. Do not mechanically recolor or invert a mark to create a dark variant.
 
 The table links published usage guidance where located. References marked “project reference” identify the publisher, **not a logo usage grant**; separate brand terms were not located during this inspection. Review those terms before launch as well. Sources were inspected on 2026-10-12.
 
