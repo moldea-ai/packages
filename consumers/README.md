@@ -4,7 +4,7 @@ The `consumer-conformance` CI lane gives the skill manager and closed launcher t
 
 ## Recorded verification
 
-The selected closure contains CLI `11.0.0`, Core `7.0.0`, Repository `2.0.0`, and Repository FS `2.0.3`. The tarballs came from packages commit `9931db0c3a1a53702f79cb3393b1c03e7a172602` and the [release-candidate workflow run 38137841399](https://github.com/moldea-ai/skill/actions/runs/38137841399). The workflow used skill tooling commit `fc8d91aab06323bb3295f8d84275df67a2e25b27`, prepared skill `8.0.0` with CLI 11/Core 7, and passed all fourteen manager selections. Its producer used Node `24.15.0` and pnpm `11.9.0`.
+The selected closure contains CLI `11.0.1`, Core `7.0.1`, Repository `2.0.1`, and Repository FS `2.0.4`. The tarballs came from packages commit `44fe81ac3e84356185c0ac477668d30cab1d3966` and the [release-candidate workflow run 38199585200](https://github.com/moldea-ai/skill/actions/runs/38199585200). The workflow used skill tooling commit `17f80e780c05d18ad6726235e33e87d6a2436acd`, prepared skill `8.0.1` with CLI 11/Core 7, and passed all fourteen manager selections. Its producer used Node `24.15.0` and pnpm `11.9.0`.
 
 | Manager | Verified selections                                                                        |
 | ------- | ------------------------------------------------------------------------------------------ |
