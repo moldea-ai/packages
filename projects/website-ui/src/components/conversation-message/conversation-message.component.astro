@@ -1,34 +1,48 @@
 ---
+import { Bot, UserRound } from '@lucide/astro';
 import type { IConversationRole } from '@moldea.ai/website-ui/markdown';
 
-// visible speaker identity and a rich-content slot; avatars remain caller-owned
+// shared chat panels and avatar placement; callers provide optional avatar artwork and rich content
 export interface Props {
   role: IConversationRole;
 }
 const { role } = Astro.props;
 const label = role === 'user' ? 'You' : 'Coding agent';
+const Icon = role === 'user' ? UserRound : Bot;
 ---
 
 <li
-  class="min-w-0"
+  class:list={[
+    'group relative flex min-w-0 items-start gap-3',
+    role === 'user' && 'max-w-[92%] sm:max-w-none',
+  ]}
   data-conversation-message={role}
 >
+  <span
+    class="absolute top-9 -bottom-4 left-[1.125rem] w-px bg-border group-last:hidden"
+    aria-hidden="true"
+  ></span>
+  <span
+    class:list={[
+      'relative z-10 inline-flex size-9 shrink-0 items-center justify-center rounded-xl [&_img]:h-5 [&_img]:w-auto [&_img]:max-w-5 [&_img]:object-contain',
+      role === 'user'
+        ? 'dark-surface-selection bg-primary text-primary-foreground'
+        : 'bg-secondary',
+    ]}
+    aria-hidden="true"
+  >
+    <slot name="avatar"><Icon class="size-4" /></slot>
+  </span>
   <article
-    class="min-w-0"
+    class:list={[
+      'min-w-0 overflow-hidden rounded-2xl rounded-tl-sm border border-border',
+      role === 'user'
+        ? 'bg-background px-4 py-3 shadow-surface'
+        : 'flex-1 bg-card p-3 shadow-raised sm:p-5',
+    ]}
     aria-label={`${label} message`}
   >
-    <header class="mb-3 flex items-center gap-3">
-      {
-        Astro.slots.has('avatar') && (
-          <span class="flex size-8 shrink-0 items-center justify-center [&_img]:size-8 [&_img]:object-contain">
-            <slot name="avatar" />
-          </span>
-        )
-      }
-      <p class="text-sm font-semibold text-foreground">{label}</p>
-    </header>
-    <div class:list={['min-w-0', role === 'user' && 'rounded-lg bg-secondary px-4 py-3']}>
-      <slot />
-    </div>
+    <p class="mb-1 text-xs font-semibold text-muted-foreground">{label}</p>
+    <slot />
   </article>
 </li>

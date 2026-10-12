@@ -19,6 +19,8 @@ import { chromium } from '@playwright/test';
 import { extractMessage } from 'error-message-utils';
 import { afterEach, describe, expect, test } from 'vitest';
 
+import { RUNTIME_CATALOG } from './runtime-catalog/index.js';
+
 const projectDirectory = path.resolve(import.meta.dirname, '..');
 const temporaryDirectories: string[] = [];
 
@@ -93,7 +95,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '2.0.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.0.0' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -341,7 +343,7 @@ describe('published website UI package', () => {
         '    <EvaluationReplay id="fixture-replay" replay={replay} />',
         '    <DocumentationShell breadcrumbs={[{ href: "/", label: "Home" }, { label: "moldea Docs" }]} currentRoute="/docs/" headings={rendered.headings} navigationGroups={[{ label: "moldea Guides", items: [{ href: "/docs/", label: "moldea Start" }] }]} previousPage={{ href: "/previous/", label: "Previous moldea guide" }} nextPage={{ href: "/next/", label: "Next moldea guide" }}><div class="prose-moldea" set:html={rendered.html} /></DocumentationShell>',
         '    <p>{tree[0]?.name}</p>',
-        '    <section data-runtime-fixture><h2>Runtime labels</h2><RuntimeGrid hrefBase="/runtimes/" /></section>',
+        '    <section data-runtime-fixture><h2>Runtime labels</h2><RuntimeGrid /></section>',
         '    <ThemeControl storageKey="fixture-theme" />',
         '    <LocalSearch action="/search/" failureMessage="Search unavailable." initialPrompt="Enter a query." placeholder="e.g. repository snapshots" searchIndexUrl="/search-index.json" shouldFocusOnLoad />',
         '    <SiteFooter hasTopSpacing={false}><p slot="brand">Fixture footer</p><nav slot="primary-navigation" aria-label="Fixture documentation">Docs</nav><nav slot="secondary-navigation" aria-label="Fixture project">Project</nav></SiteFooter>',
@@ -370,7 +372,7 @@ describe('published website UI package', () => {
         "import '../styles.css';",
         '---',
         '<html lang="en"><head><title>Runtime labels</title></head><body>',
-        '<main data-runtime-count={RUNTIME_CATALOG.length}><RuntimeGrid hrefBase="" />',
+        '<main data-runtime-count={RUNTIME_CATALOG.length}><RuntimeGrid />',
         '<img src={microsoftLogo} width="32" height="32" alt="Microsoft logo" /></main>',
         '</body></html>',
       ].join('\n'),
@@ -405,8 +407,7 @@ describe('published website UI package', () => {
       'utf8',
     );
     expect(runtimeHtml).toContain('data-runtime-count="35"');
-    expect(runtimeHtml).toContain('href="#openai"');
-    expect(runtimeHtml).not.toMatch(/<script\b/u);
+    expect(runtimeHtml).toContain('href="https://openai.com/"');
     expect(fixtureHtml).toContain('Consumer hero');
     expect(fixtureHtml).toContain('data-code-diff="unified"');
     expect(fixtureHtml).toContain('data-code-diff="split"');
@@ -456,8 +457,10 @@ describe('published website UI package', () => {
             }, theme);
             const runtimeGrid = page.getByRole('list', { name: 'Runtime guidance', exact: true });
             expect(await runtimeGrid.getByRole('link').count()).toBe(35);
-            const runtimeLink = runtimeGrid.getByRole('link', { name: /^OpenAI openai$/u });
-            expect(await runtimeLink.getAttribute('href')).toBe('/runtimes/#openai');
+            const runtimeLink = runtimeGrid.getByRole('link', {
+              name: /^OpenAI openai \(opens in a new tab\)$/u,
+            });
+            expect(await runtimeLink.getAttribute('href')).toBe('https://openai.com/');
             await runtimeLink.focus();
             expect(await runtimeLink.evaluate((node) => getComputedStyle(node).boxShadow)).not.toBe(
               'none',
@@ -465,7 +468,9 @@ describe('published website UI package', () => {
             await page.keyboard.press('Tab');
             expect(
               await runtimeGrid
-                .getByRole('link', { name: /^OpenAI Agents SDK openai-agents-sdk$/u })
+                .getByRole('link', {
+                  name: /^OpenAI Agents SDK openai-agents-sdk \(opens in a new tab\)$/u,
+                })
                 .evaluate((node) => node === document.activeElement),
             ).toBe(true);
             await runtimeGrid.scrollIntoViewIfNeeded();
@@ -473,8 +478,8 @@ describe('published website UI package', () => {
               expect(await image.getAttribute('loading')).toBe('lazy');
               expect(await image.getAttribute('decoding')).toBe('async');
               expect(await image.getAttribute('alt')).toBe('');
-              expect(await image.getAttribute('width')).toBe('96');
-              expect(await image.getAttribute('height')).toBe('48');
+              expect(await image.getAttribute('width')).toBe('56');
+              expect(await image.getAttribute('height')).toBe('56');
               if (await image.isVisible()) {
                 await image.scrollIntoViewIfNeeded();
                 await image.evaluate((node) => (node as HTMLImageElement).decode());
@@ -805,6 +810,6 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toMatch(/<span\b[^>]*class="sr-only"[^>]*>Open complete source<\/span>/u);
     expect(fixtureHtml).toContain('lucide-maximize-2');
     expect(fixtureHtml).toContain('Expanded source content');
-    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(3);
+    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(3 + RUNTIME_CATALOG.length);
   }, 180_000);
 });

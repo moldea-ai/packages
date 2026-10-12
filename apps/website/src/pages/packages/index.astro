@@ -14,57 +14,48 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Packages' }];
 const examples = [
   {
     slug: 'cli',
+    displayName: 'CLI',
     caseId: 'cli-invalid-project',
     language: 'bash',
     source: 'moldea validate --json',
-    purpose: 'A useful failure, ready for CI.',
-    context:
-      'Run from an adopted repository. The exit status and JSON result report a broken reference.',
   },
   {
     slug: 'core',
-    caseId: 'inspection-mixed-diagnostics',
+    displayName: 'Core',
+    caseId: 'policy-reference-missing',
     language: 'typescript',
     source: `import { createCore } from '@moldea.ai/core';
 
 const inspection = await createCore().createProjectInspection({ repository });
 const diagnostics = inspection.readPage({ view: 'diagnostics', maxItems: 1 });`,
-    purpose: 'Inspect once. Read the facts you need.',
-    context:
-      'Supply a repository reader. Diagnostics, warnings, and binding coverage keep their own meaning.',
   },
   {
     slug: 'repository',
-    caseId: 'memory-immutable-ranges',
+    displayName: 'Repository',
+    caseId: 'reader-entry-pages',
     language: 'typescript',
-    source: `import { parseRepositoryPath } from '@moldea.ai/repository';
-import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+    source: `import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 const repository = createMemoryRepositoryReader([
   { path: '/policy.md', type: 'file', content: '30 days\\n' },
+  { path: '/scratch', type: 'directory' },
+  { path: '/shortcut', type: 'symlink' },
 ]);
-const firstRange = await repository.readFilePage(parseRepositoryPath('/policy.md'), {
-  offset: 0, maxBytes: 2,
-});`,
-    purpose: 'Your content. One read-only contract.',
-    context:
-      'Bring content from your own storage. This reader returns the requested bytes from an immutable memory snapshot.',
+const page = await repository.listEntriesPage({ maxEntries: 2 });`,
   },
   {
     slug: 'repository-fs',
+    displayName: 'Repository FS',
     caseId: 'filesystem-selection',
     language: 'typescript',
     source: `import { parseRepositoryPath } from '@moldea.ai/repository';
 import { createFilesystemRepositoryReader } from '@moldea.ai/repository-fs';
 
 const repository = await createFilesystemRepositoryReader({
-  rootDirectory: selectedDirectory,
+  rootDirectory: process.cwd(),
   selection: { kind: 'paths', paths: [parseRepositoryPath('/policy.md')] },
 });
 const page = await repository.listEntriesPage({ maxEntries: 16 });`,
-    purpose: 'An explicit boundary around local files.',
-    context:
-      'Your application supplies an absolute selectedDirectory. Only the selected paths and required parents enter this reader.',
   },
 ].map((example) => {
   const packageModel = model.packages.find(({ slug }) => slug === example.slug);
@@ -118,30 +109,31 @@ const page = await repository.listEntriesPage({ maxEntries: 16 });`,
     </header>
     <div class="grid gap-12 sm:gap-20">
       {
-        examples.map(({ packageModel, execution, copy, purpose, context, source, language }) => (
+        examples.map(({ packageModel, displayName, execution, copy, source, language }) => (
           <section
             class="scroll-mt-24 border-t pt-10"
             id={packageModel.slug}
             aria-labelledby={`package-${packageModel.slug}`}
             data-package-showcase
           >
-            <div class="mb-7 flex flex-wrap items-center gap-3 text-sm">
-              <>
-                <code class="inline-code break-all">{packageModel.name}</code>
-                <span class="text-muted-foreground">{packageModel.version}</span>
-              </>
-            </div>
             <div class="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
               <div class="min-w-0">
-                <p class="eyebrow mb-3">{copy.name}</p>
                 <h2
                   class="section-title"
                   id={`package-${packageModel.slug}`}
                 >
-                  {purpose}
+                  {displayName}
                 </h2>
+                <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <code class="font-mono text-sm break-all text-muted-foreground">
+                    {packageModel.name}
+                  </code>
+                  <span class="rounded-md border px-2 py-0.5 text-xs text-muted-foreground">
+                    v{packageModel.version}
+                  </span>
+                </div>
                 <p class="mt-5 leading-7 text-muted-foreground">{copy.description}</p>
-                <p class="mt-4 text-sm leading-6 text-muted-foreground">{context}</p>
+
                 <div class="mt-6">
                   <CodeBlock
                     {source}

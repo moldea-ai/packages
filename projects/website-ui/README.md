@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@2.0.0
+pnpm add @moldea.ai/website-ui@3.0.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -81,15 +81,15 @@ Set `shouldFocusOnLoad` on a dedicated search page to focus its input without sc
 
 ## Runtime labels
 
-`@moldea.ai/website-ui/runtime-catalog` exports `RUNTIME_CATALOG` and `IRuntimeCatalogEntry`. Its 35 stable runtime IDs select guidance; they do not certify SDK compatibility or vendor endorsement. Each entry contains its display name and official asset paths, with optional dark variants and optical sizing (`icon`, `wordmark`, or `padded-wordmark`).
+`@moldea.ai/website-ui/runtime-catalog` exports `RUNTIME_CATALOG` and `IRuntimeCatalogEntry`. Its 35 stable runtime IDs select guidance; they do not certify SDK compatibility or vendor endorsement. Each entry contains its display name, official website or repository URL, and icon assets. Optional dark variants preserve contrast. `padded-icon` optical sizing accounts for clear space inside source assets, including Anthropic, Cloudflare, Convex, node-llama-cpp, and Pi Agent.
 
-`RuntimeGrid` displays the recognizable mark, display name, and complete runtime ID. Pass `hrefBase=""` on the runtime page to retain stable fragment targets. Relative destinations remain in the current tab; absolute destinations open a new tab with an external-link indicator. Entry-level hover and focus use shared theme tokens. Assets resolve at build time, load lazily with explicit dimensions, and require no client JavaScript.
+`RuntimeGrid` displays the recognizable icon, display name, and complete runtime ID. Every entry opens its official destination in a new tab with an external-link indicator. Three responsive rows appear initially; Load more reveals another three rows. Keyboard activation focuses the first revealed link. Runtime search fragments reveal the requested entry before scrolling to it. Without JavaScript, all 35 entries remain available. Entry-level hover and focus use shared theme tokens. Assets resolve at build time and load lazily with explicit dimensions.
 
 The `@moldea.ai/website-ui/runtime-logos/*` export exposes static SVG and PNG assets to other frameworks. Import named files through that public path. Catalog synchronization and asset safety are tested. The repository's [runtime logo record](../../docs/runtime-logos.md) records provenance and deferred permission follow-up; it is not shipped in the package.
 
 ## Conversations
 
-Compose `Conversation` and `ConversationMessage` for illustrative interactions. Messages accept `role="user"` or `role="assistant"`, rich slot content, and an optional `avatar` slot. Websites own domain artifacts, outcomes, and recorded evaluation evidence.
+Compose `Conversation` and `ConversationMessage` for illustrative interactions. Messages accept `role="user"` or `role="assistant"`, rich slot content, and an optional `avatar` slot. The shared presentation retains the avatar column, connecting line, user bubble, and bordered assistant response panel. The avatar slot supplies only the icon or image; the component owns its surrounding surface. Websites own domain artifacts, outcomes, and recorded evaluation evidence.
 
 For explicitly authored Markdown examples, opt in with `renderMarkdownDocument(markdown, { conversations: true })`. A top-level blockquote must begin with a paragraph containing only the exact strong speaker label `You` or `Coding agent`, followed by a separate content paragraph. For example:
 

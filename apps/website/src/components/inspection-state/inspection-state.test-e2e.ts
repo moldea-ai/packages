@@ -151,7 +151,7 @@ test('keeps result dialogs usable after client navigation and browser history', 
   });
   await page.goBack();
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
-    'Choose a label. Keep the checks explicit.',
+    'Guidance for the runtime you use.',
   );
   await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
   await page.goForward();
