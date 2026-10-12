@@ -1,7 +1,6 @@
 ---
 import { ArrowUpRight, Box, Database, FolderTree, Terminal } from '@lucide/astro';
 import { withBase } from '@moldea.ai/website-ui/site';
-import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 
 import type { IPublicPackage } from '../lib/model/types.ts';
 import type { IPackageDiscoveryCopy } from '../lib/discovery-copy/index.ts';
@@ -43,7 +42,7 @@ const Icon = icons[packageModel.slug as keyof typeof icons] ?? Box;
     <code>{packageModel.name}</code>
   </p>
   <p class="mb-6 leading-6 text-muted-foreground">
-    <InlineBrandText text={copy.description} />
+    {copy.description}
   </p>
   <div class="mt-auto flex items-end justify-between gap-3">
     <span class="text-sm font-bold">Explore package</span>

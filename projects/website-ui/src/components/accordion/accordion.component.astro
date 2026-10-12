@@ -1,6 +1,5 @@
 ---
 import { ChevronDown } from '@lucide/astro';
-import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
 
 // an optional document-unique group name makes sibling items mutually exclusive
 export interface Props {
@@ -31,7 +30,7 @@ if (!id.trim() || !title.trim() || (group !== undefined && !group.trim()))
       <span
         id={`${id}-title`}
         class="block text-sm leading-6 font-semibold sm:text-base"
-        ><InlineBrandText text={title} /></span
+        >{title}</span
       >
       {
         description && (
@@ -39,7 +38,7 @@ if (!id.trim() || !title.trim() || (group !== undefined && !group.trim()))
             id={`${id}-description`}
             class="mt-1 block text-xs leading-5 text-muted-foreground"
           >
-            <InlineBrandText text={description} />
+            {description}
           </span>
         )
       }

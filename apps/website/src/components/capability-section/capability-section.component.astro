@@ -1,7 +1,6 @@
 ---
 import { ArrowUpRight, ChevronDown } from '@lucide/astro';
 import ActionButton from '@moldea.ai/website-ui/action-button';
-import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import type {
@@ -33,10 +32,10 @@ const { catalog, group, examples, position } = Astro.props;
       id={`${group.id}-heading`}
       class="section-title"
     >
-      <InlineBrandText text={group.title} />
+      {group.title}
     </h2>
     <p class="mt-4 text-base leading-7 text-muted-foreground">
-      <InlineBrandText text={group.description} />
+      {group.description}
     </p>
     <a
       class="mt-4 inline-flex items-center gap-2 text-link text-sm font-medium"

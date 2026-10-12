@@ -1,5 +1,4 @@
 ---
-import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import Dialog from '@moldea.ai/website-ui/dialog';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 
@@ -49,7 +48,7 @@ const positionLabel = `Example ${position} of ${total}`;
     >
       <span class="flex min-w-0 flex-1 flex-col items-start gap-0.5">
         <span class="text-sm leading-6 font-semibold sm:text-base">
-          <InlineBrandText text={example.title} />
+          {example.title}
         </span>
         <span class="text-xs leading-5 text-muted-foreground">{positionLabel}</span>
       </span>
@@ -67,7 +66,7 @@ const positionLabel = `Example ${position} of ${total}`;
         id={`${dialogId}-title`}
         class="text-lg leading-6 font-semibold break-words"
       >
-        <InlineBrandText text={example.title} />
+        {example.title}
       </h2>
     </div>
     <div class="mx-auto max-w-3xl min-w-0">

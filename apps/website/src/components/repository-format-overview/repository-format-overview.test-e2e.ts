@@ -75,8 +75,8 @@ test('orders the homepage from purpose and a real check to tools and boundaries'
     'Guidance for your runtime.',
     'Know what a check tells you.',
   ]);
-  await expect(page.getByRole('region', { name: 'Runtime labels' })).toHaveCount(0);
-  await expect(page.getByRole('list', { name: 'Runtime labels' })).toHaveCount(1);
+  await expect(page.getByRole('region', { name: 'Runtime guidance' })).toHaveCount(0);
+  await expect(page.getByRole('list', { name: 'Runtime guidance' })).toHaveCount(1);
 });
 
 for (const width of [320, 768, 1024, 1440]) {

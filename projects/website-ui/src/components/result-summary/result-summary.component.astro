@@ -1,5 +1,4 @@
 ---
-import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
 import type { IStatusBadgeTone } from '../status-badge/status-badge.component.astro';
 
 // balanced presentation shared by outcome cards and slotted dialog headings
@@ -55,10 +54,10 @@ const toneClasses = {
       <Title
         id={headingId}
         class="text-sm leading-5 font-semibold"
-        ><InlineBrandText text={title} /></Title
+        >{title}</Title
       >
       <slot name="status" />
     </div>
-    <p class="text-xs leading-5 text-muted-foreground"><InlineBrandText text={description} /></p>
+    <p class="text-xs leading-5 text-muted-foreground">{description}</p>
   </div>
 </div>

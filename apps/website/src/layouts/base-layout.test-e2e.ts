@@ -162,7 +162,7 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
         });
         await expect(source).toHaveAttribute('target', '_blank');
         await expect(
-          source.locator('svg.lucide-git-branch[data-external-link-icon]'),
+          source.locator('svg.lucide-external-link[data-external-link-icon]'),
         ).toBeVisible();
         expect(brand!.x + brand!.width).toBeLessThan(linkRects[0].x);
         expect(linkRects.at(-1)!.right).toBeLessThan(search!.x);
@@ -209,7 +209,7 @@ for (const width of [320, 1440]) {
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await page.goto(toPublicPath('/runtimes/'));
       const target = page.getByRole('link', {
-        name: 'OpenAI',
+        name: 'OpenAI openai',
         exact: true,
       });
       const textLink = page.getByRole('link', {
@@ -500,7 +500,7 @@ test('publishes unique canonical, social, and structured search metadata', async
   });
 });
 
-test('renders standalone moldea references as inline code in visible prose', async ({ page }) => {
+test('keeps product references as ordinary prose', async ({ page }) => {
   await page.goto(toPublicPath('/'));
 
   const heroCopy = page
@@ -508,39 +508,29 @@ test('renders standalone moldea references as inline code in visible prose', asy
     .filter({ hasText: 'Want help adopting moldea in your coding agent?' });
   const heroBrandName = heroCopy.locator('code');
 
-  await expect(heroBrandName).toHaveText('moldea');
+  await expect(heroBrandName).toHaveCount(0);
   await expect(heroCopy).toContainText('Want help adopting moldea in your coding agent?');
 
   await page.goto(toPublicPath('/packages/core/'));
 
   const description = page.locator('article > header > p').first();
 
-  await expect(description.locator('code')).toHaveText('moldea');
+  await expect(description.locator('code')).toHaveCount(0);
   await expect(description).toContainText('binding coverage for moldea repositories.');
 });
 
-test('formats the brand in homepage copy and the guide heading without changing its text', async ({
-  page,
-}) => {
-  for (const route of ['/', '/getting-started/']) {
-    await page.goto(toPublicPath(route));
-    const unformatted = await page.locator('main').evaluate((main) => {
-      const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
-      const matches: string[] = [];
-      while (walker.nextNode()) {
-        const node = walker.currentNode;
-        if (
-          /\bmoldea\b/iu.test(node.textContent ?? '') &&
-          !node.parentElement?.closest('code, pre, script, style')
-        ) {
-          matches.push(node.textContent ?? '');
-        }
-      }
-      return matches;
-    });
-    expect(unformatted).toStrictEqual([]);
-  }
-  await expect(page.getByRole('heading', { level: 1 }).locator('code')).toHaveText('moldea');
+test('preserves ordinary guide headings and complete technical tokens', async ({ page }) => {
+  await page.goto(toPublicPath('/getting-started/'));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Get started with moldea');
+  await expect(page.getByRole('heading', { level: 1 }).locator('code')).toHaveCount(0);
+  await expect(page.getByText('/moldea/project.md', { exact: true }).first()).toBeVisible();
+  await page.goto(toPublicPath('/packages/'));
+  await expect(
+    page
+      .locator('#core code')
+      .filter({ hasText: /^@moldea\.ai\/core$/u })
+      .first(),
+  ).toHaveText('@moldea.ai/core');
 });
 
 test('joins the homepage closing section directly to the footer at mobile and desktop widths', async ({
@@ -1279,7 +1269,7 @@ test('lists the four public packages without the retired adapter family', async 
   await page.goto(toPublicPath('/packages/'));
   for (const slug of ['cli', 'core', 'repository', 'repository-fs']) {
     await expect(
-      page.getByRole('link', { name: new RegExp(`@moldea\\.ai/${slug} `) }),
+      page.locator(`#${slug}`).getByRole('link', { name: /Read the .+ guide/u }),
     ).toHaveAttribute('href', toPublicPath(`/packages/${slug}/`));
   }
   await expect(page.locator('a[href*="/adapters/"]')).toHaveCount(0);
@@ -1538,16 +1528,13 @@ test('renders product names safely in search results and keeps the latest reques
 
   await expect(status).toHaveText('1 result for “beta”.');
   await expect(result).toBeVisible();
-  await expect(result.locator('code')).toHaveCount(3);
-  await expect(result.locator('code').nth(0)).toHaveText('moldea');
-  await expect(result.locator('code').nth(1)).toHaveText('moldea');
-  await expect(result.locator('code').nth(2)).toHaveText('moldea');
+  await expect(result.locator('code')).toHaveCount(0);
   await expect(result.locator('img')).toHaveCount(0);
   await expect(result).toContainText('<img src=x onerror=alert(1)>');
 
   await input.fill('moldea');
   await input.press('Enter');
-  await expect(status.locator('code')).toHaveText('moldea');
+  await expect(status.locator('code')).toHaveCount(0);
   await expect(status).toHaveText('1 result for “moldea”.');
 });
 

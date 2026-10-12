@@ -14,9 +14,9 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
     ],
     featuredExampleIds: [
       'policy-reference-missing',
-      'policy-reference-connected',
       'exact-impact-missing',
       'manifest-path',
+      'policy-reference-connected',
     ],
     reference: { route: '/packages/core/diagnostics/', label: 'Explore structural checks' },
   },
@@ -50,9 +50,9 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
       'missing links and cycles',
     ],
     featuredExampleIds: [
-      'decision-replacement-chain',
+      'decision-reference-missing',
       'decision-cycle',
-      'decision-relationship-accepted',
+      'decision-replacement-chain',
       'decision-status-mismatch',
     ],
     reference: { route: '/repository-format/', label: 'Explore decision records' },
@@ -70,8 +70,8 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
       'warnings and accepted warnings',
     ],
     featuredExampleIds: [
-      'binding-export-passed',
       'binding-export-missing',
+      'binding-export-passed',
       'binding-commonjs',
       'warning-accepted',
     ],

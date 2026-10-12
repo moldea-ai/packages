@@ -91,9 +91,6 @@
     "./hero-backdrop": {
       "import": "./src/components/hero-backdrop/hero-backdrop.component.astro"
     },
-    "./inline-brand-text": {
-      "import": "./src/components/inline-brand-text/inline-brand-text.component.astro"
-    },
     "./local-search": {
       "import": "./src/components/local-search/local-search.component.astro"
     },
@@ -151,7 +148,13 @@
     "./runtime-grid": {
       "import": "./src/components/runtime-grid/runtime-grid.component.astro"
     },
-    "./runtime-logos/*": "./runtime-logos/*"
+    "./runtime-logos/*": "./runtime-logos/*",
+    "./conversation": {
+      "import": "./src/components/conversation/conversation.component.astro"
+    },
+    "./conversation-message": {
+      "import": "./src/components/conversation-message/conversation-message.component.astro"
+    }
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -178,6 +181,8 @@
     "@moldea.ai/core": "workspace:^7.0.0",
     "@playwright/test": "1.62.1",
     "@shikijs/rehype": "4.4.3",
+    "@types/hast": "3.0.5",
+    "@types/mdast": "4.0.4",
     "@types/node": "22.20.1",
     "astro": "7.2.8",
     "diff": "9.0.0",

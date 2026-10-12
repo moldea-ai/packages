@@ -1,0 +1,16 @@
+---
+// an ordered, static conversation; callers own the messages and any domain artifacts
+export interface Props {
+  ariaLabel?: string;
+  class?: string;
+}
+const { ariaLabel = 'Illustrative conversation', class: className } = Astro.props;
+---
+
+<ol
+  class:list={['grid min-w-0 gap-6', className]}
+  aria-label={ariaLabel}
+  data-conversation
+>
+  <slot />
+</ol>
