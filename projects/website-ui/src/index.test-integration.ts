@@ -95,7 +95,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.0.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.0.1' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -469,7 +469,7 @@ describe('published website UI package', () => {
             expect(
               await runtimeGrid
                 .getByRole('link', {
-                  name: /^OpenAI Agents SDK openai-agents-sdk \(opens in a new tab\)$/u,
+                  name: /^Vercel AI SDK vercel-ai-sdk \(opens in a new tab\)$/u,
                 })
                 .evaluate((node) => node === document.activeElement),
             ).toBe(true);

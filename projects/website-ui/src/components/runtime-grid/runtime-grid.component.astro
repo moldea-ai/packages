@@ -1,5 +1,5 @@
 ---
-import { ExternalLink, Plus } from '@lucide/astro';
+import { ChevronDown, ExternalLink } from '@lucide/astro';
 import ActionButton from '@moldea.ai/website-ui/action-button';
 import { RUNTIME_CATALOG, type IRuntimeCatalogEntry } from '@moldea.ai/website-ui/runtime-catalog';
 
@@ -84,64 +84,55 @@ const runtimes: IRuntimeCatalogEntry[] = [...RUNTIME_CATALOG];
       ))
     }
   </ul>
-  <div class="mt-6 flex flex-wrap items-center justify-center gap-4">
+  <div class="mt-5 flex justify-center has-[[hidden]]:hidden">
     <ActionButton
       variant="outline"
+      aria-label="Load more runtimes"
       aria-controls={listId}
       hidden
       data-runtime-load
     >
-      <Plus
+      Load more
+      <ChevronDown
         class="size-4"
         aria-hidden="true"
       />
-      Load more runtimes
     </ActionButton>
-    <p
-      class="text-xs text-muted-foreground"
-      aria-live="polite"
-      data-runtime-count
-    >
-      {runtimes.length} runtimes
-    </p>
   </div>
 </div>
 
 <script>
-  /** Shows three responsive rows per batch while preserving the complete no-JavaScript list. */
+  /** Shows three responsive rows before revealing the complete catalog while preserving the complete no-JavaScript list. */
   const initializeRuntimeCatalogs = () => {
     for (const catalog of document.querySelectorAll<HTMLElement>('[data-runtime-catalog]')) {
       if (catalog.dataset.initialized) continue;
       const grid = catalog.querySelector<HTMLElement>('[data-runtime-grid]');
       const button = catalog.querySelector<HTMLButtonElement>('[data-runtime-load]');
-      const count = catalog.querySelector<HTMLElement>('[data-runtime-count]');
-      if (!grid || !button || !count) continue;
+      if (!grid || !button) continue;
       catalog.dataset.initialized = 'true';
       const items = [...grid.children].filter(
         (item): item is HTMLLIElement => item instanceof HTMLLIElement,
       );
-      let rows = 3;
+      let isExpanded = false;
       let visibleCount = 0;
       let columns = 0;
       const update = () => {
         columns = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
-        visibleCount = Math.min(rows * columns, items.length);
+        visibleCount = isExpanded ? items.length : Math.min(3 * columns, items.length);
         for (const [index, item] of items.entries()) {
           if (index >= visibleCount && item.contains(document.activeElement)) button.focus();
           item.hidden = index >= visibleCount;
         }
         button.hidden = visibleCount === items.length;
-        count.textContent = `Showing ${visibleCount} of ${items.length} runtimes`;
       };
       const controller = new AbortController();
       button.addEventListener(
         'click',
-        (event) => {
+        () => {
           const firstNewItem = items[visibleCount];
-          rows += 3;
+          isExpanded = true;
           update();
-          if (event.detail === 0 || button.hidden)
-            firstNewItem?.querySelector('a')?.focus({ preventScroll: true });
+          firstNewItem?.querySelector('a')?.focus({ preventScroll: true });
         },
         { signal: controller.signal },
       );
@@ -151,7 +142,7 @@ const runtimes: IRuntimeCatalogEntry[] = [...RUNTIME_CATALOG];
       const revealRequestedRuntime = () => {
         const index = items.findIndex((item) => item.id === location.hash.slice(1));
         if (index < 0) return;
-        rows = Math.max(rows, Math.ceil((index + 1) / (3 * columns)) * 3);
+        if (index >= visibleCount) isExpanded = true;
         update();
         items[index]?.scrollIntoView({ block: 'start' });
       };
