@@ -60,7 +60,7 @@ test('connects homepage, desktop navigation, and footer to the guide', async ({ 
   await expect(cloud).toHaveAttribute('href', 'https://moldea.ai');
   await expect(cloud).toHaveAttribute('target', '_blank');
   await expect(cloud).toHaveAttribute('rel', 'noopener noreferrer');
-  await expect(content).toContainText('Cloud is optional.');
+  await expect(content).toContainText('Cloud review is in development.');
   await expect(
     content
       .locator('#adoption-guide')
