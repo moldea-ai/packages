@@ -44,7 +44,6 @@ The reference is for repository development only. Builds, tests, CI, and package
 - [Repository Format version `1` specification](specifications/repository-format.md): the public format contract; `@moldea.ai/core` is its executable reference implementation.
 - [Local development](docs/local-development.md): commands, builds, tests, and packed-consumer checks.
 - [npm releases](docs/npm-releases.md): version selection, preparation, publication, and recovery.
-- [Launch readiness](docs/launch-readiness.md): milestone verification, resource calibration, package audits, and final release gates.
 - [Packages website](apps/website/README.md): website source model, verification, and deployment.
 - `projects/<project>/README.md` and `projects/<project>/docs/**`: public package behavior and API documentation.
 

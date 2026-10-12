@@ -12,15 +12,18 @@ import { createCoreEntries, MANIFEST_PATH, PROJECT_PATH } from './constants.ts';
 const scopeManifest = `version: 1
 context:
   /moldea/project.md:
-    bindings: [{ path: /src/returns/policy.ts }]
-    affectedBy: [/src/returns/**]
+    bindings:
+      - path: /src/returns/policy.ts
+    affectedBy:
+      - /src/returns/**
 unresolved:
   international-returns:
     category: policy
     effect: warning
     description: International return eligibility is not documented.
     resolution: Record the approved international return policy.
-    related: [{ path: /src/returns/international.ts }]
+    related:
+      - path: /src/returns/international.ts
 `;
 
 /** Builds a content-bounded operation example without inventing a validation verdict. */
@@ -52,8 +55,11 @@ const createMixedDiagnosticExample = async (): Promise<ICapabilityCase> => {
     `version: 1
 context:
   /moldea/project.md:
-    bindings: [{ path: /src/returns.ts, symbol: canReturn }]
-    affectedBy: [/src/future/**]
+    bindings:
+      - path: /src/returns.ts
+        symbol: canReturn
+    affectedBy:
+      - /src/future/**
 `,
     [{ path: '/src/returns.ts', type: 'file', content: 'export const otherRule = () => true;\n' }],
   );
@@ -179,9 +185,12 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
 context:
   /moldea/project.md:
     bindings:
-      - { path: /src/returns.ts, symbol: canReturn }
-      - { path: /src/returns.ts, symbol: otherRule }
-    affectedBy: [/src/future/**]
+      - path: /src/returns.ts
+        symbol: canReturn
+      - path: /src/returns.ts
+        symbol: otherRule
+    affectedBy:
+      - /src/future/**
 `,
         [
           {

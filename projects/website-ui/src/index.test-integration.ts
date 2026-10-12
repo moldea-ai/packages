@@ -95,7 +95,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.0.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.1.0' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -136,6 +136,7 @@ describe('published website UI package', () => {
     expect(packedPaths).toContain('src/components/tabbed-panels/tabbed-panels.component.astro');
     expect(packedPaths).toContain('src/components/dialog/dialog.component.astro');
     expect(packedPaths).toContain('src/components/file-preview/file-preview.component.astro');
+    expect(packedPaths).toContain('src/components/file-tree/file-tree.component.astro');
     expect(packedPaths).toContain('src/components/result-summary/result-summary.component.astro');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
@@ -234,6 +235,7 @@ describe('published website UI package', () => {
         "import Dialog from '@moldea.ai/website-ui/dialog';",
         "import EvaluationReplay from '@moldea.ai/website-ui/evaluation-replay';",
         "import FilePreview from '@moldea.ai/website-ui/file-preview';",
+        "import FileTree from '@moldea.ai/website-ui/file-tree';",
         "import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';",
         "import Conversation from '@moldea.ai/website-ui/conversation';",
         "import ConversationMessage from '@moldea.ai/website-ui/conversation-message';",
@@ -331,6 +333,7 @@ describe('published website UI package', () => {
         '    <section><h2>Fixture checks</h2><Accordion id="check-one" group="fixture-accordion" title="First check" description="One concise outcome."><StatusBadge slot="status" label="Valid" tone="success" size="sm" /><p>First visual</p></Accordion><Accordion {...accordionProps}><FilePreview path="src/policy.ts" label="Policy"><p>Second visual</p></FilePreview></Accordion></section>',
         '    <Accordion id="closed-check" title="Closed check"><p>Optional detail</p></Accordion>',
         '    <FilePreview {...fileProps}><span slot="icon">File</span><StatusBadge slot="status" label="Missing" size="sm" tone="danger" /><pre class="code-block" tabindex="0" role="region" aria-label="Return policy source"><code>export const returnWindowDays = 30;</code></pre></FilePreview>',
+        '    <FileTree ariaLabel="Repository files" nodes={[{ kind: "file", name: "policy.md", path: "policy.md", removed: true }]} />',
         '    <Dialog id="composed-result" title="Reference not found" triggerLabel="Inspect composed result" isOverlayCloseEnabled><ResultSummary slot="heading" {...summaryProps}><span slot="icon">!</span><StatusBadge slot="status" label="Invalid" size="sm" tone="danger" /></ResultSummary><p>Composed result body</p></Dialog>',
         '    <ResultSummary title="Metadata available" description="Logical paths only." as="h3" />',
         '    <Dialog id="fixture-result" title="Fixture result" triggerLabel="View result"><div slot="heading"><h2 id="fixture-result-title">Fixture result</h2><StatusBadge label="Invalid" size="sm" tone="danger" /><p>Recorded check</p></div><p>Result content</p></Dialog>',

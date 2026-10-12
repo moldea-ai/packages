@@ -8,6 +8,7 @@ import type { IPublicPackage } from '../../model/types.ts';
 import type { ICapabilityCase } from '../index.ts';
 
 import { createCliExamples } from './cli-examples.ts';
+import { CliCollectionResult } from './types.ts';
 
 const repositoryRoot = fileURLToPath(new URL('../../../../../../', import.meta.url));
 let packages: IPublicPackage[];
@@ -74,8 +75,43 @@ test('distinguishes a failed check from an operational refusal', () => {
     kind: 'cli',
     status: 'invalid',
     exitStatus: 1,
-    facts: { valid: false },
+    facts: {
+      valid: false,
+      coverageCounts: { bindings: 1, exportsPassed: 0, exportsFailed: 1, exportsNotChecked: 0 },
+      coverage: {
+        path: '/src/returns/policy.ts',
+        symbol: 'checkEligibility',
+        exportCheck: 'failed',
+      },
+      diagnostics: [{ code: 'MOLDEA_REFERENCE_EXPORT_MISSING' }],
+    },
+    envelopeExcerpt: {
+      result: {
+        coverageCounts: { bindings: 1, exportsPassed: 0, exportsFailed: 1, exportsNotChecked: 0 },
+        page: {
+          records: [
+            { kind: 'diagnostic', code: 'MOLDEA_REFERENCE_EXPORT_MISSING' },
+            { kind: 'coverage', exportCheck: 'failed', symbol: 'checkEligibility' },
+          ],
+        },
+      },
+    },
   });
+});
+
+test('rejects misplaced coverage totals in the CLI collection schema', () => {
+  const result = {
+    valid: false,
+    counts: { coverage: 1 },
+    coverageCounts: { bindings: 1, exportsPassed: 0, exportsFailed: 1, exportsNotChecked: 0 },
+    page: { cursor: null, records: [] },
+  };
+  expect(CliCollectionResult.safeParse(result).success).toBe(true);
+  expect(
+    CliCollectionResult.safeParse({ ...result, counts: { ...result.counts, exportsFailed: 1 } })
+      .success,
+  ).toBe(false);
+  expect(CliCollectionResult.safeParse({ ...result, unknownField: true }).success).toBe(false);
 });
 
 test('exercises both changed-path inputs and Git selection without exposing document bodies', () => {

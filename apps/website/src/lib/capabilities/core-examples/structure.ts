@@ -135,35 +135,35 @@ export const STRUCTURE_EXAMPLES: ICoreExampleDefinition[] = [
     'manifest-path',
     'A path leaves its root',
     'A logical reference cannot traverse outside the repository.',
-    'version: 1\ncontext:\n  /moldea/project.md:\n    bindings: [{ path: /../policy.ts }]\n',
+    'version: 1\ncontext:\n  /moldea/project.md:\n    bindings:\n      - path: /../policy.ts\n',
     ['MOLDEA_PATH_INVALID'],
   ),
   manifestCase(
     'manifest-glob',
     'A malformed impact pattern',
     'Patterns have a defined grammar rather than arbitrary filesystem matching.',
-    'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy: ["/src/[policy].ts"]\n',
+    'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy:\n      - "/src/[policy].ts"\n',
     ['MOLDEA_GLOB_INVALID'],
   ),
   manifestCase(
     'manifest-duplicate-path',
     'The same path twice',
     'Repeated exact impact declarations are identified.',
-    'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy: [/src/policy.ts, /src/policy.ts]\n',
+    'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy:\n      - /src/policy.ts\n      - /src/policy.ts\n',
     ['MOLDEA_PATH_DUPLICATE'],
   ),
   manifestCase(
     'manifest-duplicate-pattern',
     'The same pattern twice',
     'Repeated impact patterns are identified.',
-    'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy: [/src/**, /src/**]\n',
+    'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy:\n      - /src/**\n      - /src/**\n',
     ['MOLDEA_PATTERN_DUPLICATE'],
   ),
   manifestCase(
     'binding-canonical-symbol',
     'A symbol on a document',
     'Canonical document references cannot claim source-code symbols.',
-    'version: 1\ncontext:\n  /moldea/project.md:\n    bindings: [{ path: /moldea/context/returns.md, symbol: policy }]\n',
+    'version: 1\ncontext:\n  /moldea/project.md:\n    bindings:\n      - path: /moldea/context/returns.md\n        symbol: policy\n',
     ['MOLDEA_SYMBOL_FORBIDDEN'],
   ),
   projectCase(
@@ -213,7 +213,7 @@ export const STRUCTURE_EXAMPLES: ICoreExampleDefinition[] = [
           ? 'The path exists, but it is a folder instead of a file.'
           : 'A declared source connection must resolve to a regular repository file.',
       createCoreEntries(
-        `version: 1\ncontext:\n  /moldea/project.md:\n    bindings: [{ path: ${state === 'directory' ? '/src/returns' : '/src/returns/policy.ts'} }]\n`,
+        `version: 1\ncontext:\n  /moldea/project.md:\n    bindings:\n      - path: ${state === 'directory' ? '/src/returns' : '/src/returns/policy.ts'}\n`,
         state === 'missing'
           ? []
           : [
@@ -237,7 +237,7 @@ export const STRUCTURE_EXAMPLES: ICoreExampleDefinition[] = [
     'An exact impact path is missing',
     'Unlike a glob, an exact affected path must exist.',
     createCoreEntries(
-      'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy: [/src/returns/policy.ts]\n',
+      'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy:\n      - /src/returns/policy.ts\n',
     ),
     ['MOLDEA_IMPACT_PATH_MISSING'],
   ),
@@ -246,7 +246,7 @@ export const STRUCTURE_EXAMPLES: ICoreExampleDefinition[] = [
     'An exact impact path is a directory',
     'Exact impact paths identify files, not directory selections.',
     createCoreEntries(
-      'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy: [/src/returns]\n',
+      'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy:\n      - /src/returns\n',
       [{ path: '/src/returns', type: 'directory' }],
     ),
     ['MOLDEA_IMPACT_PATH_NOT_FILE'],

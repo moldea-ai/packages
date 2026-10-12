@@ -206,7 +206,7 @@ export const DECISION_EXAMPLES: ICoreExampleDefinition[] = [
         },
       ],
       status === 'accepted' ? [] : ['MOLDEA_DECISION_RELATIONSHIP_INACTIVE'],
-      `version: 1\ndecisions:\n  ${originalPath}:\n    affectedBy: [/src/returns/**]\n`,
+      `version: 1\ndecisions:\n  ${originalPath}:\n    affectedBy:\n      - /src/returns/**\n`,
     ),
   ),
 ];

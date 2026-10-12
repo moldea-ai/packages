@@ -7,7 +7,10 @@ export interface Props {
   ariaLabel?: string;
 }
 const { ariaLabel = 'Runtime guidance' } = Astro.props;
-const listId = `runtimes-${crypto.randomUUID()}`;
+const listId = `runtimes-${ariaLabel
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-|-$/g, '')}`;
 const logoSources = import.meta.glob<string>('../../../runtime-logos/*.{svg,png}', {
   eager: true,
   import: 'default',

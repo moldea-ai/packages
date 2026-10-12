@@ -73,6 +73,21 @@ const permittedAttributes = new Set([
 ]);
 
 describe('runtime catalog', () => {
+  test('puts eve in the first three desktop rows, immediately before Mastra', () => {
+    expect(RUNTIME_CATALOG.slice(0, 9).map(({ id }) => id)).toStrictEqual([
+      'anthropic',
+      'openai',
+      'vercel-ai-sdk',
+      'google-genai',
+      'claude-agent-sdk',
+      'langchain',
+      'langgraph',
+      'openai-agents-sdk',
+      'eve',
+    ]);
+    expect(RUNTIME_CATALOG[9]?.id).toBe('mastra');
+  });
+
   test('matches every Core runtime label exactly once, excluding custom', () => {
     expect(RUNTIME_CATALOG.map((runtime) => runtime.id).sort()).toStrictEqual(
       RECOGNIZED_RUNTIME_IDS.filter((id) => id !== 'custom').sort(),

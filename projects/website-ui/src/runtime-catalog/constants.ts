@@ -56,6 +56,12 @@ export const RUNTIME_CATALOG = [
     darkLogoPath: '@moldea.ai/website-ui/runtime-logos/openai-dark.svg',
   },
   {
+    id: 'eve',
+    websiteUrl: 'https://eve.dev/',
+    displayName: 'eve',
+    logoPath: '@moldea.ai/website-ui/runtime-logos/vercel.svg',
+  },
+  {
     id: 'mastra',
     websiteUrl: 'https://mastra.ai/',
     displayName: 'Mastra',
@@ -218,12 +224,6 @@ export const RUNTIME_CATALOG = [
     displayName: 'Pi Agent',
     logoPath: '@moldea.ai/website-ui/runtime-logos/pi.svg',
     logoSize: 'padded-icon',
-  },
-  {
-    id: 'eve',
-    websiteUrl: 'https://eve.dev/',
-    displayName: 'eve',
-    logoPath: '@moldea.ai/website-ui/runtime-logos/vercel.svg',
   },
   {
     id: 'ibm-watsonx-ai',
