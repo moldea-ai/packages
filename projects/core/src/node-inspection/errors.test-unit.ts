@@ -153,7 +153,7 @@ describe('safe isolated inspection failures', () => {
     },
     {
       family: 'configuration',
-      options: { operation: 'create-core', code: 'INVALID_ADAPTER_DEFINITION', cause: 'private' },
+      options: { operation: 'create-core', code: 'UNSUPPORTED_CODE', cause: 'private' },
     },
     {
       family: 'repository',

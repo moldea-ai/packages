@@ -11,12 +11,17 @@ const documents = [
     searchText: 'snapshot',
     url: '/snapshots/',
   },
-  { title: 'Adapters', description: 'Inspect adapters.', searchText: 'adapter', url: '/adapters/' },
+  {
+    title: 'Runtimes',
+    description: 'Read runtime guidance.',
+    searchText: 'runtime',
+    url: '/runtimes/',
+  },
 ];
 
 // Astro's underscore prefix keeps page-owned browser tests out of production routes.
 for (const [query, status, resultCount] of [
-  ['adapter', '1 result for “adapter”.', 1],
+  ['runtime', '1 result for “runtime”.', 1],
   ['no-match', 'No matching documentation, capability, or runtime was found.', 0],
   ['', 'Enter a package, capability, API symbol, or runtime ID.', 0],
   ['   ', 'Enter a package, capability, API symbol, or runtime ID.', 0],
@@ -62,7 +67,7 @@ for (const [query, status, resultCount] of [
       ).toHaveCount(0);
       if (resultCount > 0) {
         await expect(page.locator('[data-search-results]').getByRole('heading')).toHaveText(
-          'Adapters',
+          'Runtimes',
         );
         await input.fill('snapshot');
         await input.press('Enter');
