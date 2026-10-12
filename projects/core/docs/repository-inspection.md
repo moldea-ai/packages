@@ -8,7 +8,7 @@ order: 20
 
 ## Changed-path preactivation
 
-Use `matchManifestScope` when a caller needs to decide whether known changed paths intersect declared moldea relationships.
+Use `matchManifestScope` when a caller needs to decide whether known changed paths intersect declared `moldea` relationships.
 
 ```typescript
 import { matchManifestScope } from '@moldea.ai/core/scope';

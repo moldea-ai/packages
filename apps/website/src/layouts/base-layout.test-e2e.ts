@@ -503,7 +503,7 @@ test('publishes unique canonical, social, and structured search metadata', async
   });
 });
 
-test('keeps product references as ordinary prose', async ({ page }) => {
+test('formats complete product names while preserving plain metadata', async ({ page }) => {
   await page.goto(toPublicPath('/'));
 
   const heroCopy = page
@@ -511,7 +511,7 @@ test('keeps product references as ordinary prose', async ({ page }) => {
     .filter({ hasText: 'Want help adopting moldea in your coding agent?' });
   const heroBrandName = heroCopy.locator('code');
 
-  await expect(heroBrandName).toHaveCount(0);
+  await expect(heroBrandName).toHaveText('moldea');
   await expect(heroCopy).toContainText('Want help adopting moldea in your coding agent?');
 
   await page.goto(toPublicPath('/packages/core/'));
@@ -521,6 +521,40 @@ test('keeps product references as ordinary prose', async ({ page }) => {
   await expect(description.locator('code')).toHaveCount(0);
   await expect(description).toContainText('binding coverage for moldea repositories.');
 });
+
+for (const theme of ['light', 'dark'] as const) {
+  for (const width of [320, 768, 1440]) {
+    test(`renders complete product names in prose at ${width}px in ${theme}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto(toPublicPath('/getting-started/'));
+
+      const content = page.getByRole('main');
+      const skillLink = content.getByRole('link', {
+        name: 'moldea Agent Skill (opens in a new tab)',
+        exact: true,
+      });
+      await expect(skillLink.locator('code')).toHaveText('moldea Agent Skill');
+      await expect(skillLink).toHaveAttribute('href', 'https://skill.moldea.ai/');
+      await skillLink.focus();
+      await expect(skillLink).toBeFocused();
+      await expect(content.locator('code').filter({ hasText: /^moldea Cloud$/u })).toHaveText(
+        'moldea Cloud',
+      );
+      const cloudAction = content.getByRole('link', { name: 'Explore moldea Cloud', exact: true });
+      await expect(cloudAction).toBeVisible();
+      await expect(cloudAction.locator('code')).toHaveCount(0);
+      await expect(content.getByRole('heading', { level: 1 }).locator('code')).toHaveCount(0);
+      await expect(
+        content.getByRole('navigation', { name: 'Explore the ecosystem' }).locator('code'),
+      ).toHaveCount(0);
+      await expect(page.getByRole('contentinfo').locator('code')).toHaveText('moldea');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+    });
+  }
+}
 
 test('preserves ordinary guide headings and complete technical tokens', async ({ page }) => {
   await page.goto(toPublicPath('/getting-started/'));
