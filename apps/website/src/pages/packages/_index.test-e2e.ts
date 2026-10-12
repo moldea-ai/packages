@@ -31,7 +31,7 @@ for (const width of [320, 768, 1440]) {
         const dialog = page.getByRole('dialog');
         await expect(dialog).toBeVisible();
         const bounds = await dialog.boundingBox();
-        expect(bounds!.width).toBeLessThanOrEqual(width);
+        expect(bounds!.width).toBe(width < 640 ? width : Math.min(width - 32, 672));
         await page.keyboard.press('Escape');
         await expect(trigger).toBeFocused();
       }

@@ -1,12 +1,22 @@
 ---
-import { ArrowRight } from '@lucide/astro';
-import Accordion from '@moldea.ai/website-ui/accordion';
+import {
+  ArrowDown,
+  ArrowRight,
+  ExternalLink,
+  GitBranch,
+  GitPullRequest,
+  ShieldAlert,
+} from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
 import CodeBlock from '@moldea.ai/website-ui/code-block';
+import CodeDiff from '@moldea.ai/website-ui/code-diff';
+import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import Conversation from '@moldea.ai/website-ui/conversation';
 import ConversationMessage from '@moldea.ai/website-ui/conversation-message';
-import { renderMarkdownDocument } from '@moldea.ai/website-ui/markdown';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
+import ResultSummary from '@moldea.ai/website-ui/result-summary';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import { RepositoryCheckPreview } from '../../components/repository-check-preview/index.ts';
@@ -15,32 +25,15 @@ import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 
 const model = loadWebsiteModel();
 const guide = model.gettingStarted;
-const rendered = await renderMarkdownDocument(guide.markdown, {
-  basePath: import.meta.env.BASE_URL,
-});
 const breadcrumbs = [{ href: '/', label: 'Home' }, { label: guide.navigationTitle }];
-const journey = [
-  {
-    title: 'Put project intent in Git.',
-    description:
-      'Use the Agent Skill to adopt the repository and capture its purpose, rules, and decisions.',
-    href: 'https://skill.moldea.ai/',
-    label: 'Install the Agent Skill',
-  },
-  {
-    title: 'Check declared connections.',
-    description: 'Run the local CLI when project files or their connections to code change.',
-    href: withBase('/packages/cli/', import.meta.env.BASE_URL),
-    label: 'CLI overview and installation guide',
-  },
-  {
-    title: 'Review the evidence.',
-    description:
-      'Read diagnostics and coverage. Ask for a repair deliberately, then inspect the updated repository.',
-    href: withBase('/capabilities/', import.meta.env.BASE_URL),
-    label: 'Explore executed examples',
-  },
+const sections = [
+  { id: 'agent-skill', label: 'Agent Skill' },
+  { id: 'local-packages', label: 'Packages' },
+  { id: 'cloud', label: 'moldea Cloud' },
+  { id: 'pr-assurance', label: 'PR Assurance' },
 ];
+const beforeInstruction = 'Explain eligibility. Never approve refunds.';
+const afterInstruction = 'Approve eligible refunds using the order details.';
 ---
 
 <BaseLayout
@@ -50,106 +43,364 @@ const journey = [
 >
   <section class="page-shell pt-8 pb-section-gap">
     <Breadcrumbs items={breadcrumbs} />
-    <header class="grid items-start gap-10 pt-12 pb-12 sm:pt-16 lg:grid-cols-2 lg:gap-16">
-      <div class="min-w-0">
-        <p class="eyebrow mb-4">Choose your starting point</p>
-        <h1 class="page-title">{guide.title}</h1>
-        <p class="mt-6 text-lg leading-8 text-muted-foreground">{guide.description}</p>
-        <ActionLink
-          class="mt-7"
-          href="https://skill.moldea.ai/"
-          target="_blank"
-          >Start with the Agent Skill</ActionLink
-        >
-        <a
-          class="mt-5 block text-link"
-          href={withBase('/packages/', import.meta.env.BASE_URL)}
-          >Building your own tools? Explore the packages.</a
-        >
-      </div>
-      <div class="min-w-0 sm:rounded-xl sm:border sm:bg-card sm:p-6">
-        <p class="eyebrow mb-5">Illustrative adoption conversation</p>
-        <Conversation ariaLabel="Adopting project context">
-          <ConversationMessage role="user"
-            ><p>Initialize moldea in this repository.</p></ConversationMessage
-          >
-          <ConversationMessage role="assistant"
-            ><p class="leading-7 text-muted-foreground">
-              I’ll inspect the repository and capture its purpose and constraints in <code
-                class="inline-code">/moldea/project.md</code
-              >. Then we can connect the relevant context to its code.
-            </p></ConversationMessage
-          >
-        </Conversation>
-      </div>
-    </header>
-    <ol
-      class="grid gap-8 border-y py-8 md:grid-cols-3"
-      aria-label="Adoption journey"
-    >
-      {
-        journey.map((step, index) => (
-          <li class="min-w-0">
-            <>
-              <span class="mb-4 block font-mono text-sm text-muted-foreground">0{index + 1}</span>
-              <h2 class="text-lg font-semibold">{step.title}</h2>
-              <p class="mt-3 text-sm leading-7 text-muted-foreground">{step.description}</p>
-              <ActionLink
-                class="mt-4"
-                href={step.href}
-                target={step.href.startsWith('https:') ? '_blank' : undefined}
-                variant="link"
-                size="sm"
-              >
-                {step.label}
-                {!step.href.startsWith('https:') && (
-                  <ArrowRight
-                    class="size-4"
-                    aria-hidden="true"
-                  />
-                )}
-              </ActionLink>
-            </>
-          </li>
-        ))
-      }
-    </ol>
-    <section
-      class="mt-12 grid items-start gap-8 lg:grid-cols-2 lg:gap-16"
-      aria-labelledby="local-check-title"
-    >
-      <div class="min-w-0">
-        <p class="eyebrow mb-4">Inside an adopted repository</p><h2
-          class="section-title"
-          id="local-check-title"
-        >
-          Find a broken connection before it spreads.
-        </h2><p class="mt-5 leading-8 text-muted-foreground">
-          This synthetic support agent declares a tool whose implementation file is missing. The
-          local CLI reports the structural failure. It does not run the agent or repair the file.
-        </p><div class="mt-6">
-          <CodeBlock
-            source="moldea validate --json"
-            language="bash"
-            ariaLabel="Run a local structural check"
-          />
-        </div><p class="mt-5 text-sm leading-7 text-muted-foreground">
-          Local checks read only the selected repository. They make no model calls or network
-          requests and send no telemetry.
-        </p>
-      </div>
-      <RepositoryCheckPreview example={model.instructionExample} />
-    </section>
-    <div class="mt-12">
-      <Accordion
-        id="adoption-guide"
-        title="Read the complete adoption guide"
-        description="Installation, Cloud, programmatic integrations, runtime guidance, and repository files."
-        ><div
-          class="prose-moldea min-w-0"
-          set:html={rendered.html}
-        /></Accordion
+    <header class="max-w-4xl pt-12 pb-12 sm:pt-16">
+      <p class="eyebrow mb-4">The moldea ecosystem</p>
+      <h1 class="page-title">{guide.title}</h1>
+      <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">{guide.description}</p>
+      <nav
+        class="mt-8 flex flex-wrap gap-2"
+        aria-label="Explore the ecosystem"
       >
+        {
+          sections.map(({ id, label }) => (
+            <ActionLink
+              href={`#${id}`}
+              variant="outline"
+              size="sm"
+            >
+              {label}
+            </ActionLink>
+          ))
+        }
+      </nav>
+    </header>
+
+    <div
+      id="adoption-guide"
+      class="grid gap-section-gap"
+    >
+      <section
+        id="agent-skill"
+        class="grid scroll-mt-24 items-center gap-8 border-t pt-10 lg:grid-cols-2 lg:gap-16"
+        aria-labelledby="skill-title"
+        data-ecosystem-section
+      >
+        <div class="min-w-0">
+          <p class="eyebrow mb-4">01 · Agent Skill</p>
+          <h2
+            id="skill-title"
+            class="section-title"
+          >
+            Give your coding agent the project context.
+          </h2>
+          <p class="mt-5 leading-8 text-muted-foreground">
+            Start with the <a
+              class="text-link"
+              href="https://skill.moldea.ai/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >moldea Agent Skill<span class="sr-only"> (opens in a new tab)</span><ExternalLink
+                class="ml-1 inline size-3.5"
+                aria-hidden="true"
+                data-external-link-icon
+              /></a
+            >. It guides adoption, captures your project's purpose and decisions in Git, and brings
+            relevant knowledge into ongoing work.
+          </p>
+          <p class="mt-4 text-sm leading-7 text-muted-foreground">
+            Installing a package alone does not adopt the repository. The Skill website owns
+            installation instructions and tutorials.
+          </p>
+          <ActionLink
+            class="mt-6"
+            href="https://skill.moldea.ai/"
+            target="_blank"
+            >Start with the Agent Skill</ActionLink
+          >
+        </div>
+        <figure
+          class="min-w-0"
+          aria-label="Illustrative adoption conversation"
+        >
+          <figcaption class="eyebrow mb-5">Adopt an existing project</figcaption>
+          <Conversation ariaLabel="Adopting project context">
+            <ConversationMessage role="user"
+              ><p class="text-sm leading-6 font-medium">
+                Initialize moldea in this repository.
+              </p></ConversationMessage
+            >
+            <ConversationMessage role="assistant">
+              <p class="mb-4 text-sm leading-7">
+                I captured the project's purpose and connected its refund policy to the code that
+                enforces it.
+              </p>
+              <FilePreview
+                path="moldea/project.md"
+                label="Project brief"
+              >
+                <div class="p-4 text-sm leading-7">
+                  <p class="font-semibold">Trailside support</p><p
+                    class="mt-2 text-muted-foreground"
+                  >
+                    Support explains the refund policy and looks up orders. The application decides
+                    eligibility.
+                  </p>
+                </div>
+              </FilePreview>
+              <ConnectionLabel
+                ><ArrowDown
+                  slot="icon"
+                  class="size-4"
+                />Connected project knowledge</ConnectionLabel
+              >
+              <FilePreview
+                path="moldea/context/refund-policy.md"
+                label="Refund policy"
+              />
+            </ConversationMessage>
+          </Conversation>
+        </figure>
+      </section>
+
+      <section
+        id="local-packages"
+        class="grid scroll-mt-24 items-center gap-8 border-t pt-10 lg:grid-cols-2 lg:gap-16"
+        aria-labelledby="packages-title"
+        data-ecosystem-section
+      >
+        <div class="min-w-0">
+          <p class="eyebrow mb-4">02 · Open-source packages</p>
+          <h2
+            id="packages-title"
+            class="section-title"
+          >
+            Check the connections as your code changes.
+          </h2>
+          <p class="mt-5 leading-8 text-muted-foreground">
+            The local CLI checks repository structure and declared files and exports. In this
+            executed example, an agent's declared tool implementation is missing.
+          </p>
+          <div class="mt-6">
+            <CodeBlock
+              source="moldea validate --json"
+              language="bash"
+              ariaLabel="Run a local structural check"
+            />
+          </div>
+          <p class="mt-4 text-sm leading-7 text-muted-foreground">
+            The CLI is read-only. It makes no model calls or network requests and sends no
+            telemetry. These guarantees describe the local CLI, not every coding-agent or Agent
+            Skill workflow.
+          </p>
+          <ActionLink
+            class="mt-5"
+            href={withBase('/packages/cli/', import.meta.env.BASE_URL)}
+            variant="link"
+            >CLI overview and installation guide<ArrowRight
+              class="size-4"
+              aria-hidden="true"
+            /></ActionLink
+          >
+          <p class="mt-5 text-sm leading-7 text-muted-foreground">
+            Building your own tooling? <a
+              class="text-link"
+              href={withBase('/packages/core/', import.meta.env.BASE_URL)}
+              >Core</a
+            > owns inspection; <a
+              class="text-link"
+              href={withBase('/packages/repository/', import.meta.env.BASE_URL)}
+              >Repository</a
+            > supplies a source-neutral reader; <a
+              class="text-link"
+              href={withBase('/packages/repository-fs/', import.meta.env.BASE_URL)}
+              >Repository FS</a
+            > reads selected local files.
+          </p>
+          <p class="mt-4 text-sm leading-7 text-muted-foreground">
+            A passing structural check means the completed checks found no errors. Review coverage
+            and warnings. Code semantics and agent behavior need separate evaluation; checks do not
+            repair files automatically.
+          </p>
+        </div>
+        <RepositoryCheckPreview example={model.instructionExample} />
+      </section>
+
+      <section
+        id="cloud"
+        class="grid scroll-mt-24 items-center gap-8 border-t pt-10 lg:grid-cols-2 lg:gap-16"
+        aria-labelledby="cloud-title"
+        data-ecosystem-section
+      >
+        <div class="min-w-0">
+          <p class="eyebrow mb-4">03 · moldea Cloud</p>
+          <h2
+            id="cloud-title"
+            class="section-title"
+          >
+            Review with the same project knowledge.
+          </h2>
+          <p class="mt-5 leading-8 text-muted-foreground">
+            The platform brings project context, decisions, and review evidence together for your
+            team. Git owns the knowledge that the Skill, packages, and Cloud share.
+          </p>
+          <p class="mt-4 text-sm leading-7 text-muted-foreground">
+            Cloud review is in development. The Agent Skill, CLI, and packages can be used locally
+            without it.
+          </p>
+          <ActionLink
+            class="mt-6"
+            href="https://moldea.ai"
+            target="_blank"
+            >Explore moldea Cloud</ActionLink
+          >
+        </div>
+        <figure
+          class="min-w-0 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
+          aria-label="Illustrative Cloud project context"
+        >
+          <figcaption class="mb-5 flex items-center gap-3 text-sm font-semibold">
+            <GitBranch
+              class="size-5"
+              aria-hidden="true"
+            />Project context in Git<StatusBadge
+              label="Illustrative"
+              tone="neutral"
+              size="sm"
+            />
+          </figcaption>
+          <FilePreview
+            path="moldea/project.md"
+            label="Who owns the decision?"
+          >
+            <p class="p-4 text-sm leading-7">
+              Support can explain the policy and look up orders. It cannot approve refunds or change
+              orders.
+            </p>
+          </FilePreview>
+          <ConnectionLabel
+            ><ArrowDown
+              slot="icon"
+              class="size-4"
+            />Shared context for implementation and review</ConnectionLabel
+          >
+          <FilePreview
+            path="moldea/context/refund-policy.md"
+            label="What is the rule?"
+          >
+            <p class="p-4 text-sm leading-7">
+              Customers may request a refund within <strong>14 completed days</strong> of purchase.
+            </p>
+          </FilePreview>
+          <p class="mt-4 text-xs leading-6 text-muted-foreground">
+            A team reviews the same committed rules that guide development.
+          </p>
+        </figure>
+      </section>
+
+      <section
+        id="pr-assurance"
+        class="grid scroll-mt-24 items-center gap-8 border-t pt-10 lg:grid-cols-2 lg:gap-16"
+        aria-labelledby="assurance-title"
+        data-ecosystem-section
+      >
+        <div class="min-w-0">
+          <p class="eyebrow mb-4">04 · PR Assurance</p>
+          <h2
+            id="assurance-title"
+            class="section-title"
+          >
+            Catch a change that breaks project intent.
+          </h2>
+          <p class="mt-5 leading-8 text-muted-foreground">
+            A pull request lets the support agent approve refunds. The project's rule still reserves
+            that decision for the application. PR Assurance is being built to surface that conflict
+            with the relevant evidence.
+          </p>
+          <p class="mt-4 text-sm leading-7 text-muted-foreground">
+            This illustrates Cloud's semantic review. A structural check alone cannot establish
+            whether the new instruction respects the project's authority boundary.
+          </p>
+          <ActionLink
+            class="mt-6"
+            href="https://moldea.ai/pr-assurance"
+            target="_blank"
+            >Explore PR Assurance</ActionLink
+          >
+        </div>
+        <figure
+          class="grid min-w-0 gap-5 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
+          aria-label="Illustrative PR Assurance review"
+        >
+          <figcaption class="flex items-center gap-3 text-sm font-semibold">
+            <GitPullRequest
+              class="size-5"
+              aria-hidden="true"
+            />Let support approve refunds<StatusBadge
+              label="Illustrative"
+              tone="neutral"
+              size="sm"
+            />
+          </figcaption>
+          <CodeDiff
+            oldValue={beforeInstruction}
+            newValue={afterInstruction}
+            language="markdown"
+            ariaLabel="Changed support instruction"
+          />
+          <div class="border-t pt-5">
+            <ResultSummary
+              title="Refund approval boundary"
+              description="The instruction grants authority the project brief forbids."
+              tone="danger"
+            >
+              <ShieldAlert
+                slot="icon"
+                class="size-5"
+                aria-hidden="true"
+              /><StatusBadge
+                slot="status"
+                label="Blocking"
+                tone="danger"
+                size="sm"
+              />
+            </ResultSummary>
+            <p class="mt-4 text-xs leading-6 text-muted-foreground">
+              Evidence: <code class="break-all">/moldea/project.md</code> and <code
+                class="break-all">/moldea/agents/support/instruction.md</code
+              >.
+            </p>
+          </div>
+        </figure>
+      </section>
     </div>
+
+    <nav
+      class="mt-section-gap grid gap-6 border-t pt-8 sm:grid-cols-2"
+      aria-label="Continue with the repository model"
+    >
+      <div>
+        <h2 class="text-lg font-semibold">Understand the project files.</h2><p
+          class="mt-3 text-sm leading-7 text-muted-foreground"
+        >
+          Every adopted repository has <code class="inline-code">/moldea/moldea.yaml</code> and <code
+            class="inline-code">/moldea/project.md</code
+          >. Context, decisions, and runtime agents follow the project's needs.
+        </p><ActionLink
+          class="mt-3"
+          href={withBase('/repository-format/', import.meta.env.BASE_URL)}
+          variant="link"
+          >Repository Format specification<ArrowRight
+            class="size-4"
+            aria-hidden="true"
+          /></ActionLink
+        >
+      </div>
+      <div>
+        <h2 class="text-lg font-semibold">Connect a runtime when you need one.</h2><p
+          class="mt-3 text-sm leading-7 text-muted-foreground"
+        >
+          A runtime ID selects guidance for your coding agent. Core's file and export coverage does
+          not establish runtime wiring or SDK compatibility.
+        </p><ActionLink
+          class="mt-3"
+          href={withBase('/runtimes/', import.meta.env.BASE_URL)}
+          variant="link"
+          >Runtime labels and guidance<ArrowRight
+            class="size-4"
+            aria-hidden="true"
+          /></ActionLink
+        >
+      </div>
+    </nav>
   </section>
 </BaseLayout>

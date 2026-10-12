@@ -316,7 +316,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
     agentCase(
       `runtime-guidance-${state}`,
       state === 'present'
-        ? 'Runtime guidance is connected'
+        ? 'OpenAI guidance is connected'
         : state === 'empty'
           ? 'The runtime guidance is empty'
           : 'The runtime guidance is missing',
@@ -325,19 +325,19 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
         ...createAgentEntries(
           AGENT_MANIFEST.replace(
             '{ id: custom }',
-            '{ id: custom, guidance: /moldea/runtimes/service.md }',
+            '{ id: openai, guidance: /moldea/runtimes/openai.md }',
           ),
         ),
         ...(state === 'missing'
           ? []
           : [
               {
-                path: '/moldea/runtimes/service.md',
+                path: '/moldea/runtimes/openai.md',
                 type: 'file' as const,
                 content:
                   state === 'empty'
                     ? '\n'
-                    : 'The service supplies the region before constructing the request.\n',
+                    : 'Read the installed OpenAI SDK types before changing how instructions and tools enter a request.\n',
               },
             ]),
       ],

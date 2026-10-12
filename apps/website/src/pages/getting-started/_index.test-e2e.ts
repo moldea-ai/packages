@@ -14,11 +14,15 @@ for (const width of [320, 1440]) {
       const heading = page.getByRole('heading', { level: 1, name: 'Get started with moldea' });
       await expect(heading.locator('code')).toHaveCount(0);
       await expect(page.locator('[data-conversation-message]')).toHaveCount(2);
-      await page.getByText('Read the complete adoption guide', { exact: true }).click();
-      for (const name of ['moldea Agent Skill', 'moldea Cloud']) {
+      await expect(page.locator('[data-ecosystem-section]')).toHaveCount(4);
+      for (const section of await page.locator('[data-ecosystem-section]').all()) {
+        await expect(section.locator('figure')).toBeVisible();
+      }
+      await expect(page.locator('#adoption-guide')).toBeVisible();
+      for (const name of ['moldea Agent Skill (opens in a new tab)', 'Explore moldea Cloud']) {
         const productLink = page.getByRole('main').getByRole('link', { name, exact: true });
         await expect(productLink).toBeVisible();
-        await expect(productLink).toHaveText(name);
+        await expect(productLink).toHaveAccessibleName(name);
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
         width,
@@ -51,12 +55,11 @@ test('connects homepage, desktop navigation, and footer to the guide', async ({ 
       .getByRole('link', { name: 'Get started' }),
   ).toHaveAttribute('href', guidePath);
 
-  await page.getByText('Read the complete adoption guide', { exact: true }).click();
   const content = page.locator('main');
   await expect(
-    content.getByRole('link', { name: 'moldea Agent Skill', exact: true }),
+    content.getByRole('link', { name: 'moldea Agent Skill (opens in a new tab)', exact: true }),
   ).toHaveAttribute('href', 'https://skill.moldea.ai/');
-  const cloud = content.getByRole('link', { name: 'moldea Cloud', exact: true });
+  const cloud = content.getByRole('link', { name: 'Explore moldea Cloud', exact: true });
   await expect(cloud).toHaveAttribute('href', 'https://moldea.ai');
   await expect(cloud).toHaveAttribute('target', '_blank');
   await expect(cloud).toHaveAttribute('rel', 'noopener noreferrer');
@@ -70,7 +73,7 @@ test('connects homepage, desktop navigation, and footer to the guide', async ({ 
     ['Core', '/packages/core/'],
     ['Repository', '/packages/repository/'],
     ['Repository FS', '/packages/repository-fs/'],
-    ['runtime labels and guidance', '/runtimes/'],
+    ['Runtime labels and guidance', '/runtimes/'],
   ] as const) {
     await expect(content.getByRole('link', { name, exact: true })).toHaveAttribute(
       'href',
@@ -89,12 +92,11 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
   const page = await context.newPage();
   try {
     await page.goto(guidePath);
-    await page.getByText('Read the complete adoption guide', { exact: true }).click();
     await expect(
-      page.getByRole('main').getByRole('link', { name: 'moldea Cloud', exact: true }),
+      page.getByRole('main').getByRole('link', { name: 'Explore moldea Cloud', exact: true }),
     ).toHaveAttribute('href', 'https://moldea.ai');
     await expect(
-      page.getByRole('heading', { name: 'Check an adopted repository locally' }),
+      page.getByRole('heading', { name: 'Check the connections as your code changes.' }),
     ).toBeVisible();
     await page
       .locator('#adoption-guide')
