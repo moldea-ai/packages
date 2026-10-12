@@ -73,15 +73,16 @@
           "pointer": "/agents/reviewer/tools/deploy/implementation"
         },
         {
-          "code": "MOLDEA_IMPACT_PATH_MISSING",
+          "code": "MOLDEA_IMPACT_PATH_NOT_FILE",
           "details": {
-            "impactPath": "/impact/a-missing.ts"
+            "actualType": "symlink",
+            "impactPath": "/impact/c-link.ts"
           },
           "entity": {
             "contextPath": "/moldea/project.md"
           },
           "path": "/moldea/moldea.yaml",
-          "pointer": "/context/~1moldea~1project.md/affectedBy/1"
+          "pointer": "/context/~1moldea~1project.md/affectedBy/0"
         },
         {
           "code": "MOLDEA_IMPACT_PATH_NOT_FILE",
@@ -93,25 +94,24 @@
             "contextPath": "/moldea/project.md"
           },
           "path": "/moldea/moldea.yaml",
-          "pointer": "/context/~1moldea~1project.md/affectedBy/2"
+          "pointer": "/context/~1moldea~1project.md/affectedBy/1"
         },
         {
-          "code": "MOLDEA_IMPACT_PATH_NOT_FILE",
+          "code": "MOLDEA_IMPACT_PATH_MISSING",
           "details": {
-            "actualType": "symlink",
-            "impactPath": "/impact/c-link.ts"
+            "impactPath": "/impact/a-missing.ts"
           },
           "entity": {
             "contextPath": "/moldea/project.md"
           },
           "path": "/moldea/moldea.yaml",
-          "pointer": "/context/~1moldea~1project.md/affectedBy/3"
+          "pointer": "/context/~1moldea~1project.md/affectedBy/2"
         },
         {
-          "code": "MOLDEA_REFERENCE_NOT_FILE",
+          "code": "MOLDEA_REFERENCE_SYMLINK",
           "details": {
-            "actualType": "directory",
-            "referencedPath": "/src/a-directory"
+            "actualType": "symlink",
+            "referencedPath": "/src/c-link.ts"
           },
           "entity": {
             "contextPath": "/moldea/project.md"
@@ -131,10 +131,10 @@
           "pointer": "/context/~1moldea~1project.md/bindings/1"
         },
         {
-          "code": "MOLDEA_REFERENCE_SYMLINK",
+          "code": "MOLDEA_REFERENCE_NOT_FILE",
           "details": {
-            "actualType": "symlink",
-            "referencedPath": "/src/c-link.ts"
+            "actualType": "directory",
+            "referencedPath": "/src/a-directory"
           },
           "entity": {
             "contextPath": "/moldea/project.md"

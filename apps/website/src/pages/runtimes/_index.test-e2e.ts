@@ -71,6 +71,17 @@ for (const width of [320, 768, 1440]) {
           exact: true,
         }),
       ).toContainText('id: openai');
+      const removedFile = page.getByRole('list', {
+        name: 'Repository after the runtime guidance file was removed',
+      });
+      await expect(removedFile).toContainText('openai.md');
+      await expect(removedFile).toContainText('Removed');
+      await expect(
+        page.getByRole('region', { name: 'Runtime declaration in moldea.yaml' }),
+      ).toContainText('guidance: /moldea/runtimes/openai.md');
+      await expect(
+        page.locator('section[aria-labelledby="example-runtime-guidance-missing-title"]'),
+      ).toContainText('The referenced runtime guidance does not exist.');
     });
   }
 }

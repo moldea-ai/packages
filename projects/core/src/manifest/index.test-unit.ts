@@ -58,7 +58,7 @@ describe('Core manifest parsing', () => {
     expect(Object.isFrozen(result.manifest)).toBe(true);
   });
 
-  test('normalizes every version 1 field with canonical map and array ordering', async () => {
+  test('normalizes every version 1 field with canonical map ordering', async () => {
     const content = readFixture('valid-complete.yaml');
     const expected = JSON.parse(readFixture('valid-complete.expected.json')) as unknown;
     const result = await createCore().parseManifest({ content, path: manifestPath });
@@ -71,7 +71,7 @@ describe('Core manifest parsing', () => {
     expect(Object.isFrozen(result.manifest?.agents?.['customer-support']?.bindings)).toBe(true);
   });
 
-  test('normalizes equivalent mapping and array orders to equal manifest values', async () => {
+  test('normalizes mapping order and retains authored array order', async () => {
     const left = await createCore().parseManifest({
       content: [
         'version: 1',
@@ -81,6 +81,9 @@ describe('Core manifest parsing', () => {
         '    affectedBy: [/z/**, /a/**]',
         '  alpha:',
         '    runtime: { id: custom }',
+        'context:',
+        '  /moldea/project.md:',
+        '    bindings: [{ path: /src/z.ts }, { path: /src/a.ts }]',
         '',
       ].join('\n'),
       path: manifestPath,
@@ -97,6 +100,11 @@ describe('Core manifest parsing', () => {
         '      - /z/**',
         '    runtime:',
         '      id: custom',
+        'context:',
+        '  /moldea/project.md:',
+        '    bindings:',
+        '      - path: /src/a.ts',
+        '      - path: /src/z.ts',
         'version: 1',
         '',
       ].join('\n'),
@@ -105,9 +113,19 @@ describe('Core manifest parsing', () => {
 
     expect(left.valid).toBe(true);
     expect(right.valid).toBe(true);
-    expect(left.manifest).toStrictEqual(right.manifest);
+    expect(left.manifest).not.toStrictEqual(right.manifest);
     expect(Object.keys(left.manifest?.agents ?? {})).toStrictEqual(['alpha', 'zeta']);
-    expect(left.manifest?.agents?.['zeta']?.affectedBy).toStrictEqual(['/a/**', '/z/**']);
+    expect(Object.keys(right.manifest?.agents ?? {})).toStrictEqual(['alpha', 'zeta']);
+    expect(left.manifest?.agents?.['zeta']?.affectedBy).toStrictEqual(['/z/**', '/a/**']);
+    expect(right.manifest?.agents?.['zeta']?.affectedBy).toStrictEqual(['/a/**', '/z/**']);
+    expect(left.manifest?.context?.['/moldea/project.md']?.bindings).toStrictEqual([
+      { path: '/src/z.ts' },
+      { path: '/src/a.ts' },
+    ]);
+    expect(right.manifest?.context?.['/moldea/project.md']?.bindings).toStrictEqual([
+      { path: '/src/a.ts' },
+      { path: '/src/z.ts' },
+    ]);
   });
 
   test('does not rely on JavaScript property order for integer-like stable IDs', async () => {

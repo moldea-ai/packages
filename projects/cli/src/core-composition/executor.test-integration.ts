@@ -83,8 +83,6 @@ describe('CLI Core composition through the real isolated boundary', () => {
         { code: 'MOLDEA_INTEGRATION_BLOCK_MISSING', severity: 'warning', group: 'integration' },
       ],
     });
-    expect(result).not.toHaveProperty('runtimeInspection');
-    expect(result).not.toHaveProperty('evidence');
     expect(Object.isFrozen(result)).toBe(true);
   });
 

@@ -4,17 +4,9 @@ The `consumer-conformance` CI lane gives the skill manager and closed launcher t
 
 ## Recorded verification
 
-The selected closure contains CLI `11.0.1`, Core `7.0.1`, Repository `2.0.1`, and Repository FS `2.0.4`. The tarballs came from packages commit `44fe81ac3e84356185c0ac477668d30cab1d3966` and the [release-candidate workflow run 38199585200](https://github.com/moldea-ai/skill/actions/runs/38199585200). The workflow used skill tooling commit `17f80e780c05d18ad6726235e33e87d6a2436acd`, prepared skill `8.0.1` with CLI 11/Core 7, and passed all fourteen manager selections. Its producer used Node `24.15.0` and pnpm `11.9.0`.
+The selected closure contains CLI `11.0.2`, Core `7.0.2`, Repository `2.0.1`, and Repository FS `2.0.4`. The tarballs were packed from packages commit `cbcfe8a195dabe0a5c95df8347b654cec8833b87` using Node `24.15.0` and pnpm `11.9.0`. Their checksums were verified, and skill candidate `8.1.0` was prepared and installed locally from these exact four tarballs. The npm, pnpm, and Yarn conformance matrix has not yet run for this selection.
 
-| Manager | Verified selections                                                                        |
-| ------- | ------------------------------------------------------------------------------------------ |
-| npm     | `7.0.0`, `8.0.0`, `9.0.0`, `10.0.0`, `11.0.0`, `12.0.2`                                    |
-| pnpm    | `8.3.1`, `9.0.0`, `10.0.0`, `11.0.0`, `12.3.1`, and `11.21.0` with existing Vitest `3.2.4` |
-| Yarn    | `4.14.1`, `4.18.0`                                                                         |
-
-These checks exercise repository-local installation, lifecycle suppression, closed-launcher composition/validation/inspection, broken-installation recovery, interrupted installation, and preservation of project files and the locked dependency graph during same-target recovery. They establish deterministic tooling mechanics, not runtime wiring or model-based repair effectiveness.
-
-Trusted packages CI must reproduce every selected tarball byte before publication. It supplies its immutable public-package artifact and exact source commit to the skill workflow pinned above, without repacking. Website UI is checked in that public artifact and has its own website verification; it remains outside the CLI consumer closure.
+Trusted packages CI must reproduce every selected tarball byte before publication. It supplies its immutable public-package artifact and exact source commit to the skill workflow without repacking. The skill workflow verifies repository-local installation, lifecycle suppression, closed-launcher composition/validation/inspection, broken-installation recovery, interrupted installation, and preservation of project files and the locked dependency graph during same-target recovery. These checks establish deterministic tooling mechanics, not runtime wiring or model-based repair effectiveness. Website UI is checked in the public artifact and has its own website verification; it remains outside the CLI consumer closure.
 
 ## Refreshing the selection
 

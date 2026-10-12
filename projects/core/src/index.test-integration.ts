@@ -190,7 +190,7 @@ describe('published Core package artifacts', () => {
     ) as { readonly dependencies?: Readonly<Record<string, string>> };
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '7.0.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '7.0.2' });
     for (const entryName of [
       'index',
       'format',
@@ -493,7 +493,7 @@ describe('published Core package artifacts', () => {
     expect(javascript).not.toContain('inventoryExports');
   });
 
-  test('runs manifest-only operations while TypeScript loading is rejected', () => {
+  test('runs manifest-only and file-only validation while TypeScript loading is rejected', () => {
     const output = execFileSync(
       process.execPath,
       [
@@ -507,15 +507,27 @@ describe('published Core package artifacts', () => {
       }});
       const {createCore} = await import('@moldea.ai/core');
       const {matchManifestScope} = await import('@moldea.ai/core/scope');
+      const {createMemoryRepositoryReader} = await import('@moldea.ai/repository/memory');
       const manifest = {path: '/moldea/moldea.yaml', content: 'version: 1\\n'};
       const parsed = await createCore().parseManifest(manifest);
       const matched = await matchManifestScope({manifest, paths: ['/src/entry.ts']});
-      process.stdout.write(JSON.stringify({parsed: parsed.valid, matched: matched.valid}));
+      const repository = createMemoryRepositoryReader([
+        {path: '/moldea/moldea.yaml', type: 'file', content: JSON.stringify({version: 1, context: {'/moldea/project.md': {bindings: [{path: '/src/entry.ts'}]}}})},
+        {path: '/moldea/project.md', type: 'file', content: '# Project\\n'},
+        {path: '/src/entry.ts', type: 'file', content: 'export const entry = 1;'},
+      ]);
+      const checked = await createCore().validateProject({repository});
+      process.stdout.write(JSON.stringify({parsed: parsed.valid, matched: matched.valid, checked: checked.valid, exportCheck: checked.coverage[0]?.exportCheck}));
     `,
       ],
       { cwd: projectDirectory, encoding: 'utf8' },
     );
-    expect(JSON.parse(output)).toStrictEqual({ parsed: true, matched: true });
+    expect(JSON.parse(output)).toStrictEqual({
+      parsed: true,
+      matched: true,
+      checked: true,
+      exportCheck: 'not-checked',
+    });
   });
 
   test('keeps main, format and scope import graphs environment-neutral', () => {

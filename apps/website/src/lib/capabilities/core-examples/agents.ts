@@ -35,7 +35,7 @@ const agentCase = (
   operation: 'validateProject',
 });
 
-const mirrorManifest = `${AGENT_MANIFEST}    mirrors: [/instructions/support.md]\n`;
+const mirrorManifest = `${AGENT_MANIFEST}    mirrors:\n      - /instructions/support.md\n`;
 
 // canonical instructions, declared assets, and mirrors remain independent of runtime execution
 export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
@@ -174,7 +174,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
     'A variable-provider binding cannot silently introduce a new variable.',
     [
       ...createAgentEntries(
-        `${AGENT_MANIFEST}    bindings:\n      variableProviders:\n        ORDER_ID: { path: /src/order.ts }\n`,
+        `${AGENT_MANIFEST}    bindings:\n      variableProviders:\n        ORDER_ID:\n          path: /src/order.ts\n`,
       ),
       {
         path: '/src/order.ts',
@@ -185,7 +185,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
     ['MOLDEA_VARIABLE_PROVIDER_UNDECLARED'],
   ),
   ...(['tool', 'skill'] as const).flatMap((kind) => {
-    const manifest = `${AGENT_MANIFEST}    ${kind}s:\n      returns:\n        name: explain_returns\n        description: Explains return eligibility using the current policy.\n        implementation: { path: /src/returns.ts }\n`;
+    const manifest = `${AGENT_MANIFEST}    ${kind}s:\n      returns:\n        name: explain_returns\n        description: Explains return eligibility using the current policy.\n        implementation:\n          path: /src/returns.ts\n`;
     return [
       agentCase(
         `${kind}-description-invalid`,
@@ -236,7 +236,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
     'A capability has no description',
     'Registered tools need a description explaining their purpose.',
     createAgentEntries(
-      `${AGENT_MANIFEST}    tools:\n      returns:\n        name: explain_returns\n        implementation: { path: /src/returns.ts }\n`,
+      `${AGENT_MANIFEST}    tools:\n      returns:\n        name: explain_returns\n        implementation:\n          path: /src/returns.ts\n`,
     ),
     ['MOLDEA_CAPABILITY_DESCRIPTION_MISSING'],
   ),
@@ -300,7 +300,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
     'mirror-canonical-destination',
     'A mirror cannot overwrite canonical knowledge',
     'Mirror destinations must be outside the canonical directory.',
-    createAgentEntries(`${AGENT_MANIFEST}    mirrors: [/moldea/project.md]\n`),
+    createAgentEntries(`${AGENT_MANIFEST}    mirrors:\n      - /moldea/project.md\n`),
     ['MOLDEA_MIRROR_PATH_INSIDE_MOLDEA'],
   ),
   agentCase(
@@ -308,7 +308,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
     'A mirror is assigned twice',
     'A destination cannot have conflicting mirror ownership.',
     createAgentEntries(
-      `${AGENT_MANIFEST}    mirrors: [/instructions/support.md, /instructions/support.md]\n`,
+      `${AGENT_MANIFEST}    mirrors:\n      - /instructions/support.md\n      - /instructions/support.md\n`,
     ),
     ['MOLDEA_MIRROR_PATH_DUPLICATE'],
   ),

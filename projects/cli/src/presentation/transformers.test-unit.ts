@@ -167,6 +167,15 @@ describe('schema 7 presentation projections', () => {
       expect.objectContaining({ accepted: true, reason: 'Instructions are shared.' }),
     );
     expect(new Set(result.records.map((record) => record.key)).size).toBe(result.records.length);
+    expect(result.records.map((record) => record.kind)).toStrictEqual([
+      'diagnostic',
+      'diagnostic',
+      'diagnostic',
+      'coverage',
+    ]);
+    expect(result.records.map((record) => record.key)).toStrictEqual(
+      [...result.records.map((record) => record.key)].sort(),
+    );
     expect(JSON.stringify(result)).not.toContain('private error');
   });
 

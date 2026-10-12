@@ -33,7 +33,6 @@ export const serializeInspectionFailure = (error: unknown): INodeInspectionFailu
       options: {
         code: error.code,
         operation: error.operation,
-        ...(error.agentId === null ? {} : { agentId: error.agentId }),
         ...(error.code !== 'RESOURCE_LIMIT_EXCEEDED'
           ? {}
           : {
@@ -100,14 +99,11 @@ export const deserializeInspectionFailure = (failure: INodeInspectionFailure): E
     failure.family === 'configuration'
       ? ['code', 'operation']
       : failure.family === 'operation'
-        ? ['code', 'operation', 'agentId', 'limit', 'limitMaximum', 'nextAction', 'observedUsage']
+        ? ['code', 'operation', 'limit', 'limitMaximum', 'nextAction', 'observedUsage']
         : failure.family === 'repository'
           ? ['code', 'operation', 'path', 'retryable', 'resource']
           : [];
-  if (
-    Object.keys(options).some((key) => !allowed.includes(key)) ||
-    (Object.hasOwn(options, 'agentId') && typeof options['agentId'] !== 'string')
-  )
+  if (Object.keys(options).some((key) => !allowed.includes(key)))
     throw createInspectionProcessFailure();
   if (
     (failure.family === 'operation' || failure.family === 'configuration') &&
@@ -118,7 +114,6 @@ export const deserializeInspectionFailure = (failure: INodeInspectionFailure): E
     operation: isCoreOperation(options['operation'])
       ? options['operation']
       : ('create-project-inspection' as const),
-    ...(typeof options['agentId'] === 'string' ? { agentId: options['agentId'] } : {}),
   };
   if (failure.family === 'path' && Object.keys(options).length === 0)
     return new RepositoryPathException();

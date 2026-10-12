@@ -35,7 +35,6 @@ export interface ICoreConfigurationExceptionOptions {
 
 interface ICoreOperationExceptionOptionsBase {
   readonly operation: ICoreOperation;
-  readonly agentId?: string;
   readonly cause?: unknown;
 }
 
@@ -150,8 +149,6 @@ export class CoreOperationException extends Exception {
 
   public readonly retryable: boolean;
 
-  public readonly agentId: string | null;
-
   public readonly limit: string | null;
 
   public readonly limitMaximum: number | null;
@@ -167,7 +164,6 @@ export class CoreOperationException extends Exception {
     this.name = 'CoreOperationException';
     this.operation = options.operation;
     this.retryable = OPERATION_ERROR_RETRYABILITY[options.code];
-    this.agentId = options.agentId ?? null;
     this.limit = options.limit ?? null;
     this.limitMaximum = options.limitMaximum ?? null;
     this.nextAction = options.nextAction ?? null;

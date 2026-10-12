@@ -105,6 +105,8 @@ const collectExportInventory = (path: string, bytes: Uint8Array): IExportInvento
               element.name.text,
             );
       }
+    } else if (ts.isImportEqualsDeclaration(statement)) {
+      (statement.isTypeOnly ? typeOnlyNames : runtimeNames).add(statement.name.text);
     }
   }
   for (const name of runtimeNames) typeOnlyNames.delete(name);
@@ -145,7 +147,9 @@ const collectExportInventory = (path: string, bytes: Uint8Array): IExportInvento
       continue;
     }
     if (!hasModifier(statement, ts.SyntaxKind.ExportKeyword)) continue;
-    if (ts.isVariableStatement(statement)) {
+    if (ts.isImportEqualsDeclaration(statement)) {
+      if (!statement.isTypeOnly) complete = false;
+    } else if (ts.isVariableStatement(statement)) {
       for (const declaration of statement.declarationList.declarations) {
         if (ts.isIdentifier(declaration.name)) names.add(declaration.name.text);
         else complete = false;

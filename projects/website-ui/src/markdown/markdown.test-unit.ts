@@ -171,11 +171,11 @@ describe('website Markdown rendering', () => {
 
   test('keeps external-link indicators with the final path segment without blocking earlier wraps', async () => {
     const html = await renderMarkdownFragment(
-      '[https://packages.moldea.ai/compatibility/runtimes.json](https://packages.moldea.ai/compatibility/runtimes.json)',
+      '[https://packages.moldea.ai/runtimes/](https://packages.moldea.ai/runtimes/)',
     );
 
     expect(html).toContain(
-      'https://packages.moldea.ai/compatibility/<span class="whitespace-nowrap">runtimes.json&#160;<svg',
+      'https://packages.moldea.ai/<span class="whitespace-nowrap">runtimes/&#160;<svg',
     );
   });
 

@@ -64,12 +64,10 @@ describe('safe isolated inspection failures', () => {
     const error = new CoreOperationException({
       code: 'INVALID_ARGUMENT',
       operation: 'validate-project',
-      agentId: 'support',
     });
     expect(deserializeInspectionFailure(serializeInspectionFailure(error))).toMatchObject({
       code: error.code,
       operation: 'validate-project',
-      agentId: 'support',
     });
   });
 
@@ -113,6 +111,14 @@ describe('safe isolated inspection failures', () => {
   });
 
   test.each([
+    {
+      family: 'operation',
+      options: {
+        operation: 'create-project-inspection',
+        code: 'INSPECTION_TIMEOUT',
+        agentId: 'reviewer',
+      },
+    },
     {
       family: 'operation',
       options: {

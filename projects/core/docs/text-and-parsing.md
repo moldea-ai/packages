@@ -28,7 +28,7 @@ const result = await core.calculateContentDigest({
 
 `parseManifest` requires the canonical `/moldea/moldea.yaml` path and validates a complete Repository Format version 1 document. The parser uses the supported YAML 1.2 Core Schema subset and rejects directives, anchors, aliases, merge keys, custom tags, duplicate keys, unknown properties, invalid values, unrecognized official runtime IDs, and non-canonical relationships.
 
-The operation does not read referenced files or check runtime export names. Those checks require complete repository inspection.
+The operation does not read referenced files or check runtime export names. Runtime IDs are guidance labels, not SDK compatibility checks. File and export checks require complete repository inspection.
 
 ## Decision parsing
 

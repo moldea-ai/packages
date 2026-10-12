@@ -1,6 +1,11 @@
 ---
+import { parse } from 'yaml';
+import { z } from 'zod';
+
 import CodeBlock from '@moldea.ai/website-ui/code-block';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
+import FileTree from '@moldea.ai/website-ui/file-tree';
+
 import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
 
 interface Props {
@@ -30,24 +35,90 @@ const representation =
     : file.representation === 'json-string'
       ? 'JSON-string representation'
       : 'Inspected input';
+const isMissingGuidance = example.id === 'runtime-guidance-missing';
+const RuntimeManifest = z.object({
+  agents: z.object({
+    support: z.object({ runtime: z.object({ id: z.literal('openai'), guidance: z.string() }) }),
+  }),
+});
+const guidancePath = isMissingGuidance
+  ? RuntimeManifest.parse(parse(file.content) as unknown).agents.support.runtime.guidance
+  : undefined;
+if (
+  isMissingGuidance &&
+  (guidancePath !== diagnostic?.details.referencedPath ||
+    example.files.some(({ path }) => path === guidancePath))
+)
+  throw new Error('Runtime illustration requires the executed missing guidance reference.');
+const guidanceLines = lines.filter((line) =>
+  /^(    runtime:|      id:|      guidance:)/u.test(line),
+);
+if (isMissingGuidance && guidanceLines.length !== 3)
+  throw new Error('Runtime illustration requires the authored declaration lines.');
 ---
 
 <div class="grid min-w-0 gap-3">
-  <FilePreview
-    path={file.path.slice(1)}
-    label={representation}
-    tone={diagnostic?.severity === 'error' ? 'danger' : diagnostic ? 'warning' : 'neutral'}
-  >
-    <div class="p-3">
-      <CodeBlock
-        source={excerpt}
-        language={file.language}
-        variant="plain"
-        copyable={false}
-        ariaLabel={`${representation} for ${example.title}`}
-      />
-    </div>
-  </FilePreview>
+  {
+    isMissingGuidance && guidancePath ? (
+      <>
+        <FileTree
+          ariaLabel="Repository after the runtime guidance file was removed"
+          nodes={[
+            {
+              kind: 'folder',
+              name: 'moldea',
+              path: '/moldea',
+              children: [
+                {
+                  kind: 'folder',
+                  name: 'runtimes',
+                  path: '/moldea/runtimes',
+                  children: [
+                    {
+                      kind: 'file',
+                      name: guidancePath.split('/').at(-1) ?? guidancePath,
+                      path: guidancePath,
+                      removed: true,
+                    },
+                  ],
+                },
+              ],
+            },
+          ]}
+        />
+        <FilePreview
+          path={file.path.slice(1)}
+          label="Still declared in the manifest"
+        >
+          <div class="p-3">
+            <CodeBlock
+              source={guidanceLines.join('\n')}
+              language="yaml"
+              variant="plain"
+              copyable={false}
+              ariaLabel="Runtime declaration in moldea.yaml"
+            />
+          </div>
+        </FilePreview>
+      </>
+    ) : (
+      <FilePreview
+        path={file.path.slice(1)}
+        label={representation}
+        tone={diagnostic?.severity === 'error' ? 'danger' : diagnostic ? 'warning' : 'neutral'}
+      >
+        <div class="p-3">
+          <CodeBlock
+            source={excerpt}
+            language={file.language}
+            variant="plain"
+            copyable={false}
+            ariaLabel={`${representation} for ${example.title}`}
+          />
+        </div>
+      </FilePreview>
+    )
+  }
   {
     (start > 0 || end < lines.length || file.isExcerpt) && (
       <p class="text-xs text-muted-foreground">
