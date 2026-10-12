@@ -102,24 +102,38 @@ test('refuses partial success alongside an operational error', () => {
   ).toThrow('unexpected facts');
 });
 
-test('retains selected command facts and strips unknown host/process fields', () => {
-  expect(
-    CliCollectionResult.parse({
-      valid: true,
-      counts: { matchedPaths: 1, processId: 123 },
-      hostPath: 'not-for-publication',
-      page: {
-        cursor: null,
-        records: [
-          { kind: 'metadata', path: '/moldea/project.md', hostPath: 'not-for-publication' },
-        ],
-      },
-    }),
-  ).toStrictEqual({
+test('retains selected command facts and rejects unknown collection fields', () => {
+  const metadata = {
+    agentId: null,
+    byteLength: 16,
+    canonicalDigest: null,
+    decisionId: null,
+    digest: 'abc123',
+    key: 'metadata-1',
+    kind: 'metadata',
+    metadataKind: 'project',
+    path: '/moldea/project.md',
+    scalarLength: 16,
+  };
+  const result = {
     valid: true,
     counts: { matchedPaths: 1 },
-    page: { cursor: null, records: [{ kind: 'metadata', path: '/moldea/project.md' }] },
-  });
+    page: { cursor: null, records: [metadata] },
+  };
+  expect(CliCollectionResult.parse(result)).toStrictEqual(result);
+  expect(
+    CliCollectionResult.safeParse({ ...result, hostPath: 'not-for-publication' }).success,
+  ).toBe(false);
+  expect(
+    CliCollectionResult.safeParse({ ...result, counts: { matchedPaths: 1, processId: 123 } })
+      .success,
+  ).toBe(false);
+  expect(
+    CliCollectionResult.safeParse({
+      ...result,
+      page: { cursor: null, records: [{ ...metadata, hostPath: 'not-for-publication' }] },
+    }).success,
+  ).toBe(false);
 });
 
 const warningRecord = {
@@ -171,4 +185,40 @@ test.each([
       page: { cursor: null, records: [{ ...warningRecord, ...changes }] },
     }),
   ).toThrow();
+});
+
+test('validates complete schema 7 coverage records without dropping fields', () => {
+  const coverage = {
+    entity: { contextPath: '/moldea/project.md' },
+    relationship: 'context-binding',
+    kind: 'coverage',
+    key: 'coverage-1',
+    path: '/src/returns/policy.ts',
+    symbol: 'checkEligibility',
+    fileCheck: 'passed',
+    exportCheck: 'failed',
+  };
+  const collection = {
+    valid: false,
+    coverageCounts: {
+      bindings: 1,
+      exportsPassed: 0,
+      exportsFailed: 1,
+      exportsNotChecked: 0,
+    },
+    page: { cursor: null, records: [coverage] },
+  };
+  expect(CliCollectionResult.parse(collection).page.records).toStrictEqual([coverage]);
+  expect(
+    CliCollectionResult.safeParse({
+      ...collection,
+      page: { cursor: null, records: [{ ...coverage, hostPath: '/private/source.ts' }] },
+    }).success,
+  ).toBe(false);
+  expect(
+    CliCollectionResult.safeParse({
+      ...collection,
+      page: { cursor: null, records: [{ ...coverage, exportCheck: 'not-checked' }] },
+    }).success,
+  ).toBe(false);
 });

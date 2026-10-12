@@ -371,7 +371,7 @@ describe('Core repository reference validation', () => {
     expect(fixture.lookups).toHaveLength(20);
   });
 
-  test('emits deterministic type-specific diagnostics at normalized pointers', async () => {
+  test('emits deterministic type-specific diagnostics at authored pointers', async () => {
     const directoryReferencePath = parseRepositoryPath('/src/a-directory');
     const missingReferencePath = parseRepositoryPath('/src/b-missing.ts');
     const symlinkReferencePath = parseRepositoryPath('/src/c-link.ts');
@@ -467,8 +467,8 @@ describe('Core repository reference validation', () => {
         pointer: '/agents/reviewer/tools/generate/implementation',
       },
       {
-        code: 'MOLDEA_IMPACT_PATH_MISSING',
-        details: { impactPath: missingImpactPath },
+        code: 'MOLDEA_IMPACT_PATH_NOT_FILE',
+        details: { actualType: 'symlink', impactPath: symlinkImpactPath },
         entity: { contextPath: PROJECT_PATH },
         path: MANIFEST_PATH,
         pointer: '/context/~1moldea~1project.md/affectedBy/0',
@@ -481,15 +481,15 @@ describe('Core repository reference validation', () => {
         pointer: '/context/~1moldea~1project.md/affectedBy/1',
       },
       {
-        code: 'MOLDEA_IMPACT_PATH_NOT_FILE',
-        details: { actualType: 'symlink', impactPath: symlinkImpactPath },
+        code: 'MOLDEA_IMPACT_PATH_MISSING',
+        details: { impactPath: missingImpactPath },
         entity: { contextPath: PROJECT_PATH },
         path: MANIFEST_PATH,
         pointer: '/context/~1moldea~1project.md/affectedBy/2',
       },
       {
-        code: 'MOLDEA_REFERENCE_NOT_FILE',
-        details: { actualType: 'directory', referencedPath: directoryReferencePath },
+        code: 'MOLDEA_REFERENCE_SYMLINK',
+        details: { actualType: 'symlink', referencedPath: symlinkReferencePath },
         entity: { contextPath: PROJECT_PATH },
         path: MANIFEST_PATH,
         pointer: '/context/~1moldea~1project.md/bindings/0',
@@ -502,8 +502,8 @@ describe('Core repository reference validation', () => {
         pointer: '/context/~1moldea~1project.md/bindings/1',
       },
       {
-        code: 'MOLDEA_REFERENCE_SYMLINK',
-        details: { actualType: 'symlink', referencedPath: symlinkReferencePath },
+        code: 'MOLDEA_REFERENCE_NOT_FILE',
+        details: { actualType: 'directory', referencedPath: directoryReferencePath },
         entity: { contextPath: PROJECT_PATH },
         path: MANIFEST_PATH,
         pointer: '/context/~1moldea~1project.md/bindings/2',
@@ -550,7 +550,7 @@ describe('Core repository reference validation', () => {
         details: { referencedPath: missingReferencePath },
         entity: { contextPath: PROJECT_PATH },
         path: MANIFEST_PATH,
-        pointer: '/context/~1moldea~1project.md/bindings/0',
+        pointer: '/context/~1moldea~1project.md/bindings/1',
       },
     ]);
     expect(fixture.lookups).toStrictEqual([missingReferencePath]);

@@ -46,7 +46,7 @@ Coverage reports the actual file and export checks performed. It does not establ
 
 The `unresolved` summary count includes all project-owned and agent-owned requirements, across every effect. Identical IDs under different owners count separately. Validation and every inspection page report the same complete total. Requirements describe readiness gaps; even blocking requirements do not invalidate a structurally valid project.
 
-Structural repository errors and proven missing runtime exports return error diagnostics. Reader access failures, snapshot drift, cancellation, resource exhaustion, and invalid operation input reject the complete operation with typed exceptions. No partial coverage is returned.
+Structural repository errors and proven missing runtime exports return error diagnostics. A declared source too large for a bounded syntax check produces `not-checked` coverage with reason `resource-limit` without reading that source. Reader access failures, inconsistent entry and source sizes, snapshot drift, cancellation, resource exhaustion outside this optional check, and invalid operation input reject the complete operation with typed exceptions. No partial coverage is returned.
 
 ## Coding-agent integration
 

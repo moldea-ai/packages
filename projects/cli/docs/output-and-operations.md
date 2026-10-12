@@ -20,7 +20,7 @@ Binding coverage reports the checks performed on each declared reference: `fileC
 
 ## Resource budgets
 
-These defaults describe CLI `11.0.0` with Core `7.0.0`. Options take byte counts or positive safe-integer counts as appropriate.
+These defaults describe CLI 11 with Core 7. Options take byte counts or positive safe-integer counts as appropriate.
 
 | Option                 |               Default | Scope                                                                              |
 | ---------------------- | --------------------: | ---------------------------------------------------------------------------------- |

@@ -50,21 +50,7 @@ const childPointer = (pointer: string, segment: string): string => {
   return `${pointer}/${escapeJsonPointerSegment(segment)}`;
 };
 
-const compareNullableStrings = (left: string | undefined, right: string | undefined): number => {
-  if (left === undefined) {
-    return right === undefined ? 0 : -1;
-  }
-
-  return right === undefined ? 1 : compareExactStrings(left, right);
-};
-
-const compareReferences = (left: IRepositoryReference, right: IRepositoryReference): number => {
-  return (
-    compareExactStrings(left.path, right.path) || compareNullableStrings(left.symbol, right.symbol)
-  );
-};
-
-/** Adds sorted repository-reference array entries with their normalized indexes. */
+/** Adds repository-reference array entries with their authored indexes. */
 const addReferenceCandidates = (
   candidates: IRepositoryCandidate[],
   references: readonly IRepositoryReference[] | undefined,
@@ -72,7 +58,7 @@ const addReferenceCandidates = (
   entity: IDiagnosticEntity | null,
   relationship?: IBindingRelationship,
 ): void => {
-  for (const [index, reference] of [...(references ?? [])].sort(compareReferences).entries()) {
+  for (const [index, reference] of (references ?? []).entries()) {
     candidates.push({
       entity,
       kind: 'reference',
@@ -84,14 +70,14 @@ const addReferenceCandidates = (
   }
 };
 
-/** Adds sorted exact impact paths while retaining skipped glob indexes. */
+/** Adds exact impact paths while retaining authored indexes for skipped globs. */
 const addImpactCandidates = (
   candidates: IRepositoryCandidate[],
   affectedBy: readonly string[] | undefined,
   pointer: string,
   entity: IDiagnosticEntity | null,
 ): void => {
-  for (const [index, pattern] of [...(affectedBy ?? [])].sort(compareExactStrings).entries()) {
+  for (const [index, pattern] of (affectedBy ?? []).entries()) {
     if (pattern.includes('*')) {
       continue;
     }
@@ -486,6 +472,8 @@ export const validateRepositoryReferences = async (
     const entry = await entryPromise;
     validateCandidate(candidate, entry, manifestPath, collector);
     if (entry?.type !== 'file' || candidate.relationship === undefined) continue;
+    if (entry.byteLength === null)
+      throw new TypeError('A repository file entry must declare its byte length.');
     if (coverage.length >= limits.maxCoverage)
       throw new CoreOperationException({
         code: 'RESOURCE_LIMIT_EXCEEDED',
@@ -508,7 +496,12 @@ export const validateRepositoryReferences = async (
     } else {
       let inventory = inventories.get(candidate.path);
       if (inventory === undefined) {
-        inventory = await readExportInventory(repository, candidate.path);
+        inventory = await readExportInventory(
+          repository,
+          candidate.path,
+          entry.byteLength,
+          limits.maxFileBytes,
+        );
         inventories.set(candidate.path, inventory);
       }
       if (inventory.kind === 'not-checked')

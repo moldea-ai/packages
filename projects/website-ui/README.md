@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@3.0.1
+pnpm add @moldea.ai/website-ui@3.1.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -107,12 +107,6 @@ The returned `blocks` preserve document order. An `html` block contains sanitize
 
 Unrecognized, nested, incomplete, and non-opted-in quotes stay ordinary Markdown. The renderer never infers conversations from prose or code fences. Use this only for authored illustrative examples, not recorded evidence. Sanitization, highlighting, local-link policy, and external-link indicators run through the existing Markdown pipeline once.
 
-## Migrating to 2.0
-
-The `inline-brand-text` export and `productNameTreatment` rendering option are removed. Render product names and string metadata as ordinary text. Explicitly author semantic code around complete technical tokens, such as `@moldea.ai/core` or `/moldea/project.md`.
-
-`ActionLink` owns its external-link indicator whenever `target="_blank"` is supplied and always includes `noopener noreferrer` in `rel`. Remove caller-supplied external-link icons to avoid duplicates. Raw anchors and handlers that open a new tab still need their own indicator.
-
 ## Components
 
 Every component has a dedicated public subpath:
@@ -132,6 +126,7 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/evaluation-replay`
 - `@moldea.ai/website-ui/evaluation-replay-model`
 - `@moldea.ai/website-ui/file-preview`
+- `@moldea.ai/website-ui/file-tree`
 - `@moldea.ai/website-ui/hero-backdrop`
 - `@moldea.ai/website-ui/conversation`
 - `@moldea.ai/website-ui/conversation-message`
@@ -148,6 +143,8 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/theme-control`
 
 `ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. Mount `CodeCopyControls` once in the body to add compact header copy actions to eligible code blocks on direct loads and client navigation. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
+
+`FileTree` presents static file and folder paths, with an optional removed marker. Evaluation replay uses it for path-only workspace changes. `ActionLink` adds the external-link indicator and `noopener noreferrer` whenever `target="_blank"` is supplied. Raw anchors and handlers opening a new tab need their own indicator.
 
 `SiteHeader`, `SiteFooter`, and `DocumentationShell` own responsive structure while consumers retain navigation data, accessible labels, copy, branding, actions, and page content. `SiteFooter` keeps its standard section gap by default; pass `hasTopSpacing={false}` when the preceding page section already provides the intended separation. `TabbedPanels` keeps every panel readable without JavaScript and adds WAI-ARIA tab behavior, including Arrow Left, Arrow Right, Home, and End, after enhancement. `StatusBadge` exposes semantic tones and border treatments without defining domain status mappings.
 

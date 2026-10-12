@@ -38,7 +38,6 @@ describe('Core exceptions', () => {
 
     expect(exception).toBeInstanceOf(Exception);
     expect(exception).toMatchObject({
-      agentId: null,
       code: 'RESOURCE_LIMIT_EXCEEDED',
       limit: 'maxFileBytes',
       limitMaximum: 8,
@@ -49,6 +48,7 @@ describe('Core exceptions', () => {
       operation: 'normalize-text',
       retryable: false,
     });
+    expect(Object.hasOwn(exception, 'agentId')).toBe(false);
   });
 
   test('derives retryability from the operation error code', () => {

@@ -249,8 +249,8 @@ export const createCliExamples = async (
     );
     const inspection = await run(['inspect']);
     const inspectionResult = CliInspectionResult.parse(inspection.envelope.result);
-    const paths = inspectionResult.page.records.flatMap(({ path }) =>
-      typeof path === 'string' ? [path] : [],
+    const paths = inspectionResult.page.records.flatMap((record) =>
+      record.kind === 'metadata' ? [record.path] : [],
     );
     assertCapabilityFacts(paths, [
       '/moldea/context/long-policy.md',
@@ -446,7 +446,7 @@ export const createCliExamples = async (
         composition.exitStatus,
         { ...compositionResult },
         {
-          packages: compositionResult.packages.slice(0, 2),
+          packages: compositionResult.packages,
           minimumGitVersion: compositionResult.minimumGitVersion,
           repositoryFormatVersions: compositionResult.repositoryFormatVersions,
           supportedNodeRange: compositionResult.supportedNodeRange,
@@ -455,8 +455,15 @@ export const createCliExamples = async (
     );
     assertCapabilityFacts(await captureFixtureState(workspace.directory), before);
     const invalidManifest =
-      'version: 1\ncontext:\n  /moldea/project.md:\n    bindings: [{ path: /src/returns/check-eligibility.ts }]\n';
+      'version: 1\ncontext:\n  /moldea/project.md:\n    bindings:\n      - path: /src/returns/policy.ts\n        symbol: checkEligibility\n';
     await workspace.write({ path: '/moldea/moldea.yaml', content: invalidManifest });
+    const policySource = CLI_FIXTURE_FILES.find(({ path }) => path === '/src/returns/policy.ts');
+    if (policySource === undefined || typeof policySource.content !== 'string')
+      throw new Error('The policy source fixture is missing.');
+    const renamedPolicySource = policySource.content.replace('checkEligibility', 'canReturn');
+    if (renamedPolicySource === policySource.content)
+      throw new Error('The policy source fixture has no export to rename.');
+    await workspace.write({ path: policySource.path, content: renamedPolicySource });
     const beforeInvalid = await captureFixtureState(workspace.directory);
     const invalid = await run(['validate']);
     const invalidResult = CliInspectionResult.parse(invalid.envelope.result);
@@ -471,19 +478,62 @@ export const createCliExamples = async (
       [1, false, 1, 1, 0],
     );
     assertCapabilityFacts(
-      invalidResult.page.records.map(({ code, path, pointer }) => ({ code, path, pointer })),
+      invalidResult.page.records.flatMap((record) =>
+        record.kind === 'diagnostic'
+          ? [{ code: record.code, path: record.path, pointer: record.pointer }]
+          : [],
+      ),
       [
         {
-          code: 'MOLDEA_REFERENCE_MISSING',
+          code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
           path: '/moldea/moldea.yaml',
           pointer: '/context/~1moldea~1project.md/bindings/0',
         },
       ],
     );
+    assertCapabilityFacts(invalidResult.coverageCounts, {
+      bindings: 1,
+      exportsPassed: 0,
+      exportsFailed: 1,
+      exportsNotChecked: 0,
+    });
+    const failedCoverage = invalidResult.page.records.find((record) => record.kind === 'coverage');
+    if (
+      invalidResult.coverageCounts === undefined ||
+      failedCoverage === undefined ||
+      failedCoverage.kind !== 'coverage'
+    )
+      throw new Error('The failed export check did not return its coverage record and counts.');
+    assertCapabilityFacts(
+      {
+        path: failedCoverage.path,
+        symbol: failedCoverage.symbol,
+        exportCheck: failedCoverage.exportCheck,
+      },
+      { path: '/src/returns/policy.ts', symbol: 'checkEligibility', exportCheck: 'failed' },
+    );
+    const invalidRecords = invalidResult.page.records.map((record): ICapabilityFact => {
+      if (record.kind === 'diagnostic')
+        return {
+          kind: record.kind,
+          code: record.code,
+          path: record.path,
+          pointer: record.pointer,
+          severity: record.severity,
+        };
+      if (record.kind === 'coverage')
+        return {
+          kind: record.kind,
+          path: record.path,
+          symbol: record.symbol,
+          exportCheck: record.exportCheck,
+        };
+      throw new Error('Validation returned a record outside the diagnostic and coverage contract.');
+    });
     const invalidCase = commandCase(
       'cli-invalid-project',
-      'A failed check your CI can detect',
-      'A missing eligibility-check file makes validation fail with exit code 1.',
+      'A renamed export breaks a declared connection',
+      'The manifest still names checkEligibility, but the source exports canReturn.',
       'moldea validate --json',
       invalid.envelope,
       invalid.exitStatus,
@@ -492,36 +542,34 @@ export const createCliExamples = async (
         diagnosticCount: invalidResult.diagnosticCount ?? 0,
         errorCount: invalidResult.errorCount ?? 0,
         warningCount: invalidResult.warningCount ?? 0,
-        diagnostics: invalidResult.page.records.map(({ code, path, pointer }) => ({
-          code: code ?? null,
-          path: path ?? null,
-          pointer: pointer ?? null,
-        })),
+        coverageCounts: invalidResult.coverageCounts,
+        coverage: {
+          path: failedCoverage.path,
+          symbol: failedCoverage.symbol,
+          exportCheck: failedCoverage.exportCheck,
+        },
+        diagnostics: invalidResult.page.records.flatMap((record) =>
+          record.kind === 'diagnostic'
+            ? [{ code: record.code, path: record.path, pointer: record.pointer }]
+            : [],
+        ),
       },
       {
         valid: invalidResult.valid,
         diagnosticCount: invalidResult.diagnosticCount ?? 0,
         errorCount: invalidResult.errorCount ?? 0,
         warningCount: invalidResult.warningCount ?? 0,
-        page: {
-          records: invalidResult.page.records.flatMap((record) =>
-            record.kind === 'diagnostic'
-              ? [
-                  {
-                    kind: record.kind,
-                    code: record.code,
-                    path: record.path,
-                    pointer: record.pointer,
-                    severity: record.severity,
-                  },
-                ]
-              : [],
-          ),
-        },
+        coverageCounts: invalidResult.coverageCounts,
+        page: { records: invalidRecords },
       },
     );
     invalidCase.files = [
       projectFile({ path: '/moldea/moldea.yaml', type: 'file', content: invalidManifest }),
+      projectFile({
+        path: '/src/returns/policy.ts',
+        type: 'file',
+        content: renamedPolicySource,
+      }),
     ].filter((file) => file !== null);
     examples.push(invalidCase);
     assertCapabilityFacts(await captureFixtureState(workspace.directory), beforeInvalid);
@@ -540,7 +588,8 @@ export const createCliExamples = async (
         content: `version: 1
 context:
   /moldea/project.md:
-    affectedBy: [/src/future/**]
+    affectedBy:
+      - /src/future/**
 ${acceptance}`,
       });
       const beforeWarning = await captureFixtureState(workspace.directory);

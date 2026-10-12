@@ -103,6 +103,35 @@ describe('coding-agent integration through Core', () => {
     const result = await createCore().validateProject({ repository: createRepository(entries) });
     expect(result.diagnostics).toMatchObject([{ code: 'MOLDEA_INTEGRATION_BLOCK_STALE' }]);
   });
+
+  test('reports invalid UTF-8 in AGENTS.md as a missing integration block', async () => {
+    const entries = INTEGRATION_TEST_ENTRIES.map((entry) =>
+      entry.path === agentsPath ? { ...entry, content: new Uint8Array([255]) } : entry,
+    );
+    const result = await createCore().validateProject({ repository: createRepository(entries) });
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'MOLDEA_INTEGRATION_BLOCK_MISSING',
+        details: { entryKind: 'file', reason: 'invalid-utf8' },
+      },
+    ]);
+  });
+
+  test('reports invalid UTF-8 in the installed asset as a stale integration block', async () => {
+    const entries = INTEGRATION_TEST_ENTRIES.map((entry) =>
+      entry.path === `${skillPath}/assets/managed-agents-block.md`
+        ? { ...entry, content: new Uint8Array([255]) }
+        : entry,
+    );
+    const result = await createCore().validateProject({ repository: createRepository(entries) });
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'MOLDEA_INTEGRATION_BLOCK_STALE',
+        details: { referencedPath: skillPath, reason: 'invalid-utf8-asset' },
+      },
+    ]);
+  });
+
   test.each(['\n', '\r\n'])(
     'recognizes a current installation with %o line endings',
     async (ending) => {

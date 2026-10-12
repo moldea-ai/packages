@@ -11,7 +11,8 @@ export const CLI_FIXTURE_FILES: IFixtureFile[] = [
   ),
   {
     path: '/moldea/moldea.yaml',
-    content: 'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy: [/src/returns/**]\n',
+    content:
+      'version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy:\n      - /src/returns/**\n',
   },
   {
     path: '/moldea/project.md',
@@ -35,7 +36,8 @@ export const CLI_FIXTURE_FILES: IFixtureFile[] = [
   },
   {
     path: '/src/returns/policy.ts',
-    content: 'export const canReturn = (daysSinceDelivery: number) => daysSinceDelivery <= 30;\n',
+    content:
+      'export const checkEligibility = (\n  daysSinceDelivery: number,\n) => daysSinceDelivery <= 30;\n',
   },
   {
     path: '/.gitignore',

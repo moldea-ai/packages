@@ -15,7 +15,7 @@ import type { IEvaluationReplayModel } from '@moldea.ai/website-ui/evaluation-re
 
 import StatusBadge from '../status-badge/status-badge.component.astro';
 import EvaluationReplayMarkdown from './evaluation-replay-markdown.component.astro';
-import EvaluationReplayPathTree from './evaluation-replay-path-tree.component.astro';
+import FileTree from '../file-tree/file-tree.component.astro';
 
 export interface Props {
   id: string;
@@ -182,7 +182,7 @@ const workspaceLabels = {
                                   <p class="mt-2 text-xs text-muted-foreground">No paths</p>
                                 ) : (
                                   <div class="mt-2">
-                                    <EvaluationReplayPathTree nodes={group.tree} />
+                                    <FileTree nodes={group.tree} />
                                   </div>
                                 )}
                               </section>

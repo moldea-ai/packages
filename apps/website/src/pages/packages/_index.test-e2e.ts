@@ -20,11 +20,24 @@ for (const width of [320, 768, 1440]) {
           .click();
         const section = page.locator(`#${slug}`);
         await expect(section).toBeInViewport();
-        const code = section.getByRole('region', {
-          name: `@moldea.ai/${slug} example`,
-          exact: true,
-        });
-        await expect(code.locator('[style*="--shiki"]')).not.toHaveCount(0);
+        if (slug === 'repository') {
+          await expect(
+            section.getByRole('list', { name: 'Repository entry returned by getEntry' }),
+          ).toContainText('policy.md');
+        } else if (slug === 'repository-fs') {
+          await expect(
+            section.getByRole('list', { name: 'Explicit filesystem selection' }),
+          ).toContainText('policy.md');
+          await expect(
+            section.getByRole('list', { name: 'Filesystem directory selection' }),
+          ).toContainText('policy.md');
+        } else {
+          const code = section.getByRole('region', {
+            name: `@moldea.ai/${slug} example`,
+            exact: true,
+          });
+          await expect(code.locator('[style*="--shiki"]')).not.toHaveCount(0);
+        }
         const trigger = section.getByRole('button', { name: /^View result:/u });
         await trigger.focus();
         await page.keyboard.press('Enter');

@@ -19,20 +19,19 @@ export const CliEnvelope = z.strictObject({
 });
 export type ICliEnvelope = z.infer<typeof CliEnvelope>;
 
+const CliEntity = z.strictObject({
+  agentId: z.string().optional(),
+  capabilityId: z.string().optional(),
+  capabilityKind: z.enum(['tool', 'skill']).optional(),
+  decisionId: z.string().optional(),
+  variableId: z.string().optional(),
+  contextPath: z.string().optional(),
+  integrationPath: z.string().optional(),
+});
 const CliDiagnosticFields = {
   code: z.string(),
   group: z.enum(['discovery', 'manifest', 'references', 'agents', 'mirrors', 'integration']),
-  entity: z
-    .strictObject({
-      agentId: z.string().optional(),
-      capabilityId: z.string().optional(),
-      capabilityKind: z.enum(['tool', 'skill']).optional(),
-      decisionId: z.string().optional(),
-      variableId: z.string().optional(),
-      contextPath: z.string().optional(),
-      integrationPath: z.string().optional(),
-    })
-    .nullable(),
+  entity: CliEntity.nullable(),
   key: z.string(),
   kind: z.literal('diagnostic'),
   message: z.string(),
@@ -58,44 +57,127 @@ const CliDiagnosticRecord = z.union([
     reason: z.string().nullable(),
   }),
 ]);
-const CliOtherRecord = z.object({
-  agentId: z.string().nullable().optional(),
-  kind: z.enum(['agent', 'coverage', 'metadata', 'match']),
-  path: z.string().optional(),
-  code: z.string().optional(),
-  pointer: z.string().nullable().optional(),
-  metadataKind: z.string().optional(),
-  runtimeId: z.string().optional(),
-  match: z
-    .object({
-      inputPath: z.string(),
-      field: z.string(),
-      pointer: z.string(),
-      owner: z.object({ kind: z.string(), id: z.string(), agentId: z.string().nullable() }),
-    })
-    .optional(),
+const CliCoverageFields = {
+  entity: CliEntity,
+  relationship: z.enum([
+    'runtime-agent',
+    'instruction-loader',
+    'agent-input-schema',
+    'agent-output-schema',
+    'variable-provider',
+    'tool-implementation',
+    'tool-registration',
+    'tool-input-schema',
+    'tool-output-schema',
+    'skill-implementation',
+    'skill-registration',
+    'context-binding',
+    'decision-binding',
+  ]),
+  kind: z.literal('coverage'),
+  key: z.string(),
+  path: z.string(),
+  symbol: z.string().nullable(),
+  fileCheck: z.literal('passed'),
+};
+const CliCoverageRecord = z.discriminatedUnion('exportCheck', [
+  z.strictObject({ ...CliCoverageFields, exportCheck: z.literal('passed') }),
+  z.strictObject({ ...CliCoverageFields, exportCheck: z.literal('failed') }),
+  z.strictObject({
+    ...CliCoverageFields,
+    exportCheck: z.literal('not-checked'),
+    exportNotCheckedReason: z.enum([
+      'no-symbol',
+      'unsupported-file-type',
+      'unresolved-exports',
+      'unparseable-source',
+      'resource-limit',
+    ]),
+  }),
+]);
+const CliAgentRecord = z.strictObject({
+  agentId: z.string(),
+  key: z.string(),
+  kind: z.literal('agent'),
+  runtimeId: z.string(),
+});
+const CliMetadataRecord = z.strictObject({
+  agentId: z.string().nullable(),
+  byteLength: z.number().int().nonnegative(),
+  canonicalDigest: z.string().nullable(),
+  decisionId: z.string().nullable(),
+  digest: z.string(),
+  key: z.string(),
+  kind: z.literal('metadata'),
+  metadataKind: z.enum([
+    'agent-description',
+    'agent-handoff-description',
+    'agent-instruction',
+    'context',
+    'decision',
+    'manifest',
+    'mirror',
+    'project',
+    'runtime-guidance',
+  ]),
+  path: z.string(),
+  scalarLength: z.number().int().nonnegative().nullable(),
+});
+const CliMatchRecord = z.strictObject({
+  key: z.string(),
+  kind: z.literal('match'),
+  match: z.strictObject({
+    inputPath: z.string(),
+    field: z.enum([
+      'affectedBy',
+      'bindings',
+      'implementation',
+      'inputSchema',
+      'instructionLoader',
+      'mirrors',
+      'outputSchema',
+      'registration',
+      'related',
+      'runtimeAgent',
+      'variableProvider',
+    ]),
+    pointer: z.string(),
+    owner: z.strictObject({
+      kind: z.enum(['agent', 'context', 'decision', 'skill', 'tool', 'unresolved']),
+      id: z.string(),
+      agentId: z.string().nullable(),
+    }),
+    declaration: z.union([
+      z.strictObject({ kind: z.literal('exact'), path: z.string(), symbol: z.string().nullable() }),
+      z.strictObject({ kind: z.literal('glob'), pattern: z.string() }),
+    ]),
+  }),
 });
 
-// known metadata and relationship records; additive producer fields are intentionally stripped
-export const CliCollectionResult = z.object({
+// the selected schema 7 collection fields are closed so misplaced counts cannot disappear
+export const CliCollectionResult = z.strictObject({
   valid: z.boolean(),
+  formatVersion: z.number().nullable().optional(),
+  snapshotDigest: z.string().optional(),
+  source: z.strictObject({ kind: z.literal('git-working-tree') }).optional(),
+  project: z.unknown().optional(),
+  view: z.string().optional(),
+  inputDigest: z.string().optional(),
+  manifestDigest: z.string().nullable().optional(),
   diagnosticCount: z.number().optional(),
   errorCount: z.number().optional(),
   warningCount: z.number().optional(),
   acceptedWarningCount: z.number().optional(),
   relevant: z.boolean().optional(),
   counts: z
-    .object({
+    .strictObject({
       agents: z.number().optional(),
       context: z.number().optional(),
       decisions: z.number().optional(),
       diagnostics: z.number().optional(),
       errors: z.number().optional(),
       acceptedWarnings: z.number().optional(),
-      bindings: z.number().optional(),
-      exportsPassed: z.number().optional(),
-      exportsFailed: z.number().optional(),
-      exportsNotChecked: z.number().optional(),
+      coverage: z.number().optional(),
       metadata: z.number().optional(),
       mirrors: z.number().optional(),
       runtimes: z.number().optional(),
@@ -113,9 +195,25 @@ export const CliCollectionResult = z.object({
       ),
     )
     .optional(),
-  page: z.object({
+  coverageCounts: z
+    .strictObject({
+      bindings: z.number().int().nonnegative(),
+      exportsPassed: z.number().int().nonnegative(),
+      exportsFailed: z.number().int().nonnegative(),
+      exportsNotChecked: z.number().int().nonnegative(),
+    })
+    .optional(),
+  page: z.strictObject({
     cursor: z.string().nullable(),
-    records: z.array(z.union([CliDiagnosticRecord, CliOtherRecord])),
+    records: z.array(
+      z.union([
+        CliDiagnosticRecord,
+        CliCoverageRecord,
+        CliAgentRecord,
+        CliMetadataRecord,
+        CliMatchRecord,
+      ]),
+    ),
   }),
 });
 export const CliInspectionResult = CliCollectionResult;

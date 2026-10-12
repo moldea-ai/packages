@@ -1302,14 +1302,13 @@ test('marks the current desktop and mobile navigation destinations', async ({ pa
   );
 });
 
-test('lists the four public packages without the retired adapter family', async ({ page }) => {
+test('lists the four public packages', async ({ page }) => {
   await page.goto(toPublicPath('/packages/'));
   for (const slug of ['cli', 'core', 'repository', 'repository-fs']) {
     await expect(
       page.locator(`#${slug}`).getByRole('link', { name: /Read the .+ guide/u }),
     ).toHaveAttribute('href', toPublicPath(`/packages/${slug}/`));
   }
-  await expect(page.locator('a[href*="/adapters/"]')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Website Foundations' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: /@moldea.ai\/website-ui/ })).toHaveCount(0);
 });

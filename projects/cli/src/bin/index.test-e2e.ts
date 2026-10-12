@@ -267,7 +267,7 @@ describe('published CLI package and executable', () => {
     const manifest = readCliPackageManifest();
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '11.0.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '11.0.2' });
     expect(packedPaths).toContain('dist/moldea.js');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
@@ -284,7 +284,7 @@ describe('published CLI package and executable', () => {
       ),
     ).toBe(true);
     expect(packedPaths.every((filePath) => !filePath.includes('.test-'))).toBe(true);
-    expectPackageManifest(manifest, 'workspace:^7.0.0', 'workspace:^2.0.0', 'workspace:^2.0.3');
+    expectPackageManifest(manifest, 'workspace:^7.0.2', 'workspace:^2.0.0', 'workspace:^2.0.3');
     const executable = readFileSync(CLI_DISTRIBUTION_PATH, 'utf8');
     const executableChunks = packedPaths
       .filter((filePath) => filePath.startsWith('dist/chunks/') && filePath.endsWith('.js'))
@@ -317,7 +317,7 @@ describe('published CLI package and executable', () => {
       ) as IMoldeaCliPackageManifest;
       const executable = readTarEntry(tarball, 'package/dist/moldea.js').toString('utf8');
 
-      expectPackageManifest(manifest, '^7.0.0', '^2.0.0', '^2.0.3');
+      expectPackageManifest(manifest, '^7.0.2', '^2.0.0', '^2.0.3');
       expect(executable.startsWith('#!/usr/bin/env node\n')).toBe(true);
       expect(executable).toContain('import("./chunks/');
     } finally {
@@ -426,7 +426,7 @@ describe('published CLI package and executable', () => {
           cwd: consumerDirectory,
           encoding: 'utf8',
         }),
-      ).toBe('11.0.1\n');
+      ).toBe('11.0.2\n');
 
       const warningRepositoryDirectory = path.join(testDirectory, 'warning-repository');
       mkdirSync(path.join(warningRepositoryDirectory, 'moldea'), { recursive: true });
@@ -577,13 +577,13 @@ describe('published CLI package and executable', () => {
       );
 
       warningManifest.context['/moldea/project.md'].bindings = Array.from(
-        { length: 64 },
+        { length: 201 },
         (_, index) => ({ path: '/src/agent.ts', symbol: `entry${index}` }),
       );
       writeFileSync(warningManifestPath, JSON.stringify(warningManifest));
       writeFileSync(
         warningSourcePath,
-        Array.from({ length: 64 }, (_, index) => `export const entry${index} = ${index};`).join(
+        Array.from({ length: 200 }, (_, index) => `export const entry${index} = ${index};`).join(
           '\n',
         ),
       );
@@ -591,19 +591,30 @@ describe('published CLI package and executable', () => {
       let coverageCursor: string | null = null;
       let coveragePages = 0;
       do {
-        const options = ['--json', '--max-output-bytes', '4096'];
+        const options = ['--json', '--max-output-bytes', '32768'];
         if (coverageCursor !== null) options.push('--cursor', coverageCursor);
         const response = executeWarningCase('validate', options);
-        expect(response.status).toBe(0);
-        expect(Buffer.byteLength(response.stdout)).toBeLessThanOrEqual(4096);
+        expect(response.status).toBe(1);
+        expect(Buffer.byteLength(response.stdout)).toBeLessThanOrEqual(32768);
         const envelope = JSON.parse(response.stdout) as { result: IMoldeaCliValidateResult };
         expect(envelope.result.coverageCounts).toStrictEqual({
-          bindings: 64,
-          exportsPassed: 64,
-          exportsFailed: 0,
+          bindings: 201,
+          exportsPassed: 200,
+          exportsFailed: 1,
           exportsNotChecked: 0,
         });
-        expect(envelope.result.diagnosticCount).toBe(2);
+        expect(envelope.result.diagnosticCount).toBe(3);
+        if (coveragePages === 0) {
+          expect(envelope.result.page.records).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                kind: 'diagnostic',
+                code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
+              }),
+            ]),
+          );
+          expect(envelope.result.page.records[0]?.kind).toBe('diagnostic');
+        }
         for (const record of envelope.result.page.records) {
           expect(coverageKeys.has(record.key)).toBe(false);
           coverageKeys.add(record.key);
@@ -612,7 +623,7 @@ describe('published CLI package and executable', () => {
         expect(++coveragePages).toBeLessThanOrEqual(64);
       } while (coverageCursor !== null);
       expect(coveragePages).toBeGreaterThan(1);
-      expect(coverageKeys.size).toBe(66);
+      expect(coverageKeys.size).toBe(204);
 
       const topLevelHelp = runPackageManager(
         packageManagerEntrypoint,
@@ -694,7 +705,7 @@ describe('published CLI package and executable', () => {
       expect(humanComposition.status).toBe(0);
       expect(humanComposition.stderr).toBe('');
       expect(humanComposition.stdout).toContain(
-        'The installed CLI composition state is valid.\nCLI version: 11.0.1\n',
+        'The installed CLI composition state is valid.\nCLI version: 11.0.2\n',
       );
 
       const jsonComposition = spawnPackageManager(
@@ -739,7 +750,7 @@ describe('published CLI package and executable', () => {
       expect(jsonUsageFailure.status).toBe(2);
       expect(jsonUsageFailure.stderr).toBe('');
       expect(jsonUsageFailure.stdout).toBe(
-        '{"cliVersion":"11.0.1","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"11.0.2","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const nonRepositoryCommand = spawnPackageManager(
@@ -787,7 +798,7 @@ describe('published CLI package and executable', () => {
       expect(discoveredRepositoryCommand.stderr).toBe('');
       expect(discoveredRepositoryCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(discoveredRepositoryCommand.stdout)).toMatchObject({
-        cliVersion: '11.0.1',
+        cliVersion: '11.0.2',
         command: 'inspect',
         result: {
           counts: { diagnostics: 3, errors: 2, warnings: 1, acceptedWarnings: 0 },
@@ -812,7 +823,7 @@ describe('published CLI package and executable', () => {
       expect(invalidValidationCommand.stderr).toBe('');
       expect(invalidValidationCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(invalidValidationCommand.stdout)).toMatchObject({
-        cliVersion: '11.0.1',
+        cliVersion: '11.0.2',
         command: 'validate',
         result: {
           diagnosticCount: 3,
@@ -955,7 +966,7 @@ process.exit(0);
       expect(validJsonValidationCommand.status).toBe(0);
       expect(validJsonValidationCommand.stderr).toBe('');
       expect(JSON.parse(validJsonValidationCommand.stdout)).toMatchObject({
-        cliVersion: '11.0.1',
+        cliVersion: '11.0.2',
         command: 'validate',
         result: {
           diagnosticCount: 0,
@@ -1018,7 +1029,7 @@ acceptedWarnings: 0
       expect(validJsonInspectionCommand.status).toBe(0);
       expect(validJsonInspectionCommand.stderr).toBe('');
       expect(validInspectionEnvelope).toMatchObject({
-        cliVersion: '11.0.1',
+        cliVersion: '11.0.2',
         command: 'inspect',
         error: null,
         result: {
@@ -1068,7 +1079,7 @@ acceptedWarnings: 0
       expect(unrelatedScopeCommand.stderr).toBe('');
       expect(Buffer.byteLength(unrelatedScopeCommand.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
       expect(JSON.parse(unrelatedScopeCommand.stdout)).toMatchObject({
-        cliVersion: '11.0.1',
+        cliVersion: '11.0.2',
         command: 'scope',
         result: {
           counts: { declarations: 0, inputPaths: 1, matches: 0 },
@@ -1117,7 +1128,7 @@ acceptedWarnings: 0
         expect(invalidScope.status).toBe(3);
         expect(invalidScope.stderr).toBe('');
         expect(JSON.parse(invalidScope.stdout)).toStrictEqual({
-          cliVersion: '11.0.1',
+          cliVersion: '11.0.2',
           command: 'scope',
           schemaVersion: 7,
           status: 'error',
@@ -1175,7 +1186,7 @@ acceptedWarnings: 0
       expect(explicitContentCommand.status).toBe(0);
       expect(explicitContentCommand.stderr).toBe('');
       expect(JSON.parse(explicitContentCommand.stdout)).toMatchObject({
-        cliVersion: '11.0.1',
+        cliVersion: '11.0.2',
         command: 'content',
         result: {
           asset: { path: '/moldea/project.md' },
@@ -1479,7 +1490,7 @@ acceptedWarnings: 0
       expect(inventoryLimitCommand.status).toBe(3);
       expect(inventoryLimitCommand.stderr).toBe('');
       expect(inventoryLimitCommand.stdout).toBe(
-        '{"cliVersion":"11.0.1","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"11.0.2","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const environmentWithoutPath = Object.fromEntries(
@@ -1501,7 +1512,7 @@ acceptedWarnings: 0
       expect(missingGitResult.status).toBe(3);
       expect(missingGitResult.stderr).toBe('');
       expect(missingGitResult.stdout).toBe(
-        '{"cliVersion":"11.0.1","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"11.0.2","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const compositionWithoutGit = spawnSync(

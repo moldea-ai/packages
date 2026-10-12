@@ -74,7 +74,7 @@ The prepared inspection retains only its content-free records, summary, source i
 
 ## Binding coverage
 
-Core checks each declared binding's file and, when a symbol is named, its syntax-only runtime export inventory. TypeScript and JavaScript ESM are recognized conservatively. A proven missing export is an error and a `failed` coverage record. CommonJS, declaration files, wildcard exports, malformed source, and insufficient parsing capacity remain `not-checked`, with a reason. Coverage names the checks performed; it does not establish runtime wiring, behavior, provider compatibility, or business correctness.
+Core checks each declared binding's file and, when a symbol is named, its syntax-only runtime export inventory. TypeScript and JavaScript ESM are recognized conservatively. A proven missing export is an error and a `failed` coverage record. CommonJS, declaration files, wildcard exports, malformed or oversized source, and insufficient parsing capacity remain `not-checked`, with a reason. Coverage names the checks performed; it does not establish runtime wiring, behavior, provider compatibility, or business correctness.
 
 `RECOGNIZED_RUNTIME_IDS` contains 35 runtime labels plus `custom`. Labels select agent guidance. Core applies the same universal checks to every label and does not interpret SDK calls. Use the installed SDK's type definitions and real application tests to establish runtime behavior. Handoffs remain runtime-native behavior.
 
@@ -82,11 +82,9 @@ Every diagnostic has `severity`, `group`, and stable `source: 'core'`. The group
 
 ## Resource and trust boundaries
 
-Core uses independent limits for distinct entries, total bytes read, per-file bytes, manifest bytes, logical retained bytes, diagnostics, and coverage records. The default logical retained-memory ceiling is 512 MiB. Before parsing a supported source, Core reserves `65536 + sourceBytes * (8 + 512)` bytes for text and syntax nodes. A reservation miss records `resource-limit` without parsing; a source read, cancellation, or operation budget failure rejects the whole operation. Each distinct source is parsed at most once per operation. Source buffers and syntax reservations are released after analysis; only export names remain in the inventory cache. Core executes no repository code, follows no symlink, receives no host path or source credential, and returns logical paths only.
+Core uses independent limits for distinct entries, total bytes read, per-file bytes, manifest bytes, logical retained bytes, diagnostics, and coverage records. The default logical retained-memory ceiling is 512 MiB. Before reading a supported source for export analysis, Core checks `maxFileBytes`, confirms read-buffer headroom, and reserves `65536 + sourceBytes * (8 + 512)` bytes for text and syntax nodes. An oversized source or reservation miss records `resource-limit` without a source read; a subsequent failed read, cancellation, or operation budget failure rejects the whole operation. Each distinct source is parsed at most once per operation. Source buffers and syntax reservations are released after analysis; only export names remain in the inventory cache. Core executes no repository code, follows no symlink, receives no host path or source credential, and returns logical paths only.
 
-Every `RESOURCE_LIMIT_EXCEEDED` exception identifies the exceeded limit, its configured maximum, the observed or projected usage, and the stable `reduce-input-or-increase-limit` next action. Core refuses the operation before allocating retained state beyond the applicable ceiling.
-
-The release-5 calibration corpus drives these limits through the real CLI and PR Assurance across ordinary, 1,024-path, broad-relationship, Unicode, binary, diagnostic-heavy, and incomplete-provider cases. Repeated measurements establish ordinary cumulative headroom, while adversarial tests prove explicit bounded failure without treating a page, file, or operation limit as total repository capacity.
+Logical `RESOURCE_LIMIT_EXCEEDED` exceptions identify the exceeded limit, its configured maximum, the observed or projected usage, and `reduce-input-or-increase-limit`. Verified isolated-worker heap exhaustion uses `review-inspection-capacity` with unknown observed usage. Fixed transport limits have no next action. Core refuses an operation before allocating retained state beyond the applicable ceiling.
 
 ## Development
 

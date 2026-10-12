@@ -101,7 +101,7 @@ Binding coverage reports the checks performed on each declared reference: `fileC
 
 For JSON collection and content output, `--max-output-bytes` accepts 4,096 through 1,048,576 bytes and defaults to 65,536. The measurement covers the final newline-terminated UTF-8 envelope after JSON escaping. `--cursor` continues a prior JSON page. Cursors are opaque canonical base64url documents bound to their format version, command, normalized filters, source snapshot, last key, and checksum. Invalid, tampered, cross-command, filter-mismatched, unsupported, or stale cursors fail with a safe structured error. An envelope or atomic record that cannot fit returns `OUTPUT_BUDGET_TOO_SMALL`; output is never truncated into invalid JSON.
 
-The default output budget remains 65,536 bytes. The [historical release observations](../../docs/launch-readiness.md) record the earlier resource corpus and its original package versions; those measurements do not establish current release performance. Large traversals use additional bounded pages without raising the page peak. The 1 MiB hard maximum is a single-response safety boundary, not a total repository-size limit.
+The default output budget remains 65,536 bytes. Large traversals use additional bounded pages without raising the page peak. The 1 MiB hard maximum is a single-response safety boundary, not a total repository-size limit.
 
 The `inspect` unresolved count includes project-owned and agent-owned requirements across all effects. IDs are scoped to their owners, so identical IDs under different owners count separately. These readiness gaps do not themselves invalidate structurally valid project state.
 

@@ -113,6 +113,54 @@ describe('Core repository references through the memory repository reader', () =
 
     expect(await validateFixture(reorderedRepository)).toStrictEqual(expected);
   });
+
+  test('points to the authored binding when a later export is missing', async () => {
+    const repository = createIntegratedMemoryRepositoryReader([
+      {
+        path: '/moldea/moldea.yaml',
+        type: 'file',
+        content: JSON.stringify({
+          version: 1,
+          context: {
+            '/moldea/project.md': {
+              bindings: [
+                { path: '/src/z.ts', symbol: 'entry' },
+                { path: '/src/y.ts', symbol: 'entry' },
+                { path: '/src/a.ts', symbol: 'entry' },
+              ],
+            },
+          },
+        }),
+      },
+      { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
+      { path: '/src/z.ts', type: 'file', content: 'export const entry = 1;' },
+      { path: '/src/y.ts', type: 'file', content: 'export const entry = 1;' },
+      { path: '/src/a.ts', type: 'file', content: 'export const other = 1;' },
+    ]);
+    const result = await createCore().validateProject({ repository });
+    expect(
+      result.diagnostics.filter(({ code }) => code === 'MOLDEA_REFERENCE_EXPORT_MISSING'),
+    ).toMatchObject([{ pointer: '/context/~1moldea~1project.md/bindings/2' }]);
+  });
+
+  test('points to the authored unmatched impact pattern', async () => {
+    const repository = createIntegratedMemoryRepositoryReader([
+      {
+        path: '/moldea/moldea.yaml',
+        type: 'file',
+        content: JSON.stringify({
+          version: 1,
+          context: { '/moldea/project.md': { affectedBy: ['/zz/**', '/aa/**'] } },
+        }),
+      },
+      { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
+      { path: '/aa/entry.ts', type: 'file', content: 'export const entry = 1;' },
+    ]);
+    const result = await createCore().validateProject({ repository });
+    expect(
+      result.diagnostics.filter(({ code }) => code === 'MOLDEA_IMPACT_PATTERN_UNMATCHED'),
+    ).toMatchObject([{ pointer: '/context/~1moldea~1project.md/affectedBy/0' }]);
+  });
 });
 
 const createExportRepository = (
@@ -198,6 +246,17 @@ describe('universal binding coverage through Core', () => {
   test.each([
     ['ts', 'export * from "./elsewhere.js";', 'unresolved-exports'],
     ['cts', 'export = {}', 'unresolved-exports'],
+    [
+      'ts',
+      'namespace ns { export interface Shape {} } export import entry = ns.Shape;',
+      'unresolved-exports',
+    ],
+    [
+      'ts',
+      'namespace ns { export const v = 1; } export import entry = ns.v;',
+      'unresolved-exports',
+    ],
+    ['cts', 'export import entry = require("./impl");', 'unresolved-exports'],
     ['js', 'exports.entry = 1; delete exports.entry;', 'unresolved-exports'],
     ['js', 'module["exports"] = { entry: 1 }; module.exports = {};', 'unresolved-exports'],
     ['js', 'export const entry = 1; exports["entry"] = 2;', 'unresolved-exports'],
@@ -230,6 +289,18 @@ describe('universal binding coverage through Core', () => {
     });
   });
 
+  test('a type-only export import leaves an absent runtime export conclusive', async () => {
+    const result = await createCore().validateProject({
+      repository: createExportRepository(
+        'namespace ns { export interface Shape {} } export import type entry = ns.Shape;',
+      ),
+    });
+    expect(result.coverage).toMatchObject([{ exportCheck: 'failed' }]);
+    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
+      'MOLDEA_REFERENCE_EXPORT_MISSING',
+    ]);
+  });
+
   test('records a file-only binding without parsing its source', async () => {
     const result = await createCore().validateProject({
       repository: createExportRepository('invalid syntax', '/src/entry.ts', null),
@@ -257,6 +328,37 @@ describe('universal binding coverage through Core', () => {
     expect(result.coverage).toMatchObject([
       { exportCheck: 'not-checked', exportNotCheckedReason: 'resource-limit' },
     ]);
+  });
+
+  test('skips the source read when the parse bound fits but read headroom does not', async () => {
+    const source = createExportRepository(' '.repeat(4096));
+    let sourceReads = 0;
+    const repository = {
+      ...source,
+      readFilePage: (
+        path: Parameters<typeof source.readFilePage>[0],
+        options: Parameters<typeof source.readFilePage>[1],
+      ) => {
+        if (path === '/src/entry.ts') sourceReads += 1;
+        return source.readFilePage(path, options);
+      },
+    };
+    const limit = 2_200_000;
+    const result = await createCore({
+      limits: { maxRetainedBytes: limit },
+    }).createProjectInspection({
+      repository,
+    });
+    expect(result.readPage({ view: 'coverage', maxItems: 1 }).page.records).toMatchObject([
+      {
+        item: {
+          kind: 'coverage',
+          coverage: { exportCheck: 'not-checked', exportNotCheckedReason: 'resource-limit' },
+        },
+      },
+    ]);
+    expect(result.resourceUsage.retainedBytes + 65_536 + 4096 * 520).toBeLessThanOrEqual(limit);
+    expect(sourceReads).toBe(0);
   });
 
   test('preserves failed export coverage and counts on a filtered inspection page', async () => {
@@ -331,12 +433,52 @@ describe('universal binding coverage through Core', () => {
     ).rejects.toMatchObject({ code: 'ABORTED' });
   });
 
-  test('rejects a source exceeding maxFileBytes instead of returning inconclusive coverage', async () => {
-    await expect(
-      createCore({ limits: { maxFileBytes: 1024 } }).validateProject({
-        repository: createExportRepository(' '.repeat(2048)),
-      }),
-    ).rejects.toMatchObject({ code: 'RESOURCE_LIMIT_EXCEEDED', limit: 'maxFileBytes' });
+  test('skips an oversized source before reading while completing validation', async () => {
+    const source = createExportRepository(' '.repeat(2048));
+    let sourceReads = 0;
+    const repository = {
+      ...source,
+      readFilePage: (
+        path: Parameters<typeof source.readFilePage>[0],
+        options: Parameters<typeof source.readFilePage>[1],
+      ) => {
+        if (path === '/src/entry.ts') sourceReads += 1;
+        return source.readFilePage(path, options);
+      },
+    };
+    const result = await createCore({ limits: { maxFileBytes: 1024 } }).createProjectInspection({
+      repository,
+    });
+    expect(result.valid).toBe(true);
+    expect(result.readPage({ view: 'coverage', maxItems: 1 }).page.records).toMatchObject([
+      {
+        item: {
+          kind: 'coverage',
+          coverage: { exportCheck: 'not-checked', exportNotCheckedReason: 'resource-limit' },
+        },
+      },
+    ]);
+    expect(sourceReads).toBe(0);
+    expect(result.resourceUsage.totalBytesRead).toBeLessThan(2048);
+  });
+
+  test('rejects a source whose read size differs from its entry size', async () => {
+    const source = createExportRepository('export const entry = 1;');
+    const repository = {
+      ...source,
+      getEntry: async (
+        path: Parameters<typeof source.getEntry>[0],
+        options: Parameters<typeof source.getEntry>[1],
+      ) => {
+        const entry = await source.getEntry(path, options);
+        return path === '/src/entry.ts' && entry?.type === 'file'
+          ? { ...entry, byteLength: 1 }
+          : entry;
+      },
+    };
+    await expect(createCore().validateProject({ repository })).rejects.toMatchObject({
+      code: 'INVALID_SOURCE_DATA',
+    });
   });
 
   test('checks every binding kind while parsing a shared source once per operation', async () => {

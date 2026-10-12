@@ -18,7 +18,7 @@ const DIAGNOSTIC_TITLES: Record<string, string> = {
   'decision-reference-missing': '1 missing decision',
 };
 const COMMAND_TITLES: Record<string, string> = {
-  'cli-invalid-project': 'Broken reference caught by validation',
+  'cli-invalid-project': 'Declared export missing',
   'cli-canonical-content': 'One document, ready for your tools',
   'cli-content-refusal': 'Source file outside this command’s scope',
 };

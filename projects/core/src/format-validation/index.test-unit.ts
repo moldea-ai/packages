@@ -15,7 +15,6 @@ import {
   isUnicodeScalarText,
   isVariableId,
   parseDecisionIdFromPath,
-  sortRepositoryReferences,
   trimRepositoryFormatWhitespace,
 } from './index.js';
 
@@ -175,18 +174,5 @@ describe('Core manifest-format validation', () => {
     expect(isRepositorySymbol('line\u000bbreak')).toBe(true);
     expect(isRepositorySymbol('line\u000cbreak')).toBe(true);
     expect(isRepositorySymbol('escaped\0nul')).toBe(false);
-  });
-
-  test('sorts references by Unicode code point, path, and absent symbol', () => {
-    const bmpPath = parseRepositoryPath('/\ue000');
-    const astralPath = parseRepositoryPath('/𐀀');
-
-    expect(
-      sortRepositoryReferences([
-        { path: astralPath },
-        { path: bmpPath, symbol: 'z' },
-        { path: bmpPath },
-      ]),
-    ).toStrictEqual([{ path: bmpPath }, { path: bmpPath, symbol: 'z' }, { path: astralPath }]);
   });
 });

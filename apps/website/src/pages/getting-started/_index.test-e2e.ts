@@ -40,6 +40,26 @@ for (const width of [320, 1440]) {
   }
 }
 
+test('shows the renamed export and labels the project-intent diff', async ({ page }) => {
+  await page.goto(guidePath);
+  const packages = page.locator('#local-packages figure');
+  await expect(packages).toContainText('checkEligibility');
+  await expect(packages).toContainText('canReturn');
+  await packages.getByRole('button', { name: /^View result:/u }).click();
+  const result = page.getByRole('dialog');
+  await expect(result).toContainText('MOLDEA_REFERENCE_EXPORT_MISSING');
+  await expect(result).toContainText('coverageCounts');
+  await expect(result).toContainText('exportsFailed');
+  await page.keyboard.press('Escape');
+
+  const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
+  await expect(
+    assurance.locator(
+      '[data-file-preview-header] code[title="/moldea/agents/support/instruction.md"]',
+    ),
+  ).toBeVisible();
+});
+
 // Astro's native underscore prefix keeps this colocated page test out of route discovery.
 test('connects homepage, desktop navigation, and footer to the guide', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
