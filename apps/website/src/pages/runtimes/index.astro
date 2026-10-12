@@ -2,10 +2,15 @@
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
 import CodeBlock from '@moldea.ai/website-ui/code-block';
 import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';
-import { RUNTIME_CATALOG } from '@moldea.ai/website-ui/runtime-catalog';
 import { withBase } from '@moldea.ai/website-ui/site';
 
+import { CapabilityCard } from '../../components/capability-card/index.ts';
 import BaseLayout from '../../layouts/base-layout.astro';
+import { loadWebsiteModel } from '../../lib/generation/generation.ts';
+
+const model = loadWebsiteModel();
+const example = model.capabilities.cases.find(({ id }) => id === 'binding-export-missing');
+if (!example) throw new Error('Missing binding guidance example.');
 
 const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Runtimes' }];
 const binding = `context:
@@ -21,14 +26,32 @@ const binding = `context:
 >
   <section class="page-shell pt-8 pb-section-gap">
     <Breadcrumbs items={breadcrumbs} />
-    <header class="max-w-4xl pt-16 pb-10">
-      <p class="eyebrow mb-5">Runtime guidance</p>
-      <h1 class="page-title">Choose a label. Keep the checks explicit.</h1>
-      <p class="mt-7 text-xl leading-9 text-muted-foreground">
-        The runtime ID in your manifest selects guidance for your coding agent. It does not select a
-        compatibility checker or certify an SDK integration.
-      </p>
-    </header>
+    <div class="grid items-center gap-10 pt-12 pb-14 lg:grid-cols-2 lg:gap-16">
+      <header>
+        <p class="eyebrow mb-5">Runtime guidance</p>
+        <h1 class="page-title">Choose a label. Keep the checks explicit.</h1>
+        <p class="mt-7 text-xl leading-9 text-muted-foreground">
+          The runtime ID in your manifest selects guidance for your coding agent. It does not select
+          a compatibility checker or certify an SDK integration.
+        </p>
+      </header>
+      <section
+        aria-labelledby={`example-${example.id}-title`}
+        class="min-w-0 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
+      >
+        <h2
+          id={`example-${example.id}-title`}
+          class="mb-6 text-lg font-semibold"
+        >
+          {example.title}
+        </h2>
+        <CapabilityCard
+          {example}
+          catalog={model.capabilities}
+        />
+      </section>
+    </div>
+    <h2 class="section-title mb-8">Find your runtime.</h2>
     <RuntimeGrid hrefBase="" />
     <p class="mt-5 text-xs leading-6 text-muted-foreground">
       Names and marks belong to their respective owners. Labels do not imply SDK compatibility,
@@ -108,38 +131,5 @@ const binding = `context:
         </p>
       </section>
     </div>
-    <section
-      class="mt-section-gap"
-      aria-labelledby="runtime-ids-title"
-    >
-      <h2
-        id="runtime-ids-title"
-        class="section-title"
-      >
-        Manifest runtime IDs.
-      </h2>
-      <p class="mt-5 max-w-3xl leading-8 text-muted-foreground">
-        Use the label that describes your integration. The same declared binding checks apply to
-        every label.
-      </p>
-      <ul
-        class="mt-8 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3"
-        aria-label="Manifest runtime IDs"
-      >
-        {
-          RUNTIME_CATALOG.map((runtime) => (
-            <li
-              id={runtime.id}
-              class="scroll-mt-24 border-b py-4"
-            >
-              <>
-                <h3 class="font-semibold">{runtime.displayName}</h3>
-                <code class="mt-2 block text-sm break-all text-muted-foreground">{runtime.id}</code>
-              </>
-            </li>
-          ))
-        }
-      </ul>
-    </section>
   </section>
 </BaseLayout>

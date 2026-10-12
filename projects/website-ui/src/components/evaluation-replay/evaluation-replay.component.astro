@@ -13,7 +13,6 @@ import {
 
 import type { IEvaluationReplayModel } from '@moldea.ai/website-ui/evaluation-replay-model';
 
-import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
 import StatusBadge from '../status-badge/status-badge.component.astro';
 import EvaluationReplayMarkdown from './evaluation-replay-markdown.component.astro';
 import EvaluationReplayPathTree from './evaluation-replay-path-tree.component.astro';
@@ -131,12 +130,7 @@ const workspaceLabels = {
                           </code>
                           <ul class="mt-2 grid gap-1 text-sm text-code-foreground/80">
                             {step.results.map((result) => (
-                              <li class="break-words">
-                                <InlineBrandText
-                                  text={result}
-                                  variant="compact"
-                                />
-                              </li>
+                              <li class="break-words">{result}</li>
                             ))}
                           </ul>
                           {step.exitCode !== null && (

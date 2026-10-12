@@ -1,6 +1,6 @@
 # packages
 
-This repository develops the open-source `moldea` packages, private shared implementations, conformance fixtures, consumer checksums, and packages website. The separate [`platform`](https://github.com/moldea-ai/platform) repository owns hosted applications, APIs, and infrastructure.
+This repository develops the open-source moldea packages, private shared implementations, conformance fixtures, consumer checksums, and packages website. The separate [`platform`](https://github.com/moldea-ai/platform) repository owns hosted applications, APIs, and infrastructure.
 
 ## Getting started
 
@@ -31,7 +31,7 @@ API and HTTP endpoint documentation belongs in the owning project's established 
 
 ## Authoritative project specifications
 
-The sibling `platform` repository owns the canonical `moldea` product and package specifications. The root `project-specification` symlink targets `../platform/moldea`. Before work that requires those specifications, read the [project foundation](project-specification/project.md), then only the relevant focused context. Start with the [packages specification](project-specification/context/packages.md) and the affected package's focused specification; the [detailed blueprint](docs/project-blueprint.md) routes package contracts and ownership.
+The sibling `platform` repository owns the canonical moldea product and package specifications. The root `project-specification` symlink targets `../platform/moldea`. Before work that requires those specifications, read the [project foundation](project-specification/project.md), then only the relevant focused context. Start with the [packages specification](project-specification/context/packages.md) and the affected package's focused specification; the [detailed blueprint](docs/project-blueprint.md) routes package contracts and ownership.
 
 Specifications define intended product requirements and design constraints. This repository owns the [public Repository Format](specifications/repository-format.md), package implementations, tests, public documentation, consumer verification, and releases. The platform's Repository Format copy is a synchronized integration reference. Specifications alone do not establish shipped behavior or availability. Report conflicts or version drift and establish the affected authority before changing a contract; do not silently regress supported behavior to match an older specification.
 

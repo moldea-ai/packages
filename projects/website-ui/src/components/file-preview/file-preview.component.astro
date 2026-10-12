@@ -1,7 +1,6 @@
 ---
 import { FileText } from '@lucide/astro';
 
-import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
 import type { IStatusBadgeTone } from '../status-badge/status-badge.component.astro';
 
 // file presentation only; consumers own source selection, status, and body content
@@ -42,13 +41,7 @@ const toneClasses = {
       <slot name="icon"><FileText class="size-5" /></slot>
     </span>
     <div class="min-w-0 flex-1">
-      {
-        label && (
-          <p class="mb-1 text-xs text-muted-foreground">
-            <InlineBrandText text={label} />
-          </p>
-        )
-      }
+      {label && <p class="mb-1 text-xs text-muted-foreground">{label}</p>}
       <code
         class="inline-code flex w-fit max-w-full text-xs whitespace-nowrap"
         title={path}

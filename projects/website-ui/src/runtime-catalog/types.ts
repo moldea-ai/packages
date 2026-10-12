@@ -4,4 +4,5 @@ export interface IRuntimeCatalogEntry {
   displayName: string;
   logoPath: string;
   darkLogoPath?: string;
+  logoSize?: 'icon' | 'wordmark' | 'padded-wordmark';
 }

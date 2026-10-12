@@ -17,7 +17,10 @@ for (const width of [320, 768, 1440]) {
         const grid = page.locator('[data-runtime-grid]');
         await expect(grid.getByRole('link')).toHaveCount(35);
         for (const runtime of RUNTIME_CATALOG) {
-          const link = grid.getByRole('link', { name: runtime.displayName, exact: true });
+          const link = grid.getByRole('link', {
+            name: `${runtime.displayName} ${runtime.id}`,
+            exact: true,
+          });
           await expect(link).toHaveAttribute(
             'href',
             `${route === '/' ? withBase('/runtimes/', basePath) : ''}#${runtime.id}`,
@@ -26,8 +29,8 @@ for (const width of [320, 768, 1440]) {
           const image = link.locator('img:visible');
           await expect(image).toHaveAttribute('loading', 'lazy');
           await expect(image).toHaveAttribute('alt', '');
-          await expect(image).toHaveAttribute('width', '104');
-          await expect(image).toHaveAttribute('height', '32');
+          await expect(image).toHaveAttribute('width', '96');
+          await expect(image).toHaveAttribute('height', '48');
           await image.evaluate(async (element: HTMLImageElement) => {
             await element.decode();
             if (element.naturalWidth === 0) throw new Error('Runtime logo did not decode.');
@@ -65,7 +68,7 @@ test('a runtime link reaches its manifest ID without JavaScript', async ({ brows
     await page.goto(withBase('/runtimes/', basePath));
     await page
       .locator('[data-runtime-grid]')
-      .getByRole('link', { name: 'OpenAI', exact: true })
+      .getByRole('link', { name: 'OpenAI openai', exact: true })
       .click();
     await expect(page).toHaveURL(`${withBase('/runtimes/', basePath)}#openai`);
     await expect(page.locator('#openai')).toContainText('openai');

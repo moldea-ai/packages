@@ -1,17 +1,46 @@
 ---
+import { ArrowRight } from '@lucide/astro';
+import Accordion from '@moldea.ai/website-ui/accordion';
+import ActionLink from '@moldea.ai/website-ui/action-link';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
-import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
+import CodeBlock from '@moldea.ai/website-ui/code-block';
+import Conversation from '@moldea.ai/website-ui/conversation';
+import ConversationMessage from '@moldea.ai/website-ui/conversation-message';
 import { renderMarkdownDocument } from '@moldea.ai/website-ui/markdown';
+import { withBase } from '@moldea.ai/website-ui/site';
 
+import { RepositoryCheckPreview } from '../../components/repository-check-preview/index.ts';
 import BaseLayout from '../../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 
-const { gettingStarted: guide } = loadWebsiteModel();
+const model = loadWebsiteModel();
+const guide = model.gettingStarted;
 const rendered = await renderMarkdownDocument(guide.markdown, {
   basePath: import.meta.env.BASE_URL,
-  productNameTreatment: 'code',
 });
 const breadcrumbs = [{ href: '/', label: 'Home' }, { label: guide.navigationTitle }];
+const journey = [
+  {
+    title: 'Put project intent in Git.',
+    description:
+      'Use the Agent Skill to adopt the repository and capture its purpose, rules, and decisions.',
+    href: 'https://skill.moldea.ai/',
+    label: 'Install the Agent Skill',
+  },
+  {
+    title: 'Check declared connections.',
+    description: 'Run the local CLI when project files or their connections to code change.',
+    href: withBase('/packages/cli/', import.meta.env.BASE_URL),
+    label: 'CLI overview and installation guide',
+  },
+  {
+    title: 'Review the evidence.',
+    description:
+      'Read diagnostics and coverage. Ask for a repair deliberately, then inspect the updated repository.',
+    href: withBase('/capabilities/', import.meta.env.BASE_URL),
+    label: 'Explore executed examples',
+  },
+];
 ---
 
 <BaseLayout
@@ -21,16 +50,106 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: guide.navigationTitl
 >
   <section class="page-shell pt-8 pb-section-gap">
     <Breadcrumbs items={breadcrumbs} />
-    <header class="max-w-3xl pt-10 pb-8 sm:pt-16">
-      <p class="eyebrow mb-4">Choose your starting point</p>
-      <h1 class="page-title">
-        <InlineBrandText text={guide.title} />
-      </h1>
-      <p class="mt-6 text-lg leading-8 text-muted-foreground">{guide.description}</p>
+    <header class="grid items-start gap-10 pt-12 pb-12 sm:pt-16 lg:grid-cols-2 lg:gap-16">
+      <div class="min-w-0">
+        <p class="eyebrow mb-4">Choose your starting point</p>
+        <h1 class="page-title">{guide.title}</h1>
+        <p class="mt-6 text-lg leading-8 text-muted-foreground">{guide.description}</p>
+        <ActionLink
+          class="mt-7"
+          href="https://skill.moldea.ai/"
+          target="_blank"
+          >Start with the Agent Skill</ActionLink
+        >
+        <a
+          class="mt-5 block text-link"
+          href={withBase('/packages/', import.meta.env.BASE_URL)}
+          >Building your own tools? Explore the packages.</a
+        >
+      </div>
+      <div class="min-w-0 sm:rounded-xl sm:border sm:bg-card sm:p-6">
+        <p class="eyebrow mb-5">Illustrative adoption conversation</p>
+        <Conversation ariaLabel="Adopting project context">
+          <ConversationMessage role="user"
+            ><p>Initialize moldea in this repository.</p></ConversationMessage
+          >
+          <ConversationMessage role="assistant"
+            ><p class="leading-7 text-muted-foreground">
+              I’ll inspect the repository and capture its purpose and constraints in <code
+                class="inline-code">/moldea/project.md</code
+              >. Then we can connect the relevant context to its code.
+            </p></ConversationMessage
+          >
+        </Conversation>
+      </div>
     </header>
-    <div
-      class="prose-moldea max-w-3xl"
-      set:html={rendered.html}
-    />
+    <ol
+      class="grid gap-8 border-y py-8 md:grid-cols-3"
+      aria-label="Adoption journey"
+    >
+      {
+        journey.map((step, index) => (
+          <li class="min-w-0">
+            <>
+              <span class="mb-4 block font-mono text-sm text-muted-foreground">0{index + 1}</span>
+              <h2 class="text-lg font-semibold">{step.title}</h2>
+              <p class="mt-3 text-sm leading-7 text-muted-foreground">{step.description}</p>
+              <ActionLink
+                class="mt-4"
+                href={step.href}
+                target={step.href.startsWith('https:') ? '_blank' : undefined}
+                variant="link"
+                size="sm"
+              >
+                {step.label}
+                {!step.href.startsWith('https:') && (
+                  <ArrowRight
+                    class="size-4"
+                    aria-hidden="true"
+                  />
+                )}
+              </ActionLink>
+            </>
+          </li>
+        ))
+      }
+    </ol>
+    <section
+      class="mt-12 grid items-start gap-8 lg:grid-cols-2 lg:gap-16"
+      aria-labelledby="local-check-title"
+    >
+      <div class="min-w-0">
+        <p class="eyebrow mb-4">Inside an adopted repository</p><h2
+          class="section-title"
+          id="local-check-title"
+        >
+          Find a broken connection before it spreads.
+        </h2><p class="mt-5 leading-8 text-muted-foreground">
+          This synthetic support agent declares a tool whose implementation file is missing. The
+          local CLI reports the structural failure. It does not run the agent or repair the file.
+        </p><div class="mt-6">
+          <CodeBlock
+            source="moldea validate --json"
+            language="bash"
+            ariaLabel="Run a local structural check"
+          />
+        </div><p class="mt-5 text-sm leading-7 text-muted-foreground">
+          Local checks read only the selected repository. They make no model calls or network
+          requests and send no telemetry.
+        </p>
+      </div>
+      <RepositoryCheckPreview example={model.instructionExample} />
+    </section>
+    <div class="mt-12">
+      <Accordion
+        id="adoption-guide"
+        title="Read the complete adoption guide"
+        description="Installation, Cloud, programmatic integrations, runtime guidance, and repository files."
+        ><div
+          class="prose-moldea min-w-0"
+          set:html={rendered.html}
+        /></Accordion
+      >
+    </div>
   </section>
 </BaseLayout>

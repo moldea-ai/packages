@@ -1,8 +1,7 @@
 ---
-import { ExternalLink, GitBranch, Menu, Search, X } from '@lucide/astro';
+import { ExternalLink, Menu, Search, X } from '@lucide/astro';
 
 import ActionLink from '../action-link/action-link.component.astro';
-import InlineBrandText from '../inline-brand-text/inline-brand-text.component.astro';
 import ThemeControl from '../theme-control/theme-control.component.astro';
 
 export interface ISiteHeaderNavigationItem {
@@ -81,26 +80,17 @@ const responsiveClasses = breakpointClasses[breakpoint];
                   class="xl:hidden"
                   aria-hidden="true"
                 >
-                  <InlineBrandText
-                    text={compactLabel}
-                    variant="compact"
-                  />
+                  {compactLabel}
                 </span>
                 <span
                   class="hidden xl:inline"
                   aria-hidden="true"
                 >
-                  <InlineBrandText
-                    text={label}
-                    variant="compact"
-                  />
+                  {label}
                 </span>
               </>
             ) : (
-              <InlineBrandText
-                text={label}
-                variant="compact"
-              />
+              label
             )}
           </a>
         ))
@@ -128,13 +118,7 @@ const responsiveClasses = breakpointClasses[breakpoint];
         target="_blank"
         rel="noopener noreferrer"
         aria-label={sourceAriaLabel}
-      >
-        <GitBranch
-          class="size-4"
-          aria-hidden="true"
-          data-external-link-icon
-        />
-      </ActionLink>
+      />
       <ThemeControl storageKey={themeStorageKey} />
       <slot name="desktop-actions" />
     </div>
@@ -169,10 +153,7 @@ const responsiveClasses = breakpointClasses[breakpoint];
                 href={href}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <InlineBrandText
-                  text={label}
-                  variant="compact"
-                />
+                {label}
               </a>
             ))
           }
@@ -189,10 +170,7 @@ const responsiveClasses = breakpointClasses[breakpoint];
             target="_blank"
             rel="noopener noreferrer"
           >
-            <InlineBrandText
-              text={sourceLabel}
-              variant="compact"
-            />
+            {sourceLabel}
             <ExternalLink
               class="ms-1.5 inline size-3.5"
               aria-hidden="true"

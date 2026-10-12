@@ -85,7 +85,9 @@ describe('runtime catalog', () => {
       for (const key of ['logoPath', 'darkLogoPath'] as const) {
         const assetPath = runtime[key];
         if (assetPath === undefined) continue;
-        expect(assetPath).toMatch(/^@moldea\.ai\/website-ui\/runtime-logos\/[a-z0-9-]+\.svg$/u);
+        expect(assetPath).toMatch(
+          /^@moldea\.ai\/website-ui\/runtime-logos\/[a-z0-9-]+\.(?:svg|png)$/u,
+        );
         expect(logoNames).toContain(assetPath.split('/').at(-1));
       }
       expect(runtime.displayName.trim()).toBe(runtime.displayName);
@@ -93,21 +95,35 @@ describe('runtime catalog', () => {
     }
   });
 
-  test.each(logoNames)('keeps %s self-contained and free of executable SVG constructs', (name) => {
-    const svg = readFileSync(path.join(logoDirectory, name), 'utf8');
-    expect(svg).toMatch(/^<svg\s[^>]*\bviewBox="[^"]+"[^>]*>/u);
-    expect(svg).not.toMatch(/<!|<\?|&|\bon[a-z]+\s*=|\b(?:href|style|src)\s*=/iu);
-    expect(svg.replace('xmlns="http://www.w3.org/2000/svg"', '')).not.toMatch(
-      /(?:https?:|data:|javascript:|\/\/)/iu,
-    );
-    for (const match of svg.matchAll(/<\/?([\w:-]+)/gu)) {
-      expect(permittedElements.has(match[1] ?? ''), `${name}: ${match[1]}`).toBe(true);
-    }
-    for (const match of svg.matchAll(/\s([\w:-]+)\s*=\s*(?:"[^"]*"|'[^']*')/gu)) {
-      expect(permittedAttributes.has(match[1] ?? ''), `${name}: ${match[1]}`).toBe(true);
-    }
-    for (const match of svg.matchAll(/url\(([^)]*)\)/giu)) {
-      expect(match[1]).toMatch(/^#[a-zA-Z0-9_-]+$/u);
-    }
-  });
+  test.each(logoNames.filter((name) => name.endsWith('.png')))(
+    'keeps %s as a bounded static PNG',
+    (name) => {
+      const image = readFileSync(path.join(logoDirectory, name));
+      expect([...image.subarray(0, 8)]).toStrictEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+      expect(image.readUInt32BE(16)).toBeGreaterThan(0);
+      expect(image.readUInt32BE(20)).toBeGreaterThan(0);
+      expect(image.byteLength).toBeLessThan(65536);
+    },
+  );
+
+  test.each(logoNames.filter((name) => name.endsWith('.svg')))(
+    'keeps %s self-contained and free of executable SVG constructs',
+    (name) => {
+      const svg = readFileSync(path.join(logoDirectory, name), 'utf8');
+      expect(svg).toMatch(/^<svg\s[^>]*\bviewBox="[^"]+"[^>]*>/u);
+      expect(svg).not.toMatch(/<!|<\?|&|\bon[a-z]+\s*=|\b(?:href|style|src)\s*=/iu);
+      expect(svg.replace('xmlns="http://www.w3.org/2000/svg"', '')).not.toMatch(
+        /(?:https?:|data:|javascript:|\/\/)/iu,
+      );
+      for (const match of svg.matchAll(/<\/?([\w:-]+)/gu)) {
+        expect(permittedElements.has(match[1] ?? ''), `${name}: ${match[1]}`).toBe(true);
+      }
+      for (const match of svg.matchAll(/\s([\w:-]+)\s*=\s*(?:"[^"]*"|'[^']*')/gu)) {
+        expect(permittedAttributes.has(match[1] ?? ''), `${name}: ${match[1]}`).toBe(true);
+      }
+      for (const match of svg.matchAll(/url\(([^)]*)\)/giu)) {
+        expect(match[1]).toMatch(/^#[a-zA-Z0-9_-]+$/u);
+      }
+    },
+  );
 });

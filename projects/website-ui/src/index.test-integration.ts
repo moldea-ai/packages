@@ -12,6 +12,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 
 import { AxeBuilder } from '@axe-core/playwright';
 import { chromium } from '@playwright/test';
@@ -92,7 +93,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '1.14.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '2.0.0' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -106,7 +107,7 @@ describe('published website UI package', () => {
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/runtime-catalog.js');
     expect(packedPaths).toContain('dist/runtime-catalog/index.d.ts');
-    expect(packedPaths).toContain('runtime-logos/fallback.svg');
+    expect(packedPaths).toContain('runtime-logos/microsoft.png');
     expect(packedPaths).toContain('src/components/runtime-grid/runtime-grid.component.astro');
     expect(packedPaths).toContain('dist/code-diff.js');
     expect(packedPaths).toContain('dist/code-presentation.js');
@@ -115,6 +116,11 @@ describe('published website UI package', () => {
     expect(packedPaths).toContain('src/components/code-diff/rows/code-diff-rows.component.astro');
     expect(packedPaths).toContain('src/components/code-diff/line/code-diff-line.component.astro');
     expect(packedPaths).toContain('dist/markdown.js');
+    expect(packedPaths).toContain('src/components/conversation/conversation.component.astro');
+    expect(packedPaths).toContain(
+      'src/components/conversation-message/conversation-message.component.astro',
+    );
+    expect(packedPaths.some((file) => file.includes('inline-brand-text'))).toBe(false);
     expect(packedPaths).toContain('dist/site/index.d.ts');
     expect(packedPaths).toContain('src/styles.css');
     expect(packedPaths).toContain('src/tokens.css');
@@ -227,7 +233,8 @@ describe('published website UI package', () => {
         "import EvaluationReplay from '@moldea.ai/website-ui/evaluation-replay';",
         "import FilePreview from '@moldea.ai/website-ui/file-preview';",
         "import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';",
-        "import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';",
+        "import Conversation from '@moldea.ai/website-ui/conversation';",
+        "import ConversationMessage from '@moldea.ai/website-ui/conversation-message';",
         "import LocalSearch from '@moldea.ai/website-ui/local-search';",
         "import NavigationProgress from '@moldea.ai/website-ui/navigation-progress';",
         "import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';",
@@ -243,7 +250,8 @@ describe('published website UI package', () => {
         "import { withBase } from '@moldea.ai/website-ui/site';",
         "import '../styles.css';",
         '',
-        "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## moldea Shared Markdown', { productNameTreatment: 'code' });",
+        "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## moldea Shared Markdown');",
+        "const conversationDocument = await renderMarkdownDocument('> **You**\\n>\\n> Inspect `@moldea.ai/core`.\\n\\n> **Coding agent**\\n>\\n> The declared export exists.', { conversations: true });",
         "const tree = buildEvaluationReplayPathTree([{ path: 'src/index.ts', type: 'file' }]);",
         "const replay = { trials: [{ confirmationIndex: 3, evaluatedAt: '2026-09-10T00:00:00.000Z', id: 'confirmation-3', kind: 'confirmation', steps: [], title: 'Confirmation 3' }] } satisfies IEvaluationReplayModel;",
         "const navigationItems = [{ href: '/', isActive: true, label: 'moldea Home' }, { href: '/repository-format/', isActive: false, label: 'Repository Format', compactLabel: 'Repo. Format' }] satisfies ComponentProps<typeof SiteHeader>['navigationItems'];",
@@ -279,8 +287,9 @@ describe('published website UI package', () => {
         '    </SiteHeader>',
         '    <BrandLogo compact darkCompactLogoPath="/dark-icon.png" darkLogoPath="/dark.png" homeLabel="Fixture home" lightCompactLogoPath="/light-icon.png" lightLogoPath="/light.png" suffix="fixture" />',
         '    <Breadcrumbs items={[{ href: "/", label: "Home" }, { label: "moldea Fixture" }]} />',
-        '    <InlineBrandText text="Use moldea here." />',
-        '    <InlineBrandText text="Use MOLDEA compactly." variant="compact" />',
+        '    <p>Use moldea here and preserve @moldea.ai/core as one token.</p>',
+        '    {conversationDocument.blocks.map((block) => block.kind === "html" ? <div set:html={block.html} /> : <Conversation>{block.messages.map((message) => <ConversationMessage role={message.role}><div set:html={message.html} /></ConversationMessage>)}</Conversation>)}',
+        '    <ActionLink href="https://example.com" target="_blank" rel="author">External action</ActionLink>',
         '    <ActionButton>Run</ActionButton>',
         '    <section class="relative overflow-hidden"><HeroBackdrop /><h1 class="relative">Consumer hero</h1></section>',
         '    <CodeBlock source={JSON.stringify({ valid: false })} language="json" />',
@@ -347,18 +356,22 @@ describe('published website UI package', () => {
       ['install', '--prefer-offline', '--ignore-scripts', '--frozen-lockfile=false'],
       { cwd: fixtureDirectory, encoding: 'utf8' },
     );
+    const consumerRequire = createRequire(path.join(fixtureDirectory, 'package.json'));
+    expect(() => consumerRequire.resolve('@moldea.ai/website-ui/inline-brand-text')).toThrow(
+      'Package subpath',
+    );
     writeFileSync(
       path.join(pagesDirectory, 'runtimes.astro'),
       [
         '---',
         "import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';",
         "import { RUNTIME_CATALOG } from '@moldea.ai/website-ui/runtime-catalog';",
-        "import fallbackLogo from '@moldea.ai/website-ui/runtime-logos/fallback.svg?url';",
+        "import microsoftLogo from '@moldea.ai/website-ui/runtime-logos/microsoft.png?url';",
         "import '../styles.css';",
         '---',
         '<html lang="en"><head><title>Runtime labels</title></head><body>',
         '<main data-runtime-count={RUNTIME_CATALOG.length}><RuntimeGrid hrefBase="" />',
-        '<img src={fallbackLogo} width="32" height="32" alt="Neutral document glyph" /></main>',
+        '<img src={microsoftLogo} width="32" height="32" alt="Microsoft logo" /></main>',
         '</body></html>',
       ].join('\n'),
     );
@@ -423,12 +436,12 @@ describe('published website UI package', () => {
             const page = await context.newPage();
             await page.route('https://runtime-fixture.example/**', async (route) => {
               const assetName = new URL(route.request().url()).pathname.split('/').at(-1);
-              if (assetName === undefined || !/^[a-zA-Z0-9_.-]+\.svg$/u.test(assetName)) {
+              if (assetName === undefined || !/^[a-zA-Z0-9_.-]+\.(?:svg|png)$/u.test(assetName)) {
                 await route.abort();
                 return;
               }
               await route.fulfill({
-                contentType: 'image/svg+xml',
+                contentType: assetName.endsWith('.png') ? 'image/png' : 'image/svg+xml',
                 body: readFileSync(path.join(fixtureDirectory, 'dist', '_astro', assetName)),
               });
             });
@@ -441,9 +454,9 @@ describe('published website UI package', () => {
             await page.evaluate((selectedTheme) => {
               document.documentElement.className = selectedTheme;
             }, theme);
-            const runtimeGrid = page.getByRole('list', { name: 'Runtime labels', exact: true });
+            const runtimeGrid = page.getByRole('list', { name: 'Runtime guidance', exact: true });
             expect(await runtimeGrid.getByRole('link').count()).toBe(35);
-            const runtimeLink = runtimeGrid.getByRole('link', { name: 'OpenAI', exact: true });
+            const runtimeLink = runtimeGrid.getByRole('link', { name: /^OpenAI openai$/u });
             expect(await runtimeLink.getAttribute('href')).toBe('/runtimes/#openai');
             await runtimeLink.focus();
             expect(await runtimeLink.evaluate((node) => getComputedStyle(node).boxShadow)).not.toBe(
@@ -452,7 +465,7 @@ describe('published website UI package', () => {
             await page.keyboard.press('Tab');
             expect(
               await runtimeGrid
-                .getByRole('link', { name: 'OpenAI Agents SDK', exact: true })
+                .getByRole('link', { name: /^OpenAI Agents SDK openai-agents-sdk$/u })
                 .evaluate((node) => node === document.activeElement),
             ).toBe(true);
             await runtimeGrid.scrollIntoViewIfNeeded();
@@ -460,8 +473,8 @@ describe('published website UI package', () => {
               expect(await image.getAttribute('loading')).toBe('lazy');
               expect(await image.getAttribute('decoding')).toBe('async');
               expect(await image.getAttribute('alt')).toBe('');
-              expect(await image.getAttribute('width')).toBe('104');
-              expect(await image.getAttribute('height')).toBe('32');
+              expect(await image.getAttribute('width')).toBe('96');
+              expect(await image.getAttribute('height')).toBe('48');
               if (await image.isVisible()) {
                 await image.scrollIntoViewIfNeeded();
                 await image.evaluate((node) => (node as HTMLImageElement).decode());
@@ -746,7 +759,9 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('role="region" aria-label="Order status command"');
     expect(fixtureHtml).toContain('data-code-copy-controls-template');
     expect(fixtureHtml).toContain('data-code-copy="false"');
-    expect(fixtureHtml.match(/<code[^>]*>moldea<\/code>/gu)?.length).toBeGreaterThanOrEqual(8);
+    expect(fixtureHtml).not.toMatch(/<code[^>]*>moldea<\/code>/u);
+    expect(fixtureHtml).toContain('data-conversation-message="assistant"');
+    expect(fixtureHtml).toContain('rel="author noopener noreferrer"');
     expect(fixtureHtml).toContain('Linked file');
     expect(fixtureHtml).toContain('Missing from <code class="inline-code">moldea.yaml</code>');
     expect(fixtureHtml).toContain('data-search-focus-on-load="true"');
@@ -776,7 +791,7 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('Second visual');
     expect(fixtureHtml).toContain('Repo. Format');
     expect(fixtureHtml).toContain('aria-label="Repository Format"');
-    expect(fixtureHtml).toContain('lucide-git-branch');
+    expect(fixtureHtml).toContain('lucide-external-link');
     expect(fixtureHtml).toMatch(/<footer class="border-t border-border">/u);
     expect(fixtureHtml).toMatch(/<h3[^>]*>Metadata available<\/h3>/u);
     expect(fixtureHtml).toMatch(/<dialog\b[^>]*id="fixture-wide"[^>]*sm:max-w-5xl/u);
@@ -790,6 +805,6 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toMatch(/<span\b[^>]*class="sr-only"[^>]*>Open complete source<\/span>/u);
     expect(fixtureHtml).toContain('lucide-maximize-2');
     expect(fixtureHtml).toContain('Expanded source content');
-    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(2);
+    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(3);
   }, 180_000);
 });

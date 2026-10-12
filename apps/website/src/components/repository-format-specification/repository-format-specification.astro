@@ -1,9 +1,8 @@
 ---
-import { Braces, ExternalLink } from '@lucide/astro';
+import { Braces } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import CodeBlock from '@moldea.ai/website-ui/code-block';
 import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';
-import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import type { IRenderedMarkdownDocument } from '@moldea.ai/website-ui/markdown';
 import { withBase } from '@moldea.ai/website-ui/site';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
@@ -45,7 +44,7 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Repository Format s
       {specification.title}
     </h1>
     <p class="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground">
-      <InlineBrandText text={specification.description} />
+      {specification.description}
     </p>
     <div class="mt-7 flex flex-wrap gap-3">
       <ActionLink
@@ -54,11 +53,7 @@ const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Repository Format s
         target="_blank"
         rel="noopener noreferrer"
       >
-        Canonical source <ExternalLink
-          class="size-3.5"
-          aria-hidden="true"
-          data-external-link-icon
-        />
+        Canonical source
       </ActionLink>
       <ActionLink
         class={SITE_GHOST_LINK_CLASS_NAME}

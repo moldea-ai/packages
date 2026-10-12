@@ -1,63 +1,187 @@
 ---
+import { ArrowRight } from '@lucide/astro';
+import ActionLink from '@moldea.ai/website-ui/action-link';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
+import CodeBlock from '@moldea.ai/website-ui/code-block';
 import { withBase } from '@moldea.ai/website-ui/site';
 
-import PackageCard from '../../components/package-card.astro';
+import { CapabilityCard } from '../../components/capability-card/index.ts';
 import BaseLayout from '../../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 
 const model = loadWebsiteModel();
-const toolingPackages = model.packages;
 const breadcrumbs = [{ href: '/', label: 'Home' }, { label: 'Packages' }];
+const examples = [
+  {
+    slug: 'cli',
+    caseId: 'cli-invalid-project',
+    language: 'bash',
+    source: 'moldea validate --json',
+    purpose: 'A useful failure, ready for CI.',
+    context:
+      'Run from an adopted repository. The exit status and JSON result report a broken reference.',
+  },
+  {
+    slug: 'core',
+    caseId: 'inspection-mixed-diagnostics',
+    language: 'typescript',
+    source: `import { createCore } from '@moldea.ai/core';
+
+const inspection = await createCore().createProjectInspection({ repository });
+const diagnostics = inspection.readPage({ view: 'diagnostics', maxItems: 1 });`,
+    purpose: 'Inspect once. Read the facts you need.',
+    context:
+      'Supply a repository reader. Diagnostics, warnings, and binding coverage keep their own meaning.',
+  },
+  {
+    slug: 'repository',
+    caseId: 'memory-immutable-ranges',
+    language: 'typescript',
+    source: `import { parseRepositoryPath } from '@moldea.ai/repository';
+import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+
+const repository = createMemoryRepositoryReader([
+  { path: '/policy.md', type: 'file', content: '30 days\\n' },
+]);
+const firstRange = await repository.readFilePage(parseRepositoryPath('/policy.md'), {
+  offset: 0, maxBytes: 2,
+});`,
+    purpose: 'Your content. One read-only contract.',
+    context:
+      'Bring content from your own storage. This reader returns the requested bytes from an immutable memory snapshot.',
+  },
+  {
+    slug: 'repository-fs',
+    caseId: 'filesystem-selection',
+    language: 'typescript',
+    source: `import { parseRepositoryPath } from '@moldea.ai/repository';
+import { createFilesystemRepositoryReader } from '@moldea.ai/repository-fs';
+
+const repository = await createFilesystemRepositoryReader({
+  rootDirectory: selectedDirectory,
+  selection: { kind: 'paths', paths: [parseRepositoryPath('/policy.md')] },
+});
+const page = await repository.listEntriesPage({ maxEntries: 16 });`,
+    purpose: 'An explicit boundary around local files.',
+    context:
+      'Your application supplies an absolute selectedDirectory. Only the selected paths and required parents enter this reader.',
+  },
+].map((example) => {
+  const packageModel = model.packages.find(({ slug }) => slug === example.slug);
+  const execution = model.capabilities.cases.find(({ id }) => id === example.caseId);
+  if (!packageModel || !execution) throw new Error(`Missing package showcase: ${example.slug}`);
+  return {
+    ...example,
+    packageModel,
+    execution,
+    copy: model.discoveryCopy.packages[packageModel.name],
+  };
+});
 ---
 
 <BaseLayout
   title="Open-source packages"
-  description="Explore the public moldea packages for repository access, deterministic Core interpretation, and CLI composition."
+  description="Explore the CLI, Core, Repository, and Repository FS through executed examples and their distinct responsibilities."
   {breadcrumbs}
 >
   <section class="page-shell pt-8 pb-section-gap">
     <Breadcrumbs items={breadcrumbs} />
-    <div class="max-w-4xl pt-16 pb-12">
-      <p class="eyebrow mb-5">Public package ecosystem</p>
+    <header class="max-w-4xl pt-12 pb-10 sm:pt-16">
+      <p class="eyebrow mb-5">Four tools. One repository model.</p>
       <h1 class="page-title">One foundation. Explicit responsibilities.</h1>
-      <p class="mt-7 max-w-3xl text-xl leading-9 text-muted-foreground">
-        Start with the CLI to check an adopted repository. Choose Core and repository readers when
-        building your own tools.
+      <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
+        Start at the terminal, or compose the same checks inside your own tools. The result
+        illustrations come from real operations on synthetic repository content during the website
+        build.
       </p>
+      <nav
+        class="mt-8 flex flex-wrap gap-2"
+        aria-label="Choose a package"
+      >
+        {
+          examples.map(({ packageModel }) => (
+            <ActionLink
+              href={`#${packageModel.slug}`}
+              variant="outline"
+              size="sm"
+            >
+              {packageModel.name.replace('@moldea.ai/', '')}
+            </ActionLink>
+          ))
+        }
+      </nav>
       <a
-        class="mt-5 inline-block text-link"
+        class="mt-6 inline-block text-link"
         href={withBase('/getting-started/', import.meta.env.BASE_URL)}
         >Not sure where to start? Read the guide.</a
       >
-    </div>
-
-    <section aria-labelledby="tooling-title">
-      <div class="mb-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p class="eyebrow mb-3">Read-only tools</p>
-          <h2
-            id="tooling-title"
-            class="section-title"
+    </header>
+    <div class="grid gap-12 sm:gap-20">
+      {
+        examples.map(({ packageModel, execution, copy, purpose, context, source, language }) => (
+          <section
+            class="scroll-mt-24 border-t pt-10"
+            id={packageModel.slug}
+            aria-labelledby={`package-${packageModel.slug}`}
+            data-package-showcase
           >
-            CLI and libraries
-          </h2>
-        </div>
-        <p class="max-w-lg text-sm leading-6 text-muted-foreground">
-          The CLI combines these building blocks for local checks. Most users do not need to
-          assemble them separately.
-        </p>
-      </div>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {
-          toolingPackages.map((packageModel) => (
-            <PackageCard
-              packageModel={packageModel}
-              copy={model.discoveryCopy.packages[packageModel.name]}
-            />
-          ))
-        }
-      </div>
-    </section>
+            <div class="mb-7 flex flex-wrap items-center gap-3 text-sm">
+              <>
+                <code class="inline-code break-all">{packageModel.name}</code>
+                <span class="text-muted-foreground">{packageModel.version}</span>
+              </>
+            </div>
+            <div class="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
+              <div class="min-w-0">
+                <p class="eyebrow mb-3">{copy.name}</p>
+                <h2
+                  class="section-title"
+                  id={`package-${packageModel.slug}`}
+                >
+                  {purpose}
+                </h2>
+                <p class="mt-5 leading-7 text-muted-foreground">{copy.description}</p>
+                <p class="mt-4 text-sm leading-6 text-muted-foreground">{context}</p>
+                <div class="mt-6">
+                  <CodeBlock
+                    {source}
+                    {language}
+                    ariaLabel={`${packageModel.name} example`}
+                  />
+                </div>
+                <ActionLink
+                  class="mt-5"
+                  href={withBase(packageModel.route, import.meta.env.BASE_URL)}
+                  variant="link"
+                >
+                  Read the API and guide{' '}
+                  <ArrowRight
+                    class="size-4"
+                    aria-hidden="true"
+                  />
+                </ActionLink>
+              </div>
+              <div class="min-w-0 sm:rounded-xl sm:border sm:bg-card sm:p-6">
+                <h3
+                  id={`example-${execution.id}-title`}
+                  class="mb-5 text-base font-semibold"
+                >
+                  {execution.title}
+                </h3>
+                <CapabilityCard
+                  example={execution}
+                  catalog={model.capabilities}
+                />
+              </div>
+            </div>
+          </section>
+        ))
+      }
+    </div>
+    <p class="mt-12 max-w-3xl text-sm leading-7 text-muted-foreground">
+      Repository readers acquire content. Core checks its structure and declared connections. The
+      CLI composes them for local use. A passing check does not establish application semantics or
+      runtime wiring.
+    </p>
   </section>
 </BaseLayout>

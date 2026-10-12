@@ -4,6 +4,77 @@ import { describe, expect, test } from 'vitest';
 import { renderCodeBlock, renderMarkdownDocument, renderMarkdownFragment } from './index.js';
 
 describe('website Markdown rendering', () => {
+  test('groups explicitly authored turns and preserves document-wide headings and technical content', async () => {
+    const rendered = await renderMarkdownDocument(
+      [
+        '# Guide',
+        '## Result',
+        '',
+        '> **You**',
+        '>',
+        '> Inspect `@moldea.ai/core`.',
+        '',
+        '> **Coding agent**',
+        '>',
+        '> ## Result',
+        '>',
+        '> ```yaml',
+        '> valid: true',
+        '> ```',
+        '',
+        '## Result',
+        '',
+        'Continue reading.',
+      ].join('\n'),
+      { conversations: true },
+    );
+    expect(rendered.headings.map(({ id }) => id)).toStrictEqual(['result', 'result-1', 'result-2']);
+    expect(rendered.blocks.map(({ kind }) => kind)).toStrictEqual(['html', 'conversation', 'html']);
+    const conversation = rendered.blocks[1];
+    expect(conversation?.kind).toBe('conversation');
+    if (conversation?.kind !== 'conversation') throw new Error('Expected conversation block');
+    expect(conversation.messages.map(({ role }) => role)).toStrictEqual(['user', 'assistant']);
+    expect(conversation.messages[0]?.html).toContain('<code>@moldea.ai/core</code>');
+    expect(conversation.messages[1]?.html).toContain('id="result-1"');
+    expect(conversation.messages[1]?.html).toContain('language-yaml');
+    expect(conversation.messages[1]?.html).toContain('shiki');
+    expect(conversation.messages[1]?.html).not.toContain('<strong>Coding agent</strong>');
+    expect(rendered.html).toContain('<strong>Coding agent</strong>');
+  });
+
+  test.each([
+    '> **You**\n>\n> A question.',
+    '> A quotation about **You**.\n>\n> An ordinary quote.',
+    '> **Developer**\n>\n> A question.',
+    '> **You** asks\n>\n> A question.',
+    '> **You**',
+    '> **You**\n>\n> **Coding agent**\n>\n> Reply.',
+  ])('keeps ordinary, incomplete, or disabled structures as HTML: %s', async (source) => {
+    const disabled = await renderMarkdownDocument(source, { hasDocumentTitle: false });
+    expect(disabled.blocks.map(({ kind }) => kind)).toStrictEqual(['html']);
+    if (source === '> **You**\n>\n> A question.') return;
+    const enabled = await renderMarkdownDocument(source, {
+      hasDocumentTitle: false,
+      conversations: true,
+    });
+    expect(enabled.blocks.map(({ kind }) => kind)).toStrictEqual(['html']);
+  });
+
+  test('sanitizes conversation messages, retains nested quotes, and does not infer roles from raw HTML', async () => {
+    const source =
+      '> **Coding agent**\n>\n> [Unsafe](javascript:alert%281%29) <script>unsafe()</script>\n>\n> > **You**\n> >\n> > Nested quotation.\n\n<div data-conversation-role="user">Forged</div>';
+    const rendered = await renderMarkdownDocument(source, {
+      hasDocumentTitle: false,
+      conversations: true,
+    });
+    expect(rendered.blocks).toHaveLength(1);
+    const conversation = rendered.blocks[0];
+    if (conversation?.kind !== 'conversation') throw new Error('Expected conversation block');
+    expect(conversation.messages).toHaveLength(1);
+    expect(conversation.messages[0]?.html).toContain('<blockquote>');
+    expect(conversation.messages[0]?.html).not.toMatch(/<script|javascript:|Forged/u);
+  });
+
   test('renders literal code without allowing embedded fences or HTML to escape', async () => {
     const html = await renderCodeBlock(
       '```\n# Not a heading\n<script>alert("example")</script>\n[Not a link](https://example.com)\n```',
@@ -162,13 +233,13 @@ describe('website Markdown rendering', () => {
     ).rejects.toThrow('Markdown strong-label badge configuration is invalid.');
   });
 
-  test('unwraps local fragment links and treats product names outside code elements', async () => {
+  test('unwraps local fragment links and preserves authored prose and code', async () => {
     const html = await renderMarkdownFragment(
       '[Local](./source.md) and moldea with `moldea` plus [Web](https://example.com).',
-      { localLinks: 'unwrap', productNameTreatment: 'code' },
+      { localLinks: 'unwrap' },
     );
 
-    expect(html).toContain('Local and <code>moldea</code> with <code>moldea</code>');
+    expect(html).toContain('Local and moldea with <code>moldea</code>');
     expect(html).toContain('href="https://example.com" target="_blank" rel="noopener noreferrer"');
     expect(html.match(/data-external-link-icon/gu)).toHaveLength(1);
     expect(html).not.toContain('href="./source.md"');

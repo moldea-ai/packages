@@ -13,7 +13,7 @@ test('separates each package identifier from its bottom-right version in both th
     await page.setViewportSize({ width, height: 900 });
     for (const theme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: theme });
-      await page.goto(withBase('/packages/', basePath));
+      await page.goto(withBase('/', basePath));
       for (const packageModel of model.packages) {
         const card = page
           .locator('main')
