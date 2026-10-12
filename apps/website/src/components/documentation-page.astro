@@ -1,8 +1,7 @@
 ---
-import { BookOpen, ExternalLink, Package } from '@lucide/astro';
+import { BookOpen, Package } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';
-import InlineBrandText from '@moldea.ai/website-ui/inline-brand-text';
 import type { IRenderedMarkdownHeading } from '@moldea.ai/website-ui/markdown';
 import { withBase } from '@moldea.ai/website-ui/site';
 
@@ -79,7 +78,7 @@ const navigationItems = [
       {pageTitle}
     </h1>
     <p class="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground">
-      <InlineBrandText text={pageDescription} />
+      {pageDescription}
     </p>
     <div class="mt-6 flex flex-wrap gap-3">
       <ActionLink
@@ -88,11 +87,7 @@ const navigationItems = [
         target="_blank"
         rel="noopener noreferrer"
       >
-        Source <ExternalLink
-          class="size-3.5"
-          aria-hidden="true"
-          data-external-link-icon
-        />
+        Source
       </ActionLink>
       <ActionLink
         class={SITE_GHOST_LINK_CLASS_NAME}
@@ -102,11 +97,7 @@ const navigationItems = [
         rel="noopener noreferrer"
         variant="ghost"
       >
-        npm <ExternalLink
-          class="size-3.5"
-          aria-hidden="true"
-          data-external-link-icon
-        />
+        npm
       </ActionLink>
     </div>
   </header>

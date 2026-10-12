@@ -1,0 +1,34 @@
+---
+import type { IConversationRole } from '@moldea.ai/website-ui/markdown';
+
+// visible speaker identity and a rich-content slot; avatars remain caller-owned
+export interface Props {
+  role: IConversationRole;
+}
+const { role } = Astro.props;
+const label = role === 'user' ? 'You' : 'Coding agent';
+---
+
+<li
+  class="min-w-0"
+  data-conversation-message={role}
+>
+  <article
+    class="min-w-0"
+    aria-label={`${label} message`}
+  >
+    <header class="mb-3 flex items-center gap-3">
+      {
+        Astro.slots.has('avatar') && (
+          <span class="flex size-8 shrink-0 items-center justify-center [&_img]:size-8 [&_img]:object-contain">
+            <slot name="avatar" />
+          </span>
+        )
+      }
+      <p class="text-sm font-semibold text-foreground">{label}</p>
+    </header>
+    <div class:list={['min-w-0', role === 'user' && 'rounded-lg bg-secondary px-4 py-3']}>
+      <slot />
+    </div>
+  </article>
+</li>

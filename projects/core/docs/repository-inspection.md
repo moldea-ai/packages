@@ -8,7 +8,7 @@ order: 20
 
 ## Changed-path preactivation
 
-Use `matchManifestScope` when a caller needs to decide whether known changed paths intersect declared `moldea` relationships.
+Use `matchManifestScope` when a caller needs to decide whether known changed paths intersect declared moldea relationships.
 
 ```typescript
 import { matchManifestScope } from '@moldea.ai/core/scope';
@@ -58,7 +58,7 @@ This check performs at most two bounded file reads and two entry lookups. Source
 
 ## Resource limits
 
-These defaults describe Core `7.0.0`. They apply independently to each Core operation.
+These defaults describe Core 7. They apply independently to each Core operation.
 
 | Limit                 |                     Default | Counted scope                                                                                                           |
 | --------------------- | --------------------------: | ----------------------------------------------------------------------------------------------------------------------- |
@@ -96,7 +96,7 @@ Resource refusals expose the exceeded limit name, configured maximum, observed o
 
 ## Isolated Node inspection
 
-The fixed Core `7.0.0` Node profile is independent of configurable input limits:
+The fixed Core 7 Node profile is independent of configurable input limits:
 
 | Control                 | Fixed value | Scope                                               |
 | ----------------------- | ----------: | --------------------------------------------------- |

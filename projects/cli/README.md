@@ -2,7 +2,7 @@
 
 # `@moldea.ai/cli`
 
-The canonical read-only local command-line composition for deterministic inspection of `moldea` repositories.
+The canonical read-only local command-line composition for deterministic inspection of moldea repositories.
 
 The version 11 executable exposes one schema-7-only JSON contract. `validate` and `inspect` are content-free, `scope` matches changed paths by reading only the project manifest, and `content` retrieves one explicitly selected canonical text asset in bounded Unicode-safe chunks. Collection and content responses use deterministic snapshot-bound cursors, exact final UTF-8 byte accounting, a 65,536-byte default page budget, and a 1,048,576-byte hard page ceiling.
 
@@ -14,7 +14,7 @@ Tarball, installed-bin, runtime, and testing-peer checks remain the package rele
 
 The command names are:
 
-```text
+```bash
 moldea validate
 moldea inspect
 moldea scope --path /src/example.ts

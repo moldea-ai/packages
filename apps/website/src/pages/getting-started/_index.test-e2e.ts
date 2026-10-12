@@ -7,28 +7,18 @@ const guidePath = withBase('/getting-started/', basePath);
 
 for (const width of [320, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
-    test(`keeps the title's brand token proportionate at ${width}px in ${theme}`, async ({
-      page,
-    }) => {
+    test(`keeps the visual adoption guide usable at ${width}px in ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme });
       await page.goto(guidePath);
       const heading = page.getByRole('heading', { level: 1, name: 'Get started with moldea' });
-      const brand = heading.locator('code');
-      await expect(brand).toHaveText('moldea');
-      await expect(brand).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-      await expect(brand).toHaveCSS('letter-spacing', 'normal');
-      const typography = await heading.evaluate((element) => ({
-        heading: parseFloat(getComputedStyle(element).fontSize),
-        brand: parseFloat(getComputedStyle(element.querySelector('code')!).fontSize),
-      }));
-      expect(typography.brand / typography.heading).toBeCloseTo(0.86, 2);
-      const bounds = await brand.boundingBox();
-      expect(bounds!.x).toBeGreaterThanOrEqual(0);
-      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+      await expect(heading.locator('code')).toHaveCount(0);
+      await expect(page.locator('[data-conversation-message]')).toHaveCount(2);
+      await page.getByText('Read the complete adoption guide', { exact: true }).click();
       for (const name of ['moldea Agent Skill', 'moldea Cloud']) {
         const productLink = page.getByRole('main').getByRole('link', { name, exact: true });
-        await expect(productLink.locator('code')).toHaveText(name);
+        await expect(productLink).toBeVisible();
+        await expect(productLink).toHaveText(name);
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
         width,
@@ -61,6 +51,7 @@ test('connects homepage, desktop navigation, and footer to the guide', async ({ 
       .getByRole('link', { name: 'Get started' }),
   ).toHaveAttribute('href', guidePath);
 
+  await page.getByText('Read the complete adoption guide', { exact: true }).click();
   const content = page.locator('main');
   await expect(
     content.getByRole('link', { name: 'moldea Agent Skill', exact: true }),
@@ -69,9 +60,11 @@ test('connects homepage, desktop navigation, and footer to the guide', async ({ 
   await expect(cloud).toHaveAttribute('href', 'https://moldea.ai');
   await expect(cloud).toHaveAttribute('target', '_blank');
   await expect(cloud).toHaveAttribute('rel', 'noopener noreferrer');
-  await expect(content).toContainText('Cloud is optional.');
+  await expect(content).toContainText('Cloud review is in development.');
   await expect(
-    content.getByRole('link', { name: 'CLI overview and installation guide' }),
+    content
+      .locator('#adoption-guide')
+      .getByRole('link', { name: 'CLI overview and installation guide' }),
   ).toHaveAttribute('href', withBase('/packages/cli/', basePath));
   for (const [name, route] of [
     ['Core', '/packages/core/'],
@@ -96,13 +89,17 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
   const page = await context.newPage();
   try {
     await page.goto(guidePath);
+    await page.getByText('Read the complete adoption guide', { exact: true }).click();
     await expect(
       page.getByRole('main').getByRole('link', { name: 'moldea Cloud', exact: true }),
     ).toHaveAttribute('href', 'https://moldea.ai');
     await expect(
       page.getByRole('heading', { name: 'Check an adopted repository locally' }),
     ).toBeVisible();
-    await page.getByRole('link', { name: 'CLI overview and installation guide' }).click();
+    await page
+      .locator('#adoption-guide')
+      .getByRole('link', { name: 'CLI overview and installation guide', exact: true })
+      .click();
     await expect(page).toHaveURL(new RegExp(`${withBase('/packages/cli/', basePath)}$`));
   } finally {
     await context.close();

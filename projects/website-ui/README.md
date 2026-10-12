@@ -1,13 +1,13 @@
 # `@moldea.ai/website-ui`
 
-Shared Astro foundations for `moldea` public websites.
+Shared Astro foundations for moldea public websites.
 
 The package owns the reusable design tokens, global website primitives, interaction states, base-path and theme utilities, and small accessible Astro components used by the package and skill websites. Each website continues to own its page composition, navigation copy, content generation, SEO identity, public assets, site URL, and theme storage key.
 
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@1.14.0
+pnpm add @moldea.ai/website-ui@2.0.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -25,7 +25,7 @@ Tailwind scans the shipped Astro components through the package stylesheet's exp
 - Use `HeroBackdrop` inside a `relative overflow-hidden` section, with foreground content positioned `relative`. It owns the static, theme-aware radial/grid background shared with the Skill website. Do not duplicate its gradients in page markup.
 - Section introductions may place the title on the left and a concise explanation on the right at `lg`, stacking on mobile. Alternate this with compact stacked introductions when the content warrants it; do not force every section into the same composition.
 - Demonstrations should show recognizable files, one visible connection or mismatch, and a concise outcome. Compose `FilePreview`, `ConnectionLabel`, `ResultSummary`, `StatusBadge`, `CodeBlock`, and `Dialog`. Keep the essential result visible without interaction; dialogs contain optional evidence. Use `Accordion` when several examples share a section.
-- Preserve semantic inline code for filenames, variables, operations, and package names using `inline-code`; use `InlineBrandText` for prose containing the product name. Breadcrumbs, documentation navigation, the site header, and local-search results apply the same product-name treatment to their string labels. Keep code wrapping and interaction feedback in the shared policies below.
+- Product names and string metadata are ordinary prose. Preserve semantic inline code for complete filenames, variables, operations, and package names using `inline-code`. Never style only the brand substring within a technical token. Keep code wrapping and interaction feedback in the shared policies below.
 - Verify compositions at 320px through desktop, in both themes, with keyboard focus and reduced motion. Flatten unnecessary mobile panels and preserve legible filenames, labels, and status text. Use icons and explicit text together rather than relying on color alone.
 
 ## Heading roles
@@ -62,7 +62,7 @@ Dark prose keeps its primary foreground opaque before the 70%/60% opacity feedba
 
 `BrandLogo` stays background-free in its resting, hover, and pressed states while retaining the global keyboard focus ring.
 
-`SiteHeaderShell` marks both source links as external destinations because they open in a new tab. The desktop source action uses the same `GitBranch` icon as the platform website and retains an explicit accessible name; the mobile text link uses the compact external-link indicator.
+`SiteHeaderShell` marks both source links as external destinations because they open in a new tab. Both source links use the external-link indicator and retain an explicit accessible name.
 
 ## Utilities
 
@@ -81,19 +81,37 @@ Set `shouldFocusOnLoad` on a dedicated search page to focus its input without sc
 
 ## Runtime labels
 
-`@moldea.ai/website-ui/runtime-catalog` exports `RUNTIME_CATALOG` and `IRuntimeCatalogEntry`. Its 35 entries contain a runtime `id`, `displayName`, package-exported `logoPath`, and optional `darkLogoPath`. `custom` has no catalog entry. These are guidance labels, without a runtime compatibility or certification claim. Core is a development dependency used only to check catalog synchronization.
+`@moldea.ai/website-ui/runtime-catalog` exports `RUNTIME_CATALOG` and `IRuntimeCatalogEntry`. Its 35 stable runtime IDs select guidance; they do not certify SDK compatibility or vendor endorsement. Each entry contains its display name and official asset paths, with optional dark variants and optical sizing (`icon`, `wordmark`, or `padded-wordmark`).
 
-```astro
----
-import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';
----
+`RuntimeGrid` displays the recognizable mark, display name, and complete runtime ID. Pass `hrefBase=""` on the runtime page to retain stable fragment targets. Relative destinations remain in the current tab; absolute destinations open a new tab with an external-link indicator. Entry-level hover and focus use shared theme tokens. Assets resolve at build time, load lazily with explicit dimensions, and require no client JavaScript.
 
-<RuntimeGrid hrefBase="/runtimes/" />
+The `@moldea.ai/website-ui/runtime-logos/*` export exposes static SVG and PNG assets to other frameworks. Import named files through that public path. Catalog synchronization and asset safety are tested. The repository's [runtime logo record](../../docs/runtime-logos.md) records provenance and deferred permission follow-up; it is not shipped in the package.
+
+## Conversations
+
+Compose `Conversation` and `ConversationMessage` for illustrative interactions. Messages accept `role="user"` or `role="assistant"`, rich slot content, and an optional `avatar` slot. Websites own domain artifacts, outcomes, and recorded evaluation evidence.
+
+For explicitly authored Markdown examples, opt in with `renderMarkdownDocument(markdown, { conversations: true })`. A top-level blockquote must begin with a paragraph containing only the exact strong speaker label `You` or `Coding agent`, followed by a separate content paragraph. For example:
+
+```markdown
+> **You**
+>
+> Check `/src/returns.ts` against the policy.
+
+> **Coding agent**
+>
+> The declared export is missing. No files were changed.
 ```
 
-`RuntimeGrid` renders a static, keyboard-accessible list of links to `${hrefBase}#${id}`. `hrefBase` defaults to `https://packages.moldea.ai/runtimes/`; use an empty string for anchors on the current page. `ariaLabel` defaults to “Runtime labels.” Logos have empty alternative text because each link already contains its visible runtime name. The component uses the shared tokens, works from 320px in both themes, and sends no client JavaScript. SVGs are resolved at build time and loaded lazily with explicit dimensions. Vendor-provided dark variants are used where available; other marks retain a light backing for contrast.
+The returned `blocks` preserve document order. An `html` block contains sanitized `html`; a `conversation` block contains ordered `messages`, each with a `role` and sanitized `html`. Render HTML blocks normally and conversation blocks through the shared components. Existing `html` and `headings` remain available, with document-wide heading IDs. The full HTML retains speaker labels for non-component consumers.
 
-The `@moldea.ai/website-ui/runtime-logos/*` export exposes static SVGs for other frameworks. Consumer bundlers should import the named file through that public path. SVG safety and catalog synchronization are checked by unit tests. Logo provenance, fallback choices, and pre-launch permission follow-ups are maintained in the repository's [runtime logo record](../../docs/runtime-logos.md), which is not shipped in the package.
+Unrecognized, nested, incomplete, and non-opted-in quotes stay ordinary Markdown. The renderer never infers conversations from prose or code fences. Use this only for authored illustrative examples, not recorded evidence. Sanitization, highlighting, local-link policy, and external-link indicators run through the existing Markdown pipeline once.
+
+## Migrating to 2.0
+
+The `inline-brand-text` export and `productNameTreatment` rendering option are removed. Render product names and string metadata as ordinary text. Explicitly author semantic code around complete technical tokens, such as `@moldea.ai/core` or `/moldea/project.md`.
+
+`ActionLink` owns its external-link indicator whenever `target="_blank"` is supplied and always includes `noopener noreferrer` in `rel`. Remove caller-supplied external-link icons to avoid duplicates. Raw anchors and handlers that open a new tab still need their own indicator.
 
 ## Components
 
@@ -115,7 +133,8 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/evaluation-replay-model`
 - `@moldea.ai/website-ui/file-preview`
 - `@moldea.ai/website-ui/hero-backdrop`
-- `@moldea.ai/website-ui/inline-brand-text`
+- `@moldea.ai/website-ui/conversation`
+- `@moldea.ai/website-ui/conversation-message`
 - `@moldea.ai/website-ui/local-search`
 - `@moldea.ai/website-ui/markdown`
 - `@moldea.ai/website-ui/navigation-progress`
