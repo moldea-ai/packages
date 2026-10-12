@@ -375,7 +375,7 @@ test('uses the authored guide and excludes Website UI from public discovery', ()
   expect(records[0].searchText).toContain('Collaborate in Cloud');
   expect(model.llmsText).toContain(`[${guide.title}](${guide.route}): ${guide.description}`);
   expect(model.llmsText).toContain('[moldea Agent Skill](https://skill.moldea.ai/)');
-  expect(model.gettingStarted.markdown).toContain('[`moldea Cloud`](https://moldea.ai)');
+  expect(model.gettingStarted.markdown).toContain('[moldea Cloud](https://moldea.ai)');
   expect(
     JSON.stringify({ routes: model.routes, search: model.searchRecords, llms: model.llmsText }),
   ).not.toContain('/packages/website-ui/');

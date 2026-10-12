@@ -6,7 +6,7 @@ order: 10
 
 # Commands and options
 
-```text
+```bash
 moldea validate
 moldea inspect
 moldea scope --path /src/example.ts

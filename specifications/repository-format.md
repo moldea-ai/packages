@@ -6,9 +6,9 @@ formatVersion: 1
 
 # Repository format specification
 
-This document defines the version `1` repository format for a `moldea` project. It is the authoritative contract for the client-owned files under `/moldea/**` and the repository relationships declared in `/moldea/moldea.yaml`.
+This document defines the version `1` repository format for a moldea project. It is the authoritative contract for the client-owned files under `/moldea/**` and the repository relationships declared in `/moldea/moldea.yaml`.
 
-The format is consumed by humans, coding agents, the open-source `moldea` skill, `@moldea.ai/core`, `moldea` Cloud indexing, and PR Assurance. A future Node.js instruction-consumption SDK will also conform to this format after its focused specification and release.
+The format is consumed by humans, coding agents, the open-source moldea skill, `@moldea.ai/core`, moldea Cloud indexing, and PR Assurance. A future Node.js instruction-consumption SDK will also conform to this format after its focused specification and release.
 
 The repository format follows one central rule:
 
@@ -18,10 +18,10 @@ The format does not define Cloud environment mappings, billing, GitHub permissio
 
 ## Core principles
 
-A conforming `moldea` repository follows these principles:
+A conforming moldea repository follows these principles:
 
-- Git owns canonical `moldea` content and history.
-- Every canonical `moldea` asset lives under one root-level `/moldea/` directory.
+- Git owns canonical moldea content and history.
+- Every canonical moldea asset lives under one root-level `/moldea/` directory.
 - `/moldea/project.md` establishes the project foundation before agents are required.
 - Canonical locations are convention-based whenever they can be determined reliably.
 - `/moldea/moldea.yaml` records semantic relationships rather than duplicating discoverable repository facts.
@@ -29,8 +29,8 @@ A conforming `moldea` repository follows these principles:
 - Registered tools and skills are independently optional, but every registered capability has explicit concise metadata and model-facing instruction guidance.
 - Project context, runtime guidance, decisions, instructions, capability descriptions, code bindings, mirrors, and unresolved requirements remain explicit and inspectable.
 - The format describes the project as it is implemented. It does not judge whether runtime usage follows recommended practices.
-- Local tooling may inspect the current Git working-tree view defined by the active local source composition, while `moldea` Cloud considers committed Git content authoritative.
-- Structural validation is deterministic. Semantic ambiguity is handled by the `moldea` skill, `evaluate`, `reconcile`, or PR Assurance rather than being hidden behind guesses.
+- Local tooling may inspect the current Git working-tree view defined by the active local source composition, while moldea Cloud considers committed Git content authoritative.
+- Structural validation is deterministic. Semantic ambiguity is handled by the moldea skill, `evaluate`, `reconcile`, or PR Assurance rather than being hidden behind guesses.
 
 ## Terminology
 
@@ -65,7 +65,7 @@ A repository reference provides traceability to an existing canonical asset or i
 
 ### Binding
 
-A **binding** is a repository reference that explicitly connects `moldea` semantics to a specific implementation artifact in the repository. Bindings carry implementation-relationship meaning in addition to identifying the file and optional symbol.
+A **binding** is a repository reference that explicitly connects moldea semantics to a specific implementation artifact in the repository. Bindings carry implementation-relationship meaning in addition to identifying the file and optional symbol.
 
 ### Impact path
 
@@ -75,7 +75,7 @@ An impact-path match means the affected asset should enter relevance analysis. I
 
 ### Runtime guidance
 
-**Runtime guidance** is optional project-local Markdown under `/moldea/runtimes/**` that explains how the `moldea` project's agent runtime integration is implemented, wrapped, extended, or otherwise structured. In colocated mode that implementation is normally in the same repository; in dedicated-repository mode the guidance may describe the developer-identified related application implementation without creating a cross-repository manifest relationship.
+**Runtime guidance** is optional project-local Markdown under `/moldea/runtimes/**` that explains how the moldea project's agent runtime integration is implemented, wrapped, extended, or otherwise structured. In colocated mode that implementation is normally in the same repository; in dedicated-repository mode the guidance may describe the developer-identified related application implementation without creating a cross-repository manifest relationship.
 
 ### Agent description
 
@@ -164,7 +164,7 @@ The recognized version `1` canonical locations are:
 
 Files under `/moldea/**` that do not match a recognized canonical location are invalid in version `1`. This keeps Cloud indexing, validation, portability, and agent discovery deterministic.
 
-The root repository `README.md` may contain synchronization guidance maintained by the open-source skill, but it is outside `/moldea/**` and is not canonical `moldea` content.
+The root repository `README.md` may contain synchronization guidance maintained by the open-source skill, but it is outside `/moldea/**` and is not canonical moldea content.
 
 ## Git and local authoring state
 
@@ -172,7 +172,7 @@ A committed Git tree is authoritative for Cloud indexing, REST distribution, his
 
 During local development, the skill and `@moldea.ai/core` may inspect modified, staged, unstaged, renamed, deleted, or untracked working-tree files. Such files may represent valid work in progress before they are committed.
 
-A local working tree therefore may temporarily contain new canonical assets or mirrors that are not yet Git-tracked. They become part of the authoritative `moldea` project only when committed.
+A local working tree therefore may temporarily contain new canonical assets or mirrors that are not yet Git-tracked. They become part of the authoritative moldea project only when committed.
 
 ## Text encoding and normalization
 
@@ -182,7 +182,7 @@ Version `1` applies these rules:
 
 - Binary canonical assets are not supported.
 - Invalid UTF-8 is a structural validation error.
-- A leading UTF-8 byte-order mark may be read, but it is removed from the normalized text representation and `moldea` writers remove it when rewriting the file.
+- A leading UTF-8 byte-order mark may be read, but it is removed from the normalized text representation and moldea writers remove it when rewriting the file.
 - CRLF and CR line endings are normalized to LF for textual equality, mirror comparison, and content digests.
 - No Unicode normalization is applied; Unicode scalar values other than the removed leading byte-order mark are preserved exactly.
 - Other textual content, including spaces, tabs, trailing whitespace, and trailing newlines, remains significant.
@@ -242,7 +242,7 @@ Paths that represent exact bindings or repository references resolve to regular 
 
 ### Symlinks
 
-Version `1` does not use symlinks for `moldea` relationships.
+Version `1` does not use symlinks for moldea relationships.
 
 The following must not be symlinks:
 
@@ -290,7 +290,7 @@ An `affectedBy` entry without `*` is an exact path and must resolve to an existi
 
 ## Stable IDs
 
-`moldea` IDs are short, portable, machine-readable slugs.
+moldea IDs are short, portable, machine-readable slugs.
 
 Agent IDs, tool IDs, skill IDs, and unresolved-requirement IDs must:
 
@@ -490,7 +490,7 @@ It describes current project identity and foundational truth such as:
 
 The file must be non-empty UTF-8 Markdown.
 
-The repository format does not impose a fixed heading template because project structure varies. YAML frontmatter has no `moldea` semantics in `project.md` in version `1` and should not be used for machine-readable project metadata.
+The repository format does not impose a fixed heading template because project structure varies. YAML frontmatter has no moldea semantics in `project.md` in version `1` and should not be used for machine-readable project metadata.
 
 `project.md` is implicitly foundational context for every registered agent. It is not repeated in each agent's manifest `context` list.
 
@@ -508,7 +508,7 @@ Every focused context file must contain at least one non-whitespace Unicode char
 
 Context files are discovered automatically and need no manifest entry merely to exist or appear in Cloud.
 
-The `context` manifest property is used only when a context asset has explicit implementation relationships that `moldea` should not infer silently.
+The `context` manifest property is used only when a context asset has explicit implementation relationships that moldea should not infer silently.
 
 `/moldea/project.md` may also appear as a key under `context` when explicit project-level implementation relationships need to be declared.
 
@@ -649,7 +649,7 @@ Guidance may document project-specific facts such as:
 
 Runtime guidance must describe the project's actual implementation pattern rather than reproduce generic runtime documentation.
 
-Project-local runtime guidance provides explicit repository-specific semantics about how the customer's runtime is structured. `moldea` uses it together with manifest relationships and repository evidence to interpret project behavior, not to judge whether the implementation follows runtime-recommended practices.
+Project-local runtime guidance provides explicit repository-specific semantics about how the customer's runtime is structured. moldea uses it together with manifest relationships and repository evidence to interpret project behavior, not to judge whether the implementation follows runtime-recommended practices.
 
 Runtime guidance:
 
@@ -657,7 +657,7 @@ Runtime guidance:
 - may provide the primary project-specific interpretation for `custom`
 - may be shared by any number of agents
 - should be created per materially distinct runtime-integration pattern, not per agent by default
-- cannot override `moldea` repository-format, security, authorization, or Assurance rules
+- cannot override moldea repository-format, security, authorization, or Assurance rules
 - is never executable code
 
 Unreferenced runtime-guidance files are allowed.
@@ -723,7 +723,7 @@ The effective value must contain between 1 and 1,000 Unicode scalar values, incl
 
 Additional rules:
 
-- `moldea` writers should persist the effective value without leading or trailing Unicode whitespace.
+- moldea writers should persist the effective value without leading or trailing Unicode whitespace.
 - Runtime-variable delimiters `{{` and `}}` are prohibited in both files.
 - Validation never silently truncates either value.
 - The application must respect provider-specific limits in addition to the repository-format maximum. Core does not validate provider limits.
@@ -754,7 +754,7 @@ Your purpose is to resolve customer-support requests within the rules and bounda
 
 The instruction may contain purpose, project context, responsibilities, rules, input, output, schemas, tools, skills, handoff behavior, runtime variables, failure behavior, and other model-facing requirements.
 
-The instruction is complete and directly readable. It is not assembled from reusable `moldea` instruction fragments.
+The instruction is complete and directly readable. It is not assembled from reusable moldea instruction fragments.
 
 ### Handoff description
 
@@ -887,7 +887,7 @@ context:
 
 Each entry must point to an existing Markdown file under `/moldea/context/**`.
 
-The list records context that materially informs the agent's instruction or behavior. It is not a runtime composition list and does not cause `moldea` to concatenate context into the instruction.
+The list records context that materially informs the agent's instruction or behavior. It is not a runtime composition list and does not cause moldea to concatenate context into the instruction.
 
 A context relationship should be added only when the relationship is meaningful. The skill asks when it cannot establish that meaning reliably.
 
@@ -926,7 +926,7 @@ Repository-reference rules:
 
 A binding uses this shape where the manifest declares an implementation relationship, including agent bindings and capability implementation, registration, or schema fields. When a binding omits `symbol`, the entire file is the bound implementation artifact. Broad implementation relationships belong under `affectedBy` rather than in a binding.
 
-Unlike a general repository reference, a binding always identifies implementation outside the canonical `/moldea/**` tree. A binding path must therefore resolve to an existing regular repository file outside `/moldea/**`. Canonical `moldea` assets may still be used by repository-reference fields whose semantics explicitly permit them, such as an unresolved requirement's `related` references, but they cannot serve as implementation bindings.
+Unlike a general repository reference, a binding always identifies implementation outside the canonical `/moldea/**` tree. A binding path must therefore resolve to an existing regular repository file outside `/moldea/**`. Canonical moldea assets may still be used by repository-reference fields whose semantics explicitly permit them, such as an unresolved requirement's `related` references, but they cannot serve as implementation bindings.
 
 A binding whose path is inside `/moldea/**` is structurally invalid.
 
@@ -954,7 +954,7 @@ The supported agent-level `bindings` properties are:
 - `instructionLoader`
 - `variableProviders`
 
-`runtimeAgent` identifies the implementation file or exported symbol that constitutes, constructs, or performs the registered `moldea` agent's runtime execution boundary. The property name does not require the underlying SDK to expose an `Agent` class or another first-class agent object. For a direct-provider integration, the binding may therefore identify the function, factory, module, or other implementation artifact that performs the model invocation for that registered agent.
+`runtimeAgent` identifies the implementation file or exported symbol that constitutes, constructs, or performs the registered moldea agent's runtime execution boundary. The property name does not require the underlying SDK to expose an `Agent` class or another first-class agent object. For a direct-provider integration, the binding may therefore identify the function, factory, module, or other implementation artifact that performs the model invocation for that registered agent.
 
 Example:
 
@@ -1000,7 +1000,7 @@ affectedBy:
 
 Exact bindings are automatically relevant and do not need to be duplicated under `affectedBy`.
 
-Impact paths are intentionally conservative. A matching change enters relevance analysis, but `moldea` does not assume the instruction or context must change merely because a pattern matched.
+Impact paths are intentionally conservative. A matching change enters relevance analysis, but moldea does not assume the instruction or context must change merely because a pattern matched.
 
 The skill should be conversational when creating or changing impact relationships. If it is unclear whether an implementation area can materially affect behavior, the skill asks rather than silently binding it.
 
@@ -1034,7 +1034,7 @@ The same underlying implementation may be registered by multiple agents with dif
 
 ## Tools
 
-Tools are agent-scoped capability relationships. They are not project-global `moldea` assets.
+Tools are agent-scoped capability relationships. They are not project-global moldea assets.
 
 A tool ID is unique only within its owning agent. Multiple agents may independently register the same underlying implementation and may use the same tool ID when appropriate.
 
@@ -1073,15 +1073,15 @@ A tool supports:
 - `outputSchema`: optional exact binding
 - `affectedBy`: optional non-empty list of impact paths
 
-The stable `moldea` tool ID and runtime-facing `name` are intentionally separate.
+The stable moldea tool ID and runtime-facing `name` are intentionally separate.
 
 For example:
 
-- `moldea` ID: `find-order`
+- moldea ID: `find-order`
 - Runtime name: `find_order`
 - Code symbol: `lookupCustomerOrder`
 
-The stable ID preserves `moldea` history even when a code symbol or runtime-visible name changes.
+The stable ID preserves moldea history even when a code symbol or runtime-visible name changes.
 
 The manifest description is authoritative for concise tool metadata. The implementation is authoritative for executable behavior, and the instruction is authoritative for what the model is told. These surfaces must remain semantically aligned.
 
@@ -1121,7 +1121,7 @@ A skill supports:
 - `registration`: optional exact binding when registration is distinct
 - `affectedBy`: optional non-empty list of impact paths
 
-The exact runtime meaning of a skill is runtime-specific. `moldea` records the capability relationship and relies on runtime guidance, explicit bindings, implementation code, and real tests rather than imposing one universal skill runtime.
+The exact runtime meaning of a skill is runtime-specific. moldea records the capability relationship and relies on runtime guidance, explicit bindings, implementation code, and real tests rather than imposing one universal skill runtime.
 
 The manifest description is authoritative for concise skill metadata. The implementation is authoritative for the skill content or executable behavior, and the instruction is authoritative for what the model is told. These surfaces must remain semantically aligned.
 
@@ -1211,8 +1211,8 @@ Runtime-variable syntax is prohibited in `description.md` and `handoff-descripti
 - Every supplied string must contain only valid Unicode scalar values and must not contain NUL. An unpaired UTF-16 surrogate, invalid decoded scalar representation, or NUL value is a runtime-resolution error rather than being replaced or normalized silently.
 - Substitution is a single, non-recursive pass over the already validated canonical instruction. Every occurrence of each valid placeholder is replaced with the corresponding supplied string. After scalar/NUL validation, supplied values are inserted exactly as provided: they are not trimmed, Unicode-normalized, line-ending-normalized, scanned, or interpreted as additional placeholders.
 - Empty strings are valid values.
-- `null`, `undefined`, and strings such as `n/a` have no special `moldea` semantics.
-- `moldea` supplies no defaults in version `1`.
+- `null`, `undefined`, and strings such as `n/a` have no special moldea semantics.
+- moldea supplies no defaults in version `1`.
 - Runtime variables are not used to represent unfinished project work.
 - Runtime substitution does not alter the canonical instruction's content digest. When a runtime-consumption SDK or REST response exposes `contentDigest`, that value identifies the Core-defined digest of the normalized canonical instruction before runtime-variable substitution. A digest of resolved variable-bearing output, if introduced later, uses a distinct field and contract.
 
@@ -1262,7 +1262,7 @@ An unresolved requirement supports:
 
 The unresolved-requirement key is its stable ID.
 
-`related` provides requirement-specific traceability to existing repository artifacts that help locate, understand, or verify the unresolved state. A related repository reference may identify a canonical `moldea` asset, such as a focused context file, or an implementation artifact, optionally with a symbol.
+`related` provides requirement-specific traceability to existing repository artifacts that help locate, understand, or verify the unresolved state. A related repository reference may identify a canonical moldea asset, such as a focused context file, or an implementation artifact, optionally with a symbol.
 
 `related` is the unresolved-requirement counterpart to `affectedBy`, but it is intentionally narrower. `affectedBy` uses exact paths or globs to identify repository areas whose changes may affect an asset's behavior, while `related` uses exact repository references, optionally including a symbol, to identify artifacts relevant to evaluating one unresolved requirement. A change to a related artifact causes the requirement to be re-evaluated but does not by itself resolve it.
 
@@ -1311,9 +1311,9 @@ Build-generated or transformed instruction outputs are not mirrors in version `1
 
 ## Project-local runtime deviations
 
-`moldea` does not enforce runtime orthodoxy.
+moldea does not enforce runtime orthodoxy.
 
-Repository-format rules govern structurally valid `moldea` state. Project-local runtime guidance and explicit manifest relationships describe repository-specific semantics. Installed SDK types, actual implementation, and real tests establish how those integrations behave.
+Repository-format rules govern structurally valid moldea state. Project-local runtime guidance and explicit manifest relationships describe repository-specific semantics. Installed SDK types, actual implementation, and real tests establish how those integrations behave.
 
 Repositories may use internal wrappers, central registries, generated agent definitions, direct provider calls, or custom instruction loaders. The skill investigates those conventions to maintain instruction-code alignment. Core's file and export checks do not impose a runtime architecture or establish wiring.
 
@@ -1323,7 +1323,7 @@ When guidance, manifest relationships, and implementation evidence disagree, the
 
 The repository format deliberately separates discoverable files from semantic relationships.
 
-`moldea` discovers these by convention:
+moldea discovers these by convention:
 
 - project foundation
 - context files
@@ -1511,11 +1511,11 @@ An acceptance that matches nothing produces `MOLDEA_ACCEPTANCE_UNMATCHED` (warni
 
 The repository format never stores runtime variable values, API credentials, payment credentials, Git credentials, encryption keys, webhook secrets, or other runtime secrets in `moldea.yaml`.
 
-Canonical `moldea` content may contain confidential project information because it is client-owned source-controlled context. The skill should nevertheless avoid placing credentials or ephemeral secrets in project context, runtime guidance, instructions, decisions, or unresolved requirements.
+Canonical moldea content may contain confidential project information because it is client-owned source-controlled context. The skill should nevertheless avoid placing credentials or ephemeral secrets in project context, runtime guidance, instructions, decisions, or unresolved requirements.
 
 Runtime values supplied during instruction resolution are transient and do not become repository content.
 
-Project-local runtime guidance is treated as untrusted repository content by Cloud analysis in the same way as other repository files. It explains repository structure but cannot redefine `moldea`'s evaluator authority.
+Project-local runtime guidance is treated as untrusted repository content by Cloud analysis in the same way as other repository files. It explains repository structure but cannot redefine moldea's evaluator authority.
 
 ## Complete example
 
@@ -1683,7 +1683,7 @@ The skill and local tooling may work with temporarily non-conforming working-tre
 
 `@moldea.ai/core` is the reference deterministic implementation of version `1` parsing, path resolution, discovery, structural validation, static variable-declaration and placeholder validation, mirror comparison, content normalization, and repository indexing semantics. Runtime consumers conform separately to this specification's runtime-value validation, exact substitution, privacy, and canonical-digest provenance rules.
 
-The open-source skill, `moldea` Cloud, PR Assurance, and any future Node.js instruction-consumption SDK must use the same repository interpretation rather than implementing competing format rules.
+The open-source skill, moldea Cloud, PR Assurance, and any future Node.js instruction-consumption SDK must use the same repository interpretation rather than implementing competing format rules.
 
 New runtime labels and project-local runtime guidance do not require a repository-format version change when the manifest semantics remain unchanged.
 

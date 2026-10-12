@@ -13,13 +13,13 @@ Runtime agents and their instructions use the same foundation when your project 
 
 ## Adopt moldea in a project
 
-Start with the [`moldea Agent Skill`](https://skill.moldea.ai/). It guides repository adoption and ongoing workflows in your coding agent. Its website owns installation instructions, tutorials, and the adoption process.
+Start with the [moldea Agent Skill](https://skill.moldea.ai/). It guides repository adoption and ongoing workflows in your coding agent. Its website owns installation instructions, tutorials, and the adoption process.
 
 The packages documented here are the underlying tools. Installing a package alone does not adopt the repository or write its project knowledge for you.
 
 ## Collaborate in Cloud
 
-Explore [`moldea Cloud`](https://moldea.ai) for pull-request review against the project's Git-owned context. It uses the same foundation as the Agent Skill, with the repository as the source of truth.
+Explore [moldea Cloud](https://moldea.ai) for pull-request review against the project's Git-owned context. It uses the same foundation as the Agent Skill, with the repository as the source of truth.
 
 Cloud is optional. The Agent Skill, CLI, and packages can be used locally without it.
 

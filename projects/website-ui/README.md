@@ -1,6 +1,6 @@
 # `@moldea.ai/website-ui`
 
-Shared Astro foundations for `moldea` public websites.
+Shared Astro foundations for moldea public websites.
 
 The package owns the reusable design tokens, global website primitives, interaction states, base-path and theme utilities, and small accessible Astro components used by the package and skill websites. Each website continues to own its page composition, navigation copy, content generation, SEO identity, public assets, site URL, and theme storage key.
 
@@ -25,7 +25,7 @@ Tailwind scans the shipped Astro components through the package stylesheet's exp
 - Use `HeroBackdrop` inside a `relative overflow-hidden` section, with foreground content positioned `relative`. It owns the static, theme-aware radial/grid background shared with the Skill website. Do not duplicate its gradients in page markup.
 - Section introductions may place the title on the left and a concise explanation on the right at `lg`, stacking on mobile. Alternate this with compact stacked introductions when the content warrants it; do not force every section into the same composition.
 - Demonstrations should show recognizable files, one visible connection or mismatch, and a concise outcome. Compose `FilePreview`, `ConnectionLabel`, `ResultSummary`, `StatusBadge`, `CodeBlock`, and `Dialog`. Keep the essential result visible without interaction; dialogs contain optional evidence. Use `Accordion` when several examples share a section.
-- Preserve semantic inline code for filenames, variables, operations, and package names using `inline-code`; use `InlineBrandText` for prose containing the product name. Breadcrumbs, documentation navigation, the site header, and local-search results apply the same product-name treatment to their string labels. Keep code wrapping and interaction feedback in the shared policies below.
+- Product names and string metadata are ordinary prose. Preserve semantic inline code for complete filenames, variables, operations, and package names using `inline-code`. Never style only the brand substring within a technical token. Keep code wrapping and interaction feedback in the shared policies below.
 - Verify compositions at 320px through desktop, in both themes, with keyboard focus and reduced motion. Flatten unnecessary mobile panels and preserve legible filenames, labels, and status text. Use icons and explicit text together rather than relying on color alone.
 
 ## Heading roles
