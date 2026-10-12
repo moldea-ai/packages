@@ -32,16 +32,15 @@ const diagnostics = inspection.readPage({ view: 'diagnostics', maxItems: 1 });`,
   {
     slug: 'repository',
     displayName: 'Repository',
-    caseId: 'reader-entry-pages',
+    caseId: 'reader-exact-entry',
     language: 'typescript',
-    source: `import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+    source: `import { parseRepositoryPath } from '@moldea.ai/repository';
+import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 const repository = createMemoryRepositoryReader([
   { path: '/policy.md', type: 'file', content: '30 days\\n' },
-  { path: '/scratch', type: 'directory' },
-  { path: '/shortcut', type: 'symlink' },
 ]);
-const page = await repository.listEntriesPage({ maxEntries: 2 });`,
+const entry = await repository.getEntry(parseRepositoryPath('/policy.md'));`,
   },
   {
     slug: 'repository-fs',
@@ -81,9 +80,8 @@ const page = await repository.listEntriesPage({ maxEntries: 16 });`,
       <p class="eyebrow mb-5">Four tools. One repository model.</p>
       <h1 class="page-title">One foundation. Explicit responsibilities.</h1>
       <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
-        Start at the terminal, or compose the same checks inside your own tools. The result
-        illustrations come from real operations on synthetic repository content during the website
-        build.
+        Run local checks or build them into your tools. Every result below comes from an executed
+        example.
       </p>
       <nav
         class="mt-8 flex flex-wrap gap-2"
@@ -116,7 +114,7 @@ const page = await repository.listEntriesPage({ maxEntries: 16 });`,
             aria-labelledby={`package-${packageModel.slug}`}
             data-package-showcase
           >
-            <div class="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
+            <div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
               <div class="min-w-0">
                 <h2
                   class="section-title"

@@ -11,7 +11,8 @@ export const INSTRUCTION_TEXT =
 export const AGENT_MANIFEST = `version: 1
 agents:
   support:
-    runtime: { id: custom }
+    runtime:
+      id: custom
     variables:
       REGION:
         description: The customer service region.

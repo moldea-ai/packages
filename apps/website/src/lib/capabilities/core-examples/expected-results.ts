@@ -586,14 +586,14 @@ export const CORE_EXPECTED_RESULTS: Record<
         pointer: '/agents/support/runtime/id',
         range: {
           end: {
-            column: 26,
-            line: 4,
-            offset: 55,
+            column: 17,
+            line: 5,
+            offset: 59,
           },
           start: {
-            column: 20,
-            line: 4,
-            offset: 49,
+            column: 11,
+            line: 5,
+            offset: 53,
           },
         },
         severity: 'error',
@@ -907,13 +907,13 @@ export const CORE_EXPECTED_RESULTS: Record<
         range: {
           end: {
             column: 17,
-            line: 10,
-            offset: 192,
+            line: 11,
+            offset: 194,
           },
           start: {
             column: 9,
-            line: 10,
-            offset: 184,
+            line: 11,
+            offset: 186,
           },
         },
         severity: 'error',
@@ -939,13 +939,13 @@ export const CORE_EXPECTED_RESULTS: Record<
         range: {
           end: {
             column: 65,
-            line: 11,
-            offset: 257,
+            line: 12,
+            offset: 259,
           },
           start: {
             column: 22,
-            line: 11,
-            offset: 214,
+            line: 12,
+            offset: 216,
           },
         },
         severity: 'error',
@@ -996,13 +996,13 @@ export const CORE_EXPECTED_RESULTS: Record<
         range: {
           end: {
             column: 65,
-            line: 11,
-            offset: 258,
+            line: 12,
+            offset: 260,
           },
           start: {
             column: 22,
-            line: 11,
-            offset: 215,
+            line: 12,
+            offset: 217,
           },
         },
         severity: 'error',
@@ -1140,13 +1140,13 @@ export const CORE_EXPECTED_RESULTS: Record<
         range: {
           end: {
             column: 33,
-            line: 8,
-            offset: 169,
+            line: 9,
+            offset: 171,
           },
           start: {
             column: 15,
-            line: 8,
-            offset: 151,
+            line: 9,
+            offset: 153,
           },
         },
         severity: 'error',
@@ -1170,13 +1170,13 @@ export const CORE_EXPECTED_RESULTS: Record<
         range: {
           end: {
             column: 65,
-            line: 8,
-            offset: 201,
+            line: 9,
+            offset: 203,
           },
           start: {
             column: 41,
-            line: 8,
-            offset: 177,
+            line: 9,
+            offset: 179,
           },
         },
         severity: 'error',

@@ -20,9 +20,9 @@ for (const width of [320, 768, 1440]) {
         await expect(grid.locator('a:visible')).toHaveCount(batchSize);
         await loadMore.focus();
         await page.keyboard.press('Enter');
-        await expect(grid.locator('a:visible')).toHaveCount(batchSize * 2);
+        await expect(grid.locator('a:visible')).toHaveCount(35);
         await expect(grid.locator('a').nth(batchSize)).toBeFocused();
-        while (await loadMore.isVisible()) await loadMore.click();
+        await expect(loadMore).toBeHidden();
         await expect(grid.locator('a:visible')).toHaveCount(35);
         for (const runtime of RUNTIME_CATALOG) {
           const link = grid.getByRole('link', {
