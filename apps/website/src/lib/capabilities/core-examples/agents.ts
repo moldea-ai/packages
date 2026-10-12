@@ -324,8 +324,8 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
       [
         ...createAgentEntries(
           AGENT_MANIFEST.replace(
-            '{ id: custom }',
-            '{ id: openai, guidance: /moldea/runtimes/openai.md }',
+            '      id: custom',
+            '      id: openai\n      guidance: /moldea/runtimes/openai.md',
           ),
         ),
         ...(state === 'missing'

@@ -2,10 +2,12 @@
 import {
   ArrowRight,
   Braces,
+  FileCheck,
   FileText,
   Folder,
   FolderOpen,
   GitBranch,
+  Link2,
   ScanSearch,
 } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
@@ -140,9 +142,24 @@ const canonicalFiles = [
           One coherent snapshot. Repeatable structural checks. No model calls.
         </p>
         <ul class="mt-6 divide-y divide-primary/15 text-sm">
-          <li class="py-3">Validate the Repository Format</li>
-          <li class="py-3">Resolve declared references</li>
-          <li class="py-3">Inspect supported runtime patterns</li>
+          <li class="flex items-center gap-3 py-3">
+            <FileCheck
+              class="size-4 shrink-0"
+              aria-hidden="true"
+            />Validate the Repository Format
+          </li>
+          <li class="flex items-center gap-3 py-3">
+            <Link2
+              class="size-4 shrink-0"
+              aria-hidden="true"
+            />Resolve declared references
+          </li>
+          <li class="flex items-center gap-3 py-3">
+            <ScanSearch
+              class="size-4 shrink-0"
+              aria-hidden="true"
+            />Check declared files and exports
+          </li>
         </ul>
         <p class="mt-auto pt-6 text-xs"><code>@moldea.ai/core</code></p>
       </article>

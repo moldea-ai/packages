@@ -19,6 +19,9 @@ for (const width of [320, 1440]) {
         await expect(section.locator('figure')).toBeVisible();
       }
       await expect(page.locator('#adoption-guide')).toBeVisible();
+      const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
+      await expect(assurance).toContainText('It cannot approve refunds or change orders.');
+      await expect(assurance).toContainText('Approve eligible refunds using the order details.');
       for (const name of ['moldea Agent Skill (opens in a new tab)', 'Explore moldea Cloud']) {
         const productLink = page.getByRole('main').getByRole('link', { name, exact: true });
         await expect(productLink).toBeVisible();

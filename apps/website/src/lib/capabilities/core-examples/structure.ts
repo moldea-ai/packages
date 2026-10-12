@@ -121,14 +121,14 @@ export const STRUCTURE_EXAMPLES: ICoreExampleDefinition[] = [
     'manifest-invalid-id',
     'An invalid identifier',
     'Agent IDs follow the repository format naming rules.',
-    'version: 1\nagents:\n  Support: { runtime: { id: custom } }\n',
+    'version: 1\nagents:\n  Support:\n    runtime:\n      id: custom\n',
     ['MOLDEA_ID_INVALID'],
   ),
   manifestCase(
     'manifest-reserved-id',
     'A reserved filename',
     'Reserved filesystem names cannot become agent IDs.',
-    'version: 1\nagents:\n  con: { runtime: { id: custom } }\n',
+    'version: 1\nagents:\n  con:\n    runtime:\n      id: custom\n',
     ['MOLDEA_ID_RESERVED'],
   ),
   manifestCase(
