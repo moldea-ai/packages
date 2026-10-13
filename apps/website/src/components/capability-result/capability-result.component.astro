@@ -2,6 +2,9 @@
 import { CircleAlert, ScanLine } from '@lucide/astro';
 import CodeBlock from '@moldea.ai/website-ui/code-block';
 import Dialog from '@moldea.ai/website-ui/dialog';
+import FilePreview from '@moldea.ai/website-ui/file-preview';
+import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';
+import { DIAGNOSTIC_GROUP_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';
 import ResultSummary from '@moldea.ai/website-ui/result-summary';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 
@@ -49,6 +52,42 @@ const resultSource = JSON.stringify(getCapabilityResultExcerpt(example.result), 
     />
   </ResultSummary>
   <div class="grid min-w-0 gap-5">
+    {
+      example.id === 'cli-invalid-project' && (
+        <>
+          <InspectionFinding
+            title="Declared export missing"
+            code="MOLDEA_REFERENCE_EXPORT_MISSING"
+            severity="error"
+            presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references}
+            path="src/returns/policy.ts"
+          />
+          {example.files
+            .filter(
+              ({ path }) => path === '/moldea/moldea.yaml' || path === '/src/returns/policy.ts',
+            )
+            .map((file) => (
+              <FilePreview
+                path={file.path.slice(1)}
+                label={
+                  file.path.endsWith('.yaml') ? 'Declared connection' : 'Current implementation'
+                }
+              >
+                <div class="p-3">
+                  <CodeBlock
+                    source={file.content}
+                    language={file.path.endsWith('.yaml') ? 'yaml' : 'typescript'}
+                    variant="plain"
+                    ariaLabel={file.path}
+                    copyable={false}
+                  />
+                </div>
+              </FilePreview>
+            ))}
+        </>
+      )
+    }
+
     <dl class="grid gap-3 border-b pb-4 text-xs sm:grid-cols-2">
       <div class="min-w-0">
         <dt class="mb-1 text-muted-foreground">Responsible package</dt><dd>

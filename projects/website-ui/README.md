@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@3.1.1
+pnpm add @moldea.ai/website-ui@3.2.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -62,7 +62,7 @@ Dark prose keeps its primary foreground opaque before the 70%/60% opacity feedba
 
 `BrandLogo` stays background-free in its resting, hover, and pressed states while retaining the global keyboard focus ring.
 
-`SiteHeaderShell` marks both source links as external destinations because they open in a new tab. Both source links use the external-link indicator and retain an explicit accessible name.
+`SiteHeaderShell` marks both source links as external destinations because they open in a new tab. The desktop source button uses `GitBranch`; the mobile text link retains the external-link indicator. Both keep an explicit accessible name. Icon-size `ActionLink` controls supply their own icon.
 
 ## Utilities
 
@@ -348,3 +348,9 @@ pnpm --filter @moldea.ai/website-ui test
 The packed-consumer integration also checks diff layouts and accessibility in real Chromium. Install Chromium with `pnpm --filter @moldea.ai/website-ui exec playwright install chromium` when it is not already available. The Website UI integration task forwards `PLAYWRIGHT_BROWSERS_PATH` through Turborepo so CI reuses the browsers in its existing Playwright container.
 
 The integration suite verifies the packed public surface and a real Astro consumer fixture. Publishing the package is a separate release operation and is not part of ordinary website development.
+
+## Inspection presentation
+
+`InspectionFinding` composes a subject icon, label, concise title, exact code, optional path, and severity badge. Import it from `@moldea.ai/website-ui/inspection-finding`. `@moldea.ai/website-ui/inspection-presentation` exports `DIAGNOSTIC_GROUP_PRESENTATIONS`, `FINDING_CATEGORY_PRESENTATIONS`, and `INSPECTION_SEVERITY_PRESENTATIONS`, with their public types. Subject ids and icon choices follow the shared platform design reference. Websites retain diagnostic selection and result semantics.
+
+`StatusBadge` uses sentence case, medium `text-xs` type, and an optional `icon` slot. Success uses the green-teal success token in both themes. `CodeDiff` aligns tabular line numbers in 2.5rem gutters, separates markers from source text, and accommodates four-digit line numbers in unified and split views.

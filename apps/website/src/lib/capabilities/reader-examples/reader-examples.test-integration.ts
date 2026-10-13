@@ -50,3 +50,17 @@ test.each([
   expect(result).toMatchObject({ kind: 'reader', facts: { code, source: 'repository' } });
   expect(result).not.toHaveProperty('valid');
 });
+
+test('exact filesystem selection excludes dependencies and generated files from the same workspace', () => {
+  const result = examples.find(({ id }) => id === 'filesystem-selection')?.result;
+  expect(result?.kind).toBe('reader');
+  if (result?.kind !== 'reader') throw new Error('Missing reader facts.');
+  const explicit = result.facts.explicit;
+  expect(explicit).toBeInstanceOf(Array);
+  expect(JSON.stringify(explicit)).toContain('/moldea/moldea.yaml');
+  expect(JSON.stringify(explicit)).toContain('/moldea/project.md');
+  expect(JSON.stringify(explicit)).toContain('/src/returns/policy.ts');
+  expect(JSON.stringify(explicit)).not.toMatch(/node_modules|dist/);
+  expect(JSON.stringify(result.facts.directory)).toContain('/node_modules/left-pad/index.js');
+  expect(JSON.stringify(result.facts.directory)).toContain('/dist/bundle.js');
+});

@@ -37,7 +37,7 @@ const relationship =
 >
   <slot />
   {
-    target === '_blank' && (
+    target === '_blank' && size !== 'icon' && (
       <ExternalLink
         class="size-4 shrink-0"
         aria-hidden="true"

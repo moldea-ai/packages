@@ -24,15 +24,21 @@ test('keeps complete warning and error counts on every diagnostic page', () => {
       counts: { diagnostics: 3, errors: 1, warnings: 2 },
       pages: [
         {
-          records: [{ code: 'MOLDEA_IMPACT_PATTERN_UNMATCHED', severity: 'warning' }],
+          records: [
+            { code: 'MOLDEA_IMPACT_PATTERN_UNMATCHED', group: 'references', severity: 'warning' },
+          ],
           hasContinuation: true,
         },
         {
-          records: [{ code: 'MOLDEA_INTEGRATION_BLOCK_MISSING', severity: 'warning' }],
+          records: [
+            { code: 'MOLDEA_INTEGRATION_BLOCK_MISSING', group: 'integration', severity: 'warning' },
+          ],
           hasContinuation: true,
         },
         {
-          records: [{ code: 'MOLDEA_REFERENCE_EXPORT_MISSING', severity: 'error' }],
+          records: [
+            { code: 'MOLDEA_REFERENCE_EXPORT_MISSING', group: 'references', severity: 'error' },
+          ],
           hasContinuation: false,
         },
       ],

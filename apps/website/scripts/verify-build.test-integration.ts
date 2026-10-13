@@ -194,6 +194,7 @@ describe('production discovery guards', () => {
     ['data-capability-visual="files"', 'data-capability-visual="runtime"', 'wrong visual family'],
     ['data-capability-label="Invalid"', 'data-capability-label="Valid"', 'unsupported outcome'],
     ['1 missing file', 'All relationships verified', 'unsupported outcome'],
+    ['<code>moldea validate --json</code>', '<code>moldea repair</code>', 'unsupported outcome'],
   ])('rejects an unsupported capability claim %s', (marker, replacement, message) => {
     replaceArtifactText('capabilities/index.html', marker, replacement);
     expect(() => verifyProductionBuild(directory)).toThrow(message);

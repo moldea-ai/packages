@@ -1,0 +1,54 @@
+---
+import {
+  INSPECTION_SEVERITY_PRESENTATIONS,
+  type IInspectionPresentation,
+  type IInspectionSeverity,
+} from '@moldea.ai/website-ui/inspection-presentation';
+
+import StatusBadge from '../status-badge/status-badge.component.astro';
+
+// one finding keeps its subject, exact code, and severity visible together
+interface Props {
+  title: string;
+  code: string;
+  severity: IInspectionSeverity;
+  presentation: IInspectionPresentation;
+  path?: string;
+}
+const { title, code, severity, presentation, path } = Astro.props;
+const SubjectIcon = presentation.icon;
+const status = INSPECTION_SEVERITY_PRESENTATIONS[severity];
+const SeverityIcon = status.icon;
+---
+
+<article
+  class="flex min-w-0 items-start gap-3"
+  aria-label={`${title}: ${code}`}
+  data-inspection-finding
+>
+  <span
+    class="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground"
+    aria-hidden="true"
+    ><SubjectIcon class="size-5" /></span
+  >
+  <div class="min-w-0 flex-1">
+    <p class="text-xs text-muted-foreground">{presentation.label}</p>
+    <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
+      <p class="text-sm leading-5 font-semibold">{title}</p><StatusBadge
+        label={status.label}
+        tone={status.tone}
+        size="sm"
+        ><SeverityIcon
+          slot="icon"
+          aria-hidden="true"
+        /></StatusBadge
+      >
+    </div>
+    <code class="mt-1 block text-xs leading-5 break-all text-muted-foreground">{code}</code>
+    {
+      path && (
+        <code class="mt-1 block text-xs leading-5 break-all text-muted-foreground">{path}</code>
+      )
+    }
+  </div>
+</article>

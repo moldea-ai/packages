@@ -1,6 +1,6 @@
 ---
 import { Layers } from '@lucide/astro';
-import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
+import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
 import { getOperationRows } from './utilities.ts';
 
 interface Props {
@@ -9,11 +9,22 @@ interface Props {
 const { example } = Astro.props;
 if (example.result.kind !== 'inspection' && example.result.kind !== 'reader')
   throw new Error('Operation illustration requires reader or inspection facts.');
-const rows = getOperationRows(example.result.facts);
+const facts =
+  example.id === 'filesystem-selection'
+    ? {
+        explicitFiles: getCapabilityFactRows(example.result.facts.explicit).filter(
+          ({ type }) => type === 'file',
+        ),
+        directoryFiles: getCapabilityFactRows(example.result.facts.directory).filter(
+          ({ type }) => type === 'file',
+        ),
+      }
+    : example.result.facts;
+const rows = getOperationRows(facts);
 ---
 
 <div
-  class="grid min-w-0 gap-2"
+  class:list={['grid min-w-0 gap-2', example.id === 'filesystem-selection' && 'sm:grid-cols-2']}
   role="group"
   aria-label={`${example.title} execution facts`}
 >
@@ -38,7 +49,12 @@ const rows = getOperationRows(example.result.facts);
       </div>
     ))
   }
-  <p class="text-xs text-muted-foreground">
+  <p
+    class:list={[
+      'text-xs text-muted-foreground',
+      example.id === 'filesystem-selection' && 'sm:col-span-2',
+    ]}
+  >
     Selected execution facts. View the result for details.
   </p>
 </div>

@@ -121,10 +121,11 @@ export const verifyCapabilityArtifacts = (
       if (visuals.get(example.id) !== getCapabilityVisualFamily(example))
         throw new Error(`Capabilities artifact has the wrong visual family for ${example.id}.`);
       const outcome = getCapabilityOutcome(example);
-      if (
-        labels.get(example.id) !== outcome.label ||
-        summaries.get(example.id) !== `${outcome.title} ${outcome.label}`
-      )
+      const expectedSummary =
+        example.id === 'cli-invalid-project' && example.result.kind === 'cli'
+          ? `${example.result.command} Exit ${example.result.exitStatus}`
+          : `${outcome.title} ${outcome.label}`;
+      if (labels.get(example.id) !== outcome.label || summaries.get(example.id) !== expectedSummary)
         throw new Error(`Capabilities artifact has an unsupported outcome for ${example.id}.`);
       if (!html.includes(`id="result-${example.id}"`))
         throw new Error(`Capabilities artifact omits result dialog ${example.id}.`);

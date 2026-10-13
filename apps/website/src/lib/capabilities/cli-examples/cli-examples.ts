@@ -480,12 +480,13 @@ export const createCliExamples = async (
     assertCapabilityFacts(
       invalidResult.page.records.flatMap((record) =>
         record.kind === 'diagnostic'
-          ? [{ code: record.code, path: record.path, pointer: record.pointer }]
+          ? [{ code: record.code, group: record.group, path: record.path, pointer: record.pointer }]
           : [],
       ),
       [
         {
           code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
+          group: 'references',
           path: '/moldea/moldea.yaml',
           pointer: '/context/~1moldea~1project.md/bindings/0',
         },
@@ -550,7 +551,14 @@ export const createCliExamples = async (
         },
         diagnostics: invalidResult.page.records.flatMap((record) =>
           record.kind === 'diagnostic'
-            ? [{ code: record.code, path: record.path, pointer: record.pointer }]
+            ? [
+                {
+                  code: record.code,
+                  group: record.group,
+                  path: record.path,
+                  pointer: record.pointer,
+                },
+              ]
             : [],
         ),
       },

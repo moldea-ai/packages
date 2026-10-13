@@ -5,7 +5,7 @@ import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const guidePath = withBase('/getting-started/', basePath);
 
-for (const width of [320, 1440]) {
+for (const width of [320, 768, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
     test(`keeps the visual adoption guide usable at ${width}px in ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
@@ -44,10 +44,14 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   await page.goto(guidePath);
   const packages = page.locator('#local-packages figure');
   await expect(packages).toContainText('checkEligibility');
-  await expect(packages).toContainText('canReturn');
+  await expect(packages.locator('[data-inspection-finding]').first()).toContainText(
+    'MOLDEA_REFERENCE_EXPORT_MISSING',
+  );
+  await expect(packages.locator('svg.lucide-link-2').first()).toBeVisible();
   await packages.getByRole('button', { name: /^View result:/u }).click();
   const result = page.getByRole('dialog');
   await expect(result).toContainText('MOLDEA_REFERENCE_EXPORT_MISSING');
+  await expect(result).toContainText('canReturn');
   await expect(result).toContainText('coverageCounts');
   await expect(result).toContainText('exportsFailed');
   await page.keyboard.press('Escape');

@@ -31,32 +31,36 @@ const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAle
   <div
     class="-mx-4 flex flex-col gap-3 border-t px-4 pt-4 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6"
   >
-    <div
-      class="min-w-0 flex-1"
-      data-capability-summary={example.id}
-    >
-      <ResultSummary
-        title={outcome.title}
-        description=""
-        tone={outcome.tone}
-      >
-        <Icon
-          slot="icon"
-          class="size-5"
-        />
-        <span
-          slot="status"
-          data-capability-status
+    {
+      example.id !== 'cli-invalid-project' && (
+        <div
+          class="min-w-0 flex-1"
+          data-capability-summary={example.id}
         >
-          <StatusBadge
-            label={outcome.label}
+          <ResultSummary
+            title={outcome.title}
+            description=""
             tone={outcome.tone}
-            size="sm"
-          />
-        </span>
-      </ResultSummary>
-    </div>
-    <div class="w-full sm:w-auto">
+          >
+            <Icon
+              slot="icon"
+              class="size-5"
+            />
+            <span
+              slot="status"
+              data-capability-status
+            >
+              <StatusBadge
+                label={outcome.label}
+                tone={outcome.tone}
+                size="sm"
+              />
+            </span>
+          </ResultSummary>
+        </div>
+      )
+    }
+    <div class="w-full sm:ml-auto sm:w-auto">
       <CapabilityResult
         {example}
         {catalog}

@@ -1,5 +1,5 @@
 ---
-import { ExternalLink, Menu, Search, X } from '@lucide/astro';
+import { ExternalLink, GitBranch, Menu, Search, X } from '@lucide/astro';
 
 import ActionLink from '../action-link/action-link.component.astro';
 import ThemeControl from '../theme-control/theme-control.component.astro';
@@ -118,7 +118,12 @@ const responsiveClasses = breakpointClasses[breakpoint];
         target="_blank"
         rel="noopener noreferrer"
         aria-label={sourceAriaLabel}
-      />
+        ><GitBranch
+          class="size-4"
+          aria-hidden="true"
+          data-external-link-icon
+        /></ActionLink
+      >
       <ThemeControl storageKey={themeStorageKey} />
       <slot name="desktop-actions" />
     </div>

@@ -95,7 +95,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.1.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.2.0' });
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -234,6 +234,8 @@ describe('published website UI package', () => {
         "import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';",
         "import Dialog from '@moldea.ai/website-ui/dialog';",
         "import EvaluationReplay from '@moldea.ai/website-ui/evaluation-replay';",
+        "import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';",
+        "import { DIAGNOSTIC_GROUP_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';",
         "import FilePreview from '@moldea.ai/website-ui/file-preview';",
         "import FileTree from '@moldea.ai/website-ui/file-tree';",
         "import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';",
@@ -342,6 +344,8 @@ describe('published website UI package', () => {
         '    <Dialog {...iconDialogProps}><p>Expanded source content</p></Dialog>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
+        '    <InspectionFinding title="Declared export missing" code="MOLDEA_REFERENCE_EXPORT_MISSING" severity="error" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} />',
+        '    <CodeDiff patch={"--- a/policy.ts\\n+++ b/policy.ts\\n@@ -1000 +1000 @@\\n-export const days = 30;\\n+export const days = 60;\\n"} ariaLabel="Four-digit lines" overflow="wrap" />',
         '    <TabbedPanels ariaLabel="Fixture views" id="fixture-tabs" items={[{ id: "first", label: "First", slotName: "first" }, { id: "second", label: "Second", slotName: "second" }]}><p slot="first">First panel</p><p slot="second">Second panel</p></TabbedPanels>',
         '    <EvaluationReplay id="fixture-replay" replay={replay} />',
         '    <DocumentationShell breadcrumbs={[{ href: "/", label: "Home" }, { label: "moldea Docs" }]} currentRoute="/docs/" headings={rendered.headings} navigationGroups={[{ label: "moldea Guides", items: [{ href: "/docs/", label: "moldea Start" }] }]} previousPage={{ href: "/previous/", label: "Previous moldea guide" }} nextPage={{ href: "/next/", label: "Next moldea guide" }}><div class="prose-moldea" set:html={rendered.html} /></DocumentationShell>',
@@ -458,6 +462,56 @@ describe('published website UI package', () => {
             await page.evaluate((selectedTheme) => {
               document.documentElement.className = selectedTheme;
             }, theme);
+            const finding = page.getByRole('article', {
+              name: 'Declared export missing: MOLDEA_REFERENCE_EXPORT_MISSING',
+            });
+            expect(await finding.locator('svg.lucide-link-2').count()).toBe(1);
+            expect(await finding.locator('svg.lucide-circle-alert').count()).toBe(1);
+            const badgeStyle = await finding.locator('[data-status-badge]').evaluate((node) => ({
+              transform: getComputedStyle(node).textTransform,
+              weight: getComputedStyle(node).fontWeight,
+            }));
+            expect(badgeStyle).toStrictEqual({ transform: 'none', weight: '500' });
+            expect(
+              await page
+                .getByRole('link', { name: 'Fixture source', exact: true, includeHidden: true })
+                .first()
+                .locator('svg.lucide-git-branch[data-external-link-icon]')
+                .count(),
+            ).toBe(1);
+            const gutter = await page
+              .getByRole('region', { name: 'Four-digit lines', exact: true })
+              .evaluate((node) =>
+                Array.from(node.querySelectorAll('[data-diff-line]')).map((row) => {
+                  const cells = Array.from(row.children) as HTMLElement[];
+                  const visibleNumbers = cells
+                    .slice(0, -2)
+                    .filter((cell) => getComputedStyle(cell).display !== 'none');
+                  const number = visibleNumbers.at(-1)!;
+                  const marker = cells.at(-2)!;
+                  const content = cells.at(-1)!;
+                  const numberRange = document.createRange();
+                  numberRange.selectNodeContents(number);
+                  const markerRange = document.createRange();
+                  markerRange.selectNodeContents(marker);
+                  const sourceRange = document.createRange();
+                  sourceRange.selectNodeContents(content.querySelector('code')!);
+                  return {
+                    numberGap:
+                      markerRange.getBoundingClientRect().left -
+                      numberRange.getBoundingClientRect().right,
+                    sourceGap:
+                      sourceRange.getBoundingClientRect().left -
+                      markerRange.getBoundingClientRect().right,
+                    overflow: number.scrollWidth > number.clientWidth,
+                  };
+                }),
+              );
+            for (const row of gutter) {
+              expect(row.numberGap).toBeGreaterThanOrEqual(8);
+              expect(row.sourceGap).toBeGreaterThanOrEqual(6);
+              expect(row.overflow).toBe(false);
+            }
             const runtimeGrid = page.getByRole('list', { name: 'Runtime guidance', exact: true });
             expect(await runtimeGrid.getByRole('link').count()).toBe(35);
             const runtimeLink = runtimeGrid.getByRole('link', {

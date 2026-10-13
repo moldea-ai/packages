@@ -1,12 +1,5 @@
 ---
-import {
-  ArrowDown,
-  ArrowRight,
-  ExternalLink,
-  GitBranch,
-  GitPullRequest,
-  ShieldAlert,
-} from '@lucide/astro';
+import { ArrowDown, ArrowRight, ExternalLink, GitBranch, GitPullRequest } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
 import CodeDiff from '@moldea.ai/website-ui/code-diff';
@@ -14,7 +7,8 @@ import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import Conversation from '@moldea.ai/website-ui/conversation';
 import ConversationMessage from '@moldea.ai/website-ui/conversation-message';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
-import ResultSummary from '@moldea.ai/website-ui/result-summary';
+import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';
+import { FINDING_CATEGORY_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import { withBase } from '@moldea.ai/website-ui/site';
 
@@ -359,28 +353,13 @@ const afterInstruction = 'Approve eligible refunds using the order details.';
               />
             </div>
           </FilePreview>
-          <div class="border-t pt-5">
-            <ResultSummary
+          <div class="border-t pt-4">
+            <InspectionFinding
               title="Refund approval boundary"
-              description="The instruction grants authority the project brief forbids."
-              tone="danger"
-            >
-              <ShieldAlert
-                slot="icon"
-                class="size-5"
-                aria-hidden="true"
-              /><StatusBadge
-                slot="status"
-                label="Blocking"
-                tone="danger"
-                size="sm"
-              />
-            </ResultSummary>
-            <p class="mt-4 text-xs leading-6 text-muted-foreground">
-              Evidence: <code class="break-all">/moldea/project.md</code> and <code
-                class="break-all">/moldea/agents/support/instruction.md</code
-              >.
-            </p>
+              code="CONTEXT_CONTRADICTED"
+              severity="error"
+              presentation={FINDING_CATEGORY_PRESENTATIONS.context}
+            />
           </div>
         </figure>
       </section>

@@ -20,23 +20,26 @@ for (const width of [320, 768, 1440]) {
           .click();
         const section = page.locator(`#${slug}`);
         await expect(section).toBeInViewport();
+        const code = section.getByRole('region', {
+          name: `@moldea.ai/${slug} example`,
+          exact: true,
+        });
+        await expect(code.locator('[style*="--shiki"]')).not.toHaveCount(0);
         if (slug === 'repository') {
           await expect(
-            section.getByRole('list', { name: 'Repository entry returned by getEntry' }),
-          ).toContainText('policy.md');
+            section.getByRole('list', { name: 'Changed repository paths' }),
+          ).toContainText('return-policy.md');
+          await expect(code).toContainText('listChangesPage');
         } else if (slug === 'repository-fs') {
           await expect(
-            section.getByRole('list', { name: 'Explicit filesystem selection' }),
-          ).toContainText('policy.md');
-          await expect(
-            section.getByRole('list', { name: 'Filesystem directory selection' }),
-          ).toContainText('policy.md');
-        } else {
-          const code = section.getByRole('region', {
-            name: `@moldea.ai/${slug} example`,
-            exact: true,
-          });
-          await expect(code.locator('[style*="--shiki"]')).not.toHaveCount(0);
+            section.getByRole('group', { name: 'Read only the files you choose execution facts' }),
+          ).toContainText('/node_modules/left-pad/index.js');
+          await expect(code).toContainText('/moldea/moldea.yaml');
+        } else if (slug === 'cli') {
+          await expect(section.locator('[data-inspection-finding]').first()).toContainText(
+            'MOLDEA_REFERENCE_EXPORT_MISSING',
+          );
+          await expect(section.locator('svg.lucide-link-2').first()).toBeVisible();
         }
         const trigger = section.getByRole('button', { name: /^View result:/u });
         await trigger.focus();
