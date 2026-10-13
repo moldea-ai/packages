@@ -67,6 +67,7 @@ export const verifyCapabilityArtifacts = (
   const outcomes = new Set<string>();
   const labels = new Map<string, string>();
   const summaries = new Map<string, string>();
+  const resultLabels = new Map<string, string>();
   const visuals = new Map<string, string>();
   const references = new Set<string>();
   const recordedOutputs = new Map<string, string[]>();
@@ -93,6 +94,19 @@ export const verifyCapabilityArtifacts = (
           attributes['data-capability-outcome'],
           attributes['data-capability-label'] ?? '',
         );
+      }
+      if (attributes['data-inspection-outcome']) {
+        let parent = node.parentNode;
+        while (parent && 'tagName' in parent) {
+          const summaryId = parent.attrs.find(
+            ({ name }) => name === 'data-capability-summary',
+          )?.value;
+          if (summaryId) {
+            resultLabels.set(summaryId, attributes['data-inspection-outcome']);
+            break;
+          }
+          parent = parent.parentNode;
+        }
       }
       if (attributes['data-capability-summary'])
         summaries.set(
@@ -141,10 +155,10 @@ export const verifyCapabilityArtifacts = (
       if (
         labels.get(example.id) !== outcome.label ||
         summary === undefined ||
-        (view.findings.length === 0 &&
-          (!summary.includes(outcome.title) || !summary.includes(outcome.label))) ||
+        resultLabels.get(example.id) !== outcome.label ||
+        !summary.includes(outcome.label) ||
         view.findings.some(
-          (finding) => !summary.includes(finding.code) || !summary.includes(finding.title),
+          (finding) => !references.has(`#${example.id}-result-finding-${finding.id}`),
         )
       )
         throw new Error(`Capabilities artifact has an unsupported outcome for ${example.id}.`);

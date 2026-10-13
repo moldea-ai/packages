@@ -193,11 +193,7 @@ describe('production discovery guards', () => {
   test.each([
     ['data-capability-visual="files"', 'data-capability-visual="runtime"', 'wrong visual family'],
     ['data-capability-label="Invalid"', 'data-capability-label="Valid"', 'unsupported outcome'],
-    [
-      'The referenced repository path does not exist.',
-      'All relationships verified',
-      'unsupported outcome',
-    ],
+    ['data-inspection-outcome="Invalid"', 'data-inspection-outcome="Valid"', 'unsupported outcome'],
   ])('rejects an unsupported capability claim %s', (marker, replacement, message) => {
     replaceArtifactText('capabilities/index.html', marker, replacement);
     expect(() => verifyProductionBuild(directory)).toThrow(message);

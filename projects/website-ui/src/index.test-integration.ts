@@ -289,8 +289,8 @@ describe('published website UI package', () => {
         'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", hideIconOnMobile: true, ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
         'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", panelClass: "sm:h-[32rem]!", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
         'const iconDialogProps = { id: "fixture-icon", title: "Complete source", triggerLabel: "Open complete source", triggerAriaLabel: "Open complete source in a larger view", triggerVariant: "ghost", triggerSize: "icon-xs", size: "large" } satisfies ComponentProps<typeof Dialog>;',
-        'const passed = { title: "Validation complete", label: "Valid", tone: "success", findings: [], outputLabel: "Complete Core response", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
-        'const failed = { ...passed, title: "Validation failed", label: "Invalid", tone: "danger", outputLabel: "Complete CLI response", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "moldea.yaml", evidence: [{ path: "moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Missing target" }] }] } satisfies IInspectionResultView;',
+        'const passed = { title: "Validation complete", label: "Valid", tone: "success", findings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
+        'const failed = { ...passed, title: "Validation failed", label: "Invalid", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "moldea.yaml", evidence: [{ path: "moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Missing target", isMissing: true }] }] } satisfies IInspectionResultView;',
         'const multiple = { ...failed, title: "Inspection complete", findings: [...failed.findings, { id: "accepted", title: "Unmatched relationship", code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", accepted: true, reason: "Generated files arrive during the release build.", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", evidence: [] }] } satisfies IInspectionResultView;',
         '---',
         '<html lang="en" data-theme="system">',
@@ -548,7 +548,7 @@ describe('published website UI package', () => {
             expect(
               await page
                 .locator('#single-result')
-                .getByText('Complete CLI response', { exact: true })
+                .getByText('moldea validate --json', { exact: true })
                 .isVisible(),
             ).toBe(true);
             expect(
@@ -905,8 +905,22 @@ describe('published website UI package', () => {
             await page.evaluate((selectedTheme) => {
               document.documentElement.className = selectedTheme;
             }, theme);
+            const flatCode = page.getByRole('region', {
+              name: 'Order status command',
+              exact: true,
+            });
+            expect(await flatCode.locator('..').getAttribute('data-code-copy-frame')).toBeNull();
+            expect(await flatCode.evaluate((node) => getComputedStyle(node).paddingLeft)).toBe(
+              '0px',
+            );
+            expect(
+              await flatCode
+                .locator('..')
+                .getByRole('button', { name: 'Copy code', exact: true })
+                .count(),
+            ).toBe(1);
             const passedOpener = page.getByRole('link', {
-              name: 'View output: Validation complete',
+              name: 'Valid: View result: Validation complete',
               exact: true,
             });
             await passedOpener.click();
@@ -938,7 +952,7 @@ describe('published website UI package', () => {
             ).not.toBe('none');
             await singleOpener.press('Enter');
             const singleDialog = page.getByRole('dialog', {
-              name: 'Reference not found',
+              name: 'Validation failed',
               exact: true,
             });
             expect(
@@ -951,6 +965,21 @@ describe('published website UI package', () => {
             ).toBe(1);
             expect(await singleDialog.locator('[data-file-preview]').count()).toBe(2);
             expect(
+              await singleDialog
+                .locator('[data-inspection-finding-card] [data-file-preview]')
+                .count(),
+            ).toBe(0);
+            expect(
+              await singleDialog
+                .locator('[data-inspection-finding-card]')
+                .getByText('References', { exact: true })
+                .isVisible(),
+            ).toBe(true);
+            const rowBounds = await singleOpener.boundingBox();
+            const listBounds = await singleOpener.locator('..').boundingBox();
+            expect(rowBounds?.width).toBe(listBounds?.width);
+            expect(rowBounds!.height).toBeLessThan(48);
+            expect(
               await singleDialog.locator('[data-file-preview]').last().locator('pre').count(),
             ).toBe(0);
             await singleDialog.getByRole('tab', { name: 'Finding', exact: true }).focus();
@@ -958,6 +987,19 @@ describe('published website UI package', () => {
             expect(
               await singleDialog.getByRole('tab', { name: 'Output', selected: true }).count(),
             ).toBe(1);
+            const outputHeader = singleDialog.locator(
+              '[data-inspection-output] [data-code-block-header]',
+            );
+            expect(
+              await outputHeader.getByText('moldea validate --json', { exact: true }).isVisible(),
+            ).toBe(true);
+            expect(await outputHeader.getByText('Exit 1', { exact: true }).isVisible()).toBe(true);
+            expect(
+              await outputHeader.getByRole('button', { name: 'Copy code', exact: true }).count(),
+            ).toBe(1);
+            expect(
+              await singleDialog.getByText('Complete recorded response', { exact: true }).count(),
+            ).toBe(0);
             expect(
               JSON.parse(
                 await singleDialog.locator('[data-inspection-output] pre code').innerText(),
@@ -988,7 +1030,7 @@ describe('published website UI package', () => {
             await acceptedOpener.click();
             expect(await page.locator('dialog:modal').count()).toBe(2);
             const acceptedDialog = page.getByRole('dialog', {
-              name: 'Unmatched relationship',
+              name: 'Inspection complete',
               exact: true,
             });
             expect(
@@ -1044,7 +1086,7 @@ describe('published website UI package', () => {
             await page.locator('[data-dialog-open="single-result"]').click();
             expect(
               await page
-                .getByRole('dialog', { name: 'Reference not found', exact: true })
+                .getByRole('dialog', { name: 'Validation failed', exact: true })
                 .isVisible(),
             ).toBe(true);
             await page.keyboard.press('Escape');

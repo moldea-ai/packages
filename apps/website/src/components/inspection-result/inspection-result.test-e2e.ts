@@ -28,7 +28,7 @@ test('locks background scrolling without changing the document width', async ({ 
   await page.locator('[data-dialog-open="hero-check-result"]').click();
   await expect(
     page.getByRole('dialog', {
-      name: 'The registered tool implementation is missing.',
+      name: '1 broken reference',
       exact: true,
     }),
   ).toBeVisible();
@@ -161,7 +161,7 @@ for (const theme of ['light', 'dark'] as const) {
     await page.goto(homepage);
     await page.locator('[data-dialog-open="hero-check-result"]').click();
     const dialog = page.getByRole('dialog', {
-      name: 'The registered tool implementation is missing.',
+      name: '1 broken reference',
       exact: true,
     });
     await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1);

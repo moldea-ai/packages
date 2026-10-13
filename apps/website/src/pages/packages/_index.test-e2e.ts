@@ -36,10 +36,18 @@ for (const width of [320, 768, 1440]) {
           ).toContainText('/node_modules/left-pad/index.js');
           await expect(code).toContainText('/moldea/moldea.yaml');
         } else if (slug === 'cli') {
-          await expect(section.locator('[data-inspection-finding]').first()).toContainText(
-            'MOLDEA_REFERENCE_EXPORT_MISSING',
+          await expect(section.locator('[data-inspection-outcome]').first()).toContainText(
+            'Invalid',
           );
           await expect(section.locator('svg.lucide-link-2').first()).toBeVisible();
+        }
+        if (slug === 'cli' && width >= 1024) {
+          const columns = await section
+            .locator(':scope > div > div')
+            .evaluateAll((elements) =>
+              elements.map((element) => element.getBoundingClientRect().top),
+            );
+          expect(columns[0]).toBeCloseTo(columns[1], 0);
         }
         const trigger = section.locator('[data-dialog-open]').first();
         await trigger.focus();

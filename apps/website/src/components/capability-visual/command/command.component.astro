@@ -58,24 +58,23 @@ if (binding && !boundSource) throw new Error('The bound source illustration is m
 ---
 
 <div class="grid min-w-0 gap-3">
-  <div
-    class="flex min-w-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground"
+  <CodeBlock
+    source={result.command}
+    language="sh"
+    headerLabel="Command"
+    ariaLabel={`Command for ${example.title}`}
   >
-    <div class="flex min-w-0 flex-1 items-center gap-2">
-      <Terminal
-        class="size-4 shrink-0"
-        aria-hidden="true"
-      /><div class="min-w-0 flex-1">
-        <CodeBlock
-          source={result.command}
-          language="sh"
-          variant="plain"
-          ariaLabel={`Command for ${example.title}`}
-        />
-      </div>
-    </div>
-    <span class="shrink-0">Exit {result.exitStatus}</span>
-  </div>
+    <Terminal
+      slot="header-icon"
+      class="size-4 shrink-0"
+      aria-hidden="true"
+    />
+    <span
+      slot="header-end"
+      class="shrink-0"
+      >Exit {result.exitStatus}</span
+    >
+  </CodeBlock>
   {
     binding && manifest && boundSource && (
       <>

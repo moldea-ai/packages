@@ -11,12 +11,10 @@ test('shows the complete real check without tabs or disclosures', async ({ page 
   await expect(example.locator('article[id^="inspection-"]')).toHaveCount(3);
   await expect(example.getByRole('tab')).toHaveCount(0);
   await expect(example.locator('details, pre:visible')).toHaveCount(0);
-  await expect(
-    example.locator('[data-inspection-list] > ul a, [data-inspection-list] > div > a'),
-  ).toHaveCount(3);
-  await expect(example.getByRole('article', { name: '1. Connected' })).toContainText('Path found');
+  await expect(example.locator('[data-inspection-list] > a')).toHaveCount(3);
+  await expect(example.getByRole('article', { name: '1. Connected' })).toContainText('Valid');
   const broken = example.getByRole('article', { name: '2. File moved' });
-  await expect(broken).toContainText('The referenced repository path does not exist.');
+  await expect(broken).toContainText('Invalid');
   await expect(broken.getByRole('group', { name: 'Referenced location' })).toContainText(
     'src/refund-policy.ts',
   );
@@ -25,13 +23,16 @@ test('shows the complete real check without tabs or disclosures', async ({ page 
     'src/payments/refund-policy.ts',
   );
   await expect(example.getByRole('article', { name: '3. Reference updated' })).toContainText(
-    'Check passes',
+    'Valid',
   );
   await expect(example).not.toContainText('Core diagnostic:');
   await expect(example).toContainText('not program behavior');
   await expect(example).toContainText('A developer makes the repair.');
   const preview = page.getByRole('figure', { name: 'Repository check preview' });
-  await expect(preview).toContainText('MOLDEA_TOOL_IMPLEMENTATION_MISSING');
+  await expect(preview.locator('[data-inspection-outcome]')).toHaveAttribute(
+    'data-inspection-outcome',
+    'Invalid',
+  );
   await expect(preview).not.toContainText('src/refund-policy.ts');
 });
 
@@ -111,7 +112,7 @@ test('keeps every frame readable without JavaScript', async ({ browser }) => {
     for (const name of ['1. Connected', '2. File moved', '3. Reference updated']) {
       await expect(example.getByRole('article', { name, exact: true })).toBeVisible();
     }
-    await expect(example.locator('[data-inspection-finding]')).toContainText(
+    await expect(example.locator('[data-inspection-finding-card]')).toContainText(
       'MOLDEA_REFERENCE_MISSING',
     );
     await expect(example.locator('details, [role="tab"]')).toHaveCount(0);
@@ -124,7 +125,7 @@ test('keeps every frame readable without JavaScript', async ({ browser }) => {
     await expect(preview.getByRole('group', { name: 'Missing tool implementation' })).toContainText(
       'src/orders/tracking.ts',
     );
-    await expect(preview.locator('[data-inspection-finding]')).toContainText(
+    await expect(preview.locator('[data-inspection-finding-card]')).toContainText(
       'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
     );
     await expect(preview.getByRole('button', { name: /^View result:/ })).toHaveCount(0);

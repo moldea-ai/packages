@@ -6,17 +6,28 @@ import type { ICodeOverflow } from '@moldea.ai/website-ui/code-presentation';
 export interface Props {
   ariaLabel?: string;
   copyable?: boolean;
+  headerLabel?: string;
   source: string;
   language?: string;
   overflow?: ICodeOverflow;
   variant?: 'panel' | 'plain';
 }
-const { ariaLabel, copyable = true, source, language, overflow, variant = 'panel' } = Astro.props;
+const {
+  ariaLabel,
+  copyable = true,
+  headerLabel,
+  source,
+  language,
+  overflow,
+  variant = 'panel',
+} = Astro.props;
 const html = await renderCodeBlock(source, language, ariaLabel, overflow);
 ---
 
 <div
   data-code-block
+  data-code-variant={variant}
+  data-code-copy-frame={headerLabel && variant === 'panel' ? '' : undefined}
   data-code-copy={copyable ? undefined : 'false'}
   class:list={[
     'prose-moldea min-w-0 text-sm [&_pre]:m-0 [&_pre]:text-xs [&_pre]:leading-6',
@@ -24,5 +35,26 @@ const html = await renderCodeBlock(source, language, ariaLabel, overflow);
       ? '[&_pre]:p-4'
       : '[&_pre]:rounded-none [&_pre]:border-0 [&_pre]:bg-transparent [&_pre]:p-0 [&_pre]:pb-1 [&_pre]:shadow-none',
   ]}
-  set:html={html}
-/>
+>
+  {
+    headerLabel && (
+      <div
+        data-code-block-header
+        class:list={[
+          'flex min-w-0 items-center gap-2 text-xs text-muted-foreground',
+          variant === 'panel' ? 'border-b bg-muted/40 px-3 py-1.5' : 'pb-2',
+        ]}
+      >
+        <slot name="header-icon" />
+        <span
+          class="min-w-0 flex-1 truncate font-mono"
+          title={headerLabel}
+        >
+          {headerLabel}
+        </span>
+        <slot name="header-end" />
+      </div>
+    )
+  }
+  <Fragment set:html={html} />
+</div>

@@ -243,7 +243,7 @@ test('opens every executed illustration once with its truthful visual and result
     ['canonical-content-pages', 'Bytes 3 to 7'],
     ['reader-cancellation', 'Read cancelled'],
     ['policy-reference-connected', 'Declared target in moldea.yaml'],
-    ['cli-composition', 'Exit 0: completed'],
+    ['cli-composition', 'Completed'],
   ])
     await expect(page.locator(`#${id}`)).toContainText(text);
   await expect(page.locator('#binding-export-passed')).toContainText('A declared export exists');

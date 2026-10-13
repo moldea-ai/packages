@@ -14,17 +14,6 @@ const { result } = Astro.props;
   data-inspection-output
 >
   {
-    result.command && (
-      <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b pb-3 text-xs">
-        <code class="min-w-0 break-all">{result.command}</code>
-        {result.exitStatus !== undefined && (
-          <span class="shrink-0 text-muted-foreground">Exit {result.exitStatus}</span>
-        )}
-      </div>
-    )
-  }
-  <p class="text-xs font-medium text-muted-foreground">{result.outputLabel}</p>
-  {
     result.redactions.length > 0 && (
       <div class="text-xs leading-5 text-muted-foreground">
         <p class="font-semibold">Redacted fields</p>
@@ -41,6 +30,18 @@ const { result } = Astro.props;
     language="json"
     overflow="scroll"
     ariaLabel={result.outputLabel}
-  />
+    headerLabel={result.command ?? result.outputLabel}
+  >
+    {
+      result.exitStatus !== undefined && (
+        <span
+          slot="header-end"
+          class="shrink-0 text-xs text-muted-foreground"
+        >
+          Exit {result.exitStatus}
+        </span>
+      )
+    }
+  </CodeBlock>
   {result.limitation && <p class="text-xs leading-6 text-muted-foreground">{result.limitation}</p>}
 </div>

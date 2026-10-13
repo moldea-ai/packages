@@ -1,21 +1,38 @@
 ---
-import { ArrowUpRight } from '@lucide/astro';
+import { ArrowUpRight, CheckCircle2, CircleAlert, Info, TriangleAlert } from '@lucide/astro';
 import {
   DIAGNOSTIC_GROUP_PRESENTATIONS,
+  INSPECTION_SEVERITY_PRESENTATIONS,
   type IInspectionResultView,
 } from '@moldea.ai/website-ui/inspection-presentation';
 
+import ActionLink from '../action-link/action-link.component.astro';
 import InspectionDialog from '../inspection-dialog/inspection-dialog.component.astro';
-import InspectionFinding from '../inspection-finding/inspection-finding.component.astro';
-import StatusBadge from '../status-badge/status-badge.component.astro';
 
-// one compact result surface handles no findings, a single finding or an aggregate
+// every outcome uses the same compact action; detailed evidence belongs in its dialog
 export interface Props {
   id: string;
   result: IInspectionResultView;
 }
 const { id, result } = Astro.props;
 const dialogId = `${id}-result`;
+const icons = {
+  danger: CircleAlert,
+  info: Info,
+  neutral: Info,
+  success: CheckCircle2,
+  warning: TriangleAlert,
+};
+const single = result.findings.length === 1 ? result.findings[0] : undefined;
+const Icon = single ? DIAGNOSTIC_GROUP_PRESENTATIONS[single.group].icon : icons[result.tone];
+const toneClasses = {
+  danger: 'border-destructive/40 bg-destructive/10 [&_svg:first-child]:text-destructive',
+  info: 'border-info/40 bg-info/10 [&_svg:first-child]:text-info-foreground dark:[&_svg:first-child]:text-info',
+  neutral: 'border-border bg-muted',
+  success: 'border-success/40 bg-success/10 [&_svg:first-child]:text-success',
+  warning:
+    'border-warning/50 bg-warning/10 [&_svg:first-child]:text-warning-foreground dark:[&_svg:first-child]:text-warning',
+};
 const errors = result.findings.filter(({ severity }) => severity === 'error').length;
 const warnings = result.findings.filter(
   ({ severity, accepted }) => severity === 'warning' && !accepted,
@@ -31,73 +48,76 @@ const counts = [
 ---
 
 <div
-  class="min-w-0"
+  class="grid min-w-0 gap-2"
   data-inspection-list
 >
+  <ActionLink
+    href={single ? `#${dialogId}-finding-${single.id}` : `#${dialogId}`}
+    data-dialog-open={dialogId}
+    data-inspection-select={single?.id ?? ''}
+    aria-controls={dialogId}
+    aria-haspopup="dialog"
+    aria-label={`${result.label}: View result: ${single?.title ?? result.title}`}
+    variant="outline"
+    size="sm"
+    class={`min-h-10 w-full min-w-0 justify-start gap-3 text-foreground ${toneClasses[result.tone]}`}
+    data-inspection-outcome={result.label}
+  >
+    <Icon
+      class="size-5 shrink-0"
+      aria-hidden="true"
+    />
+    <span class="min-w-0 flex-1 text-start whitespace-normal"
+      >{result.label}{
+        result.findings.length > 1 && <span class="ml-2 text-xs font-normal">{counts}</span>
+      }</span
+    >
+    <ArrowUpRight
+      class="size-3.5 shrink-0 text-muted-foreground"
+      aria-hidden="true"
+    />
+  </ActionLink>
   {
-    result.findings.length !== 1 && (
-      <div class="flex min-w-0 flex-wrap items-center justify-between gap-3 py-2">
-        <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-          <p class="font-semibold">{result.findings.length > 1 ? counts : result.title}</p>
-          {result.findings.length === 0 && (
-            <StatusBadge
-              label={result.label}
-              tone={result.tone}
-              size="sm"
-            />
-          )}
-        </div>
-        <a
-          href={`#${dialogId}`}
-          data-dialog-open={dialogId}
-          data-inspection-select=""
-          aria-controls={dialogId}
-          aria-haspopup="dialog"
-          aria-label={`View output: ${result.title}`}
-          class="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-semibold text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          View output{' '}
-          <ArrowUpRight
-            class="size-3.5"
-            aria-hidden="true"
-          />
-        </a>
-      </div>
-    )
-  }
-  {
-    result.findings.length > 0 && (
+    result.findings.length > 1 && (
       <ul
-        class="grid min-w-0 gap-2"
+        class="grid w-full min-w-0 divide-y"
         aria-label="Inspection findings"
       >
-        {result.findings.map((finding) => (
-          <li class="min-w-0">
-            <a
-              href={`#${dialogId}-finding-${finding.id}`}
-              data-dialog-open={dialogId}
-              data-inspection-select={finding.id}
-              aria-controls={dialogId}
-              aria-haspopup="dialog"
-              class="block rounded-lg border bg-background p-3 transition-colors outline-none hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
-            >
-              <InspectionFinding
-                title={finding.title}
-                code={finding.code}
-                severity={finding.severity}
-                presentation={DIAGNOSTIC_GROUP_PRESENTATIONS[finding.group]}
-                path={finding.path}
-                accepted={finding.accepted}
+        {result.findings.map((finding) => {
+          const FindingIcon = INSPECTION_SEVERITY_PRESENTATIONS[finding.severity].icon;
+          return (
+            <li class="min-w-0">
+              <ActionLink
+                href={`#${dialogId}-finding-${finding.id}`}
+                data-dialog-open={dialogId}
+                data-inspection-select={finding.id}
+                aria-controls={dialogId}
+                aria-haspopup="dialog"
+                aria-label={`View finding: ${finding.title}`}
+                variant="ghost"
+                size="sm"
+                class="w-full min-w-0 justify-start px-1 text-start text-foreground"
               >
-                <ArrowUpRight
-                  slot="action"
-                  class="mt-1 size-4 shrink-0 text-muted-foreground"
+                <FindingIcon
+                  class:list={[
+                    'size-4 shrink-0',
+                    finding.accepted
+                      ? 'text-info-foreground dark:text-info'
+                      : finding.severity === 'error'
+                        ? 'text-destructive'
+                        : 'text-warning-foreground dark:text-warning',
+                  ]}
                   aria-hidden="true"
                 />
-              </InspectionFinding>
-            </a>
-          </li>
-        ))}
+                <span class="min-w-0 flex-1 truncate">{finding.title}</span>
+                <ArrowUpRight
+                  class="size-3.5 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              </ActionLink>
+            </li>
+          );
+        })}
       </ul>
     )
   }

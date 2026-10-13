@@ -86,7 +86,7 @@ test('shows source evidence without inventing content for an unavailable target'
   });
   expect(view.findings[0]?.evidence).toStrictEqual([
     { path: '/moldea/moldea.yaml', content: 'version: 1\n', language: 'yaml', isExcerpt: false },
-    { path: '/src/missing.ts', label: 'Referenced target', language: 'text' },
+    { path: '/src/missing.ts', label: 'Referenced target', language: 'text', isMissing: true },
   ]);
 });
 
@@ -147,4 +147,24 @@ test('rejects unsupported diagnostic groups instead of guessing a category', () 
       ]),
     }),
   ).toThrow();
+});
+
+test('does not mark an unprovided source missing when validation only reports an absent export', () => {
+  const exportDiagnostic = {
+    ...diagnostic,
+    code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
+    message: 'The referenced export is missing.',
+  };
+  const view = getCapabilityInspectionView({
+    ...example,
+    output: createRecordedOutput([
+      { result: { page: { records: [{ kind: 'diagnostic', ...exportDiagnostic }] } } },
+    ]),
+  });
+  expect(view.findings[0]?.evidence[1]).toStrictEqual({
+    path: '/src/missing.ts',
+    label: 'Referenced target',
+    language: 'text',
+    isMissing: false,
+  });
 });

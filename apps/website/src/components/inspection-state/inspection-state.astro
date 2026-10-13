@@ -26,7 +26,7 @@ const { state } = Astro.props;
   <div class="flex-1">
     <InspectionDiagram {state} />
   </div>
-  <div class:list={['mt-5 border-t pt-4', !state.result.valid && 'border-destructive/30']}>
+  <div class="mt-5 border-t pt-4">
     <InspectionResult
       id={`inspection-${state.id}`}
       result={state.result}

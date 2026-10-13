@@ -116,7 +116,12 @@ const page = await repository.listEntriesPage({ maxEntries: 16 });`,
               aria-labelledby={`package-${packageModel.slug}`}
               data-package-showcase
             >
-              <div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+              <div
+                class:list={[
+                  'grid items-center gap-8 lg:grid-cols-2 lg:gap-12',
+                  packageModel.slug === 'cli' && 'lg:items-start',
+                ]}
+              >
                 <div class="min-w-0">
                   <h2
                     class="section-title"

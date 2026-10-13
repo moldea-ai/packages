@@ -44,9 +44,7 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   await page.goto(guidePath);
   const packages = page.locator('#local-packages figure');
   await expect(packages).toContainText('checkEligibility');
-  await expect(packages.locator('[data-inspection-finding]').first()).toContainText(
-    'MOLDEA_REFERENCE_EXPORT_MISSING',
-  );
+  await expect(packages.locator('[data-inspection-outcome]').first()).toContainText('Invalid');
   await expect(packages.locator('svg.lucide-link-2').first()).toBeVisible();
   await packages.locator('[data-dialog-open]').first().click();
   const result = page.getByRole('dialog');

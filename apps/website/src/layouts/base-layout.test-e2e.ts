@@ -807,6 +807,54 @@ ${'long-line-'.repeat(32)}
   ).toBeGreaterThan(0);
 });
 
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`keeps command and JSON copy actions in their own headers in ${colorScheme}`, async ({
+    context,
+    page,
+  }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+    await page.goto(toPublicPath('/packages/'));
+    const example = page.locator('#cli');
+    const command = example.getByRole('region', { name: /^Command for / });
+    const commandSource = await command.locator('code').innerText();
+    const commandFrame = command.locator('..');
+    const commandHeader = commandFrame.locator('[data-code-block-header]');
+    await expect(commandHeader).toContainText('Command');
+    await expect(commandHeader).toContainText('Exit 1');
+    await expect(commandHeader).not.toContainText('Shell');
+    await expect(commandFrame.locator('[data-code-copy-header]')).toHaveCount(0);
+    await expect(command).toHaveCSS('padding-left', '16px');
+    await commandHeader.getByRole('button', { name: 'Copy code', exact: true }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(commandSource);
+    await example.locator('[data-inspection-outcome]').click();
+    const result = page.getByRole('dialog');
+    await expect(result.locator('[data-inspection-finding-card] [data-file-preview]')).toHaveCount(
+      0,
+    );
+    await result.getByRole('tab', { name: 'Output', exact: true }).click();
+    const output = result.locator('[data-inspection-output]');
+    const outputHeader = output.locator('[data-code-block-header]');
+    await expect(outputHeader.getByText(commandSource, { exact: true })).toBeVisible();
+    await expect(outputHeader).toContainText('Exit 1');
+    await expect(output).not.toContainText('Complete recorded response');
+    await expect(output.locator('[data-code-copy-header]')).toHaveCount(0);
+    const json = await output.locator('pre code').innerText();
+    expect(JSON.parse(json)).toHaveProperty('schemaVersion', 7);
+    await outputHeader.getByRole('button', { name: 'Copy code', exact: true }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(json);
+    for (const header of [commandHeader, outputHeader]) {
+      expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+        true,
+      );
+    }
+    expect(
+      (await new AxeBuilder({ page }).include('dialog[open]').analyze()).violations,
+    ).toStrictEqual([]);
+  });
+}
+
 test('honors code-copy opt-outs without affecting neighboring blocks', async ({ page }) => {
   await page.goto(toPublicPath('/'));
 

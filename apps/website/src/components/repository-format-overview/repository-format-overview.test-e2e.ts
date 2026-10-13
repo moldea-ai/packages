@@ -35,7 +35,16 @@ test('distinguishes required repository files from optional project knowledge', 
     overview.getByRole('link', { name: 'Read the format specification' }),
   ).toHaveAttribute('href', toPublicPath('/repository-format/'));
   const opener = overview.locator('[data-dialog-open="repository-overview-result"]');
-  await expect(opener).toContainText('MOLDEA_REFERENCE_MISSING');
+  const preview = overview.getByRole('region', {
+    name: 'Validation response excerpt',
+    exact: true,
+  });
+  const result = loadWebsiteModel().inspectionExample[1].result;
+  expect(JSON.parse(await preview.innerText())).toStrictEqual({
+    valid: result.valid,
+    diagnostics: result.diagnostics.map(({ code, severity, path }) => ({ code, severity, path })),
+  });
+  await expect(preview).not.toHaveAttribute('data-code-copy-enhanced');
   await opener.click();
   const dialog = page.locator('#repository-overview-result');
   await expect(dialog.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();

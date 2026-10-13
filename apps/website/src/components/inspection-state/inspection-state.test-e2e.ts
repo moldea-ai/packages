@@ -26,7 +26,7 @@ for (const width of [320, 1440]) {
         await page.keyboard.press('Enter');
         const resultTitle = {
           connected: 'Path found',
-          broken: state.result.diagnostics[0]?.message,
+          broken: '1 broken reference',
           repaired: 'Check passes',
         }[state.id];
         const dialog = page.getByRole('dialog', { name: resultTitle, exact: true });
@@ -46,7 +46,7 @@ for (const width of [320, 1440]) {
           await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
         } else await expect(dialog.getByRole('tab')).toHaveCount(0);
         const code = dialog.getByRole('region', {
-          name: 'Complete recorded response',
+          name: 'JSON',
           exact: true,
         });
         expect(JSON.parse(await code.locator('code').innerText())).toStrictEqual(state.result);
@@ -186,7 +186,7 @@ for (const width of [320, 1440]) {
       const trigger = page.locator('[data-dialog-open="hero-check-result"]');
       await trigger.click();
       const dialog = page.getByRole('dialog', {
-        name: 'The registered tool implementation is missing.',
+        name: '1 broken reference',
         exact: true,
       });
       await dialog.evaluate((element) => {
@@ -271,7 +271,7 @@ test('finishes an interrupted exit when reduced motion changes and can reopen', 
   const trigger = page.locator('[data-dialog-open="hero-check-result"]');
   await trigger.click();
   const dialog = page.getByRole('dialog', {
-    name: 'The registered tool implementation is missing.',
+    name: '1 broken reference',
     exact: true,
   });
   await dialog.evaluate((element) => {
@@ -295,7 +295,7 @@ test('an obsolete exit cannot close a reopened dialog', async ({ page }) => {
   const trigger = page.locator('[data-dialog-open="hero-check-result"]');
   await trigger.click();
   const dialog = page.getByRole('dialog', {
-    name: 'The registered tool implementation is missing.',
+    name: '1 broken reference',
     exact: true,
   });
   await dialog.evaluate(async (element) => {

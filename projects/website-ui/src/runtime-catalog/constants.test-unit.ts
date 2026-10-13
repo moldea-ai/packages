@@ -73,7 +73,7 @@ const permittedAttributes = new Set([
 ]);
 
 describe('runtime catalog', () => {
-  test('puts Mastra in the first three desktop rows, immediately before eve', () => {
+  test('puts eve in the first three desktop rows, immediately before Mastra', () => {
     expect(RUNTIME_CATALOG.slice(0, 9).map(({ id }) => id)).toStrictEqual([
       'anthropic',
       'openai',
@@ -83,9 +83,9 @@ describe('runtime catalog', () => {
       'langchain',
       'langgraph',
       'openai-agents-sdk',
-      'mastra',
+      'eve',
     ]);
-    expect(RUNTIME_CATALOG[9]?.id).toBe('eve');
+    expect(RUNTIME_CATALOG[9]?.id).toBe('mastra');
   });
 
   test('matches every Core runtime label exactly once, excluding custom', () => {

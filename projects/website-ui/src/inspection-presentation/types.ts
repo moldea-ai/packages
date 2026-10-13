@@ -28,6 +28,7 @@ export interface IInspectionEvidence {
   language: string;
   content?: string;
   isExcerpt?: boolean;
+  isMissing?: boolean;
 }
 
 export interface IInspectionFindingView {

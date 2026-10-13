@@ -61,8 +61,11 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(trigger).toBeVisible();
       const triggerBounds = await trigger.boundingBox();
       expect(triggerBounds!.height).toBeGreaterThanOrEqual(36);
-      await expect(preview.locator('[data-inspection-finding]')).toContainText(
-        'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
+      await expect(trigger).toContainText('Invalid');
+      await expect(trigger.locator('svg.lucide-bot')).toHaveCount(1);
+      expect(triggerBounds!.width).toBeCloseTo(
+        (await trigger.locator('..').boundingBox())!.width,
+        0,
       );
       const badges = hero.getByRole('list', { name: 'Package foundations' });
       await expect(badges.getByRole('listitem')).toHaveCount(3);
@@ -129,7 +132,7 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(trigger).not.toHaveCSS('box-shadow', 'none');
       await page.keyboard.press('Enter');
       const dialog = page.getByRole('dialog', {
-        name: 'The registered tool implementation is missing.',
+        name: '1 broken reference',
         exact: true,
       });
       await expect(dialog).toBeVisible();

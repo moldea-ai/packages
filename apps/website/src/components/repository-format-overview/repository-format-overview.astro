@@ -11,6 +11,7 @@ import {
   ScanSearch,
 } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
+import CodeBlock from '@moldea.ai/website-ui/code-block';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
@@ -22,6 +23,14 @@ interface Props {
   files: IInspectionExampleState['files'];
 }
 const { repositoryFormatRoute, result, files } = Astro.props;
+const outputPreview = JSON.stringify(
+  {
+    valid: result.valid,
+    diagnostics: result.diagnostics.map(({ code, severity, path }) => ({ code, severity, path })),
+  },
+  null,
+  2,
+);
 const canonicalFiles = [
   { name: 'moldea.yaml', isRequired: true },
   { name: 'project.md', isRequired: true },
@@ -168,7 +177,16 @@ const canonicalFiles = [
             aria-hidden="true"
           />
         </div>
-        <div class="theme-surface-selection rounded-lg bg-background p-3 text-foreground">
+        <div
+          class="theme-surface-selection grid min-w-0 gap-3 rounded-lg bg-background p-3 text-foreground"
+        >
+          <CodeBlock
+            source={outputPreview}
+            language="json"
+            headerLabel="JSON excerpt"
+            copyable={false}
+            ariaLabel="Validation response excerpt"
+          />
           <InspectionResult
             id="repository-overview"
             {result}

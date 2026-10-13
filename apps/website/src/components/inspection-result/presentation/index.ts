@@ -82,7 +82,19 @@ const findingView = (
           }),
     }));
   if (typeof referencedPath === 'string' && !evidence.some((file) => file.path === referencedPath))
-    evidence.push({ path: referencedPath, label: 'Referenced target', language: 'text' });
+    evidence.push({
+      path: referencedPath,
+      label: 'Referenced target',
+      language: 'text',
+      isMissing: [
+        'MOLDEA_REFERENCE_MISSING',
+        'MOLDEA_DECISION_REFERENCE_MISSING',
+        'MOLDEA_RUNTIME_GUIDANCE_MISSING',
+        'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
+        'MOLDEA_SKILL_IMPLEMENTATION_MISSING',
+        'MOLDEA_INTEGRATION_SKILL_MISSING',
+      ].includes(finding.code),
+    });
   return {
     id: `finding-${index + 1}`,
     title: finding.message,
@@ -107,12 +119,7 @@ const outputView = (
     null,
     2,
   ),
-  outputLabel:
-    output.kind === 'execution-facts'
-      ? 'Execution facts'
-      : output.responses.length === 1
-        ? 'Complete recorded response'
-        : 'Complete recorded responses, in order',
+  outputLabel: output.kind === 'execution-facts' ? 'Execution facts' : 'JSON',
   redactions: output.redactions.map(
     ({ responseIndex, pointer, reason }) => `Response ${responseIndex + 1}: ${pointer} (${reason})`,
   ),
