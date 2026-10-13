@@ -14,22 +14,14 @@ import ActionLink from '@moldea.ai/website-ui/action-link';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
+import { InspectionResult } from '../inspection-result/index.ts';
 
 interface Props {
   repositoryFormatRoute: string;
   result: IInspectionExampleState['result'];
+  files: IInspectionExampleState['files'];
 }
-const { repositoryFormatRoute, result } = Astro.props;
-const output = JSON.stringify(
-  {
-    valid: result.valid,
-    errorCount: result.errorCount,
-    warningCount: result.warningCount,
-    diagnostics: result.diagnostics.map(({ code, path, severity }) => ({ code, path, severity })),
-  },
-  null,
-  2,
-);
+const { repositoryFormatRoute, result, files } = Astro.props;
 const canonicalFiles = [
   { name: 'moldea.yaml', isRequired: true },
   { name: 'project.md', isRequired: true },
@@ -176,16 +168,14 @@ const canonicalFiles = [
             aria-hidden="true"
           />
         </div>
-        <pre
-          class="code-block rounded-lg border border-primary-foreground/20 bg-primary/55 p-4 font-mono text-xs leading-6"
-          data-code-copy="false"
-          tabindex="0"
-          role="region"
-          aria-label="Core validation result excerpt"><code>{output}</code></pre>
-        <p class="mt-4 text-xs leading-6 text-current/80">
-          This is an excerpt from the moved-file example. The full result also includes
-          formatVersion, summary, source, coverage, coverageCounts, and complete diagnostic records.
-        </p>
+        <div class="theme-surface-selection rounded-lg bg-background p-3 text-foreground">
+          <InspectionResult
+            id="repository-overview"
+            {result}
+            {files}
+            summary="broken"
+          />
+        </div>
       </article>
     </div>
     <div class="mt-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">

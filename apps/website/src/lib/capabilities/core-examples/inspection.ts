@@ -3,7 +3,11 @@ import { parseRepositoryPath } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import type { ICapabilityCase, ICapabilityFact } from '../index.ts';
-import { assertCapabilityFacts, captureOperationalRefusal } from '../index.ts';
+import {
+  assertCapabilityFacts,
+  captureOperationalRefusal,
+  createRecordedOutput,
+} from '../index.ts';
 import { projectFile } from '../index.ts';
 import { MANAGED_INTEGRATION_ENTRIES } from '../integration-fixture/index.ts';
 
@@ -33,6 +37,7 @@ const operationCase = (
   title: string,
   description: string,
   facts: Record<string, ICapabilityFact>,
+  responses?: unknown[],
 ): ICapabilityCase => ({
   id,
   groupId: 'repository-access',
@@ -46,6 +51,10 @@ const operationCase = (
     'projects/core/docs/text-and-parsing.md',
   ],
   files: [],
+  output: createRecordedOutput(
+    responses ?? [facts],
+    responses === undefined ? 'execution-facts' : 'response',
+  ),
   result: { kind: 'inspection', facts },
 });
 
@@ -126,6 +135,7 @@ context:
       },
       pages,
     },
+    diagnosticPages,
   );
 };
 
@@ -155,6 +165,7 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
         utf8ByteLength: normalized.text?.utf8ByteLength ?? null,
         scalarLength: normalized.text?.scalarLength ?? null,
       },
+      [normalized],
     ),
   );
   const digestInputs = [text, `\uFEFF${text.replaceAll('\n', '\r\n')}`, text.replace('30', '60')];
@@ -184,6 +195,7 @@ export const createCoreInspectionExamples = async (): Promise<ICapabilityCase[]>
         changedDigest: changed.digest,
         inputs: digestInputs,
       },
+      digests,
     ),
   );
 
@@ -214,6 +226,7 @@ context:
   });
   for (const view of ['metadata', 'diagnostics', 'coverage'] as const) {
     const pages: ICapabilityFact[] = [];
+    const responses: unknown[] = [];
     let cursor: string | undefined;
     let recordCount = 0;
     let totalItems: number;
@@ -224,6 +237,7 @@ context:
         maxItems: 1,
         ...(cursor === undefined ? {} : { cursor }),
       });
+      responses.push(result);
       const records = result.page.records.map(({ item }): ICapabilityFact =>
         item.kind === 'agent'
           ? {
@@ -272,6 +286,7 @@ context:
         `${view === 'metadata' ? 'Assignments and asset metadata' : view === 'diagnostics' ? 'Diagnostics' : 'Binding coverage'} in bounded pages`,
         'The requested view returns records and a stable inspection digest, without canonical document bodies.',
         { view, totalItems, inspectionDigest: digest, pages },
+        responses,
       ),
     );
   }
@@ -285,6 +300,7 @@ context:
     ]),
   );
   const chunks: ICapabilityFact[] = [];
+  const contentResponses: unknown[] = [];
   let offset = 0;
   let reconstructed = '';
   do {
@@ -294,6 +310,7 @@ context:
       offset,
       maxBytes: 4,
     });
+    contentResponses.push(page);
     reconstructed += page.content;
     assertCapabilityFacts(
       [page.totalBytes, page.byteStart, page.byteEnd],
@@ -324,6 +341,7 @@ context:
       'Read text without splitting a character',
       'An explicit content request returns Unicode-safe chunks of one canonical document.',
       { chunks },
+      contentResponses,
     ),
   );
   examples.push(
@@ -395,6 +413,7 @@ context:
         declaration: { ...declaration },
       })),
     },
+    [scope],
   );
   scopeCase.limitation =
     'Relevance does not prove semantic impact or that an unresolved requirement has been satisfied.';

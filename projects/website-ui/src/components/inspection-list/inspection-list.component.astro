@@ -1,0 +1,108 @@
+---
+import { ArrowUpRight } from '@lucide/astro';
+import {
+  DIAGNOSTIC_GROUP_PRESENTATIONS,
+  type IInspectionResultView,
+} from '@moldea.ai/website-ui/inspection-presentation';
+
+import InspectionDialog from '../inspection-dialog/inspection-dialog.component.astro';
+import InspectionFinding from '../inspection-finding/inspection-finding.component.astro';
+import StatusBadge from '../status-badge/status-badge.component.astro';
+
+// one compact result surface handles no findings, a single finding or an aggregate
+export interface Props {
+  id: string;
+  result: IInspectionResultView;
+}
+const { id, result } = Astro.props;
+const dialogId = `${id}-result`;
+const errors = result.findings.filter(({ severity }) => severity === 'error').length;
+const warnings = result.findings.filter(
+  ({ severity, accepted }) => severity === 'warning' && !accepted,
+).length;
+const accepted = result.findings.filter((finding) => finding.accepted).length;
+const counts = [
+  errors && `${errors} error${errors === 1 ? '' : 's'}`,
+  warnings && `${warnings} warning${warnings === 1 ? '' : 's'}`,
+  accepted && `${accepted} accepted`,
+]
+  .filter(Boolean)
+  .join(' · ');
+---
+
+<div
+  class="min-w-0"
+  data-inspection-list
+>
+  {
+    result.findings.length !== 1 && (
+      <div class="flex min-w-0 flex-wrap items-center justify-between gap-3 py-2">
+        <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+          <p class="font-semibold">{result.findings.length > 1 ? counts : result.title}</p>
+          {result.findings.length === 0 && (
+            <StatusBadge
+              label={result.label}
+              tone={result.tone}
+              size="sm"
+            />
+          )}
+        </div>
+        <a
+          href={`#${dialogId}`}
+          data-dialog-open={dialogId}
+          data-inspection-select=""
+          aria-controls={dialogId}
+          aria-haspopup="dialog"
+          aria-label={`View output: ${result.title}`}
+          class="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-semibold text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          View output{' '}
+          <ArrowUpRight
+            class="size-3.5"
+            aria-hidden="true"
+          />
+        </a>
+      </div>
+    )
+  }
+  {
+    result.findings.length > 0 && (
+      <ul
+        class="grid min-w-0 gap-2"
+        aria-label="Inspection findings"
+      >
+        {result.findings.map((finding) => (
+          <li class="min-w-0">
+            <a
+              href={`#${dialogId}-finding-${finding.id}`}
+              data-dialog-open={dialogId}
+              data-inspection-select={finding.id}
+              aria-controls={dialogId}
+              aria-haspopup="dialog"
+              class="block rounded-lg border bg-background p-3 transition-colors outline-none hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+            >
+              <InspectionFinding
+                title={finding.title}
+                code={finding.code}
+                severity={finding.severity}
+                presentation={DIAGNOSTIC_GROUP_PRESENTATIONS[finding.group]}
+                path={finding.path}
+                accepted={finding.accepted}
+              >
+                <ArrowUpRight
+                  slot="action"
+                  class="mt-1 size-4 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              </InspectionFinding>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  <InspectionDialog
+    id={dialogId}
+    result={result}
+  />
+</div>

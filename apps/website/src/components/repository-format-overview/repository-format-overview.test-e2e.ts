@@ -2,6 +2,8 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 
+import { loadWebsiteModel } from '../../lib/generation/generation.ts';
+
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const toPublicPath = (route: string): string => withBase(route, basePath);
 
@@ -32,17 +34,18 @@ test('distinguishes required repository files from optional project knowledge', 
   await expect(
     overview.getByRole('link', { name: 'Read the format specification' }),
   ).toHaveAttribute('href', toPublicPath('/repository-format/'));
-  const output = overview.getByLabel('Core validation result excerpt');
-  await expect(output).toBeVisible();
-  expect(JSON.parse(await output.innerText())).toStrictEqual({
-    valid: false,
-    errorCount: 1,
-    warningCount: 0,
-    diagnostics: [
-      { code: 'MOLDEA_REFERENCE_MISSING', path: '/moldea/moldea.yaml', severity: 'error' },
-    ],
-  });
-  await expect(overview).toContainText('The full result also includes formatVersion');
+  const opener = overview.locator('[data-dialog-open="repository-overview-result"]');
+  await expect(opener).toContainText('MOLDEA_REFERENCE_MISSING');
+  await opener.click();
+  const dialog = page.locator('#repository-overview-result');
+  await expect(dialog.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
+  await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
+  const output = dialog.locator('[data-inspection-output] pre');
+  expect(JSON.parse(await output.innerText())).toStrictEqual(
+    loadWebsiteModel().inspectionExample[1].result,
+  );
+  await page.keyboard.press('Escape');
+  await expect(opener).toBeFocused();
 });
 
 test('visually separates the repository architecture from the example in both themes', async ({

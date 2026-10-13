@@ -4,6 +4,9 @@ export type {
   IFindingCategory,
   IInspectionPresentation,
   IInspectionSeverity,
+  IInspectionEvidence,
+  IInspectionFindingView,
+  IInspectionResultView,
 } from './types.js';
 
 // constants

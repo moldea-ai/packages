@@ -56,16 +56,16 @@ export const RUNTIME_CATALOG = [
     darkLogoPath: '@moldea.ai/website-ui/runtime-logos/openai-dark.svg',
   },
   {
-    id: 'eve',
-    websiteUrl: 'https://eve.dev/',
-    displayName: 'eve',
-    logoPath: '@moldea.ai/website-ui/runtime-logos/vercel.svg',
-  },
-  {
     id: 'mastra',
     websiteUrl: 'https://mastra.ai/',
     displayName: 'Mastra',
     logoPath: '@moldea.ai/website-ui/runtime-logos/mastra.svg',
+  },
+  {
+    id: 'eve',
+    websiteUrl: 'https://eve.dev/',
+    displayName: 'eve',
+    logoPath: '@moldea.ai/website-ui/runtime-logos/vercel.svg',
   },
   {
     id: 'cloudflare-agents',

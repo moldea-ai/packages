@@ -206,8 +206,12 @@ const afterInstruction = 'Approve eligible refunds using the order details.';
           <figcaption class="mb-6">
             <h3
               id={`example-${connectionExample.id}-title`}
-              class="text-lg font-semibold"
+              class="flex items-start gap-2 text-lg font-semibold"
             >
+              <GitPullRequest
+                class="mt-1 size-5 shrink-0"
+                aria-hidden="true"
+              />
               {connectionExample.title}
             </h3>
           </figcaption>
@@ -288,7 +292,7 @@ const afterInstruction = 'Approve eligible refunds using the order details.';
 
       <section
         id="pr-assurance"
-        class="grid scroll-mt-24 items-center gap-8 border-t pt-10 lg:grid-cols-2 lg:gap-16"
+        class="grid scroll-mt-24 items-start gap-8 border-t pt-10 lg:grid-cols-2 lg:gap-16"
         aria-labelledby="assurance-title"
         data-ecosystem-section
       >
@@ -343,15 +347,13 @@ const afterInstruction = 'Approve eligible refunds using the order details.';
             label="Changed support instruction"
             tone="danger"
           >
-            <div class="p-3">
-              <CodeDiff
-                oldValue={beforeInstruction}
-                newValue={afterInstruction}
-                language="markdown"
-                variant="plain"
-                ariaLabel="Changed support instruction"
-              />
-            </div>
+            <CodeDiff
+              oldValue={beforeInstruction}
+              newValue={afterInstruction}
+              language="markdown"
+              variant="plain"
+              ariaLabel="Changed support instruction"
+            />
           </FilePreview>
           <div class="border-t pt-4">
             <InspectionFinding

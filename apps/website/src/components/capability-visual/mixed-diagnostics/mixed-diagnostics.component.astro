@@ -1,8 +1,7 @@
 ---
 import { z } from 'zod';
 
-import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';
-import { DIAGNOSTIC_GROUP_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';
+import StatusBadge from '@moldea.ai/website-ui/status-badge';
 
 import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
 
@@ -23,11 +22,6 @@ if (
   counts.warnings !== 2
 )
   throw new Error('Mixed diagnostic illustration requires complete inspection counts.');
-const findingTitles: Record<string, string> = {
-  MOLDEA_IMPACT_PATTERN_UNMATCHED: 'No files match the declared relationship',
-  MOLDEA_INTEGRATION_BLOCK_MISSING: 'Project setup guidance is missing',
-  MOLDEA_REFERENCE_EXPORT_MISSING: 'Declared export missing',
-};
 const pages = getCapabilityFactRows(example.result.facts.pages);
 if (pages.length !== 3) throw new Error('Mixed diagnostic illustration requires three pages.');
 const entries = pages.map((page, index) => {
@@ -39,17 +33,9 @@ const entries = pages.map((page, index) => {
     page.hasContinuation !== index < pages.length - 1
   )
     throw new Error('Mixed diagnostic illustration requires a paginated diagnostic.');
-  const group = z
-    .enum(['discovery', 'manifest', 'references', 'agents', 'mirrors', 'integration'])
-    .parse(record.group);
-  const title = findingTitles[record.code];
-  if (!title) throw new Error('Mixed diagnostic illustration requires a known finding title.');
   return {
-    title,
     page: index + 1,
-    code: record.code,
     severity: z.enum(['error', 'warning']).parse(record.severity),
-    group,
   };
 });
 ---
@@ -64,18 +50,17 @@ const entries = pages.map((page, index) => {
     {counts.errors} error.
   </p>
   <ol
-    class="divide-y rounded-lg border px-3"
+    class="grid gap-2 sm:grid-cols-3"
     aria-label="Diagnostic pages"
   >
     {
       entries.map((entry) => (
-        <li class="min-w-0 py-3">
-          <span class="sr-only">Page {entry.page}</span>
-          <InspectionFinding
-            title={entry.title}
-            code={entry.code}
-            severity={entry.severity}
-            presentation={DIAGNOSTIC_GROUP_PRESENTATIONS[entry.group]}
+        <li class="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-xs">
+          <span>Page {entry.page}</span>
+          <StatusBadge
+            label={entry.severity === 'error' ? '1 error' : '1 warning'}
+            tone={entry.severity === 'error' ? 'danger' : 'warning'}
+            size="sm"
           />
         </li>
       ))

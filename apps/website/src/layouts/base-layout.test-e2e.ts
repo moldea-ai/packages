@@ -790,20 +790,31 @@ ${'long-line-'.repeat(32)}
 
   await page.goto(toPublicPath('/capabilities/'));
   await expect(
-    page.locator('[data-capability-visual="command"] pre[data-code-copy-enhanced="true"]'),
-  ).toHaveCount(10);
+    page.locator(
+      '[data-capability-visual="command"] pre[aria-label^="Command for "][data-code-copy-enhanced="true"]',
+    ),
+  ).toHaveCount(11);
   await expect(
-    page.locator('#cli-invalid-project pre[data-code-copy-enhanced="true"]'),
-  ).toHaveCount(0);
+    page.locator(
+      '#cli-invalid-project pre[aria-label="Manifest binding for the eligibility check"]',
+    ),
+  ).not.toHaveAttribute('data-code-copy-enhanced');
   await expect(
-    page.locator('dialog[id^="result-"] pre[data-code-copy-enhanced="true"]'),
+    page.locator('[data-inspection-output] pre:not([data-code-copy-enhanced="true"])'),
   ).toHaveCount(0);
+  expect(
+    await page.locator('[data-inspection-output] pre[data-code-copy-enhanced="true"]').count(),
+  ).toBeGreaterThan(0);
 });
 
 test('honors code-copy opt-outs without affecting neighboring blocks', async ({ page }) => {
   await page.goto(toPublicPath('/'));
 
-  const optedOutExcerpt = page.locator('pre[data-code-copy="false"]');
+  await page.goto(toPublicPath('/packages/'));
+  const optedOutExcerpt = page.getByRole('region', {
+    name: '@moldea.ai/repository-fs usage excerpt',
+    exact: true,
+  });
 
   await expect(optedOutExcerpt).toHaveCount(1);
   await expect(optedOutExcerpt).not.toHaveAttribute('data-code-copy-enhanced');

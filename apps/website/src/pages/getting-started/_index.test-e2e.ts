@@ -48,10 +48,11 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
     'MOLDEA_REFERENCE_EXPORT_MISSING',
   );
   await expect(packages.locator('svg.lucide-link-2').first()).toBeVisible();
-  await packages.getByRole('button', { name: /^View result:/u }).click();
+  await packages.locator('[data-dialog-open]').first().click();
   const result = page.getByRole('dialog');
   await expect(result).toContainText('MOLDEA_REFERENCE_EXPORT_MISSING');
   await expect(result).toContainText('canReturn');
+  await result.getByRole('tab', { name: 'Output', exact: true }).click();
   await expect(result).toContainText('coverageCounts');
   await expect(result).toContainText('exportsFailed');
   await page.keyboard.press('Escape');

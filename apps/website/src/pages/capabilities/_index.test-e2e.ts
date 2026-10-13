@@ -4,9 +4,7 @@ import { DEFAULT_BASE_PATH, normalizeBasePath, withBase } from '@moldea.ai/websi
 
 import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 import { getCapabilityShowcase, getCapabilityVisualFamily } from '../../lib/capabilities/index.ts';
-
-// retain failure traces without copying the complete catalog DOM on every assertion
-test.use({ trace: { mode: 'retain-on-failure', snapshots: false } });
+import { getCapabilityInspectionView } from '../../components/inspection-result/presentation/index.ts';
 
 const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const route = withBase('/capabilities/', basePath);
@@ -221,9 +219,18 @@ test('opens every executed illustration once with its truthful visual and result
       getCapabilityVisualFamily(example),
     );
     await expect(dialog.locator('[data-capability-summary]')).not.toBeEmpty();
-    await expect(
-      dialog.getByRole('button', { name: `View result: ${example.title}`, exact: true }),
-    ).toBeVisible();
+    const view = getCapabilityInspectionView(example);
+    const resultOpener = dialog.locator('[data-dialog-open]').first();
+    await resultOpener.click();
+    const result = page.locator(`#${example.id}-result`);
+    await expect(result).toBeVisible();
+    if (view.findings.length > 0)
+      await result.getByRole('tab', { name: 'Output', exact: true }).click();
+    expect(
+      JSON.parse(await result.locator('[data-inspection-output] pre').innerText()),
+    ).toStrictEqual(JSON.parse(view.output));
+    await page.keyboard.press('Escape');
+    await expect(resultOpener).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
   }
@@ -236,7 +243,7 @@ test('opens every executed illustration once with its truthful visual and result
     ['canonical-content-pages', 'Bytes 3 to 7'],
     ['reader-cancellation', 'Read cancelled'],
     ['policy-reference-connected', 'Declared target in moldea.yaml'],
-    ['cli-composition', 'Command completed'],
+    ['cli-composition', 'Exit 0: completed'],
   ])
     await expect(page.locator(`#${id}`)).toContainText(text);
   await expect(page.locator('#binding-export-passed')).toContainText('A declared export exists');
@@ -256,17 +263,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
     const trigger = triggerFor(page, example.id);
     await trigger.click();
     const illustration = page.locator(`#example-${example.id}`);
-    const resultTrigger = illustration.getByRole('button', {
-      name: `View result: ${example.title}`,
-      exact: true,
-    });
+    const resultTrigger = illustration.locator('[data-dialog-open]').first();
     await resultTrigger.click();
-    const result = page.locator(`#result-${example.id}`);
+    const result = page.locator(`#${example.id}-result`);
     await expect(page.locator('dialog:modal')).toHaveCount(2);
-    await expect(result).toContainText('warningCount');
-    await expect(result).toContainText(example.packageName);
+    await expect(result.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
+    await result.getByRole('tab', { name: 'Output', exact: true }).click();
+    await expect(result.locator('[data-inspection-output]')).toContainText('warningCount');
     const codeRegion = result.getByRole('region', {
-      name: `Result excerpt for ${example.title}`,
+      name: getCapabilityInspectionView(example).outputLabel,
     });
     await expect(codeRegion).toHaveAttribute('tabindex', '0');
     await expect(codeRegion.locator('code')).toHaveClass('language-json');
@@ -280,7 +285,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       true,
     );
     expect(
-      (await new AxeBuilder({ page }).include(`#result-${example.id}`).analyze()).violations,
+      (await new AxeBuilder({ page }).include(`#${example.id}-result`).analyze()).violations,
     ).toStrictEqual([]);
     await page.keyboard.press('Escape');
     await expect(result).toBeHidden();
@@ -308,7 +313,7 @@ test('keeps one complete illustration catalog readable without JavaScript', asyn
       catalog.cases.length,
     );
     await expect(page.locator('dialog[data-dialog-fallback-open][open]')).toHaveCount(
-      catalog.cases.length,
+      catalog.cases.length * 2,
     );
     await expect(page.getByRole('button', { name: /^Open example:/u })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(

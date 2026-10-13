@@ -8,7 +8,6 @@ import {
   getCapabilityVisualFamily,
   getCapabilityOutcome,
   getCapabilityShowcase,
-  getCapabilityResultExcerpt,
 } from './presentation.ts';
 import { CAPABILITY_GROUPS } from './catalog.ts';
 import type { ICapabilityCase, ICapabilityResult } from './types.ts';
@@ -23,20 +22,13 @@ const example: ICapabilityCase = {
   operation: 'validateProject',
   sourcePaths: [],
   files: [],
+  output: {
+    kind: 'execution-facts',
+    responses: [{ valid: true, diagnostics: [] }],
+    redactions: [],
+  },
   result: { kind: 'validation', valid: true, diagnostics: [] },
 };
-const cliEnvelopeExcerpt = (
-  status: Extract<ICapabilityResult, { kind: 'cli' }>['status'],
-  command: string,
-) => ({
-  cliVersion: '11.0.0',
-  command,
-  error: null,
-  result: {},
-  schemaVersion: 7 as const,
-  status,
-});
-
 test('orders every case once with four featured cases per category', () => {
   const groups = CAPABILITY_GROUPS;
   const featured = groups.flatMap((group) =>
@@ -168,7 +160,6 @@ describe('getCapabilityOutcome', () => {
           exitStatus: 0,
           command: 'moldea validate --json',
           facts: { warningCount: 1 },
-          envelopeExcerpt: cliEnvelopeExcerpt('valid', 'validate'),
         },
       }),
     ).toMatchObject({
@@ -192,7 +183,6 @@ describe('getCapabilityOutcome', () => {
         exitStatus: 0,
         command: 'moldea inspect --json',
         facts: {},
-        envelopeExcerpt: cliEnvelopeExcerpt('valid', 'inspect'),
       },
       'Completed',
       'info',
@@ -205,7 +195,6 @@ describe('getCapabilityOutcome', () => {
         exitStatus: 1,
         command: 'moldea validate --json',
         facts: {},
-        envelopeExcerpt: cliEnvelopeExcerpt('invalid', 'validate'),
       },
       'Invalid',
       'danger',
@@ -218,7 +207,6 @@ describe('getCapabilityOutcome', () => {
         exitStatus: 3,
         command: 'moldea content --json',
         facts: {},
-        envelopeExcerpt: cliEnvelopeExcerpt('error', 'content'),
       },
       'Refused',
       'warning',
@@ -233,43 +221,6 @@ describe('getCapabilityOutcome', () => {
       });
     },
   );
-});
-
-test('publishes coverage and accepted-warning counts without mutating the result', () => {
-  const result: ICapabilityResult = {
-    kind: 'validation',
-    valid: true,
-    errorCount: 0,
-    warningCount: 0,
-    acceptedWarningCount: 0,
-    diagnostics: [],
-    coverage: [
-      {
-        entity: { contextPath: parseRepositoryPath('/moldea/project.md') },
-        relationship: 'context-binding',
-        path: '/src/returns.cjs',
-        symbol: 'canReturn',
-        fileCheck: 'passed',
-        exportCheck: 'not-checked',
-        exportNotCheckedReason: 'unsupported-file-type',
-      },
-    ],
-    coverageCounts: { bindings: 1, exportsPassed: 0, exportsFailed: 0, exportsNotChecked: 1 },
-  };
-  const before = structuredClone(result);
-  expect(getCapabilityResultExcerpt(result)).toStrictEqual({
-    valid: true,
-    errorCount: 0,
-    warningCount: 0,
-    acceptedWarningCount: 0,
-    diagnostics: [],
-    coverage: result.coverage,
-    coverageCounts: result.coverageCounts,
-  });
-  expect(result).toStrictEqual(before);
-  expect(getCapabilityResultExcerpt({ kind: 'reader', facts: { code: 'ABORTED' } })).toStrictEqual({
-    code: 'ABORTED',
-  });
 });
 
 test.each([null, 'invalid', [null], [true], [[]]])(

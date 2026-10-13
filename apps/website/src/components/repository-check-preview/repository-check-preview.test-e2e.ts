@@ -8,9 +8,7 @@ const homepage = withBase('/', process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 
 for (const width of [320, 768, 1024, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
-    test(`introduces the real repository check at ${width}px in ${theme}`, async ({
-      page,
-    }, testInfo) => {
+    test(`introduces the real repository check at ${width}px in ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme });
       await page.goto(homepage);
@@ -59,17 +57,13 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(preview).not.toContainText('src/refund-policy.ts');
       await expect(preview.getByText('Example', { exact: true })).toHaveCount(0);
       await expect(preview.locator('details, pre:visible')).toHaveCount(0);
-      const trigger = preview
-        .locator('figcaption')
-        .getByRole('button', { name: 'View result: Hero example', exact: true });
+      const trigger = preview.locator('[data-dialog-open="hero-check-result"]');
       await expect(trigger).toBeVisible();
       const triggerBounds = await trigger.boundingBox();
-      expect(triggerBounds!.height).toBe(32);
-      await expect(
-        preview
-          .getByRole('group', { name: 'Check outcome', exact: true })
-          .getByText('1 broken reference', { exact: true }),
-      ).toBeVisible();
+      expect(triggerBounds!.height).toBeGreaterThanOrEqual(36);
+      await expect(preview.locator('[data-inspection-finding]')).toContainText(
+        'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
+      );
       const badges = hero.getByRole('list', { name: 'Package foundations' });
       await expect(badges.getByRole('listitem')).toHaveCount(3);
       const heading = hero.getByRole('heading', { level: 1 });
@@ -129,34 +123,31 @@ for (const width of [320, 768, 1024, 1440]) {
             ({ impact }) => impact === 'serious' || impact === 'critical',
           ),
         ).toStrictEqual([]);
-        const screenshotPath = testInfo.outputPath(`hero-${width}-${theme}.png`);
-        await hero.screenshot({ path: screenshotPath });
-        await testInfo.attach('Hero layout', { path: screenshotPath, contentType: 'image/png' });
       }
 
       await trigger.focus();
       await expect(trigger).not.toHaveCSS('box-shadow', 'none');
       await page.keyboard.press('Enter');
-      const dialog = page.getByRole('dialog', { name: '1 broken reference', exact: true });
+      const dialog = page.getByRole('dialog', {
+        name: 'The registered tool implementation is missing.',
+        exact: true,
+      });
       await expect(dialog).toBeVisible();
       await expect(dialog).toHaveAccessibleDescription('');
-      expect(JSON.parse(await dialog.locator('pre').innerText())).toStrictEqual(
-        loadWebsiteModel().instructionExample.result,
-      );
-      await expect(dialog).toContainText('Missing implementation');
+      await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeFocused();
+      await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
+      expect(
+        JSON.parse(await dialog.locator('[data-inspection-output] pre').innerText()),
+      ).toStrictEqual(loadWebsiteModel().instructionExample.result);
       await expect(dialog).toContainText('/src/orders/tracking.ts');
       await expect(dialog).not.toContainText('/src/refund-policy.ts');
-      await expect(dialog.getByRole('button', { name: 'Close Core result' })).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(dialog).toHaveCount(0);
       await expect(trigger).toBeFocused();
 
-      const cardTrigger = page.getByRole('button', {
-        name: 'View result: 2. File moved',
-        exact: true,
-      });
+      const cardTrigger = page.locator('[data-dialog-open="inspection-broken-result"]');
       await cardTrigger.click();
-      const cardDialog = page.getByRole('dialog', { name: '1 broken reference', exact: true });
+      const cardDialog = page.locator('#inspection-broken-result');
       await expect(cardDialog).toBeVisible();
       expect(await cardDialog.getAttribute('id')).not.toBe(
         await trigger.getAttribute('aria-controls'),

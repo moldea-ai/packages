@@ -38,6 +38,15 @@ const comparison =
   patch === undefined
     ? await buildCodeDiff(oldValue, newValue, language, contextLines)
     : await buildCodePatch(patch, language);
+const maxLineNumber = (comparison?.sections ?? []).reduce(
+  (largest, section) =>
+    section.lines.reduce(
+      (maximum, line) => Math.max(maximum, line.oldNumber ?? 0, line.newNumber ?? 0),
+      largest,
+    ),
+  1,
+);
+const gutterWidth = `calc(${String(maxLineNumber).length}ch + 0.75rem)`;
 const groups: { overflow: ICodeOverflow; sections: ICodeDiffSection[] }[] = [];
 for (const section of comparison?.sections ?? []) {
   const mode = resolveCodeOverflow(language, overflow, section.filePath);
@@ -58,6 +67,7 @@ const renderedOverflow = hasMixedOverflow
     variant === 'panel' && 'rounded-lg border border-border',
   ]}
   data-code-diff={view}
+  style={`--diff-gutter-width:${gutterWidth}`}
   data-diff-overflow={renderedOverflow}
   data-code-copy="false"
   role="region"

@@ -95,7 +95,14 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.2.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.3.0' });
+    expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
+    expect(packedPaths).toContain(
+      'src/components/inspection-dialog/inspection-dialog.component.astro',
+    );
+    expect(packedPaths).toContain(
+      'src/components/inspection-dialog/output/inspection-output.component.astro',
+    );
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
     expect(packedPaths).toContain('src/components/code-block/code-block.component.astro');
     expect(packedPaths).toContain(
@@ -235,6 +242,9 @@ describe('published website UI package', () => {
         "import Dialog from '@moldea.ai/website-ui/dialog';",
         "import EvaluationReplay from '@moldea.ai/website-ui/evaluation-replay';",
         "import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';",
+        "import InspectionList from '@moldea.ai/website-ui/inspection-list';",
+        "import InspectionDialog from '@moldea.ai/website-ui/inspection-dialog';",
+        "import type { IInspectionResultView } from '@moldea.ai/website-ui/inspection-presentation';",
         "import { DIAGNOSTIC_GROUP_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';",
         "import FilePreview from '@moldea.ai/website-ui/file-preview';",
         "import FileTree from '@moldea.ai/website-ui/file-tree';",
@@ -277,8 +287,11 @@ describe('published website UI package', () => {
         'const connectionProps = { tone: "danger" } satisfies ComponentProps<typeof ConnectionLabel>;',
         'const accordionProps = { id: "check-two", group: "fixture-accordion", title: "Second check", isOpen: true } satisfies ComponentProps<typeof Accordion>;',
         'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", hideIconOnMobile: true, ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
-        'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
+        'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", panelClass: "sm:h-[32rem]!", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
         'const iconDialogProps = { id: "fixture-icon", title: "Complete source", triggerLabel: "Open complete source", triggerAriaLabel: "Open complete source in a larger view", triggerVariant: "ghost", triggerSize: "icon-xs", size: "large" } satisfies ComponentProps<typeof Dialog>;',
+        'const passed = { title: "Validation complete", label: "Valid", tone: "success", findings: [], outputLabel: "Complete Core response", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
+        'const failed = { ...passed, title: "Validation failed", label: "Invalid", tone: "danger", outputLabel: "Complete CLI response", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "moldea.yaml", evidence: [{ path: "moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Missing target" }] }] } satisfies IInspectionResultView;',
+        'const multiple = { ...failed, title: "Inspection complete", findings: [...failed.findings, { id: "accepted", title: "Unmatched relationship", code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", accepted: true, reason: "Generated files arrive during the release build.", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", evidence: [] }] } satisfies IInspectionResultView;',
         '---',
         '<html lang="en" data-theme="system">',
         '  <head>',
@@ -342,6 +355,7 @@ describe('published website UI package', () => {
         '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
         '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
         '    <Dialog {...iconDialogProps}><p>Expanded source content</p></Dialog>',
+        '    <main data-inspection-fixture class="mx-auto max-w-3xl px-3"><h2>Inspection examples</h2><InspectionList id="passed" result={passed} /><InspectionList id="single" result={failed} /><Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><a href="#standalone" data-dialog-open="standalone">Open standalone output</a><InspectionDialog id="standalone" result={passed} /><a href="/runtimes/">Navigate to runtimes</a></main>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
         '    <InspectionFinding title="Declared export missing" code="MOLDEA_REFERENCE_EXPORT_MISSING" severity="error" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} />',
@@ -467,11 +481,13 @@ describe('published website UI package', () => {
             });
             expect(await finding.locator('svg.lucide-link-2').count()).toBe(1);
             expect(await finding.locator('svg.lucide-circle-alert').count()).toBe(1);
-            const badgeStyle = await finding.locator('[data-status-badge]').evaluate((node) => ({
-              transform: getComputedStyle(node).textTransform,
-              weight: getComputedStyle(node).fontWeight,
-            }));
-            expect(badgeStyle).toStrictEqual({ transform: 'none', weight: '500' });
+            const badgeStyle = await finding
+              .getByText('Error', { exact: true })
+              .evaluate((node) => ({
+                transform: getComputedStyle(node).textTransform,
+                weight: getComputedStyle(node).fontWeight,
+              }));
+            expect(badgeStyle).toStrictEqual({ transform: 'none', weight: '600' });
             expect(
               await page
                 .getByRole('link', { name: 'Fixture source', exact: true, includeHidden: true })
@@ -512,6 +528,35 @@ describe('published website UI package', () => {
               expect(row.sourceGap).toBeGreaterThanOrEqual(6);
               expect(row.overflow).toBe(false);
             }
+            const gutterWidth = (name: string) =>
+              page
+                .getByRole('region', { name, exact: true })
+                .locator('[data-diff-line]')
+                .first()
+                .evaluate(
+                  (row) =>
+                    Array.from(row.children)
+                      .slice(0, -2)
+                      .filter((cell) => getComputedStyle(cell).display !== 'none')
+                      .at(-1)!
+                      .getBoundingClientRect().width,
+                );
+            expect(await gutterWidth('Booking changes')).toBeLessThan(
+              await gutterWidth('Four-digit lines'),
+            );
+            expect(await page.locator('#single-result').isVisible()).toBe(true);
+            expect(
+              await page
+                .locator('#single-result')
+                .getByText('Complete CLI response', { exact: true })
+                .isVisible(),
+            ).toBe(true);
+            expect(
+              await page
+                .locator('#single-result')
+                .getByText('Missing target', { exact: true })
+                .isVisible(),
+            ).toBe(true);
             const runtimeGrid = page.getByRole('list', { name: 'Runtime guidance', exact: true });
             expect(await runtimeGrid.getByRole('link').count()).toBe(35);
             const runtimeLink = runtimeGrid.getByRole('link', {
@@ -573,7 +618,9 @@ describe('published website UI package', () => {
                 ),
               ).filter(
                 (element) =>
-                  !element.parentElement?.closest('[data-code-diff], [data-wrapping-fixtures]'),
+                  !element.parentElement?.closest(
+                    '[data-code-diff], [data-wrapping-fixtures], [data-inspection-fixture]',
+                  ),
               );
               main.append(heading, ...examples);
               document.body.replaceChildren(main);
@@ -806,6 +853,202 @@ describe('published website UI package', () => {
             ).toContain('Binary files a/image.png and b/image.png differ');
             const accessibility = await new AxeBuilder({ page }).analyze();
             expect(accessibility.violations).toStrictEqual([]);
+          } finally {
+            await context.close();
+          }
+        }
+      }
+      // Execute the packed scripts against real built HTML, without a shared server or captures.
+      for (const theme of ['light', 'dark']) {
+        for (const width of [320, 768, 1440]) {
+          const context = await browser.newContext({
+            viewport: { width, height: 900 },
+            reducedMotion: 'reduce',
+          });
+          try {
+            const page = await context.newPage();
+            const pageErrors: string[] = [];
+            page.on('pageerror', (error) => pageErrors.push(error.message));
+            await page.route('https://ui-consumer.example/**', async (route) => {
+              const pathname = new URL(route.request().url()).pathname;
+              if (pathname === '/' || pathname === '/runtimes/') {
+                await route.fulfill({
+                  contentType: 'text/html',
+                  body: pathname === '/' ? fixtureHtml : runtimeHtml,
+                });
+                return;
+              }
+              const asset = /^\/_astro\/([a-zA-Z0-9_.-]+)$/u.exec(pathname)?.[1];
+              if (asset === undefined) {
+                await route.abort();
+                return;
+              }
+              const contentType = asset.endsWith('.js')
+                ? 'text/javascript'
+                : asset.endsWith('.css')
+                  ? 'text/css'
+                  : asset.endsWith('.svg')
+                    ? 'image/svg+xml'
+                    : asset.endsWith('.png')
+                      ? 'image/png'
+                      : 'font/woff2';
+              await route.fulfill({
+                contentType,
+                body: readFileSync(path.join(fixtureDirectory, 'dist', '_astro', asset)),
+              });
+            });
+            await page.goto('https://ui-consumer.example/');
+            await page.waitForSelector(
+              '[data-inspection-dialog-root][data-inspection-enhanced="true"]',
+              { state: 'attached' },
+            );
+            await page.evaluate((selectedTheme) => {
+              document.documentElement.className = selectedTheme;
+            }, theme);
+            const passedOpener = page.getByRole('link', {
+              name: 'View output: Validation complete',
+              exact: true,
+            });
+            await passedOpener.click();
+            const passedDialog = page.getByRole('dialog', {
+              name: 'Validation complete',
+              exact: true,
+            });
+            expect(await passedDialog.isVisible()).toBe(true);
+            expect(await passedDialog.getByRole('tab').count()).toBe(0);
+            expect(
+              JSON.parse(
+                await passedDialog.locator('[data-inspection-output] pre code').innerText(),
+              ),
+            ).toStrictEqual({
+              valid: true,
+              diagnostics: [],
+              coverage: { checked: ['references'], unchecked: [] },
+            });
+            expect(await passedDialog.evaluate((dialog) => dialog.getAnimations().length)).toBe(0);
+            await page.keyboard.press('Escape');
+            await expect
+              .poll(() => passedOpener.evaluate((node) => node === document.activeElement))
+              .toBe(true);
+            const singleOpener = page.locator('[data-dialog-open="single-result"]');
+            await page.keyboard.press('Tab');
+            await singleOpener.focus();
+            expect(
+              await singleOpener.evaluate((node) => getComputedStyle(node).boxShadow),
+            ).not.toBe('none');
+            await singleOpener.press('Enter');
+            const singleDialog = page.getByRole('dialog', {
+              name: 'Reference not found',
+              exact: true,
+            });
+            expect(
+              await singleDialog
+                .getByRole('heading', { name: 'Reference not found', exact: true })
+                .count(),
+            ).toBe(1);
+            expect(
+              await singleDialog.getByRole('tab', { name: 'Finding', selected: true }).count(),
+            ).toBe(1);
+            expect(await singleDialog.locator('[data-file-preview]').count()).toBe(2);
+            expect(
+              await singleDialog.locator('[data-file-preview]').last().locator('pre').count(),
+            ).toBe(0);
+            await singleDialog.getByRole('tab', { name: 'Finding', exact: true }).focus();
+            await page.keyboard.press('ArrowRight');
+            expect(
+              await singleDialog.getByRole('tab', { name: 'Output', selected: true }).count(),
+            ).toBe(1);
+            expect(
+              JSON.parse(
+                await singleDialog.locator('[data-inspection-output] pre code').innerText(),
+              ),
+            ).toStrictEqual({
+              version: 1,
+              command: 'validate',
+              status: 'invalid',
+              result: {
+                valid: false,
+                coverage: { checked: ['references'], unchecked: ['agents'] },
+              },
+              diagnostics: [{ code: 'MOLDEA_REFERENCE_NOT_FOUND' }],
+              error: null,
+            });
+            expect(
+              (await new AxeBuilder({ page }).include('#single-result').analyze()).violations,
+            ).toStrictEqual([]);
+            await page.keyboard.press('Escape');
+            await expect
+              .poll(() => singleOpener.evaluate((node) => node === document.activeElement))
+              .toBe(true);
+            const outerOpener = page.getByRole('button', { name: 'Open case', exact: true });
+            await outerOpener.click();
+            const acceptedOpener = page.locator(
+              '[data-dialog-open="multiple-result"][data-inspection-select="accepted"]',
+            );
+            await acceptedOpener.click();
+            expect(await page.locator('dialog:modal').count()).toBe(2);
+            const acceptedDialog = page.getByRole('dialog', {
+              name: 'Unmatched relationship',
+              exact: true,
+            });
+            expect(
+              await acceptedDialog.getByRole('tab', { name: 'Finding', selected: true }).count(),
+            ).toBe(1);
+            expect(
+              await acceptedDialog.getByText('Accepted warning', { exact: true }).isVisible(),
+            ).toBe(true);
+            expect(
+              await acceptedDialog
+                .getByText('Generated files arrive during the release build.', { exact: true })
+                .isVisible(),
+            ).toBe(true);
+            expect(
+              await page.evaluate(
+                () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+              ),
+            ).toBe(true);
+            await page.keyboard.press('Escape');
+            await expect.poll(() => page.locator('dialog:modal').count()).toBe(1);
+            await expect
+              .poll(() => acceptedOpener.evaluate((node) => node === document.activeElement))
+              .toBe(true);
+            await page.keyboard.press('Escape');
+            await expect
+              .poll(() => outerOpener.evaluate((node) => node === document.activeElement))
+              .toBe(true);
+            const standaloneOpener = page.getByRole('link', {
+              name: 'Open standalone output',
+              exact: true,
+            });
+            await standaloneOpener.click();
+            if (width >= 768) await page.mouse.click(1, 1);
+            else await page.keyboard.press('Escape');
+            await expect
+              .poll(() => standaloneOpener.evaluate((node) => node === document.activeElement))
+              .toBe(true);
+            await page.getByRole('button', { name: 'Inspect evidence', exact: true }).click();
+            expect(
+              await page
+                .locator('#fixture-wide')
+                .evaluate((dialog) => Math.round(dialog.getBoundingClientRect().height)),
+            ).toBe(width >= 768 ? 512 : 900);
+            await page.keyboard.press('Escape');
+            await page.getByRole('link', { name: 'Navigate to runtimes', exact: true }).click();
+            await page.waitForURL('https://ui-consumer.example/runtimes/');
+            expect(await page.locator('dialog:modal').count()).toBe(0);
+            await page.goBack();
+            await page.waitForSelector(
+              '[data-inspection-dialog-root][data-inspection-enhanced="true"]',
+              { state: 'attached' },
+            );
+            await page.locator('[data-dialog-open="single-result"]').click();
+            expect(
+              await page
+                .getByRole('dialog', { name: 'Reference not found', exact: true })
+                .isVisible(),
+            ).toBe(true);
+            await page.keyboard.press('Escape');
+            expect(pageErrors).toStrictEqual([]);
           } finally {
             await context.close();
           }

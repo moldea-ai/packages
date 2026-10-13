@@ -26,6 +26,7 @@ const example: ICapabilityCase = {
   limitation: 'Not a semantic evaluation.',
   sourcePaths: [],
   files: [],
+  output: { kind: 'execution-facts', responses: [facts], redactions: [] },
   result: { kind: 'inspection', facts },
 };
 

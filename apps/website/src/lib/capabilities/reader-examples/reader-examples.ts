@@ -3,7 +3,11 @@ import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 import { createFilesystemRepositoryReader } from '@moldea.ai/repository-fs';
 
 import type { ICapabilityCase, ICapabilityFact } from '../index.ts';
-import { assertCapabilityFacts, captureOperationalRefusal } from '../index.ts';
+import {
+  assertCapabilityFacts,
+  captureOperationalRefusal,
+  createRecordedOutput,
+} from '../index.ts';
 import { projectEntry } from '../index.ts';
 import { withFixtureWorkspace } from '../fixture-workspace/index.ts';
 
@@ -30,6 +34,7 @@ const readerCase = (
       ]
     : ['projects/repository/docs/reader-contract.md', 'projects/repository/docs/memory-reader.md'],
   files: [],
+  output: createRecordedOutput([facts], 'execution-facts'),
   result: { kind: 'reader', facts },
 });
 

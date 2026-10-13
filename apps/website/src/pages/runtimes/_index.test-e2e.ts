@@ -18,9 +18,20 @@ for (const width of [320, 768, 1440]) {
         const grid = page.locator('[data-runtime-grid]');
         const loadMore = page.getByRole('button', { name: 'Load more runtimes', exact: true });
         await expect(grid.locator('a:visible')).toHaveCount(batchSize);
+        if (width === 1440) {
+          await expect(
+            grid.getByRole('link', { name: 'Mastra mastra (opens in a new tab)', exact: true }),
+          ).toBeVisible();
+          await expect(
+            grid.getByRole('link', { name: 'eve eve (opens in a new tab)', exact: true }),
+          ).toBeHidden();
+        }
         await loadMore.focus();
         await page.keyboard.press('Enter');
         await expect(grid.locator('a:visible')).toHaveCount(35);
+        await expect(
+          grid.getByRole('link', { name: 'eve eve (opens in a new tab)', exact: true }),
+        ).toBeVisible();
         await expect(grid.locator('a').nth(batchSize)).toBeFocused();
         await expect(loadMore).toBeHidden();
         await expect(grid.locator('a:visible')).toHaveCount(35);

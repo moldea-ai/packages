@@ -21,7 +21,7 @@ for (const width of [320, 768, 1440]) {
         const section = page.locator(`#${slug}`);
         await expect(section).toBeInViewport();
         const code = section.getByRole('region', {
-          name: `@moldea.ai/${slug} example`,
+          name: `@moldea.ai/${slug} ${slug === 'repository-fs' ? 'usage excerpt' : 'example'}`,
           exact: true,
         });
         await expect(code.locator('[style*="--shiki"]')).not.toHaveCount(0);
@@ -41,7 +41,7 @@ for (const width of [320, 768, 1440]) {
           );
           await expect(section.locator('svg.lucide-link-2').first()).toBeVisible();
         }
-        const trigger = section.getByRole('button', { name: /^View result:/u });
+        const trigger = section.locator('[data-dialog-open]').first();
         await trigger.focus();
         await page.keyboard.press('Enter');
         const dialog = page.getByRole('dialog');
