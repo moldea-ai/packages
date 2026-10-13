@@ -855,6 +855,28 @@ for (const colorScheme of ['light', 'dark'] as const) {
   });
 }
 
+test('keeps information result icons legible in both themes', async ({ page }) => {
+  await page.goto(toPublicPath('/packages/'));
+  const result = page.locator('#repository [data-inspection-outcome]');
+  await expect(result).toContainText('Returned');
+  for (const theme of ['light', 'dark'] as const) {
+    await page.locator('html').evaluate((root, activeTheme) => {
+      root.classList.remove('light', 'dark');
+      root.classList.add(activeTheme);
+    }, theme);
+    const colors = await result
+      .locator('svg')
+      .first()
+      .evaluate((icon) => ({
+        icon: getComputedStyle(icon).color,
+        surface: getComputedStyle(document.documentElement).getPropertyValue('--background'),
+      }));
+    expect(calculateContrastRatio(colors.icon, colors.surface)).toBeGreaterThanOrEqual(3);
+    await result.focus();
+    await expect(result).not.toHaveCSS('box-shadow', 'none');
+  }
+});
+
 test('honors code-copy opt-outs without affecting neighboring blocks', async ({ page }) => {
   await page.goto(toPublicPath('/'));
 

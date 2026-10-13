@@ -70,12 +70,15 @@ const items = [
                     class="min-w-0 overflow-hidden rounded-xl border bg-card"
                     data-inspection-finding-card
                   >
-                    <div class="flex flex-wrap items-center gap-3 border-b p-4">
+                    <div
+                      class="flex items-start gap-3 border-b p-3 sm:p-4"
+                      data-inspection-finding-header
+                    >
                       <span
                         class:list={[
                           'flex size-9 shrink-0 items-center justify-center rounded-lg',
                           finding.accepted
-                            ? 'bg-info/10 text-info-foreground dark:text-info'
+                            ? 'bg-info/10 text-info'
                             : finding.severity === 'error'
                               ? 'bg-destructive/10 text-destructive'
                               : 'bg-warning/10 text-warning-foreground dark:text-warning',
@@ -86,28 +89,32 @@ const items = [
                           aria-hidden="true"
                         />
                       </span>
-                      <div class="min-w-0 flex-1 text-sm font-semibold">{group.label}</div>
-                      <span
-                        class:list={[
-                          'inline-flex shrink-0 items-center gap-1 text-xs font-semibold',
-                          finding.accepted
-                            ? 'text-info-foreground dark:text-info'
-                            : finding.severity === 'error'
-                              ? 'text-destructive'
-                              : 'text-warning-foreground dark:text-warning',
-                        ]}
-                      >
-                        <SeverityIcon
-                          class="size-3.5"
-                          aria-hidden="true"
-                        />
-                        {finding.accepted ? 'Accepted warning' : severity.label}
-                      </span>
+                      <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                          <p class="text-xs font-medium text-muted-foreground">{group.label}</p>
+                          <span
+                            class:list={[
+                              'inline-flex shrink-0 items-center gap-1 text-xs font-semibold',
+                              finding.accepted
+                                ? 'text-info'
+                                : finding.severity === 'error'
+                                  ? 'text-destructive'
+                                  : 'text-warning-foreground dark:text-warning',
+                            ]}
+                          >
+                            <SeverityIcon
+                              class="size-3.5"
+                              aria-hidden="true"
+                            />
+                            {finding.accepted ? 'Accepted warning' : severity.label}
+                          </span>
+                        </div>
+                        {finding.title !== result.title && (
+                          <h3 class="mt-1 text-sm leading-6 font-semibold">{finding.title}</h3>
+                        )}
+                      </div>
                     </div>
                     <div class="grid min-w-0 gap-3 p-3 sm:p-4">
-                      {finding.title !== result.title && (
-                        <h3 class="text-base leading-6 font-semibold">{finding.title}</h3>
-                      )}
                       {finding.message !== finding.title && (
                         <p class="text-sm leading-6">{finding.message}</p>
                       )}
@@ -116,7 +123,7 @@ const items = [
                           {finding.reason}
                         </p>
                       )}
-                      <dl class="grid min-w-0 gap-2 border-t pt-3 text-xs leading-5">
+                      <dl class="grid min-w-0 gap-2 text-xs leading-5">
                         <div class="grid min-w-0 gap-1 sm:grid-cols-[4rem_minmax(0,1fr)]">
                           <dt class="text-muted-foreground">Code</dt>
                           <dd class="min-w-0">

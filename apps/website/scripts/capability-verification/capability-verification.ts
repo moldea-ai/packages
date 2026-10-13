@@ -158,7 +158,9 @@ export const verifyCapabilityArtifacts = (
         resultLabels.get(example.id) !== outcome.label ||
         !summary.includes(outcome.label) ||
         view.findings.some(
-          (finding) => !references.has(`#${example.id}-result-finding-${finding.id}`),
+          (finding) =>
+            !references.has(`#${example.id}-result-finding-${finding.id}`) ||
+            !summary.includes(finding.code),
         )
       )
         throw new Error(`Capabilities artifact has an unsupported outcome for ${example.id}.`);

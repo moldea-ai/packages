@@ -978,7 +978,23 @@ describe('published website UI package', () => {
             const rowBounds = await singleOpener.boundingBox();
             const listBounds = await singleOpener.locator('..').boundingBox();
             expect(rowBounds?.width).toBe(listBounds?.width);
-            expect(rowBounds!.height).toBeLessThan(48);
+            const findingCode = singleOpener.locator('code');
+            expect(await findingCode.innerText()).toBe('MOLDEA_REFERENCE_NOT_FOUND');
+            expect(await findingCode.evaluate((node) => getComputedStyle(node).fontWeight)).toBe(
+              '400',
+            );
+            expect(await findingCode.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(
+              true,
+            );
+            const findingHeader = singleDialog.locator('[data-inspection-finding-header]');
+            expect(await findingHeader.getByText('References', { exact: true }).isVisible()).toBe(
+              true,
+            );
+            expect(
+              await findingHeader
+                .getByRole('heading', { name: 'Reference not found', exact: true })
+                .isVisible(),
+            ).toBe(true);
             expect(
               await singleDialog.locator('[data-file-preview]').last().locator('pre').count(),
             ).toBe(0);

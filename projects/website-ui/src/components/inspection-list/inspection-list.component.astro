@@ -27,7 +27,7 @@ const single = result.findings.length === 1 ? result.findings[0] : undefined;
 const Icon = single ? DIAGNOSTIC_GROUP_PRESENTATIONS[single.group].icon : icons[result.tone];
 const toneClasses = {
   danger: 'border-destructive/40 bg-destructive/10 [&_svg:first-child]:text-destructive',
-  info: 'border-info/40 bg-info/10 [&_svg:first-child]:text-info-foreground dark:[&_svg:first-child]:text-info',
+  info: 'border-info/40 bg-info/10 [&_svg:first-child]:text-info',
   neutral: 'border-border bg-muted',
   success: 'border-success/40 bg-success/10 [&_svg:first-child]:text-success',
   warning:
@@ -57,21 +57,28 @@ const counts = [
     data-inspection-select={single?.id ?? ''}
     aria-controls={dialogId}
     aria-haspopup="dialog"
-    aria-label={`${result.label}: View result: ${single?.title ?? result.title}`}
+    aria-label={`${result.label}${single ? ` ${single.code}` : ''}: View result: ${single?.title ?? result.title}`}
     variant="outline"
     size="sm"
-    class={`min-h-10 w-full min-w-0 justify-start gap-3 text-foreground ${toneClasses[result.tone]}`}
+    class={`min-h-14 w-full min-w-0 justify-start gap-3 text-foreground ${toneClasses[result.tone]}`}
     data-inspection-outcome={result.label}
   >
     <Icon
       class="size-5 shrink-0"
       aria-hidden="true"
     />
-    <span class="min-w-0 flex-1 text-start whitespace-normal"
-      >{result.label}{
+    <span class="min-w-0 flex-1 text-start whitespace-normal">
+      <span>{result.label}</span>{
         result.findings.length > 1 && <span class="ml-2 text-xs font-normal">{counts}</span>
-      }</span
-    >
+      }
+      {
+        single && (
+          <code class="mt-0.5 block font-mono text-[11px] leading-4 font-normal break-all text-muted-foreground">
+            {single.code}
+          </code>
+        )
+      }
+    </span>
     <ArrowUpRight
       class="size-3.5 shrink-0 text-muted-foreground"
       aria-hidden="true"
@@ -93,7 +100,7 @@ const counts = [
                 data-inspection-select={finding.id}
                 aria-controls={dialogId}
                 aria-haspopup="dialog"
-                aria-label={`View finding: ${finding.title}`}
+                aria-label={`View finding: ${finding.title} ${finding.code}`}
                 variant="ghost"
                 size="sm"
                 class="w-full min-w-0 justify-start px-1 text-start text-foreground"
@@ -102,14 +109,19 @@ const counts = [
                   class:list={[
                     'size-4 shrink-0',
                     finding.accepted
-                      ? 'text-info-foreground dark:text-info'
+                      ? 'text-info'
                       : finding.severity === 'error'
                         ? 'text-destructive'
                         : 'text-warning-foreground dark:text-warning',
                   ]}
                   aria-hidden="true"
                 />
-                <span class="min-w-0 flex-1 truncate">{finding.title}</span>
+                <span class="min-w-0 flex-1 text-start">
+                  <span class="block truncate">{finding.title}</span>
+                  <code class="mt-0.5 block font-mono text-[11px] leading-4 font-normal break-all whitespace-normal text-muted-foreground">
+                    {finding.code}
+                  </code>
+                </span>
                 <ArrowUpRight
                   class="size-3.5 shrink-0 text-muted-foreground"
                   aria-hidden="true"
