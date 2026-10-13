@@ -1,13 +1,13 @@
 # `@moldea.ai/website-ui`
 
-Shared Astro foundations for moldea public websites.
+Shared Astro foundations for `moldea` public websites.
 
 The package owns the reusable design tokens, global website primitives, interaction states, base-path and theme utilities, and small accessible Astro components used by the package and skill websites. Each website continues to own its page composition, navigation copy, content generation, SEO identity, public assets, site URL, and theme storage key.
 
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@3.1.0
+pnpm add @moldea.ai/website-ui@3.1.1
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -25,7 +25,7 @@ Tailwind scans the shipped Astro components through the package stylesheet's exp
 - Use `HeroBackdrop` inside a `relative overflow-hidden` section, with foreground content positioned `relative`. It owns the static, theme-aware radial/grid background shared with the Skill website. Do not duplicate its gradients in page markup.
 - Section introductions may place the title on the left and a concise explanation on the right at `lg`, stacking on mobile. Alternate this with compact stacked introductions when the content warrants it; do not force every section into the same composition.
 - Demonstrations should show recognizable files, one visible connection or mismatch, and a concise outcome. Compose `FilePreview`, `ConnectionLabel`, `ResultSummary`, `StatusBadge`, `CodeBlock`, and `Dialog`. Keep the essential result visible without interaction; dialogs contain optional evidence. Use `Accordion` when several examples share a section.
-- Product names and string metadata are ordinary prose. Preserve semantic inline code for complete filenames, variables, operations, and package names using `inline-code`. Never style only the brand substring within a technical token. Keep code wrapping and interaction feedback in the shared policies below.
+- Use semantic inline code for complete existing product names in authored prose, subheadings, and prose links, including `moldea`, `moldea Skill`, `moldea Agent Skill`, and `moldea Cloud`. Keep titles and matching H1s, navigation, metadata, accessible string labels, artwork, actions, and string-only surfaces plain. Mark complete technical tokens using `inline-code`; when a surface cannot render inline code correctly, leave the complete name or token plain. Preserve recorded evidence and source payloads. Never style only the brand substring within a technical token. Keep code wrapping and interaction feedback in the shared policies below.
 - Verify compositions at 320px through desktop, in both themes, with keyboard focus and reduced motion. Flatten unnecessary mobile panels and preserve legible filenames, labels, and status text. Use icons and explicit text together rather than relying on color alone.
 
 ## Heading roles
@@ -207,9 +207,7 @@ For a dialog heading, compose `ResultSummary` in Dialog's `heading` slot, set `a
 
 `StatusBadge` defaults to `size="md"`. Use `size="sm"` for secondary status beside compact headings: a 20px minimum height, tighter padding, and lighter 10px lettering. Badge labels stay on one line so short values such as “Exit 3” remain intact in tight flex rows. Use `truncate` when a longer label must fit a constrained width. Both sizes retain the same semantic colors.
 
-`InlineBrandText` renders standalone product names as semantic inline code. Its default `badge` variant includes the code background and padding; `compact` omits them. Both variants scale with surrounding text and use normal letter spacing so display headings do not compress the monospace token.
-
-For other hand-authored inline tokens, use `<code class="inline-code">`. This shared class matches rendered Markdown's code background, padding, monospace weight, and theme colors. `FilePreview` uses it for paths while retaining filename-preserving truncation. It does not parse text or add code semantics to plain strings; consumers must mark filenames and variable tokens explicitly.
+For hand-authored complete product names and technical tokens, use `<code class="inline-code">`. This shared class matches rendered Markdown's code background, padding, monospace weight, and theme colors. `FilePreview` uses it for paths while retaining filename-preserving truncation. It does not parse text or add code semantics to plain strings; consumers must mark filenames and variable tokens explicitly.
 
 The compiled `markdown` entry renders sanitized documents and fragments with stable headings, syntax highlighting, safe external links, base-aware internal links, and keyboard-scrollable tables. Raw HTML is disabled. The replay component accepts only the normalized contracts from `evaluation-replay-model`, including one initial trial and up to three ordered confirmation trials; semantic and qualification evidence conversion remains application-owned.
 
