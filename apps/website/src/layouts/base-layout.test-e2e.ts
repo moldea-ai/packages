@@ -520,6 +520,17 @@ test('formats complete product names while preserving plain metadata', async ({ 
 
   await expect(description.locator('code')).toHaveCount(0);
   await expect(description).toContainText('binding coverage for moldea repositories.');
+
+  await page.goto(toPublicPath('/repository-format/'));
+  const foundation = page.locator('main p').filter({ hasText: 'This document defines' });
+  await expect(foundation.locator('code')).toHaveText([
+    '1',
+    'moldea',
+    '/moldea/**',
+    '/moldea/moldea.yaml',
+  ]);
+  const consumers = page.locator('main p').filter({ hasText: 'The format is consumed' });
+  await expect(consumers.locator('code')).toHaveText(['moldea', '@moldea.ai/core', 'moldea Cloud']);
 });
 
 for (const theme of ['light', 'dark'] as const) {

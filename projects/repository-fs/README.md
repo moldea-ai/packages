@@ -14,7 +14,7 @@ pnpm add @moldea.ai/repository@2 @moldea.ai/repository-fs@2
 
 ## Responsibility
 
-The reader is read-only and Git-agnostic. Callers provide an absolute host root and choose exact logical paths or recursive directory access. The package does not discover a repository, interpret Git rules, execute content filters, parse moldea, or expose host paths. It treats stable descendant symlinks as metadata instead of traversing them.
+The reader is read-only and Git-agnostic. Callers provide an absolute host root and choose exact logical paths or recursive directory access. The package does not discover a repository, interpret Git rules, execute content filters, parse `moldea`, or expose host paths. It treats stable descendant symlinks as metadata instead of traversing them.
 
 Directory selection includes every eligible raw entry reached by the requested pages. It may expose ignored files, credentials, dependencies, caches, and generated output. Trust-sensitive callers should derive an exact path selection outside this package.
 

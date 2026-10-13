@@ -2,7 +2,7 @@
 
 # `@moldea.ai/cli`
 
-The canonical read-only local command-line composition for deterministic inspection of moldea repositories.
+The canonical read-only local command-line composition for deterministic inspection of `moldea` repositories.
 
 The version 11 executable exposes one schema-7-only JSON contract. `validate` and `inspect` are content-free, `scope` matches changed paths by reading only the project manifest, and `content` retrieves one explicitly selected canonical text asset in bounded Unicode-safe chunks. Collection and content responses use deterministic snapshot-bound cursors, exact final UTF-8 byte accounting, a 65,536-byte default page budget, and a 1,048,576-byte hard page ceiling.
 
@@ -97,7 +97,7 @@ Binding coverage reports the checks performed on each declared reference: `fileC
 
 `inspect` uses the same completion status and exit codes. Its allowlisted pages contain agent/runtime assignments, asset metadata, diagnostics and binding coverage. Both commands expose coverage counts and the specific file and export checks performed; a successful export check does not prove runtime wiring. Unbounded collections use independent record keys. Canonical bodies are available only through `content`.
 
-`scope` accepts either one leading-slash repository-logical path through `--path` or NUL-delimited UTF-8 paths with the same grammar through `--paths-stdin`. Invalid paths return `PATH_INPUT_INVALID` before repository discovery; relative paths are not normalized. It reads only `/moldea/moldea.yaml`, invokes Core's deterministic manifest-only relationship matcher, and returns relevance, complete counts and digests, and paged match or diagnostic records. `content` accepts exactly one canonical moldea text path and returns metadata plus the largest complete Unicode-scalar chunk that fits its output page.
+`scope` accepts either one leading-slash repository-logical path through `--path` or NUL-delimited UTF-8 paths with the same grammar through `--paths-stdin`. Invalid paths return `PATH_INPUT_INVALID` before repository discovery; relative paths are not normalized. It reads only `/moldea/moldea.yaml`, invokes Core's deterministic manifest-only relationship matcher, and returns relevance, complete counts and digests, and paged match or diagnostic records. `content` accepts exactly one canonical `moldea` text path and returns metadata plus the largest complete Unicode-scalar chunk that fits its output page.
 
 For JSON collection and content output, `--max-output-bytes` accepts 4,096 through 1,048,576 bytes and defaults to 65,536. The measurement covers the final newline-terminated UTF-8 envelope after JSON escaping. `--cursor` continues a prior JSON page. Cursors are opaque canonical base64url documents bound to their format version, command, normalized filters, source snapshot, last key, and checksum. Invalid, tampered, cross-command, filter-mismatched, unsupported, or stale cursors fail with a safe structured error. An envelope or atomic record that cannot fit returns `OUTPUT_BUDGET_TOO_SMALL`; output is never truncated into invalid JSON.
 

@@ -2,7 +2,7 @@
 
 # `@moldea.ai/core`
 
-Source-neutral, deterministic, content-safe interpretation of the moldea repository format.
+Source-neutral, deterministic, content-safe interpretation of the `moldea` repository format.
 
 Version 7 accepts caller-supplied text and `@moldea.ai/repository` version 2 readers. The main, format, and scope entry points remain environment-neutral. Repository access belongs to the caller-supplied reader. Project validation returns content-free summaries, diagnostics, binding coverage, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
 

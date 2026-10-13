@@ -2,7 +2,7 @@
 
 # `@moldea.ai/repository`
 
-Source-neutral, read-only, resource-bounded repository contracts for the moldea ecosystem.
+Source-neutral, read-only, resource-bounded repository contracts for the `moldea` ecosystem.
 
 Version 2 represents one coherent repository snapshot without assuming a filesystem, Git host, archive, or network protocol. Every collection, comparison, and file read is paged or ranged. Continuation cursors are opaque, integrity-protected, and bound to the source snapshot and request scope.
 
