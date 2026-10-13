@@ -63,7 +63,7 @@ export const getOperationRows = (facts: Record<string, ICapabilityFact>): IOpera
             throw new Error('Selection illustration requires actual paths.');
           return entry.path;
         }),
-        detail: `${fact.length} entries`,
+        detail: `${fact.length} ${fact.length === 1 ? 'entry' : 'entries'}`,
       };
     if (fact !== null && typeof fact === 'object') {
       if (

@@ -247,32 +247,59 @@ export const createReaderExamples = async (): Promise<ICapabilityCase[]> => {
 
   const filesystemExamples = await withFixtureWorkspace(
     [
-      { path: '/policy.md', content: '30 days\n' },
-      { path: '/unselected.md', content: 'A separate draft policy.\n' },
+      { path: '/moldea/moldea.yaml', content: 'version: 1\n' },
+      { path: '/moldea/project.md', content: '# Returns\nApproval stays with billing.\n' },
+      { path: '/src/returns/policy.ts', content: 'export const returnWindowDays = 30;\n' },
+      { path: '/node_modules/left-pad/index.js', content: 'export default () => {};\n' },
+      { path: '/dist/bundle.js', content: 'generated();\n' },
     ],
     async (workspace) => {
       const selected = await createFilesystemRepositoryReader({
         rootDirectory: workspace.directory,
-        selection: { kind: 'paths', paths: [policyPath] },
+        selection: {
+          kind: 'paths',
+          paths: ['/moldea/moldea.yaml', '/moldea/project.md', '/src/returns/policy.ts'].map(
+            parseRepositoryPath,
+          ),
+        },
       });
       const directory = await createFilesystemRepositoryReader({
         rootDirectory: workspace.directory,
         selection: { kind: 'directory' },
       });
-      const selectedPage = await selected.listEntriesPage({ maxEntries: 2 });
-      const directoryPage = await directory.listEntriesPage({ maxEntries: 2 });
+      const selectedPage = await selected.listEntriesPage({ maxEntries: 16 });
+      const directoryPage = await directory.listEntriesPage({ maxEntries: 16 });
       assertCapabilityFacts(
         selectedPage.entries.map(({ path }) => path),
-        ['/policy.md'],
+        [
+          '/moldea',
+          '/moldea/moldea.yaml',
+          '/moldea/project.md',
+          '/src',
+          '/src/returns',
+          '/src/returns/policy.ts',
+        ],
       );
       assertCapabilityFacts(
         directoryPage.entries.map(({ path }) => path),
-        ['/policy.md', '/unselected.md'],
+        [
+          '/dist',
+          '/dist/bundle.js',
+          '/moldea',
+          '/moldea/moldea.yaml',
+          '/moldea/project.md',
+          '/node_modules',
+          '/node_modules/left-pad',
+          '/node_modules/left-pad/index.js',
+          '/src',
+          '/src/returns',
+          '/src/returns/policy.ts',
+        ],
       );
       const selection = readerCase(
         'filesystem-selection',
         'createFilesystemRepositoryReader',
-        'Choose explicit files or a directory snapshot',
+        'Read only the files you choose',
         'The reader returns repository-logical paths. Directory selection is not Git ignore selection.',
         {
           explicit: selectedPage.entries.map(projectEntry),
@@ -280,15 +307,25 @@ export const createReaderExamples = async (): Promise<ICapabilityCase[]> => {
         },
         true,
       );
-      await selected.readFilePage(policyPath, { offset: 0, maxBytes: 2 });
-      await workspace.write({ path: '/policy.md', content: 'The return window is now 60 days.\n' });
+      await selected.readFilePage(parseRepositoryPath('/src/returns/policy.ts'), {
+        offset: 0,
+        maxBytes: 2,
+      });
+      await workspace.write({
+        path: '/src/returns/policy.ts',
+        content: 'export const returnWindowDays = 60;\n',
+      });
       const changed = readerCase(
         'filesystem-changed-snapshot',
         'readFilePage',
         'The source changed during inspection',
         'A continued read refuses changed filesystem state instead of mixing old and new bytes.',
         await captureOperationalRefusal(
-          () => selected.readFilePage(policyPath, { offset: 2, maxBytes: 2 }),
+          () =>
+            selected.readFilePage(parseRepositoryPath('/src/returns/policy.ts'), {
+              offset: 2,
+              maxBytes: 2,
+            }),
           'SNAPSHOT_CHANGED',
         ),
         true,

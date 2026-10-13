@@ -52,8 +52,8 @@ for (const width of [320, 1440]) {
         await expect(badge).toBeVisible();
         const badgeBounds = await badge.boundingBox();
         expect(badgeBounds!.height).toBe(20);
-        await expect(badge).toHaveCSS('font-size', '10px');
-        await expect(badge).toHaveCSS('font-weight', '600');
+        await expect(badge).toHaveCSS('font-size', '12px');
+        await expect(badge).toHaveCSS('font-weight', '500');
         const excerptAlignment = await excerptRow.evaluate((element) => {
           const label = element.querySelector('p');
           const status = element.querySelector('[data-status-badge]');

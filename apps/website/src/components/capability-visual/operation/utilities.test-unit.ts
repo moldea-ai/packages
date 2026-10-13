@@ -54,3 +54,14 @@ test('refuses to invent pagination or selection facts', () => {
     'actual byte ranges',
   );
 });
+
+test('selection counts distinguish one entry from several entries', () => {
+  expect(getOperationRows({ explicit: [{ path: '/moldea/project.md' }] })[0]?.detail).toBe(
+    '1 entry',
+  );
+  expect(
+    getOperationRows({
+      explicit: [{ path: '/moldea/project.md' }, { path: '/moldea/moldea.yaml' }],
+    })[0]?.detail,
+  ).toBe('2 entries');
+});

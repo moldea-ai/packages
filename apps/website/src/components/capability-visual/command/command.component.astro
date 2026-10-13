@@ -4,7 +4,8 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 
 import CodeBlock from '@moldea.ai/website-ui/code-block';
-import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
+import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';
+import { DIAGNOSTIC_GROUP_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
@@ -59,13 +60,18 @@ const binding =
     ? ReferenceManifest.parse(parse(manifest.content) as unknown).context['/moldea/project.md']
         .bindings[0]
     : undefined;
+const diagnosticGroup = diagnostic
+  ? z
+      .enum(['discovery', 'manifest', 'references', 'agents', 'mirrors', 'integration'])
+      .parse(diagnostic.group)
+  : undefined;
 const boundSource = example.files.find(({ path }) => path === binding?.path);
 if (binding && !boundSource) throw new Error('The bound source illustration is missing.');
 ---
 
 <div class="grid min-w-0 gap-3">
   {
-    binding && manifest && boundSource && (
+    binding && manifest && boundSource && diagnostic && diagnosticGroup ? (
       <>
         <FilePreview
           path={manifest.path.slice(1)}
@@ -73,7 +79,7 @@ if (binding && !boundSource) throw new Error('The bound source illustration is m
         >
           <div class="p-3">
             <CodeBlock
-              source={manifest.content}
+              source={`bindings:\n  - path: ${binding.path}\n    symbol: ${binding.symbol}`}
               language="yaml"
               variant="plain"
               copyable={false}
@@ -81,73 +87,65 @@ if (binding && !boundSource) throw new Error('The bound source illustration is m
             />
           </div>
         </FilePreview>
-        <ConnectionLabel tone="danger">
-          The declared export is absent from the source
-        </ConnectionLabel>
-        <FilePreview
-          path={boundSource.path.slice(1)}
-          label="Current implementation"
-          tone="danger"
+        <InspectionFinding
+          title="Declared export missing"
+          code={String(diagnostic.code)}
+          severity="error"
+          presentation={DIAGNOSTIC_GROUP_PRESENTATIONS[diagnosticGroup]}
+          path={binding.path.slice(1)}
+        />
+        <div
+          class="flex items-center justify-between gap-3 border-t pt-3 text-xs"
+          data-capability-summary={example.id}
         >
-          <StatusBadge
-            slot="status"
-            label="Export missing"
-            tone="danger"
-            size="sm"
-          />
-          <div class="p-3">
-            <CodeBlock
-              source={boundSource.content}
-              language="typescript"
-              variant="plain"
-              copyable={false}
-              ariaLabel="Current policy implementation"
+          <>
+            <code>{result.command}</code>
+            <StatusBadge
+              label={`Exit ${result.exitStatus}`}
+              tone="danger"
+              size="sm"
             />
-          </div>
-        </FilePreview>
+          </>
+        </div>
       </>
+    ) : (
+      <div class="min-w-0 rounded-lg border bg-muted/30 p-4">
+        <p class="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <Terminal
+            class="size-4"
+            aria-hidden="true"
+          />
+          Terminal / CI
+        </p>
+        <CodeBlock
+          source={result.command}
+          ariaLabel={`Command for ${example.title}`}
+          language="sh"
+          copyable
+        />
+        <div class="mt-3 flex items-center gap-2 border-t pt-3 text-xs">
+          <>
+            <ArrowDown
+              class="size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <StatusBadge
+              label={`Exit ${result.exitStatus}`}
+              tone={hasWarnings || result.status === 'error' ? 'warning' : 'info'}
+              size="sm"
+            />
+            <span class="text-muted-foreground">
+              {result.status === 'error'
+                ? 'Operation refused'
+                : hasWarnings
+                  ? 'Validation completed with a warning'
+                  : 'Command completed'}
+            </span>
+          </>
+        </div>
+      </div>
     )
   }
-  <div class="min-w-0 rounded-lg border bg-muted/30 p-4">
-    <p class="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-      <Terminal
-        class="size-4"
-        aria-hidden="true"
-      />Terminal / CI
-    </p>
-    <CodeBlock
-      source={result.command}
-      ariaLabel={`Command for ${example.title}`}
-      language="sh"
-      copyable={true}
-    />
-    <div class="mt-3 flex items-center gap-2 border-t pt-3 text-xs">
-      <ArrowDown
-        class="size-4 text-muted-foreground"
-        aria-hidden="true"
-      /><StatusBadge
-        label={`Exit ${result.exitStatus}`}
-        tone={hasWarnings
-          ? 'warning'
-          : result.status === 'invalid'
-            ? 'danger'
-            : result.status === 'error'
-              ? 'warning'
-              : 'info'}
-        size="sm"
-      /><span class="text-muted-foreground"
-        >{
-          result.status === 'invalid'
-            ? 'Validation failed'
-            : result.status === 'error'
-              ? 'Operation refused'
-              : hasWarnings
-                ? 'Validation completed with a warning'
-                : 'Command completed'
-        }</span
-      >
-    </div>
-  </div>
   {
     typeof path === 'string' && (
       <FilePreview

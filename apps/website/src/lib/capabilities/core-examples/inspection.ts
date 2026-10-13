@@ -80,7 +80,11 @@ context:
   const pages = diagnosticPages.map((page) => ({
     records: page.page.records.map(({ item }) => {
       if (item.kind !== 'diagnostic') throw new Error('A diagnostic page contains another record.');
-      return { code: item.diagnostic.code, severity: item.diagnostic.severity };
+      return {
+        code: item.diagnostic.code,
+        group: item.diagnostic.group,
+        severity: item.diagnostic.severity,
+      };
     }),
     hasContinuation: page.page.nextCursor !== null,
   }));
@@ -90,15 +94,21 @@ context:
   );
   assertCapabilityFacts(pages, [
     {
-      records: [{ code: 'MOLDEA_IMPACT_PATTERN_UNMATCHED', severity: 'warning' }],
+      records: [
+        { code: 'MOLDEA_IMPACT_PATTERN_UNMATCHED', group: 'references', severity: 'warning' },
+      ],
       hasContinuation: true,
     },
     {
-      records: [{ code: 'MOLDEA_INTEGRATION_BLOCK_MISSING', severity: 'warning' }],
+      records: [
+        { code: 'MOLDEA_INTEGRATION_BLOCK_MISSING', group: 'integration', severity: 'warning' },
+      ],
       hasContinuation: true,
     },
     {
-      records: [{ code: 'MOLDEA_REFERENCE_EXPORT_MISSING', severity: 'error' }],
+      records: [
+        { code: 'MOLDEA_REFERENCE_EXPORT_MISSING', group: 'references', severity: 'error' },
+      ],
       hasContinuation: false,
     },
   ]);

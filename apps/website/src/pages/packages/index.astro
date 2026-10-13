@@ -1,11 +1,9 @@
 ---
 import { ArrowRight } from '@lucide/astro';
-import { z } from 'zod';
 
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
 import CodeBlock from '@moldea.ai/website-ui/code-block';
-import FileTree from '@moldea.ai/website-ui/file-tree';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import { CapabilityCard } from '../../components/capability-card/index.ts';
@@ -35,15 +33,14 @@ const diagnostics = inspection.readPage({ view: 'diagnostics', maxItems: 1 });`,
   {
     slug: 'repository',
     displayName: 'Repository',
-    caseId: 'reader-exact-entry',
+    caseId: 'snapshot-comparison',
     language: 'typescript',
-    source: `import { parseRepositoryPath } from '@moldea.ai/repository';
-import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
-
-const repository = createMemoryRepositoryReader([
-  { path: '/policy.md', type: 'file', content: '30 days\\n' },
-]);
-const entry = await repository.getEntry(parseRepositoryPath('/policy.md'));`,
+    source: `// base and candidate are immutable repository snapshots.
+const comparison = await base.compare(candidate);
+const page = await comparison.listChangesPage({
+  maxChanges: 2, maxEntriesVisited: 2, maxBytesRead: 32,
+});
+// Use page.nextCursor to continue the same comparison.`,
   },
   {
     slug: 'repository-fs',
@@ -55,7 +52,10 @@ import { createFilesystemRepositoryReader } from '@moldea.ai/repository-fs';
 
 const repository = await createFilesystemRepositoryReader({
   rootDirectory: process.cwd(),
-  selection: { kind: 'paths', paths: [parseRepositoryPath('/policy.md')] },
+  selection: { kind: 'paths', paths: [
+    '/moldea/moldea.yaml', '/moldea/project.md',
+    '/src/returns/policy.ts',
+  ].map(parseRepositoryPath) },
 });
 const page = await repository.listEntriesPage({ maxEntries: 16 });`,
   },
@@ -70,21 +70,6 @@ const page = await repository.listEntriesPage({ maxEntries: 16 });`,
     copy: model.discoveryCopy.packages[packageModel.name],
   };
 });
-const repositoryCase = examples.find(({ slug }) => slug === 'repository');
-const filesystemCase = examples.find(({ slug }) => slug === 'repository-fs');
-if (
-  repositoryCase?.execution.result.kind !== 'reader' ||
-  filesystemCase?.execution.result.kind !== 'reader'
-)
-  throw new Error('The package showcase requires executed reader results.');
-const ReaderEntry = z.object({ path: z.string(), type: z.literal('file') });
-const repositoryEntry = ReaderEntry.parse(repositoryCase.execution.result.facts.entry);
-const explicitEntries = z.array(ReaderEntry).parse(filesystemCase.execution.result.facts.explicit);
-const directoryEntries = z
-  .array(ReaderEntry)
-  .parse(filesystemCase.execution.result.facts.directory);
-const fileNodes = (entries: readonly z.infer<typeof ReaderEntry>[]) =>
-  entries.map(({ path }) => ({ kind: 'file' as const, path, name: path.slice(1) }));
 ---
 
 <BaseLayout
@@ -150,42 +135,13 @@ const fileNodes = (entries: readonly z.infer<typeof ReaderEntry>[]) =>
                 </div>
                 <p class="mt-5 leading-7 text-muted-foreground">{copy.description}</p>
 
-                {packageModel.slug === 'repository' ? (
-                  <div class="mt-6">
-                    <p class="mb-3 text-xs font-medium text-muted-foreground">Exact entry lookup</p>
-                    <FileTree
-                      ariaLabel="Repository entry returned by getEntry"
-                      nodes={fileNodes([repositoryEntry])}
-                    />
-                  </div>
-                ) : packageModel.slug === 'repository-fs' ? (
-                  <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <p class="mb-3 text-xs font-medium text-muted-foreground">Explicit paths</p>
-                      <FileTree
-                        ariaLabel="Explicit filesystem selection"
-                        nodes={fileNodes(explicitEntries)}
-                      />
-                    </div>
-                    <div>
-                      <p class="mb-3 text-xs font-medium text-muted-foreground">
-                        Directory snapshot
-                      </p>
-                      <FileTree
-                        ariaLabel="Filesystem directory selection"
-                        nodes={fileNodes(directoryEntries)}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div class="mt-6">
-                    <CodeBlock
-                      {source}
-                      {language}
-                      ariaLabel={`${packageModel.name} example`}
-                    />
-                  </div>
-                )}
+                <div class="mt-6">
+                  <CodeBlock
+                    {source}
+                    {language}
+                    ariaLabel={`${packageModel.name} example`}
+                  />
+                </div>
                 <ActionLink
                   class="mt-5"
                   href={withBase(packageModel.route, import.meta.env.BASE_URL)}

@@ -1,5 +1,8 @@
 ---
-import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import { z } from 'zod';
+
+import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';
+import { DIAGNOSTIC_GROUP_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';
 
 import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
 
@@ -20,6 +23,11 @@ if (
   counts.warnings !== 2
 )
   throw new Error('Mixed diagnostic illustration requires complete inspection counts.');
+const findingTitles: Record<string, string> = {
+  MOLDEA_IMPACT_PATTERN_UNMATCHED: 'No files match the declared relationship',
+  MOLDEA_INTEGRATION_BLOCK_MISSING: 'Project setup guidance is missing',
+  MOLDEA_REFERENCE_EXPORT_MISSING: 'Declared export missing',
+};
 const pages = getCapabilityFactRows(example.result.facts.pages);
 if (pages.length !== 3) throw new Error('Mixed diagnostic illustration requires three pages.');
 const entries = pages.map((page, index) => {
@@ -31,7 +39,18 @@ const entries = pages.map((page, index) => {
     page.hasContinuation !== index < pages.length - 1
   )
     throw new Error('Mixed diagnostic illustration requires a paginated diagnostic.');
-  return { page: index + 1, code: record.code, severity: record.severity };
+  const group = z
+    .enum(['discovery', 'manifest', 'references', 'agents', 'mirrors', 'integration'])
+    .parse(record.group);
+  const title = findingTitles[record.code];
+  if (!title) throw new Error('Mixed diagnostic illustration requires a known finding title.');
+  return {
+    title,
+    page: index + 1,
+    code: record.code,
+    severity: z.enum(['error', 'warning']).parse(record.severity),
+    group,
+  };
 });
 ---
 
@@ -50,14 +69,14 @@ const entries = pages.map((page, index) => {
   >
     {
       entries.map((entry) => (
-        <li class="flex min-w-0 flex-wrap items-center gap-2 py-3 text-xs">
-          <span class="font-medium">Page {entry.page}</span>
-          <StatusBadge
-            label={entry.severity === 'warning' ? 'Warning' : 'Error'}
-            tone={entry.severity === 'warning' ? 'warning' : 'danger'}
-            size="sm"
+        <li class="min-w-0 py-3">
+          <span class="sr-only">Page {entry.page}</span>
+          <InspectionFinding
+            title={entry.title}
+            code={entry.code}
+            severity={entry.severity}
+            presentation={DIAGNOSTIC_GROUP_PRESENTATIONS[entry.group]}
           />
-          <code class="inline-code break-all">{entry.code}</code>
         </li>
       ))
     }

@@ -162,7 +162,7 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
         });
         await expect(source).toHaveAttribute('target', '_blank');
         await expect(
-          source.locator('svg.lucide-external-link[data-external-link-icon]'),
+          source.locator('svg.lucide-git-branch[data-external-link-icon]'),
         ).toBeVisible();
         expect(brand!.x + brand!.width).toBeLessThan(linkRects[0].x);
         expect(linkRects.at(-1)!.right).toBeLessThan(search!.x);
@@ -571,7 +571,11 @@ test('preserves ordinary guide headings and complete technical tokens', async ({
   await page.goto(toPublicPath('/getting-started/'));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Get started with moldea');
   await expect(page.getByRole('heading', { level: 1 }).locator('code')).toHaveCount(0);
-  await expect(page.getByText('/moldea/project.md', { exact: true }).first()).toBeVisible();
+  await expect(
+    page
+      .getByRole('figure', { name: 'Illustrative PR Assurance review' })
+      .getByText('/moldea/project.md', { exact: true }),
+  ).toBeVisible();
   await page.goto(toPublicPath('/packages/'));
   await expect(
     page
@@ -787,7 +791,10 @@ ${'long-line-'.repeat(32)}
   await page.goto(toPublicPath('/capabilities/'));
   await expect(
     page.locator('[data-capability-visual="command"] pre[data-code-copy-enhanced="true"]'),
-  ).toHaveCount(11);
+  ).toHaveCount(10);
+  await expect(
+    page.locator('#cli-invalid-project pre[data-code-copy-enhanced="true"]'),
+  ).toHaveCount(0);
   await expect(
     page.locator('dialog[id^="result-"] pre[data-code-copy-enhanced="true"]'),
   ).toHaveCount(0);
