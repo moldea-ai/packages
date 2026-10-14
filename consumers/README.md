@@ -4,7 +4,7 @@ The `consumer-conformance` CI lane gives the skill manager and closed launcher t
 
 ## Recorded verification
 
-The selected closure contains CLI `11.0.4`, Core `7.0.4`, Repository `2.0.2`, and Repository FS `2.0.5`. Local qualification used the corrected source tree based on packages commit `ad08edf8d600ddbb1e6bf249760b55b8c42992ba`, Node `24.15.0`, and pnpm `11.9.0`. Local checksum verification, Repository FS runtime checks, CLI runtime checks, and fresh-client consumer conformance passed on Linux with Node `24.15.0`. The consumer profiles used npm `11.12.1` and pnpm `12.4.0`, including an existing root Vitest `3.2.4` for pnpm.
+The selected closure contains CLI `11.0.4`, Core `7.0.4`, Repository `2.0.2`, and Repository FS `2.0.5`. Packages commit `8f6cf4e0d4773461a36866ac7585102f18635e35` reproduced all five qualified tarballs and their complete checksum manifest byte for byte using Node `24.15.0` and pnpm `11.9.0`. Local checksum verification, Repository FS runtime checks, CLI runtime checks, and fresh-client consumer conformance passed on Linux with Node `24.15.0`. The consumer profiles used npm `11.12.1` and pnpm `12.4.0`, including an existing root Vitest `3.2.4` for pnpm.
 
 Local consumer tooling was pinned to skill commit `b62013c8797247cbde21dccf517f722d0e412b0d`. Skill candidate `8.1.0` was also prepared and installed with CLI `11.0.4` and Website UI `3.2.0` from the complete five-package public artifact. The ordinary updater preserves compatible transitive versions; the fresh-client conformance and packed runtime checks separately exercised the exact selected four-package closure.
 
