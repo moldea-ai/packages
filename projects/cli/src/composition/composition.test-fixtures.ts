@@ -4,7 +4,7 @@ import { MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES } from './constants.js';
 import type { IMoldeaCliCompositionStateInput } from './types.js';
 
 const PACKAGE_VERSIONS = {
-  '@moldea.ai/core': '7.0.2',
+  '@moldea.ai/core': '7.0.4',
   '@moldea.ai/repository': '2.0.0',
   '@moldea.ai/repository-fs': '2.0.3',
 } as const;

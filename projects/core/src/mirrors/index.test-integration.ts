@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest';
 import { parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  createIntegratedMemoryRepositoryReader,
   overrideCoreTestRepositoryReader,
   type ICoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
@@ -145,6 +146,51 @@ const inspectRepository = async (sourceRepository: ICoreTestRepositoryReader) =>
 };
 
 describe('Core mirror inspection through the memory repository reader', () => {
+  test.each([[0], [1]])(
+    'reports the authored missing mirror position %d through Core',
+    async (index) => {
+      const mirrors = ['/mirrors/z.md', '/mirrors/a.md'];
+      const instruction = 'You are the `alpha` agent. Follow project policy.\n';
+      const repository = createIntegratedMemoryRepositoryReader([
+        {
+          path: manifestPath,
+          type: 'file',
+          content: JSON.stringify({
+            version: 1,
+            agents: { alpha: { runtime: { id: 'custom' }, mirrors } },
+          }),
+        },
+        { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
+        { path: '/moldea/agents/alpha/description.md', type: 'file', content: 'Alpha agent.\n' },
+        { path: '/moldea/agents/alpha/instruction.md', type: 'file', content: instruction },
+        ...mirrors
+          .filter((_, position) => position !== index)
+          .map((path) => ({
+            path,
+            type: 'file' as const,
+            content: instruction,
+          })),
+      ]);
+      const result = await createCore().validateProject({ repository });
+
+      expect(result.valid).toBe(false);
+      expect(result.errorCount).toBe(1);
+      expect(
+        result.diagnostics.map(({ code, pointer, details }) => ({
+          code,
+          pointer,
+          details: { ...details },
+        })),
+      ).toStrictEqual([
+        {
+          code: 'MOLDEA_MIRROR_MISSING',
+          pointer: `/agents/alpha/mirrors/${index}`,
+          details: { mirrorPath: mirrors[index] },
+        },
+      ]);
+    },
+  );
+
   test.each(fixture.cases)('returns exact repository-level results for $name', async (case_) => {
     const { agentAssets, mirrorResult } = await inspectRepository(
       createMemoryRepositoryReader(createEntries(case_)),

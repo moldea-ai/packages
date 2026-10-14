@@ -183,7 +183,7 @@ export const inspectMirrors = async (
     const mirrors: IIndexedMirror[] = [];
 
     if (agent.instruction !== null) {
-      const declaredMirrors = [...(agent.declaration.mirrors ?? [])].sort(compareExactStrings);
+      const declaredMirrors = agent.declaration.mirrors ?? [];
 
       for (const [index, mirrorPath] of declaredMirrors.entries()) {
         const mirror = await inspectMirror(

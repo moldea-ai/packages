@@ -125,14 +125,14 @@ describe('Core manifest relationship validation', () => {
         details: { referencedPath: contextPath },
         entity: { agentId: 'reviewer' },
         path: MANIFEST_PATH,
-        pointer: '/agents/reviewer/context',
+        pointer: '/agents/reviewer/context/0',
       },
       {
         code: 'MOLDEA_DECISION_REFERENCE_MISSING',
         details: { referencedPath: decisionPath },
         entity: { agentId: 'reviewer', decisionId: '1767225600000' },
         path: MANIFEST_PATH,
-        pointer: '/agents/reviewer/decisions',
+        pointer: '/agents/reviewer/decisions/0',
       },
       {
         code: 'MOLDEA_REFERENCE_MISSING',
@@ -151,16 +151,66 @@ describe('Core manifest relationship validation', () => {
     ]);
   });
 
+  test.each([[0], [1]])('retains authored indexes for missing relationships at %d', (index) => {
+    const contextPaths = [
+      parseRepositoryPath('/moldea/context/z.md'),
+      parseRepositoryPath('/moldea/context/a.md'),
+    ];
+    const decisions = [
+      createDecision('1767225600001', 'z', 'accepted'),
+      createDecision('1767225600000', 'a', 'accepted'),
+    ];
+    const manifest: IMoldeaManifestV1 = {
+      version: 1,
+      agents: {
+        reviewer: {
+          runtime: { id: 'custom' },
+          context: contextPaths,
+          decisions: decisions.map(({ path }) => path),
+        },
+      },
+    };
+    const resolvedDecisions = decisions.filter((_, position) => position !== index);
+    const diagnostics = validateManifestRelationships(
+      MANIFEST_PATH,
+      manifest,
+      createDiscovery({
+        context: contextPaths.filter((_, position) => position !== index),
+        decisions: resolvedDecisions.map(({ path }) => path),
+      }),
+      resolvedDecisions,
+      DEFAULT_CORE_RESOURCE_LIMITS,
+    );
+
+    expect(simplifyDiagnostics(diagnostics)).toStrictEqual([
+      {
+        code: 'MOLDEA_REFERENCE_MISSING',
+        details: { referencedPath: contextPaths[index] },
+        entity: { agentId: 'reviewer' },
+        path: MANIFEST_PATH,
+        pointer: `/agents/reviewer/context/${index}`,
+      },
+      {
+        code: 'MOLDEA_DECISION_REFERENCE_MISSING',
+        details: { referencedPath: decisions[index]!.path },
+        entity: { agentId: 'reviewer', decisionId: decisions[index]!.id },
+        path: MANIFEST_PATH,
+        pointer: `/agents/reviewer/decisions/${index}`,
+      },
+    ]);
+  });
+
   test.each([
     ['proposed', '1767225600000'],
     ['rejected', '1767225600001'],
     ['superseded', '1767225600002'],
   ] as const)('reports an inactive relationship to a %s decision', (status, id) => {
     const decision = createDecision(id, status, status);
+    const acceptedDecision = createDecision('1767225600009', 'accepted', 'accepted');
     const manifest: IMoldeaManifestV1 = {
       agents: {
         reviewer: {
-          decisions: [decision.path],
+          decisions: [acceptedDecision.path, decision.path],
           runtime: { id: 'custom' },
         },
       },
@@ -169,8 +219,8 @@ describe('Core manifest relationship validation', () => {
     const diagnostics = validateManifestRelationships(
       MANIFEST_PATH,
       manifest,
-      createDiscovery({ decisions: [decision.path] }),
-      [decision],
+      createDiscovery({ decisions: [acceptedDecision.path, decision.path] }),
+      [acceptedDecision, decision],
       DEFAULT_CORE_RESOURCE_LIMITS,
     );
 
@@ -180,7 +230,7 @@ describe('Core manifest relationship validation', () => {
         details: { referencedPath: decision.path, targetStatus: status },
         entity: { agentId: 'reviewer', decisionId: id },
         path: MANIFEST_PATH,
-        pointer: '/agents/reviewer/decisions',
+        pointer: '/agents/reviewer/decisions/1',
       },
     ]);
   });
@@ -250,7 +300,7 @@ describe('Core manifest relationship validation', () => {
     );
 
     expect(diagnostics.map(({ pointer }) => pointer)).toStrictEqual([
-      '/agents/constructor/context',
+      '/agents/constructor/context/0',
       '/context/~1moldea~1context~1a~0b.md',
     ]);
     expect(Object.isFrozen(diagnostics)).toBe(true);
@@ -259,7 +309,7 @@ describe('Core manifest relationship validation', () => {
     expect(Object.isFrozen(diagnostics[0]?.entity)).toBe(true);
   });
 
-  test('is input-order independent across multiple agents and relationships', () => {
+  test('is independent of agent mapping order while retaining authored relationship positions', () => {
     const firstContextPath = parseRepositoryPath('/moldea/context/a.md');
     const secondContextPath = parseRepositoryPath('/moldea/context/b.md');
     const firstDecisionPath = parseRepositoryPath('/moldea/decisions/1767225600000-first.md');
@@ -282,13 +332,13 @@ describe('Core manifest relationship validation', () => {
     const reorderedManifest: IMoldeaManifestV1 = {
       agents: {
         auditor: {
-          context: [firstContextPath, secondContextPath],
-          decisions: [firstDecisionPath, secondDecisionPath],
+          context: [secondContextPath, firstContextPath],
+          decisions: [secondDecisionPath, firstDecisionPath],
           runtime: { id: 'custom' },
         },
         reviewer: {
-          context: [firstContextPath, secondContextPath],
-          decisions: [firstDecisionPath, secondDecisionPath],
+          context: [secondContextPath, firstContextPath],
+          decisions: [secondDecisionPath, firstDecisionPath],
           runtime: { id: 'custom' },
         },
       },
@@ -313,59 +363,59 @@ describe('Core manifest relationship validation', () => {
     expect(simplifyDiagnostics(expected)).toStrictEqual([
       {
         code: 'MOLDEA_REFERENCE_MISSING',
-        details: { referencedPath: firstContextPath },
-        entity: { agentId: 'auditor' },
-        path: MANIFEST_PATH,
-        pointer: '/agents/auditor/context',
-      },
-      {
-        code: 'MOLDEA_REFERENCE_MISSING',
         details: { referencedPath: secondContextPath },
         entity: { agentId: 'auditor' },
         path: MANIFEST_PATH,
-        pointer: '/agents/auditor/context',
+        pointer: '/agents/auditor/context/0',
       },
       {
-        code: 'MOLDEA_DECISION_REFERENCE_MISSING',
-        details: { referencedPath: firstDecisionPath },
-        entity: { agentId: 'auditor', decisionId: '1767225600000' },
+        code: 'MOLDEA_REFERENCE_MISSING',
+        details: { referencedPath: firstContextPath },
+        entity: { agentId: 'auditor' },
         path: MANIFEST_PATH,
-        pointer: '/agents/auditor/decisions',
+        pointer: '/agents/auditor/context/1',
       },
       {
         code: 'MOLDEA_DECISION_REFERENCE_MISSING',
         details: { referencedPath: secondDecisionPath },
         entity: { agentId: 'auditor', decisionId: '1767225600001' },
         path: MANIFEST_PATH,
-        pointer: '/agents/auditor/decisions',
+        pointer: '/agents/auditor/decisions/0',
       },
       {
-        code: 'MOLDEA_REFERENCE_MISSING',
-        details: { referencedPath: firstContextPath },
-        entity: { agentId: 'reviewer' },
+        code: 'MOLDEA_DECISION_REFERENCE_MISSING',
+        details: { referencedPath: firstDecisionPath },
+        entity: { agentId: 'auditor', decisionId: '1767225600000' },
         path: MANIFEST_PATH,
-        pointer: '/agents/reviewer/context',
+        pointer: '/agents/auditor/decisions/1',
       },
       {
         code: 'MOLDEA_REFERENCE_MISSING',
         details: { referencedPath: secondContextPath },
         entity: { agentId: 'reviewer' },
         path: MANIFEST_PATH,
-        pointer: '/agents/reviewer/context',
+        pointer: '/agents/reviewer/context/0',
       },
       {
-        code: 'MOLDEA_DECISION_REFERENCE_MISSING',
-        details: { referencedPath: firstDecisionPath },
-        entity: { agentId: 'reviewer', decisionId: '1767225600000' },
+        code: 'MOLDEA_REFERENCE_MISSING',
+        details: { referencedPath: firstContextPath },
+        entity: { agentId: 'reviewer' },
         path: MANIFEST_PATH,
-        pointer: '/agents/reviewer/decisions',
+        pointer: '/agents/reviewer/context/1',
       },
       {
         code: 'MOLDEA_DECISION_REFERENCE_MISSING',
         details: { referencedPath: secondDecisionPath },
         entity: { agentId: 'reviewer', decisionId: '1767225600001' },
         path: MANIFEST_PATH,
-        pointer: '/agents/reviewer/decisions',
+        pointer: '/agents/reviewer/decisions/0',
+      },
+      {
+        code: 'MOLDEA_DECISION_REFERENCE_MISSING',
+        details: { referencedPath: firstDecisionPath },
+        entity: { agentId: 'reviewer', decisionId: '1767225600000' },
+        path: MANIFEST_PATH,
+        pointer: '/agents/reviewer/decisions/1',
       },
     ]);
   });

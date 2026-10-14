@@ -110,7 +110,7 @@ const simplifyDiagnostics = (diagnostics: readonly ICoreDiagnostic[]) => {
 };
 
 describe('Core mirror inspection', () => {
-  test('normalizes matching mirrors, sorts output, and compares content rather than digests', async () => {
+  test('normalizes matching mirrors, sorts agents, and preserves authored mirror order', async () => {
     const alphaFirstPath = parseRepositoryPath('/mirrors/alpha-a.md');
     const alphaSecondPath = parseRepositoryPath('/mirrors/alpha-b.md');
     const zetaPath = parseRepositoryPath('/mirrors/zeta.md');
@@ -144,18 +144,18 @@ describe('Core mirror inspection', () => {
 
     expect(result.agentMirrors.map(({ id }) => id)).toStrictEqual(['alpha', 'zeta']);
     expect(result.agentMirrors[0]?.mirrors.map(({ path }) => path)).toStrictEqual([
-      alphaFirstPath,
       alphaSecondPath,
+      alphaFirstPath,
     ]);
     expect(result.agentMirrors[0]?.mirrors[0]).toMatchObject({
       canonicalDigest: alphaDigest,
-      path: alphaFirstPath,
+      path: alphaSecondPath,
     });
     expect(result.agentMirrors[0]?.mirrors[0]?.digest).not.toBe(alphaDigest);
     expect(result.diagnostics).toStrictEqual([]);
     expect(result.valid).toBe(true);
-    expect(fixture.entryPaths).toStrictEqual([alphaFirstPath, alphaSecondPath, zetaPath]);
-    expect(fixture.readPaths).toStrictEqual([alphaFirstPath, alphaSecondPath, zetaPath]);
+    expect(fixture.entryPaths).toStrictEqual([alphaSecondPath, alphaFirstPath, zetaPath]);
+    expect(fixture.readPaths).toStrictEqual([alphaSecondPath, alphaFirstPath, zetaPath]);
     expect(Object.isFrozen(result)).toBe(true);
     expect(Object.isFrozen(result.agentMirrors)).toBe(true);
     expect(Object.isFrozen(result.agentMirrors[0]?.mirrors[0])).toBe(true);
@@ -184,30 +184,12 @@ describe('Core mirror inspection', () => {
 
     expect(simplifyDiagnostics(result.diagnostics)).toStrictEqual([
       {
-        code: 'MOLDEA_MIRROR_MISSING',
-        details: { mirrorPath: missingPath },
-        entity: { agentId: 'alpha' },
-        message: 'The declared mirror does not exist.',
-        path: MANIFEST_PATH,
-        pointer: '/agents/alpha/mirrors/0',
-        range: null,
-      },
-      {
-        code: 'MOLDEA_MIRROR_NOT_FILE',
-        details: { actualType: 'directory', mirrorPath: directoryPath },
-        entity: { agentId: 'alpha' },
-        message: 'The declared mirror is not a regular file.',
-        path: MANIFEST_PATH,
-        pointer: '/agents/alpha/mirrors/1',
-        range: null,
-      },
-      {
         code: 'MOLDEA_MIRROR_SYMLINK',
         details: { actualType: 'symlink', mirrorPath: symlinkPath },
         entity: { agentId: 'alpha' },
         message: 'The declared mirror is a symlink.',
         path: MANIFEST_PATH,
-        pointer: '/agents/alpha/mirrors/2',
+        pointer: '/agents/alpha/mirrors/0',
         range: null,
       },
       {
@@ -216,13 +198,31 @@ describe('Core mirror inspection', () => {
         entity: { agentId: 'alpha' },
         message: 'The declared mirror differs from its canonical instruction.',
         path: MANIFEST_PATH,
+        pointer: '/agents/alpha/mirrors/1',
+        range: null,
+      },
+      {
+        code: 'MOLDEA_MIRROR_MISSING',
+        details: { mirrorPath: missingPath },
+        entity: { agentId: 'alpha' },
+        message: 'The declared mirror does not exist.',
+        path: MANIFEST_PATH,
+        pointer: '/agents/alpha/mirrors/2',
+        range: null,
+      },
+      {
+        code: 'MOLDEA_MIRROR_NOT_FILE',
+        details: { actualType: 'directory', mirrorPath: directoryPath },
+        entity: { agentId: 'alpha' },
+        message: 'The declared mirror is not a regular file.',
+        path: MANIFEST_PATH,
         pointer: '/agents/alpha/mirrors/3',
         range: null,
       },
     ]);
     expect(result.agentMirrors).toStrictEqual([{ id: 'alpha', mirrors: [] }]);
     expect(result.valid).toBe(false);
-    expect(fixture.entryPaths).toStrictEqual([missingPath, directoryPath, symlinkPath, stalePath]);
+    expect(fixture.entryPaths).toStrictEqual([symlinkPath, stalePath, missingPath, directoryPath]);
     expect(fixture.readPaths).toStrictEqual([stalePath]);
   });
 
