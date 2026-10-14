@@ -28,7 +28,7 @@
             "agentId": "reviewer"
           },
           "path": "/moldea/moldea.yaml",
-          "pointer": "/agents/reviewer/context"
+          "pointer": "/agents/reviewer/context/0"
         },
         {
           "code": "MOLDEA_DECISION_REFERENCE_MISSING",
@@ -40,7 +40,7 @@
             "decisionId": "1767225600000"
           },
           "path": "/moldea/moldea.yaml",
-          "pointer": "/agents/reviewer/decisions"
+          "pointer": "/agents/reviewer/decisions/0"
         },
         {
           "code": "MOLDEA_REFERENCE_MISSING",
@@ -87,7 +87,7 @@
             "decisionId": "1767225600001"
           },
           "path": "/moldea/moldea.yaml",
-          "pointer": "/agents/reviewer/decisions"
+          "pointer": "/agents/reviewer/decisions/0"
         },
         {
           "code": "MOLDEA_DECISION_RELATIONSHIP_INACTIVE",

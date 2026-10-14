@@ -79,6 +79,9 @@ describe('Core manifest parsing', () => {
         '  zeta:',
         '    runtime: { id: custom }',
         '    affectedBy: [/z/**, /a/**]',
+        '    context: [/moldea/context/z.md, /moldea/context/a.md]',
+        '    decisions: [/moldea/decisions/1767225600001-z.md, /moldea/decisions/1767225600000-a.md]',
+        '    mirrors: [/mirrors/z.md, /mirrors/a.md]',
         '  alpha:',
         '    runtime: { id: custom }',
         'context:',
@@ -98,6 +101,9 @@ describe('Core manifest parsing', () => {
         '    affectedBy:',
         '      - /a/**',
         '      - /z/**',
+        '    context: [/moldea/context/a.md, /moldea/context/z.md]',
+        '    decisions: [/moldea/decisions/1767225600000-a.md, /moldea/decisions/1767225600001-z.md]',
+        '    mirrors: [/mirrors/a.md, /mirrors/z.md]',
         '    runtime:',
         '      id: custom',
         'context:',
@@ -118,6 +124,30 @@ describe('Core manifest parsing', () => {
     expect(Object.keys(right.manifest?.agents ?? {})).toStrictEqual(['alpha', 'zeta']);
     expect(left.manifest?.agents?.['zeta']?.affectedBy).toStrictEqual(['/z/**', '/a/**']);
     expect(right.manifest?.agents?.['zeta']?.affectedBy).toStrictEqual(['/a/**', '/z/**']);
+    expect(left.manifest?.agents?.['zeta']?.context).toStrictEqual([
+      '/moldea/context/z.md',
+      '/moldea/context/a.md',
+    ]);
+    expect(right.manifest?.agents?.['zeta']?.context).toStrictEqual([
+      '/moldea/context/a.md',
+      '/moldea/context/z.md',
+    ]);
+    expect(left.manifest?.agents?.['zeta']?.decisions).toStrictEqual([
+      '/moldea/decisions/1767225600001-z.md',
+      '/moldea/decisions/1767225600000-a.md',
+    ]);
+    expect(right.manifest?.agents?.['zeta']?.decisions).toStrictEqual([
+      '/moldea/decisions/1767225600000-a.md',
+      '/moldea/decisions/1767225600001-z.md',
+    ]);
+    expect(left.manifest?.agents?.['zeta']?.mirrors).toStrictEqual([
+      '/mirrors/z.md',
+      '/mirrors/a.md',
+    ]);
+    expect(right.manifest?.agents?.['zeta']?.mirrors).toStrictEqual([
+      '/mirrors/a.md',
+      '/mirrors/z.md',
+    ]);
     expect(left.manifest?.context?.['/moldea/project.md']?.bindings).toStrictEqual([
       { path: '/src/z.ts' },
       { path: '/src/a.ts' },

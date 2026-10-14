@@ -70,11 +70,11 @@ A match retains the warning with `accepted: true` and its reason. `warningCount`
 
 ## Ordering and limits
 
-Core normalizes diagnostics into deterministic order using their source location and identity fields rather than discovery timing. A manifest JSON Pointer retains the entry's authored array position. `maxDiagnostics` bounds raw diagnostic production; exceeding it raises `RESOURCE_LIMIT_EXCEEDED` instead of silently truncating the invalid state.
+Core normalizes diagnostics into deterministic order using their source location and identity fields rather than discovery timing. A manifest JSON Pointer retains the entry's authored array position, including agent context, decision, and mirror lists. Parsed manifest lists preserve that order; derived project indexes remain sorted independently. `maxDiagnostics` bounds raw diagnostic production; exceeding it raises `RESOURCE_LIMIT_EXCEEDED` instead of silently truncating the invalid state.
 
 ## Operational exceptions
 
-`CoreConfigurationException` reports invalid limits. `CoreOperationException` reports invalid operation arguments, resource exhaustion, cancellation, or isolated-process failure. Repository access, snapshot, cancellation, and resource exceptions propagate through the inspection boundary. Expected missing or non-file integration reads produce the integration warnings above; a reader resource refusal during the optional impact-pattern pass suppresses only that pass. Other operational failures never become content diagnostics.
+`CoreConfigurationException` reports invalid limits. `CoreOperationException` reports invalid operation arguments, resource exhaustion, cancellation, or isolated-process failure. Repository access, snapshot, cancellation, and resource exceptions propagate through the inspection boundary. Expected missing or non-file integration reads produce the integration warnings above; a reader or memory-ledger resource refusal during the optional impact-pattern pass suppresses only that pass. Other operational failures never become content diagnostics.
 
 Core owns these stable exception contracts:
 

@@ -45,12 +45,12 @@
           "id": "alpha",
           "mirrors": [
             {
-              "path": "/apps/alpha-cr.md",
+              "path": "/apps/alpha-crlf.md",
               "digest": "sha256:26d3cbfcfc24d9661a8f7e602630d6eeefb5a5efeed7e3b3b9a668367f840ba7",
               "canonicalDigest": "sha256:26d3cbfcfc24d9661a8f7e602630d6eeefb5a5efeed7e3b3b9a668367f840ba7"
             },
             {
-              "path": "/apps/alpha-crlf.md",
+              "path": "/apps/alpha-cr.md",
               "digest": "sha256:26d3cbfcfc24d9661a8f7e602630d6eeefb5a5efeed7e3b3b9a668367f840ba7",
               "canonicalDigest": "sha256:26d3cbfcfc24d9661a8f7e602630d6eeefb5a5efeed7e3b3b9a668367f840ba7"
             }
@@ -115,30 +115,42 @@
       ],
       "expectedDiagnostics": [
         {
-          "code": "MOLDEA_MIRROR_MISSING",
+          "code": "MOLDEA_MIRROR_STALE",
           "details": {
-            "mirrorPath": "/mirrors/a-missing.md"
+            "mirrorPath": "/mirrors/f-empty.md"
           },
           "entity": {
             "agentId": "alpha"
           },
-          "message": "The declared mirror does not exist.",
+          "message": "The declared mirror differs from its canonical instruction.",
           "path": "/moldea/moldea.yaml",
           "pointer": "/agents/alpha/mirrors/0",
           "range": null
         },
         {
-          "code": "MOLDEA_MIRROR_NOT_FILE",
+          "code": "MOLDEA_MIRROR_STALE",
           "details": {
-            "actualType": "directory",
-            "mirrorPath": "/mirrors/b-directory"
+            "mirrorPath": "/mirrors/e-stale-unicode.md"
           },
           "entity": {
             "agentId": "alpha"
           },
-          "message": "The declared mirror is not a regular file.",
+          "message": "The declared mirror differs from its canonical instruction.",
           "path": "/moldea/moldea.yaml",
           "pointer": "/agents/alpha/mirrors/1",
+          "range": null
+        },
+        {
+          "code": "MOLDEA_MIRROR_STALE",
+          "details": {
+            "mirrorPath": "/mirrors/d-stale-space.md"
+          },
+          "entity": {
+            "agentId": "alpha"
+          },
+          "message": "The declared mirror differs from its canonical instruction.",
+          "path": "/moldea/moldea.yaml",
+          "pointer": "/agents/alpha/mirrors/2",
           "range": null
         },
         {
@@ -152,44 +164,32 @@
           },
           "message": "The declared mirror is a symlink.",
           "path": "/moldea/moldea.yaml",
-          "pointer": "/agents/alpha/mirrors/2",
-          "range": null
-        },
-        {
-          "code": "MOLDEA_MIRROR_STALE",
-          "details": {
-            "mirrorPath": "/mirrors/d-stale-space.md"
-          },
-          "entity": {
-            "agentId": "alpha"
-          },
-          "message": "The declared mirror differs from its canonical instruction.",
-          "path": "/moldea/moldea.yaml",
           "pointer": "/agents/alpha/mirrors/3",
           "range": null
         },
         {
-          "code": "MOLDEA_MIRROR_STALE",
+          "code": "MOLDEA_MIRROR_NOT_FILE",
           "details": {
-            "mirrorPath": "/mirrors/e-stale-unicode.md"
+            "actualType": "directory",
+            "mirrorPath": "/mirrors/b-directory"
           },
           "entity": {
             "agentId": "alpha"
           },
-          "message": "The declared mirror differs from its canonical instruction.",
+          "message": "The declared mirror is not a regular file.",
           "path": "/moldea/moldea.yaml",
           "pointer": "/agents/alpha/mirrors/4",
           "range": null
         },
         {
-          "code": "MOLDEA_MIRROR_STALE",
+          "code": "MOLDEA_MIRROR_MISSING",
           "details": {
-            "mirrorPath": "/mirrors/f-empty.md"
+            "mirrorPath": "/mirrors/a-missing.md"
           },
           "entity": {
             "agentId": "alpha"
           },
-          "message": "The declared mirror differs from its canonical instruction.",
+          "message": "The declared mirror does not exist.",
           "path": "/moldea/moldea.yaml",
           "pointer": "/agents/alpha/mirrors/5",
           "range": null

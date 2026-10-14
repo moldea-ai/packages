@@ -10,6 +10,7 @@ import {
 } from '@moldea.ai/repository';
 import {
   createMemoryRepositoryReader,
+  createIntegratedMemoryRepositoryReader,
   overrideCoreTestRepositoryReader,
   type ICoreTestRepositoryReader,
   type IMemoryRepositoryEntry,
@@ -72,7 +73,10 @@ const createDecisionContent = (decision: IDecisionFixture): string => {
 };
 
 const createRepositoryEntries = (
-  fixtureCase: IManifestRelationshipFixture['cases'][number],
+  fixtureCase: Pick<
+    IManifestRelationshipFixture['cases'][number],
+    'manifest' | 'contextPaths' | 'decisions'
+  >,
 ): readonly IMemoryRepositoryEntry[] => [
   { content: fixtureCase.manifest, path: '/moldea/moldea.yaml', type: 'file' },
   { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
@@ -149,6 +153,66 @@ const validateRepositoryRelationships = async (repository: ICoreTestRepositoryRe
 };
 
 describe('Core manifest relationships through the memory repository reader', () => {
+  test.each([[0], [1]])(
+    'retains authored context and decision indexes through Core (%d)',
+    async (missingIndex) => {
+      const contextPaths = ['/moldea/context/z.md', '/moldea/context/a.md'];
+      const decisions: IDecisionFixture[] = [
+        { id: '1767225600001', slug: 'z', status: 'proposed' },
+        { id: '1767225600000', slug: 'a', status: 'proposed' },
+      ];
+      const fixtureCase = {
+        manifest: JSON.stringify({
+          version: 1,
+          agents: {
+            reviewer: {
+              runtime: { id: 'custom' },
+              context: contextPaths,
+              decisions: decisions.map(createDecisionPath),
+            },
+          },
+        }),
+        contextPaths: contextPaths.filter((_, index) => index !== missingIndex),
+        decisions: decisions.filter((_, index) => index !== missingIndex),
+      };
+      const repository = createIntegratedMemoryRepositoryReader([
+        ...createRepositoryEntries(fixtureCase),
+        { path: '/moldea/agents/reviewer/description.md', type: 'file', content: 'Reviewer.\n' },
+        {
+          path: '/moldea/agents/reviewer/instruction.md',
+          type: 'file',
+          content: 'You are the `reviewer` agent. Follow project policy.\n',
+        },
+      ]);
+      const result = await createCore().validateProject({ repository });
+
+      expect(result.valid).toBe(false);
+      expect(result.errorCount).toBe(3);
+      expect(simplifyDiagnostics(result.diagnostics)).toStrictEqual([
+        {
+          code: 'MOLDEA_REFERENCE_MISSING',
+          details: { referencedPath: contextPaths[missingIndex] },
+          entity: { agentId: 'reviewer' },
+          path: '/moldea/moldea.yaml',
+          pointer: `/agents/reviewer/context/${missingIndex}`,
+        },
+        ...decisions.map((decision, index) => ({
+          code:
+            index === missingIndex
+              ? 'MOLDEA_DECISION_REFERENCE_MISSING'
+              : 'MOLDEA_DECISION_RELATIONSHIP_INACTIVE',
+          details: {
+            referencedPath: createDecisionPath(decision),
+            ...(index === missingIndex ? {} : { targetStatus: 'proposed' }),
+          },
+          entity: { agentId: 'reviewer', decisionId: decision.id },
+          path: '/moldea/moldea.yaml',
+          pointer: `/agents/reviewer/decisions/${index}`,
+        })),
+      ]);
+    },
+  );
+
   test.each(fixture.cases)('returns exact relationship diagnostics for $name', async (case_) => {
     const repository = createMemoryRepositoryReader(createRepositoryEntries(case_));
     const diagnostics = await validateRepositoryRelationships(repository);

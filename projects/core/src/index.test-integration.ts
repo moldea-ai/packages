@@ -190,7 +190,7 @@ describe('published Core package artifacts', () => {
     ) as { readonly dependencies?: Readonly<Record<string, string>> };
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '7.0.3' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '7.0.4' });
     for (const entryName of [
       'index',
       'format',
