@@ -105,6 +105,59 @@ describe('Core with the immutable memory repository reader', () => {
     expect(JSON.stringify(result)).not.toContain(manifestContent);
   });
 
+  test('preserves authored mirror indexes through YAML parsing and deterministic scope matching', async () => {
+    const manifest = {
+      content: [
+        'version: 1',
+        'agents:',
+        '  reviewer:',
+        '    runtime:',
+        '      id: openai',
+        '    mirrors:',
+        '      - /prompts/zeta.md',
+        '      - /prompts/alpha.md',
+        '',
+      ].join('\n'),
+      path: parseRepositoryPath('/moldea/moldea.yaml'),
+    };
+    const core = createCore();
+    const paths = ['/prompts/zeta.md', '/prompts/alpha.md'];
+    const result = await core.matchManifestScope({ manifest, paths });
+
+    expect(result).toMatchObject({
+      counts: {
+        declarations: 2,
+        inputPaths: 2,
+        matchedOwners: 1,
+        matchedPaths: 2,
+        matches: 2,
+      },
+      diagnostics: [],
+      relevant: true,
+      valid: true,
+    });
+    expect(result.matches).toStrictEqual([
+      {
+        declaration: { kind: 'exact', path: '/prompts/alpha.md', symbol: null },
+        field: 'mirrors',
+        inputPath: '/prompts/alpha.md',
+        owner: { agentId: 'reviewer', id: 'reviewer', kind: 'agent' },
+        pointer: '/agents/reviewer/mirrors/1',
+      },
+      {
+        declaration: { kind: 'exact', path: '/prompts/zeta.md', symbol: null },
+        field: 'mirrors',
+        inputPath: '/prompts/zeta.md',
+        owner: { agentId: 'reviewer', id: 'reviewer', kind: 'agent' },
+        pointer: '/agents/reviewer/mirrors/0',
+      },
+    ]);
+    expect(await core.matchManifestScope({ manifest, paths: [...paths].reverse() })).toStrictEqual(
+      result,
+    );
+    expect(JSON.stringify(result)).not.toContain(manifest.content);
+  });
+
   test('returns structural manifest diagnostics without manufacturing relevance', async () => {
     const result = await createCore().matchManifestScope({
       manifest: {
