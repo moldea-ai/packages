@@ -42,7 +42,11 @@ test('distinguishes required repository files from optional project knowledge', 
   const result = loadWebsiteModel().inspectionExample[1].result;
   expect(JSON.parse(await preview.innerText())).toStrictEqual({
     valid: result.valid,
-    diagnostics: result.diagnostics.map(({ code, severity, path }) => ({ code, severity, path })),
+    errorCount: result.errorCount,
+    warningCount: result.warningCount,
+    acceptedWarningCount: result.acceptedWarningCount,
+    diagnosticCount: result.diagnosticCount,
+    diagnostics: result.diagnostics.map(({ code }) => ({ code })),
   });
   await expect(preview).not.toHaveAttribute('data-code-copy-enhanced');
   await opener.click();

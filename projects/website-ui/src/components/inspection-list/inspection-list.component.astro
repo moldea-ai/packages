@@ -60,20 +60,25 @@ const counts = [
     aria-label={`${result.label}${single ? ` ${single.code}` : ''}: View result: ${single?.title ?? result.title}`}
     variant="outline"
     size="sm"
-    class={`min-h-14 w-full min-w-0 justify-start gap-3 text-foreground ${toneClasses[result.tone]}`}
+    class={`min-h-10 w-full min-w-0 justify-start gap-3 text-foreground ${toneClasses[result.tone]}`}
     data-inspection-outcome={result.label}
   >
     <Icon
       class="size-5 shrink-0"
       aria-hidden="true"
     />
-    <span class="min-w-0 flex-1 text-start whitespace-normal">
-      <span>{result.label}</span>{
-        result.findings.length > 1 && <span class="ml-2 text-xs font-normal">{counts}</span>
+    <span class="flex min-w-0 flex-1 items-center gap-2 text-start">
+      <span class="shrink-0">{result.label}</span>{
+        result.findings.length > 1 && (
+          <span class="min-w-0 truncate text-xs font-normal">{counts}</span>
+        )
       }
       {
         single && (
-          <code class="mt-0.5 block font-mono text-[11px] leading-4 font-normal break-all text-muted-foreground">
+          <code
+            class="min-w-0 truncate font-mono text-[11px] font-normal text-muted-foreground"
+            title={single.code}
+          >
             {single.code}
           </code>
         )
@@ -116,9 +121,12 @@ const counts = [
                   ]}
                   aria-hidden="true"
                 />
-                <span class="min-w-0 flex-1 text-start">
-                  <span class="block truncate">{finding.title}</span>
-                  <code class="mt-0.5 block font-mono text-[11px] leading-4 font-normal break-all whitespace-normal text-muted-foreground">
+                <span class="flex min-w-0 flex-1 items-center gap-2 text-start">
+                  <span class="min-w-0 flex-1 truncate">{finding.title}</span>
+                  <code
+                    class="max-w-1/2 min-w-0 truncate font-mono text-[11px] font-normal text-muted-foreground"
+                    title={finding.code}
+                  >
                     {finding.code}
                   </code>
                 </span>

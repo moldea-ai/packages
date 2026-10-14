@@ -983,9 +983,14 @@ describe('published website UI package', () => {
             expect(await findingCode.evaluate((node) => getComputedStyle(node).fontWeight)).toBe(
               '400',
             );
-            expect(await findingCode.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(
-              true,
+            expect(await findingCode.evaluate((node) => getComputedStyle(node).whiteSpace)).toBe(
+              'nowrap',
             );
+            expect(await findingCode.evaluate((node) => getComputedStyle(node).textOverflow)).toBe(
+              'ellipsis',
+            );
+            expect(rowBounds!.height).toBe(40);
+            expect((await passedOpener.boundingBox())!.height).toBe(40);
             const findingHeader = singleDialog.locator('[data-inspection-finding-header]');
             expect(await findingHeader.getByText('References', { exact: true }).isVisible()).toBe(
               true,

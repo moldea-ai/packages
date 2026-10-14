@@ -32,9 +32,14 @@ for (const width of [320, 768, 1440]) {
           await expect(code).toContainText('listChangesPage');
         } else if (slug === 'repository-fs') {
           await expect(
-            section.getByRole('group', { name: 'Read only the files you choose execution facts' }),
+            section.getByRole('group', {
+              name: 'Select the files your inspection can read execution facts',
+            }),
           ).toContainText('/node_modules/left-pad/index.js');
           await expect(code).toContainText('/moldea/moldea.yaml');
+          await expect(section).toContainText(
+            'Output also lists parent directories and byte lengths.',
+          );
         } else if (slug === 'cli') {
           await expect(section.locator('[data-inspection-outcome]').first()).toContainText(
             'Invalid',
@@ -54,6 +59,30 @@ for (const width of [320, 768, 1440]) {
         await page.keyboard.press('Enter');
         const dialog = page.getByRole('dialog');
         await expect(dialog).toBeVisible();
+        if (slug === 'repository-fs') {
+          const output: unknown = JSON.parse(
+            await dialog.locator('[data-inspection-output] pre').innerText(),
+          );
+          expect(output).toMatchObject({
+            explicit: expect.arrayContaining([
+              {
+                path: '/moldea',
+                type: 'directory',
+                byteLength: null,
+              },
+            ]),
+            directory: expect.arrayContaining([
+              {
+                path: '/dist/bundle.js',
+                type: 'file',
+                byteLength: 13,
+              },
+            ]),
+          });
+          await expect(dialog).toContainText(
+            'Execution facts omit opaque snapshot and content identities and cursor values.',
+          );
+        }
         const bounds = await dialog.boundingBox();
         expect(bounds!.width).toBe(width < 640 ? width : Math.min(width - 32, 672));
         await page.keyboard.press('Escape');

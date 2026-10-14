@@ -26,7 +26,11 @@ const { repositoryFormatRoute, result, files } = Astro.props;
 const outputPreview = JSON.stringify(
   {
     valid: result.valid,
-    diagnostics: result.diagnostics.map(({ code, severity, path }) => ({ code, severity, path })),
+    errorCount: result.errorCount,
+    warningCount: result.warningCount,
+    acceptedWarningCount: result.acceptedWarningCount,
+    diagnosticCount: result.diagnosticCount,
+    diagnostics: result.diagnostics.map(({ code }) => ({ code })),
   },
   null,
   2,
@@ -187,6 +191,9 @@ const canonicalFiles = [
             copyable={false}
             ariaLabel="Validation response excerpt"
           />
+          <p class="text-xs leading-5 text-muted-foreground">
+            Output includes full diagnostics, coverage and source metadata.
+          </p>
           <InspectionResult
             id="repository-overview"
             {result}
