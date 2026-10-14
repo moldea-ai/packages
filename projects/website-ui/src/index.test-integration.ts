@@ -15,7 +15,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 
 import { AxeBuilder } from '@axe-core/playwright';
-import { chromium } from '@playwright/test';
+import { chromium, type Locator } from '@playwright/test';
 import { extractMessage } from 'error-message-utils';
 import { afterEach, describe, expect, test } from 'vitest';
 
@@ -84,6 +84,44 @@ afterEach(() => {
     rmSync(directory, { force: true, recursive: true });
   }
 });
+
+/**
+ * Checks rendered text baselines and icon centers at the current viewport.
+ * Zero-height inline markers expose text baselines without changing line height.
+ * @returns A promise that resolves after the alignment assertions.
+ */
+const expectInspectionActionAlignment = async (opener: Locator): Promise<void> => {
+  const layout = await opener.evaluate(async (node) => {
+    await document.fonts.ready;
+    const textGroup = node.querySelector(':scope > span');
+    if (textGroup === null) throw new Error('Missing inspection action text.');
+    const measureBaseline = (text: Element): number => {
+      const marker = document.createElement('span');
+      marker.style.cssText =
+        'display:inline-block;width:0;height:0;vertical-align:baseline;line-height:0;font-size:0';
+      text.append(marker);
+      try {
+        return marker.getBoundingClientRect().top;
+      } finally {
+        marker.remove();
+      }
+    };
+    const bounds = node.getBoundingClientRect();
+    return {
+      baselines: [...textGroup.children].map(measureBaseline),
+      center: bounds.top + bounds.height / 2,
+      iconCenters: [...node.querySelectorAll(':scope > svg')].map((icon) => {
+        const iconBounds = icon.getBoundingClientRect();
+        return iconBounds.top + iconBounds.height / 2;
+      }),
+    };
+  });
+  expect(layout.baselines.length).toBeGreaterThan(0);
+  expect(Math.max(...layout.baselines) - Math.min(...layout.baselines)).toBeLessThanOrEqual(0.5);
+  expect(layout.iconCenters).toHaveLength(2);
+  for (const center of layout.iconCenters)
+    expect(Math.abs(center - layout.center)).toBeLessThanOrEqual(0.5);
+};
 
 describe('published website UI package', () => {
   test('packs only the documented runtime, component, style, and package files', () => {
@@ -923,6 +961,7 @@ describe('published website UI package', () => {
             ).toBe(1);
             for (const id of ['passed', 'single', 'hover-neutral', 'hover-warning', 'hover-info']) {
               const opener = page.locator(`[data-dialog-open="${id}-result"]`);
+              await expectInspectionActionAlignment(opener);
               await page.mouse.move(0, 0);
               const restingColor = await opener.evaluate(
                 (node) => getComputedStyle(node).backgroundColor,
@@ -945,6 +984,7 @@ describe('published website UI package', () => {
               expect((await opener.boundingBox())!.height).toBe(40);
             }
             const illustrationOpener = page.locator('[data-dialog-open="illustrated-result"]');
+            await expectInspectionActionAlignment(illustrationOpener);
             expect(await illustrationOpener.locator('svg.lucide-scroll-text').count()).toBe(1);
             await illustrationOpener.focus();
             await illustrationOpener.press('Enter');
@@ -1100,6 +1140,11 @@ describe('published website UI package', () => {
               .toBe(true);
             const outerOpener = page.getByRole('button', { name: 'Open case', exact: true });
             await outerOpener.click();
+            for (const findingOpener of await page
+              .locator('#outer-case [data-inspection-select]')
+              .all()) {
+              await expectInspectionActionAlignment(findingOpener);
+            }
             const acceptedOpener = page.locator(
               '[data-dialog-open="multiple-result"][data-inspection-select="accepted"]',
             );

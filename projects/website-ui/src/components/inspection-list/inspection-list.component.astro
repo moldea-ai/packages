@@ -76,7 +76,7 @@ const counts = [
       class="size-5 shrink-0"
       aria-hidden="true"
     />
-    <span class="flex min-w-0 flex-1 items-center gap-2 text-start">
+    <span class="flex min-w-0 flex-1 items-baseline gap-2 text-start">
       <span class="shrink-0">{result.label}</span>{
         result.findings.length > 1 && (
           <span class="min-w-0 truncate text-xs font-normal">{counts}</span>
@@ -130,7 +130,7 @@ const counts = [
                   ]}
                   aria-hidden="true"
                 />
-                <span class="flex min-w-0 flex-1 items-center gap-2 text-start">
+                <span class="flex min-w-0 flex-1 items-baseline gap-2 text-start">
                   <span class="min-w-0 flex-1 truncate">{finding.title}</span>
                   <code
                     class="max-w-1/2 min-w-0 truncate font-mono text-[11px] font-normal text-muted-foreground"
