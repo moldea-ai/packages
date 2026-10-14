@@ -39,12 +39,6 @@ const EXPECTED_MANIFEST_PROPERTY_PATHS = [
   'unresolved.{requirement-id}.reference',
   'agents',
   'agents.{agent-id}.runtime',
-  'acceptedWarnings',
-  'acceptedWarnings[]',
-  'acceptedWarnings[].code',
-  'acceptedWarnings[].subject',
-  'acceptedWarnings[].qualifier',
-  'acceptedWarnings[].reason',
   'agents.{agent-id}.runtime.id',
   'agents.{agent-id}.runtime.guidance',
   'agents.{agent-id}.context',
@@ -110,6 +104,12 @@ const EXPECTED_MANIFEST_PROPERTY_PATHS = [
   'agents.{agent-id}.unresolved.{requirement-id}.related[].path',
   'agents.{agent-id}.unresolved.{requirement-id}.related[].symbol',
   'agents.{agent-id}.unresolved.{requirement-id}.reference',
+  'acceptedWarnings',
+  'acceptedWarnings[]',
+  'acceptedWarnings[].code',
+  'acceptedWarnings[].subject',
+  'acceptedWarnings[].qualifier',
+  'acceptedWarnings[].reason',
 ] as const;
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../..');
