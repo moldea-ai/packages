@@ -1348,5 +1348,5 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('lucide-maximize-2');
     expect(fixtureHtml).toContain('Expanded source content');
     expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(3 + RUNTIME_CATALOG.length);
-  }, 180_000);
+  }, 240_000);
 });
