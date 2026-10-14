@@ -371,6 +371,8 @@ for (const exampleId of ['cli-pattern-warning', 'cli-accepted-warning']) {
     test(`opens illustration and result dialogs with separate focus restoration for ${exampleId} in ${colorScheme}`, async ({
       page,
     }) => {
+      // both dialog states receive an Axe audit within this complete nested-dialog journey
+      test.setTimeout(60_000);
       await page.setViewportSize({ width: 320, height: 900 });
       await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
       await page.goto(route);
