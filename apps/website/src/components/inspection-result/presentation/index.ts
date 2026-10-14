@@ -15,6 +15,9 @@ import {
   type IRecordedOutput,
 } from '../../../lib/capabilities/index.ts';
 
+// executed examples always retain their captured response
+type IRecordedInspectionView = IInspectionResultView & { output: string; outputLabel: string };
+
 // only finding fields used by presentation are interpreted; output remains complete
 const Finding = z.object({
   code: z.string(),
@@ -113,7 +116,7 @@ const findingView = (
 /** Formats complete output without moving process context into native envelopes. */
 const outputView = (
   output: IRecordedOutput,
-): Pick<IInspectionResultView, 'output' | 'outputLabel' | 'redactions'> => ({
+): Pick<IRecordedInspectionView, 'output' | 'outputLabel' | 'redactions'> => ({
   output: JSON.stringify(
     output.responses.length === 1 ? output.responses[0] : output.responses,
     null,
@@ -126,7 +129,7 @@ const outputView = (
 });
 
 /** Adapts actual capability outcomes and diagnostics to the official inspection surfaces. */
-export const getCapabilityInspectionView = (example: ICapabilityCase): IInspectionResultView => {
+export const getCapabilityInspectionView = (example: ICapabilityCase): IRecordedInspectionView => {
   const outcome = getCapabilityOutcome(example);
   const result = example.result;
   return {
@@ -147,7 +150,7 @@ export const getProjectInspectionView = (
   result: IProjectValidationResult,
   title: string,
   files: ICapabilityFile[] = [],
-): IInspectionResultView => ({
+): IRecordedInspectionView => ({
   title,
   label: result.valid ? 'Valid' : 'Invalid',
   tone: result.valid ? 'success' : 'danger',

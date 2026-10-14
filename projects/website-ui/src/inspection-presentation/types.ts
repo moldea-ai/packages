@@ -31,30 +31,31 @@ export interface IInspectionEvidence {
   isMissing?: boolean;
 }
 
-export interface IInspectionFindingView {
+export type IInspectionFindingView = {
   id: string;
   title: string;
   code: string;
   severity: IInspectionSeverity;
-  group: IDiagnosticGroup;
   message: string;
   path?: string;
   pointer?: string;
   accepted?: boolean;
   reason?: string;
   evidence: IInspectionEvidence[];
-}
+} & ({ group: IDiagnosticGroup; category?: never } | { category: IFindingCategory; group?: never });
 
 // reusable result presentation contains no Core or CLI domain dependency
-export interface IInspectionResultView {
+export type IInspectionResultView = {
   title: string;
   label: string;
   tone: 'danger' | 'info' | 'neutral' | 'success' | 'warning';
   findings: IInspectionFindingView[];
-  outputLabel: string;
-  output: string;
   redactions: string[];
   command?: string;
   exitStatus?: number;
   limitation?: string;
-}
+} & (
+  | { output: string; outputLabel: string }
+  // illustrative findings omit output rather than inventing a captured response
+  | { output?: never; outputLabel?: never }
+);

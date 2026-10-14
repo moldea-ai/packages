@@ -292,6 +292,8 @@ describe('published website UI package', () => {
         'const passed = { title: "Validation complete", label: "Valid", tone: "success", findings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
         'const failed = { ...passed, title: "Validation failed", label: "Invalid", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "moldea.yaml", evidence: [{ path: "moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Missing target", isMissing: true }] }] } satisfies IInspectionResultView;',
         'const multiple = { ...failed, title: "Inspection complete", findings: [...failed.findings, { id: "accepted", title: "Unmatched relationship", code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", accepted: true, reason: "Generated files arrive during the release build.", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", evidence: [] }] } satisfies IInspectionResultView;',
+        'const illustrated = { title: "Illustrative policy review", label: "Error", tone: "danger", findings: [{ id: "authority", title: "Approval authority", code: "CONTEXT_CONTRADICTED", severity: "error", category: "context", message: "Only managers can approve refunds.", evidence: [{ path: "project.md", language: "markdown", content: "Only managers can approve refunds.", isExcerpt: true }] }], redactions: [], limitation: "Illustrative finding." } satisfies IInspectionResultView;',
+        'const statusResults = [{ ...passed, title: "Reader result", label: "Result", tone: "neutral" }, { ...failed, title: "Review warning", label: "Warning", tone: "warning", findings: [{ ...failed.findings[0], severity: "warning" }] }, { ...failed, title: "Accepted warning", label: "Accepted", tone: "info", findings: [{ ...failed.findings[0], severity: "warning", accepted: true }] }] satisfies IInspectionResultView[];',
         '---',
         '<html lang="en" data-theme="system">',
         '  <head>',
@@ -355,7 +357,7 @@ describe('published website UI package', () => {
         '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
         '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
         '    <Dialog {...iconDialogProps}><p>Expanded source content</p></Dialog>',
-        '    <main data-inspection-fixture class="mx-auto max-w-3xl px-3"><h2>Inspection examples</h2><InspectionList id="passed" result={passed} /><InspectionList id="single" result={failed} /><Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><a href="#standalone" data-dialog-open="standalone">Open standalone output</a><InspectionDialog id="standalone" result={passed} /><a href="/runtimes/">Navigate to runtimes</a></main>',
+        '    <main data-inspection-fixture class="mx-auto max-w-3xl px-3"><h2>Inspection examples</h2><InspectionList id="passed" result={passed} /><InspectionList id="single" result={failed} /><InspectionList id="illustrated" result={illustrated} />{statusResults.map((result) => <InspectionList id={`hover-${result.tone}`} result={result} />)}<Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><a href="#standalone" data-dialog-open="standalone">Open standalone output</a><InspectionDialog id="standalone" result={passed} /><a href="/runtimes/">Navigate to runtimes</a></main>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
         '    <InspectionFinding title="Declared export missing" code="MOLDEA_REFERENCE_EXPORT_MISSING" severity="error" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} />',
@@ -919,6 +921,59 @@ describe('published website UI package', () => {
                 .getByRole('button', { name: 'Copy code', exact: true })
                 .count(),
             ).toBe(1);
+            for (const id of ['passed', 'single', 'hover-neutral', 'hover-warning', 'hover-info']) {
+              const opener = page.locator(`[data-dialog-open="${id}-result"]`);
+              await page.mouse.move(0, 0);
+              const restingColor = await opener.evaluate(
+                (node) => getComputedStyle(node).backgroundColor,
+              );
+              const restingBorder = await opener.evaluate(
+                (node) => getComputedStyle(node).borderColor,
+              );
+              await opener.hover();
+              expect(
+                await opener.evaluate((node) => getComputedStyle(node).backgroundColor),
+              ).not.toBe(restingColor);
+              expect(await opener.evaluate((node) => getComputedStyle(node).borderColor)).not.toBe(
+                restingBorder,
+              );
+              expect(
+                await opener.evaluate((node) =>
+                  Number.parseFloat(getComputedStyle(node).transitionDuration),
+                ),
+              ).toBeLessThanOrEqual(0.00001);
+              expect((await opener.boundingBox())!.height).toBe(40);
+            }
+            const illustrationOpener = page.locator('[data-dialog-open="illustrated-result"]');
+            expect(await illustrationOpener.locator('svg.lucide-scroll-text').count()).toBe(1);
+            await illustrationOpener.focus();
+            await illustrationOpener.press('Enter');
+            const illustrationDialog = page.getByRole('dialog', {
+              name: 'Illustrative policy review',
+              exact: true,
+            });
+            expect(
+              await illustrationDialog.getByText('Project context', { exact: true }).isVisible(),
+            ).toBe(true);
+            expect(
+              await illustrationDialog
+                .getByRole('heading', { name: 'Approval authority', exact: true })
+                .count(),
+            ).toBe(1);
+            expect(await illustrationDialog.getByRole('tab').count()).toBe(0);
+            expect(await illustrationDialog.locator('[data-inspection-output]').count()).toBe(0);
+            expect(
+              await illustrationDialog
+                .getByText('Illustrative finding.', { exact: true })
+                .isVisible(),
+            ).toBe(true);
+            expect(
+              (await new AxeBuilder({ page }).include('#illustrated-result').analyze()).violations,
+            ).toStrictEqual([]);
+            await page.keyboard.press('Escape');
+            await expect
+              .poll(() => illustrationOpener.evaluate((node) => node === document.activeElement))
+              .toBe(true);
             const passedOpener = page.getByRole('link', {
               name: 'Valid: View result: Validation complete',
               exact: true,

@@ -574,6 +574,7 @@ test('preserves ordinary guide headings and complete technical tokens', async ({
   await expect(
     page
       .getByRole('figure', { name: 'Illustrative PR Assurance review' })
+      .locator('[data-file-preview-header]:visible')
       .getByText('/moldea/project.md', { exact: true }),
   ).toBeVisible();
   await page.goto(toPublicPath('/packages/'));

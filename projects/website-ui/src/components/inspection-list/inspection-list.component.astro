@@ -2,6 +2,7 @@
 import { ArrowUpRight, CheckCircle2, CircleAlert, Info, TriangleAlert } from '@lucide/astro';
 import {
   DIAGNOSTIC_GROUP_PRESENTATIONS,
+  FINDING_CATEGORY_PRESENTATIONS,
   INSPECTION_SEVERITY_PRESENTATIONS,
   type IInspectionResultView,
 } from '@moldea.ai/website-ui/inspection-presentation';
@@ -24,14 +25,22 @@ const icons = {
   warning: TriangleAlert,
 };
 const single = result.findings.length === 1 ? result.findings[0] : undefined;
-const Icon = single ? DIAGNOSTIC_GROUP_PRESENTATIONS[single.group].icon : icons[result.tone];
+const Icon = single
+  ? (single.category === undefined
+      ? DIAGNOSTIC_GROUP_PRESENTATIONS[single.group]
+      : FINDING_CATEGORY_PRESENTATIONS[single.category]
+    ).icon
+  : icons[result.tone];
 const toneClasses = {
-  danger: 'border-destructive/40 bg-destructive/10 [&_svg:first-child]:text-destructive',
-  info: 'border-info/40 bg-info/10 [&_svg:first-child]:text-info',
-  neutral: 'border-border bg-muted',
-  success: 'border-success/40 bg-success/10 [&_svg:first-child]:text-success',
+  danger:
+    'border-destructive/40 bg-destructive/10 not-disabled:not-aria-disabled:hover:border-destructive/60 not-disabled:not-aria-disabled:hover:bg-destructive/20 [&_svg:first-child]:text-destructive',
+  info: 'border-info/40 bg-info/10 not-disabled:not-aria-disabled:hover:border-info/60 not-disabled:not-aria-disabled:hover:bg-info/20 [&_svg:first-child]:text-info',
+  neutral:
+    'border-border bg-muted not-disabled:not-aria-disabled:hover:border-foreground/30 not-disabled:not-aria-disabled:hover:bg-foreground/10',
+  success:
+    'border-success/40 bg-success/10 not-disabled:not-aria-disabled:hover:border-success/60 not-disabled:not-aria-disabled:hover:bg-success/20 [&_svg:first-child]:text-success',
   warning:
-    'border-warning/50 bg-warning/10 [&_svg:first-child]:text-warning-foreground dark:[&_svg:first-child]:text-warning',
+    'border-warning/50 bg-warning/10 not-disabled:not-aria-disabled:hover:border-warning/70 not-disabled:not-aria-disabled:hover:bg-warning/20 [&_svg:first-child]:text-warning-foreground dark:[&_svg:first-child]:text-warning',
 };
 const errors = result.findings.filter(({ severity }) => severity === 'error').length;
 const warnings = result.findings.filter(
@@ -60,7 +69,7 @@ const counts = [
     aria-label={`${result.label}${single ? ` ${single.code}` : ''}: View result: ${single?.title ?? result.title}`}
     variant="outline"
     size="sm"
-    class={`min-h-10 w-full min-w-0 justify-start gap-3 text-foreground ${toneClasses[result.tone]}`}
+    class={`min-h-10 w-full min-w-0 justify-start gap-3 text-foreground transition-colors motion-reduce:transition-none ${toneClasses[result.tone]}`}
     data-inspection-outcome={result.label}
   >
     <Icon

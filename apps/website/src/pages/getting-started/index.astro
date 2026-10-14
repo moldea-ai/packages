@@ -7,8 +7,8 @@ import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import Conversation from '@moldea.ai/website-ui/conversation';
 import ConversationMessage from '@moldea.ai/website-ui/conversation-message';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
-import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';
-import { FINDING_CATEGORY_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';
+import InspectionList from '@moldea.ai/website-ui/inspection-list';
+import type { IInspectionResultView } from '@moldea.ai/website-ui/inspection-presentation';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import { withBase } from '@moldea.ai/website-ui/site';
 
@@ -29,6 +29,43 @@ const sections = [
 ];
 const beforeInstruction = 'Explain eligibility. Never approve refunds.';
 const afterInstruction = 'Approve eligible refunds using the order details.';
+const supportPolicy =
+  'Support can explain the policy and look up orders. It cannot approve refunds or change orders.';
+const assuranceIllustration = {
+  title: 'Illustrative PR Assurance review',
+  label: 'Error',
+  tone: 'danger',
+  findings: [
+    {
+      id: 'refund-authority',
+      title: 'Refund approval boundary',
+      code: 'CONTEXT_CONTRADICTED',
+      severity: 'error',
+      category: 'context',
+      message:
+        'The changed instruction allows support to approve refunds, exceeding the authority set by the project rule.',
+      path: '/moldea/agents/support/instruction.md',
+      evidence: [
+        {
+          path: '/moldea/project.md',
+          label: 'Project rule',
+          language: 'markdown',
+          content: supportPolicy,
+          isExcerpt: true,
+        },
+        {
+          path: '/moldea/agents/support/instruction.md',
+          label: 'Changed instruction',
+          language: 'markdown',
+          content: afterInstruction,
+          isExcerpt: true,
+        },
+      ],
+    },
+  ],
+  redactions: [],
+  limitation: 'Illustrative review of the displayed rule and instruction.',
+} satisfies IInspectionResultView;
 ---
 
 <BaseLayout
@@ -337,10 +374,7 @@ const afterInstruction = 'Approve eligible refunds using the order details.';
             path="/moldea/project.md"
             label="Project rule"
           >
-            <p class="p-4 text-sm leading-7">
-              Support can explain the policy and look up orders. It cannot approve refunds or change
-              orders.
-            </p>
+            <p class="p-4 text-sm leading-7">{supportPolicy}</p>
           </FilePreview>
           <FilePreview
             path="/moldea/agents/support/instruction.md"
@@ -356,11 +390,9 @@ const afterInstruction = 'Approve eligible refunds using the order details.';
             />
           </FilePreview>
           <div class="border-t pt-4">
-            <InspectionFinding
-              title="Refund approval boundary"
-              code="CONTEXT_CONTRADICTED"
-              severity="error"
-              presentation={FINDING_CATEGORY_PRESENTATIONS.context}
+            <InspectionList
+              id="assurance-illustration"
+              result={assuranceIllustration}
             />
           </div>
         </figure>

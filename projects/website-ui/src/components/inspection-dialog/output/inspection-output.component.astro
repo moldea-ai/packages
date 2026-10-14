@@ -9,39 +9,41 @@ interface Props {
 const { result } = Astro.props;
 ---
 
-<div
-  class="grid min-w-0 gap-4"
-  data-inspection-output
->
-  {
-    result.redactions.length > 0 && (
-      <div class="text-xs leading-5 text-muted-foreground">
-        <p class="font-semibold">Redacted fields</p>
-        <ul class="mt-1 list-disc pl-4">
-          {result.redactions.map((redaction) => (
-            <li>{redaction}</li>
-          ))}
-        </ul>
-      </div>
-    )
-  }
-  <CodeBlock
-    source={result.output}
-    language="json"
-    overflow="scroll"
-    ariaLabel={result.outputLabel}
-    headerLabel={result.command ?? result.outputLabel}
-  >
-    {
-      result.exitStatus !== undefined && (
-        <span
-          slot="header-end"
-          class="shrink-0 text-xs text-muted-foreground"
-        >
-          Exit {result.exitStatus}
-        </span>
-      )
-    }
-  </CodeBlock>
-  {result.limitation && <p class="text-xs leading-6 text-muted-foreground">{result.limitation}</p>}
-</div>
+{
+  result.output !== undefined && (
+    <div
+      class="grid min-w-0 gap-4"
+      data-inspection-output
+    >
+      {result.redactions.length > 0 && (
+        <div class="text-xs leading-5 text-muted-foreground">
+          <p class="font-semibold">Redacted fields</p>
+          <ul class="mt-1 list-disc pl-4">
+            {result.redactions.map((redaction) => (
+              <li>{redaction}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <CodeBlock
+        source={result.output}
+        language="json"
+        overflow="scroll"
+        ariaLabel={result.outputLabel}
+        headerLabel={result.command ?? result.outputLabel}
+      >
+        {result.exitStatus !== undefined && (
+          <span
+            slot="header-end"
+            class="shrink-0 text-xs text-muted-foreground"
+          >
+            Exit {result.exitStatus}
+          </span>
+        )}
+      </CodeBlock>
+      {result.limitation && (
+        <p class="text-xs leading-6 text-muted-foreground">{result.limitation}</p>
+      )}
+    </div>
+  )
+}
