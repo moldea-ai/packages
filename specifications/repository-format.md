@@ -458,7 +458,7 @@ The paths below are the complete version `1` property surface. Braced segments i
 | `acceptedWarnings[]`                                                  | yes per entry    | mapping        | One closed warning acceptance, unique by code, subject, and normalized qualifier.                          |
 | `acceptedWarnings[].code`                                             | yes per entry    | string         | One code from Core's acceptable-warning list.                                                              |
 | `acceptedWarnings[].subject`                                          | yes per entry    | string         | Repository-root-absolute logical path identifying the warning subject.                                     |
-| `acceptedWarnings[].qualifier`                                        | no               | string or null | Warning qualifier; omission and null identify the same warning.                                            |
+| `acceptedWarnings[].qualifier`                                        | no               | string or null | Non-empty single-line qualifier containing non-whitespace; omission and null identify the same warning.    |
 | `acceptedWarnings[].reason`                                           | yes per entry    | string         | Non-whitespace reason containing at most 256 Unicode scalar values.                                        |
 
 ## Manifest version

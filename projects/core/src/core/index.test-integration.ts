@@ -102,7 +102,7 @@ describe('Core with the immutable memory repository reader', () => {
       '/src/feature/index.ts',
       '/src/bound.ts',
     ]);
-    expect(JSON.stringify(result)).not.toContain(manifestContent);
+    expect(JSON.stringify(result)).not.toContain(JSON.stringify(manifestContent).slice(1, -1));
   });
 
   test('preserves authored mirror indexes through YAML parsing and deterministic scope matching', async () => {
@@ -155,7 +155,7 @@ describe('Core with the immutable memory repository reader', () => {
     expect(await core.matchManifestScope({ manifest, paths: [...paths].reverse() })).toStrictEqual(
       result,
     );
-    expect(JSON.stringify(result)).not.toContain(manifest.content);
+    expect(JSON.stringify(result)).not.toContain(JSON.stringify(manifest.content).slice(1, -1));
   });
 
   test('returns structural manifest diagnostics without manufacturing relevance', async () => {
