@@ -844,7 +844,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
     const json = await output.locator('pre code').innerText();
     expect(JSON.parse(json)).toHaveProperty('schemaVersion', 7);
     await outputHeader.getByRole('button', { name: 'Copy code', exact: true }).click();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(json);
+    // native clipboards may represent copied line breaks as CRLF
+    expect(
+      (await page.evaluate(() => navigator.clipboard.readText())).replaceAll('\r\n', '\n'),
+    ).toBe(json);
     for (const header of [commandHeader, outputHeader]) {
       expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
         true,

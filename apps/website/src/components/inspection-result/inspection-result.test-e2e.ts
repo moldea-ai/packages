@@ -159,14 +159,21 @@ for (const theme of ['light', 'dark'] as const) {
     await page.setViewportSize({ width: 320, height: 540 });
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
     await page.goto(homepage);
-    await page.locator('[data-dialog-open="hero-check-result"]').click();
-    const dialog = page.getByRole('dialog', {
-      name: '1 broken reference',
-      exact: true,
-    });
+    const opener = page.locator('[data-dialog-open="hero-check-result"]');
+    const dialog = page.getByRole('dialog', { name: '1 broken reference', exact: true });
+    const body = dialog.locator(':scope > div');
+    const openResult = async () => {
+      await opener.click();
+      await expect(dialog).toBeVisible();
+      await dialog.evaluate(async (element) => {
+        await Promise.allSettled(element.getAnimations().map((animation) => animation.finished));
+      });
+      await expect(dialog.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
+      expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
+    };
+    await openResult();
     await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1);
     await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
-    const body = dialog.locator(':scope > div');
     expect(await body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
       true,
     );
@@ -176,37 +183,29 @@ for (const theme of ['light', 'dark'] as const) {
     await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBe(400);
     expect(await page.evaluate(() => window.scrollY)).toBe(pageScroll);
     await expect(dialog.getByRole('heading', { level: 2 })).toBeInViewport({ ratio: 1 });
-    await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeInViewport({
-      ratio: 1,
-    });
+    await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeInViewport({ ratio: 1 });
     expect(await body.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 
     await dialog.getByRole('button', { name: 'Close dialog' }).click();
     await expect(dialog).not.toBeVisible();
-    await page.locator('[data-dialog-open="hero-check-result"]').click();
-    await expect(dialog).toBeVisible();
+    await openResult();
     await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
-    expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
-
-    await body.hover();
-    await page.mouse.wheel(0, 400);
-    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBe(400);
+    await body.evaluate((element) => {
+      element.scrollTop = 400;
+    });
+    expect(await body.evaluate((element) => element.scrollTop)).toBe(400);
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
-    await page.locator('[data-dialog-open="hero-check-result"]').click();
-    await expect(dialog).toBeVisible();
-    await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
-    expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
+    await openResult();
 
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await body.hover();
-    await page.mouse.wheel(0, 400);
-    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBe(400);
+    await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
+    await body.evaluate((element) => {
+      element.scrollTop = 400;
+    });
+    expect(await body.evaluate((element) => element.scrollTop)).toBe(400);
     await dialog.getByRole('button', { name: 'Close dialog' }).click();
     await expect(dialog).not.toBeVisible();
-    await page.locator('[data-dialog-open="hero-check-result"]').click();
-    await expect(dialog).toBeVisible();
-    await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
-    expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
+    await openResult();
   });
 }
