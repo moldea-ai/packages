@@ -1,5 +1,5 @@
 ---
-import { CircleAlert } from '@lucide/astro';
+import { ArrowLeft } from '@lucide/astro';
 import {
   DIAGNOSTIC_GROUP_PRESENTATIONS,
   FINDING_CATEGORY_PRESENTATIONS,
@@ -9,6 +9,10 @@ import {
 
 import CodeBlock from '../../code-block/code-block.component.astro';
 import FilePreview from '../../file-preview/file-preview.component.astro';
+import ActionLink from '../../action-link/action-link.component.astro';
+import StatusBadge from '../../status-badge/status-badge.component.astro';
+
+import InspectionOverview from '../overview/inspection-overview.component.astro';
 
 interface Props {
   id: string;
@@ -19,6 +23,34 @@ const { id, resultTitle, findings } = Astro.props;
 ---
 
 <div class="min-w-0">
+  {
+    findings.length > 1 && (
+      <>
+        <InspectionOverview
+          id={id}
+          findings={findings}
+        />
+        <div
+          class="mb-4"
+          data-inspection-back
+          hidden
+        >
+          <ActionLink
+            href={`#${id}-findings`}
+            variant="ghost"
+            size="sm"
+            class="justify-start gap-2 text-foreground"
+          >
+            <ArrowLeft
+              class="size-4"
+              aria-hidden="true"
+            />
+            Back to findings
+          </ActionLink>
+        </div>
+      </>
+    )
+  }
   {
     findings.map((finding) => {
       const severity = INSPECTION_SEVERITY_PRESENTATIONS[finding.severity];
@@ -32,14 +64,30 @@ const { id, resultTitle, findings } = Astro.props;
         <section
           id={`${id}-finding-${finding.id}`}
           data-inspection-detail={finding.id}
-          class="grid min-w-0 gap-4"
+          aria-label={finding.title}
+          tabindex="-1"
+          class="grid min-w-0 gap-4 outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <div
-            class="min-w-0 overflow-hidden rounded-xl border bg-card"
+            class:list={[
+              'min-w-0 overflow-hidden rounded-xl border bg-card',
+              finding.accepted
+                ? 'border-info/40'
+                : finding.severity === 'error'
+                  ? 'border-destructive/40'
+                  : 'border-warning/50',
+            ]}
             data-inspection-finding-card
           >
             <div
-              class="flex items-start gap-3 border-b p-3 sm:p-4"
+              class:list={[
+                'flex items-start gap-3 border-b p-3 sm:p-4',
+                finding.accepted
+                  ? 'bg-info/5'
+                  : finding.severity === 'error'
+                    ? 'bg-destructive/5'
+                    : 'bg-warning/10',
+              ]}
               data-inspection-finding-header
             >
               <span
@@ -64,14 +112,19 @@ const { id, resultTitle, findings } = Astro.props;
                     class:list={[
                       'inline-flex shrink-0 items-center gap-1 text-xs font-semibold',
                       finding.accepted
-                        ? 'text-info'
+                        ? 'text-foreground'
                         : finding.severity === 'error'
                           ? 'text-foreground'
                           : 'text-warning-foreground dark:text-warning',
                     ]}
                   >
                     <SeverityIcon
-                      class:list={['size-3.5', finding.severity === 'error' && 'text-destructive']}
+                      class:list={[
+                        'size-3.5',
+                        finding.accepted
+                          ? 'text-info'
+                          : finding.severity === 'error' && 'text-destructive',
+                      ]}
                       aria-hidden="true"
                     />
                     {finding.accepted ? 'Accepted warning' : severity.label}
@@ -112,45 +165,42 @@ const { id, resultTitle, findings } = Astro.props;
               </dl>
             </div>
           </div>
-          {finding.evidence.map((evidence) => (
-            <FilePreview
-              path={evidence.path}
-              label={
-                evidence.isMissing
-                  ? 'Missing target'
-                  : evidence.isExcerpt
-                    ? `${evidence.label ?? 'Source'} excerpt`
-                    : (evidence.label ??
-                      (evidence.path === finding.path ? 'Reported in' : 'Related file'))
-              }
-            >
-              {evidence.isMissing && (
-                <CircleAlert
-                  slot="icon"
-                  class="size-5 text-destructive"
-                />
-              )}
-              {evidence.isMissing && (
-                <span
-                  slot="status"
-                  class="text-xs font-semibold text-destructive"
-                >
-                  Missing
-                </span>
-              )}
-              {evidence.content !== undefined && (
-                <div class="p-3">
-                  <CodeBlock
-                    source={evidence.content}
-                    language={evidence.language}
-                    variant="plain"
-                    copyable={!evidence.isExcerpt}
-                    ariaLabel={evidence.path}
-                  />
-                </div>
-              )}
-            </FilePreview>
-          ))}
+          {finding.evidence.map((evidence) => {
+            const isAffected = evidence.issueLabel !== undefined;
+            const label = evidence.isExcerpt
+              ? `${evidence.label ?? 'Source'} excerpt`
+              : (evidence.label ??
+                (evidence.path === finding.path ? 'Declared in' : 'Referenced file'));
+            return (
+              <FilePreview
+                path={evidence.path}
+                tone={isAffected ? (finding.accepted ? 'info' : severity.tone) : 'neutral'}
+                label={label}
+              >
+                {evidence.issueLabel !== undefined && (
+                  <Fragment slot="label">
+                    <span>{label}</span>
+                    <StatusBadge
+                      label={finding.accepted ? 'Accepted warning' : evidence.issueLabel}
+                      tone={finding.accepted ? 'info' : severity.tone}
+                      size="sm"
+                    />
+                  </Fragment>
+                )}
+                {evidence.content !== undefined && (
+                  <div class="p-3">
+                    <CodeBlock
+                      source={evidence.content}
+                      language={evidence.language}
+                      variant="plain"
+                      copyable={!evidence.isExcerpt}
+                      ariaLabel={evidence.path}
+                    />
+                  </div>
+                )}
+              </FilePreview>
+            );
+          })}
         </section>
       );
     })

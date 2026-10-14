@@ -205,6 +205,24 @@ describe('production discovery guards', () => {
       'Capabilities machine discovery is missing',
     );
   });
+  test('rejects a mixed-result overview that loses a finding link', () => {
+    replaceArtifactText(
+      'capabilities/index.html',
+      'href="#inspection-mixed-diagnostics-result-finding-finding-3"',
+      'href="#inspection-mixed-diagnostics-result-finding-finding-2"',
+    );
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'unsupported outcome for inspection-mixed-diagnostics',
+    );
+  });
+  test('rejects an intermediate illustration for the direct mixed-result entry', () => {
+    replaceArtifactText(
+      'capabilities/index.html',
+      '</main>',
+      '<div id="example-inspection-mixed-diagnostics"></div></main>',
+    );
+    expect(() => verifyProductionBuild(directory)).toThrow('unnecessary intermediate illustration');
+  });
   test('rejects capability search fragments that no longer identify the rendered case', () => {
     replaceArtifactText('search-index.json', '#mirror-stale', '#unknown-capability');
     expect(() => verifyProductionBuild(directory)).toThrow('Capabilities search discovery');

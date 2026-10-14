@@ -11,11 +11,18 @@ import InspectionOutput from './output/inspection-output.component.astro';
 export interface Props {
   id: string;
   result: IInspectionResultView;
+  triggerLabel?: string;
+  triggerAriaLabel?: string;
+  triggerClass?: string;
 }
-const { id, result } = Astro.props;
+const { id, result, triggerLabel, triggerAriaLabel, triggerClass } = Astro.props;
 const tabsId = `${id}-tabs`;
 const items = [
-  { id: 'finding', label: 'Finding', slotName: 'finding' },
+  {
+    id: 'finding',
+    label: result.findings.length > 1 ? 'Findings' : 'Finding',
+    slotName: 'finding',
+  },
   { id: 'output', label: 'Output', slotName: 'output' },
 ];
 ---
@@ -24,11 +31,14 @@ const items = [
   <Dialog
     id={id}
     title={result.title}
-    triggerLabel="View output"
-    triggerClass="hidden"
+    triggerLabel={triggerLabel ?? 'View output'}
+    triggerAriaLabel={triggerAriaLabel}
+    triggerClass={triggerLabel === undefined ? 'hidden' : triggerClass}
+    triggerSize={triggerLabel === undefined ? 'sm' : 'md'}
     fallbackOpen
     isOverlayCloseEnabled
   >
+    <Fragment slot="trigger"><slot name="trigger">{triggerLabel ?? 'View output'}</slot></Fragment>
     <h2
       slot="heading"
       id={`${id}-title`}
@@ -72,18 +82,32 @@ const items = [
 </div>
 
 <script>
-  /** Selects result-owned evidence before the shared Dialog opens its native modal. */
-  const selectInspection = (dialog: HTMLDialogElement, selectedId?: string): void => {
+  /** Selects the overview or one finding without opening another modal or changing output. */
+  const selectInspection = (
+    dialog: HTMLDialogElement,
+    selectedId?: string,
+    shouldFocus = false,
+  ): void => {
     const root = dialog.closest<HTMLElement>('[data-inspection-dialog-root]');
     if (root === null) return;
     const details = [...dialog.querySelectorAll<HTMLElement>('[data-inspection-detail]')];
     const selected = details.find((detail) => detail.dataset['inspectionDetail'] === selectedId);
-    for (const detail of details) detail.hidden = detail !== (selected ?? details[0]);
+    const overview = dialog.querySelector<HTMLElement>('[data-inspection-overview]');
+    const active = selected ?? (overview === null ? details[0] : undefined);
+    for (const detail of details) detail.hidden = detail !== active;
+    if (overview !== null) overview.hidden = active !== undefined;
+    const back = dialog.querySelector<HTMLElement>('[data-inspection-back]');
+    if (back !== null) back.hidden = active === undefined;
     document.getElementById(`${dialog.id}-tabs`)?.dispatchEvent(
       new CustomEvent('website-ui:select-tab', {
-        detail: { id: selected === undefined ? 'output' : 'finding' },
+        detail: { id: details.length === 0 ? 'output' : 'finding' },
       }),
     );
+    if (shouldFocus) {
+      const body = dialog.querySelector<HTMLElement>(':scope > div');
+      if (body !== null) body.scrollTop = 0;
+      active?.focus({ preventScroll: true });
+    }
   };
 
   const initializeInspectionDialogs = (): void => {
@@ -92,8 +116,42 @@ const items = [
       const dialog = root.querySelector('dialog');
       if (!(dialog instanceof HTMLDialogElement) || typeof dialog.showModal !== 'function')
         continue;
-      const first = dialog.querySelector<HTMLElement>('[data-inspection-detail]');
-      selectInspection(dialog, first?.dataset['inspectionDetail']);
+      selectInspection(dialog);
+      root.addEventListener(
+        'click',
+        (event) => {
+          if (
+            !(event instanceof MouseEvent) ||
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey ||
+            !(event.target instanceof Element)
+          )
+            return;
+          if (event.target.closest('[data-dialog-trigger]') !== null) {
+            selectInspection(dialog);
+            return;
+          }
+          const row = event.target.closest<HTMLElement>('[data-inspection-show]');
+          if (row !== null) {
+            event.preventDefault();
+            selectInspection(dialog, row.dataset['inspectionShow'], true);
+            return;
+          }
+          if (event.target.closest('[data-inspection-back] a') !== null) {
+            event.preventDefault();
+            const activeId = dialog.querySelector<HTMLElement>(
+              '[data-inspection-detail]:not([hidden])',
+            )?.dataset['inspectionDetail'];
+            selectInspection(dialog);
+            const rows = dialog.querySelectorAll<HTMLElement>('[data-inspection-show]');
+            [...rows].find((item) => item.dataset['inspectionShow'] === activeId)?.focus();
+          }
+        },
+        { capture: true },
+      );
       root.dataset['inspectionEnhanced'] = 'true';
     }
   };

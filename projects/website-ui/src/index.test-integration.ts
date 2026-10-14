@@ -328,13 +328,15 @@ describe('published website UI package', () => {
         'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", panelClass: "sm:h-[32rem]!", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
         'const iconDialogProps = { id: "fixture-icon", title: "Complete source", triggerLabel: "Open complete source", triggerAriaLabel: "Open complete source in a larger view", triggerVariant: "ghost", triggerSize: "icon-xs", size: "large" } satisfies ComponentProps<typeof Dialog>;',
         'const passed = { title: "Validation complete", label: "Valid", tone: "success", findings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
-        'const failed = { ...passed, title: "Validation failed", label: "Invalid", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "moldea.yaml", evidence: [{ path: "moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Missing target", isMissing: true }] }] } satisfies IInspectionResultView;',
-        'const multiple = { ...failed, title: "Inspection complete", findings: [...failed.findings, { id: "accepted", title: "Unmatched relationship", code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", accepted: true, reason: "Generated files arrive during the release build.", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", evidence: [] }] } satisfies IInspectionResultView;',
+        'const failed = { ...passed, title: "Validation failed", label: "Invalid", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "moldea.yaml", evidence: [{ path: "moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Referenced target", isMissing: true, issueLabel: "Missing target" }] }] } satisfies IInspectionResultView;',
+        'const multiple = { ...failed, title: "Inspection complete", findings: [{ id: "accepted", title: "Unmatched relationship", code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", accepted: true, reason: "Generated files arrive during the release build.", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", evidence: [] }, ...failed.findings, { ...failed.findings[0], id: "warning", title: "Integration needs attention", severity: "warning", group: "integration" }] } satisfies IInspectionResultView;',
         'const illustrated = { title: "Illustrative policy review", label: "Error", tone: "danger", findings: [{ id: "authority", title: "Approval authority", code: "CONTEXT_CONTRADICTED", severity: "error", category: "context", message: "Only managers can approve refunds.", evidence: [{ path: "project.md", language: "markdown", content: "Only managers can approve refunds.", isExcerpt: true }] }], redactions: [], limitation: "Illustrative finding." } satisfies IInspectionResultView;',
+        'const many = { ...illustrated, title: "Policy findings", findings: Array.from({ length: 32 }, (_, index) => ({ ...illustrated.findings[0], id: `policy-${index}`, title: `Policy finding ${index + 1}`, evidence: [] })) } satisfies IInspectionResultView;',
         'const statusResults = [{ ...passed, title: "Reader result", label: "Result", tone: "neutral" }, { ...failed, title: "Review warning", label: "Warning", tone: "warning", findings: [{ ...failed.findings[0], severity: "warning" }] }, { ...failed, title: "Accepted warning", label: "Accepted", tone: "info", findings: [{ ...failed.findings[0], severity: "warning", accepted: true }] }] satisfies IInspectionResultView[];',
         '---',
         '<html lang="en" data-theme="system">',
         '  <head>',
+        '    <meta charset="utf-8" />',
         '    <ClientRouter />',
         '    <ThemeBootstrap storageKey="fixture-theme" />',
         '  </head>',
@@ -395,7 +397,7 @@ describe('published website UI package', () => {
         '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
         '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
         '    <Dialog {...iconDialogProps}><p>Expanded source content</p></Dialog>',
-        '    <main data-inspection-fixture class="mx-auto max-w-3xl px-3"><h2>Inspection examples</h2><InspectionList id="passed" result={passed} /><InspectionList id="single" result={failed} /><InspectionList id="illustrated" result={illustrated} />{statusResults.map((result) => <InspectionList id={`hover-${result.tone}`} result={result} />)}<Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><a href="#standalone" data-dialog-open="standalone">Open standalone output</a><InspectionDialog id="standalone" result={passed} /><a href="/runtimes/">Navigate to runtimes</a></main>',
+        '    <main data-inspection-fixture class="mx-auto max-w-3xl px-3"><h2>Inspection examples</h2><InspectionList id="passed" result={passed} /><InspectionList id="single" result={failed} /><InspectionList id="illustrated" result={illustrated} /><InspectionList id="many" result={many} />{statusResults.map((result) => <InspectionList id={`hover-${result.tone}`} result={result} />)}<Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><a href="#standalone" data-dialog-open="standalone">Open standalone output</a><InspectionDialog id="standalone" result={passed} /><a href="/runtimes/">Navigate to runtimes</a></main>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
         '    <InspectionFinding title="Declared export missing" code="MOLDEA_REFERENCE_EXPORT_MISSING" severity="error" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} />',
@@ -1059,6 +1061,8 @@ describe('published website UI package', () => {
               await singleDialog.getByRole('tab', { name: 'Finding', selected: true }).count(),
             ).toBe(1);
             expect(await singleDialog.locator('[data-file-preview]').count()).toBe(2);
+            expect(await singleDialog.locator('[data-file-preview-tone="danger"]').count()).toBe(1);
+            expect(await singleDialog.getByText('Missing target', { exact: true }).count()).toBe(1);
             expect(
               await singleDialog
                 .locator('[data-inspection-finding-card] [data-file-preview]')
@@ -1140,31 +1144,75 @@ describe('published website UI package', () => {
               .toBe(true);
             const outerOpener = page.getByRole('button', { name: 'Open case', exact: true });
             await outerOpener.click();
-            for (const findingOpener of await page
-              .locator('#outer-case [data-inspection-select]')
-              .all()) {
-              await expectInspectionActionAlignment(findingOpener);
-            }
-            const acceptedOpener = page.locator(
-              '[data-dialog-open="multiple-result"][data-inspection-select="accepted"]',
-            );
-            await acceptedOpener.click();
+            const multipleOpener = page.locator('[data-dialog-open="multiple-result"]');
+            await expectInspectionActionAlignment(multipleOpener);
+            expect(await multipleOpener.innerText()).toContain('3 findings');
+            expect(await multipleOpener.innerText()).toContain('1 error · 1 warning · 1 accepted');
+            await multipleOpener.click();
             expect(await page.locator('dialog:modal').count()).toBe(2);
             const acceptedDialog = page.getByRole('dialog', {
               name: 'Inspection complete',
               exact: true,
             });
             expect(
-              await acceptedDialog.getByRole('tab', { name: 'Finding', selected: true }).count(),
+              await acceptedDialog.getByRole('tab', { name: 'Findings', selected: true }).count(),
             ).toBe(1);
+            const overview = acceptedDialog.getByRole('list', { name: 'Inspection findings' });
+            expect(await overview.isVisible()).toBe(true);
+            const rows = overview.getByRole('link');
+            expect(await rows.count()).toBe(3);
+            expect(await rows.nth(0).getAttribute('data-inspection-show')).toBe('missing');
+            expect(await rows.nth(1).getAttribute('data-inspection-show')).toBe('warning');
+            expect(await rows.nth(2).getAttribute('data-inspection-show')).toBe('accepted');
+            expect(await acceptedDialog.locator('[data-inspection-detail]:visible').count()).toBe(
+              0,
+            );
+            const acceptedOpener = rows.nth(2);
+            await acceptedOpener.focus();
+            await acceptedOpener.press('Enter');
+            expect(await page.locator('dialog:modal').count()).toBe(2);
+            expect(await overview.isVisible()).toBe(false);
             expect(
-              await acceptedDialog.getByText('Accepted warning', { exact: true }).isVisible(),
+              await acceptedDialog
+                .locator('[data-inspection-detail="accepted"]')
+                .evaluate((node) => node === document.activeElement),
+            ).toBe(true);
+            expect(
+              await acceptedDialog
+                .locator('[data-inspection-detail="accepted"]')
+                .getByText('Accepted warning', { exact: true })
+                .isVisible(),
             ).toBe(true);
             expect(
               await acceptedDialog
                 .getByText('Generated files arrive during the release build.', { exact: true })
                 .isVisible(),
             ).toBe(true);
+            await acceptedDialog.getByRole('tab', { name: 'Output', exact: true }).click();
+            expect(await acceptedDialog.locator('[data-inspection-output]').isVisible()).toBe(true);
+            await acceptedDialog.getByRole('tab', { name: 'Findings', exact: true }).click();
+            expect(
+              await acceptedDialog.locator('[data-inspection-detail="accepted"]').isVisible(),
+            ).toBe(true);
+            await acceptedDialog
+              .getByRole('link', { name: 'Back to findings', exact: true })
+              .click();
+            expect(await acceptedOpener.evaluate((node) => node === document.activeElement)).toBe(
+              true,
+            );
+            expect(await overview.isVisible()).toBe(true);
+            await rows.nth(1).click();
+            expect(
+              await acceptedDialog.locator('[data-inspection-detail="warning"]').isVisible(),
+            ).toBe(true);
+            expect(
+              await acceptedDialog
+                .locator('[data-inspection-detail="warning"] [data-file-preview-tone="warning"]')
+                .count(),
+            ).toBe(1);
+            expect(
+              (await new AxeBuilder({ page }).include('#multiple-result').analyze()).violations,
+            ).toStrictEqual([]);
             expect(
               await page.evaluate(
                 () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
@@ -1173,12 +1221,38 @@ describe('published website UI package', () => {
             await page.keyboard.press('Escape');
             await expect.poll(() => page.locator('dialog:modal').count()).toBe(1);
             await expect
-              .poll(() => acceptedOpener.evaluate((node) => node === document.activeElement))
+              .poll(() => multipleOpener.evaluate((node) => node === document.activeElement))
               .toBe(true);
+            await multipleOpener.click();
+            expect(await overview.isVisible()).toBe(true);
+            expect(
+              await acceptedDialog.getByRole('tab', { name: 'Findings', selected: true }).count(),
+            ).toBe(1);
+            await page.keyboard.press('Escape');
+            await expect.poll(() => page.locator('dialog:modal').count()).toBe(1);
             await page.keyboard.press('Escape');
             await expect
               .poll(() => outerOpener.evaluate((node) => node === document.activeElement))
               .toBe(true);
+            await page.locator('[data-dialog-open="many-result"]').click();
+            const manyDialog = page.getByRole('dialog', { name: 'Policy findings', exact: true });
+            expect(await manyDialog.getByRole('tab').count()).toBe(0);
+            const lastRow = manyDialog.getByRole('link', {
+              name: 'View finding: Policy finding 32 CONTEXT_CONTRADICTED',
+              exact: true,
+            });
+            await lastRow.focus();
+            await lastRow.press('Enter');
+            expect(
+              await manyDialog.locator('[data-inspection-detail="policy-31"]').isVisible(),
+            ).toBe(true);
+            expect(await manyDialog.locator('[data-inspection-output]').count()).toBe(0);
+            await manyDialog.getByRole('link', { name: 'Back to findings', exact: true }).click();
+            expect(await lastRow.evaluate((node) => node === document.activeElement)).toBe(true);
+            const lastBounds = (await lastRow.boundingBox())!;
+            expect(lastBounds.y).toBeGreaterThanOrEqual(0);
+            expect(lastBounds.y + lastBounds.height).toBeLessThanOrEqual(900);
+            await page.keyboard.press('Escape');
             const standaloneOpener = page.getByRole('link', {
               name: 'Open standalone output',
               exact: true,

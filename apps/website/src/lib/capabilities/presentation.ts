@@ -77,7 +77,6 @@ export const getCapabilityVisualFamily = (example: ICapabilityCase) => {
     )
   )
     return 'decisions';
-  if (example.id === 'inspection-mixed-diagnostics') return 'mixed-diagnostics';
   if (example.id === 'snapshot-comparison') return 'records';
   if (example.id === 'normalized-digests') return 'digests';
   if (example.id === 'manifest-change-relevance') return 'scope';

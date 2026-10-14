@@ -22,6 +22,67 @@ const revealAll = async (page: Page, id: string): Promise<void> => {
 
 for (const width of [320, 768, 1440]) {
   for (const colorScheme of ['light', 'dark'] as const) {
+    test(`browses mixed findings without extra dialogs at ${width}px in ${colorScheme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+      const id = 'inspection-mixed-diagnostics';
+      await page.goto(`${route}#${id}`);
+      const opener = triggerFor(page, id);
+      const dialog = page.locator(`#${id}-result`);
+      await expect(dialog).toBeVisible();
+      await expect(page.locator(`#example-${id}`)).toHaveCount(0);
+      await expect(page.locator('dialog:modal')).toHaveCount(1);
+      await expect(dialog.getByRole('tab', { name: 'Findings', selected: true })).toBeVisible();
+      const list = dialog.getByRole('list', { name: 'Inspection findings' });
+      const rows = list.getByRole('link');
+      await expect(rows).toHaveCount(3);
+      await expect(rows.nth(0)).toContainText('MOLDEA_REFERENCE_EXPORT_MISSING');
+      await expect(rows.nth(1)).toContainText('MOLDEA_IMPACT_PATTERN_UNMATCHED');
+      await expect(rows.nth(2)).toContainText('MOLDEA_INTEGRATION_BLOCK_MISSING');
+      expect(
+        (await new AxeBuilder({ page }).include(`#${id}-result`).analyze()).violations,
+      ).toStrictEqual([]);
+      for (const row of await rows.all()) {
+        await page.keyboard.press('Tab');
+        await row.focus();
+        await expect(row).not.toHaveCSS('box-shadow', 'none');
+        await row.press('Enter');
+        await expect(page.locator('dialog:modal')).toHaveCount(1);
+        await expect(list).toBeHidden();
+        const detail = dialog.locator('[data-inspection-detail]:visible');
+        await expect(detail).toHaveCount(1);
+        await expect(detail).toBeFocused();
+        await expect(detail.getByRole('heading')).toHaveCount(1);
+        await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
+        const example = catalog.cases.find((item) => item.id === id)!;
+        expect(
+          JSON.parse(await dialog.locator('[data-inspection-output] pre').innerText()),
+        ).toStrictEqual(example.output.responses);
+        await dialog.getByRole('tab', { name: 'Findings', exact: true }).click();
+        await expect(detail).toBeVisible();
+        expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+        expect(
+          (await new AxeBuilder({ page }).include(`#${id}-result`).analyze()).violations,
+        ).toStrictEqual([]);
+        await dialog.getByRole('link', { name: 'Back to findings', exact: true }).click();
+        await expect(row).toBeFocused();
+      }
+      await rows.nth(0).click();
+      await page.keyboard.press('Escape');
+      await expect(opener).toBeFocused();
+      await opener.press('Enter');
+      await expect(list).toBeVisible();
+      await expect(dialog.locator('[data-inspection-detail]:visible')).toHaveCount(0);
+      await page.keyboard.press('Escape');
+      await expect(page.locator('dialog:modal')).toHaveCount(0);
+    });
+  }
+}
+
+for (const width of [320, 768, 1440]) {
+  for (const colorScheme of ['light', 'dark'] as const) {
     test(`shows four compact example buttons per category at ${width}px in ${colorScheme}`, async ({
       page,
     }) => {
@@ -33,7 +94,7 @@ for (const width of [320, 768, 1440]) {
         "Catch what's broken.See what's connected.",
       );
       await expect(page.locator('[data-capability-example]')).toHaveCount(catalog.cases.length);
-      await expect(page.locator('main dialog')).toHaveCount(catalog.cases.length * 2);
+      await expect(page.locator('main dialog')).toHaveCount(catalog.cases.length * 2 - 1);
       await expect(page.locator('main dialog:modal')).toHaveCount(0);
       await expect(page.locator('[data-capability-visual]:visible')).toHaveCount(0);
       await expect(page.locator('main')).not.toContainText('Also covers:');
@@ -210,6 +271,17 @@ test('opens every executed illustration once with its truthful visual and result
   await expect(page.locator('[data-capability-example]:visible')).toHaveCount(catalog.cases.length);
   for (const example of catalog.cases) {
     await triggerFor(page, example.id).click();
+    if (example.id === 'inspection-mixed-diagnostics') {
+      const result = page.locator(`#${example.id}-result`);
+      await expect(result.getByRole('list', { name: 'Inspection findings' })).toBeVisible();
+      await result.getByRole('tab', { name: 'Output', exact: true }).click();
+      expect(
+        JSON.parse(await result.locator('[data-inspection-output] pre').innerText()),
+      ).toStrictEqual(example.output.responses);
+      await page.keyboard.press('Escape');
+      await expect(triggerFor(page, example.id)).toBeFocused();
+      continue;
+    }
     const dialog = page.locator(`#example-${example.id}`);
     await expect(
       dialog.getByRole('heading', { level: 2, name: example.title, exact: true }),
@@ -251,50 +323,60 @@ test('opens every executed illustration once with its truthful visual and result
   expect((await new AxeBuilder({ page }).include('main').analyze()).violations).toStrictEqual([]);
 });
 
-for (const colorScheme of ['light', 'dark'] as const) {
-  test(`opens illustration and result dialogs with separate focus restoration in ${colorScheme}`, async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 320, height: 900 });
-    await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
-    await page.goto(route);
-    await revealAll(page, 'command-line');
-    const example = catalog.cases.find(({ id }) => id === 'cli-pattern-warning')!;
-    const trigger = triggerFor(page, example.id);
-    await trigger.click();
-    const illustration = page.locator(`#example-${example.id}`);
-    const resultTrigger = illustration.locator('[data-dialog-open]').first();
-    await resultTrigger.click();
-    const result = page.locator(`#${example.id}-result`);
-    await expect(page.locator('dialog:modal')).toHaveCount(2);
-    await expect(result.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
-    await result.getByRole('tab', { name: 'Output', exact: true }).click();
-    await expect(result.locator('[data-inspection-output]')).toContainText('warningCount');
-    const codeRegion = result.getByRole('region', {
-      name: getCapabilityInspectionView(example).outputLabel,
+for (const exampleId of ['cli-pattern-warning', 'cli-accepted-warning']) {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`opens illustration and result dialogs with separate focus restoration for ${exampleId} in ${colorScheme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 320, height: 900 });
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+      await page.goto(route);
+      await revealAll(page, 'command-line');
+      const example = catalog.cases.find(({ id }) => id === exampleId)!;
+      const trigger = triggerFor(page, example.id);
+      await trigger.click();
+      const illustration = page.locator(`#example-${example.id}`);
+      const resultTrigger = illustration.locator('[data-dialog-open]').first();
+      await resultTrigger.click();
+      const result = page.locator(`#${example.id}-result`);
+      await expect(page.locator('dialog:modal')).toHaveCount(2);
+      await expect(result.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
+      const header = result.locator('[data-inspection-finding-header]');
+      const card = result.locator('[data-inspection-finding-card]');
+      expect(await header.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe(
+        await card.evaluate((node) => getComputedStyle(node).backgroundColor),
+      );
+      expect(
+        (await new AxeBuilder({ page }).include(`#${example.id}-result`).analyze()).violations,
+      ).toStrictEqual([]);
+      await result.getByRole('tab', { name: 'Output', exact: true }).click();
+      await expect(result.locator('[data-inspection-output]')).toContainText('warningCount');
+      const codeRegion = result.getByRole('region', {
+        name: getCapabilityInspectionView(example).outputLabel,
+      });
+      await expect(codeRegion).toHaveAttribute('tabindex', '0');
+      await expect(codeRegion.locator('code')).toHaveClass('language-json');
+      expect(await codeRegion.locator('code span').count()).toBeGreaterThan(0);
+      await codeRegion.focus();
+      await page.keyboard.press('ArrowRight');
+      await expect
+        .poll(() => codeRegion.evaluate((element) => element.scrollLeft))
+        .toBeGreaterThan(0);
+      expect(await result.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+        true,
+      );
+      expect(
+        (await new AxeBuilder({ page }).include(`#${example.id}-result`).analyze()).violations,
+      ).toStrictEqual([]);
+      await page.keyboard.press('Escape');
+      await expect(result).toBeHidden();
+      await expect(illustration).toBeVisible();
+      await expect(resultTrigger).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(illustration).toBeHidden();
+      await expect(trigger).toBeFocused();
     });
-    await expect(codeRegion).toHaveAttribute('tabindex', '0');
-    await expect(codeRegion.locator('code')).toHaveClass('language-json');
-    expect(await codeRegion.locator('code span').count()).toBeGreaterThan(0);
-    await codeRegion.focus();
-    await page.keyboard.press('ArrowRight');
-    await expect
-      .poll(() => codeRegion.evaluate((element) => element.scrollLeft))
-      .toBeGreaterThan(0);
-    expect(await result.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
-      true,
-    );
-    expect(
-      (await new AxeBuilder({ page }).include(`#${example.id}-result`).analyze()).violations,
-    ).toStrictEqual([]);
-    await page.keyboard.press('Escape');
-    await expect(result).toBeHidden();
-    await expect(illustration).toBeVisible();
-    await expect(resultTrigger).toBeFocused();
-    await page.keyboard.press('Escape');
-    await expect(illustration).toBeHidden();
-    await expect(trigger).toBeFocused();
-  });
+  }
 }
 
 test('keeps one complete illustration catalog readable without JavaScript', async ({ browser }) => {
@@ -310,10 +392,10 @@ test('keeps one complete illustration catalog readable without JavaScript', asyn
     );
     await expect(page.locator('[data-capability-load]:visible')).toHaveCount(0);
     await expect(page.locator('[data-capability-visual]:visible')).toHaveCount(
-      catalog.cases.length,
+      catalog.cases.length - 1,
     );
     await expect(page.locator('dialog[data-dialog-fallback-open][open]')).toHaveCount(
-      catalog.cases.length * 2,
+      catalog.cases.length * 2 - 1,
     );
     await expect(page.getByRole('button', { name: /^Open example:/u })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(

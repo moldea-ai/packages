@@ -86,7 +86,13 @@ test('shows source evidence without inventing content for an unavailable target'
   });
   expect(view.findings[0]?.evidence).toStrictEqual([
     { path: '/moldea/moldea.yaml', content: 'version: 1\n', language: 'yaml', isExcerpt: false },
-    { path: '/src/missing.ts', label: 'Referenced target', language: 'text', isMissing: true },
+    {
+      path: '/src/missing.ts',
+      label: 'Referenced target',
+      language: 'text',
+      isMissing: true,
+      issueLabel: 'Missing target',
+    },
   ]);
 });
 
@@ -166,5 +172,239 @@ test('does not mark an unprovided source missing when validation only reports an
     label: 'Referenced target',
     language: 'text',
     isMissing: false,
+    issueLabel: 'Missing export',
+  });
+});
+
+test('marks the implementation with a missing export while keeping its declaration neutral', () => {
+  const view = getCapabilityInspectionView({
+    ...example,
+    files: [
+      ...example.files,
+      {
+        path: '/src/missing.ts',
+        language: 'typescript',
+        content: 'export const otherRule = () => true;',
+        isExcerpt: false,
+        representation: 'source',
+      },
+    ],
+    output: createRecordedOutput([
+      {
+        result: {
+          page: {
+            records: [
+              { kind: 'diagnostic', ...diagnostic, code: 'MOLDEA_REFERENCE_EXPORT_MISSING' },
+            ],
+          },
+        },
+      },
+    ]),
+  });
+  expect(view.findings[0]?.path).toBe('/moldea/moldea.yaml');
+  expect(view.findings[0]?.evidence[0]).not.toHaveProperty('issueLabel');
+  expect(view.findings[0]?.evidence[1]).toMatchObject({
+    path: '/src/missing.ts',
+    issueLabel: 'Missing export',
+    content: 'export const otherRule = () => true;',
+  });
+});
+
+test('locates the CLI missing export using its separately captured failed coverage record', () => {
+  const record = {
+    code: diagnostic.code,
+    source: diagnostic.source,
+    group: diagnostic.group,
+    severity: diagnostic.severity,
+    message: diagnostic.message,
+    path: diagnostic.path,
+    pointer: diagnostic.pointer,
+  };
+  const view = getCapabilityInspectionView({
+    ...example,
+    result: {
+      ...example.result,
+      kind: 'cli',
+      command: 'moldea validate --json',
+      schemaVersion: 7,
+      status: 'invalid',
+      exitStatus: 1,
+      facts: {
+        coverage: { path: '/src/missing.ts', symbol: 'checkEligibility', exportCheck: 'failed' },
+      },
+    },
+    files: [
+      ...example.files,
+      {
+        path: '/src/missing.ts',
+        language: 'typescript',
+        content: 'export const otherRule = () => true;',
+        isExcerpt: false,
+        representation: 'source',
+      },
+    ],
+    output: createRecordedOutput([
+      {
+        result: {
+          page: {
+            records: [{ kind: 'diagnostic', ...record, code: 'MOLDEA_REFERENCE_EXPORT_MISSING' }],
+          },
+        },
+      },
+    ]),
+  });
+  expect(view.findings[0]?.evidence[0]).not.toHaveProperty('issueLabel');
+  expect(view.findings[0]?.evidence[1]).toMatchObject({
+    path: '/src/missing.ts',
+    issueLabel: 'Missing export',
+  });
+});
+
+test('does not assign one coverage target to several missing-export diagnostics', () => {
+  const record = {
+    code: diagnostic.code,
+    source: diagnostic.source,
+    group: diagnostic.group,
+    severity: diagnostic.severity,
+    message: diagnostic.message,
+    path: diagnostic.path,
+    pointer: diagnostic.pointer,
+  };
+  const view = getCapabilityInspectionView({
+    ...example,
+    result: {
+      ...example.result,
+      kind: 'cli',
+      command: 'moldea validate --json',
+      schemaVersion: 7,
+      status: 'invalid',
+      exitStatus: 1,
+      facts: { coverage: { path: '/src/missing.ts', exportCheck: 'failed' } },
+    },
+    output: createRecordedOutput([
+      {
+        result: {
+          page: {
+            records: [0, 1].map((index) => ({
+              kind: 'diagnostic',
+              ...record,
+              code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
+              pointer: `/context/policy/bindings/${index}`,
+            })),
+          },
+        },
+      },
+    ]),
+  });
+  expect(view.findings).toHaveLength(2);
+  expect(
+    view.findings
+      .flatMap((finding) => finding.evidence)
+      .some((file) => file.issueLabel !== undefined),
+  ).toBe(false);
+});
+
+test('does not mark supporting skill files as the issue when the managed block is stale', () => {
+  const view = getCapabilityInspectionView({
+    ...example,
+    files: [
+      ...example.files,
+      {
+        path: '/AGENTS.md',
+        language: 'markdown',
+        content: 'Stale managed block.',
+        isExcerpt: false,
+        representation: 'source',
+      },
+    ],
+    output: createRecordedOutput([
+      {
+        result: {
+          page: {
+            records: [
+              {
+                kind: 'diagnostic',
+                ...diagnostic,
+                code: 'MOLDEA_INTEGRATION_BLOCK_STALE',
+                severity: 'warning',
+                group: 'integration',
+                path: '/AGENTS.md',
+                details: { referencedPath: '/.agents/skills/moldea' },
+              },
+            ],
+          },
+        },
+      },
+    ]),
+  });
+  expect(view.findings[0]?.evidence.filter((file) => file.issueLabel !== undefined)).toStrictEqual([
+    {
+      path: '/AGENTS.md',
+      language: 'markdown',
+      content: 'Stale managed block.',
+      isExcerpt: false,
+      issueLabel: 'Needs attention',
+    },
+  ]);
+});
+
+test('distinguishes a missing implementation from a target that exists as a directory', () => {
+  const view = getCapabilityInspectionView({
+    ...example,
+    output: createRecordedOutput([
+      {
+        result: {
+          page: {
+            records: [
+              {
+                kind: 'diagnostic',
+                ...diagnostic,
+                code: 'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
+                details: {
+                  referencedPath: '/src/missing.ts',
+                  actualType: 'directory',
+                  reason: 'not-file',
+                },
+              },
+            ],
+          },
+        },
+      },
+    ]),
+  });
+  expect(view.findings[0]?.evidence[1]).toMatchObject({
+    isMissing: false,
+    issueLabel: 'Needs correction',
+  });
+});
+
+test('identifies the proven missing skill file rather than its existing parent directory', () => {
+  const view = getCapabilityInspectionView({
+    ...example,
+    output: createRecordedOutput([
+      {
+        result: {
+          page: {
+            records: [
+              {
+                kind: 'diagnostic',
+                ...diagnostic,
+                code: 'MOLDEA_INTEGRATION_SKILL_MISSING',
+                details: {
+                  referencedPath: '/.agents/skills/moldea',
+                  missingFile: '/.agents/skills/moldea/SKILL.md',
+                  entryKind: 'missing',
+                },
+              },
+            ],
+          },
+        },
+      },
+    ]),
+  });
+  expect(view.findings[0]?.evidence[1]).toMatchObject({
+    path: '/.agents/skills/moldea/SKILL.md',
+    isMissing: true,
+    issueLabel: 'Missing target',
   });
 });

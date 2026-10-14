@@ -29,6 +29,8 @@ export interface IInspectionEvidence {
   content?: string;
   isExcerpt?: boolean;
   isMissing?: boolean;
+  // identifies the affected evidence explicitly, independently of the diagnostic's reported path
+  issueLabel?: string;
 }
 
 export type IInspectionFindingView = {

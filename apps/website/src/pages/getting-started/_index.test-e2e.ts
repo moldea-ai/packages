@@ -54,6 +54,19 @@ for (const width of [320, 768, 1440]) {
       await expect(findingDialog.getByText('Project context', { exact: true })).toBeVisible();
       await expect(findingDialog).toContainText('exceeding the authority set by the project rule');
       await expect(findingDialog.locator('[data-file-preview]')).toHaveCount(2);
+      const rule = findingDialog
+        .locator('[data-file-preview]')
+        .filter({ hasText: '/moldea/project.md' });
+      const changedInstruction = findingDialog
+        .locator('[data-file-preview]')
+        .filter({ hasText: '/moldea/agents/support/instruction.md' });
+      await expect(rule).toHaveAttribute('data-file-preview-tone', 'neutral');
+      await expect(rule).toContainText('Project rule excerpt');
+      await expect(changedInstruction).toHaveAttribute('data-file-preview-tone', 'danger');
+      await expect(changedInstruction).toContainText('Violates project rule');
+      expect(
+        await changedInstruction.evaluate((node) => getComputedStyle(node).borderColor),
+      ).not.toBe(await rule.evaluate((node) => getComputedStyle(node).borderColor));
       await expect(findingDialog.getByRole('tab')).toHaveCount(0);
       await expect(findingDialog.locator('[data-inspection-output]')).toHaveCount(0);
       await findingDialog.evaluate(async (node) => {
@@ -97,6 +110,14 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   const result = page.getByRole('dialog');
   await expect(result).toContainText('MOLDEA_REFERENCE_EXPORT_MISSING');
   await expect(result).toContainText('canReturn');
+  const affected = result.locator('[data-file-preview-tone="danger"]');
+  await expect(affected).toHaveCount(1);
+  await expect(affected).toContainText('Missing export');
+  await expect(affected).toContainText('canReturn');
+  await expect(affected).not.toContainText('version: 1');
+  await expect(
+    result.locator('[data-file-preview-tone="neutral"]').filter({ hasText: 'version: 1' }),
+  ).toContainText('Declared in');
   await result.getByRole('tab', { name: 'Output', exact: true }).click();
   await expect(result).toContainText('coverageCounts');
   await expect(result).toContainText('exportsFailed');

@@ -74,13 +74,15 @@ const initializeDisclosure = (): void => {
     requestAnimationFrame(() => {
       if (controller.signal.aborted || !target.isConnected) return;
       target.scrollIntoView({ block: 'start' });
-      const dialog = document.getElementById(`example-${id}`);
+      const trigger = target.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]');
+      const dialogId = trigger?.getAttribute('aria-controls');
+      const dialog = dialogId ? document.getElementById(dialogId) : null;
       if (!(dialog instanceof HTMLDialogElement) || dialog.open) return;
       for (const openDialog of Array.from(
         document.querySelectorAll<HTMLDialogElement>('[data-capability-example] dialog:modal'),
       ).reverse())
         openDialog.close();
-      target.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]')?.click();
+      trigger?.click();
     });
   };
   window.addEventListener('hashchange', revealFragment, { signal: controller.signal });

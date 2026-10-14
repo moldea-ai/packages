@@ -3,7 +3,6 @@ import { ArrowUpRight, CheckCircle2, CircleAlert, Info, TriangleAlert } from '@l
 import {
   DIAGNOSTIC_GROUP_PRESENTATIONS,
   FINDING_CATEGORY_PRESENTATIONS,
-  INSPECTION_SEVERITY_PRESENTATIONS,
   type IInspectionResultView,
 } from '@moldea.ai/website-ui/inspection-presentation';
 
@@ -25,6 +24,7 @@ const icons = {
   warning: TriangleAlert,
 };
 const single = result.findings.length === 1 ? result.findings[0] : undefined;
+const label = result.findings.length > 1 ? `${result.findings.length} findings` : result.label;
 const Icon = single
   ? (single.category === undefined
       ? DIAGNOSTIC_GROUP_PRESENTATIONS[single.group]
@@ -66,7 +66,7 @@ const counts = [
     data-inspection-select={single?.id ?? ''}
     aria-controls={dialogId}
     aria-haspopup="dialog"
-    aria-label={`${result.label}${single ? ` ${single.code}` : ''}: View result: ${single?.title ?? result.title}`}
+    aria-label={`${label}${single ? ` ${single.code}` : result.findings.length > 1 ? `: ${counts}` : ''}: View result: ${single?.title ?? result.title}`}
     variant="outline"
     size="sm"
     class={`min-h-10 w-full min-w-0 justify-start gap-3 text-foreground transition-colors motion-reduce:transition-none ${toneClasses[result.tone]}`}
@@ -77,7 +77,7 @@ const counts = [
       aria-hidden="true"
     />
     <span class="flex min-w-0 flex-1 items-baseline gap-2 text-start">
-      <span class="shrink-0">{result.label}</span>{
+      <span class="shrink-0">{label}</span>{
         result.findings.length > 1 && (
           <span class="min-w-0 truncate text-xs font-normal">{counts}</span>
         )
@@ -98,58 +98,6 @@ const counts = [
       aria-hidden="true"
     />
   </ActionLink>
-  {
-    result.findings.length > 1 && (
-      <ul
-        class="grid w-full min-w-0 divide-y"
-        aria-label="Inspection findings"
-      >
-        {result.findings.map((finding) => {
-          const FindingIcon = INSPECTION_SEVERITY_PRESENTATIONS[finding.severity].icon;
-          return (
-            <li class="min-w-0">
-              <ActionLink
-                href={`#${dialogId}-finding-${finding.id}`}
-                data-dialog-open={dialogId}
-                data-inspection-select={finding.id}
-                aria-controls={dialogId}
-                aria-haspopup="dialog"
-                aria-label={`View finding: ${finding.title} ${finding.code}`}
-                variant="ghost"
-                size="sm"
-                class="w-full min-w-0 justify-start px-1 text-start text-foreground"
-              >
-                <FindingIcon
-                  class:list={[
-                    'size-4 shrink-0',
-                    finding.accepted
-                      ? 'text-info'
-                      : finding.severity === 'error'
-                        ? 'text-destructive'
-                        : 'text-warning-foreground dark:text-warning',
-                  ]}
-                  aria-hidden="true"
-                />
-                <span class="flex min-w-0 flex-1 items-baseline gap-2 text-start">
-                  <span class="min-w-0 flex-1 truncate">{finding.title}</span>
-                  <code
-                    class="max-w-1/2 min-w-0 truncate font-mono text-[11px] font-normal text-muted-foreground"
-                    title={finding.code}
-                  >
-                    {finding.code}
-                  </code>
-                </span>
-                <ArrowUpRight
-                  class="size-3.5 shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
-              </ActionLink>
-            </li>
-          );
-        })}
-      </ul>
-    )
-  }
   <InspectionDialog
     id={dialogId}
     result={result}

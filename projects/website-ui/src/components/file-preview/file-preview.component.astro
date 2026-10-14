@@ -17,18 +17,28 @@ const filename = filenameStart < 0 ? path : path.slice(filenameStart);
 // conditional children can register a slot without rendering content
 const body = Astro.slots.has('default') ? await Astro.slots.render('default') : '';
 const hasBody = body.trim().length > 0;
+const labelContent = Astro.slots.has('label') ? await Astro.slots.render('label') : '';
+const hasLabelContent = labelContent.trim().length > 0;
 const toneClasses = {
-  danger: 'border-destructive/40 bg-destructive/10',
-  info: 'border-info/40 bg-info/10',
-  neutral: 'border-border bg-muted/30',
+  danger: 'border-border bg-background',
+  info: 'border-border bg-background',
+  neutral: 'border-border bg-background',
   success: 'border-border bg-secondary',
-  warning: 'border-warning/60 bg-warning/15',
+  warning: 'border-border bg-background',
+} as const;
+const borderClasses = {
+  danger: 'border-2 border-destructive/50',
+  info: 'border-info/40',
+  neutral: 'border-border',
+  success: 'border-border',
+  warning: 'border-warning/60',
 } as const;
 ---
 
 <div
-  class="min-w-0 overflow-hidden rounded-lg border"
+  class:list={['min-w-0 overflow-hidden rounded-lg border', borderClasses[tone]]}
   data-file-preview
+  data-file-preview-tone={tone}
 >
   <div
     class:list={['flex items-center gap-3 px-3 py-3', hasBody && 'border-b', toneClasses[tone]]}
@@ -41,7 +51,13 @@ const toneClasses = {
       <slot name="icon"><FileText class="size-5" /></slot>
     </span>
     <div class="min-w-0 flex-1">
-      {label && <p class="mb-1 text-xs text-muted-foreground">{label}</p>}
+      {
+        (label || hasLabelContent) && (
+          <div class="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            {hasLabelContent ? <Fragment set:html={labelContent} /> : label}
+          </div>
+        )
+      }
       <code
         class="inline-code flex w-fit max-w-full text-xs whitespace-nowrap"
         title={path}

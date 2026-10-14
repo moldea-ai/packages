@@ -34,7 +34,6 @@ test('distinguishes required repository files from optional project knowledge', 
   await expect(
     overview.getByRole('link', { name: 'Read the format specification' }),
   ).toHaveAttribute('href', toPublicPath('/repository-format/'));
-  const opener = overview.locator('[data-dialog-open="repository-overview-result"]');
   const preview = overview.getByRole('region', {
     name: 'Validation response excerpt',
     exact: true,
@@ -45,16 +44,9 @@ test('distinguishes required repository files from optional project knowledge', 
     diagnostics: result.diagnostics.map(({ code, severity, path }) => ({ code, severity, path })),
   });
   await expect(preview).not.toHaveAttribute('data-code-copy-enhanced');
-  await opener.click();
-  const dialog = page.locator('#repository-overview-result');
-  await expect(dialog.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
-  await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
-  const output = dialog.locator('[data-inspection-output] pre');
-  expect(JSON.parse(await output.innerText())).toStrictEqual(
-    loadWebsiteModel().inspectionExample[1].result,
-  );
-  await page.keyboard.press('Escape');
-  await expect(opener).toBeFocused();
+  await expect(preview.locator('code')).toHaveClass('language-json');
+  await expect(preview.locator('..').locator('[data-code-block-header]')).toHaveCount(0);
+  await expect(overview.locator('#repository-overview-result')).toHaveCount(0);
 });
 
 test('visually separates the repository architecture from the example in both themes', async ({

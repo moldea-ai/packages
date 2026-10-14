@@ -122,7 +122,7 @@ context:
     },
   ]);
 
-  return operationCase(
+  const example = operationCase(
     'inspection-mixed-diagnostics',
     'createProjectInspection',
     'Warnings and errors across three pages',
@@ -137,6 +137,8 @@ context:
     },
     diagnosticPages,
   );
+  example.files = files.map((entry) => projectFile(entry)).filter((file) => file !== null);
+  return example;
 };
 
 /**

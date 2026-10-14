@@ -71,6 +71,7 @@ export const verifyCapabilityArtifacts = (
   const visuals = new Map<string, string>();
   const references = new Set<string>();
   const recordedOutputs = new Map<string, string[]>();
+  const findingTexts = new Map<string, string>();
   const showcase = getCapabilityShowcase(catalog);
   const pending: DefaultTreeAdapterMap['node'][] = [parse(html)];
   while (pending.length > 0) {
@@ -78,8 +79,10 @@ export const verifyCapabilityArtifacts = (
     if (!node) continue;
     if ('tagName' in node) {
       const attributes = Object.fromEntries(node.attrs.map(({ name, value }) => [name, value]));
-      if (node.tagName === 'dialog' && attributes.id?.endsWith('-result'))
+      if (node.tagName === 'dialog' && attributes.id?.endsWith('-result')) {
         recordedOutputs.set(attributes.id, readRecordedOutputs(node));
+        findingTexts.set(attributes.id, readText(node));
+      }
       if (
         ['script', 'template'].includes(node.tagName) ||
         (node.tagName === 'dialog' &&
@@ -145,27 +148,40 @@ export const verifyCapabilityArtifacts = (
     for (const example of examples) {
       if (!visibleIds.has(example.id) || !outcomes.has(example.id))
         throw new Error(`Capabilities artifact omits visible result ${example.id}.`);
-      if (!html.includes(`id="example-${example.id}"`))
+      const isDirectResult = example.id === 'inspection-mixed-diagnostics';
+      if (!isDirectResult && !html.includes(`id="example-${example.id}"`))
         throw new Error(`Capabilities artifact omits illustration dialog ${example.id}.`);
-      if (visuals.get(example.id) !== getCapabilityVisualFamily(example))
+      if (!isDirectResult && visuals.get(example.id) !== getCapabilityVisualFamily(example))
         throw new Error(`Capabilities artifact has the wrong visual family for ${example.id}.`);
+      if (!html.includes(`id="${example.id}-result"`))
+        throw new Error(`Capabilities artifact omits result dialog ${example.id}.`);
       const outcome = getCapabilityOutcome(example);
       const view = getCapabilityInspectionView(example);
       const summary = summaries.get(example.id);
       if (
+        isDirectResult &&
+        (html.includes(`id="example-${example.id}"`) || visuals.has(example.id))
+      )
+        throw new Error(
+          `Capabilities artifact has an unnecessary intermediate illustration for ${example.id}.`,
+        );
+      if (
         labels.get(example.id) !== outcome.label ||
-        summary === undefined ||
-        resultLabels.get(example.id) !== outcome.label ||
-        !summary.includes(outcome.label) ||
+        (!isDirectResult &&
+          (summary === undefined ||
+            resultLabels.get(example.id) !== outcome.label ||
+            !summary.includes(
+              view.findings.length > 1 ? `${view.findings.length} findings` : outcome.label,
+            ))) ||
         view.findings.some(
           (finding) =>
             !references.has(`#${example.id}-result-finding-${finding.id}`) ||
-            !summary.includes(finding.code),
+            !visibleIds.has(`${example.id}-result-finding-${finding.id}`) ||
+            (!isDirectResult && view.findings.length === 1 && !summary?.includes(finding.code)) ||
+            !findingTexts.get(`${example.id}-result`)?.includes(finding.code),
         )
       )
         throw new Error(`Capabilities artifact has an unsupported outcome for ${example.id}.`);
-      if (!html.includes(`id="${example.id}-result"`))
-        throw new Error(`Capabilities artifact omits result dialog ${example.id}.`);
       const outputs = recordedOutputs.get(`${example.id}-result`);
       if (outputs?.length !== 1)
         throw new Error(`Capabilities artifact omits standard JSON presentation ${example.id}.`);

@@ -32,6 +32,27 @@ const Finding = z.object({
 });
 type IFinding = z.infer<typeof Finding>;
 
+// these diagnostics locate the issue in the referenced target, not its declaration
+const TARGET_DIAGNOSTIC_CODES = new Set([
+  'MOLDEA_REFERENCE_MISSING',
+  'MOLDEA_REFERENCE_NOT_FILE',
+  'MOLDEA_REFERENCE_SYMLINK',
+  'MOLDEA_REFERENCE_EXPORT_MISSING',
+  'MOLDEA_DECISION_REFERENCE_MISSING',
+  'MOLDEA_RUNTIME_GUIDANCE_MISSING',
+  'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
+  'MOLDEA_SKILL_IMPLEMENTATION_MISSING',
+  'MOLDEA_INTEGRATION_SKILL_MISSING',
+]);
+const MISSING_TARGET_CODES = new Set([
+  'MOLDEA_REFERENCE_MISSING',
+  'MOLDEA_DECISION_REFERENCE_MISSING',
+  'MOLDEA_RUNTIME_GUIDANCE_MISSING',
+  'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
+  'MOLDEA_SKILL_IMPLEMENTATION_MISSING',
+  'MOLDEA_INTEGRATION_SKILL_MISSING',
+]);
+
 const asRecord = (
   candidate: ICapabilityFact | undefined,
 ): Record<string, ICapabilityFact> | null =>
@@ -66,8 +87,29 @@ const findingView = (
   index: number,
   files: ICapabilityFile[],
   isCli = false,
+  exportTarget?: string,
 ): IInspectionFindingView => {
-  const referencedPath = finding.details?.['referencedPath'];
+  const declaredTarget = finding.details?.['referencedPath'];
+  const referencedPath =
+    finding.code === 'MOLDEA_INTEGRATION_SKILL_MISSING' &&
+    typeof finding.details?.['missingFile'] === 'string'
+      ? finding.details['missingFile']
+      : typeof declaredTarget === 'string'
+        ? declaredTarget
+        : exportTarget;
+  const isMissing =
+    MISSING_TARGET_CODES.has(finding.code) &&
+    finding.details?.['actualType'] === undefined &&
+    (finding.details?.['entryKind'] === undefined || finding.details['entryKind'] === 'missing');
+  const affectedPath = TARGET_DIAGNOSTIC_CODES.has(finding.code) ? referencedPath : finding.path;
+  const issueLabel =
+    finding.code === 'MOLDEA_REFERENCE_EXPORT_MISSING'
+      ? 'Missing export'
+      : isMissing
+        ? 'Missing target'
+        : finding.severity === 'error'
+          ? 'Needs correction'
+          : 'Needs attention';
   const evidence: IInspectionEvidence[] = files
     .filter((file) => isCli || file.path === finding.path || file.path === referencedPath)
     .map((file) => ({
@@ -75,6 +117,7 @@ const findingView = (
       content: file.content,
       language: file.language,
       isExcerpt: file.isExcerpt,
+      ...(file.path === affectedPath ? { issueLabel } : {}),
       ...(file.representation === 'source'
         ? {}
         : {
@@ -89,14 +132,8 @@ const findingView = (
       path: referencedPath,
       label: 'Referenced target',
       language: 'text',
-      isMissing: [
-        'MOLDEA_REFERENCE_MISSING',
-        'MOLDEA_DECISION_REFERENCE_MISSING',
-        'MOLDEA_RUNTIME_GUIDANCE_MISSING',
-        'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
-        'MOLDEA_SKILL_IMPLEMENTATION_MISSING',
-        'MOLDEA_INTEGRATION_SKILL_MISSING',
-      ].includes(finding.code),
+      ...(referencedPath === affectedPath ? { issueLabel } : {}),
+      isMissing,
     });
   return {
     id: `finding-${index + 1}`,
@@ -132,12 +169,22 @@ const outputView = (
 export const getCapabilityInspectionView = (example: ICapabilityCase): IRecordedInspectionView => {
   const outcome = getCapabilityOutcome(example);
   const result = example.result;
+  const findings = readFindings(example);
+  const coverage = result.kind === 'cli' ? asRecord(result.facts['coverage']) : null;
+  // the renamed-export example retains its one failed native coverage record separately
+  const exportTarget =
+    findings.length === 1 &&
+    findings[0]?.code === 'MOLDEA_REFERENCE_EXPORT_MISSING' &&
+    coverage?.['exportCheck'] === 'failed' &&
+    typeof coverage['path'] === 'string'
+      ? coverage['path']
+      : undefined;
   return {
     title: outcome.title,
     label: outcome.label,
     tone: outcome.tone,
-    findings: readFindings(example).map((finding, index) =>
-      findingView(finding, index, example.files, result.kind === 'cli'),
+    findings: findings.map((finding, index) =>
+      findingView(finding, index, example.files, result.kind === 'cli', exportTarget),
     ),
     ...outputView(example.output),
     ...(result.kind === 'cli' ? { command: result.command, exitStatus: result.exitStatus } : {}),

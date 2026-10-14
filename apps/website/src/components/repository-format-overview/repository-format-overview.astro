@@ -15,14 +15,12 @@ import CodeBlock from '@moldea.ai/website-ui/code-block';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
-import { InspectionResult } from '../inspection-result/index.ts';
 
 interface Props {
   repositoryFormatRoute: string;
   result: IInspectionExampleState['result'];
-  files: IInspectionExampleState['files'];
 }
-const { repositoryFormatRoute, result, files } = Astro.props;
+const { repositoryFormatRoute, result } = Astro.props;
 const outputPreview = JSON.stringify(
   {
     valid: result.valid,
@@ -178,20 +176,14 @@ const canonicalFiles = [
           />
         </div>
         <div
-          class="theme-surface-selection grid min-w-0 gap-3 rounded-lg bg-background p-3 text-foreground"
+          class="dark dark-surface-selection min-w-0 rounded-lg border border-primary-foreground/20 bg-primary/55 p-4"
         >
           <CodeBlock
             source={outputPreview}
             language="json"
-            headerLabel="JSON excerpt"
+            variant="plain"
             copyable={false}
             ariaLabel="Validation response excerpt"
-          />
-          <InspectionResult
-            id="repository-overview"
-            {result}
-            {files}
-            summary="broken"
           />
         </div>
       </article>

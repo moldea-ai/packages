@@ -1,6 +1,7 @@
 ---
 import Dialog from '@moldea.ai/website-ui/dialog';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
+import InspectionDialog from '@moldea.ai/website-ui/inspection-dialog';
 
 import {
   getCapabilityOutcome,
@@ -8,8 +9,9 @@ import {
   type ICapabilityCase,
 } from '../../lib/capabilities/index.ts';
 import { CapabilityCard } from '../capability-card/index.ts';
+import { getCapabilityInspectionView } from '../inspection-result/presentation/index.ts';
 
-// a compact example button opens the illustration before its optional result
+// entries open their source illustration or the mixed-result findings overview directly
 interface Props {
   example: ICapabilityCase;
   catalog: ICapabilities;
@@ -20,6 +22,8 @@ const { example, catalog, position, total } = Astro.props;
 const outcome = getCapabilityOutcome(example);
 const dialogId = `example-${example.id}`;
 const positionLabel = `Example ${position} of ${total}`;
+const directResult =
+  example.id === 'inspection-mixed-diagnostics' ? getCapabilityInspectionView(example) : undefined;
 ---
 
 <div
@@ -29,53 +33,78 @@ const positionLabel = `Example ${position} of ${total}`;
   data-capability-outcome={example.id}
   data-capability-label={outcome.label}
 >
-  <Dialog
-    id={dialogId}
-    title={example.title}
-    triggerLabel={example.title}
-    triggerAriaLabel={`Open example: ${example.title}`}
-    triggerVariant="outline"
-    triggerSize="md"
-    triggerClass="min-h-12 w-full min-w-0 justify-between gap-3 rounded-lg px-3 py-2 text-left whitespace-normal"
-    size="medium"
-    closeLabel="Close example"
-    fallbackOpen
-    isOverlayCloseEnabled
-  >
-    <span
-      slot="trigger"
-      class="flex min-w-0 flex-1 items-center justify-between gap-3"
-    >
-      <span class="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-        <span class="text-sm leading-6 font-semibold sm:text-base">
-          {example.title}
-        </span>
-        <span class="text-xs leading-5 text-muted-foreground">{positionLabel}</span>
-      </span>
-      <StatusBadge
-        label={outcome.label}
-        tone={outcome.tone}
-        size="sm"
-      />
-    </span>
-    <div
-      slot="heading"
-      class="min-w-0"
-    >
-      <h2
-        id={`${dialogId}-title`}
-        class="text-lg leading-6 font-semibold break-words"
+  {
+    directResult ? (
+      <InspectionDialog
+        id={`${example.id}-result`}
+        result={directResult}
+        triggerLabel={example.title}
+        triggerAriaLabel={`Open example: ${example.title}`}
+        triggerClass="min-h-12 w-full min-w-0 justify-between gap-3 rounded-lg px-3 py-2 text-left whitespace-normal"
       >
-        {example.title}
-      </h2>
-    </div>
-    <div class="mx-auto max-w-3xl min-w-0">
-      <CapabilityCard
-        {example}
-        {catalog}
-      />
-    </div>
-  </Dialog>
+        <span
+          slot="trigger"
+          class="flex min-w-0 flex-1 items-center justify-between gap-3"
+        >
+          <span class="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+            <span class="text-sm leading-6 font-semibold sm:text-base">{example.title}</span>
+            <span class="text-xs leading-5 text-muted-foreground">{positionLabel}</span>
+          </span>
+          <StatusBadge
+            label={outcome.label}
+            tone={outcome.tone}
+            size="sm"
+          />
+        </span>
+      </InspectionDialog>
+    ) : (
+      <Dialog
+        id={dialogId}
+        title={example.title}
+        triggerLabel={example.title}
+        triggerAriaLabel={`Open example: ${example.title}`}
+        triggerVariant="outline"
+        triggerSize="md"
+        triggerClass="min-h-12 w-full min-w-0 justify-between gap-3 rounded-lg px-3 py-2 text-left whitespace-normal"
+        size="medium"
+        closeLabel="Close example"
+        fallbackOpen
+        isOverlayCloseEnabled
+      >
+        <span
+          slot="trigger"
+          class="flex min-w-0 flex-1 items-center justify-between gap-3"
+        >
+          <span class="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+            <span class="text-sm leading-6 font-semibold sm:text-base">{example.title}</span>
+            <span class="text-xs leading-5 text-muted-foreground">{positionLabel}</span>
+          </span>
+          <StatusBadge
+            label={outcome.label}
+            tone={outcome.tone}
+            size="sm"
+          />
+        </span>
+        <div
+          slot="heading"
+          class="min-w-0"
+        >
+          <h2
+            id={`${dialogId}-title`}
+            class="text-lg leading-6 font-semibold break-words"
+          >
+            {example.title}
+          </h2>
+        </div>
+        <div class="mx-auto max-w-3xl min-w-0">
+          <CapabilityCard
+            {example}
+            {catalog}
+          />
+        </div>
+      </Dialog>
+    )
+  }
 </div>
 
 <style>
@@ -83,8 +112,7 @@ const positionLabel = `Example ${position} of ${total}`;
   :global(
     html:not([data-capabilities-enhanced])
       [data-capability-example]
-      > [data-dialog-root]
-      > dialog[data-dialog-fallback-open]
+      dialog[data-dialog-fallback-open]
   ) {
     position: static;
     display: grid;
@@ -100,8 +128,7 @@ const positionLabel = `Example ${position} of ${total}`;
   :global(
     html:not([data-capabilities-enhanced])
       [data-capability-example]
-      > [data-dialog-root]
-      > dialog[data-dialog-fallback-open]
+      dialog[data-dialog-fallback-open]
       > header
       form
   ) {
@@ -111,18 +138,14 @@ const positionLabel = `Example ${position} of ${total}`;
   :global(
     html:not([data-capabilities-enhanced])
       [data-capability-example]
-      > [data-dialog-root]
-      > dialog[data-dialog-fallback-open]
+      dialog[data-dialog-fallback-open]
       > div
   ) {
     overflow: visible;
   }
 
   :global(
-    html[data-capabilities-enhanced]
-      [data-capability-example]
-      > [data-dialog-root]
-      > dialog[data-dialog-fallback-open]
+    html[data-capabilities-enhanced] [data-capability-example] dialog[data-dialog-fallback-open]
   ) {
     display: none;
   }
