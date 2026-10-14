@@ -332,7 +332,7 @@ Version `1` uses this strict subset:
 
 - duplicate mapping keys are invalid
 - unknown properties are invalid
-- optional properties are omitted rather than represented as `null`
+- optional properties are omitted rather than represented as `null`, except `acceptedWarnings[].qualifier`, which accepts `null` as the same warning identity as omission
 - a required non-empty string must contain at least one non-whitespace Unicode character
 - comments are allowed and have no semantic meaning
 - mapping order has no semantic meaning
@@ -389,12 +389,6 @@ The paths below are the complete version `1` property surface. Braced segments i
 | `unresolved.{requirement-id}.reference`                               | no               | string         | Single-line non-empty external or project-local tracking reference.                                        |
 | `agents`                                                              | no               | mapping        | Registers agents keyed by stable agent ID.                                                                 |
 | `agents.{agent-id}.runtime`                                           | yes              | mapping        | Declares the agent's runtime integration.                                                                  |
-| `acceptedWarnings`                                                    | no               | sequence       | Explicit warning acceptances with code, subject, optional qualifier, and a required reason.                |
-| `acceptedWarnings[]`                                                  | yes per entry    | mapping        | One closed warning acceptance, unique by code, subject, and normalized qualifier.                          |
-| `acceptedWarnings[].code`                                             | yes per entry    | string         | One code from Core's acceptable-warning list.                                                              |
-| `acceptedWarnings[].subject`                                          | yes per entry    | string         | Repository-root-absolute logical path identifying the warning subject.                                     |
-| `acceptedWarnings[].qualifier`                                        | no               | string or null | Warning qualifier; omission and null identify the same warning.                                            |
-| `acceptedWarnings[].reason`                                           | yes per entry    | string         | Non-whitespace reason containing at most 256 Unicode scalar values.                                        |
 | `agents.{agent-id}.runtime.id`                                        | yes              | string         | Recognized runtime label or `custom`.                                                                      |
 | `agents.{agent-id}.runtime.guidance`                                  | no               | string         | Optional canonical runtime-guidance path for any runtime, including `custom`.                              |
 | `agents.{agent-id}.context`                                           | no               | sequence       | Unique canonical context paths relevant to the agent.                                                      |
@@ -460,6 +454,12 @@ The paths below are the complete version `1` property surface. Braced segments i
 | `agents.{agent-id}.unresolved.{requirement-id}.related[].path`        | yes per entry    | string         | Repository-root-absolute path to an existing regular file.                                                 |
 | `agents.{agent-id}.unresolved.{requirement-id}.related[].symbol`      | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
 | `agents.{agent-id}.unresolved.{requirement-id}.reference`             | no               | string         | Single-line non-empty external or project-local tracking reference.                                        |
+| `acceptedWarnings`                                                    | no               | sequence       | Explicit warning acceptances with code, subject, optional qualifier, and a required reason.                |
+| `acceptedWarnings[]`                                                  | yes per entry    | mapping        | One closed warning acceptance, unique by code, subject, and normalized qualifier.                          |
+| `acceptedWarnings[].code`                                             | yes per entry    | string         | One code from Core's acceptable-warning list.                                                              |
+| `acceptedWarnings[].subject`                                          | yes per entry    | string         | Repository-root-absolute logical path identifying the warning subject.                                     |
+| `acceptedWarnings[].qualifier`                                        | no               | string or null | Warning qualifier; omission and null identify the same warning.                                            |
+| `acceptedWarnings[].reason`                                           | yes per entry    | string         | Non-whitespace reason containing at most 256 Unicode scalar values.                                        |
 
 ## Manifest version
 
