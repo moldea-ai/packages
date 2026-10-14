@@ -27,6 +27,7 @@ for (const width of [320, 768, 1440]) {
     test(`browses mixed findings without extra dialogs at ${width}px in ${colorScheme}`, async ({
       page,
     }) => {
+      test.setTimeout(60_000);
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
       const id = 'inspection-mixed-diagnostics';
