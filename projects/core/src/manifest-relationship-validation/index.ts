@@ -165,20 +165,20 @@ export const validateManifestRelationships = (
     }
 
     const escapedAgentId = escapeJsonPointerSegment(agentId);
-    for (const referencedPath of [...(agent.context ?? [])].sort(compareExactStrings)) {
+    for (const [index, referencedPath] of (agent.context ?? []).entries()) {
       validateContextRelationship(
         referencedPath,
-        `/agents/${escapedAgentId}/context`,
+        `/agents/${escapedAgentId}/context/${index}`,
         validationContext.validAgentContextPaths,
         validationContext,
         agentId,
       );
     }
 
-    for (const referencedPath of [...(agent.decisions ?? [])].sort(compareExactStrings)) {
+    for (const [index, referencedPath] of (agent.decisions ?? []).entries()) {
       validateDecisionRelationship(
         referencedPath,
-        `/agents/${escapedAgentId}/decisions`,
+        `/agents/${escapedAgentId}/decisions/${index}`,
         validationContext,
         agentId,
       );

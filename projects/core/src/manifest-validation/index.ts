@@ -519,7 +519,7 @@ const readPathList = (
     paths.push(path);
   });
 
-  return paths.sort(compareExactStrings);
+  return paths;
 };
 
 const readRuntime = (

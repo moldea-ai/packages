@@ -167,6 +167,7 @@ const createExportRepository = (
   content: string | Uint8Array,
   sourcePath = '/src/entry.ts',
   symbol: string | null = 'entry',
+  additionalEntries: readonly IMemoryRepositoryEntry[] = [],
 ) =>
   createIntegratedMemoryRepositoryReader([
     {
@@ -183,6 +184,7 @@ const createExportRepository = (
     },
     { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
     { path: sourcePath, type: 'file', content },
+    ...additionalEntries,
   ]);
 
 describe('universal binding coverage through Core', () => {
@@ -292,7 +294,16 @@ describe('universal binding coverage through Core', () => {
   test('a type-only export import leaves an absent runtime export conclusive', async () => {
     const result = await createCore().validateProject({
       repository: createExportRepository(
-        'namespace ns { export interface Shape {} } export import type entry = ns.Shape;',
+        'export import type entry = require("./impl.cjs");',
+        '/src/entry.cts',
+        'entry',
+        [
+          {
+            path: '/src/impl.d.cts',
+            type: 'file',
+            content: 'export interface Shape {}',
+          },
+        ],
       ),
     });
     expect(result.coverage).toMatchObject([{ exportCheck: 'failed' }]);

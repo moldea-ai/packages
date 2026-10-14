@@ -59,6 +59,7 @@ describe('isMoldeaCliCompositionStateValid', () => {
   test.each([
     ['a future breaking major', '8.0.0'],
     ['a prerelease', '7.0.0-rc.1'],
+    ['a release below the corrected minimum', '7.0.3'],
   ])('rejects %s for a first-party package', (_description, version) => {
     const state = createTestCompositionState();
 

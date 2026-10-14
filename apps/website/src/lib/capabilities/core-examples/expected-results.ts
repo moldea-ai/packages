@@ -636,7 +636,7 @@ export const CORE_EXPECTED_RESULTS: Record<
         },
         message: 'The referenced repository path does not exist.',
         path: '/moldea/moldea.yaml',
-        pointer: '/agents/support/context',
+        pointer: '/agents/support/context/0',
         range: null,
         severity: 'error',
         source: 'core',
