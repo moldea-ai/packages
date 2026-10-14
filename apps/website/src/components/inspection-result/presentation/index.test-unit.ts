@@ -64,7 +64,7 @@ test('retains the complete native response and keeps CLI process context outside
   expect(view).toMatchObject({
     command: 'moldea validate --json',
     exitStatus: 1,
-    label: 'Invalid',
+    label: 'Blocking',
     tone: 'danger',
   });
   expect(view.findings).toHaveLength(1);

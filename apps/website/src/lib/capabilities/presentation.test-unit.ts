@@ -96,8 +96,8 @@ describe('getCapabilityOutcome', () => {
         },
       }),
     ).toMatchObject({
-      title: '2 warnings and 1 error across three pages',
-      label: 'Mixed results',
+      title: '1 blocking finding and 2 warnings across three pages',
+      label: 'Blocking',
       tone: 'danger',
     });
   });
@@ -123,7 +123,7 @@ describe('getCapabilityOutcome', () => {
         ...example,
         result: { kind: 'validation', valid: true, warningCount: 1, diagnostics: [warning] },
       }),
-    ).toMatchObject({ label: 'Warnings', title: '1 warning', tone: 'warning' });
+    ).toMatchObject({ label: 'Warning', title: '1 warning', tone: 'warning' });
     expect(
       getCapabilityOutcome({
         ...example,
@@ -135,7 +135,7 @@ describe('getCapabilityOutcome', () => {
           diagnostics: [{ ...warning, accepted: true, reason: 'Synthetic hosted repository.' }],
         },
       }),
-    ).toMatchObject({ label: 'Accepted warnings', tone: 'info' });
+    ).toMatchObject({ label: 'Accepted', tone: 'info' });
     expect(
       getCapabilityOutcome({
         ...example,
@@ -163,15 +163,35 @@ describe('getCapabilityOutcome', () => {
         },
       }),
     ).toMatchObject({
-      label: 'Warnings',
+      label: 'Warning',
       title: '1 warning',
       tone: 'warning',
     });
   });
 
+  test('labels a completed CLI validation as passed while keeping other operations distinct', () => {
+    const validation: ICapabilityCase = {
+      ...example,
+      operation: 'validate',
+      result: {
+        kind: 'cli',
+        status: 'valid',
+        schemaVersion: 7,
+        exitStatus: 0,
+        command: 'moldea validate --json',
+        facts: { valid: true, warningCount: 0, acceptedWarningCount: 0 },
+      },
+    };
+    expect(getCapabilityOutcome(validation)).toMatchObject({ label: 'Passed', tone: 'success' });
+    expect(getCapabilityOutcome({ ...validation, operation: 'inspect' })).toMatchObject({
+      label: 'Completed',
+      tone: 'info',
+    });
+  });
+
   test.each([
-    [{ kind: 'validation', valid: true, diagnostics: [] }, 'Valid', 'success'],
-    [{ kind: 'validation', valid: false, diagnostics: [] }, 'Invalid', 'danger'],
+    [{ kind: 'validation', valid: true, diagnostics: [] }, 'Passed', 'success'],
+    [{ kind: 'validation', valid: false, diagnostics: [] }, 'Blocking', 'danger'],
     [{ kind: 'reader', facts: { code: 'SNAPSHOT_CHANGED' } }, 'Refused', 'warning'],
     [{ kind: 'inspection', facts: { code: 'RESOURCE_LIMIT_EXCEEDED' } }, 'Refused', 'warning'],
     [{ kind: 'inspection', facts: { valid: true, relevant: false } }, 'Returned', 'info'],
@@ -196,7 +216,7 @@ describe('getCapabilityOutcome', () => {
         command: 'moldea validate --json',
         facts: {},
       },
-      'Invalid',
+      'Blocking',
       'danger',
     ],
     [

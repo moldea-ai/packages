@@ -12,9 +12,9 @@ test('shows the complete real check without tabs or disclosures', async ({ page 
   await expect(example.getByRole('tab')).toHaveCount(0);
   await expect(example.locator('details, pre:visible')).toHaveCount(0);
   await expect(example.locator('[data-inspection-list] > a')).toHaveCount(3);
-  await expect(example.getByRole('article', { name: '1. Connected' })).toContainText('Valid');
+  await expect(example.getByRole('article', { name: '1. Connected' })).toContainText('Passed');
   const broken = example.getByRole('article', { name: '2. File moved' });
-  await expect(broken).toContainText('Invalid');
+  await expect(broken).toContainText('Blocking');
   await expect(broken.getByRole('group', { name: 'Referenced location' })).toContainText(
     'src/refund-policy.ts',
   );
@@ -23,7 +23,7 @@ test('shows the complete real check without tabs or disclosures', async ({ page 
     'src/payments/refund-policy.ts',
   );
   await expect(example.getByRole('article', { name: '3. Reference updated' })).toContainText(
-    'Valid',
+    'Passed',
   );
   await expect(example).not.toContainText('Core diagnostic:');
   await expect(example).toContainText('not program behavior');
@@ -31,7 +31,7 @@ test('shows the complete real check without tabs or disclosures', async ({ page 
   const preview = page.getByRole('figure', { name: 'Repository check preview' });
   await expect(preview.locator('[data-inspection-outcome]')).toHaveAttribute(
     'data-inspection-outcome',
-    'Invalid',
+    'Blocking',
   );
   await expect(preview).not.toContainText('src/refund-policy.ts');
 });

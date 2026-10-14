@@ -48,6 +48,6 @@ export const FINDING_CATEGORY_PRESENTATIONS = {
   unclassified: { label: 'Unclassified', icon: ScanSearch },
 } satisfies Record<IFindingCategory, IInspectionPresentation>;
 export const INSPECTION_SEVERITY_PRESENTATIONS = {
-  error: { label: 'Error', icon: CircleAlert, tone: 'danger' },
+  error: { label: 'Blocking', icon: CircleAlert, tone: 'danger' },
   warning: { label: 'Warning', icon: TriangleAlert, tone: 'warning' },
 } satisfies Record<IInspectionSeverity, IInspectionPresentation & { tone: 'danger' | 'warning' }>;

@@ -133,7 +133,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.3.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.3.1' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -327,10 +327,10 @@ describe('published website UI package', () => {
         'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", hideIconOnMobile: true, ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
         'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", panelClass: "sm:h-[32rem]!", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
         'const iconDialogProps = { id: "fixture-icon", title: "Complete source", triggerLabel: "Open complete source", triggerAriaLabel: "Open complete source in a larger view", triggerVariant: "ghost", triggerSize: "icon-xs", size: "large" } satisfies ComponentProps<typeof Dialog>;',
-        'const passed = { title: "Validation complete", label: "Valid", tone: "success", findings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
-        'const failed = { ...passed, title: "Validation failed", label: "Invalid", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "moldea.yaml", evidence: [{ path: "moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Referenced target", isMissing: true, issueLabel: "Missing target" }] }] } satisfies IInspectionResultView;',
+        'const passed = { title: "Validation complete", label: "Passed", tone: "success", findings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
+        'const failed = { ...passed, title: "Validation failed", label: "Blocking", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "moldea.yaml", evidence: [{ path: "moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Referenced target", isMissing: true, issueLabel: "Missing target" }] }] } satisfies IInspectionResultView;',
         'const multiple = { ...failed, title: "Inspection complete", findings: [{ id: "accepted", title: "Unmatched relationship", code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", accepted: true, reason: "Generated files arrive during the release build.", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", evidence: [] }, ...failed.findings, { ...failed.findings[0], id: "warning", title: "Integration needs attention", severity: "warning", group: "integration" }] } satisfies IInspectionResultView;',
-        'const illustrated = { title: "Illustrative policy review", label: "Error", tone: "danger", findings: [{ id: "authority", title: "Approval authority", code: "CONTEXT_CONTRADICTED", severity: "error", category: "context", message: "Only managers can approve refunds.", evidence: [{ path: "project.md", language: "markdown", content: "Only managers can approve refunds.", isExcerpt: true }] }], redactions: [], limitation: "Illustrative finding." } satisfies IInspectionResultView;',
+        'const illustrated = { title: "Illustrative policy review", label: "Blocking", tone: "danger", findings: [{ id: "authority", title: "Approval authority", code: "CONTEXT_CONTRADICTED", severity: "error", category: "context", message: "Only managers can approve refunds.", evidence: [{ path: "project.md", language: "markdown", content: "Only managers can approve refunds.", isExcerpt: true }, { path: "instruction.md", language: "markdown", beforeContent: "Explain the refund policy.", content: "Approve refunds for customers.", isExcerpt: true, issueLabel: "Violates project rule" }] }], redactions: [], limitation: "Illustrative finding." } satisfies IInspectionResultView;',
         'const many = { ...illustrated, title: "Policy findings", findings: Array.from({ length: 32 }, (_, index) => ({ ...illustrated.findings[0], id: `policy-${index}`, title: `Policy finding ${index + 1}`, evidence: [] })) } satisfies IInspectionResultView;',
         'const statusResults = [{ ...passed, title: "Reader result", label: "Result", tone: "neutral" }, { ...failed, title: "Review warning", label: "Warning", tone: "warning", findings: [{ ...failed.findings[0], severity: "warning" }] }, { ...failed, title: "Accepted warning", label: "Accepted", tone: "info", findings: [{ ...failed.findings[0], severity: "warning", accepted: true }] }] satisfies IInspectionResultView[];',
         '---',
@@ -524,7 +524,7 @@ describe('published website UI package', () => {
             expect(await finding.locator('svg.lucide-link-2').count()).toBe(1);
             expect(await finding.locator('svg.lucide-circle-alert').count()).toBe(1);
             const badgeStyle = await finding
-              .getByText('Error', { exact: true })
+              .getByText('Blocking', { exact: true })
               .evaluate((node) => ({
                 transform: getComputedStyle(node).textTransform,
                 weight: getComputedStyle(node).fontWeight,
@@ -1004,6 +1004,23 @@ describe('published website UI package', () => {
             ).toBe(1);
             expect(await illustrationDialog.getByRole('tab').count()).toBe(0);
             expect(await illustrationDialog.locator('[data-inspection-output]').count()).toBe(0);
+            const instructionDiff = illustrationDialog.getByRole('region', {
+              name: 'instruction.md: Before and after',
+              exact: true,
+            });
+            expect(await instructionDiff.innerText()).toContain('Explain the refund policy.');
+            expect(await instructionDiff.innerText()).toContain('Approve refunds for customers.');
+            expect(await illustrationDialog.locator('[data-file-preview]').count()).toBe(2);
+            expect(
+              await illustrationDialog.locator('[data-file-preview-tone="danger"]').count(),
+            ).toBe(1);
+            await instructionDiff.focus();
+            expect(await instructionDiff.evaluate((node) => node === document.activeElement)).toBe(
+              true,
+            );
+            expect(
+              await instructionDiff.evaluate((node) => getComputedStyle(node).boxShadow),
+            ).not.toBe('none');
             expect(
               await illustrationDialog
                 .getByText('Illustrative finding.', { exact: true })
@@ -1017,7 +1034,7 @@ describe('published website UI package', () => {
               .poll(() => illustrationOpener.evaluate((node) => node === document.activeElement))
               .toBe(true);
             const passedOpener = page.getByRole('link', {
-              name: 'Valid: View result: Validation complete',
+              name: 'Passed: View result: Validation complete',
               exact: true,
             });
             await passedOpener.click();
@@ -1147,7 +1164,9 @@ describe('published website UI package', () => {
             const multipleOpener = page.locator('[data-dialog-open="multiple-result"]');
             await expectInspectionActionAlignment(multipleOpener);
             expect(await multipleOpener.innerText()).toContain('3 findings');
-            expect(await multipleOpener.innerText()).toContain('1 error · 1 warning · 1 accepted');
+            expect(await multipleOpener.innerText()).toContain(
+              '1 blocking · 1 warning · 1 accepted',
+            );
             await multipleOpener.click();
             expect(await page.locator('dialog:modal').count()).toBe(2);
             const acceptedDialog = page.getByRole('dialog', {
@@ -1180,7 +1199,7 @@ describe('published website UI package', () => {
             expect(
               await acceptedDialog
                 .locator('[data-inspection-detail="accepted"]')
-                .getByText('Accepted warning', { exact: true })
+                .getByText('Accepted', { exact: true })
                 .isVisible(),
             ).toBe(true);
             expect(

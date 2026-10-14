@@ -75,6 +75,10 @@ Check root build artifacts with `check:links` before running Playwright, because
 
 ## Design and rendering
 
+Inspection results use the same visitor-facing labels as Platform: Blocking, Warning, Passed, Accepted and Not checked. Core severity keys, CLI statuses and complete Output payloads keep their native values. Read and operation results retain labels such as Returned, Completed and Refused. The homepage and capability catalog share the same validation-outcome mapping.
+
+The illustrative refund-authority finding supplies both displayed instruction revisions to Website UI, so its dialog shows one unified diff beside the governing project rule. This illustration still has no recorded Output. Other findings keep declaration and target files separate rather than treating them as revisions.
+
 The application maps GitHub light-theme comment tokens to Website UI's `muted-foreground` token so highlighted comments meet contrast requirements on the off-white documentation surface. Dark highlighting retains its existing palette.
 
 The application uses Astro static output, Tailwind CSS 4's CSS-first configuration, Ubuntu Sans Variable, and Lucide Astro icons. Website UI supplies the platform-aligned semantic OKLCH tokens, action and link states, accessible breadcrumbs, pre-paint theme initialization, theme controls, local static search, and shared responsive prose primitives. Light and dark themes have distinct token sets, reduced-motion behavior is centralized, and documentation remains ordinary static HTML when JavaScript is disabled.

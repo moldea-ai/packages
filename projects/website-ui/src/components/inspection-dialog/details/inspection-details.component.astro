@@ -8,6 +8,7 @@ import {
 } from '@moldea.ai/website-ui/inspection-presentation';
 
 import CodeBlock from '../../code-block/code-block.component.astro';
+import CodeDiff from '../../code-diff/code-diff.component.astro';
 import FilePreview from '../../file-preview/file-preview.component.astro';
 import ActionLink from '../../action-link/action-link.component.astro';
 import StatusBadge from '../../status-badge/status-badge.component.astro';
@@ -66,7 +67,7 @@ const { id, resultTitle, findings } = Astro.props;
           data-inspection-detail={finding.id}
           aria-label={finding.title}
           tabindex="-1"
-          class="grid min-w-0 gap-4 outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          class="grid min-w-0 gap-4 outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:gap-5"
         >
           <div
             class:list={[
@@ -81,7 +82,7 @@ const { id, resultTitle, findings } = Astro.props;
           >
             <div
               class:list={[
-                'flex items-start gap-3 border-b p-3 sm:p-4',
+                'flex items-start gap-3 border-b p-3 sm:p-5',
                 finding.accepted
                   ? 'bg-info/5'
                   : finding.severity === 'error'
@@ -127,7 +128,7 @@ const { id, resultTitle, findings } = Astro.props;
                       ]}
                       aria-hidden="true"
                     />
-                    {finding.accepted ? 'Accepted warning' : severity.label}
+                    {finding.accepted ? 'Accepted' : severity.label}
                   </span>
                 </div>
                 {finding.title !== resultTitle && (
@@ -135,7 +136,7 @@ const { id, resultTitle, findings } = Astro.props;
                 )}
               </div>
             </div>
-            <div class="grid min-w-0 gap-3 p-3 sm:p-4">
+            <div class="grid min-w-0 gap-4 p-3 sm:p-5">
               {finding.message !== finding.title && (
                 <p class="text-sm leading-6">{finding.message}</p>
               )}
@@ -181,22 +182,33 @@ const { id, resultTitle, findings } = Astro.props;
                   <Fragment slot="label">
                     <span>{label}</span>
                     <StatusBadge
-                      label={finding.accepted ? 'Accepted warning' : evidence.issueLabel}
+                      label={finding.accepted ? 'Accepted' : evidence.issueLabel}
                       tone={finding.accepted ? 'info' : severity.tone}
                       size="sm"
                     />
                   </Fragment>
                 )}
-                {evidence.content !== undefined && (
-                  <div class="p-3">
-                    <CodeBlock
-                      source={evidence.content}
-                      language={evidence.language}
-                      variant="plain"
-                      copyable={!evidence.isExcerpt}
-                      ariaLabel={evidence.path}
-                    />
-                  </div>
+                {evidence.content !== undefined && evidence.beforeContent !== undefined ? (
+                  <CodeDiff
+                    oldValue={evidence.beforeContent}
+                    newValue={evidence.content}
+                    language={evidence.language}
+                    variant="plain"
+                    contextLines={Infinity}
+                    ariaLabel={`${evidence.path}: Before and after`}
+                  />
+                ) : (
+                  evidence.content !== undefined && (
+                    <div class="p-3">
+                      <CodeBlock
+                        source={evidence.content}
+                        language={evidence.language}
+                        variant="plain"
+                        copyable={!evidence.isExcerpt}
+                        ariaLabel={evidence.path}
+                      />
+                    </div>
+                  )
                 )}
               </FilePreview>
             );

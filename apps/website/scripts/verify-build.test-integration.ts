@@ -192,8 +192,12 @@ describe('production discovery guards', () => {
   });
   test.each([
     ['data-capability-visual="files"', 'data-capability-visual="runtime"', 'wrong visual family'],
-    ['data-capability-label="Invalid"', 'data-capability-label="Valid"', 'unsupported outcome'],
-    ['data-inspection-outcome="Invalid"', 'data-inspection-outcome="Valid"', 'unsupported outcome'],
+    ['data-capability-label="Blocking"', 'data-capability-label="Passed"', 'unsupported outcome'],
+    [
+      'data-inspection-outcome="Blocking"',
+      'data-inspection-outcome="Passed"',
+      'unsupported outcome',
+    ],
     ['MOLDEA_REFERENCE_MISSING', 'MOLDEA_REFERENCE_UNKNOWN', 'unsupported outcome'],
   ])('rejects an unsupported capability claim %s', (marker, replacement, message) => {
     replaceArtifactText('capabilities/index.html', marker, replacement);
