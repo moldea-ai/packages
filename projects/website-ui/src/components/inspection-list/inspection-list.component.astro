@@ -48,7 +48,7 @@ const warnings = result.findings.filter(
 ).length;
 const accepted = result.findings.filter((finding) => finding.accepted).length;
 const counts = [
-  errors && `${errors} error${errors === 1 ? '' : 's'}`,
+  errors && `${errors} blocking`,
   warnings && `${warnings} warning${warnings === 1 ? '' : 's'}`,
   accepted && `${accepted} accepted`,
 ]

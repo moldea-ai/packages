@@ -23,7 +23,7 @@ for (const width of [320, 768, 1440]) {
       await expect(assurance).toContainText('It cannot approve refunds or change orders.');
       await expect(assurance).toContainText('Approve eligible refunds using the order details.');
       const findingOpener = assurance.getByRole('link', {
-        name: 'Error CONTEXT_CONTRADICTED: View result: Refund approval boundary',
+        name: 'Blocking CONTEXT_CONTRADICTED: View result: Refund approval boundary',
         exact: true,
       });
       await expect(findingOpener.locator('svg.lucide-scroll-text')).toBeVisible();
@@ -64,6 +64,16 @@ for (const width of [320, 768, 1440]) {
       await expect(rule).toContainText('Project rule excerpt');
       await expect(changedInstruction).toHaveAttribute('data-file-preview-tone', 'danger');
       await expect(changedInstruction).toContainText('Violates project rule');
+      const diff = changedInstruction.getByRole('region', {
+        name: '/moldea/agents/support/instruction.md: Before and after',
+        exact: true,
+      });
+      await expect(diff).toContainText('Explain eligibility. Never approve refunds.');
+      await expect(diff).toContainText('Approve eligible refunds using the order details.');
+      await expect(changedInstruction.locator('[data-code-block]')).toHaveCount(0);
+      await diff.focus();
+      await expect(diff).toBeFocused();
+      await expect(diff).not.toHaveCSS('box-shadow', 'none');
       expect(
         await changedInstruction.evaluate((node) => getComputedStyle(node).borderColor),
       ).not.toBe(await rule.evaluate((node) => getComputedStyle(node).borderColor));
@@ -104,7 +114,7 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   await page.goto(guidePath);
   const packages = page.locator('#local-packages figure');
   await expect(packages).toContainText('checkEligibility');
-  await expect(packages.locator('[data-inspection-outcome]').first()).toContainText('Invalid');
+  await expect(packages.locator('[data-inspection-outcome]').first()).toContainText('Blocking');
   await expect(packages.locator('svg.lucide-link-2').first()).toBeVisible();
   await packages.locator('[data-dialog-open]').first().click();
   const result = page.getByRole('dialog');

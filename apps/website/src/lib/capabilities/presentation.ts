@@ -1,3 +1,5 @@
+import type { IProjectValidationResult } from '@moldea.ai/core';
+
 import type {
   ICapabilities,
   ICapabilityCase,
@@ -85,56 +87,63 @@ export const getCapabilityVisualFamily = (example: ICapabilityCase) => {
   return 'source';
 };
 
+/** Presents native validation without treating accepted warnings or unchecked exports as passes. */
+export const getValidationOutcome = (
+  result: Pick<IProjectValidationResult, 'valid' | 'diagnostics'> &
+    Partial<Pick<IProjectValidationResult, 'acceptedWarningCount' | 'coverageCounts'>>,
+): Omit<ICapabilityOutcome, 'description'> => {
+  if (!result.valid) {
+    return {
+      title: `${result.diagnostics.length} diagnostic${result.diagnostics.length === 1 ? '' : 's'}`,
+      label: 'Blocking',
+      tone: 'danger',
+    };
+  }
+  const warningCount = result.diagnostics.filter(
+    (diagnostic) => diagnostic.severity === 'warning' && diagnostic.accepted !== true,
+  ).length;
+  if (warningCount > 0) {
+    return {
+      title: `${warningCount} warning${warningCount === 1 ? '' : 's'}`,
+      label: 'Warning',
+      tone: 'warning',
+    };
+  }
+  const accepted = result.acceptedWarningCount ?? 0;
+  if (accepted > 0)
+    return {
+      title: `${accepted} accepted warning${accepted === 1 ? '' : 's'}`,
+      label: 'Accepted',
+      tone: 'info',
+    };
+  const notChecked = result.coverageCounts?.exportsNotChecked ?? 0;
+  if (notChecked > 0)
+    return {
+      title: `${notChecked} export check${notChecked === 1 ? '' : 's'} could not run`,
+      label: 'Not checked',
+      tone: 'neutral',
+    };
+  return {
+    title: 'Declared checks pass',
+    label: 'Passed',
+    tone: 'success',
+  };
+};
+
 /** Distinguishes a failed check, absent evidence, and an operation that could not complete. */
 export const getCapabilityOutcome = (example: ICapabilityCase): ICapabilityOutcome => {
   const result = example.result;
   const description = example.description;
   if (result.kind === 'validation') {
-    if (!result.valid) {
-      return {
-        title:
-          DIAGNOSTIC_TITLES[example.id] ??
-          `${result.diagnostics.length} diagnostic${result.diagnostics.length === 1 ? '' : 's'}`,
-        description,
-        label: 'Invalid',
-        tone: 'danger',
-      };
-    }
-    const warningCount = result.diagnostics.filter(
-      (diagnostic) => diagnostic.severity === 'warning' && diagnostic.accepted !== true,
-    ).length;
-    if (warningCount > 0) {
-      return {
-        title: `${warningCount} warning${warningCount === 1 ? '' : 's'}`,
-        description,
-        label: 'Warnings',
-        tone: 'warning',
-      };
-    }
-    const accepted = result.acceptedWarningCount ?? 0;
-    if (accepted > 0)
-      return {
-        title: `${accepted} accepted warning${accepted === 1 ? '' : 's'}`,
-        description,
-        label: 'Accepted warnings',
-        tone: 'info',
-      };
-    const notChecked = result.coverageCounts?.exportsNotChecked ?? 0;
-    if (notChecked > 0)
-      return {
-        title: `${notChecked} export check${notChecked === 1 ? '' : 's'} could not run`,
-        description,
-        label: 'Not checked',
-        tone: 'neutral',
-      };
+    const outcome = getValidationOutcome(result);
     return {
-      title:
-        example.id === 'decision-replacement-chain'
-          ? 'Decision chain checks pass'
-          : 'Declared checks pass',
+      ...outcome,
       description,
-      label: 'Valid',
-      tone: 'success',
+      title: !result.valid
+        ? (DIAGNOSTIC_TITLES[example.id] ?? outcome.title)
+        : outcome.label === 'Passed' && example.id === 'decision-replacement-chain'
+          ? 'Decision chain checks pass'
+          : outcome.title,
     };
   }
   if (result.kind === 'cli') {
@@ -143,7 +152,7 @@ export const getCapabilityOutcome = (example: ICapabilityCase): ICapabilityOutco
       return {
         title: `${warningCount} warning${warningCount === 1 ? '' : 's'}`,
         description,
-        label: 'Warnings',
+        label: 'Warning',
         tone: 'warning',
       };
     const accepted = result.facts.acceptedWarningCount;
@@ -151,7 +160,7 @@ export const getCapabilityOutcome = (example: ICapabilityCase): ICapabilityOutco
       return {
         title: `${accepted} accepted warning${accepted === 1 ? '' : 's'}`,
         description,
-        label: 'Accepted warnings',
+        label: 'Accepted',
         tone: 'info',
       };
     return {
@@ -163,9 +172,18 @@ export const getCapabilityOutcome = (example: ICapabilityCase): ICapabilityOutco
         result.status === 'error'
           ? 'Refused'
           : result.status === 'invalid'
-            ? 'Invalid'
-            : 'Completed',
-      tone: result.status === 'error' ? 'warning' : result.status === 'invalid' ? 'danger' : 'info',
+            ? 'Blocking'
+            : example.operation === 'validate'
+              ? 'Passed'
+              : 'Completed',
+      tone:
+        result.status === 'error'
+          ? 'warning'
+          : result.status === 'invalid'
+            ? 'danger'
+            : example.operation === 'validate'
+              ? 'success'
+              : 'info',
     };
   }
   if (typeof result.facts.code === 'string')
@@ -177,9 +195,9 @@ export const getCapabilityOutcome = (example: ICapabilityCase): ICapabilityOutco
     };
   if (example.id === 'inspection-mixed-diagnostics')
     return {
-      title: '2 warnings and 1 error across three pages',
+      title: '1 blocking finding and 2 warnings across three pages',
       description,
-      label: 'Mixed results',
+      label: 'Blocking',
       tone: 'danger',
     };
   return {

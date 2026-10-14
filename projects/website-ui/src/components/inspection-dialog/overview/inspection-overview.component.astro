@@ -3,6 +3,7 @@ import { ChevronRight } from '@lucide/astro';
 import {
   DIAGNOSTIC_GROUP_PRESENTATIONS,
   FINDING_CATEGORY_PRESENTATIONS,
+  INSPECTION_SEVERITY_PRESENTATIONS,
   type IInspectionFindingView,
 } from '@moldea.ai/website-ui/inspection-presentation';
 
@@ -34,10 +35,8 @@ const ordered = findings.toSorted((left, right) => priority(left) - priority(rig
             : FINDING_CATEGORY_PRESENTATIONS[finding.category];
         const Icon = subject.icon;
         const status = finding.accepted
-          ? 'Accepted warning'
-          : finding.severity === 'error'
-            ? 'Error'
-            : 'Warning';
+          ? 'Accepted'
+          : INSPECTION_SEVERITY_PRESENTATIONS[finding.severity].label;
         return (
           <li class="min-w-0">
             <ActionLink
@@ -48,7 +47,7 @@ const ordered = findings.toSorted((left, right) => priority(left) - priority(rig
               aria-describedby={`${id}-summary-${finding.id}${finding.path ? ` ${id}-path-${finding.id}` : ''}`}
               variant="ghost"
               size="sm"
-              class="h-auto w-full min-w-0 justify-start gap-3 rounded-lg p-3 text-start text-foreground motion-reduce:transition-none sm:p-4"
+              class="h-auto w-full min-w-0 justify-start gap-3 rounded-lg p-3 text-start text-foreground motion-reduce:transition-none sm:p-5"
             >
               <span
                 class:list={[
@@ -65,7 +64,7 @@ const ordered = findings.toSorted((left, right) => priority(left) - priority(rig
                   aria-hidden="true"
                 />
               </span>
-              <span class="grid min-w-0 flex-1 gap-1">
+              <span class="grid min-w-0 flex-1 gap-2">
                 <span
                   id={`${id}-summary-${finding.id}`}
                   class="flex flex-wrap items-baseline gap-x-2 text-xs font-normal"

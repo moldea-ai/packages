@@ -20,6 +20,7 @@ export {
   getCapabilityShowcase,
   getCapabilityVisualFamily,
   getCapabilityOutcome,
+  getValidationOutcome,
   getCapabilityFactRows,
 } from './presentation.ts';
 

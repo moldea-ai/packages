@@ -61,7 +61,7 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(trigger).toBeVisible();
       const triggerBounds = await trigger.boundingBox();
       expect(triggerBounds!.height).toBeGreaterThanOrEqual(36);
-      await expect(trigger).toContainText('Invalid');
+      await expect(trigger).toContainText('Blocking');
       await expect(trigger.locator('svg.lucide-bot')).toHaveCount(1);
       expect(triggerBounds!.width).toBeCloseTo(
         (await trigger.locator('..').boundingBox())!.width,

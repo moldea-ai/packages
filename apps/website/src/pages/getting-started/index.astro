@@ -33,7 +33,7 @@ const supportPolicy =
   'Support can explain the policy and look up orders. It cannot approve refunds or change orders.';
 const assuranceIllustration = {
   title: 'Illustrative PR Assurance review',
-  label: 'Error',
+  label: 'Blocking',
   tone: 'danger',
   findings: [
     {
@@ -59,6 +59,7 @@ const assuranceIllustration = {
           issueLabel: 'Violates project rule',
           language: 'markdown',
           content: afterInstruction,
+          beforeContent: beforeInstruction,
           isExcerpt: true,
         },
       ],

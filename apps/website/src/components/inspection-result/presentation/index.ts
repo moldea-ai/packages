@@ -9,6 +9,7 @@ import { z } from 'zod';
 import {
   createRecordedOutput,
   getCapabilityOutcome,
+  getValidationOutcome,
   type ICapabilityCase,
   type ICapabilityFact,
   type ICapabilityFile,
@@ -197,13 +198,16 @@ export const getProjectInspectionView = (
   result: IProjectValidationResult,
   title: string,
   files: ICapabilityFile[] = [],
-): IRecordedInspectionView => ({
-  title,
-  label: result.valid ? 'Valid' : 'Invalid',
-  tone: result.valid ? 'success' : 'danger',
-  findings: result.diagnostics.map((diagnostic, index) =>
-    findingView(Finding.parse(diagnostic), index, files),
-  ),
-  ...outputView(createRecordedOutput([result])),
-  limitation: 'This checks structure and declared references, not application behavior.',
-});
+): IRecordedInspectionView => {
+  const { label, tone } = getValidationOutcome(result);
+  return {
+    title,
+    label,
+    tone,
+    findings: result.diagnostics.map((diagnostic, index) =>
+      findingView(Finding.parse(diagnostic), index, files),
+    ),
+    ...outputView(createRecordedOutput([result])),
+    limitation: 'This checks structure and declared references, not application behavior.',
+  };
+};

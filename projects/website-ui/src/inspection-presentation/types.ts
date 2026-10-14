@@ -27,6 +27,8 @@ export interface IInspectionEvidence {
   label?: string;
   language: string;
   content?: string;
+  // an explicitly supplied revision of this same file; requires current content
+  beforeContent?: string;
   isExcerpt?: boolean;
   isMissing?: boolean;
   // identifies the affected evidence explicitly, independently of the diagnostic's reported path

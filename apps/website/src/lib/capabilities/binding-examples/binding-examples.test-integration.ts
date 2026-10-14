@@ -23,7 +23,7 @@ test('executes the binding and warning inventory without treating unchecked expo
     coverageCounts: { exportsFailed: 1 },
   });
   expect(getCapabilityOutcome(cases.find(({ id }) => id === 'warning-accepted')!).label).toBe(
-    'Accepted warnings',
+    'Accepted',
   );
   for (const example of cases.filter(({ id }) => id.startsWith('integration-'))) {
     expect(example.result).toMatchObject({

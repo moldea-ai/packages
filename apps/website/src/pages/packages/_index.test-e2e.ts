@@ -42,7 +42,7 @@ for (const width of [320, 768, 1440]) {
           );
         } else if (slug === 'cli') {
           await expect(section.locator('[data-inspection-outcome]').first()).toContainText(
-            'Invalid',
+            'Blocking',
           );
           await expect(section.locator('svg.lucide-link-2').first()).toBeVisible();
         }
