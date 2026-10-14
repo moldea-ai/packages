@@ -26,7 +26,7 @@ test('derives the hero from the real instruction, manifest, and Core diagnostic'
       source: 'core',
     },
   ]);
-  expect(JSON.stringify(example.result)).not.toMatch(/sourceKind|snapshotId|You are the/iu);
+  expect(JSON.stringify(example.result)).not.toMatch(/You are the/iu);
 });
 
 test('rejects a repaired fixture rather than publishing a fabricated failure', async () => {

@@ -5,13 +5,14 @@ import { createCore } from '@moldea.ai/core';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import { MANAGED_INTEGRATION_ENTRIES } from '../capabilities/integration-fixture/index.ts';
+import { projectFile } from '../capabilities/index.ts';
 
 import { INSTRUCTION_SNAPSHOT } from './constants.ts';
 import type { IInstructionExample, IInstructionSnapshot } from './types.ts';
 
 /**
  * Builds the hero from a real missing-tool diagnostic, without executing the agent or its code.
- * @returns A promise resolving to the instruction, implementation path, and content-free result.
+ * @returns A promise resolving to the instruction, implementation path, and complete Core result.
  * @throws
  * - The instruction example produced unexpected Core results.
  */
@@ -19,26 +20,27 @@ export const createInstructionExample = async (
   snapshot: IInstructionSnapshot = INSTRUCTION_SNAPSHOT,
 ): Promise<IInstructionExample> => {
   const instructionPath = '/moldea/agents/support/instruction.md';
+  const manifest = stringify({
+    version: 1,
+    agents: {
+      support: {
+        runtime: { id: 'custom' },
+        tools: {
+          'get-delivery-status': {
+            name: 'get_delivery_status',
+            description: 'Retrieves the delivery status of a customer order.',
+            implementation: { path: snapshot.implementationPath },
+          },
+        },
+      },
+    },
+  });
   const repository = createMemoryRepositoryReader([
     ...MANAGED_INTEGRATION_ENTRIES,
     {
       path: '/moldea/moldea.yaml',
       type: 'file',
-      content: stringify({
-        version: 1,
-        agents: {
-          support: {
-            runtime: { id: 'custom' },
-            tools: {
-              'get-delivery-status': {
-                name: 'get_delivery_status',
-                description: 'Retrieves the delivery status of a customer order.',
-                implementation: { path: snapshot.implementationPath },
-              },
-            },
-          },
-        },
-      }),
+      content: manifest,
     },
     {
       path: '/moldea/project.md',
@@ -87,11 +89,12 @@ export const createInstructionExample = async (
     instructionPath,
     instruction: snapshot.instruction,
     implementationPath: snapshot.implementationPath,
-    result: {
-      valid: validation.valid,
-      errorCount: validation.errorCount,
-      warningCount: validation.warningCount,
-      diagnostics,
-    },
+    result: structuredClone(validation),
+    files: [
+      { path: '/moldea/moldea.yaml', type: 'file' as const, content: manifest },
+      { path: instructionPath, type: 'file' as const, content: snapshot.instruction },
+    ]
+      .map((entry) => projectFile(entry))
+      .filter((file) => file !== null),
   };
 };

@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@3.2.0
+pnpm add @moldea.ai/website-ui@3.3.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -128,6 +128,10 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/file-preview`
 - `@moldea.ai/website-ui/file-tree`
 - `@moldea.ai/website-ui/hero-backdrop`
+- `@moldea.ai/website-ui/inspection-finding`
+- `@moldea.ai/website-ui/inspection-list`
+- `@moldea.ai/website-ui/inspection-dialog`
+- `@moldea.ai/website-ui/inspection-presentation`
 - `@moldea.ai/website-ui/conversation`
 - `@moldea.ai/website-ui/conversation-message`
 - `@moldea.ai/website-ui/local-search`
@@ -199,7 +203,7 @@ Native disclosure, independent opening, and optional group exclusivity work with
 
 `ConnectionLabel` places a short relationship label between visual examples. Its default slot accepts text and inline markup; the optional `icon` slot takes a decorative 16px icon. `tone` is `neutral` by default or `danger` for a broken connection. It owns spacing, icon alignment, and narrow-screen wrapping, not the meaning of a connection.
 
-`FilePreview` receives `path`, optional `label`, and optional `tone`. Its header preserves an identifiable filename while truncating the directory prefix; the complete path remains selectable and readable by assistive technology without hover. Long filenames can wrap within the header. The default slot owns the body; a divider appears only when that body is present. `icon` replaces the default file icon, and `status` accepts a consumer-owned badge. This component does not parse files, choose excerpts, or define result semantics.
+`FilePreview` receives `path`, optional `label`, and optional `tone`. Error, warning and information tones distinguish the card outline while retaining a neutral header. The `label` slot can place a compact issue badge beside the file role. Its header preserves an identifiable filename while truncating the directory prefix; the complete path remains selectable and readable by assistive technology without hover. Long filenames and directory paths truncate visually within the header; the complete path remains in the accessible text and title. The default slot owns the body; a divider appears only when that body is present. `icon` replaces the default file icon, and `status` accepts a consumer-owned badge. This component does not parse files, choose excerpts, or define result semantics.
 
 `ResultSummary` receives `title`, `description`, optional `tone`, `headingId`, `as` (`p`, `h2`, or `h3`), `hideIconOnMobile`, and `ariaLabel`. Defaults are a paragraph heading, neutral tone, visible icon, and “Result” group label. The optional `icon` slot renders inside a 40px badge; supply a 20px decorative icon. The `status` slot sits beside the heading, outside its accessible name. Titles use 14px type and descriptions 12px, both with 20px line height. Both components use the `danger`, `info`, `neutral`, `success`, and `warning` semantic tones.
 
@@ -213,7 +217,7 @@ The compiled `markdown` entry renders sanitized documents and fragments with sta
 
 ### Code and text wrapping
 
-`CodeBlock` receives literal `source`, optional `language`, `overflow`, `copyable`, `ariaLabel`, and `variant="panel"` (default) or `variant="plain"` for use inside another surface. It owns compact typography, syntax highlighting, keyboard scrolling, and light/dark presentation. `ariaLabel` defaults to “Code block”; provide a descriptive document-unique label when a page contains several regions. The plain variant has no inset, border, background, or shadow; its enclosing surface supplies the padding. Pass raw code rather than constructing a Markdown fence; embedded fences and HTML remain literal source. `renderCodeBlock` from the public `markdown` subpath accepts the same label and an optional fourth `overflow` argument for non-component consumers.
+`CodeBlock` receives literal `source`, optional `language`, `overflow`, `copyable`, `ariaLabel`, `headerLabel`, and `variant="panel"` (default) or `variant="plain"` for use inside another surface. It owns compact typography, syntax highlighting, keyboard scrolling, and light/dark presentation. `ariaLabel` defaults to “Code block”; provide a descriptive document-unique label when a page contains several regions. The plain variant has no inset, border, background, or shadow; its enclosing surface supplies the padding. Pass raw code rather than constructing a Markdown fence; embedded fences and HTML remain literal source. `renderCodeBlock` from the public `markdown` subpath accepts the same label and an optional fourth `overflow` argument for non-component consumers.
 
 ```astro
 ---
@@ -239,6 +243,8 @@ import CodeBlock from '@moldea.ai/website-ui/code-block';
 ```
 
 `overflow="wrap"` or `overflow="scroll"` always takes precedence over the shared default. Without an override, Markdown (`markdown`, `md`, `mdx`) and plain text (`text`, `txt`, `plaintext`) wrap long lines while retaining their original line breaks. Code, JSON, YAML, shell commands, diffs, and unlabelled source preserve their line layout and scroll horizontally when needed. Unlabelled fences may contain code or aligned file trees. `renderMarkdownDocument` and `renderMarkdownFragment` accept `codeOverflow` to override the mode of their fenced blocks.
+
+`headerLabel` replaces the generated language label without changing syntax highlighting or copied source. The `header-icon` and `header-end` slots compose a decorative icon and execution context beside it. Copy controls join this header rather than creating a second one. Plain blocks retain their flat surface after enhancement.
 
 With `CodeCopyControls` mounted, `CodeBlock` is copyable by default. Set `copyable={false}` for an illustrative or incomplete block that does not need a copy action. For rendered Markdown and hand-authored code, place `data-code-copy="false"` on the `pre` element or an owning container. An opted-out ancestor disables every code block inside it, while neighboring blocks remain eligible. Opted-out blocks have no copy action or extra focus stop and remain selectable.
 
@@ -305,7 +311,8 @@ Use these typed props to customize presentation without replacing the shared con
 - `triggerVariant`: `outline` (default), `primary`, `secondary`, `ghost`, or `link`, using the corresponding `ActionButton` variant.
 - `triggerSize`: `compact` (default) preserves the existing result-card button; `sm`, `md`, and `lg` use standard text-button sizes. `icon` and `icon-xs` use compact icon buttons with a default expand icon; a decorative `trigger-icon` slot can replace it. `triggerLabel` remains the accessible fallback and tooltip; use `triggerAriaLabel` when the surrounding context requires a more specific name.
 - `triggerClass` adds consumer-owned layout classes to the trigger; a `trigger` slot supplies custom non-interactive text or badges inside text triggers while `triggerLabel` remains the fallback.
-- `fallbackOpen` renders the same dialog body inline before enhancement for pages that must remain readable without JavaScript. Such pages must supply their own inline fallback styling and hide the open fallback before the first paint when JavaScript is available; initialization closes it before enabling the trigger.
+- `fallbackOpen` renders the same dialog body inline before enhancement for pages that must remain readable without JavaScript. The shared fallback stays in document flow with its close control hidden; initialization closes it before enabling the trigger. Pages with many fallbacks can hide them before first paint when native modal support is available.
+- `panelClass` adds consumer-owned panel sizing classes. For a stable desktop frame use an explicit responsive height override, for example `sm:h-[32rem]!`; the shared viewport maximum and scrolling body remain active.
 - `size`: `medium` (default) caps desktop width at 42rem; `large` uses the platform's 64rem cap for wider evidence. Both retain the viewport gutter, full-screen mobile layout, fixed header, scrolling body, and the same focus and dismissal behavior.
 
 For example, add `size="large" triggerVariant="primary" triggerSize="lg"` to the example above. Import the component through `@moldea.ai/website-ui/dialog`; consumers can derive its props with Astro's `ComponentProps<typeof Dialog>`.
@@ -326,6 +333,10 @@ For example, add `size="large" triggerVariant="primary" triggerSize="lg"` to the
   />
 </Dialog>
 ```
+
+External links or buttons can set `data-dialog-open="<dialog-id>"` and `aria-controls` to the same ID. Links should retain a real fallback fragment. The shared controller prevents ordinary navigation only when it can open the dialog, preserves modified link clicks, and returns focus to the actual opener. This supports a case dialog plus one result dialog without a second modal controller.
+
+`TabbedPanels` supports the `website-ui:select-tab` DOM event on its public root ID, with `detail: { id: "<item-id>" }`. It reuses normal selection without moving focus; unknown IDs are ignored.
 
 ### Website composition
 
@@ -351,6 +362,10 @@ The integration suite verifies the packed public surface and a real Astro consum
 
 ## Inspection presentation
 
-`InspectionFinding` composes a subject icon, label, concise title, exact code, optional path, and severity badge. Import it from `@moldea.ai/website-ui/inspection-finding`. `@moldea.ai/website-ui/inspection-presentation` exports `DIAGNOSTIC_GROUP_PRESENTATIONS`, `FINDING_CATEGORY_PRESENTATIONS`, and `INSPECTION_SEVERITY_PRESENTATIONS`, with their public types. Subject ids and icon choices follow the shared platform design reference. Websites retain diagnostic selection and result semantics.
+`InspectionFinding` composes a severity-tinted subject icon, category and inline severity, one title, secondary code/path, and an optional trailing `action` slot. `accepted` distinguishes an accepted warning. Import it from `@moldea.ai/website-ui/inspection-finding`. `@moldea.ai/website-ui/inspection-presentation` exports `DIAGNOSTIC_GROUP_PRESENTATIONS`, `FINDING_CATEGORY_PRESENTATIONS`, and `INSPECTION_SEVERITY_PRESENTATIONS`, with their public types. Subject IDs and icon choices follow the shared platform design reference.
 
-`StatusBadge` uses sentence case, medium `text-xs` type, and an optional `icon` slot. Success uses the green-teal success token in both themes. `CodeDiff` aligns tabular line numbers in 2.5rem gutters, separates markers from source text, and accommodates four-digit line numbers in unified and split views.
+Use `InspectionList` from `@moldea.ai/website-ui/inspection-list` with a unique `id` and `IInspectionResultView`. Every outcome has one full-width, compact action with its icon and status. Every action remains one line and has a tone-specific hover surface and border in both themes, with color transitions disabled under reduced motion. Labels, counts and diagnostic codes share a text baseline; leading icons and trailing arrows stay vertically centered. Finding actions show the diagnostic code beside the outcome in smaller regular-weight type; long codes truncate visually while their complete text remains in the accessible name, title and dialog. Zero findings open Output; one finding opens Finding; several show a findings count with separate error, outstanding-warning and accepted-warning totals. The list owns exactly one result dialog. Multiple findings open a Findings overview, with errors first, outstanding warnings next and accepted warnings last. Ordering stays stable within each group and never changes recorded output. Each overview row shows its subject icon, severity, title, code and available path. Selecting a row shows its details in the same dialog; Back to findings restores focus to that row. Reopening the aggregate action restores the overview. The dialog header identifies the result; the Finding card holds the selected diagnostic title once. Warnings, accepted warnings and error counts remain distinct.
+
+`InspectionDialog` is also available through `@moldea.ai/website-ui/inspection-dialog` for standalone composition with external controls. Supply `triggerLabel` to use its own visible trigger; `triggerAriaLabel`, `triggerClass` and the `trigger` slot compose an application-owned entry without another dialog. Its Finding/Output tabs reuse `TabbedPanels`; the first tab is Findings for multiple findings, while zero findings have Output directly. Switching to Output and back preserves the selected finding. The native dialog body scrolls longer lists, with no additional modal for selecting a finding. An illustrative finding omits `output` and `outputLabel` and shows the same finding card without tabs or invented JSON. Findings identify either a structural `group` or a semantic `category`, using the corresponding shared icon and label. Finding shows one diagnostic card with category and title together in its header, alongside the subject icon and severity. The card retains the exact message, code and location. Its outline and lightly tinted header distinguish errors, warnings and accepted warnings without coloring the file headers. Severity icons retain their status color; small error labels use foreground text for contrast. File evidence sits beside that card in separate FilePreview surfaces, never inside a second result frame. Evidence uses `FilePreview` and `CodeBlock`; absent content yields a header without invented source. Producers identify affected evidence with `issueLabel`. Its card receives the finding’s severity outline and a compact issue badge beside its label; accepted warnings use the information tone. File icons and headers stay neutral, and supporting files retain their normal outline. A diagnostic’s reported path alone does not identify the defective file. Highlighting never guesses a line range or marks every related file as incorrect. Producers may mark a target `isMissing` only when the diagnostic proves it is absent; merely unprovided content is not evidence of absence. Label excerpts with `isExcerpt`; they are not copyable as complete files. Output contains the complete serialized response supplied by the producer, optional command/exit context in the code header outside JSON, explicit redaction notices and a limitation. The package does not execute checks, infer diagnostic meaning, validate native output or redact fields. Websites own those operations and pass typed views (`IInspectionResultView`, `IInspectionFindingView`, `IInspectionEvidence`) through the public presentation boundary. All details and output remain readable inline without JavaScript.
+
+`StatusBadge` uses sentence case, medium `text-xs` type, and an optional `icon` slot. Success uses the green-teal success token in both themes. `CodeDiff` computes gutter width once from the largest displayed line number, rather than reserving a fixed width. Consumers must not pad plain diffs inside file previews: changed backgrounds should reach the file edges. Preserve complete relevant Markdown rules; top-align substantially taller desktop examples instead of clipping their content.

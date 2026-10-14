@@ -14,6 +14,7 @@ export const CliEnvelope = z.strictObject({
       path: z.string().nullable(),
       retryable: z.boolean(),
     })
+    .catchall(z.json())
     .nullable(),
   result: z.unknown(),
 });

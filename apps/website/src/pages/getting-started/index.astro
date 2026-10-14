@@ -7,8 +7,8 @@ import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import Conversation from '@moldea.ai/website-ui/conversation';
 import ConversationMessage from '@moldea.ai/website-ui/conversation-message';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
-import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';
-import { FINDING_CATEGORY_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';
+import InspectionList from '@moldea.ai/website-ui/inspection-list';
+import type { IInspectionResultView } from '@moldea.ai/website-ui/inspection-presentation';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import { withBase } from '@moldea.ai/website-ui/site';
 
@@ -29,6 +29,44 @@ const sections = [
 ];
 const beforeInstruction = 'Explain eligibility. Never approve refunds.';
 const afterInstruction = 'Approve eligible refunds using the order details.';
+const supportPolicy =
+  'Support can explain the policy and look up orders. It cannot approve refunds or change orders.';
+const assuranceIllustration = {
+  title: 'Illustrative PR Assurance review',
+  label: 'Error',
+  tone: 'danger',
+  findings: [
+    {
+      id: 'refund-authority',
+      title: 'Refund approval boundary',
+      code: 'CONTEXT_CONTRADICTED',
+      severity: 'error',
+      category: 'context',
+      message:
+        'The changed instruction allows support to approve refunds, exceeding the authority set by the project rule.',
+      path: '/moldea/agents/support/instruction.md',
+      evidence: [
+        {
+          path: '/moldea/project.md',
+          label: 'Project rule',
+          language: 'markdown',
+          content: supportPolicy,
+          isExcerpt: true,
+        },
+        {
+          path: '/moldea/agents/support/instruction.md',
+          label: 'Changed instruction',
+          issueLabel: 'Violates project rule',
+          language: 'markdown',
+          content: afterInstruction,
+          isExcerpt: true,
+        },
+      ],
+    },
+  ],
+  redactions: [],
+  limitation: 'Illustrative review of the displayed rule and instruction.',
+} satisfies IInspectionResultView;
 ---
 
 <BaseLayout
@@ -206,8 +244,12 @@ const afterInstruction = 'Approve eligible refunds using the order details.';
           <figcaption class="mb-6">
             <h3
               id={`example-${connectionExample.id}-title`}
-              class="text-lg font-semibold"
+              class="flex items-start gap-2 text-lg font-semibold"
             >
+              <GitPullRequest
+                class="mt-1 size-5 shrink-0"
+                aria-hidden="true"
+              />
               {connectionExample.title}
             </h3>
           </figcaption>
@@ -288,7 +330,7 @@ const afterInstruction = 'Approve eligible refunds using the order details.';
 
       <section
         id="pr-assurance"
-        class="grid scroll-mt-24 items-center gap-8 border-t pt-10 lg:grid-cols-2 lg:gap-16"
+        class="grid scroll-mt-24 items-start gap-8 border-t pt-10 lg:grid-cols-2 lg:gap-16"
         aria-labelledby="assurance-title"
         data-ecosystem-section
       >
@@ -333,32 +375,25 @@ const afterInstruction = 'Approve eligible refunds using the order details.';
             path="/moldea/project.md"
             label="Project rule"
           >
-            <p class="p-4 text-sm leading-7">
-              Support can explain the policy and look up orders. It cannot approve refunds or change
-              orders.
-            </p>
+            <p class="p-4 text-sm leading-7">{supportPolicy}</p>
           </FilePreview>
           <FilePreview
             path="/moldea/agents/support/instruction.md"
             label="Changed support instruction"
             tone="danger"
           >
-            <div class="p-3">
-              <CodeDiff
-                oldValue={beforeInstruction}
-                newValue={afterInstruction}
-                language="markdown"
-                variant="plain"
-                ariaLabel="Changed support instruction"
-              />
-            </div>
+            <CodeDiff
+              oldValue={beforeInstruction}
+              newValue={afterInstruction}
+              language="markdown"
+              variant="plain"
+              ariaLabel="Changed support instruction"
+            />
           </FilePreview>
           <div class="border-t pt-4">
-            <InspectionFinding
-              title="Refund approval boundary"
-              code="CONTEXT_CONTRADICTED"
-              severity="error"
-              presentation={FINDING_CATEGORY_PRESENTATIONS.context}
+            <InspectionList
+              id="assurance-illustration"
+              result={assuranceIllustration}
             />
           </div>
         </figure>

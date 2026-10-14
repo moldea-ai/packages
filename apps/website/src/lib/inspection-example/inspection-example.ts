@@ -5,6 +5,7 @@ import { createCore } from '@moldea.ai/core';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import { MANAGED_INTEGRATION_ENTRIES } from '../capabilities/integration-fixture/index.ts';
+import { projectFile } from '../capabilities/index.ts';
 
 import { INSPECTION_SNAPSHOTS } from './constants.ts';
 import type { IInspectionExampleState, IInspectionSnapshot } from './types.ts';
@@ -12,7 +13,7 @@ import type { IInspectionExampleState, IInspectionSnapshot } from './types.ts';
 /**
  * Validates the three synthetic snapshots through public Core and reader exports.
  * Rejects changed results instead of publishing an inaccurate demonstration.
- * @returns The file paths and content-free excerpts from actual Core results.
+ * @returns The file paths and complete actual Core results.
  * @throws
  * - If snapshots are malformed, out of order, or produce unexpected Core results.
  */
@@ -79,19 +80,6 @@ export const createInspectionExample = async (
       );
     }
 
-    const result = {
-      valid,
-      errorCount,
-      warningCount,
-      diagnostics: diagnostics.map(({ code, message, path, pointer, details, severity }) => ({
-        code,
-        message,
-        path,
-        pointer,
-        details,
-        severity,
-      })),
-    };
     states.push({
       id: snapshot.id,
       label: snapshot.label,
@@ -99,7 +87,14 @@ export const createInspectionExample = async (
       projectPath: '/moldea/project.md',
       declaredPath,
       sourcePath: snapshot.sourcePath,
-      result,
+      result: structuredClone(validation),
+      files: [
+        { path: '/moldea/moldea.yaml', type: 'file' as const, content: snapshot.manifest },
+        { path: '/moldea/project.md', type: 'file' as const, content: snapshot.project },
+        { path: snapshot.sourcePath, type: 'file' as const, content: snapshot.source },
+      ]
+        .map((entry) => projectFile(entry))
+        .filter((file) => file !== null),
     });
   }
 

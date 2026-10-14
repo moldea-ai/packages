@@ -20,12 +20,13 @@ export {
   getCapabilityShowcase,
   getCapabilityVisualFamily,
   getCapabilityOutcome,
-  getCapabilityResultExcerpt,
   getCapabilityFactRows,
 } from './presentation.ts';
 
 // shared example projection and assertion boundaries
 export { projectDiagnostics, projectEntry, projectFile } from './transformers.ts';
+export { createRecordedOutput, assertRecordedOutput } from './output/index.ts';
+export type { IRecordedOutput, IOutputRedaction } from './output/index.ts';
 export {
   assertCapabilityFacts,
   captureOperationalRefusal,

@@ -8,7 +8,7 @@ import type { IPublicPackage } from '../../model/types.ts';
 import type { ICapabilityCase, ICapabilityFact } from '../index.ts';
 import { withFixtureWorkspace } from '../fixture-workspace/index.ts';
 import { assertCapabilityFacts } from '../index.ts';
-import { projectFile } from '../index.ts';
+import { createRecordedOutput, projectFile } from '../index.ts';
 
 import { CLI_FIXTURE_FILES } from './constants.ts';
 import {
@@ -18,7 +18,7 @@ import {
   CliContentResult,
   type ICliEnvelope,
 } from './types.ts';
-import { assertCliResultExcerpt, parseCliExecution } from './validations.ts';
+import { parseCliExecution } from './validations.ts';
 
 const cliManifestSchema = z.object({
   name: z.literal('@moldea.ai/cli'),
@@ -106,9 +106,7 @@ const resolveCliBin = async (
 };
 
 /**
- * Builds a safe command excerpt without the disposable host path or opaque cursor.
- * @throws
- * - A CLI result excerpt does not match the executed response.
+ * Keeps execution context outside the unchanged, complete native CLI envelope.
  */
 const commandCase = (
   id: string,
@@ -118,9 +116,8 @@ const commandCase = (
   envelope: ICliEnvelope,
   exitStatus: number,
   facts: Record<string, ICapabilityFact>,
-  resultExcerpt: ICapabilityFact,
+  responses: ICliEnvelope[] = [envelope],
 ): ICapabilityCase => {
-  assertCliResultExcerpt(envelope.result, resultExcerpt);
   return {
     id,
     groupId: 'command-line',
@@ -136,6 +133,7 @@ const commandCase = (
       'projects/cli/docs/working-tree.md',
     ],
     files: [],
+    output: createRecordedOutput(responses),
     result: {
       kind: 'cli',
       command,
@@ -143,23 +141,13 @@ const commandCase = (
       schemaVersion: envelope.schemaVersion,
       status: envelope.status,
       facts,
-      envelopeExcerpt: {
-        cliVersion: envelope.cliVersion,
-        command: envelope.command,
-        error: envelope.error,
-        result: resultExcerpt,
-        schemaVersion: envelope.schemaVersion,
-        status: envelope.status,
-      },
     },
   };
 };
 
 /**
  * Executes the declared CLI bin in an isolated Git fixture and verifies its read-only behavior.
- * @returns Validated schema 7 excerpts with real exit statuses and no host-specific identities.
- * @throws
- * - A CLI result excerpt does not match the executed response.
+ * @returns Complete schema 7 envelopes with separate real exit statuses.
  */
 export const createCliExamples = async (
   repositoryRoot: string,
@@ -238,13 +226,6 @@ export const createCliExamples = async (
           errorCount: validationResult.errorCount ?? 0,
           warningCount: validationResult.warningCount ?? 0,
         },
-        {
-          valid: validationResult.valid,
-          diagnosticCount: validationResult.diagnosticCount ?? 0,
-          errorCount: validationResult.errorCount ?? 0,
-          warningCount: validationResult.warningCount ?? 0,
-          page: { records: [] },
-        },
       ),
     );
     const inspection = await run(['inspect']);
@@ -271,11 +252,6 @@ export const createCliExamples = async (
           paths,
           counts: inspectionResult.counts ?? {},
           hasContinuation: inspectionResult.page.cursor !== null,
-        },
-        {
-          valid: inspectionResult.valid,
-          counts: inspectionResult.counts ?? {},
-          page: { records: paths.map((path) => ({ path })) },
         },
       ),
     );
@@ -316,18 +292,6 @@ export const createCliExamples = async (
                 : [{ ...record.match, owner: { ...record.match.owner } }],
             ),
           },
-          {
-            valid: result.valid,
-            relevant: result.relevant ?? false,
-            counts: result.counts ?? {},
-            page: {
-              records: result.page.records.flatMap((record) =>
-                record.kind !== 'match' || record.match === undefined
-                  ? []
-                  : [{ kind: record.kind, match: record.match }],
-              ),
-            },
-          },
         ),
       );
     }
@@ -350,13 +314,13 @@ export const createCliExamples = async (
           chunk: { ...contentResult.chunk },
           hasContinuation: contentResult.cursor !== null,
         },
-        { asset: contentResult.asset, chunk: contentResult.chunk },
       ),
     );
     const chunks: ICapabilityFact[] = [];
     let cursor: string | null = null;
     let totalContent = '';
     let firstEnvelope: ICliEnvelope | undefined;
+    const contentResponses: ICliEnvelope[] = [];
     do {
       const execution = await run([
         'content',
@@ -367,6 +331,7 @@ export const createCliExamples = async (
         ...(cursor === null ? [] : ['--cursor', cursor]),
       ]);
       firstEnvelope ??= execution.envelope;
+      contentResponses.push(execution.envelope);
       const result = CliContentResult.parse(execution.envelope.result);
       assertCapabilityFacts(
         result.chunk.byteStart,
@@ -389,7 +354,6 @@ export const createCliExamples = async (
     );
     assertCapabilityFacts(chunks.length > 1, true);
     if (firstEnvelope === undefined) throw new Error('A CLI capability content page is missing.');
-    const firstContentResult = CliContentResult.parse(firstEnvelope.result);
     examples.push(
       commandCase(
         'cli-content-continuation',
@@ -399,13 +363,7 @@ export const createCliExamples = async (
         firstEnvelope,
         0,
         { chunks },
-        {
-          asset: firstContentResult.asset,
-          chunk: {
-            byteStart: firstContentResult.chunk.byteStart,
-            byteEnd: firstContentResult.chunk.byteEnd,
-          },
-        },
+        contentResponses,
       ),
     );
     const refused = await run(['content', '--path', '/src/returns/policy.ts']);
@@ -419,7 +377,6 @@ export const createCliExamples = async (
         refused.envelope,
         refused.exitStatus,
         { error: refused.envelope.error === null ? null : { ...refused.envelope.error } },
-        null,
       ),
     );
     const composition = await run(['composition']);
@@ -445,12 +402,6 @@ export const createCliExamples = async (
         composition.envelope,
         composition.exitStatus,
         { ...compositionResult },
-        {
-          packages: compositionResult.packages,
-          minimumGitVersion: compositionResult.minimumGitVersion,
-          repositoryFormatVersions: compositionResult.repositoryFormatVersions,
-          supportedNodeRange: compositionResult.supportedNodeRange,
-        },
       ),
     );
     assertCapabilityFacts(await captureFixtureState(workspace.directory), before);
@@ -513,24 +464,6 @@ export const createCliExamples = async (
       },
       { path: '/src/returns/policy.ts', symbol: 'checkEligibility', exportCheck: 'failed' },
     );
-    const invalidRecords = invalidResult.page.records.map((record): ICapabilityFact => {
-      if (record.kind === 'diagnostic')
-        return {
-          kind: record.kind,
-          code: record.code,
-          path: record.path,
-          pointer: record.pointer,
-          severity: record.severity,
-        };
-      if (record.kind === 'coverage')
-        return {
-          kind: record.kind,
-          path: record.path,
-          symbol: record.symbol,
-          exportCheck: record.exportCheck,
-        };
-      throw new Error('Validation returned a record outside the diagnostic and coverage contract.');
-    });
     const invalidCase = commandCase(
       'cli-invalid-project',
       'A renamed export breaks a declared connection',
@@ -561,14 +494,6 @@ export const createCliExamples = async (
               ]
             : [],
         ),
-      },
-      {
-        valid: invalidResult.valid,
-        diagnosticCount: invalidResult.diagnosticCount ?? 0,
-        errorCount: invalidResult.errorCount ?? 0,
-        warningCount: invalidResult.warningCount ?? 0,
-        coverageCounts: invalidResult.coverageCounts,
-        page: { records: invalidRecords },
       },
     );
     invalidCase.files = [
@@ -665,7 +590,6 @@ ${acceptance}`,
           warning.envelope,
           warning.exitStatus,
           { ...counts, diagnostics: [diagnostic] },
-          { ...counts, page: { records: [{ kind: 'diagnostic', ...diagnostic }] } },
         ),
       );
       assertCapabilityFacts(await captureFixtureState(workspace.directory), beforeWarning);

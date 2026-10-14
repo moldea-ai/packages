@@ -33,6 +33,7 @@ if (
 ---
 
 <div
+  id={id}
   class="flex min-w-0 flex-col gap-2"
   data-tabbed-panels-root
 >
@@ -140,6 +141,21 @@ if (
       }
 
       root.dataset['enhanced'] = 'true';
+      root.addEventListener('website-ui:select-tab', (event) => {
+        if (!(event instanceof CustomEvent)) return;
+        const detail: unknown = event.detail;
+        if (
+          detail === null ||
+          typeof detail !== 'object' ||
+          !('id' in detail) ||
+          typeof detail.id !== 'string'
+        )
+          return;
+        const selectedIndex = tabs.findIndex(
+          (tab) => tab.dataset['panelId'] === `${root.id}-${detail.id}-panel`,
+        );
+        if (selectedIndex >= 0) selectTab(selectedIndex, false);
+      });
       selectTab(0, false);
     }
   };

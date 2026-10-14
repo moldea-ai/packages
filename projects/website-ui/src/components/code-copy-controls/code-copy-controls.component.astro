@@ -10,7 +10,7 @@ import ActionButton from '../action-button/action-button.component.astro';
     data-code-copy-header
   >
     <span
-      class="max-w-24 min-w-0 flex-1 truncate font-mono text-xs font-medium text-muted-foreground"
+      class="min-w-0 flex-1 truncate font-mono text-xs font-medium text-muted-foreground"
       data-code-copy-language
       >Code</span
     >
@@ -152,6 +152,16 @@ import ActionButton from '../action-button/action-button.component.astro';
     header: HTMLElement,
     toolbar: HTMLElement,
   ): void => {
+    const componentContainer = pre.closest<HTMLElement>('[data-code-block]');
+    const componentHeader = componentContainer?.querySelector<HTMLElement>(
+      ':scope > [data-code-block-header]',
+    );
+    if (componentHeader) {
+      componentHeader.append(toolbar);
+      if (componentContainer?.dataset.codeVariant === 'panel')
+        componentContainer.dataset.codeCopyFrame = '';
+      return;
+    }
     const filePreview = pre.closest<HTMLElement>('[data-file-preview]');
     const filePreviewHeader = filePreview?.querySelector<HTMLElement>(
       ':scope > [data-file-preview-header]',
@@ -170,9 +180,10 @@ import ActionButton from '../action-button/action-button.component.astro';
     const languageLabel = header.querySelector<HTMLElement>('[data-code-copy-language]');
     if (languageLabel !== null) languageLabel.textContent = resolveLanguageLabel(code);
 
-    const componentContainer = pre.closest<HTMLElement>('[data-code-block]');
     if (componentContainer !== null && componentContainer.firstElementChild === pre) {
-      componentContainer.dataset.codeCopyFrame = '';
+      if (componentContainer.dataset.codeVariant === 'plain') {
+        header.className = 'flex min-w-0 items-center justify-between gap-2 pb-2';
+      } else componentContainer.dataset.codeCopyFrame = '';
       componentContainer.prepend(header);
       return;
     }

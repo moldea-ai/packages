@@ -1,39 +1,54 @@
 import { parse, type DefaultTreeAdapterMap } from 'parse5';
+import { z } from 'zod';
 
 import {
   getCapabilityShowcase,
   getCapabilityVisualFamily,
   getCapabilityOutcome,
-  getCapabilityResultExcerpt,
+  assertRecordedOutput,
   type ICapabilities,
 } from '../../src/lib/capabilities/index.ts';
+import { getCapabilityInspectionView } from '../../src/components/inspection-result/presentation/index.ts';
 
 /** Reads a parsed subtree, retaining exact code whitespace when the separator is empty. */
-const readText = (node: DefaultTreeAdapterMap['node'], separator = ' '): string => {
+const readText = (
+  node: DefaultTreeAdapterMap['node'],
+  separator = ' ',
+  skipDialogs = false,
+): string => {
+  if (skipDialogs && 'tagName' in node && node.tagName === 'dialog') return '';
   if ('value' in node) return node.value;
   return 'childNodes' in node
-    ? node.childNodes.map((child) => readText(child, separator)).join(separator)
+    ? node.childNodes.map((child) => readText(child, separator, skipDialogs)).join(separator)
     : '';
 };
 
-/** Collects standard JSON excerpts even though result dialogs are initially closed. */
-const readResultExcerpts = (dialog: DefaultTreeAdapterMap['node']): string[] => {
-  const excerpts: string[] = [];
-  const pending = [dialog];
+/** Collects only recorded output, excluding JSON source evidence in Finding views. */
+const readRecordedOutputs = (dialog: DefaultTreeAdapterMap['node']): string[] => {
+  const outputs: string[] = [];
+  const pending: { node: DefaultTreeAdapterMap['node']; isOutput: boolean }[] = [
+    { node: dialog, isOutput: false },
+  ];
   while (pending.length > 0) {
-    const node = pending.pop();
-    if (!node) continue;
+    const current = pending.pop();
+    if (!current) continue;
+    const { node } = current;
+    const isOutput =
+      current.isOutput ||
+      ('attrs' in node && node.attrs.some(({ name }) => name === 'data-inspection-output'));
     if (
+      isOutput &&
       'tagName' in node &&
       node.tagName === 'code' &&
       node.attrs.some(
         ({ name, value }) => name === 'class' && value.split(/\s+/u).includes('language-json'),
       )
     )
-      excerpts.push(readText(node, ''));
-    else if ('childNodes' in node) pending.push(...node.childNodes);
+      outputs.push(readText(node, ''));
+    else if ('childNodes' in node)
+      pending.push(...node.childNodes.map((child) => ({ node: child, isOutput })));
   }
-  return excerpts;
+  return outputs;
 };
 
 /**
@@ -52,9 +67,11 @@ export const verifyCapabilityArtifacts = (
   const outcomes = new Set<string>();
   const labels = new Map<string, string>();
   const summaries = new Map<string, string>();
+  const resultLabels = new Map<string, string>();
   const visuals = new Map<string, string>();
   const references = new Set<string>();
-  const resultExcerpts = new Map<string, string[]>();
+  const recordedOutputs = new Map<string, string[]>();
+  const findingTexts = new Map<string, string>();
   const showcase = getCapabilityShowcase(catalog);
   const pending: DefaultTreeAdapterMap['node'][] = [parse(html)];
   while (pending.length > 0) {
@@ -62,8 +79,10 @@ export const verifyCapabilityArtifacts = (
     if (!node) continue;
     if ('tagName' in node) {
       const attributes = Object.fromEntries(node.attrs.map(({ name, value }) => [name, value]));
-      if (node.tagName === 'dialog' && attributes.id?.startsWith('result-'))
-        resultExcerpts.set(attributes.id, readResultExcerpts(node));
+      if (node.tagName === 'dialog' && attributes.id?.endsWith('-result')) {
+        recordedOutputs.set(attributes.id, readRecordedOutputs(node));
+        findingTexts.set(attributes.id, readText(node));
+      }
       if (
         ['script', 'template'].includes(node.tagName) ||
         (node.tagName === 'dialog' &&
@@ -79,10 +98,23 @@ export const verifyCapabilityArtifacts = (
           attributes['data-capability-label'] ?? '',
         );
       }
+      if (attributes['data-inspection-outcome']) {
+        let parent = node.parentNode;
+        while (parent && 'tagName' in parent) {
+          const summaryId = parent.attrs.find(
+            ({ name }) => name === 'data-capability-summary',
+          )?.value;
+          if (summaryId) {
+            resultLabels.set(summaryId, attributes['data-inspection-outcome']);
+            break;
+          }
+          parent = parent.parentNode;
+        }
+      }
       if (attributes['data-capability-summary'])
         summaries.set(
           attributes['data-capability-summary'],
-          readText(node).replaceAll(/\s+/gu, ' ').trim(),
+          readText(node, ' ', true).replaceAll(/\s+/gu, ' ').trim(),
         );
       if (attributes['data-capability-visual']) {
         let parent: DefaultTreeAdapterMap['node'] | null = node.parentNode;
@@ -116,24 +148,58 @@ export const verifyCapabilityArtifacts = (
     for (const example of examples) {
       if (!visibleIds.has(example.id) || !outcomes.has(example.id))
         throw new Error(`Capabilities artifact omits visible result ${example.id}.`);
-      if (!html.includes(`id="example-${example.id}"`))
+      const isDirectResult = example.id === 'inspection-mixed-diagnostics';
+      if (!isDirectResult && !html.includes(`id="example-${example.id}"`))
         throw new Error(`Capabilities artifact omits illustration dialog ${example.id}.`);
-      if (visuals.get(example.id) !== getCapabilityVisualFamily(example))
+      if (!isDirectResult && visuals.get(example.id) !== getCapabilityVisualFamily(example))
         throw new Error(`Capabilities artifact has the wrong visual family for ${example.id}.`);
-      const outcome = getCapabilityOutcome(example);
-      const expectedSummary =
-        example.id === 'cli-invalid-project' && example.result.kind === 'cli'
-          ? `${example.result.command} Exit ${example.result.exitStatus}`
-          : `${outcome.title} ${outcome.label}`;
-      if (labels.get(example.id) !== outcome.label || summaries.get(example.id) !== expectedSummary)
-        throw new Error(`Capabilities artifact has an unsupported outcome for ${example.id}.`);
-      if (!html.includes(`id="result-${example.id}"`))
+      if (!html.includes(`id="${example.id}-result"`))
         throw new Error(`Capabilities artifact omits result dialog ${example.id}.`);
-      const excerpts = resultExcerpts.get(`result-${example.id}`);
-      if (excerpts?.length !== 1)
+      const outcome = getCapabilityOutcome(example);
+      const view = getCapabilityInspectionView(example);
+      const summary = summaries.get(example.id);
+      if (
+        isDirectResult &&
+        (html.includes(`id="example-${example.id}"`) || visuals.has(example.id))
+      )
+        throw new Error(
+          `Capabilities artifact has an unnecessary intermediate illustration for ${example.id}.`,
+        );
+      if (
+        labels.get(example.id) !== outcome.label ||
+        (!isDirectResult &&
+          (summary === undefined ||
+            resultLabels.get(example.id) !== outcome.label ||
+            !summary.includes(
+              view.findings.length > 1 ? `${view.findings.length} findings` : outcome.label,
+            ))) ||
+        view.findings.some(
+          (finding) =>
+            !references.has(`#${example.id}-result-finding-${finding.id}`) ||
+            !visibleIds.has(`${example.id}-result-finding-${finding.id}`) ||
+            (!isDirectResult && view.findings.length === 1 && !summary?.includes(finding.code)) ||
+            !findingTexts.get(`${example.id}-result`)?.includes(finding.code),
+        )
+      )
+        throw new Error(`Capabilities artifact has an unsupported outcome for ${example.id}.`);
+      const outputs = recordedOutputs.get(`${example.id}-result`);
+      if (outputs?.length !== 1)
         throw new Error(`Capabilities artifact omits standard JSON presentation ${example.id}.`);
-      if (excerpts[0] !== JSON.stringify(getCapabilityResultExcerpt(example.result), null, 2))
-        throw new Error(`Capabilities artifact result does not match execution ${example.id}.`);
+      try {
+        const published = z.json().parse(JSON.parse(outputs[0]));
+        assertRecordedOutput(example.output.responses, {
+          ...example.output,
+          redactions: [],
+          responses:
+            example.output.responses.length === 1
+              ? [published]
+              : z.array(z.json()).parse(published),
+        });
+      } catch (error) {
+        throw new Error(`Capabilities artifact result does not match execution ${example.id}.`, {
+          cause: error,
+        });
+      }
     }
     const referencePath = new URL(`..${group.reference.route}`, pageUrl).pathname;
     if (!references.has(referencePath))

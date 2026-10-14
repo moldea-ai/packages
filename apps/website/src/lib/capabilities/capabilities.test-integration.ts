@@ -31,13 +31,11 @@ test('accounts for every release-owned operation and diagnostic', () => {
   }
 });
 
-test('regenerates identical published facts without host paths, cursors, or opaque reader identities', async () => {
+test('regenerates identical published facts with complete repeatable output and without host paths', async () => {
   const repositoryRoot = fileURLToPath(new URL('../../../../../', import.meta.url));
   const repeated = await createCapabilities(repositoryRoot, model.packages);
   expect(repeated).toStrictEqual(model.capabilities);
-  expect(JSON.stringify(repeated)).not.toMatch(
-    /"(?:cursor|nextCursor|snapshotIdentity|contentIdentity)":|moldea-capabilities-/u,
-  );
+  expect(JSON.stringify(repeated)).not.toMatch(/moldea-capabilities-/u);
   expect(JSON.stringify(repeated)).not.toContain(repositoryRoot);
 });
 

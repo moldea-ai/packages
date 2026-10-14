@@ -3,7 +3,6 @@ import type {
   ICapabilityCase,
   ICapabilityFact,
   ICapabilityOutcome,
-  ICapabilityResult,
 } from './types.ts';
 
 const DIAGNOSTIC_TITLES: Record<string, string> = {
@@ -78,7 +77,6 @@ export const getCapabilityVisualFamily = (example: ICapabilityCase) => {
     )
   )
     return 'decisions';
-  if (example.id === 'inspection-mixed-diagnostics') return 'mixed-diagnostics';
   if (example.id === 'snapshot-comparison') return 'records';
   if (example.id === 'normalized-digests') return 'digests';
   if (example.id === 'manifest-change-relevance') return 'scope';
@@ -197,25 +195,6 @@ export const getCapabilityOutcome = (example: ICapabilityCase): ICapabilityOutco
     label: 'Returned',
     tone: 'info',
   };
-};
-
-/** Selects a bounded result excerpt without inventing or changing public-result facts. */
-export const getCapabilityResultExcerpt = (result: ICapabilityResult): unknown => {
-  if (result.kind === 'validation')
-    return {
-      valid: result.valid,
-      ...(result.errorCount === undefined
-        ? {}
-        : { errorCount: result.errorCount, warningCount: result.warningCount }),
-      ...(result.acceptedWarningCount === undefined
-        ? {}
-        : { acceptedWarningCount: result.acceptedWarningCount }),
-      ...(result.coverage === undefined
-        ? {}
-        : { coverage: result.coverage, coverageCounts: result.coverageCounts }),
-      diagnostics: result.diagnostics,
-    };
-  return result.kind === 'cli' ? result.envelopeExcerpt : result.facts;
 };
 
 /**

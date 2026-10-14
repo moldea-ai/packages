@@ -13,6 +13,7 @@ import {
 import type { ICapabilityCase } from '../types.ts';
 import { assertCapabilityFacts } from '../validations.ts';
 import { projectDiagnostics, projectFile } from '../transformers.ts';
+import { createRecordedOutput } from '../output/index.ts';
 import { MANAGED_INTEGRATION_ENTRIES } from '../integration-fixture/index.ts';
 
 // each expectation is authored independently of the executed Core result
@@ -277,6 +278,7 @@ export const createBindingExamples = async (): Promise<ICapabilityCase[]> => {
         .filter(({ path }) => path === '/moldea/moldea.yaml' || path === sourcePath)
         .map((entry) => projectFile(entry))
         .filter((file) => file !== null),
+      output: createRecordedOutput([result]),
       result: {
         kind: 'validation',
         valid: result.valid,

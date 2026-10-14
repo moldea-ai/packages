@@ -22,6 +22,66 @@ for (const width of [320, 768, 1440]) {
       const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
       await expect(assurance).toContainText('It cannot approve refunds or change orders.');
       await expect(assurance).toContainText('Approve eligible refunds using the order details.');
+      const findingOpener = assurance.getByRole('link', {
+        name: 'Error CONTEXT_CONTRADICTED: View result: Refund approval boundary',
+        exact: true,
+      });
+      await expect(findingOpener.locator('svg.lucide-scroll-text')).toBeVisible();
+      expect((await findingOpener.boundingBox())!.width).toBe(
+        (await findingOpener.locator('..').boundingBox())!.width,
+      );
+      expect((await findingOpener.boundingBox())!.height).toBe(40);
+      await findingOpener.hover();
+      await findingOpener.evaluate(async (node) => {
+        await Promise.all(node.getAnimations().map((animation) => animation.finished));
+      });
+      expect(
+        (
+          await new AxeBuilder({ page })
+            .include('#pr-assurance [data-inspection-outcome]')
+            .analyze()
+        ).violations,
+      ).toStrictEqual([]);
+      await findingOpener.focus();
+      await page.keyboard.press('Enter');
+      const findingDialog = page.getByRole('dialog', {
+        name: 'Illustrative PR Assurance review',
+        exact: true,
+      });
+      await expect(
+        findingDialog.getByRole('heading', { name: 'Refund approval boundary', exact: true }),
+      ).toHaveCount(1);
+      await expect(findingDialog.getByText('Project context', { exact: true })).toBeVisible();
+      await expect(findingDialog).toContainText('exceeding the authority set by the project rule');
+      await expect(findingDialog.locator('[data-file-preview]')).toHaveCount(2);
+      const rule = findingDialog
+        .locator('[data-file-preview]')
+        .filter({ hasText: '/moldea/project.md' });
+      const changedInstruction = findingDialog
+        .locator('[data-file-preview]')
+        .filter({ hasText: '/moldea/agents/support/instruction.md' });
+      await expect(rule).toHaveAttribute('data-file-preview-tone', 'neutral');
+      await expect(rule).toContainText('Project rule excerpt');
+      await expect(changedInstruction).toHaveAttribute('data-file-preview-tone', 'danger');
+      await expect(changedInstruction).toContainText('Violates project rule');
+      expect(
+        await changedInstruction.evaluate((node) => getComputedStyle(node).borderColor),
+      ).not.toBe(await rule.evaluate((node) => getComputedStyle(node).borderColor));
+      await expect(findingDialog.getByRole('tab')).toHaveCount(0);
+      await expect(findingDialog.locator('[data-inspection-output]')).toHaveCount(0);
+      await findingDialog.evaluate(async (node) => {
+        await Promise.all(
+          node.getAnimations({ subtree: true }).map((animation) => animation.finished),
+        );
+      });
+      expect(
+        (await new AxeBuilder({ page }).include('#assurance-illustration-result').analyze())
+          .violations,
+      ).toStrictEqual([]);
+      if (width >= 768) await page.mouse.click(1, 1);
+      else await page.keyboard.press('Escape');
+      await expect(findingDialog).not.toBeVisible();
+      await expect(findingOpener).toBeFocused();
       for (const name of ['moldea Agent Skill (opens in a new tab)', 'Explore moldea Cloud']) {
         const productLink = page.getByRole('main').getByRole('link', { name, exact: true });
         await expect(productLink).toBeVisible();
@@ -44,14 +104,21 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   await page.goto(guidePath);
   const packages = page.locator('#local-packages figure');
   await expect(packages).toContainText('checkEligibility');
-  await expect(packages.locator('[data-inspection-finding]').first()).toContainText(
-    'MOLDEA_REFERENCE_EXPORT_MISSING',
-  );
+  await expect(packages.locator('[data-inspection-outcome]').first()).toContainText('Invalid');
   await expect(packages.locator('svg.lucide-link-2').first()).toBeVisible();
-  await packages.getByRole('button', { name: /^View result:/u }).click();
+  await packages.locator('[data-dialog-open]').first().click();
   const result = page.getByRole('dialog');
   await expect(result).toContainText('MOLDEA_REFERENCE_EXPORT_MISSING');
   await expect(result).toContainText('canReturn');
+  const affected = result.locator('[data-file-preview-tone="danger"]');
+  await expect(affected).toHaveCount(1);
+  await expect(affected).toContainText('Missing export');
+  await expect(affected).toContainText('canReturn');
+  await expect(affected).not.toContainText('version: 1');
+  await expect(
+    result.locator('[data-file-preview-tone="neutral"]').filter({ hasText: 'version: 1' }),
+  ).toContainText('Declared in');
+  await result.getByRole('tab', { name: 'Output', exact: true }).click();
   await expect(result).toContainText('coverageCounts');
   await expect(result).toContainText('exportsFailed');
   await page.keyboard.press('Escape');
@@ -59,7 +126,7 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
   await expect(
     assurance.locator(
-      '[data-file-preview-header] code[title="/moldea/agents/support/instruction.md"]',
+      '[data-file-preview-header]:visible code[title="/moldea/agents/support/instruction.md"]',
     ),
   ).toBeVisible();
 });
@@ -125,6 +192,12 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
     await expect(
       page.getByRole('heading', { name: 'Check the connections as your code changes.' }),
     ).toBeVisible();
+    const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
+    await expect(
+      assurance.getByRole('heading', { name: 'Refund approval boundary', exact: true }),
+    ).toBeVisible();
+    await expect(assurance).toContainText('exceeding the authority set by the project rule');
+    await expect(assurance.locator('[data-inspection-output]')).toHaveCount(0);
     await page
       .locator('#adoption-guide')
       .getByRole('link', { name: 'CLI overview and installation guide', exact: true })
