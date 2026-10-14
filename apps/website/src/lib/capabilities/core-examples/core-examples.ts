@@ -5,7 +5,7 @@ import { parseRepositoryPath } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 
 import type { ICapabilityCase } from '../index.ts';
-import { projectDiagnostics, projectFile } from '../index.ts';
+import { createRecordedOutput, projectDiagnostics, projectFile } from '../index.ts';
 
 import { MANAGED_INTEGRATION_ENTRIES } from '../integration-fixture/index.ts';
 
@@ -68,6 +68,7 @@ export const createCoreExamples = async (
       limitation: 'A structural result does not establish application behavior or answer quality.',
       sourcePaths: ['projects/core/docs/diagnostics.md', 'specifications/repository-format.md'],
       files: entries.map((entry) => projectFile(entry)).filter((file) => file !== null),
+      output: createRecordedOutput([result]),
       result: {
         kind: 'validation',
         valid: result.valid,

@@ -8,7 +8,6 @@ import { CapabilityAgents } from './agents/index.ts';
 import { CapabilityCommand } from './command/index.ts';
 import { CapabilityDecisions } from './decisions/index.ts';
 import { CapabilityFiles } from './files/index.ts';
-import { CapabilityMixedDiagnostics } from './mixed-diagnostics/index.ts';
 import { CapabilityDigests } from './digests/index.ts';
 import { CapabilityRecords } from './records/index.ts';
 import { CapabilityScope } from './scope/index.ts';
@@ -35,8 +34,6 @@ const family = getCapabilityVisualFamily(example);
       <CapabilityAgents {example} />
     ) : family === 'decisions' ? (
       <CapabilityDecisions {example} />
-    ) : family === 'mixed-diagnostics' ? (
-      <CapabilityMixedDiagnostics {example} />
     ) : family === 'records' ? (
       <CapabilityRecords {example} />
     ) : family === 'command' ? (

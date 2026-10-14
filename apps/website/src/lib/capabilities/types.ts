@@ -6,6 +6,8 @@ import type {
   IBindingCoverageCounts,
 } from '@moldea.ai/core';
 
+import type { IRecordedOutput } from './output/index.ts';
+
 // release-owned groups, operations, and explicitly selected display facts
 export type ICapabilityGroupId =
   'structure' | 'agents' | 'decisions' | 'binding-coverage' | 'repository-access' | 'command-line';
@@ -20,7 +22,7 @@ export type ICapabilityFact =
       [key: string]: ICapabilityFact;
     };
 
-// result excerpts remain distinct from the complete public package contracts
+// summaries remain derived from the separately retained complete operation output
 export type ICapabilityResult =
   | {
       kind: 'validation';
@@ -41,14 +43,6 @@ export type ICapabilityResult =
       schemaVersion: 7;
       status: 'valid' | 'invalid' | 'error';
       facts: Record<string, ICapabilityFact>;
-      envelopeExcerpt: {
-        cliVersion: string;
-        command: string;
-        error: ICapabilityFact;
-        result: ICapabilityFact;
-        schemaVersion: 7;
-        status: 'valid' | 'invalid' | 'error';
-      };
     };
 
 // a visible excerpt always points to the exact synthetic input that was executed
@@ -72,6 +66,7 @@ export interface ICapabilityCase {
   sourcePaths: string[];
   files: ICapabilityFile[];
   result: ICapabilityResult;
+  output: IRecordedOutput;
 }
 
 // concise coverage and selected illustrations, with the full contract linked separately

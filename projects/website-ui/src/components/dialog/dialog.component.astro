@@ -15,6 +15,7 @@ export interface Props {
   triggerVariant?: IActionButtonProps['variant'];
   triggerSize?: 'compact' | IActionButtonProps['size'];
   triggerClass?: string;
+  panelClass?: string;
   size?: 'medium' | 'large';
   closeLabel?: string;
   fallbackOpen?: boolean;
@@ -31,6 +32,7 @@ const {
   triggerVariant = 'outline',
   triggerSize = 'compact',
   triggerClass,
+  panelClass,
   size = 'medium',
   closeLabel = 'Close dialog',
   fallbackOpen = false,
@@ -75,6 +77,7 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
     class:list={[
       'fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden border-0 bg-background p-0 text-foreground outline-none [--dialog-exit-duration:300ms] [--dialog-motion-transform:translateY(0.25rem)] backdrop:bg-transparent open:grid sm:m-auto sm:h-fit sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:rounded-xl sm:border sm:shadow-raised sm:[--dialog-exit-duration:200ms] sm:[--dialog-motion-transform:translateY(0.5rem)_scale(0.95)] sm:backdrop:bg-black/45 sm:backdrop:backdrop-blur-xs dark:sm:backdrop:bg-black/70',
       size === 'large' ? 'sm:max-w-5xl' : 'sm:max-w-2xl',
+      panelClass,
     ]}
     aria-labelledby={`${id}-title`}
     aria-describedby={description ? `${id}-description` : undefined}
@@ -141,6 +144,35 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
 <script>
   const activeReturnTransitions = new Set<ViewTransition>();
   const returnAttribute = 'data-website-ui-dialog-return';
+  const dialogOpeners = new WeakMap<HTMLDialogElement, (opener: HTMLElement) => void>();
+  const enhancedExternalTriggers = new WeakSet<HTMLElement>();
+
+  /** Binds external controls before client-router bubbling, without duplicating modal behavior. */
+  const initializeExternalTriggers = (): void => {
+    for (const opener of document.querySelectorAll<HTMLElement>('[data-dialog-open]')) {
+      if (enhancedExternalTriggers.has(opener)) continue;
+      opener.addEventListener('click', (event) => {
+        if (
+          event.defaultPrevented ||
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        )
+          return;
+        const dialogId = opener.dataset['dialogOpen'];
+        if (dialogId === undefined) return;
+        const dialog = document.getElementById(dialogId);
+        if (!(dialog instanceof HTMLDialogElement)) return;
+        const openDialog = dialogOpeners.get(dialog);
+        if (openDialog === undefined) return;
+        event.preventDefault();
+        openDialog(opener);
+      });
+      enhancedExternalTriggers.add(opener);
+    }
+  };
 
   /** Enhances optional detail triggers while native dialogs own modality and keyboard focus. */
   const initializeDialogs = (): void => {
@@ -154,6 +186,7 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
 
       let closeRequest: symbol | undefined;
       let returnTransition: ViewTransition | undefined;
+      let actualOpener: HTMLElement | undefined;
       const clearReturnMarker = (): void => {
         if (document.documentElement.getAttribute(returnAttribute) === dialog.id)
           document.documentElement.removeAttribute(returnAttribute);
@@ -208,16 +241,19 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
         await Promise.allSettled(dialog.getAnimations().map((animation) => animation.finished));
         if (closeRequest === request && dialog.isConnected && dialog.open) dialog.close();
       };
-      trigger.addEventListener('click', () => {
+      const openDialog = (opener: HTMLElement): void => {
         if (dialog.open) return;
         returnTransition?.skipTransition();
         returnTransition = undefined;
         clearReturnMarker();
         closeRequest = undefined;
         delete dialog.dataset['closing'];
+        actualOpener = opener;
         dialog.showModal();
         body.scrollTop = 0;
-      });
+      };
+      dialogOpeners.set(dialog, openDialog);
+      trigger.addEventListener('click', () => openDialog(trigger));
       dialog.addEventListener('cancel', (event) => {
         event.preventDefault();
         void requestClose();
@@ -230,6 +266,8 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
         if (dialog.open) return;
         closeRequest = undefined;
         delete dialog.dataset['closing'];
+        if (actualOpener?.isConnected) actualOpener.focus({ preventScroll: true });
+        actualOpener = undefined;
       });
       if (dialog.hasAttribute('data-overlay-close-enabled')) {
         let didPressOverlay = false;
@@ -266,6 +304,7 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
       }
       trigger.hidden = false;
     }
+    initializeExternalTriggers();
   };
 
   initializeDialogs();
@@ -283,6 +322,19 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
 </script>
 
 <style>
+  /* Non-modal fallbacks remain in document flow when JavaScript is unavailable. */
+  dialog[data-dialog-fallback-open] {
+    position: static;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    margin: 1rem 0 0;
+    box-shadow: none;
+  }
+  dialog[data-dialog-fallback-open] [data-dialog-close-form] {
+    display: none;
+  }
+
   /* Native modality makes the page inert; also prevent background scrolling. */
   :global(html:has([data-website-ui-dialog]:modal)) {
     overflow: hidden;

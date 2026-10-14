@@ -1,10 +1,10 @@
-import type { IInspectionResultExcerpt } from '../../lib/inspection-example/index.ts';
+import type { IProjectValidationResult } from '@moldea.ai/core';
 
 import type { IInspectionSummaryKind } from './types.ts';
 
 /** Supplies identical outcome copy to the visible summary and its dialog's accessible name. */
 export const getInspectionSummaryCopy = (
-  result: IInspectionResultExcerpt,
+  result: IProjectValidationResult,
   summary: IInspectionSummaryKind,
 ): { title: string; description: string } =>
   ({

@@ -3,7 +3,11 @@ import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 import { createFilesystemRepositoryReader } from '@moldea.ai/repository-fs';
 
 import type { ICapabilityCase, ICapabilityFact } from '../index.ts';
-import { assertCapabilityFacts, captureOperationalRefusal } from '../index.ts';
+import {
+  assertCapabilityFacts,
+  captureOperationalRefusal,
+  createRecordedOutput,
+} from '../index.ts';
 import { projectEntry } from '../index.ts';
 import { withFixtureWorkspace } from '../fixture-workspace/index.ts';
 
@@ -22,7 +26,8 @@ const readerCase = (
   description,
   operation,
   packageName: filesystem ? '@moldea.ai/repository-fs' : '@moldea.ai/repository',
-  limitation: 'Reader results describe the selected snapshot, not application semantics.',
+  limitation:
+    'Execution facts omit opaque snapshot and content identities and cursor values. Reader results describe the selected snapshot, not application semantics.',
   sourcePaths: filesystem
     ? [
         'projects/repository-fs/docs/selection-and-snapshots.md',
@@ -30,6 +35,7 @@ const readerCase = (
       ]
     : ['projects/repository/docs/reader-contract.md', 'projects/repository/docs/memory-reader.md'],
   files: [],
+  output: createRecordedOutput([facts], 'execution-facts'),
   result: { kind: 'reader', facts },
 });
 
@@ -299,8 +305,8 @@ export const createReaderExamples = async (): Promise<ICapabilityCase[]> => {
       const selection = readerCase(
         'filesystem-selection',
         'createFilesystemRepositoryReader',
-        'Read only the files you choose',
-        'The reader returns repository-logical paths. Directory selection is not Git ignore selection.',
+        'Select the files your inspection can read',
+        'Exact paths keep dependencies and build output outside this snapshot. Raw directory selection includes them.',
         {
           explicit: selectedPage.entries.map(projectEntry),
           directory: directoryPage.entries.map(projectEntry),

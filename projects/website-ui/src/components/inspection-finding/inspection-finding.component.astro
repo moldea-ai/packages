@@ -5,8 +5,6 @@ import {
   type IInspectionSeverity,
 } from '@moldea.ai/website-ui/inspection-presentation';
 
-import StatusBadge from '../status-badge/status-badge.component.astro';
-
 // one finding keeps its subject, exact code, and severity visible together
 interface Props {
   title: string;
@@ -14,8 +12,9 @@ interface Props {
   severity: IInspectionSeverity;
   presentation: IInspectionPresentation;
   path?: string;
+  accepted?: boolean;
 }
-const { title, code, severity, presentation, path } = Astro.props;
+const { title, code, severity, presentation, path, accepted = false } = Astro.props;
 const SubjectIcon = presentation.icon;
 const status = INSPECTION_SEVERITY_PRESENTATIONS[severity];
 const SeverityIcon = status.icon;
@@ -25,25 +24,42 @@ const SeverityIcon = status.icon;
   class="flex min-w-0 items-start gap-3"
   aria-label={`${title}: ${code}`}
   data-inspection-finding
+  data-finding-code={code}
+  data-finding-severity={severity}
 >
   <span
-    class="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground"
+    class:list={[
+      'flex size-9 shrink-0 items-center justify-center rounded-lg',
+      accepted
+        ? 'bg-info/10 text-info-foreground dark:text-info'
+        : severity === 'error'
+          ? 'bg-destructive/10 text-destructive'
+          : 'bg-warning/15 text-warning-foreground dark:text-warning',
+    ]}
     aria-hidden="true"
     ><SubjectIcon class="size-5" /></span
   >
   <div class="min-w-0 flex-1">
-    <p class="text-xs text-muted-foreground">{presentation.label}</p>
-    <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
-      <p class="text-sm leading-5 font-semibold">{title}</p><StatusBadge
-        label={status.label}
-        tone={status.tone}
-        size="sm"
-        ><SeverityIcon
-          slot="icon"
-          aria-hidden="true"
-        /></StatusBadge
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+      <span class="font-medium text-muted-foreground">{presentation.label}</span>
+      <span
+        class:list={[
+          'inline-flex items-center gap-1 font-semibold',
+          accepted
+            ? 'text-info-foreground dark:text-info'
+            : severity === 'error'
+              ? 'text-destructive'
+              : 'text-warning-foreground dark:text-warning',
+        ]}
       >
+        <SeverityIcon
+          class="size-3"
+          aria-hidden="true"
+        />
+        {accepted ? 'Accepted warning' : status.label}
+      </span>
     </div>
+    <p class="mt-1 text-sm leading-5 font-semibold">{title}</p>
     <code class="mt-1 block text-xs leading-5 break-all text-muted-foreground">{code}</code>
     {
       path && (
@@ -51,4 +67,5 @@ const SeverityIcon = status.icon;
       )
     }
   </div>
+  <slot name="action" />
 </article>

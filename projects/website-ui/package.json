@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/website-ui",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Shared Astro foundations for moldea public websites.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/website-ui#readme",
   "bugs": {
@@ -164,6 +164,12 @@
     },
     "./inspection-finding": {
       "import": "./src/components/inspection-finding/inspection-finding.component.astro"
+    },
+    "./inspection-list": {
+      "import": "./src/components/inspection-list/inspection-list.component.astro"
+    },
+    "./inspection-dialog": {
+      "import": "./src/components/inspection-dialog/inspection-dialog.component.astro"
     }
   },
   "main": "./dist/index.js",

@@ -1,0 +1,208 @@
+---
+import { ArrowLeft } from '@lucide/astro';
+import {
+  DIAGNOSTIC_GROUP_PRESENTATIONS,
+  FINDING_CATEGORY_PRESENTATIONS,
+  INSPECTION_SEVERITY_PRESENTATIONS,
+  type IInspectionFindingView,
+} from '@moldea.ai/website-ui/inspection-presentation';
+
+import CodeBlock from '../../code-block/code-block.component.astro';
+import FilePreview from '../../file-preview/file-preview.component.astro';
+import ActionLink from '../../action-link/action-link.component.astro';
+import StatusBadge from '../../status-badge/status-badge.component.astro';
+
+import InspectionOverview from '../overview/inspection-overview.component.astro';
+
+interface Props {
+  id: string;
+  resultTitle: string;
+  findings: IInspectionFindingView[];
+}
+const { id, resultTitle, findings } = Astro.props;
+---
+
+<div class="min-w-0">
+  {
+    findings.length > 1 && (
+      <>
+        <InspectionOverview
+          id={id}
+          findings={findings}
+        />
+        <div
+          class="mb-4"
+          data-inspection-back
+          hidden
+        >
+          <ActionLink
+            href={`#${id}-findings`}
+            variant="ghost"
+            size="sm"
+            class="justify-start gap-2 text-foreground"
+          >
+            <ArrowLeft
+              class="size-4"
+              aria-hidden="true"
+            />
+            Back to findings
+          </ActionLink>
+        </div>
+      </>
+    )
+  }
+  {
+    findings.map((finding) => {
+      const severity = INSPECTION_SEVERITY_PRESENTATIONS[finding.severity];
+      const SeverityIcon = severity.icon;
+      const group =
+        finding.category === undefined
+          ? DIAGNOSTIC_GROUP_PRESENTATIONS[finding.group]
+          : FINDING_CATEGORY_PRESENTATIONS[finding.category];
+      const GroupIcon = group.icon;
+      return (
+        <section
+          id={`${id}-finding-${finding.id}`}
+          data-inspection-detail={finding.id}
+          aria-label={finding.title}
+          tabindex="-1"
+          class="grid min-w-0 gap-4 outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <div
+            class:list={[
+              'min-w-0 overflow-hidden rounded-xl border bg-card',
+              finding.accepted
+                ? 'border-info/40'
+                : finding.severity === 'error'
+                  ? 'border-destructive/40'
+                  : 'border-warning/50',
+            ]}
+            data-inspection-finding-card
+          >
+            <div
+              class:list={[
+                'flex items-start gap-3 border-b p-3 sm:p-4',
+                finding.accepted
+                  ? 'bg-info/5'
+                  : finding.severity === 'error'
+                    ? 'bg-destructive/5'
+                    : 'bg-warning/10',
+              ]}
+              data-inspection-finding-header
+            >
+              <span
+                class:list={[
+                  'flex size-9 shrink-0 items-center justify-center rounded-lg',
+                  finding.accepted
+                    ? 'bg-info/10 text-info'
+                    : finding.severity === 'error'
+                      ? 'bg-destructive/10 text-destructive'
+                      : 'bg-warning/10 text-warning-foreground dark:text-warning',
+                ]}
+              >
+                <GroupIcon
+                  class="size-4"
+                  aria-hidden="true"
+                />
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <p class="text-xs font-medium text-muted-foreground">{group.label}</p>
+                  <span
+                    class:list={[
+                      'inline-flex shrink-0 items-center gap-1 text-xs font-semibold',
+                      finding.accepted
+                        ? 'text-foreground'
+                        : finding.severity === 'error'
+                          ? 'text-foreground'
+                          : 'text-warning-foreground dark:text-warning',
+                    ]}
+                  >
+                    <SeverityIcon
+                      class:list={[
+                        'size-3.5',
+                        finding.accepted
+                          ? 'text-info'
+                          : finding.severity === 'error' && 'text-destructive',
+                      ]}
+                      aria-hidden="true"
+                    />
+                    {finding.accepted ? 'Accepted warning' : severity.label}
+                  </span>
+                </div>
+                {finding.title !== resultTitle && (
+                  <h3 class="mt-1 text-sm leading-6 font-semibold">{finding.title}</h3>
+                )}
+              </div>
+            </div>
+            <div class="grid min-w-0 gap-3 p-3 sm:p-4">
+              {finding.message !== finding.title && (
+                <p class="text-sm leading-6">{finding.message}</p>
+              )}
+              {finding.reason && (
+                <p class="border-l-2 border-info/40 pl-3 text-sm leading-6">{finding.reason}</p>
+              )}
+              <dl class="grid min-w-0 gap-2 text-xs leading-5">
+                <div class="grid min-w-0 gap-1 sm:grid-cols-[4rem_minmax(0,1fr)]">
+                  <dt class="text-muted-foreground">Code</dt>
+                  <dd class="min-w-0">
+                    <code class="break-all">{finding.code}</code>
+                  </dd>
+                </div>
+                {finding.path && (
+                  <div class="grid min-w-0 gap-1 sm:grid-cols-[4rem_minmax(0,1fr)]">
+                    <dt class="text-muted-foreground">Location</dt>
+                    <dd class="min-w-0">
+                      <code class="break-all">{finding.path}</code>
+                      {finding.pointer && (
+                        <code class="mt-1 block break-all text-muted-foreground">
+                          {finding.pointer}
+                        </code>
+                      )}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          </div>
+          {finding.evidence.map((evidence) => {
+            const isAffected = evidence.issueLabel !== undefined;
+            const label = evidence.isExcerpt
+              ? `${evidence.label ?? 'Source'} excerpt`
+              : (evidence.label ??
+                (evidence.path === finding.path ? 'Declared in' : 'Referenced file'));
+            return (
+              <FilePreview
+                path={evidence.path}
+                tone={isAffected ? (finding.accepted ? 'info' : severity.tone) : 'neutral'}
+                label={label}
+              >
+                {evidence.issueLabel !== undefined && (
+                  <Fragment slot="label">
+                    <span>{label}</span>
+                    <StatusBadge
+                      label={finding.accepted ? 'Accepted warning' : evidence.issueLabel}
+                      tone={finding.accepted ? 'info' : severity.tone}
+                      size="sm"
+                    />
+                  </Fragment>
+                )}
+                {evidence.content !== undefined && (
+                  <div class="p-3">
+                    <CodeBlock
+                      source={evidence.content}
+                      language={evidence.language}
+                      variant="plain"
+                      copyable={!evidence.isExcerpt}
+                      ariaLabel={evidence.path}
+                    />
+                  </div>
+                )}
+              </FilePreview>
+            );
+          })}
+        </section>
+      );
+    })
+  }
+</div>

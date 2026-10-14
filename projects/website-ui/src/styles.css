@@ -272,7 +272,7 @@
   }
 
   [data-code-copy-frame] {
-    @apply min-w-0 overflow-hidden rounded-xl border border-border shadow-inset;
+    @apply min-w-0 overflow-hidden rounded-xl border border-border bg-background shadow-inset;
   }
 
   .prose-moldea [data-code-copy-frame] {

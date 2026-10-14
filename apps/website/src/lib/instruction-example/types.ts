@@ -1,4 +1,6 @@
-import type { IDiagnostic } from '@moldea.ai/core';
+import type { IProjectValidationResult } from '@moldea.ai/core';
+
+import type { ICapabilityFile } from '../capabilities/index.ts';
 
 // a fixed instruction, its tool implementation reference, and any supporting source files
 export interface IInstructionSnapshot {
@@ -12,5 +14,6 @@ export interface IInstructionExample {
   instructionPath: string;
   instruction: string;
   implementationPath: string;
-  result: { valid: boolean; errorCount: number; warningCount: number; diagnostics: IDiagnostic[] };
+  result: IProjectValidationResult;
+  files: ICapabilityFile[];
 }

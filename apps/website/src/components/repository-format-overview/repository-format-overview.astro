@@ -11,6 +11,7 @@ import {
   ScanSearch,
 } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
+import CodeBlock from '@moldea.ai/website-ui/code-block';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
@@ -20,12 +21,10 @@ interface Props {
   result: IInspectionExampleState['result'];
 }
 const { repositoryFormatRoute, result } = Astro.props;
-const output = JSON.stringify(
+const outputPreview = JSON.stringify(
   {
     valid: result.valid,
-    errorCount: result.errorCount,
-    warningCount: result.warningCount,
-    diagnostics: result.diagnostics.map(({ code, path, severity }) => ({ code, path, severity })),
+    diagnostics: result.diagnostics.map(({ code, severity, path }) => ({ code, severity, path })),
   },
   null,
   2,
@@ -176,16 +175,17 @@ const canonicalFiles = [
             aria-hidden="true"
           />
         </div>
-        <pre
-          class="code-block rounded-lg border border-primary-foreground/20 bg-primary/55 p-4 font-mono text-xs leading-6"
-          data-code-copy="false"
-          tabindex="0"
-          role="region"
-          aria-label="Core validation result excerpt"><code>{output}</code></pre>
-        <p class="mt-4 text-xs leading-6 text-current/80">
-          This is an excerpt from the moved-file example. The full result also includes
-          formatVersion, summary, source, coverage, coverageCounts, and complete diagnostic records.
-        </p>
+        <div
+          class="dark dark-surface-selection min-w-0 rounded-lg border border-primary-foreground/20 bg-primary/55 p-4"
+        >
+          <CodeBlock
+            source={outputPreview}
+            language="json"
+            variant="plain"
+            copyable={false}
+            ariaLabel="Validation response excerpt"
+          />
+        </div>
       </article>
     </div>
     <div class="mt-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">

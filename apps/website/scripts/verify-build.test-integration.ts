@@ -157,8 +157,8 @@ describe('production discovery guards', () => {
       'omits illustration dialog mirror-stale',
     ],
     [
-      'id="result-mirror-stale"',
-      'data-removed="result-mirror-stale"',
+      'id="mirror-stale-result"',
+      'data-removed="mirror-stale-result"',
       'omits result dialog mirror-stale',
     ],
     [
@@ -174,7 +174,7 @@ describe('production discovery guards', () => {
     replaceArtifactText('capabilities/index.html', 'language-json', 'language-text');
     expect(() => verifyProductionBuild(directory)).toThrow('omits standard JSON presentation');
   });
-  test('rejects rendered capability JSON that differs from the executed excerpt', () => {
+  test('rejects rendered capability JSON that differs from the complete executed output', () => {
     replaceArtifactText(
       'capabilities/index.html',
       '<code class="language-json">',
@@ -193,8 +193,8 @@ describe('production discovery guards', () => {
   test.each([
     ['data-capability-visual="files"', 'data-capability-visual="runtime"', 'wrong visual family'],
     ['data-capability-label="Invalid"', 'data-capability-label="Valid"', 'unsupported outcome'],
-    ['1 missing file', 'All relationships verified', 'unsupported outcome'],
-    ['<code>moldea validate --json</code>', '<code>moldea repair</code>', 'unsupported outcome'],
+    ['data-inspection-outcome="Invalid"', 'data-inspection-outcome="Valid"', 'unsupported outcome'],
+    ['MOLDEA_REFERENCE_MISSING', 'MOLDEA_REFERENCE_UNKNOWN', 'unsupported outcome'],
   ])('rejects an unsupported capability claim %s', (marker, replacement, message) => {
     replaceArtifactText('capabilities/index.html', marker, replacement);
     expect(() => verifyProductionBuild(directory)).toThrow(message);
@@ -204,6 +204,24 @@ describe('production discovery guards', () => {
     expect(() => verifyProductionBuild(directory)).toThrow(
       'Capabilities machine discovery is missing',
     );
+  });
+  test('rejects a mixed-result overview that loses a finding link', () => {
+    replaceArtifactText(
+      'capabilities/index.html',
+      'href="#inspection-mixed-diagnostics-result-finding-finding-3"',
+      'href="#inspection-mixed-diagnostics-result-finding-finding-2"',
+    );
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'unsupported outcome for inspection-mixed-diagnostics',
+    );
+  });
+  test('rejects an intermediate illustration for the direct mixed-result entry', () => {
+    replaceArtifactText(
+      'capabilities/index.html',
+      '</main>',
+      '<div id="example-inspection-mixed-diagnostics"></div></main>',
+    );
+    expect(() => verifyProductionBuild(directory)).toThrow('unnecessary intermediate illustration');
   });
   test('rejects capability search fragments that no longer identify the rendered case', () => {
     replaceArtifactText('search-index.json', '#mirror-stale', '#unknown-capability');
