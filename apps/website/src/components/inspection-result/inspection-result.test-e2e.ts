@@ -178,7 +178,8 @@ for (const theme of ['light', 'dark'] as const) {
       true,
     );
     const pageScroll = await page.evaluate(() => window.scrollY);
-    await body.hover();
+    // target the dialog body's padding rather than a nested source scroll region
+    await body.hover({ position: { x: 8, y: 8 } });
     await page.mouse.wheel(0, 400);
     await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBe(400);
     expect(await page.evaluate(() => window.scrollY)).toBe(pageScroll);
