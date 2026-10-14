@@ -1,23 +1,13 @@
 ---
-import { CircleAlert, ScanLine } from '@lucide/astro';
-import ResultSummary from '@moldea.ai/website-ui/result-summary';
-import StatusBadge from '@moldea.ai/website-ui/status-badge';
-import {
-  getCapabilityOutcome,
-  type ICapabilities,
-  type ICapabilityCase,
-} from '../../lib/capabilities/index.ts';
+import type { ICapabilities, ICapabilityCase } from '../../lib/capabilities/index.ts';
 import { CapabilityVisual } from '../capability-visual/index.ts';
 import { CapabilityResult } from '../capability-result/index.ts';
 
-// feature-specific composition of the shared file, summary, status, and dialog primitives
 interface Props {
   example: ICapabilityCase;
   catalog: ICapabilities;
 }
 const { example, catalog } = Astro.props;
-const outcome = getCapabilityOutcome(example);
-const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAlert : ScanLine;
 ---
 
 <article
@@ -29,42 +19,9 @@ const Icon = outcome.tone === 'danger' || outcome.tone === 'warning' ? CircleAle
     {catalog}
   />
   <div
-    class="-mx-4 flex flex-col gap-3 border-t px-4 pt-4 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6"
+    class="-mx-4 border-t px-4 pt-4 sm:-mx-6 sm:px-6 sm:pt-6"
+    data-capability-summary={example.id}
   >
-    {
-      example.id !== 'cli-invalid-project' && (
-        <div
-          class="min-w-0 flex-1"
-          data-capability-summary={example.id}
-        >
-          <ResultSummary
-            title={outcome.title}
-            description=""
-            tone={outcome.tone}
-          >
-            <Icon
-              slot="icon"
-              class="size-5"
-            />
-            <span
-              slot="status"
-              data-capability-status
-            >
-              <StatusBadge
-                label={outcome.label}
-                tone={outcome.tone}
-                size="sm"
-              />
-            </span>
-          </ResultSummary>
-        </div>
-      )
-    }
-    <div class="w-full sm:ml-auto sm:w-auto">
-      <CapabilityResult
-        {example}
-        {catalog}
-      />
-    </div>
+    <CapabilityResult {example} />
   </div>
 </article>

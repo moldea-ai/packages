@@ -35,6 +35,7 @@ const example: ICapabilityCase = {
       representation: 'source',
     },
   ],
+  output: { kind: 'execution-facts', responses: [{}], redactions: [] },
   result: {
     kind: 'validation',
     valid: false,

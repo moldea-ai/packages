@@ -2,7 +2,6 @@
 export type {
   IInspectionExampleId,
   IInspectionExampleState,
-  IInspectionResultExcerpt,
   IInspectionSnapshot,
 } from './types.ts';
 

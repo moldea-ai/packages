@@ -8,7 +8,7 @@ import type { IPublicPackage } from '../../model/types.ts';
 import type { ICapabilityCase } from '../index.ts';
 
 import { createCliExamples } from './cli-examples.ts';
-import { CliCollectionResult } from './types.ts';
+import { CliCollectionResult, CliEnvelope } from './types.ts';
 
 const repositoryRoot = fileURLToPath(new URL('../../../../../../', import.meta.url));
 let packages: IPublicPackage[];
@@ -85,15 +85,43 @@ test('distinguishes a failed check from an operational refusal', () => {
       },
       diagnostics: [{ code: 'MOLDEA_REFERENCE_EXPORT_MISSING' }],
     },
-    envelopeExcerpt: {
-      result: {
-        coverageCounts: { bindings: 1, exportsPassed: 0, exportsFailed: 1, exportsNotChecked: 0 },
-        page: {
-          records: [
-            { kind: 'diagnostic', code: 'MOLDEA_REFERENCE_EXPORT_MISSING' },
-            { kind: 'coverage', exportCheck: 'failed', symbol: 'checkEligibility' },
-          ],
-        },
+  });
+});
+
+test('retains all native envelope keys and full diagnostic/coverage records', () => {
+  const example = examples.find(({ id }) => id === 'cli-invalid-project')!;
+  const envelope = CliEnvelope.parse(example.output.responses[0]);
+  expect(Object.keys(envelope).sort()).toStrictEqual([
+    'cliVersion',
+    'command',
+    'error',
+    'result',
+    'schemaVersion',
+    'status',
+  ]);
+  expect(envelope).toMatchObject({
+    schemaVersion: 7,
+    command: 'validate',
+    status: 'invalid',
+    error: null,
+    result: {
+      coverageCounts: { bindings: 1, exportsPassed: 0, exportsFailed: 1, exportsNotChecked: 0 },
+      page: {
+        cursor: null,
+        records: [
+          {
+            kind: 'diagnostic',
+            code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
+            severity: 'error',
+            message: 'The referenced export is missing.',
+          },
+          {
+            kind: 'coverage',
+            exportCheck: 'failed',
+            fileCheck: 'passed',
+            symbol: 'checkEligibility',
+          },
+        ],
       },
     },
   });
@@ -155,7 +183,7 @@ test('reconstructs bounded content, checks installed composition, and leaves Git
   });
   const serialized = JSON.stringify(repeated);
   expect(serialized).not.toContain(repositoryRoot);
-  expect(serialized).not.toMatch(/moldea-capabilities-|"(?:cursor|processId|snapshotIdentity)":/u);
+  expect(serialized).not.toMatch(/moldea-capabilities-|"processId":/u);
 });
 
 test('fails before running fixture commands when the public CLI package is absent', async () => {

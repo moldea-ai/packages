@@ -574,6 +574,7 @@ test('preserves ordinary guide headings and complete technical tokens', async ({
   await expect(
     page
       .getByRole('figure', { name: 'Illustrative PR Assurance review' })
+      .locator('[data-file-preview-header]:visible')
       .getByText('/moldea/project.md', { exact: true }),
   ).toBeVisible();
   await page.goto(toPublicPath('/packages/'));
@@ -790,20 +791,104 @@ ${'long-line-'.repeat(32)}
 
   await page.goto(toPublicPath('/capabilities/'));
   await expect(
-    page.locator('[data-capability-visual="command"] pre[data-code-copy-enhanced="true"]'),
-  ).toHaveCount(10);
+    page.locator(
+      '[data-capability-visual="command"] pre[aria-label^="Command for "][data-code-copy-enhanced="true"]',
+    ),
+  ).toHaveCount(11);
   await expect(
-    page.locator('#cli-invalid-project pre[data-code-copy-enhanced="true"]'),
-  ).toHaveCount(0);
+    page.locator(
+      '#cli-invalid-project pre[aria-label="Manifest binding for the eligibility check"]',
+    ),
+  ).not.toHaveAttribute('data-code-copy-enhanced');
   await expect(
-    page.locator('dialog[id^="result-"] pre[data-code-copy-enhanced="true"]'),
+    page.locator('[data-inspection-output] pre:not([data-code-copy-enhanced="true"])'),
   ).toHaveCount(0);
+  expect(
+    await page.locator('[data-inspection-output] pre[data-code-copy-enhanced="true"]').count(),
+  ).toBeGreaterThan(0);
+});
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`keeps command and JSON copy actions in their own headers in ${colorScheme}`, async ({
+    context,
+    page,
+  }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+    await page.goto(toPublicPath('/packages/'));
+    const example = page.locator('#cli');
+    const command = example.getByRole('region', { name: /^Command for / });
+    const commandSource = await command.locator('code').innerText();
+    const commandFrame = command.locator('..');
+    const commandHeader = commandFrame.locator('[data-code-block-header]');
+    await expect(commandHeader).toContainText('Command');
+    await expect(commandHeader).toContainText('Exit 1');
+    await expect(commandHeader).not.toContainText('Shell');
+    await expect(commandFrame.locator('[data-code-copy-header]')).toHaveCount(0);
+    await expect(command).toHaveCSS('padding-left', '16px');
+    await commandHeader.getByRole('button', { name: 'Copy code', exact: true }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(commandSource);
+    await example.locator('[data-inspection-outcome]').click();
+    const result = page.getByRole('dialog');
+    await expect(result.locator('[data-inspection-finding-card] [data-file-preview]')).toHaveCount(
+      0,
+    );
+    await result.getByRole('tab', { name: 'Output', exact: true }).click();
+    const output = result.locator('[data-inspection-output]');
+    const outputHeader = output.locator('[data-code-block-header]');
+    await expect(outputHeader.getByText(commandSource, { exact: true })).toBeVisible();
+    await expect(outputHeader).toContainText('Exit 1');
+    await expect(output).not.toContainText('Complete recorded response');
+    await expect(output.locator('[data-code-copy-header]')).toHaveCount(0);
+    const json = await output.locator('pre code').innerText();
+    expect(JSON.parse(json)).toHaveProperty('schemaVersion', 7);
+    await outputHeader.getByRole('button', { name: 'Copy code', exact: true }).click();
+    // native clipboards may represent copied line breaks as CRLF
+    expect(
+      (await page.evaluate(() => navigator.clipboard.readText())).replaceAll('\r\n', '\n'),
+    ).toBe(json);
+    for (const header of [commandHeader, outputHeader]) {
+      expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+        true,
+      );
+    }
+    expect(
+      (await new AxeBuilder({ page }).include('dialog[open]').analyze()).violations,
+    ).toStrictEqual([]);
+  });
+}
+
+test('keeps information result icons legible in both themes', async ({ page }) => {
+  await page.goto(toPublicPath('/packages/'));
+  const result = page.locator('#repository [data-inspection-outcome]');
+  await expect(result).toContainText('Returned');
+  for (const theme of ['light', 'dark'] as const) {
+    await page.locator('html').evaluate((root, activeTheme) => {
+      root.classList.remove('light', 'dark');
+      root.classList.add(activeTheme);
+    }, theme);
+    const colors = await result
+      .locator('svg')
+      .first()
+      .evaluate((icon) => ({
+        icon: getComputedStyle(icon).color,
+        surface: getComputedStyle(document.documentElement).getPropertyValue('--background'),
+      }));
+    expect(calculateContrastRatio(colors.icon, colors.surface)).toBeGreaterThanOrEqual(3);
+    await result.focus();
+    await expect(result).not.toHaveCSS('box-shadow', 'none');
+  }
 });
 
 test('honors code-copy opt-outs without affecting neighboring blocks', async ({ page }) => {
   await page.goto(toPublicPath('/'));
 
-  const optedOutExcerpt = page.locator('pre[data-code-copy="false"]');
+  await page.goto(toPublicPath('/packages/'));
+  const optedOutExcerpt = page.getByRole('region', {
+    name: '@moldea.ai/repository-fs usage excerpt',
+    exact: true,
+  });
 
   await expect(optedOutExcerpt).toHaveCount(1);
   await expect(optedOutExcerpt).not.toHaveAttribute('data-code-copy-enhanced');
@@ -1377,12 +1462,9 @@ for (const viewportWidth of [320, 360, 768, 1024, 1440]) {
   }
 }
 
-test('keeps primary static routes free of serious automated accessibility violations', async ({
-  page,
-}) => {
-  // the complete representative route set runs one Axe analysis per page
-  test.setTimeout(60_000);
-  for (const path of REPRESENTATIVE_PATHS) {
+for (const path of REPRESENTATIVE_PATHS) {
+  test(`keeps ${path} free of serious automated accessibility violations`, async ({ page }) => {
+    test.setTimeout(60_000);
     await page.goto(toPublicPath(path));
     const results = await new AxeBuilder({ page }).analyze();
     const materialViolations = results.violations.filter(
@@ -1390,8 +1472,8 @@ test('keeps primary static routes free of serious automated accessibility violat
     );
 
     expect(materialViolations, `${path} has material accessibility violations`).toStrictEqual([]);
-  }
-});
+  });
+}
 
 test('uses branded action states in both themes and respects reduced motion', async ({ page }) => {
   await page.goto(toPublicPath('/'));

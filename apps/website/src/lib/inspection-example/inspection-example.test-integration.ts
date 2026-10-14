@@ -1,10 +1,14 @@
 // @vitest-environment node
 import { expect, test } from 'vitest';
+import { createCore } from '@moldea.ai/core';
+import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+
+import { MANAGED_INTEGRATION_ENTRIES } from '../capabilities/integration-fixture/index.ts';
 
 import { INSPECTION_SNAPSHOTS } from './constants.ts';
 import { createInspectionExample } from './inspection-example.ts';
 
-test('generates reproducible pass, fail, pass excerpts from real Core checks', async () => {
+test('generates reproducible pass, fail, pass responses from real Core checks', async () => {
   const states = await createInspectionExample();
 
   expect(states.map(({ result }) => result.valid)).toStrictEqual([true, false, true]);
@@ -26,15 +30,30 @@ test('generates reproducible pass, fail, pass excerpts from real Core checks', a
       pointer: '/context/~1moldea~1project.md/bindings/0',
       details: { referencedPath: '/src/refund-policy.ts' },
       severity: 'error',
+      source: 'core',
+      group: 'references',
+      entity: { contextPath: '/moldea/project.md' },
+      range: null,
     },
   ]);
   expect(states).toStrictEqual(await createInspectionExample());
 
   for (const state of states) {
     expect(state.projectPath).toBe('/moldea/project.md');
-    expect(JSON.stringify(state.result)).not.toMatch(
-      /manager approval|reviewRefund|digest|snapshotId/iu,
+    const snapshot = INSPECTION_SNAPSHOTS.find(({ id }) => id === state.id)!;
+    const expected = await createCore().validateProject({
+      repository: createMemoryRepositoryReader([
+        ...MANAGED_INTEGRATION_ENTRIES,
+        { path: '/moldea/moldea.yaml', type: 'file', content: snapshot.manifest },
+        { path: '/moldea/project.md', type: 'file', content: snapshot.project },
+        { path: snapshot.sourcePath, type: 'file', content: snapshot.source },
+      ]),
+    });
+    expect(JSON.parse(JSON.stringify(state.result))).toStrictEqual(
+      JSON.parse(JSON.stringify(expected)),
     );
+
+    expect(JSON.stringify(state.result)).not.toMatch(/manager approval|reviewRefund/iu);
   }
 });
 
@@ -44,7 +63,7 @@ test('does not mistake a resolved path for a semantic check of source behavior',
 
   const states = await createInspectionExample(snapshots);
 
-  expect(states[0].result).toStrictEqual({
+  expect(states[0].result).toMatchObject({
     valid: true,
     errorCount: 0,
     warningCount: 0,

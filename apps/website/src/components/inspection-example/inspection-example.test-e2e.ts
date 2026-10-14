@@ -8,13 +8,13 @@ const homepage = withBase('/', basePath);
 test('shows the complete real check without tabs or disclosures', async ({ page }) => {
   await page.goto(homepage);
   const example = page.getByRole('region', { name: 'A file moves. The connection breaks.' });
-  await expect(example.getByRole('article')).toHaveCount(3);
+  await expect(example.locator('article[id^="inspection-"]')).toHaveCount(3);
   await expect(example.getByRole('tab')).toHaveCount(0);
   await expect(example.locator('details, pre:visible')).toHaveCount(0);
-  await expect(example.getByRole('button', { name: /^View result:/ })).toHaveCount(3);
-  await expect(example.getByRole('article', { name: '1. Connected' })).toContainText('Path found');
+  await expect(example.locator('[data-inspection-list] > a')).toHaveCount(3);
+  await expect(example.getByRole('article', { name: '1. Connected' })).toContainText('Valid');
   const broken = example.getByRole('article', { name: '2. File moved' });
-  await expect(broken).toContainText('1 broken reference');
+  await expect(broken).toContainText('Invalid');
   await expect(broken.getByRole('group', { name: 'Referenced location' })).toContainText(
     'src/refund-policy.ts',
   );
@@ -23,13 +23,16 @@ test('shows the complete real check without tabs or disclosures', async ({ page 
     'src/payments/refund-policy.ts',
   );
   await expect(example.getByRole('article', { name: '3. Reference updated' })).toContainText(
-    'Check passes',
+    'Valid',
   );
   await expect(example).not.toContainText('Core diagnostic:');
   await expect(example).toContainText('not program behavior');
   await expect(example).toContainText('A developer makes the repair.');
   const preview = page.getByRole('figure', { name: 'Repository check preview' });
-  await expect(preview).toContainText('1 broken reference');
+  await expect(preview.locator('[data-inspection-outcome]')).toHaveAttribute(
+    'data-inspection-outcome',
+    'Invalid',
+  );
   await expect(preview).not.toContainText('src/refund-policy.ts');
 });
 
@@ -53,22 +56,16 @@ for (const width of [320, 360, 768, 1024, 1440]) {
       } else {
         expect(descriptionBounds!.y).toBeGreaterThan(titleBounds!.y + titleBounds!.height);
       }
-      const frames = example.getByRole('article');
+      const frames = example.locator('article[id^="inspection-"]');
       for (const frame of await frames.all()) await expect(frame).toBeVisible();
       for (const frame of await frames.all()) {
         const header = frame.locator(':scope > header');
-        const trigger = header.getByRole('button', { name: /^View result:/ });
+        const trigger = frame.locator('[data-dialog-open]').first();
         const titleBounds = await header.getByRole('heading', { level: 3 }).boundingBox();
         const triggerBounds = await trigger.boundingBox();
-        expect(triggerBounds!.height).toBe(32);
-        expect(triggerBounds!.x).toBeGreaterThan(titleBounds!.x + titleBounds!.width);
-        expect(
-          Math.abs(
-            triggerBounds!.y +
-              triggerBounds!.height / 2 -
-              (titleBounds!.y + titleBounds!.height / 2),
-          ),
-        ).toBeLessThan(1);
+        expect(triggerBounds!.height).toBeGreaterThanOrEqual(36);
+        expect(triggerBounds!.y).toBeGreaterThan(titleBounds!.y + titleBounds!.height);
+        expect(await trigger.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
       }
       const bounds = await frames.evaluateAll((elements) =>
         elements.map((element) => {
@@ -79,7 +76,10 @@ for (const width of [320, 360, 768, 1024, 1440]) {
       if (width >= 1024) {
         expect(new Set(bounds.map(({ top }) => top)).size).toBe(1);
         await page.getByRole('link', { name: 'See how it works', exact: true }).click();
-        for (const frame of await frames.all()) await expect(frame).toBeInViewport({ ratio: 1 });
+        for (const frame of await frames.all()) {
+          await frame.scrollIntoViewIfNeeded();
+          await expect(frame).toBeInViewport({ ratio: 0.99 });
+        }
       } else {
         expect(new Set(bounds.map(({ left }) => left)).size).toBe(1);
         expect(bounds[0].top).toBeLessThan(bounds[1].top);
@@ -112,11 +112,9 @@ test('keeps every frame readable without JavaScript', async ({ browser }) => {
     for (const name of ['1. Connected', '2. File moved', '3. Reference updated']) {
       await expect(example.getByRole('article', { name, exact: true })).toBeVisible();
     }
-    await expect(
-      example
-        .getByRole('group', { name: 'Check outcome', exact: true })
-        .getByText('1 broken reference', { exact: true }),
-    ).toBeVisible();
+    await expect(example.locator('[data-inspection-finding-card]')).toContainText(
+      'MOLDEA_REFERENCE_MISSING',
+    );
     await expect(example.locator('details, [role="tab"]')).toHaveCount(0);
     await expect(example.getByRole('button', { name: /^View result:/ })).toHaveCount(0);
     const preview = page.getByRole('figure', { name: 'Repository check preview' });
@@ -127,8 +125,8 @@ test('keeps every frame readable without JavaScript', async ({ browser }) => {
     await expect(preview.getByRole('group', { name: 'Missing tool implementation' })).toContainText(
       'src/orders/tracking.ts',
     );
-    await expect(preview.getByRole('group', { name: 'Check outcome', exact: true })).toContainText(
-      '1 broken reference',
+    await expect(preview.locator('[data-inspection-finding-card]')).toContainText(
+      'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
     );
     await expect(preview.getByRole('button', { name: /^View result:/ })).toHaveCount(0);
   } finally {

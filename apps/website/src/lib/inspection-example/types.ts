@@ -1,4 +1,6 @@
-import type { IDiagnostic } from '@moldea.ai/core';
+import type { IProjectValidationResult } from '@moldea.ai/core';
+
+import type { ICapabilityFile } from '../capabilities/index.ts';
 
 // the three authored states of the homepage reference check
 export type IInspectionExampleId = 'connected' | 'broken' | 'repaired';
@@ -13,17 +15,6 @@ export interface IInspectionSnapshot {
   source: string;
 }
 
-// only the content-free validation fields shown publicly, not the complete Core result
-export interface IInspectionResultExcerpt {
-  valid: boolean;
-  errorCount: number;
-  warningCount: number;
-  diagnostics: Pick<
-    IDiagnostic,
-    'code' | 'message' | 'path' | 'pointer' | 'details' | 'severity'
-  >[];
-}
-
 export interface IInspectionExampleState {
   id: IInspectionExampleId;
   label: string;
@@ -31,5 +22,6 @@ export interface IInspectionExampleState {
   projectPath: string;
   declaredPath: string;
   sourcePath: string;
-  result: IInspectionResultExcerpt;
+  result: IProjectValidationResult;
+  files: ICapabilityFile[];
 }

@@ -21,10 +21,7 @@ for (const width of [320, 1440]) {
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await page.goto(homepage);
       for (const state of loadWebsiteModel().inspectionExample) {
-        const trigger = page.getByRole('button', {
-          name: `View result: ${state.label}`,
-          exact: true,
-        });
+        const trigger = page.locator(`#inspection-${state.id} [data-dialog-open]`).first();
         await trigger.focus();
         await page.keyboard.press('Enter');
         const resultTitle = {
@@ -41,43 +38,20 @@ for (const width of [320, 1440]) {
         await expect(dialog).toHaveCSS('animation-name', 'none');
         await expect(dialog).toContainText(state.declaredPath);
         await expect(dialog.getByRole('heading', { name: resultTitle, exact: true })).toBeVisible();
-        await expect(dialog.getByRole('heading')).toHaveCount(1);
-        const resultSummary = dialog.getByRole('group', { name: 'Result', exact: true });
-        await expect(resultSummary.locator('[data-status-badge]')).toHaveCount(0);
-        const excerptLabel = dialog.getByText('Core validation result excerpt', { exact: true });
-        const excerptRow = excerptLabel.locator('..');
-        const badge = excerptRow.getByText(state.result.valid ? 'Valid' : 'Invalid', {
+        await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1);
+        const close = dialog.getByRole('button', { name: 'Close dialog', exact: true });
+        await expect(close).toBeFocused();
+        if (!state.result.valid) {
+          await expect(dialog.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
+          await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
+        } else await expect(dialog.getByRole('tab')).toHaveCount(0);
+        const code = dialog.getByRole('region', {
+          name: 'JSON',
           exact: true,
         });
-        await expect(badge).toBeVisible();
-        const badgeBounds = await badge.boundingBox();
-        expect(badgeBounds!.height).toBe(20);
-        await expect(badge).toHaveCSS('font-size', '12px');
-        await expect(badge).toHaveCSS('font-weight', '500');
-        const excerptAlignment = await excerptRow.evaluate((element) => {
-          const label = element.querySelector('p');
-          const status = element.querySelector('[data-status-badge]');
-
-          if (label === null || status === null) return null;
-          const rowBounds = element.getBoundingClientRect();
-          const labelBounds = label.getBoundingClientRect();
-          const statusBounds = status.getBoundingClientRect();
-
-          return {
-            rightInset: rowBounds.right - statusBounds.right,
-            spacing: statusBounds.left - labelBounds.right,
-          };
-        });
-        expect(excerptAlignment).not.toBeNull();
-        expect(Math.abs(excerptAlignment!.rightInset)).toBeLessThanOrEqual(1);
-        expect(excerptAlignment!.spacing).toBeGreaterThanOrEqual(12);
-        if (!state.result.valid)
-          await expect(dialog.locator('pre')).toContainText(state.result.diagnostics[0].message);
-        expect(JSON.parse(await dialog.locator('pre').innerText())).toStrictEqual(state.result);
-        const code = dialog.getByRole('region', { name: 'Code block', exact: true });
+        expect(JSON.parse(await code.locator('code').innerText())).toStrictEqual(state.result);
         await expect(code).toHaveCSS('white-space', 'pre');
-
-        const close = dialog.getByRole('button', { name: 'Close Core result', exact: true });
+        await close.focus();
         await expect(close).toBeFocused();
         await expect(close).toBeInViewport({ ratio: 1 });
         const closeBounds = await close.boundingBox();
@@ -120,13 +94,13 @@ for (const width of [320, 1440]) {
         ).toStrictEqual([]);
         await close.focus();
         await page.keyboard.press('Escape');
-        await expect(dialog).toHaveCount(0);
+        await expect(dialog).toBeHidden();
         await expect(trigger).toBeFocused();
         await expect(trigger).not.toHaveCSS('box-shadow', 'none');
         await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
         await trigger.click();
         await close.click();
-        await expect(dialog).toHaveCount(0);
+        await expect(dialog).toBeHidden();
         await expect(trigger).toBeFocused();
       }
     });
@@ -141,9 +115,9 @@ test('keeps result dialogs usable after client navigation and browser history', 
     .locator('header')
     .getByRole('link', { name: 'moldea packages home', exact: true })
     .click();
-  const trigger = page.getByRole('button', { name: 'View result: 2. File moved', exact: true });
+  const trigger = page.locator('[data-dialog-open="inspection-broken-result"]');
   await trigger.click();
-  const dialog = page.getByRole('dialog', { name: '1 broken reference', exact: true });
+  const dialog = page.locator('#inspection-broken-result');
   await expect(dialog).toBeVisible();
   await dialog.evaluate((element) => {
     element.querySelector<HTMLButtonElement>('button')!.click();
@@ -155,7 +129,7 @@ test('keeps result dialogs usable after client navigation and browser history', 
   );
   await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
   await page.goForward();
-  await expect(dialog).toHaveCount(0);
+  await expect(dialog).toBeHidden();
   await trigger.click();
   await expect(dialog).toBeVisible();
   await page.keyboard.press('Escape');
@@ -169,13 +143,10 @@ for (const theme of ['light', 'dark'] as const) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'no-preference' });
     await page.goto(homepage);
-    for (const name of ['View result: Hero example', 'View result: 2. File moved']) {
-      const trigger = page.getByRole('button', { name, exact: true });
+    for (const id of ['hero-check-result', 'inspection-broken-result']) {
+      const trigger = page.locator(`[data-dialog-open="${id}"]`);
       await trigger.click();
-      const dialog = page.getByRole('dialog', {
-        name: '1 broken reference',
-        exact: true,
-      });
+      const dialog = page.locator(`#${id}`);
       await expect(dialog).toHaveCSS('animation-duration', '0.3s');
       await expect(dialog).toHaveCSS('opacity', '1');
       await dialog.getByRole('heading', { level: 2 }).click();
@@ -197,7 +168,7 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(dialog).toBeVisible();
 
       await page.mouse.click(8, 8);
-      await expect(dialog).toHaveCount(0);
+      await expect(dialog).toBeHidden();
       await expect(trigger).toBeFocused();
       await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
     }
@@ -212,9 +183,12 @@ for (const width of [320, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'no-preference' });
       await page.goto(homepage);
-      const trigger = page.getByRole('button', { name: 'View result: Hero example', exact: true });
+      const trigger = page.locator('[data-dialog-open="hero-check-result"]');
       await trigger.click();
-      const dialog = page.getByRole('dialog', { name: '1 broken reference', exact: true });
+      const dialog = page.getByRole('dialog', {
+        name: '1 broken reference',
+        exact: true,
+      });
       await dialog.evaluate((element) => {
         for (const animation of element.getAnimations()) {
           animation.pause();
@@ -242,7 +216,7 @@ for (const width of [320, 1440]) {
         );
         await Promise.all([
           returnStarted,
-          dialog.getByRole('button', { name: 'Close Core result' }).click(),
+          dialog.getByRole('button', { name: 'Close dialog' }).click(),
         ]);
         expect(
           await page.evaluate(
@@ -254,7 +228,7 @@ for (const width of [320, 1440]) {
             () => getComputedStyle(document.documentElement, '::view-transition-old(root)').opacity,
           ),
         ).toBe('0');
-        await expect(dialog).toHaveCount(0);
+        await expect(dialog).toBeHidden();
         await expect(page.locator('html')).not.toHaveAttribute('data-website-ui-dialog-return');
         await expect(trigger).toBeFocused();
         await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
@@ -276,13 +250,13 @@ for (const width of [320, 1440]) {
       expect(exitingOpacity).toBeLessThan(1);
       expect(await dialog.evaluate((element) => element.matches(':modal'))).toBe(true);
       await expect(page.locator('html')).toHaveCSS('overflow', 'hidden');
-      await expect(dialog.getByRole('button', { name: 'Close Core result' })).toBeFocused();
+      await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeFocused();
       await page.keyboard.press('Escape');
       expect(await dialog.evaluate((element) => element.matches(':modal'))).toBe(true);
       await dialog.evaluate((element) => {
         for (const animation of element.getAnimations()) animation.finish();
       });
-      await expect(dialog).toHaveCount(0);
+      await expect(dialog).toBeHidden();
       await expect(trigger).toBeFocused();
       await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
     });
@@ -294,40 +268,46 @@ test('finishes an interrupted exit when reduced motion changes and can reopen', 
 }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto(homepage);
-  const trigger = page.getByRole('button', { name: 'View result: Hero example', exact: true });
+  const trigger = page.locator('[data-dialog-open="hero-check-result"]');
   await trigger.click();
-  const dialog = page.getByRole('dialog', { name: '1 broken reference', exact: true });
+  const dialog = page.getByRole('dialog', {
+    name: '1 broken reference',
+    exact: true,
+  });
   await dialog.evaluate((element) => {
     element.querySelector<HTMLButtonElement>('button')!.click();
     for (const animation of element.getAnimations()) animation.pause();
   });
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect(dialog).toHaveCount(0);
+  await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
   await trigger.click();
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveCSS('animation-name', 'none');
   await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
+  await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
 });
 
 test('an obsolete exit cannot close a reopened dialog', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto(homepage);
-  const trigger = page.getByRole('button', { name: 'View result: Hero example', exact: true });
+  const trigger = page.locator('[data-dialog-open="hero-check-result"]');
   await trigger.click();
-  const dialog = page.getByRole('dialog', { name: '1 broken reference', exact: true });
+  const dialog = page.getByRole('dialog', {
+    name: '1 broken reference',
+    exact: true,
+  });
   await dialog.evaluate(async (element) => {
     if (!(element instanceof HTMLDialogElement)) throw new Error('Expected a native dialog.');
     element.querySelector<HTMLButtonElement>('button')!.click();
     const exitAnimations = element.getAnimations();
     element.close();
-    element.parentElement!.querySelector<HTMLButtonElement>('[data-dialog-trigger]')!.click();
+    document.querySelector<HTMLAnchorElement>('[data-dialog-open="hero-check-result"]')!.click();
     await Promise.allSettled(exitAnimations.map((animation) => animation.finished));
   });
   await expect(dialog).toBeVisible();
-  await dialog.getByRole('button', { name: 'Close Core result' }).click();
-  await expect(dialog).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Close dialog' }).click();
+  await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
 });

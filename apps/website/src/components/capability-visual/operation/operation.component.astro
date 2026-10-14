@@ -12,7 +12,7 @@ if (example.result.kind !== 'inspection' && example.result.kind !== 'reader')
 const facts =
   example.id === 'filesystem-selection'
     ? {
-        explicitFiles: getCapabilityFactRows(example.result.facts.explicit).filter(
+        exactFiles: getCapabilityFactRows(example.result.facts.explicit).filter(
           ({ type }) => type === 'file',
         ),
         directoryFiles: getCapabilityFactRows(example.result.facts.directory).filter(
@@ -55,6 +55,10 @@ const rows = getOperationRows(facts);
       example.id === 'filesystem-selection' && 'sm:col-span-2',
     ]}
   >
-    Selected execution facts. View the result for details.
+    {
+      example.id === 'filesystem-selection'
+        ? 'File entries shown. Output also lists parent directories and byte lengths.'
+        : 'Selected execution facts. View the result for details.'
+    }
   </p>
 </div>

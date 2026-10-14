@@ -6,7 +6,6 @@ import FilePreview from '@moldea.ai/website-ui/file-preview';
 
 import type { IInstructionExample } from '../../lib/instruction-example/index.ts';
 import { InspectionResult } from '../inspection-result/index.ts';
-import { InspectionSummary } from '../inspection-summary/index.ts';
 
 // a second real Core check complements the moved-file sequence below the hero
 interface Props {
@@ -25,14 +24,6 @@ const instructionPath = example.instructionPath.slice(1);
     <span class="min-w-0 flex-1 text-base leading-snug font-bold sm:text-lg">
       The instruction is here,<br />but the code is missing.
     </span>
-    <InspectionResult
-      id="hero-check-result"
-      triggerAriaLabel="View result: Hero example"
-      result={example.result}
-      summary="missing-tool-implementation"
-      subjectLabel="Missing implementation"
-      subject={example.implementationPath}
-    />
   </figcaption>
   <FilePreview
     path={instructionPath}
@@ -75,10 +66,12 @@ const instructionPath = example.instructionPath.slice(1);
       tone="danger"
     />
   </div>
-  <div class="mt-5 border-t border-destructive/30 pt-4">
-    <InspectionSummary
+  <div class="mt-5 border-t pt-4">
+    <InspectionResult
+      id="hero-check"
       result={example.result}
       summary="missing-tool-implementation"
+      files={example.files}
     />
   </div>
 </figure>

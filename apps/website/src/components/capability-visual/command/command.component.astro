@@ -1,13 +1,10 @@
 ---
-import { ArrowDown, Terminal } from '@lucide/astro';
+import { Terminal } from '@lucide/astro';
 import { parse } from 'yaml';
 import { z } from 'zod';
 
 import CodeBlock from '@moldea.ai/website-ui/code-block';
-import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';
-import { DIAGNOSTIC_GROUP_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
-import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
 
 import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
@@ -19,10 +16,6 @@ interface Props {
 const { example } = Astro.props;
 if (example.result.kind !== 'cli') throw new Error('Command illustration requires a CLI result.');
 const result = example.result;
-const hasWarnings =
-  result.status === 'valid' &&
-  typeof result.facts.warningCount === 'number' &&
-  result.facts.warningCount > 0;
 const { asset, chunk } = result.facts;
 const content =
   chunk && typeof chunk === 'object' && !Array.isArray(chunk) ? chunk.content : undefined;
@@ -60,22 +53,34 @@ const binding =
     ? ReferenceManifest.parse(parse(manifest.content) as unknown).context['/moldea/project.md']
         .bindings[0]
     : undefined;
-const diagnosticGroup = diagnostic
-  ? z
-      .enum(['discovery', 'manifest', 'references', 'agents', 'mirrors', 'integration'])
-      .parse(diagnostic.group)
-  : undefined;
 const boundSource = example.files.find(({ path }) => path === binding?.path);
 if (binding && !boundSource) throw new Error('The bound source illustration is missing.');
 ---
 
 <div class="grid min-w-0 gap-3">
+  <CodeBlock
+    source={result.command}
+    language="sh"
+    headerLabel="Command"
+    ariaLabel={`Command for ${example.title}`}
+  >
+    <Terminal
+      slot="header-icon"
+      class="size-4 shrink-0"
+      aria-hidden="true"
+    />
+    <span
+      slot="header-end"
+      class="shrink-0"
+      >Exit {result.exitStatus}</span
+    >
+  </CodeBlock>
   {
-    binding && manifest && boundSource && diagnostic && diagnosticGroup ? (
+    binding && manifest && boundSource && (
       <>
         <FilePreview
           path={manifest.path.slice(1)}
-          label="Declared connection"
+          label="Declared connection excerpt"
         >
           <div class="p-3">
             <CodeBlock
@@ -87,63 +92,21 @@ if (binding && !boundSource) throw new Error('The bound source illustration is m
             />
           </div>
         </FilePreview>
-        <InspectionFinding
-          title="Declared export missing"
-          code={String(diagnostic.code)}
-          severity="error"
-          presentation={DIAGNOSTIC_GROUP_PRESENTATIONS[diagnosticGroup]}
-          path={binding.path.slice(1)}
-        />
-        <div
-          class="flex items-center justify-between gap-3 border-t pt-3 text-xs"
-          data-capability-summary={example.id}
+        <FilePreview
+          path={boundSource.path.slice(1)}
+          label="Changed implementation"
         >
-          <>
-            <code>{result.command}</code>
-            <StatusBadge
-              label={`Exit ${result.exitStatus}`}
-              tone="danger"
-              size="sm"
+          <div class="p-3">
+            <CodeBlock
+              source={boundSource.content}
+              language={boundSource.language}
+              variant="plain"
+              copyable={!boundSource.isExcerpt}
+              ariaLabel="Changed eligibility implementation"
             />
-          </>
-        </div>
+          </div>
+        </FilePreview>
       </>
-    ) : (
-      <div class="min-w-0 rounded-lg border bg-muted/30 p-4">
-        <p class="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-          <Terminal
-            class="size-4"
-            aria-hidden="true"
-          />
-          Terminal / CI
-        </p>
-        <CodeBlock
-          source={result.command}
-          ariaLabel={`Command for ${example.title}`}
-          language="sh"
-          copyable
-        />
-        <div class="mt-3 flex items-center gap-2 border-t pt-3 text-xs">
-          <>
-            <ArrowDown
-              class="size-4 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <StatusBadge
-              label={`Exit ${result.exitStatus}`}
-              tone={hasWarnings || result.status === 'error' ? 'warning' : 'info'}
-              size="sm"
-            />
-            <span class="text-muted-foreground">
-              {result.status === 'error'
-                ? 'Operation refused'
-                : hasWarnings
-                  ? 'Validation completed with a warning'
-                  : 'Command completed'}
-            </span>
-          </>
-        </div>
-      </div>
     )
   }
   {
@@ -153,7 +116,7 @@ if (binding && !boundSource) throw new Error('The bound source illustration is m
         label="Returned document"
       >
         <div
-          class="prose-moldea px-4 py-4 text-sm leading-7 [&_h3]:mt-0 [&_h3]:text-base [&_p]:my-1 [&_strong]:rounded [&_strong]:bg-secondary [&_strong]:px-1.5 [&_strong]:py-1 [&_strong]:text-base"
+          class="prose-moldea px-4 py-4 text-sm leading-7 [&_h3]:mt-0 [&_h3]:text-base [&_p]:my-1"
           set:html={html}
         />
       </FilePreview>

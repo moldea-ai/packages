@@ -20,3 +20,44 @@ export interface IInspectionPresentation {
   label: string;
   icon: AstroComponentFactory;
 }
+
+// websites supply captured evidence; missing targets have no invented source content
+export interface IInspectionEvidence {
+  path: string;
+  label?: string;
+  language: string;
+  content?: string;
+  isExcerpt?: boolean;
+  isMissing?: boolean;
+  // identifies the affected evidence explicitly, independently of the diagnostic's reported path
+  issueLabel?: string;
+}
+
+export type IInspectionFindingView = {
+  id: string;
+  title: string;
+  code: string;
+  severity: IInspectionSeverity;
+  message: string;
+  path?: string;
+  pointer?: string;
+  accepted?: boolean;
+  reason?: string;
+  evidence: IInspectionEvidence[];
+} & ({ group: IDiagnosticGroup; category?: never } | { category: IFindingCategory; group?: never });
+
+// reusable result presentation contains no Core or CLI domain dependency
+export type IInspectionResultView = {
+  title: string;
+  label: string;
+  tone: 'danger' | 'info' | 'neutral' | 'success' | 'warning';
+  findings: IInspectionFindingView[];
+  redactions: string[];
+  command?: string;
+  exitStatus?: number;
+  limitation?: string;
+} & (
+  | { output: string; outputLabel: string }
+  // illustrative findings omit output rather than inventing a captured response
+  | { output?: never; outputLabel?: never }
+);

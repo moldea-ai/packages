@@ -13,6 +13,7 @@ export default defineConfig({
   site,
   base,
   output: 'static',
+  prefetch: false,
   trailingSlash: 'always',
   redirects: Object.fromEntries(
     RETIRED_RUNTIME_ROUTES.map((route) => [route, withBase('/runtimes/', base)]),

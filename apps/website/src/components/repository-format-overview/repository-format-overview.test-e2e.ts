@@ -2,6 +2,8 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 
+import { loadWebsiteModel } from '../../lib/generation/generation.ts';
+
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const toPublicPath = (route: string): string => withBase(route, basePath);
 
@@ -32,17 +34,19 @@ test('distinguishes required repository files from optional project knowledge', 
   await expect(
     overview.getByRole('link', { name: 'Read the format specification' }),
   ).toHaveAttribute('href', toPublicPath('/repository-format/'));
-  const output = overview.getByLabel('Core validation result excerpt');
-  await expect(output).toBeVisible();
-  expect(JSON.parse(await output.innerText())).toStrictEqual({
-    valid: false,
-    errorCount: 1,
-    warningCount: 0,
-    diagnostics: [
-      { code: 'MOLDEA_REFERENCE_MISSING', path: '/moldea/moldea.yaml', severity: 'error' },
-    ],
+  const preview = overview.getByRole('region', {
+    name: 'Validation response excerpt',
+    exact: true,
   });
-  await expect(overview).toContainText('The full result also includes formatVersion');
+  const result = loadWebsiteModel().inspectionExample[1].result;
+  expect(JSON.parse(await preview.innerText())).toStrictEqual({
+    valid: result.valid,
+    diagnostics: result.diagnostics.map(({ code, severity, path }) => ({ code, severity, path })),
+  });
+  await expect(preview).not.toHaveAttribute('data-code-copy-enhanced');
+  await expect(preview.locator('code')).toHaveClass('language-json');
+  await expect(preview.locator('..').locator('[data-code-block-header]')).toHaveCount(0);
+  await expect(overview.locator('#repository-overview-result')).toHaveCount(0);
 });
 
 test('visually separates the repository architecture from the example in both themes', async ({

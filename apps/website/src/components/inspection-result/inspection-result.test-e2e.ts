@@ -25,8 +25,13 @@ test('locks background scrolling without changing the document width', async ({ 
     }));
   const before = await measure();
   expect(before.gutter).toBe('stable');
-  await page.getByRole('button', { name: 'View result: Hero example', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: '1 broken reference', exact: true })).toBeVisible();
+  await page.locator('[data-dialog-open="hero-check-result"]').click();
+  await expect(
+    page.getByRole('dialog', {
+      name: '1 broken reference',
+      exact: true,
+    }),
+  ).toBeVisible();
   const during = await measure();
   expect(during.bodyWidth).toBe(before.bodyWidth);
   await page.mouse.move(8, 400);
@@ -154,52 +159,54 @@ for (const theme of ['light', 'dark'] as const) {
     await page.setViewportSize({ width: 320, height: 540 });
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
     await page.goto(homepage);
-    await page.getByRole('button', { name: 'View result: Hero example', exact: true }).click();
+    const opener = page.locator('[data-dialog-open="hero-check-result"]');
     const dialog = page.getByRole('dialog', { name: '1 broken reference', exact: true });
-    await expect(dialog.getByRole('heading')).toHaveCount(1);
-    const excerptRow = dialog
-      .getByText('Core validation result excerpt', { exact: true })
-      .locator('..');
-    const badge = excerptRow.getByText('Invalid', { exact: true });
-    await expect(badge).toBeInViewport({ ratio: 1 });
     const body = dialog.locator(':scope > div');
+    const openResult = async () => {
+      await opener.click();
+      await expect(dialog).toBeVisible();
+      await dialog.evaluate(async (element) => {
+        await Promise.allSettled(element.getAnimations().map((animation) => animation.finished));
+      });
+      await expect(dialog.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
+      expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
+    };
+    await openResult();
+    await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1);
+    await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
     expect(await body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
       true,
     );
     const pageScroll = await page.evaluate(() => window.scrollY);
-    await body.hover();
+    // target the dialog body's padding rather than a nested source scroll region
+    await body.hover({ position: { x: 8, y: 8 } });
     await page.mouse.wheel(0, 400);
-    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBe(400);
     expect(await page.evaluate(() => window.scrollY)).toBe(pageScroll);
-    await expect(dialog.getByRole('heading')).toBeInViewport({ ratio: 1 });
-    await expect(dialog.getByRole('button', { name: 'Close Core result' })).toBeInViewport({
-      ratio: 1,
-    });
+    await expect(dialog.getByRole('heading', { level: 2 })).toBeInViewport({ ratio: 1 });
+    await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeInViewport({ ratio: 1 });
     expect(await body.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 
-    await dialog.getByRole('button', { name: 'Close Core result' }).click();
+    await dialog.getByRole('button', { name: 'Close dialog' }).click();
     await expect(dialog).not.toBeVisible();
-    await page.getByRole('button', { name: 'View result: Hero example', exact: true }).click();
-    await expect(dialog).toBeVisible();
-    expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
-
-    await body.hover();
-    await page.mouse.wheel(0, 400);
-    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await openResult();
+    await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
+    await body.evaluate((element) => {
+      element.scrollTop = 400;
+    });
+    expect(await body.evaluate((element) => element.scrollTop)).toBe(400);
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
-    await page.getByRole('button', { name: 'View result: Hero example', exact: true }).click();
-    await expect(dialog).toBeVisible();
-    expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
+    await openResult();
 
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await body.hover();
-    await page.mouse.wheel(0, 400);
-    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
-    await dialog.getByRole('button', { name: 'Close Core result' }).click();
+    await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
+    await body.evaluate((element) => {
+      element.scrollTop = 400;
+    });
+    expect(await body.evaluate((element) => element.scrollTop)).toBe(400);
+    await dialog.getByRole('button', { name: 'Close dialog' }).click();
     await expect(dialog).not.toBeVisible();
-    await page.getByRole('button', { name: 'View result: Hero example', exact: true }).click();
-    await expect(dialog).toBeVisible();
-    expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
+    await openResult();
   });
 }
