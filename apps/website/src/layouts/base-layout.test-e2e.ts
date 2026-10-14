@@ -1462,12 +1462,9 @@ for (const viewportWidth of [320, 360, 768, 1024, 1440]) {
   }
 }
 
-test('keeps primary static routes free of serious automated accessibility violations', async ({
-  page,
-}) => {
-  // the complete representative route set runs one Axe analysis per page
-  test.setTimeout(60_000);
-  for (const path of REPRESENTATIVE_PATHS) {
+for (const path of REPRESENTATIVE_PATHS) {
+  test(`keeps ${path} free of serious automated accessibility violations`, async ({ page }) => {
+    test.setTimeout(60_000);
     await page.goto(toPublicPath(path));
     const results = await new AxeBuilder({ page }).analyze();
     const materialViolations = results.violations.filter(
@@ -1475,8 +1472,8 @@ test('keeps primary static routes free of serious automated accessibility violat
     );
 
     expect(materialViolations, `${path} has material accessibility violations`).toStrictEqual([]);
-  }
-});
+  });
+}
 
 test('uses branded action states in both themes and respects reduced motion', async ({ page }) => {
   await page.goto(toPublicPath('/'));
