@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@3.3.1
+pnpm add @moldea.ai/website-ui@3.3.2
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -203,7 +203,7 @@ Native disclosure, independent opening, and optional group exclusivity work with
 
 `ConnectionLabel` places a short relationship label between visual examples. Its default slot accepts text and inline markup; the optional `icon` slot takes a decorative 16px icon. `tone` is `neutral` by default or `danger` for a broken connection. It owns spacing, icon alignment, and narrow-screen wrapping, not the meaning of a connection.
 
-`FilePreview` receives `path`, optional `label`, and optional `tone`. Error, warning and information tones distinguish the card outline while retaining a neutral header. The `label` slot can place a compact issue badge beside the file role. Its header preserves an identifiable filename while truncating the directory prefix; the complete path remains selectable and readable by assistive technology without hover. Long filenames and directory paths truncate visually within the header; the complete path remains in the accessible text and title. The default slot owns the body; a divider appears only when that body is present. `icon` replaces the default file icon, and `status` accepts a consumer-owned badge. This component does not parse files, choose excerpts, or define result semantics.
+`FilePreview` receives `path`, optional `label`, and optional `tone`. Error, warning and information tones distinguish the card outline while retaining a neutral header. The `label` slot replaces the role text. Its header preserves an identifiable filename while truncating the directory prefix; the complete path remains selectable and readable by assistive technology without hover. Long filenames and directory paths truncate visually within the header; the complete path remains in the accessible text and title. The default slot owns the body; a divider appears only when that body is present. `icon` replaces the default file icon, and `status` accepts a consumer-owned issue badge at the header's right edge, aligned with the role line when a label is present; headers narrower than 24rem move it onto its own line below the path so it never takes the filename's space. This component does not parse files, choose excerpts, or define result semantics.
 
 `ResultSummary` receives `title`, `description`, optional `tone`, `headingId`, `as` (`p`, `h2`, or `h3`), `hideIconOnMobile`, and `ariaLabel`. Defaults are a paragraph heading, neutral tone, visible icon, and “Result” group label. The optional `icon` slot renders inside a 40px badge; supply a 20px decorative icon. The `status` slot sits beside the heading, outside its accessible name. Titles use 14px type and descriptions 12px, both with 20px line height. Both components use the `danger`, `info`, `neutral`, `success`, and `warning` semantic tones.
 
@@ -211,9 +211,9 @@ For a dialog heading, compose `ResultSummary` in Dialog's `heading` slot, set `a
 
 `StatusBadge` defaults to `size="md"`. Use `size="sm"` for secondary status beside compact headings: a 20px minimum height, tighter padding, and lighter 10px lettering. Badge labels stay on one line so short values such as “Exit 3” remain intact in tight flex rows. Use `truncate` when a longer label must fit a constrained width. Both sizes retain the same semantic colors.
 
-For hand-authored complete product names and technical tokens, use `<code class="inline-code">`. This shared class matches rendered Markdown's code background, padding, monospace weight, and theme colors. `FilePreview` uses it for paths while retaining filename-preserving truncation. It does not parse text or add code semantics to plain strings; consumers must mark filenames and variable tokens explicitly.
+For hand-authored complete product names and technical tokens, use `<code class="inline-code">`. This shared class matches rendered Markdown's code background, padding, monospace weight, and theme colors. `FilePreview` uses it for paths while retaining filename-preserving truncation. Rendered Markdown inline code and this package's own code labels (inspection findings and dialogs, file trees, runtime IDs and replay operations) wrap only after `/`, `_`, `.` or `-`, never mid-word. Hand-authored `<code class="inline-code">` keeps normal wrapping; do not add `break-all`. It does not parse text or add code semantics to plain strings; consumers must mark filenames and variable tokens explicitly.
 
-The compiled `markdown` entry renders sanitized documents and fragments with stable headings, syntax highlighting, safe external links, base-aware internal links, and keyboard-scrollable tables. Raw HTML is disabled. The replay component accepts only the normalized contracts from `evaluation-replay-model`, including one initial trial and up to three ordered confirmation trials; semantic and qualification evidence conversion remains application-owned.
+The compiled `markdown` entry renders sanitized documents and fragments with stable headings, syntax highlighting, safe external links, base-aware internal links, keyboard-scrollable tables, and inline code that wraps only after `/`, `_`, `.` or `-`; code blocks keep their exact source. Raw HTML is disabled. The replay component accepts only the normalized contracts from `evaluation-replay-model`, including one initial trial and up to three ordered confirmation trials; semantic and qualification evidence conversion remains application-owned.
 
 ### Code and text wrapping
 

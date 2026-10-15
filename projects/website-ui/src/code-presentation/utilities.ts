@@ -1,5 +1,18 @@
 import type { ICodeOverflow } from './types.js';
 
+// a break may follow a separator only when it sits between two non-separator characters
+const BREAK_AFTER_SEPARATOR = /(?<=[^/_.-][/_.-])(?=[^/_.-])/u;
+
+/**
+ * Splits inline code after path and identifier separators so it can wrap without breaking words.
+ * The `CodeText` component applies the same rule to Astro-rendered code.
+ * @param value The inline code text.
+ * @returns The text segments, each ending at a permitted break.
+ * @example
+ * splitCodeSegments('/src/answer-cache.ts'); // ['/src/', 'answer-', 'cache.', 'ts']
+ */
+export const splitCodeSegments = (value: string): string[] => value.split(BREAK_AFTER_SEPARATOR);
+
 /**
  * Resolves shared source-line presentation while preserving explicit consumer choices.
  * @param language Syntax language; unlabelled source preserves its line layout.

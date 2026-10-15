@@ -5,6 +5,8 @@ import {
   type IInspectionSeverity,
 } from '@moldea.ai/website-ui/inspection-presentation';
 
+import CodeText from '../code-text/code-text.component.astro';
+
 // one finding keeps its subject, exact code, and severity visible together
 interface Props {
   title: string;
@@ -40,7 +42,7 @@ const SeverityIcon = status.icon;
     ><SubjectIcon class="size-5" /></span
   >
   <div class="min-w-0 flex-1">
-    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
       <span class="font-medium text-muted-foreground">{presentation.label}</span>
       <span
         class:list={[
@@ -60,10 +62,16 @@ const SeverityIcon = status.icon;
       </span>
     </div>
     <p class="mt-1 text-sm leading-5 font-semibold">{title}</p>
-    <code class="mt-1 block text-xs leading-5 break-all text-muted-foreground">{code}</code>
+    <CodeText
+      class="mt-1 block text-xs leading-5 text-muted-foreground"
+      value={code}
+    />
     {
       path && (
-        <code class="mt-1 block text-xs leading-5 break-all text-muted-foreground">{path}</code>
+        <CodeText
+          class="mt-1 block text-xs leading-5 text-muted-foreground"
+          value={path}
+        />
       )
     }
   </div>

@@ -2,6 +2,7 @@
 import { expect, test } from 'vitest';
 
 import { resolveCodeOverflow } from './index.js';
+import { splitCodeSegments } from './utilities.js';
 
 test.each([
   ['markdown', 'wrap'],
@@ -35,6 +36,22 @@ test.each([
   ['b/unknown', 'scroll'],
 ])('resolveCodeOverflow(text, default, %s) -> %s', (filePath, expected) => {
   expect(resolveCodeOverflow('text', undefined, filePath)).toBe(expected);
+});
+
+test.each([
+  [
+    '/moldea/agents/support/instruction.md',
+    ['/moldea/', 'agents/', 'support/', 'instruction.', 'md'],
+  ],
+  ['MOLDEA_REFERENCE_EXPORT_MISSING', ['MOLDEA_', 'REFERENCE_', 'EXPORT_', 'MISSING']],
+  ['./src/answer-cache.ts', ['./src/', 'answer-', 'cache.', 'ts']],
+  ['@moldea.ai/core', ['@moldea.', 'ai/', 'core']],
+  ['__init__.py', ['__init__.py']],
+  ['moldea', ['moldea']],
+  ['', ['']],
+])('splitCodeSegments(%s) -> %o', (value, expected) => {
+  expect(splitCodeSegments(value)).toStrictEqual(expected);
+  expect(splitCodeSegments(value).join('')).toBe(value);
 });
 
 test.each(['wrap', 'scroll'] as const)(
