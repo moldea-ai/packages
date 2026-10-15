@@ -3,6 +3,8 @@ import { ChevronDown, ExternalLink } from '@lucide/astro';
 import ActionButton from '@moldea.ai/website-ui/action-button';
 import { RUNTIME_CATALOG, type IRuntimeCatalogEntry } from '@moldea.ai/website-ui/runtime-catalog';
 
+import CodeText from '../code-text/code-text.component.astro';
+
 export interface Props {
   ariaLabel?: string;
 }
@@ -74,7 +76,10 @@ const runtimes: IRuntimeCatalogEntry[] = [...RUNTIME_CATALOG];
               <span class="text-sm leading-5 font-semibold text-foreground">
                 {runtime.displayName}
               </span>
-              <code class="text-xs leading-5 break-all text-muted-foreground">{runtime.id}</code>
+              <CodeText
+                class="text-xs leading-5 text-muted-foreground"
+                value={runtime.id}
+              />
               <span class="sr-only"> (opens in a new tab)</span>
             </span>
             <ExternalLink

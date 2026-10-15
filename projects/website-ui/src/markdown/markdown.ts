@@ -6,9 +6,15 @@ import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
 import { unified } from 'unified';
+import type {
+  Element as IHtmlElement,
+  ElementContent as IHtmlContent,
+  Root as IHtmlRoot,
+} from 'hast';
 
 import { withBase } from '../site/index.js';
 import { resolveCodeOverflow, type ICodeOverflow } from '../code-presentation/index.js';
+import { splitCodeSegments } from '../code-presentation/utilities.js';
 
 import type {
   IMarkdownBadgeTone,
@@ -118,6 +124,32 @@ const renderStrongLabelBadges = (
   }, html);
 };
 
+/** Splits inline code text after separators with break opportunities that carry no text. */
+const addCodeBreaks = (content: IHtmlContent): IHtmlContent[] =>
+  content.type === 'text'
+    ? splitCodeSegments(content.value).flatMap((value, index) => {
+        const text: IHtmlContent = { type: 'text', value };
+        return index > 0
+          ? [{ type: 'element', tagName: 'wbr', properties: {}, children: [] }, text]
+          : [text];
+      })
+    : [content];
+
+/**
+ * Lets inline code wrap only after `/`, `_`, `.` or `-`, never mid-word. Runs after sanitization
+ * so the break opportunities survive; code blocks inside `pre` keep their exact source.
+ */
+const addInlineCodeBreaks = () => (tree: IHtmlRoot) => {
+  const visit = (node: IHtmlRoot | IHtmlElement): void => {
+    for (const child of node.children) {
+      if (child.type !== 'element' || child.tagName === 'pre') continue;
+      if (child.tagName === 'code') child.children = child.children.flatMap(addCodeBreaks);
+      else visit(child);
+    }
+  };
+  visit(tree);
+};
+
 /** Shares sanitization and highlighting between authored Markdown and literal code. */
 const createMarkdownProcessor = (shouldSlugHeadings: boolean, conversations = false) => {
   const processor = unified()
@@ -136,6 +168,7 @@ const createMarkdownProcessor = (shouldSlugHeadings: boolean, conversations = fa
         blockquote: [['dataConversationRole', 'user', 'assistant']],
       },
     })
+    .use(addInlineCodeBreaks)
     .use(rehypeShiki, {
       addLanguageClass: true,
       defaultColor: false,

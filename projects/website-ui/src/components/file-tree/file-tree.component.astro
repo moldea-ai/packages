@@ -1,6 +1,8 @@
 ---
 import { File, Folder, Link2 } from '@lucide/astro';
 
+import CodeText from '../code-text/code-text.component.astro';
+
 // static repository tree shared by examples and evaluation replay
 interface IFileTreeNode {
   readonly name: string;
@@ -42,7 +44,10 @@ const { nodes, ariaLabel } = Astro.props;
             <div class="min-w-0 flex-1">
               {node.kind === 'folder' ? (
                 <>
-                  <code class="block font-mono text-xs font-semibold break-all">{node.name}/</code>
+                  <CodeText
+                    class="block font-mono text-xs font-semibold"
+                    value={`${node.name}/`}
+                  />
                   {node.changeCount !== undefined && (
                     <p class="mt-1 text-xs text-muted-foreground">
                       {node.changeCount} affected {node.changeCount === 1 ? 'path' : 'paths'}
@@ -51,15 +56,11 @@ const { nodes, ariaLabel } = Astro.props;
                 </>
               ) : (
                 <>
-                  <code
-                    class:list={[
-                      'block font-mono text-xs break-all',
-                      node.removed && 'line-through',
-                    ]}
+                  <CodeText
+                    class:list={['block font-mono text-xs', node.removed && 'line-through']}
                     title={node.path}
-                  >
-                    {node.name}
-                  </code>
+                    value={node.name}
+                  />
                   <p class="mt-1 text-xs text-muted-foreground">
                     {node.removed ? 'Removed' : node.kind === 'symlink' ? 'Symbolic link' : 'File'}
                   </p>

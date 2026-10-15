@@ -133,7 +133,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.3.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.3.2' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -530,6 +530,12 @@ describe('published website UI package', () => {
                 weight: getComputedStyle(node).fontWeight,
               }));
             expect(badgeStyle).toStrictEqual({ transform: 'none', weight: '600' });
+            // finding codes wrap only after separators, never mid-word
+            const separatedCode = finding.locator('code');
+            expect(await separatedCode.textContent()).toBe('MOLDEA_REFERENCE_EXPORT_MISSING');
+            expect(await separatedCode.evaluate((node) => node.innerHTML)).toBe(
+              'MOLDEA_<wbr>REFERENCE_<wbr>EXPORT_<wbr>MISSING',
+            );
             expect(
               await page
                 .getByRole('link', { name: 'Fixture source', exact: true, includeHidden: true })
@@ -1080,6 +1086,23 @@ describe('published website UI package', () => {
             expect(await singleDialog.locator('[data-file-preview]').count()).toBe(2);
             expect(await singleDialog.locator('[data-file-preview-tone="danger"]').count()).toBe(1);
             expect(await singleDialog.getByText('Missing target', { exact: true }).count()).toBe(1);
+            // beside the path the status shares the role's line; otherwise it wraps below the path
+            expect(
+              await singleDialog
+                .locator('[data-file-preview-tone="danger"] [data-file-preview-header]')
+                .evaluate((header) => {
+                  const status = header
+                    .querySelector('[data-file-preview-status]')!
+                    .getBoundingClientRect();
+                  const role = header
+                    .querySelector('[data-file-preview-role]')!
+                    .getBoundingClientRect();
+                  const path = header.querySelector('code[title]')!.getBoundingClientRect();
+                  return status.top < path.bottom
+                    ? Math.abs(status.top - role.top) <= 1
+                    : status.top >= path.bottom;
+                }),
+            ).toBe(true);
             expect(
               await singleDialog
                 .locator('[data-inspection-finding-card] [data-file-preview]')

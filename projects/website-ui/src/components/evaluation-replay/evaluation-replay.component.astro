@@ -13,6 +13,7 @@ import {
 
 import type { IEvaluationReplayModel } from '@moldea.ai/website-ui/evaluation-replay-model';
 
+import CodeText from '../code-text/code-text.component.astro';
 import StatusBadge from '../status-badge/status-badge.component.astro';
 import EvaluationReplayMarkdown from './evaluation-replay-markdown.component.astro';
 import FileTree from '../file-tree/file-tree.component.astro';
@@ -125,9 +126,10 @@ const workspaceLabels = {
                           </span>
                         </header>
                         <div class="min-w-0 px-4 py-3">
-                          <code class="block font-mono text-sm font-semibold break-all">
-                            {step.operation}
-                          </code>
+                          <CodeText
+                            class="block font-mono text-sm font-semibold"
+                            value={step.operation}
+                          />
                           <ul class="mt-2 grid gap-1 text-sm text-code-foreground/80">
                             {step.results.map((result) => (
                               <li class="break-words">{result}</li>

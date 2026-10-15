@@ -34,7 +34,7 @@ describe('website Markdown rendering', () => {
     expect(conversation?.kind).toBe('conversation');
     if (conversation?.kind !== 'conversation') throw new Error('Expected conversation block');
     expect(conversation.messages.map(({ role }) => role)).toStrictEqual(['user', 'assistant']);
-    expect(conversation.messages[0]?.html).toContain('<code>@moldea.ai/core</code>');
+    expect(conversation.messages[0]?.html).toContain('<code>@moldea.<wbr>ai/<wbr>core</code>');
     expect(conversation.messages[1]?.html).toContain('id="result-1"');
     expect(conversation.messages[1]?.html).toContain('language-yaml');
     expect(conversation.messages[1]?.html).toContain('shiki');
@@ -212,6 +212,22 @@ describe('website Markdown rendering', () => {
       }
     },
   );
+
+  test('lets inline code wrap only after separators while code blocks keep exact source', async () => {
+    const html = await renderMarkdownFragment(
+      [
+        'Edit `/moldea/project.md` for `MOLDEA_REFERENCE_EXPORT_MISSING`.',
+        '',
+        '```text',
+        '/moldea/project.md',
+        '```',
+      ].join('\n'),
+    );
+
+    expect(html).toContain('<code>/moldea/<wbr>project.<wbr>md</code>');
+    expect(html).toContain('<code>MOLDEA_<wbr>REFERENCE_<wbr>EXPORT_<wbr>MISSING</code>');
+    expect(html.match(/<wbr>/gu)).toHaveLength(5);
+  });
 
   test('renders allowlisted strong labels as semantic badges', async () => {
     const rendered = await renderMarkdownDocument('# Page\n\nUse **Supported** maturity.', {

@@ -19,6 +19,9 @@ const body = Astro.slots.has('default') ? await Astro.slots.render('default') : 
 const hasBody = body.trim().length > 0;
 const labelContent = Astro.slots.has('label') ? await Astro.slots.render('label') : '';
 const hasLabelContent = labelContent.trim().length > 0;
+const hasRole = Boolean(label) || hasLabelContent;
+const statusContent = Astro.slots.has('status') ? await Astro.slots.render('status') : '';
+const hasStatusContent = statusContent.trim().length > 0;
 const toneClasses = {
   danger: 'border-border bg-background',
   info: 'border-border bg-background',
@@ -41,7 +44,11 @@ const borderClasses = {
   data-file-preview-tone={tone}
 >
   <div
-    class:list={['flex items-center gap-3 px-3 py-3', hasBody && 'border-b', toneClasses[tone]]}
+    class:list={[
+      '@container/file-preview flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-3',
+      hasBody && 'border-b',
+      toneClasses[tone],
+    ]}
     data-file-preview-header
   >
     <span
@@ -52,8 +59,11 @@ const borderClasses = {
     </span>
     <div class="min-w-0 flex-1">
       {
-        (label || hasLabelContent) && (
-          <div class="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        hasRole && (
+          <div
+            class="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground"
+            data-file-preview-role
+          >
             {hasLabelContent ? <Fragment set:html={labelContent} /> : label}
           </div>
         )
@@ -67,7 +77,21 @@ const borderClasses = {
         >
       </code>
     </div>
-    <slot name="status" />
+    {
+      /* narrow headers move the status below the path so it never takes the filename's space */
+      hasStatusContent && (
+        <span
+          class:list={[
+            'order-last basis-full pl-8 @sm/file-preview:order-none @sm/file-preview:shrink-0 @sm/file-preview:basis-auto @sm/file-preview:pl-0',
+            // beside a role and path, the status shares the role's first line
+            hasRole && '@sm/file-preview:self-start',
+          ]}
+          data-file-preview-status
+        >
+          <Fragment set:html={statusContent} />
+        </span>
+      )
+    }
   </div>
   <Fragment set:html={body} />
 </div>

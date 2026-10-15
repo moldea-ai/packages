@@ -1,0 +1,14 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+// renders a code element whose text wraps only after `/`, `_`, `.` or `-`, never mid-word
+interface Props extends HTMLAttributes<'code'> {
+  value: string;
+}
+const { value, ...attributes } = Astro.props;
+// mirrors splitCodeSegments in code-presentation, which this shipped source cannot import
+const segments = value.split(/(?<=[^/_.-][/_.-])(?=[^/_.-])/u);
+---
+
+<!-- prettier-ignore -->
+<code {...attributes}>{segments.map((segment, index) => (index > 0 ? [<wbr />, segment] : segment))}</code>
