@@ -7,6 +7,7 @@ export default mergeConfig(
     include: [
       '.github/workflows/*.test-unit.ts',
       'configs/**/*.test-unit.ts',
+      'configs/**/*.test-unit.mjs',
       'scripts/**/*.test-unit.ts',
       'projects/cli/scripts/**/*.test-unit.mjs',
     ],

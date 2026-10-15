@@ -1,0 +1,47 @@
+name: Registry Canary
+
+# pull requests and releases verify packed consumers against the reviewed registry snapshot;
+# this scheduled run repeats complete verification on the live registry and reports breakage
+# from new upstream releases without blocking any release
+on:
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  verify:
+    name: Verify Against the Live Registry
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+    with:
+      release_build: true
+      live_registry: true
+      release_project: registry-canary
+
+  report:
+    name: Report Live Registry Breakage
+    needs: verify
+    if: ${{ always() && needs.verify.result == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or Update the Canary Issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='Registry canary: packed consumers fail on the live registry'
+          body="Complete verification against the live npm registry failed: $RUN_URL
+
+          Pull requests and releases still resolve third-party dependencies from the reviewed snapshot in configs/registry-snapshot, so they are unaffected. Resolve the upstream breakage or adjust supported ranges before advancing the snapshot."
+          issue="$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
