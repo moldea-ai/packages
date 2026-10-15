@@ -44,7 +44,7 @@ The executable performs no network requests, telemetry, repository writes, confi
 The consumer runtime range is:
 
 ```text
->=22.12.0
+>=22.17.0
 ```
 
 The package is Node.js-specific. `validate`, `inspect`, `scope`, and `content` require Git `2.30.0` or later; commands compare the numeric Git version and accept standard platform or vendor suffixes.

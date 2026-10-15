@@ -64,7 +64,7 @@ const expectPublicPackageManifest = (
       types: './dist/index.d.ts',
     },
   });
-  expect(manifest.engines).toStrictEqual({ node: '>=22.12.0' });
+  expect(manifest.engines).toStrictEqual({ node: '>=22.17.0' });
   expect(manifest.dependencies).toStrictEqual({
     '@moldea.ai/repository': repositoryVersionRange,
   });

@@ -4,7 +4,7 @@ The `consumer-conformance` CI lane gives the skill manager and closed launcher t
 
 ## Recorded verification
 
-The selected closure contains CLI `11.0.5`, Core `7.0.4`, Repository `2.0.2`, and Repository FS `2.0.6`; CLI and Repository FS raise their supported runtime to Node.js `>=22.12.0`. A clean, uncached build of the floor release reproduced the unchanged Core and Repository tarballs byte for byte against the previous selection and produced the new CLI and Repository FS bytes using Node `24.15.0` and pnpm `11.9.0`. Local checksum verification, Repository FS runtime checks, and CLI runtime checks passed on Linux with Node `24.15.0` and `22.12.0` under the reviewed registry snapshot.
+The selected closure contains CLI `11.0.5`, Core `7.0.4`, Repository `2.0.2`, and Repository FS `2.0.6`; CLI and Repository FS raise their supported runtime to Node.js `>=22.17.0`. A clean, uncached build of the floor release reproduced the unchanged Core and Repository tarballs byte for byte against the previous selection and produced the new CLI and Repository FS bytes using Node `24.15.0` and pnpm `11.9.0`. Local checksum verification, Repository FS runtime checks, and CLI runtime checks passed on Linux with Node `24.15.0` and `22.17.0` under the reviewed registry snapshot.
 
 Consumer tooling remains pinned to skill commit `b62013c8797247cbde21dccf517f722d0e412b0d`. Fresh-client consumer conformance for these exact bytes runs in the trusted packages CI consumer lane; local Linux checks do not replace it.
 

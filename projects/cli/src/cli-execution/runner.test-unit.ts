@@ -19,7 +19,7 @@ const INSTALLED_PACKAGE_METADATA = Object.freeze({
     '@moldea.ai/repository': '2.0.0',
     '@moldea.ai/repository-fs': '2.0.3',
   }),
-  supportedNodeRange: '>=22.12.0',
+  supportedNodeRange: '>=22.17.0',
   version: '11.0.0',
 });
 

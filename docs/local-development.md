@@ -59,7 +59,7 @@ Tests must remain excluded from production artifacts while still participating i
 
 ## Packed-consumer verification
 
-Real tarball installation and execution are the release boundary for every package version. Repository FS and CLI composition have packed-consumer coverage. CI builds public tarballs on the pinned development runtime, then installs and executes them with package scripts disabled and strict engine validation on Node.js `22.12.0`, the latest Node.js 22, Node.js `24.11.0`, the latest Node.js 24, and Node.js `26.8.1`.
+Real tarball installation and execution are the release boundary for every package version. Repository FS and CLI composition have packed-consumer coverage. CI builds public tarballs on the pinned development runtime, then installs and executes them with package scripts disabled and strict engine validation on Node.js `22.17.0`, the latest Node.js 22, Node.js `24.11.0`, the latest Node.js 24, and Node.js `26.8.1`.
 
 In CI, every packed-consumer install resolves third-party dependencies only from versions published before the reviewed instant in [`configs/registry-snapshot`](../configs/registry-snapshot/index.mjs), so a new upstream release cannot change a pull-request or release verdict. A step before each consumer check exports `npm_config_before` and an equivalent `pnpm_config_minimum_release_age`; the consumer scripts themselves stay unchanged. The scheduled [Registry Canary](../.github/workflows/registry-canary.yml) repeats complete verification daily with `live_registry: true` and opens or updates one issue on failure without blocking releases. Advance the snapshot in a reviewed change once the canary passes. The external Skill consumer lanes still resolve live.
 

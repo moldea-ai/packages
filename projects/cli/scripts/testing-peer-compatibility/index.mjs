@@ -189,7 +189,7 @@ const verifyCliExecution = async (consumerDirectory, environment, manifests) => 
       compositionEnvelope.command === 'composition' &&
       compositionEnvelope.schemaVersion === 7 &&
       compositionEnvelope.status === 'valid' &&
-      compositionEnvelope.result?.supportedNodeRange === '>=22.12.0',
+      compositionEnvelope.result?.supportedNodeRange === '>=22.17.0',
     'The installed CLI composition envelope is invalid.',
   );
   assertCompatibilityInvariant(

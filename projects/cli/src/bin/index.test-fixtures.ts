@@ -134,7 +134,7 @@ export const expectPackageManifest = (
 ): void => {
   expect(manifest).toMatchObject({
     bin: { moldea: './dist/moldea.js' },
-    engines: { node: '>=22.12.0' },
+    engines: { node: '>=22.17.0' },
     exports: {},
     files: ['cover.png', 'dist', 'LICENSE', 'README.md'],
     name: '@moldea.ai/cli',

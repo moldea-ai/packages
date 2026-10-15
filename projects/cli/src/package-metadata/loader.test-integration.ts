@@ -73,7 +73,7 @@ describe('loadMoldeaCliPackageMetadata', () => {
         '@moldea.ai/repository-fs': '1.0.3',
         semver: '7.8.5',
       },
-      engines: { node: '>=22.12.0' },
+      engines: { node: '>=22.17.0' },
       name: '@moldea.ai/cli',
       version: '1.0.1',
     });
@@ -91,7 +91,7 @@ describe('loadMoldeaCliPackageMetadata', () => {
         '@moldea.ai/repository': '2.0.2',
         '@moldea.ai/repository-fs': '2.0.6',
       },
-      supportedNodeRange: '>=22.12.0',
+      supportedNodeRange: '>=22.17.0',
       version: '1.0.1',
     });
     expect(Object.isFrozen(metadata)).toBe(true);
@@ -143,7 +143,7 @@ describe('loadMoldeaCliPackageMetadata', () => {
         '@moldea.ai/repository': '1.0.0',
         '@moldea.ai/repository-fs': '1.0.0',
       },
-      engines: { node: '>=22.12.0' },
+      engines: { node: '>=22.17.0' },
       name: '@moldea.ai/cli',
       version: '1.0.0',
     });

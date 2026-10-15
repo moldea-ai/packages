@@ -34,4 +34,4 @@ Raw directory selection is sensitive because it can expose ignored files, creden
 
 ## Runtime
 
-The package supports Node.js `>=22.12.0` and uses Node filesystem primitives. It is not browser-compatible. Creation and every reader operation support cancellation; a creation signal does not remain attached to later operations.
+The package supports Node.js `>=22.17.0` and uses Node filesystem primitives. It is not browser-compatible. Creation and every reader operation support cancellation; a creation signal does not remain attached to later operations.
