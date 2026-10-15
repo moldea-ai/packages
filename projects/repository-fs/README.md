@@ -76,7 +76,7 @@ The reader observes filesystem identity before returning metadata or bytes. It r
 
 ## Runtime support
 
-The package supports Node.js `>=22.11.0` and is not browser-compatible.
+The package supports Node.js `>=22.12.0` and is not browser-compatible.
 
 ## Development
 

@@ -56,7 +56,7 @@ const expectPublicPackageManifest = (
     sideEffects: false,
     type: 'module',
     types: './dist/index.d.ts',
-    version: '2.0.5',
+    version: '2.0.6',
   });
   expect(manifest.exports).toStrictEqual({
     '.': {
@@ -64,7 +64,7 @@ const expectPublicPackageManifest = (
       types: './dist/index.d.ts',
     },
   });
-  expect(manifest.engines).toStrictEqual({ node: '>=22.11.0' });
+  expect(manifest.engines).toStrictEqual({ node: '>=22.12.0' });
   expect(manifest.dependencies).toStrictEqual({
     '@moldea.ai/repository': repositoryVersionRange,
   });
@@ -184,7 +184,7 @@ describe('published Repository FS package artifacts', () => {
     ) as IRepositoryFilesystemPackageManifest;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/repository-fs', version: '2.0.5' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/repository-fs', version: '2.0.6' });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/contracts/index.d.ts');

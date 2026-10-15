@@ -11,7 +11,7 @@ describe('createMoldeaCliCompositionResult', () => {
     expect(result).toMatchObject({
       minimumGitVersion: '2.30.0',
       repositoryFormatVersions: [1],
-      supportedNodeRange: '>=22.11.0',
+      supportedNodeRange: '>=22.12.0',
     });
     expect(result.packages).toStrictEqual([
       { name: '@moldea.ai/core', version: '7.0.4' },

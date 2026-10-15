@@ -167,7 +167,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
       'The CLI identity is invalid.',
     );
     assertRuntimeInvariant(
-      cliManifest?.engines?.node === '>=22.11.0',
+      cliManifest?.engines?.node === '>=22.12.0',
       'The CLI runtime range is invalid.',
     );
     for (const packageName of [
@@ -214,7 +214,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     );
     assertRuntimeInvariant(
       compositionEnvelope.status === 'valid' &&
-        compositionEnvelope.result?.supportedNodeRange === '>=22.11.0' &&
+        compositionEnvelope.result?.supportedNodeRange === '>=22.12.0' &&
         typeof compositionEnvelope.result?.minimumGitVersion === 'string' &&
         JSON.stringify(compositionEnvelope.result?.repositoryFormatVersions) === '[1]',
       'The composition result is invalid.',
