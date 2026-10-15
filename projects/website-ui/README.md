@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@3.3.2
+pnpm add @moldea.ai/website-ui@4.0.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -89,7 +89,7 @@ The `@moldea.ai/website-ui/runtime-logos/*` export exposes static SVG and PNG as
 
 ## Conversations
 
-Compose `Conversation` and `ConversationMessage` for illustrative interactions. Messages accept `role="user"` or `role="assistant"`, rich slot content, and an optional `avatar` slot. The shared presentation retains the avatar column, connecting line, user bubble, and bordered assistant response panel. The avatar slot supplies only the icon or image; the component owns its surrounding surface. Websites own domain artifacts, outcomes, and recorded evaluation evidence.
+Compose `Conversation` and `ConversationMessage` for illustrative interactions. Messages accept `role="user"` or `role="assistant"`, rich slot content, and an optional `avatar` slot. The shared presentation retains the avatar column, connecting line, user bubble, and bordered assistant response panel. The avatar slot supplies only the icon or image; the component owns its circular surface. Websites own domain artifacts, outcomes, and recorded evaluation evidence.
 
 For explicitly authored Markdown examples, opt in with `renderMarkdownDocument(markdown, { conversations: true })`. A top-level blockquote must begin with a paragraph containing only the exact strong speaker label `You` or `Coding agent`, followed by a separate content paragraph. For example:
 
@@ -120,6 +120,7 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/code-diff`
 - `@moldea.ai/website-ui/code-diff-model`
 - `@moldea.ai/website-ui/code-copy-controls`
+- `@moldea.ai/website-ui/code-text`
 - `@moldea.ai/website-ui/connection-label`
 - `@moldea.ai/website-ui/documentation-shell`
 - `@moldea.ai/website-ui/dialog`
@@ -128,6 +129,7 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/file-preview`
 - `@moldea.ai/website-ui/file-tree`
 - `@moldea.ai/website-ui/hero-backdrop`
+- `@moldea.ai/website-ui/icon-tile`
 - `@moldea.ai/website-ui/inspection-finding`
 - `@moldea.ai/website-ui/inspection-list`
 - `@moldea.ai/website-ui/inspection-dialog`
@@ -199,19 +201,42 @@ Required props are `id` and `title`. Optional `group` enables native mutual excl
 
 Native disclosure, independent opening, and optional group exclusivity work without JavaScript. JavaScript reveals hash-linked items on initial load, hash changes, and Astro client navigation without adding history entries or taking focus. Variable-height panels use a short fade; reduced motion removes it and the chevron transition. Every item uses the shared card background, full border, and rounded corners. Mobile summaries and panels have compact 12px horizontal insets; desktop insets remain 20px. Consumers should avoid adding redundant mobile padding inside the default slot. The package owns no example content or domain status mapping.
 
+### Icon tiles
+
+`IconTile` holds a leading icon, stacked media icon or step number. `size` is `sm` (32px tile, 16px icon), `md` (40px, 20px, the default) or `lg` (48px, 24px); the tile sizes any descendant SVG or image and step-number text. `tone` is `neutral` (default), `brand`, or one of the `danger`, `info`, `success` and `warning` status tones. The tile is `aria-hidden` by default; pass `aria-hidden="false"` when its content, such as a step number, must be announced. `class` is for layout only, such as margins or `mx-auto`; the component owns size, radius and color.
+
+Place the tile beside its text, top-aligned with the first line and 12px away, so titles, descriptions and actions share one text edge and nothing wraps under it. Above a title, in feature cards and empty states, it sits on its own row. A neutral tile tints from the surrounding text color, so place it in foreground text, or inverse foreground on dark surfaces, never inside muted or link-colored text.
+
+```astro
+---
+import IconTile from '@moldea.ai/website-ui/icon-tile';
+import { GitBranch } from '@lucide/astro';
+---
+
+<div class="flex items-start gap-3">
+  <IconTile><GitBranch /></IconTile>
+  <div class="min-w-0">
+    <p class="font-semibold">Branch mapping</p>
+    <p class="text-sm text-muted-foreground">Follows the branch for this environment.</p>
+  </div>
+</div>
+```
+
 ### Files and result summaries
 
 `ConnectionLabel` places a short relationship label between visual examples. Its default slot accepts text and inline markup; the optional `icon` slot takes a decorative 16px icon. `tone` is `neutral` by default or `danger` for a broken connection. It owns spacing, icon alignment, and narrow-screen wrapping, not the meaning of a connection.
 
 `FilePreview` receives `path`, optional `label`, and optional `tone`. Error, warning and information tones distinguish the card outline while retaining a neutral header. The `label` slot replaces the role text. Its header preserves an identifiable filename while truncating the directory prefix; the complete path remains selectable and readable by assistive technology without hover. Long filenames and directory paths truncate visually within the header; the complete path remains in the accessible text and title. The default slot owns the body; a divider appears only when that body is present. `icon` replaces the default file icon, and `status` accepts a consumer-owned issue badge at the header's right edge, aligned with the role line when a label is present; headers narrower than 24rem move it onto its own line below the path so it never takes the filename's space. This component does not parse files, choose excerpts, or define result semantics.
 
-`ResultSummary` receives `title`, `description`, optional `tone`, `headingId`, `as` (`p`, `h2`, or `h3`), `hideIconOnMobile`, and `ariaLabel`. Defaults are a paragraph heading, neutral tone, visible icon, and “Result” group label. The optional `icon` slot renders inside a 40px badge; supply a 20px decorative icon. The `status` slot sits beside the heading, outside its accessible name. Titles use 14px type and descriptions 12px, both with 20px line height. Both components use the `danger`, `info`, `neutral`, `success`, and `warning` semantic tones.
+`ResultSummary` receives `title`, `description`, optional `tone`, `headingId`, `as` (`p`, `h2`, or `h3`), and `ariaLabel`. Defaults are a paragraph heading, neutral tone, and “Result” group label. The optional `icon` slot renders inside an `md` `IconTile` in the same tone, top-aligned with the title at every width; supply a decorative icon. The `status` slot sits beside the heading, outside its accessible name. Titles use 14px type and descriptions 12px, both with 20px line height. Both components use the `danger`, `info`, `neutral`, `success`, and `warning` semantic tones.
 
-For a dialog heading, compose `ResultSummary` in Dialog's `heading` slot, set `as="h2"` and `headingId` to `${id}-title`, keep `title` equal to Dialog's title, and use `hideIconOnMobile`. Consumer-owned status badges can use `size="sm"`. Neither component depends on Core, runs checks, or maps domain statuses. Derive their props with Astro's `ComponentProps` through the documented public subpaths.
+For a dialog heading, compose `ResultSummary` in Dialog's `heading` slot, set `as="h2"` and `headingId` to `${id}-title`, and keep `title` equal to Dialog's title. Consumer-owned status badges can use `size="sm"`. Neither component depends on Core, runs checks, or maps domain statuses. Derive their props with Astro's `ComponentProps` through the documented public subpaths.
 
 `StatusBadge` defaults to `size="md"`. Use `size="sm"` for secondary status beside compact headings: a 20px minimum height, tighter padding, and lighter 10px lettering. Badge labels stay on one line so short values such as “Exit 3” remain intact in tight flex rows. Use `truncate` when a longer label must fit a constrained width. Both sizes retain the same semantic colors.
 
-For hand-authored complete product names and technical tokens, use `<code class="inline-code">`. This shared class matches rendered Markdown's code background, padding, monospace weight, and theme colors. `FilePreview` uses it for paths while retaining filename-preserving truncation. Rendered Markdown inline code and this package's own code labels (inspection findings and dialogs, file trees, runtime IDs and replay operations) wrap only after `/`, `_`, `.` or `-`, never mid-word. Hand-authored `<code class="inline-code">` keeps normal wrapping; do not add `break-all`. It does not parse text or add code semantics to plain strings; consumers must mark filenames and variable tokens explicitly.
+For hand-authored complete product names and technical tokens, use `<code class="inline-code">`. This shared class matches rendered Markdown's code background, padding, monospace weight, and theme colors. `FilePreview` uses it for paths while retaining filename-preserving truncation. Rendered Markdown inline code and this package's own code labels (inspection findings and dialogs, file trees, runtime IDs and replay operations) wrap only after `/`, `_`, `.` or `-`, never mid-word. Hand-authored `<code class="inline-code">` keeps normal wrapping; do not add `break-all`. Use `CodeText` instead when a code value should wrap only at those separators. It does not parse text or add code semantics to plain strings; consumers must mark filenames and variable tokens explicitly.
+
+`CodeText` (`@moldea.ai/website-ui/code-text`) renders a `code` element from its `value` prop and accepts the element's other attributes. Its text wraps only after `/`, `_`, `.` or `-` between other characters. A value with none of those breaks and no whitespace, such as a SHA-256 digest or a run ID, stays on one line and truncates with an ellipsis at the available width. Its full text stays in the DOM, so selection, copying, find-in-page and screen readers get the whole value, and the element carries a `title` with the value unless the caller passes its own. Layout utilities such as `block` still apply.
 
 The compiled `markdown` entry renders sanitized documents and fragments with stable headings, syntax highlighting, safe external links, base-aware internal links, keyboard-scrollable tables, and inline code that wraps only after `/`, `_`, `.` or `-`; code blocks keep their exact source. Raw HTML is disabled. The replay component accepts only the normalized contracts from `evaluation-replay-model`, including one initial trial and up to three ordered confirmation trials; semantic and qualification evidence conversion remains application-owned.
 

@@ -1,5 +1,5 @@
 ---
-import { BookOpen, Package } from '@lucide/astro';
+import { Package } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import DocumentationShell from '@moldea.ai/website-ui/documentation-shell';
 import type { IRenderedMarkdownHeading } from '@moldea.ai/website-ui/markdown';
@@ -113,12 +113,8 @@ const navigationItems = [
         <div>
           <h2
             id="relationships-title"
-            class="mb-3 flex items-center gap-2 font-semibold"
+            class="mb-3 font-semibold"
           >
-            <BookOpen
-              class="size-4"
-              aria-hidden="true"
-            />{' '}
             Package relationships
           </h2>
           <p class="text-sm leading-6 text-muted-foreground">

@@ -6,6 +6,7 @@ import {
 } from '@moldea.ai/website-ui/inspection-presentation';
 
 import CodeText from '../code-text/code-text.component.astro';
+import IconTile from '../icon-tile/icon-tile.component.astro';
 
 // one finding keeps its subject, exact code, and severity visible together
 interface Props {
@@ -29,17 +30,8 @@ const SeverityIcon = status.icon;
   data-finding-code={code}
   data-finding-severity={severity}
 >
-  <span
-    class:list={[
-      'flex size-9 shrink-0 items-center justify-center rounded-lg',
-      accepted
-        ? 'bg-info/10 text-info-foreground dark:text-info'
-        : severity === 'error'
-          ? 'bg-destructive/10 text-destructive'
-          : 'bg-warning/15 text-warning-foreground dark:text-warning',
-    ]}
-    aria-hidden="true"
-    ><SubjectIcon class="size-5" /></span
+  <IconTile tone={accepted ? 'info' : severity === 'error' ? 'danger' : 'warning'}
+    ><SubjectIcon /></IconTile
   >
   <div class="min-w-0 flex-1">
     <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">

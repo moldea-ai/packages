@@ -133,7 +133,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '3.3.2' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.0.0' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -150,6 +150,8 @@ describe('published website UI package', () => {
       'src/components/connection-label/connection-label.component.astro',
     );
     expect(packedPaths).toContain('src/components/hero-backdrop/hero-backdrop.component.astro');
+    expect(packedPaths).toContain('src/components/icon-tile/icon-tile.component.astro');
+    expect(packedPaths).toContain('src/components/code-text/code-text.component.astro');
     expect(packedPaths).toContain('dist/evaluation-replay.js');
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/runtime-catalog.js');
@@ -287,6 +289,8 @@ describe('published website UI package', () => {
         "import FilePreview from '@moldea.ai/website-ui/file-preview';",
         "import FileTree from '@moldea.ai/website-ui/file-tree';",
         "import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';",
+        "import IconTile from '@moldea.ai/website-ui/icon-tile';",
+        "import CodeText from '@moldea.ai/website-ui/code-text';",
         "import Conversation from '@moldea.ai/website-ui/conversation';",
         "import ConversationMessage from '@moldea.ai/website-ui/conversation-message';",
         "import LocalSearch from '@moldea.ai/website-ui/local-search';",
@@ -324,7 +328,7 @@ describe('published website UI package', () => {
         'const unchangedSource = "const approval = true;\\nconst confirmed = false;\\n";',
         'const connectionProps = { tone: "danger" } satisfies ComponentProps<typeof ConnectionLabel>;',
         'const accordionProps = { id: "check-two", group: "fixture-accordion", title: "Second check", isOpen: true } satisfies ComponentProps<typeof Accordion>;',
-        'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", hideIconOnMobile: true, ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
+        'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
         'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", panelClass: "sm:h-[32rem]!", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
         'const iconDialogProps = { id: "fixture-icon", title: "Complete source", triggerLabel: "Open complete source", triggerAriaLabel: "Open complete source in a larger view", triggerVariant: "ghost", triggerSize: "icon-xs", size: "large" } satisfies ComponentProps<typeof Dialog>;',
         'const passed = { title: "Validation complete", label: "Passed", tone: "success", findings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
@@ -393,6 +397,7 @@ describe('published website UI package', () => {
         '    <FileTree ariaLabel="Repository files" nodes={[{ kind: "file", name: "policy.md", path: "policy.md", removed: true }]} />',
         '    <Dialog id="composed-result" title="Reference not found" triggerLabel="Inspect composed result" isOverlayCloseEnabled><ResultSummary slot="heading" {...summaryProps}><span slot="icon">!</span><StatusBadge slot="status" label="Invalid" size="sm" tone="danger" /></ResultSummary><p>Composed result body</p></Dialog>',
         '    <ResultSummary title="Metadata available" description="Logical paths only." as="h3" />',
+        '    <p><IconTile size="sm" tone="success">1</IconTile><CodeText value={"a".repeat(64)} /><CodeText value="src/answer-cache.ts" /><CodeText value="sha256-digest" title="Recorded digest" /></p>',
         '    <Dialog id="fixture-result" title="Fixture result" triggerLabel="View result"><div slot="heading"><h2 id="fixture-result-title">Fixture result</h2><StatusBadge label="Invalid" size="sm" tone="danger" /><p>Recorded check</p></div><p>Result content</p></Dialog>',
         '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
         '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
@@ -1361,6 +1366,16 @@ describe('published website UI package', () => {
       /<h2[^>]*id="composed-result-title"[^>]*>Reference not found<\/h2>/u,
     );
     expect(fixtureHtml).toContain('Composed result body');
+    // icon tiles are decorative by default and carry their named size and tone
+    expect(fixtureHtml).toMatch(
+      /<span(?=[^>]*data-icon-tile="success")(?=[^>]*data-size="sm")(?=[^>]*aria-hidden="true")[^>]*>1<\/span>/u,
+    );
+    // unbreakable code keeps its full value and title; breakable code wraps only after separators
+    expect(fixtureHtml).toMatch(
+      /<code(?=[^>]*data-code-text="unbreakable")(?=[^>]*title="a{64}")[^>]*>a{64}<\/code>/u,
+    );
+    expect(fixtureHtml).toContain('<code>src/<wbr>answer-<wbr>cache.<wbr>ts</code>');
+    expect(fixtureHtml).toContain('<code title="Recorded digest">sha256-<wbr>digest</code>');
     expect(fixtureHtml).toMatch(
       /<details\b[^>]*id="check-one"[^>]*name="fixture-accordion"(?![^>]*\bopen\b)/u,
     );
