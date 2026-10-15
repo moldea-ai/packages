@@ -19,6 +19,11 @@ on:
         required: false
         type: string
         default: ''
+      live_registry:
+        description: Resolve packed-consumer dependencies from the live registry instead of the reviewed snapshot.
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
 
 permissions:
@@ -35,6 +40,8 @@ defaults:
 env:
   NODE_VERSION: 24.15.0
   PNPM_VERSION: 11.9.0
+  # packed consumers resolve from the reviewed registry snapshot unless the canary asks for live
+  MOLDEA_LIVE_REGISTRY: ${{ inputs.live_registry == true && 'true' || 'false' }}
 
 jobs:
   plan:
@@ -208,6 +215,10 @@ jobs:
           name: 'public-package-tarballs'
           path: ${{ runner.temp }}/public-package-tarballs
 
+      - name: Pin Registry Snapshot
+        if: ${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}
+        run: node configs/registry-snapshot/write-environment.mjs >> "$GITHUB_ENV"
+
       - name: Test Packed Repository Testing Peers
         run: >-
           node projects/repository/scripts/testing-peer-compatibility/index.mjs
@@ -241,6 +252,10 @@ jobs:
         with:
           name: 'public-package-tarballs'
           path: ${{ runner.temp }}/public-package-tarballs
+
+      - name: Pin Registry Snapshot
+        if: ${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}
+        run: node configs/registry-snapshot/write-environment.mjs >> "$GITHUB_ENV"
 
       - name: Test Packed CLI with Existing Vitest
         run: >-
@@ -276,6 +291,10 @@ jobs:
         with:
           name: public-package-tarballs
           path: ${{ runner.temp }}/public-package-tarballs
+
+      - name: Pin Registry Snapshot
+        if: ${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}
+        run: node configs/registry-snapshot/write-environment.mjs >> "$GITHUB_ENV"
 
       - name: Test Packed Repository FS Runtime
         run: >-
@@ -314,6 +333,10 @@ jobs:
         with:
           name: public-package-tarballs
           path: ${{ runner.temp }}/public-package-tarballs
+
+      - name: Pin Registry Snapshot
+        if: ${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}
+        run: node configs/registry-snapshot/write-environment.mjs >> "$GITHUB_ENV"
 
       - name: Test Packed CLI Runtime
         run: >-

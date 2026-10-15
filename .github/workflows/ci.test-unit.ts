@@ -17,9 +17,30 @@ interface IJob {
 }
 const source = readFileSync(new URL('./ci.yml', import.meta.url), 'utf8');
 const workflow = parse(source) as {
+  env: Record<string, string>;
   jobs: Record<string, IJob>;
   permissions: Record<string, string>;
 };
+
+test('packed consumers use the reviewed registry snapshot unless the canary requests live', () => {
+  expect(workflow.env['MOLDEA_LIVE_REGISTRY']).toBe(
+    "${{ inputs.live_registry == true && 'true' || 'false' }}",
+  );
+  const consumerSteps = Object.values(workflow.jobs).flatMap(({ steps = [] }) =>
+    steps.flatMap((step, index) =>
+      step.name?.startsWith('Test Packed ') ? [{ step, previous: steps[index - 1] }] : [],
+    ),
+  );
+
+  expect(consumerSteps).toHaveLength(4);
+  for (const { previous } of consumerSteps) {
+    expect(previous).toStrictEqual({
+      name: 'Pin Registry Snapshot',
+      if: "${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}",
+      run: 'node configs/registry-snapshot/write-environment.mjs >> "$GITHUB_ENV"',
+    });
+  }
+});
 
 test('planner uses the tested merge checkout and explicit main comparison, with closed outputs', () => {
   const step = workflow.jobs['plan']?.steps?.find(
