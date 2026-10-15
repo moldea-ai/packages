@@ -26,6 +26,23 @@ const executeCli = (executablePath, arguments_, cwd, environment) =>
     env: environment,
   });
 
+/** Summarizes one installed CLI result so a failed check reports the CLI's own error. */
+const describeCliResult = (result) => {
+  let outcome = 'stdout is not a JSON envelope';
+
+  try {
+    const envelope = JSON.parse(result.stdout);
+    outcome =
+      envelope.error === null
+        ? `status ${envelope.status}`
+        : `${envelope.error?.code}: ${envelope.error?.message}`;
+  } catch {
+    // keep the non-envelope description
+  }
+
+  return `exit ${result.status}; ${outcome}; stderr: ${result.stderr.trim().slice(0, 2000) || '(empty)'}`;
+};
+
 /** Requires one invariant from the packed-runtime consumer check. */
 const assertRuntimeInvariant = (condition, message) => {
   if (!condition) {
@@ -337,17 +354,23 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     const scopeEnvelope = JSON.parse(scopeResult.stdout);
     const contentEnvelope = JSON.parse(contentResult.stdout);
 
-    assertRuntimeInvariant(validateResult.status === 0, 'The installed CLI validation failed.');
+    assertRuntimeInvariant(
+      validateResult.status === 0,
+      `The installed CLI validation failed (${describeCliResult(validateResult)}).`,
+    );
     assertRuntimeInvariant(validateResult.stderr === '', 'The validation command wrote stderr.');
     assertRuntimeInvariant(
       validateEnvelope.status === 'valid',
-      'The validation result is invalid.',
+      `The validation result is invalid (${describeCliResult(validateResult)}).`,
     );
     assertRuntimeInvariant(
       !validateResult.stdout.includes('# Project'),
       'Validation exposed canonical repository content.',
     );
-    assertRuntimeInvariant(inspectResult.status === 0, 'The installed CLI inspection failed.');
+    assertRuntimeInvariant(
+      inspectResult.status === 0,
+      `The installed CLI inspection failed (${describeCliResult(inspectResult)}).`,
+    );
     assertRuntimeInvariant(inspectResult.stderr === '', 'The inspection command wrote stderr.');
     assertRuntimeInvariant(
       inspectEnvelope.schemaVersion === 7 &&
@@ -371,7 +394,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
         scopeResult.stderr === '' &&
         scopeEnvelope.schemaVersion === 7 &&
         scopeEnvelope.result?.relevant === true,
-      'The installed CLI scope command failed.',
+      `The installed CLI scope command failed (${describeCliResult(scopeResult)}).`,
     );
     assertRuntimeInvariant(
       contentResult.status === 0 &&
@@ -379,7 +402,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
         contentEnvelope.schemaVersion === 7 &&
         contentEnvelope.result?.asset?.path === '/moldea/project.md' &&
         contentEnvelope.result?.chunk?.content === '# Project\n',
-      'The installed CLI content command failed.',
+      `The installed CLI content command failed (${describeCliResult(contentResult)}).`,
     );
     assertRuntimeInvariant(
       !`${compositionResult.stdout}${validateResult.stdout}${inspectResult.stdout}${scopeResult.stdout}${contentResult.stdout}`.includes(
