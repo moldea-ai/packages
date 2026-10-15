@@ -63,7 +63,7 @@ describe('schema 7 CLI presentation formatters', () => {
       minimumGitVersion: '2.30.0',
       packages: [{ name: '@moldea.ai/core', version: '5.0.0' }],
       repositoryFormatVersions: [1],
-      supportedNodeRange: '>=22.11.0',
+      supportedNodeRange: '>=22.17.0',
     };
 
     expect(formatMoldeaCliHumanCompositionResult(result, '10.0.0')).toContain(

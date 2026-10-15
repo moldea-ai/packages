@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/cli",
-  "version": "11.0.4",
+  "version": "11.0.5",
   "description": "The canonical read-only local command-line composition for moldea repositories.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/cli#readme",
   "bugs": {
@@ -26,7 +26,7 @@
     "moldea": "./dist/moldea.js"
   },
   "engines": {
-    "node": ">=22.11.0"
+    "node": ">=22.17.0"
   },
   "scripts": {
     "build": "vite build --emptyOutDir",

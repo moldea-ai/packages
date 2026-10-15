@@ -105,7 +105,7 @@ const VALID_COMPOSITION = Object.freeze({
     minimumGitVersion: '2.30.0',
     packages: Object.freeze([]),
     repositoryFormatVersions: Object.freeze([1]),
-    supportedNodeRange: '>=22.11.0',
+    supportedNodeRange: '>=22.17.0',
   }),
 });
 
@@ -139,7 +139,7 @@ const createCommandInput = (
   packageMetadata: {
     dependencies: Object.freeze({}),
     installedPackageVersions: Object.freeze({}),
-    supportedNodeRange: '>=22.11.0',
+    supportedNodeRange: '>=22.17.0',
     version: '10.0.0',
   },
 });

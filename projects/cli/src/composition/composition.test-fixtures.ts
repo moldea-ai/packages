@@ -20,7 +20,7 @@ export const INSTALLED_PACKAGE_METADATA: IMoldeaCliPackageMetadata = Object.free
     ),
   ),
   installedPackageVersions: Object.freeze({ ...PACKAGE_VERSIONS }),
-  supportedNodeRange: '>=22.11.0',
+  supportedNodeRange: '>=22.17.0',
   version: '11.0.2',
 });
 
