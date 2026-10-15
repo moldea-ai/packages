@@ -1376,6 +1376,7 @@ describe('published website UI package', () => {
     );
     expect(fixtureHtml).toContain('<code>src/<wbr>answer-<wbr>cache.<wbr>ts</code>');
     expect(fixtureHtml).toContain('<code title="Recorded digest">sha256-<wbr>digest</code>');
+    expect(fixtureHtml).not.toContain('prettier-ignore');
     expect(fixtureHtml).toMatch(
       /<details\b[^>]*id="check-one"[^>]*name="fixture-accordion"(?![^>]*\bopen\b)/u,
     );

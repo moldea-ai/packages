@@ -15,5 +15,9 @@ const segments = value.split(/(?<=[^/_.-][/_.-])(?=[^/_.-])/u);
 const isUnbreakable = segments.length === 1 && !/\s/u.test(value);
 ---
 
-<!-- prettier-ignore -->
-<code {...attributes} title={title ?? (isUnbreakable ? value : undefined)} data-code-text={isUnbreakable ? 'unbreakable' : undefined}>{segments.map((segment, index) => (index > 0 ? [<wbr />, segment] : segment))}</code>
+<code
+  {...attributes}
+  title={title ?? (isUnbreakable ? value : undefined)}
+  data-code-text={isUnbreakable ? 'unbreakable' : undefined}
+  >{segments.map((segment, index) => (index > 0 ? [<wbr />, segment] : segment))}</code
+>
