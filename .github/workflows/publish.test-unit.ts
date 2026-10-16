@@ -17,6 +17,7 @@ interface IWorkflowJob {
   needs?: string | string[];
   outputs?: Record<string, unknown>;
   permissions?: Record<string, string>;
+  steps?: { name?: string; run?: string; with?: Record<string, unknown> }[];
   uses?: string;
   with?: Record<string, unknown>;
 }
@@ -199,7 +200,7 @@ describe('npm release workflow', () => {
       '${{ needs.plan.outputs.cli_previous_version }}',
     );
     expect(publishWorkflow.jobs?.['release_website_ui']).toMatchObject({
-      needs: ['plan', 'verify'],
+      needs: ['plan', 'verify', 'website_browser'],
       permissions: { contents: 'write', 'id-token': 'write' },
       uses: './.github/workflows/publish-package.yml',
       with: {
@@ -213,6 +214,24 @@ describe('npm release workflow', () => {
     );
     expect(publishWorkflow.jobs?.['release_core']?.if).toContain(
       "needs.release_repository_fs.result == 'success'",
+    );
+  });
+
+  test('gates a Website UI release on its consumer site browser suite without caching', () => {
+    const browser = publishWorkflow.jobs?.['website_browser'];
+    expect(browser).toMatchObject({
+      needs: 'plan',
+      if: "${{ needs.plan.outputs.website_ui == 'true' }}",
+      permissions: { contents: 'read' },
+      container: ciWorkflow.jobs?.['checks']?.container,
+      env: { PLAYWRIGHT_BROWSERS_PATH: '/ms-playwright' },
+    });
+    expect(browser?.steps?.at(-1)?.run).toBe('pnpm --filter @moldea.ai/packages-website test:e2e');
+    expect(browser?.steps?.some(({ with: options }) => options?.['cache'] !== undefined)).toBe(
+      false,
+    );
+    expect(publishWorkflow.jobs?.['release_website_ui']?.if).toContain(
+      "needs.website_browser.result == 'success'",
     );
   });
 
