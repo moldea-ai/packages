@@ -1,5 +1,5 @@
 ---
-import { ArrowRight, GitPullRequest } from '@lucide/astro';
+import { ArrowRight } from '@lucide/astro';
 
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
@@ -164,9 +164,6 @@ const page = await repository.listEntriesPage({ maxEntries: 16 });`,
                 </div>
                 <div class="example-card">
                   <div class="example-card-header">
-                    {execution.result.kind === 'cli' && execution.result.status === 'invalid' && (
-                      <GitPullRequest aria-hidden="true" />
-                    )}
                     <h3
                       id={`example-${execution.id}-title`}
                       class="example-card-title"

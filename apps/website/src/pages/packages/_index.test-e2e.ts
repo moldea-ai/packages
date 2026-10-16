@@ -46,6 +46,8 @@ for (const width of [320, 768, 1440]) {
             'Blocking',
           );
           await expect(section.locator('svg.lucide-link-2').first()).toBeVisible();
+          // a local CLI run is not a pull request, so its title has no leading icon
+          await expect(section.locator('.example-card-header svg')).toHaveCount(0);
         }
         if (slug === 'cli' && width >= 1024) {
           const columns = await section
