@@ -790,17 +790,19 @@ ${'long-line-'.repeat(32)}
   );
 
   await page.goto(toPublicPath('/capabilities/'));
-  await expect(
-    page.locator(
-      '[data-capability-visual="command"] pre[aria-label^="Command for "][data-code-copy-enhanced="true"]',
-    ),
-  ).toHaveCount(11);
+  // example commands and recorded output are evidence, so none of them is copyable
+  const exampleCommands = page.locator(
+    '[data-capability-visual="command"] pre[aria-label^="Command for "]',
+  );
+  await expect(exampleCommands).toHaveCount(11);
+  await expect(exampleCommands.and(page.locator('[data-code-copy-enhanced="true"]'))).toHaveCount(
+    0,
+  );
   await expect(
     page.locator(
       '#cli-invalid-project pre[aria-label="Manifest binding for the eligibility check"]',
     ),
   ).not.toHaveAttribute('data-code-copy-enhanced');
-  // recorded output is evidence, so only the commands above stay copyable
   expect(await page.locator('[data-inspection-output] pre').count()).toBeGreaterThan(0);
   await expect(
     page.locator('[data-inspection-output] pre[data-code-copy-enhanced="true"]'),
@@ -808,11 +810,9 @@ ${'long-line-'.repeat(32)}
 });
 
 for (const colorScheme of ['light', 'dark'] as const) {
-  test(`copies the command but not the recorded JSON output in ${colorScheme}`, async ({
-    context,
+  test(`shows the example command and recorded JSON output without copy controls in ${colorScheme}`, async ({
     page,
   }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.setViewportSize({ width: 320, height: 900 });
     await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
     await page.goto(toPublicPath('/packages/'));
@@ -826,8 +826,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await expect(commandHeader).not.toContainText('Shell');
     await expect(commandFrame.locator('[data-code-copy-header]')).toHaveCount(0);
     await expect(command).toHaveCSS('padding-left', '16px');
-    await commandHeader.getByRole('button', { name: 'Copy code', exact: true }).click();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(commandSource);
+    await expect(commandFrame.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(
+      0,
+    );
     await example.locator('[data-inspection-outcome]').click();
     const result = page.getByRole('dialog');
     await expect(result.locator('[data-inspection-finding-card] [data-file-preview]')).toHaveCount(

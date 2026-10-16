@@ -55,12 +55,14 @@ const binding =
     : undefined;
 const boundSource = example.files.find(({ path }) => path === binding?.path);
 if (binding && !boundSource) throw new Error('The bound source illustration is missing.');
+// the command shows what produced the recorded result, so like the rest of the evidence it has no copy control
 ---
 
 <div class="grid min-w-0 gap-3">
   <CodeBlock
     source={result.command}
     language="sh"
+    copyable={false}
     headerLabel="Command"
     ariaLabel={`Command for ${example.title}`}
   >

@@ -3,10 +3,12 @@ import { ArrowDown, ArrowRight, ExternalLink, GitBranch, GitPullRequest } from '
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
 import CodeDiff from '@moldea.ai/website-ui/code-diff';
+import CodeText from '@moldea.ai/website-ui/code-text';
 import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import Conversation from '@moldea.ai/website-ui/conversation';
 import ConversationMessage from '@moldea.ai/website-ui/conversation-message';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
+import IconTile from '@moldea.ai/website-ui/icon-tile';
 import InspectionList from '@moldea.ai/website-ui/inspection-list';
 import type { IInspectionResultView } from '@moldea.ai/website-ui/inspection-presentation';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
@@ -27,6 +29,13 @@ const sections = [
   { id: 'cloud', label: 'moldea Cloud' },
   { id: 'pr-assurance', label: 'PR Assurance' },
 ];
+// invented pull request identity for the illustration, shown with the platform's pull request header
+const illustrativePullRequest = {
+  title: 'feat(support): let support approve refunds',
+  number: 418,
+  sourceBranch: 'refund_approvals',
+  targetBranch: 'main',
+} as const;
 const beforeInstruction = 'Explain eligibility. Never approve refunds.';
 const afterInstruction = 'Approve eligible refunds using the order details.';
 const supportPolicy =
@@ -358,14 +367,33 @@ const assuranceIllustration = {
           class="example-card"
           aria-label="Illustrative PR Assurance review"
         >
-          <figcaption class="example-card-header">
-            <GitPullRequest aria-hidden="true" />
-            <span class="example-card-title">Let support approve refunds</span>
-            <StatusBadge
-              label="Illustrative"
-              tone="neutral"
-              size="sm"
-            />
+          <figcaption
+            class="example-card-header grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
+          >
+            <IconTile class="row-span-2 sm:row-span-1">
+              <GitPullRequest aria-hidden="true" />
+            </IconTile>
+            <span class="grid min-w-0 gap-1">
+              <span class="example-card-title">{illustrativePullRequest.title}</span>
+              <span
+                class="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground"
+              >
+                <span class="shrink-0">PR #{illustrativePullRequest.number}</span>
+                <span aria-hidden="true">·</span>
+                <span class="min-w-0">
+                  <CodeText value={illustrativePullRequest.sourceBranch} /> into <CodeText
+                    value={illustrativePullRequest.targetBranch}
+                  />
+                </span>
+              </span>
+            </span>
+            <span class="col-start-2 justify-self-start sm:col-start-3 sm:row-start-1">
+              <StatusBadge
+                label="Illustrative"
+                tone="neutral"
+                size="sm"
+              />
+            </span>
           </figcaption>
           <div class="grid gap-3">
             <FilePreview
