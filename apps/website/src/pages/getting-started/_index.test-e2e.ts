@@ -19,7 +19,7 @@ for (const width of [320, 768, 1440]) {
         await expect(section.locator('figure')).toBeVisible();
       }
       await expect(page.locator('#adoption-guide')).toBeVisible();
-      const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
+      const assurance = page.getByRole('figure', { name: 'PR Assurance review' });
       await expect(assurance).toContainText('It cannot approve refunds or change orders.');
       await expect(assurance).toContainText('Approve eligible refunds using the order details.');
       // the platform website's pull request header bar keeps one-line identity beside the outcome
@@ -65,7 +65,7 @@ for (const width of [320, 768, 1440]) {
       await findingOpener.focus();
       await page.keyboard.press('Enter');
       const findingDialog = page.getByRole('dialog', {
-        name: 'Illustrative PR Assurance review',
+        name: 'PR Assurance review',
         exact: true,
       });
       await expect(
@@ -155,7 +155,7 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   await expect(result).toContainText('exportsFailed');
   await page.keyboard.press('Escape');
 
-  const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
+  const assurance = page.getByRole('figure', { name: 'PR Assurance review' });
   await expect(
     assurance.locator(
       '[data-file-preview-header]:visible code[title="moldea/agents/support/instruction.md"]',
@@ -224,7 +224,7 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
     await expect(
       page.getByRole('heading', { name: 'Check the connections as your code changes.' }),
     ).toBeVisible();
-    const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
+    const assurance = page.getByRole('figure', { name: 'PR Assurance review' });
     await expect(
       assurance.getByRole('heading', { name: 'Refund approval boundary', exact: true }),
     ).toBeVisible();
