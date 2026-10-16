@@ -49,13 +49,14 @@ test.each([
 });
 
 test.each([
-  [
-    '/moldea/agents/support/instruction.md',
-    ['/moldea/', 'agents/', 'support/', 'instruction.', 'md'],
-  ],
+  ['/moldea/agents/support/instruction.md', ['/moldea/', 'agents/', 'support/', 'instruction.md']],
   ['MOLDEA_REFERENCE_EXPORT_MISSING', ['MOLDEA_', 'REFERENCE_', 'EXPORT_', 'MISSING']],
-  ['./src/answer-cache.ts', ['./src/', 'answer-', 'cache.', 'ts']],
+  ['./src/answer-cache.ts', ['./src/', 'answer-', 'cache.ts']],
   ['@moldea.ai/core', ['@moldea.', 'ai/', 'core']],
+  ['src/payments/refund-policy.ts', ['src/', 'payments/', 'refund-', 'policy.ts']],
+  ['archive.tar.gz', ['archive.', 'tar.gz']],
+  ['moldea.yaml', ['moldea.yaml']],
+  ['refund-policy.ts/', ['refund-', 'policy.', 'ts/']],
   ['__init__.py', ['__init__.py']],
   ['moldea', ['moldea']],
   ['', ['']],

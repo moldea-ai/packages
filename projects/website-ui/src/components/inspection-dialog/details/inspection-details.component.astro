@@ -24,7 +24,10 @@ interface Props {
   findings: IInspectionFindingView[];
 }
 const { id, resultTitle, findings } = Astro.props;
-// decodes JSON Pointer tokens for display; the exact pointer remains in the tooltip and output
+/*
+ * Decodes JSON Pointer tokens for display; the exact pointer remains in the tooltip and output.
+ * Segments render inline like Code and Location, so chip padding never changes the row's spacing.
+ */
 const toPointerSegments = (pointer: string): string[] =>
   pointer
     .split('/')
@@ -170,7 +173,6 @@ const toPointerSegments = (pointer: string): string[] =>
                     <dt class="text-muted-foreground">Field</dt>
                     <dd class="min-w-0">
                       <span
-                        class="flex min-w-0 flex-wrap items-center gap-1"
                         title={finding.pointer}
                         data-inspection-field
                       >
@@ -178,7 +180,7 @@ const toPointerSegments = (pointer: string): string[] =>
                           <>
                             {index > 0 && (
                               <ChevronRight
-                                class="size-3 shrink-0 text-muted-foreground"
+                                class="mx-1 inline size-3 align-middle text-muted-foreground"
                                 aria-hidden="true"
                               />
                             )}

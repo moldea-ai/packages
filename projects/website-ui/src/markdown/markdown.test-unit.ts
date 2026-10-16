@@ -224,9 +224,10 @@ describe('website Markdown rendering', () => {
       ].join('\n'),
     );
 
-    expect(html).toContain('<code>/moldea/<wbr>project.<wbr>md</code>');
+    // a final extension stays attached to its name
+    expect(html).toContain('<code>/moldea/<wbr>project.md</code>');
     expect(html).toContain('<code>MOLDEA_<wbr>REFERENCE_<wbr>EXPORT_<wbr>MISSING</code>');
-    expect(html.match(/<wbr>/gu)).toHaveLength(5);
+    expect(html.match(/<wbr>/gu)).toHaveLength(4);
   });
 
   test('renders allowlisted strong labels as semantic badges', async () => {

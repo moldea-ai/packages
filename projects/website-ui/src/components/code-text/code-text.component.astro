@@ -1,17 +1,18 @@
 ---
 import type { HTMLAttributes } from 'astro/types';
+import { splitCodeSegments } from '@moldea.ai/website-ui/code-presentation';
 
 /*
- * Renders a code element whose text wraps only after `/`, `_`, `.` or `-`, never mid-word.
- * A value with no permitted break and no whitespace stays on one line and truncates with an
- * ellipsis; its full text stays in the DOM and in a title unless the caller supplies one.
+ * Renders a code element whose text wraps only after `/`, `_`, `.` or `-`, never mid-word and
+ * never before a final extension. A value with no permitted break and no whitespace stays on one
+ * line and truncates with an ellipsis; its full text stays in the DOM and in a title unless the
+ * caller supplies one.
  */
 interface Props extends HTMLAttributes<'code'> {
   value: string;
 }
 const { value, title, ...attributes } = Astro.props;
-// mirrors splitCodeSegments in code-presentation, which this shipped source cannot import
-const segments = value.split(/(?<=[^/_.-][/_.-])(?=[^/_.-])/u);
+const segments = splitCodeSegments(value);
 const isUnbreakable = segments.length === 1 && !/\s/u.test(value);
 ---
 

@@ -140,6 +140,12 @@
     vertical-align: bottom;
   }
 
+  /* an unbreakable chip keeps an inline chip's box and position, so its padding never adds line spacing */
+  .inline-code[data-code-text='unbreakable'] {
+    line-height: normal;
+    vertical-align: middle;
+  }
+
   .page-shell {
     width: min(100%, 82rem);
     margin-inline: auto;

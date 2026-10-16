@@ -1157,6 +1157,14 @@ describe('published website UI package', () => {
               'bindings',
               '0',
             ]);
+            // single-word and wrapping chips share one height, so every details row keeps its spacing
+            const chipFragmentHeights = await findingDetails
+              .locator('dd code')
+              .evaluateAll((codes) =>
+                codes.flatMap((code) => [...code.getClientRects()].map(({ height }) => height)),
+              );
+            for (const height of chipFragmentHeights)
+              expect(Math.abs(height - chipFragmentHeights[0]!)).toBeLessThan(0.5);
             expect(
               await singleDialog
                 .locator('[data-file-preview]')
@@ -1434,7 +1442,7 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toMatch(
       /<code(?=[^>]*data-code-text="unbreakable")(?=[^>]*title="a{64}")[^>]*>a{64}<\/code>/u,
     );
-    expect(fixtureHtml).toContain('<code>src/<wbr>answer-<wbr>cache.<wbr>ts</code>');
+    expect(fixtureHtml).toContain('<code>src/<wbr>answer-<wbr>cache.ts</code>');
     expect(fixtureHtml).toContain('<code title="Recorded digest">sha256-<wbr>digest</code>');
     expect(fixtureHtml).not.toContain('prettier-ignore');
     expect(fixtureHtml).toMatch(
