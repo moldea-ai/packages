@@ -138,8 +138,45 @@ test('keeps an operational refusal neutral about whether the project passed insp
     label: 'Refused',
     tone: 'warning',
     findings: [],
+    code: 'RESOURCE_LIMIT_EXCEEDED',
     outputLabel: 'Execution facts',
   });
+});
+
+test('gives a CLI refusal the native error code from its envelope', () => {
+  const error = { code: 'CONTENT_PATH_INVALID', message: 'Not a knowledge document.' };
+  const view = getCapabilityInspectionView({
+    ...example,
+    result: {
+      kind: 'cli',
+      command: 'moldea content --path /src/returns/policy.ts --json',
+      schemaVersion: 7,
+      status: 'error',
+      exitStatus: 2,
+      facts: { error },
+    },
+    output: createRecordedOutput([
+      {
+        cliVersion: '11.0.2',
+        schemaVersion: 7,
+        command: 'content',
+        status: 'error',
+        error,
+        result: null,
+      },
+    ]),
+  });
+  expect(view).toMatchObject({ label: 'Refused', findings: [], code: 'CONTENT_PATH_INVALID' });
+});
+
+test('keeps a result code off outcomes that report findings or completed work', () => {
+  expect(getCapabilityInspectionView(example)).not.toHaveProperty('code');
+  expect(
+    getCapabilityInspectionView({
+      ...example,
+      result: { kind: 'reader', facts: { entryCount: 2 } },
+    }),
+  ).not.toHaveProperty('code');
 });
 
 test('rejects unsupported diagnostic groups instead of guessing a category', () => {

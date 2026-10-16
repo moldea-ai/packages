@@ -180,6 +180,14 @@ export const getCapabilityInspectionView = (example: ICapabilityCase): IRecorded
     typeof coverage['path'] === 'string'
       ? coverage['path']
       : undefined;
+  // a refusal has no findings, so its native code is the result's code
+  const refusal =
+    result.kind === 'cli'
+      ? asRecord(result.facts['error'])
+      : result.kind === 'validation'
+        ? null
+        : result.facts;
+  const code = outcome.label === 'Refused' ? refusal?.['code'] : undefined;
   return {
     title: outcome.title,
     label: outcome.label,
@@ -187,6 +195,7 @@ export const getCapabilityInspectionView = (example: ICapabilityCase): IRecorded
     findings: findings.map((finding, index) =>
       findingView(finding, index, example.files, result.kind === 'cli', exportTarget),
     ),
+    ...(typeof code === 'string' ? { code } : {}),
     ...outputView(example.output),
     ...(result.kind === 'cli' ? { command: result.command, exitStatus: result.exitStatus } : {}),
     limitation: example.limitation,

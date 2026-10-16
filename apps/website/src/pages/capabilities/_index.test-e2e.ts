@@ -328,6 +328,8 @@ for (const { group, examples } of showcase) {
       await expect(dialog.locator('[data-capability-summary]')).not.toBeEmpty();
       const view = getCapabilityInspectionView(example);
       const resultOpener = dialog.locator('[data-dialog-open]').first();
+      // a refusal shows its native code beside the outcome, as a single finding shows its own
+      if (view.code) await expect(resultOpener.locator('code')).toHaveText(view.code);
       await resultOpener.click();
       const result = page.locator(`#${example.id}-result`);
       await expect(result).toBeVisible();
