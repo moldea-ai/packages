@@ -1,9 +1,10 @@
 ---
-import { ArrowRight, GitPullRequest } from '@lucide/astro';
+import { ArrowRight } from '@lucide/astro';
 
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
 import CodeBlock from '@moldea.ai/website-ui/code-block';
+import CodeText from '@moldea.ai/website-ui/code-text';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import { CapabilityCard } from '../../components/capability-card/index.ts';
@@ -130,9 +131,10 @@ const page = await repository.listEntriesPage({ maxEntries: 16 });`,
                     {displayName}
                   </h2>
                   <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <code class="font-mono text-sm break-all text-muted-foreground">
-                      {packageModel.name}
-                    </code>
+                    <CodeText
+                      class="min-w-0 font-mono text-sm text-muted-foreground"
+                      value={packageModel.name}
+                    />
                     <span class="rounded-md border px-2 py-0.5 text-xs text-muted-foreground">
                       v{packageModel.version}
                     </span>
@@ -160,19 +162,15 @@ const page = await repository.listEntriesPage({ maxEntries: 16 });`,
                     />
                   </ActionLink>
                 </div>
-                <div class="min-w-0 sm:rounded-xl sm:border sm:bg-card sm:p-6">
-                  <h3
-                    id={`example-${execution.id}-title`}
-                    class="mb-5 flex items-start gap-2 text-base font-semibold"
-                  >
-                    {execution.result.kind === 'cli' && execution.result.status === 'invalid' && (
-                      <GitPullRequest
-                        class="mt-0.5 size-4 shrink-0"
-                        aria-hidden="true"
-                      />
-                    )}
-                    {execution.title}
-                  </h3>
+                <div class="example-card">
+                  <div class="example-card-header">
+                    <h3
+                      id={`example-${execution.id}-title`}
+                      class="example-card-title"
+                    >
+                      {execution.title}
+                    </h3>
+                  </div>
                   <CapabilityCard
                     example={execution}
                     catalog={model.capabilities}

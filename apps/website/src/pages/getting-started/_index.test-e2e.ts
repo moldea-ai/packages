@@ -19,9 +19,29 @@ for (const width of [320, 768, 1440]) {
         await expect(section.locator('figure')).toBeVisible();
       }
       await expect(page.locator('#adoption-guide')).toBeVisible();
-      const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
+      const assurance = page.getByRole('figure', { name: 'PR Assurance review' });
       await expect(assurance).toContainText('It cannot approve refunds or change orders.');
       await expect(assurance).toContainText('Approve eligible refunds using the order details.');
+      // the platform website's pull request header bar keeps one-line identity beside the outcome
+      const pullRequest = assurance.locator('figcaption');
+      const pullRequestTitle = pullRequest.getByTitle(
+        'feat(support): let support approve refunds',
+        {
+          exact: true,
+        },
+      );
+      const mergeOutcome = pullRequest.getByText('Merge blocked', { exact: true });
+      await expect(pullRequest).toContainText('PR #418');
+      await expect(pullRequest).toContainText('refund_approvals into main');
+      await expect(mergeOutcome).toBeVisible();
+      await expect(assurance.getByText('Illustrative', { exact: true })).toHaveCount(0);
+      const titleBounds = (await pullRequestTitle.boundingBox())!;
+      expect((await mergeOutcome.boundingBox())!.x).toBeGreaterThanOrEqual(
+        titleBounds.x + titleBounds.width,
+      );
+      expect(titleBounds.height).toBe(
+        await pullRequestTitle.evaluate((node) => parseFloat(getComputedStyle(node).lineHeight)),
+      );
       const findingOpener = assurance.getByRole('link', {
         name: 'Blocking CONTEXT_CONTRADICTED: View result: Refund approval boundary',
         exact: true,
@@ -45,7 +65,7 @@ for (const width of [320, 768, 1440]) {
       await findingOpener.focus();
       await page.keyboard.press('Enter');
       const findingDialog = page.getByRole('dialog', {
-        name: 'Illustrative PR Assurance review',
+        name: 'PR Assurance review',
         exact: true,
       });
       await expect(
@@ -56,16 +76,16 @@ for (const width of [320, 768, 1440]) {
       await expect(findingDialog.locator('[data-file-preview]')).toHaveCount(2);
       const rule = findingDialog
         .locator('[data-file-preview]')
-        .filter({ hasText: '/moldea/project.md' });
+        .filter({ hasText: 'moldea/project.md' });
       const changedInstruction = findingDialog
         .locator('[data-file-preview]')
-        .filter({ hasText: '/moldea/agents/support/instruction.md' });
+        .filter({ hasText: 'moldea/agents/support/instruction.md' });
       await expect(rule).toHaveAttribute('data-file-preview-tone', 'neutral');
       await expect(rule).toContainText('Project rule excerpt');
       await expect(changedInstruction).toHaveAttribute('data-file-preview-tone', 'danger');
       await expect(changedInstruction).toContainText('Violates project rule');
       const diff = changedInstruction.getByRole('region', {
-        name: '/moldea/agents/support/instruction.md: Before and after',
+        name: 'moldea/agents/support/instruction.md: Before and after',
         exact: true,
       });
       await expect(diff).toContainText('Explain eligibility. Never approve refunds.');
@@ -114,6 +134,8 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   await page.goto(guidePath);
   const packages = page.locator('#local-packages figure');
   await expect(packages).toContainText('checkEligibility');
+  // a local CLI run is not a pull request, so its title has no leading icon
+  await expect(packages.locator('figcaption svg')).toHaveCount(0);
   await expect(packages.locator('[data-inspection-outcome]').first()).toContainText('Blocking');
   await expect(packages.locator('svg.lucide-link-2').first()).toBeVisible();
   await packages.locator('[data-dialog-open]').first().click();
@@ -133,10 +155,10 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   await expect(result).toContainText('exportsFailed');
   await page.keyboard.press('Escape');
 
-  const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
+  const assurance = page.getByRole('figure', { name: 'PR Assurance review' });
   await expect(
     assurance.locator(
-      '[data-file-preview-header]:visible code[title="/moldea/agents/support/instruction.md"]',
+      '[data-file-preview-header]:visible code[title="moldea/agents/support/instruction.md"]',
     ),
   ).toBeVisible();
 });
@@ -202,7 +224,7 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
     await expect(
       page.getByRole('heading', { name: 'Check the connections as your code changes.' }),
     ).toBeVisible();
-    const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
+    const assurance = page.getByRole('figure', { name: 'PR Assurance review' });
     await expect(
       assurance.getByRole('heading', { name: 'Refund approval boundary', exact: true }),
     ).toBeVisible();

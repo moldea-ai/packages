@@ -3,6 +3,7 @@ import type { ICapabilities, ICapabilityCase } from '../../lib/capabilities/inde
 import { CapabilityVisual } from '../capability-visual/index.ts';
 import { CapabilityResult } from '../capability-result/index.ts';
 
+// hosts place this inside an example card or a website-ui dialog body, whose insets its footer cancels
 interface Props {
   example: ICapabilityCase;
   catalog: ICapabilities;
@@ -11,7 +12,7 @@ const { example, catalog } = Astro.props;
 ---
 
 <article
-  class="flex min-w-0 flex-col gap-4 sm:gap-6"
+  class="min-w-0"
   aria-labelledby={`example-${example.id}-title`}
 >
   <CapabilityVisual
@@ -19,7 +20,7 @@ const { example, catalog } = Astro.props;
     {catalog}
   />
   <div
-    class="-mx-4 border-t px-4 pt-4 sm:-mx-6 sm:px-6 sm:pt-6"
+    class="example-card-footer"
     data-capability-summary={example.id}
   >
     <CapabilityResult {example} />

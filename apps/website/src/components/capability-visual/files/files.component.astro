@@ -3,6 +3,7 @@ import { FileX, Folder, Unlink } from '@lucide/astro';
 import { parse } from 'yaml';
 import { z } from 'zod';
 
+import CodeText from '@moldea.ai/website-ui/code-text';
 import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
@@ -72,7 +73,7 @@ if ((isTool || isSkill) && !toolName)
 
 <div class="min-w-0">
   <FilePreview
-    path={source.path.slice(1)}
+    path={source.path}
     label={isReference
       ? 'Return policy'
       : isTool
@@ -90,9 +91,12 @@ if ((isTool || isSkill) && !toolName)
       )
     }
     {
-      (isTool || isSkill) && (
+      toolName && (
         <p class="px-4 py-4 text-sm leading-7">
-          <code class="inline-code break-all">{toolName}</code>
+          <CodeText
+            class="inline-code"
+            value={toolName}
+          />
         </p>
       )
     }
@@ -119,7 +123,7 @@ if ((isTool || isSkill) && !toolName)
     >
   </ConnectionLabel>
   <FilePreview
-    path={targetPath.slice(1)}
+    path={targetPath}
     label={isConnected
       ? 'Connected implementation'
       : isDirectory

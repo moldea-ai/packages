@@ -1,3 +1,5 @@
+import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
+
 import { getCapabilityFactRows, type ICapabilityFact } from '../../../lib/capabilities/index.ts';
 
 // short rows preserve actual execution facts without presenting a custom summary as an API response
@@ -49,7 +51,8 @@ export const getOperationRows = (facts: Record<string, ICapabilityFact>): IOpera
           if (typeof identity !== 'string')
             throw new Error('Page illustration requires a record identity.');
           const kind = record.relationship ?? record.type ?? record.kind;
-          return `${identity}${typeof kind === 'string' ? ` (${kind})` : ''}`;
+          const label = typeof record.path === 'string' ? formatRepositoryPath(identity) : identity;
+          return `${label}${typeof kind === 'string' ? ` (${kind})` : ''}`;
         }),
         detail: page.hasContinuation === true ? 'More pages follow' : 'Final page',
       };
@@ -61,7 +64,7 @@ export const getOperationRows = (facts: Record<string, ICapabilityFact>): IOpera
         entries: getCapabilityFactRows(fact).map((entry) => {
           if (typeof entry.path !== 'string')
             throw new Error('Selection illustration requires actual paths.');
-          return entry.path;
+          return formatRepositoryPath(entry.path);
         }),
         detail: `${fact.length} ${fact.length === 1 ? 'entry' : 'entries'}`,
       };

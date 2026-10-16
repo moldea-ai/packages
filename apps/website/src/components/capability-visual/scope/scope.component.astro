@@ -27,7 +27,7 @@ if (
 
 <div class="min-w-0">
   <FilePreview
-    path={match.inputPath.slice(1)}
+    path={match.inputPath}
     label="Changed code"
   />
   <ConnectionLabel>
@@ -38,7 +38,7 @@ if (
     />Declared connection
   </ConnectionLabel>
   <FilePreview
-    path={owner.id.slice(1)}
+    path={owner.id}
     label="Related project brief"
   />
   <p class="mt-3 text-xs leading-5 text-muted-foreground">

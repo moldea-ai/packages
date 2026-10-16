@@ -1,5 +1,6 @@
 ---
 import { File, Folder, Link2 } from '@lucide/astro';
+import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
 
 import CodeText from '../code-text/code-text.component.astro';
 
@@ -58,7 +59,7 @@ const { nodes, ariaLabel } = Astro.props;
                 <>
                   <CodeText
                     class:list={['block font-mono text-xs', node.removed && 'line-through']}
-                    title={node.path}
+                    title={formatRepositoryPath(node.path)}
                     value={node.name}
                   />
                   <p class="mt-1 text-xs text-muted-foreground">

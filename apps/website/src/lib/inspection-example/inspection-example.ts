@@ -73,7 +73,10 @@ export const createInspectionExample = async (
       valid !== (snapshot.id !== 'broken') ||
       errorCount !== (snapshot.id === 'broken' ? 1 : 0) ||
       warningCount !== 0 ||
-      !isDeepStrictEqual(diagnostics, expectedDiagnostics)
+      !isDeepStrictEqual(diagnostics, expectedDiagnostics) ||
+      // resolved states must complete their export check to be presented as passed
+      validation.coverageCounts.exportsPassed !== (snapshot.id === 'broken' ? 0 : 1) ||
+      validation.coverageCounts.exportsNotChecked !== 0
     ) {
       throw new Error(
         `The inspection example produced unexpected Core results for ${snapshot.id}.`,

@@ -1,5 +1,6 @@
 ---
 import { ArrowUpRight, Box, Database, FolderTree, Terminal } from '@lucide/astro';
+import CodeText from '@moldea.ai/website-ui/code-text';
 import IconTile from '@moldea.ai/website-ui/icon-tile';
 import { withBase } from '@moldea.ai/website-ui/site';
 
@@ -34,8 +35,8 @@ const Icon = icons[packageModel.slug as keyof typeof icons] ?? Box;
     />
   </div>
   <h3 class="mb-3 text-xl font-semibold tracking-tight">{copy.name}</h3>
-  <p class="mb-3 font-mono text-xs break-all text-muted-foreground">
-    <code>{packageModel.name}</code>
+  <p class="mb-3 font-mono text-xs text-muted-foreground">
+    <CodeText value={packageModel.name} />
   </p>
   <p class="mb-6 leading-6 text-muted-foreground">
     {copy.description}

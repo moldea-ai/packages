@@ -29,7 +29,7 @@ const identityHtml = identity ? await renderMarkdownFragment(identity.line) : ''
   variable && (
     <div class="min-w-0">
       <FilePreview
-        path={variable.instruction.path.slice(1)}
+        path={variable.instruction.path}
         label="Used in the instruction"
       >
         <p class="px-4 py-5 text-base leading-8">
@@ -49,7 +49,7 @@ const identityHtml = identity ? await renderMarkdownFragment(identity.line) : ''
         Missing from declarations
       </ConnectionLabel>
       <FilePreview
-        path={variable.manifest.path.slice(1)}
+        path={variable.manifest.path}
         label="Declared variables"
       >
         <div class="flex flex-wrap items-center gap-2 p-4">
@@ -71,7 +71,7 @@ const identityHtml = identity ? await renderMarkdownFragment(identity.line) : ''
   mirror && (
     <div class="min-w-0">
       <FilePreview
-        path={mirror.original.path.slice(1)}
+        path={mirror.original.path}
         label="Updated original"
       >
         <p class="px-4 py-5 text-sm leading-8">
@@ -91,7 +91,7 @@ const identityHtml = identity ? await renderMarkdownFragment(identity.line) : ''
         Copy not updated
       </ConnectionLabel>
       <FilePreview
-        path={mirror.copy.path.slice(1)}
+        path={mirror.copy.path}
         label="Stale copy"
         tone="danger"
       >
@@ -115,7 +115,7 @@ const identityHtml = identity ? await renderMarkdownFragment(identity.line) : ''
   identity && (
     <div class="min-w-0">
       <FilePreview
-        path={identity.manifest.path.slice(1)}
+        path={identity.manifest.path}
         label="Declared agent"
       >
         <p class="px-4 py-3 text-base">
@@ -131,7 +131,7 @@ const identityHtml = identity ? await renderMarkdownFragment(identity.line) : ''
         Names do not match
       </ConnectionLabel>
       <FilePreview
-        path={identity.instruction.path.slice(1)}
+        path={identity.instruction.path}
         label="Copied instruction"
         tone="danger"
       >

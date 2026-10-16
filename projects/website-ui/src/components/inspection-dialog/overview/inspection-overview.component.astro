@@ -1,5 +1,6 @@
 ---
 import { ChevronRight } from '@lucide/astro';
+import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
 import {
   DIAGNOSTIC_GROUP_PRESENTATIONS,
   FINDING_CATEGORY_PRESENTATIONS,
@@ -78,9 +79,9 @@ const ordered = findings.toSorted((left, right) => priority(left) - priority(rig
                   <code
                     id={`${id}-path-${finding.id}`}
                     class="truncate font-mono text-[11px] font-normal text-muted-foreground"
-                    title={finding.path}
+                    title={formatRepositoryPath(finding.path)}
                   >
-                    {finding.path}
+                    {formatRepositoryPath(finding.path)}
                   </code>
                 )}
               </span>

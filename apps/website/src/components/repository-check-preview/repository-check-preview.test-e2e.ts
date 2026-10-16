@@ -15,6 +15,9 @@ for (const width of [320, 768, 1024, 1440]) {
       const hero = page.getByRole('region', { name: 'Introduction', exact: true });
       const preview = hero.getByRole('figure', { name: 'Repository check preview' });
       await expect(preview).toContainText('Agent instruction');
+      await expect(
+        preview.locator('figcaption').getByText('Check failed', { exact: true }),
+      ).toBeVisible();
       const instructionPath = 'moldea/agents/support/instruction.md';
       const instructionFile = preview.getByTitle(instructionPath, { exact: true });
       await expect(instructionFile).toHaveText(instructionPath);

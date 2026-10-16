@@ -7,6 +7,7 @@ import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import Conversation from '@moldea.ai/website-ui/conversation';
 import ConversationMessage from '@moldea.ai/website-ui/conversation-message';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
+import IconTile from '@moldea.ai/website-ui/icon-tile';
 import InspectionList from '@moldea.ai/website-ui/inspection-list';
 import type { IInspectionResultView } from '@moldea.ai/website-ui/inspection-presentation';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
@@ -27,12 +28,20 @@ const sections = [
   { id: 'cloud', label: 'moldea Cloud' },
   { id: 'pr-assurance', label: 'PR Assurance' },
 ];
+// invented pull request identity, shown with the platform website's pull request header bar
+const illustrativePullRequest = {
+  title: 'feat(support): let support approve refunds',
+  number: 418,
+  sourceBranch: 'refund_approvals',
+  targetBranch: 'main',
+} as const;
+const pullRequestSubtitle = `PR #${illustrativePullRequest.number} · ${illustrativePullRequest.sourceBranch} into ${illustrativePullRequest.targetBranch}`;
 const beforeInstruction = 'Explain eligibility. Never approve refunds.';
 const afterInstruction = 'Approve eligible refunds using the order details.';
 const supportPolicy =
   'Support can explain the policy and look up orders. It cannot approve refunds or change orders.';
 const assuranceIllustration = {
-  title: 'Illustrative PR Assurance review',
+  title: 'PR Assurance review',
   label: 'Blocking',
   tone: 'danger',
   findings: [
@@ -66,7 +75,6 @@ const assuranceIllustration = {
     },
   ],
   redactions: [],
-  limitation: 'Illustrative review of the displayed rule and instruction.',
 } satisfies IInspectionResultView;
 ---
 
@@ -144,7 +152,7 @@ const assuranceIllustration = {
         </div>
         <figure
           class="min-w-0"
-          aria-label="Illustrative adoption conversation"
+          aria-label="Adoption conversation"
         >
           <figcaption class="eyebrow mb-5">Adopt an existing project</figcaption>
           <Conversation ariaLabel="Adopting project context">
@@ -240,17 +248,13 @@ const assuranceIllustration = {
         </div>
         <figure
           aria-labelledby={`example-${connectionExample.id}-title`}
-          class="min-w-0 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
+          class="example-card"
         >
-          <figcaption class="mb-6">
+          <figcaption class="example-card-header">
             <h3
               id={`example-${connectionExample.id}-title`}
-              class="flex items-start gap-2 text-lg font-semibold"
+              class="example-card-title"
             >
-              <GitPullRequest
-                class="mt-1 size-5 shrink-0"
-                aria-hidden="true"
-              />
               {connectionExample.title}
             </h3>
           </figcaption>
@@ -290,18 +294,12 @@ const assuranceIllustration = {
           >
         </div>
         <figure
-          class="min-w-0 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
-          aria-label="Illustrative Cloud project context"
+          class="example-card"
+          aria-label="Cloud project context"
         >
-          <figcaption class="mb-5 flex items-center gap-3 text-sm font-semibold">
-            <GitBranch
-              class="size-5"
-              aria-hidden="true"
-            />Project context in Git<StatusBadge
-              label="Illustrative"
-              tone="neutral"
-              size="sm"
-            />
+          <figcaption class="example-card-header">
+            <GitBranch aria-hidden="true" />
+            <span class="example-card-title">Project context in Git</span>
           </figcaption>
           <FilePreview
             path="moldea/project.md"
@@ -359,39 +357,66 @@ const assuranceIllustration = {
           >
         </div>
         <figure
-          class="grid min-w-0 gap-5 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
-          aria-label="Illustrative PR Assurance review"
+          class="example-card"
+          aria-label="PR Assurance review"
         >
-          <figcaption class="flex items-center gap-3 text-sm font-semibold">
-            <GitPullRequest
-              class="size-5"
-              aria-hidden="true"
-            />Let support approve refunds<StatusBadge
-              label="Illustrative"
-              tone="neutral"
+          <figcaption
+            class="mb-4 grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b pb-4 sm:-mx-6 sm:-mt-6 sm:mb-6 sm:px-6 sm:py-3"
+          >
+            <IconTile>
+              <GitPullRequest aria-hidden="true" />
+            </IconTile>
+            <span class="grid min-w-0">
+              <span
+                title={illustrativePullRequest.title}
+                class="truncate text-xs leading-4 font-semibold sm:text-sm sm:leading-5"
+                >{illustrativePullRequest.title}</span
+              >
+              <span
+                title={pullRequestSubtitle}
+                class="flex min-w-0 items-center gap-x-1.5 text-[0.68rem] text-muted-foreground sm:text-xs"
+              >
+                <span class="shrink-0">PR #{illustrativePullRequest.number}</span>
+                <span
+                  class="shrink-0"
+                  aria-hidden="true"
+                  >·</span
+                >
+                <span class="block min-w-0 truncate">
+                  <code>{illustrativePullRequest.sourceBranch}</code> into <code
+                    >{illustrativePullRequest.targetBranch}</code
+                  >
+                </span>
+              </span>
+            </span>
+            <StatusBadge
+              label="Merge blocked"
+              tone="danger"
               size="sm"
             />
           </figcaption>
-          <FilePreview
-            path="/moldea/project.md"
-            label="Project rule"
-          >
-            <p class="p-4 text-sm leading-7">{supportPolicy}</p>
-          </FilePreview>
-          <FilePreview
-            path="/moldea/agents/support/instruction.md"
-            label="Changed support instruction"
-            tone="danger"
-          >
-            <CodeDiff
-              oldValue={beforeInstruction}
-              newValue={afterInstruction}
-              language="markdown"
-              variant="plain"
-              ariaLabel="Changed support instruction"
-            />
-          </FilePreview>
-          <div class="border-t pt-4">
+          <div class="grid gap-3">
+            <FilePreview
+              path="/moldea/project.md"
+              label="Project rule"
+            >
+              <p class="p-4 text-sm leading-7">{supportPolicy}</p>
+            </FilePreview>
+            <FilePreview
+              path="/moldea/agents/support/instruction.md"
+              label="Changed support instruction"
+              tone="danger"
+            >
+              <CodeDiff
+                oldValue={beforeInstruction}
+                newValue={afterInstruction}
+                language="markdown"
+                variant="plain"
+                ariaLabel="Changed support instruction"
+              />
+            </FilePreview>
+          </div>
+          <div class="example-card-footer">
             <InspectionList
               id="assurance-illustration"
               result={assuranceIllustration}

@@ -133,7 +133,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.0.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.1.0' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -311,7 +311,7 @@ describe('published website UI package', () => {
         "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## moldea Shared Markdown');",
         "const conversationDocument = await renderMarkdownDocument('> **You**\\n>\\n> Inspect `@moldea.ai/core`.\\n\\n> **Coding agent**\\n>\\n> The declared export exists.', { conversations: true });",
         "const tree = buildEvaluationReplayPathTree([{ path: 'src/index.ts', type: 'file' }]);",
-        "const replay = { trials: [{ confirmationIndex: 3, evaluatedAt: '2026-09-10T00:00:00.000Z', id: 'confirmation-3', kind: 'confirmation', steps: [], title: 'Confirmation 3' }] } satisfies IEvaluationReplayModel;",
+        "const replay = { trials: [{ confirmationIndex: 3, evaluatedAt: '2026-09-10T00:00:00.000Z', id: 'confirmation-3', kind: 'confirmation', steps: [{ kind: 'message', role: 'coding-agent', source: 'recorded', content: 'Added the greeting helper.\\n\\n' + String.fromCharCode(96).repeat(3) + 'js\\nexport const greet = (name) => name;\\n' + String.fromCharCode(96).repeat(3) }], title: 'Confirmation 3' }] } satisfies IEvaluationReplayModel;",
         "const navigationItems = [{ href: '/', isActive: true, label: 'moldea Home' }, { href: '/repository-format/', isActive: false, label: 'Repository Format', compactLabel: 'Repo. Format' }] satisfies ComponentProps<typeof SiteHeader>['navigationItems'];",
         'const fileProps = { path: "src/returns/policy.ts", label: "Return policy", tone: "warning" } satisfies ComponentProps<typeof FilePreview>;',
         'const codeProps = { source: "echo order-status", language: "sh", variant: "plain", copyable: true, ariaLabel: "Order status command" } satisfies ComponentProps<typeof CodeBlock>;',
@@ -332,10 +332,11 @@ describe('published website UI package', () => {
         'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", panelClass: "sm:h-[32rem]!", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
         'const iconDialogProps = { id: "fixture-icon", title: "Complete source", triggerLabel: "Open complete source", triggerAriaLabel: "Open complete source in a larger view", triggerVariant: "ghost", triggerSize: "icon-xs", size: "large" } satisfies ComponentProps<typeof Dialog>;',
         'const passed = { title: "Validation complete", label: "Passed", tone: "success", findings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
-        'const failed = { ...passed, title: "Validation failed", label: "Blocking", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "moldea.yaml", evidence: [{ path: "moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Referenced target", isMissing: true, issueLabel: "Missing target" }] }] } satisfies IInspectionResultView;',
+        'const failed = { ...passed, title: "Validation failed", label: "Blocking", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "/moldea/moldea.yaml", pointer: "/context/~1moldea~1policy.md/bindings/0", evidence: [{ path: "/moldea/moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Referenced target", isMissing: true, issueLabel: "Missing target" }] }] } satisfies IInspectionResultView;',
         'const multiple = { ...failed, title: "Inspection complete", findings: [{ id: "accepted", title: "Unmatched relationship", code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", accepted: true, reason: "Generated files arrive during the release build.", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", evidence: [] }, ...failed.findings, { ...failed.findings[0], id: "warning", title: "Integration needs attention", severity: "warning", group: "integration" }] } satisfies IInspectionResultView;',
         'const illustrated = { title: "Illustrative policy review", label: "Blocking", tone: "danger", findings: [{ id: "authority", title: "Approval authority", code: "CONTEXT_CONTRADICTED", severity: "error", category: "context", message: "Only managers can approve refunds.", evidence: [{ path: "project.md", language: "markdown", content: "Only managers can approve refunds.", isExcerpt: true }, { path: "instruction.md", language: "markdown", beforeContent: "Explain the refund policy.", content: "Approve refunds for customers.", isExcerpt: true, issueLabel: "Violates project rule" }] }], redactions: [], limitation: "Illustrative finding." } satisfies IInspectionResultView;',
         'const many = { ...illustrated, title: "Policy findings", findings: Array.from({ length: 32 }, (_, index) => ({ ...illustrated.findings[0], id: `policy-${index}`, title: `Policy finding ${index + 1}`, evidence: [] })) } satisfies IInspectionResultView;',
+        'const refused = { ...passed, title: "Operation refused", label: "Refused", tone: "warning", code: "INVALID_PAGE_REQUEST" } satisfies IInspectionResultView;',
         'const statusResults = [{ ...passed, title: "Reader result", label: "Result", tone: "neutral" }, { ...failed, title: "Review warning", label: "Warning", tone: "warning", findings: [{ ...failed.findings[0], severity: "warning" }] }, { ...failed, title: "Accepted warning", label: "Accepted", tone: "info", findings: [{ ...failed.findings[0], severity: "warning", accepted: true }] }] satisfies IInspectionResultView[];',
         '---',
         '<html lang="en" data-theme="system">',
@@ -354,6 +355,7 @@ describe('published website UI package', () => {
         '    <Breadcrumbs items={[{ href: "/", label: "Home" }, { label: "moldea Fixture" }]} />',
         '    <p>Use moldea here and preserve @moldea.ai/core as one token.</p>',
         '    {conversationDocument.blocks.map((block) => block.kind === "html" ? <div set:html={block.html} /> : <Conversation>{block.messages.map((message) => <ConversationMessage role={message.role}><div set:html={message.html} /></ConversationMessage>)}</Conversation>)}',
+        '    <Conversation><ConversationMessage role="assistant"><p>Recorded change</p><div class="conversation-message-footer" data-bubble-footer><p>Files changed</p></div></ConversationMessage></Conversation>',
         '    <ActionLink href="https://example.com" target="_blank" rel="author">External action</ActionLink>',
         '    <ActionButton>Run</ActionButton>',
         '    <section class="relative overflow-hidden"><HeroBackdrop /><h1 class="relative">Consumer hero</h1></section>',
@@ -402,10 +404,11 @@ describe('published website UI package', () => {
         '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
         '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
         '    <Dialog {...iconDialogProps}><p>Expanded source content</p></Dialog>',
-        '    <main data-inspection-fixture class="mx-auto max-w-3xl px-3"><h2>Inspection examples</h2><InspectionList id="passed" result={passed} /><InspectionList id="single" result={failed} /><InspectionList id="illustrated" result={illustrated} /><InspectionList id="many" result={many} />{statusResults.map((result) => <InspectionList id={`hover-${result.tone}`} result={result} />)}<Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><a href="#standalone" data-dialog-open="standalone">Open standalone output</a><InspectionDialog id="standalone" result={passed} /><a href="/runtimes/">Navigate to runtimes</a></main>',
+        '    <main data-inspection-fixture class="mx-auto max-w-3xl px-3"><h2>Inspection examples</h2><InspectionList id="passed" result={passed} /><InspectionList id="single" result={failed} /><InspectionList id="illustrated" result={illustrated} /><InspectionList id="many" result={many} /><InspectionList id="refused" result={refused} />{statusResults.map((result) => <InspectionList id={`hover-${result.tone}`} result={result} />)}<Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><a href="#standalone" data-dialog-open="standalone">Open standalone output</a><InspectionDialog id="standalone" result={passed} /><a href="/runtimes/">Navigate to runtimes</a></main>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
         '    <InspectionFinding title="Declared export missing" code="MOLDEA_REFERENCE_EXPORT_MISSING" severity="error" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} />',
+        '    <InspectionFinding title="Impact pattern documented early" code="MOLDEA_IMPACT_PATTERN_UNMATCHED" severity="warning" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} accepted />',
         '    <CodeDiff patch={"--- a/policy.ts\\n+++ b/policy.ts\\n@@ -1000 +1000 @@\\n-export const days = 30;\\n+export const days = 60;\\n"} ariaLabel="Four-digit lines" overflow="wrap" />',
         '    <TabbedPanels ariaLabel="Fixture views" id="fixture-tabs" items={[{ id: "first", label: "First", slotName: "first" }, { id: "second", label: "Second", slotName: "second" }]}><p slot="first">First panel</p><p slot="second">Second panel</p></TabbedPanels>',
         '    <EvaluationReplay id="fixture-replay" replay={replay} />',
@@ -535,6 +538,53 @@ describe('published website UI package', () => {
                 weight: getComputedStyle(node).fontWeight,
               }));
             expect(badgeStyle).toStrictEqual({ transform: 'none', weight: '600' });
+            // axe skips icons, so the info tile's icon is held to 3:1 against its composited tint
+            const acceptedTileContrast = await page
+              .getByRole('article', {
+                name: 'Impact pattern documented early: MOLDEA_IMPACT_PATTERN_UNMATCHED',
+              })
+              .locator('[data-icon-tile="info"]')
+              .evaluate((tile) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = 1;
+                const context = canvas.getContext('2d', { willReadFrequently: true })!;
+                const paint = (colors: string[]) => {
+                  context.clearRect(0, 0, 1, 1);
+                  for (const color of colors) {
+                    context.fillStyle = color;
+                    context.fillRect(0, 0, 1, 1);
+                  }
+                  return context.getImageData(0, 0, 1, 1).data;
+                };
+                const layers: string[] = [];
+                for (let node: Element | null = tile; node; node = node.parentElement) {
+                  layers.unshift(getComputedStyle(node).backgroundColor);
+                  if (paint([layers[0]!])[3] === 255) break;
+                }
+                const luminance = (colors: string[]) => {
+                  const [red, green, blue] = Array.from(paint(colors).slice(0, 3), (channel) => {
+                    const value = channel / 255;
+                    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+                  });
+                  return 0.2126 * red! + 0.7152 * green! + 0.0722 * blue!;
+                };
+                const tint = luminance(layers);
+                const icon = luminance([
+                  ...layers,
+                  getComputedStyle(tile.querySelector('svg')!).color,
+                ]);
+                return (Math.max(tint, icon) + 0.05) / (Math.min(tint, icon) + 0.05);
+              });
+            expect(acceptedTileContrast).toBeGreaterThanOrEqual(3);
+            // the accepted label's text contrast is scanned on its own, before any dialog covers the page
+            expect(
+              (
+                await new AxeBuilder({ page })
+                  .include('[data-finding-code="MOLDEA_IMPACT_PATTERN_UNMATCHED"]')
+                  .analyze()
+              ).violations,
+            ).toStrictEqual([]);
             // finding codes wrap only after separators, never mid-word
             const separatedCode = finding.locator('code');
             expect(await separatedCode.textContent()).toBe('MOLDEA_REFERENCE_EXPORT_MISSING');
@@ -972,7 +1022,40 @@ describe('published website UI package', () => {
                 .getByRole('button', { name: 'Copy code', exact: true })
                 .count(),
             ).toBe(1);
-            for (const id of ['passed', 'single', 'hover-neutral', 'hover-warning', 'hover-info']) {
+            // the shared bubble footer cancels the bubble padding so its divider meets the border
+            const bubbleFooterInsets = await page
+              .locator('[data-bubble-footer]')
+              .evaluate((footer) => {
+                const bubble = footer.closest('article')!;
+                const bubbleBounds = bubble.getBoundingClientRect();
+                const footerBounds = footer.getBoundingClientRect();
+                const bubbleStyle = getComputedStyle(bubble);
+                return [
+                  footerBounds.left - bubbleBounds.left - parseFloat(bubbleStyle.borderLeftWidth),
+                  bubbleBounds.right -
+                    parseFloat(bubbleStyle.borderRightWidth) -
+                    footerBounds.right,
+                ];
+              });
+            for (const inset of bubbleFooterInsets) expect(Math.abs(inset)).toBeLessThan(0.5);
+            const replayMarkdown = page.locator('.replay-markdown');
+            expect(await replayMarkdown.locator('pre code').count()).toBe(1);
+            expect(await replayMarkdown.locator('[data-code-copy-button]').count()).toBe(0);
+            // an operation without findings shows its result code the way one finding shows its own
+            const refusedOpener = page.getByRole('link', {
+              name: 'Refused INVALID_PAGE_REQUEST: View result: Operation refused',
+              exact: true,
+            });
+            expect(await refusedOpener.locator('code').innerText()).toBe('INVALID_PAGE_REQUEST');
+            expect(await page.locator('[data-dialog-open="passed-result"] code').count()).toBe(0);
+            for (const id of [
+              'passed',
+              'single',
+              'refused',
+              'hover-neutral',
+              'hover-warning',
+              'hover-info',
+            ]) {
               const opener = page.locator(`[data-dialog-open="${id}-result"]`);
               await expectInspectionActionAlignment(opener);
               await page.mouse.move(0, 0);
@@ -1065,7 +1148,18 @@ describe('published website UI package', () => {
               coverage: { checked: ['references'], unchecked: [] },
             });
             expect(await passedDialog.evaluate((dialog) => dialog.getAnimations().length)).toBe(0);
+            /*
+             * the browser restores focus on close, but the dialog's own close handler refocuses the
+             * opener in a later task; a listener added now runs after that handler, so moving focus
+             * only after it fires keeps the late refocus from stealing it back
+             */
+            const passedClose = await passedDialog.evaluateHandle((dialog) => ({
+              done: new Promise<void>((resolve) => {
+                dialog.addEventListener('close', () => resolve(), { once: true });
+              }),
+            }));
             await page.keyboard.press('Escape');
+            await passedClose.evaluate(({ done }) => done);
             await expect
               .poll(() => passedOpener.evaluate((node) => node === document.activeElement))
               .toBe(true);
@@ -1108,6 +1202,39 @@ describe('published website UI package', () => {
                     : status.top >= path.bottom;
                 }),
             ).toBe(true);
+            // repository paths display without their leading slash; the pointer is decoded into a Field row
+            const findingDetails = singleDialog.locator('[data-inspection-finding-card] dl');
+            expect(
+              await findingDetails
+                .locator('div', { has: page.locator('dt', { hasText: /^Location$/u }) })
+                .locator('dd')
+                .innerText(),
+            ).toBe('moldea/moldea.yaml');
+            const field = findingDetails.locator('[data-inspection-field]');
+            expect(await field.getAttribute('title')).toBe(
+              '/context/~1moldea~1policy.md/bindings/0',
+            );
+            expect(await field.locator('code').allInnerTexts()).toStrictEqual([
+              'context',
+              '/moldea/policy.md',
+              'bindings',
+              '0',
+            ]);
+            // single-word and wrapping chips share one height, so every details row keeps its spacing
+            const chipFragmentHeights = await findingDetails
+              .locator('dd code')
+              .evaluateAll((codes) =>
+                codes.flatMap((code) => [...code.getClientRects()].map(({ height }) => height)),
+              );
+            for (const height of chipFragmentHeights)
+              expect(Math.abs(height - chipFragmentHeights[0]!)).toBeLessThan(0.5);
+            expect(
+              await singleDialog
+                .locator('[data-file-preview]')
+                .first()
+                .locator('code[title]')
+                .getAttribute('title'),
+            ).toBe('moldea/moldea.yaml');
             expect(
               await singleDialog
                 .locator('[data-inspection-finding-card] [data-file-preview]')
@@ -1159,9 +1286,10 @@ describe('published website UI package', () => {
               await outputHeader.getByText('moldea validate --json', { exact: true }).isVisible(),
             ).toBe(true);
             expect(await outputHeader.getByText('Exit 1', { exact: true }).isVisible()).toBe(true);
+            // recorded output is evidence, not something a reader pastes elsewhere
             expect(
               await outputHeader.getByRole('button', { name: 'Copy code', exact: true }).count(),
-            ).toBe(1);
+            ).toBe(0);
             expect(
               await singleDialog.getByText('Complete recorded response', { exact: true }).count(),
             ).toBe(0);
@@ -1209,6 +1337,9 @@ describe('published website UI package', () => {
             const rows = overview.getByRole('link');
             expect(await rows.count()).toBe(3);
             expect(await rows.nth(0).getAttribute('data-inspection-show')).toBe('missing');
+            const missingRowPath = rows.nth(0).locator('code[id$="-path-missing"]');
+            expect(await missingRowPath.innerText()).toBe('moldea/moldea.yaml');
+            expect(await missingRowPath.getAttribute('title')).toBe('moldea/moldea.yaml');
             expect(await rows.nth(1).getAttribute('data-inspection-show')).toBe('warning');
             expect(await rows.nth(2).getAttribute('data-inspection-show')).toBe('accepted');
             expect(await acceptedDialog.locator('[data-inspection-detail]:visible').count()).toBe(
@@ -1374,7 +1505,7 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toMatch(
       /<code(?=[^>]*data-code-text="unbreakable")(?=[^>]*title="a{64}")[^>]*>a{64}<\/code>/u,
     );
-    expect(fixtureHtml).toContain('<code>src/<wbr>answer-<wbr>cache.<wbr>ts</code>');
+    expect(fixtureHtml).toContain('<code>src/<wbr>answer-<wbr>cache.ts</code>');
     expect(fixtureHtml).toContain('<code title="Recorded digest">sha256-<wbr>digest</code>');
     expect(fixtureHtml).not.toContain('prettier-ignore');
     expect(fixtureHtml).toMatch(

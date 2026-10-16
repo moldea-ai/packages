@@ -5,8 +5,9 @@ const source = `export const reviewRefund = (hasManagerApproval: boolean) => {
   return hasManagerApproval ? 'approved' : 'pending-approval';
 };
 `;
+// the bound symbol lets Core complete the export check, so resolved states read as passed
 const originalManifest =
-  'version: 1\ncontext:\n  /moldea/project.md:\n    bindings:\n      - path: /src/refund-policy.ts\n';
+  'version: 1\ncontext:\n  /moldea/project.md:\n    bindings:\n      - path: /src/refund-policy.ts\n        symbol: reviewRefund\n';
 
 // synthetic, bounded snapshots shared by the preview and reference-check sequence
 export const INSPECTION_SNAPSHOTS: IInspectionSnapshot[] = [

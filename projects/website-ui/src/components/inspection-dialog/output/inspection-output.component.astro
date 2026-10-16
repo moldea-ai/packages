@@ -29,6 +29,7 @@ const { result } = Astro.props;
         source={result.output}
         language="json"
         overflow="scroll"
+        copyable={false}
         ariaLabel={result.outputLabel}
         headerLabel={result.command ?? result.outputLabel}
       >

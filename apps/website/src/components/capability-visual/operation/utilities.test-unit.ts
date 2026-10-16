@@ -19,7 +19,7 @@ test('shows actual page records and continuation without claiming validation suc
       pages: [{ entries: [{ path: '/policy.md', type: 'file' }], hasContinuation: true }],
     }),
   ).toStrictEqual([
-    { label: 'Page 1', entries: ['/policy.md (file)'], detail: 'More pages follow' },
+    { label: 'Page 1', entries: ['policy.md (file)'], detail: 'More pages follow' },
   ]);
   expect(() => getOperationRows({ pages: [{ records: [{}], hasContinuation: false }] })).toThrow(
     'record identity',
@@ -56,9 +56,11 @@ test('refuses to invent pagination or selection facts', () => {
 });
 
 test('selection counts distinguish one entry from several entries', () => {
-  expect(getOperationRows({ explicit: [{ path: '/moldea/project.md' }] })[0]?.detail).toBe(
-    '1 entry',
-  );
+  expect(getOperationRows({ explicit: [{ path: '/moldea/project.md' }] })[0]).toStrictEqual({
+    label: 'Explicit',
+    entries: ['moldea/project.md'],
+    detail: '1 entry',
+  });
   expect(
     getOperationRows({
       explicit: [{ path: '/moldea/project.md' }, { path: '/moldea/moldea.yaml' }],

@@ -1,5 +1,6 @@
 ---
 import CodeBlock from '@moldea.ai/website-ui/code-block';
+import CodeText from '@moldea.ai/website-ui/code-text';
 import { renderMarkdownDocument } from '@moldea.ai/website-ui/markdown';
 
 import DocumentationPage from '../../../components/documentation-page.astro';
@@ -111,7 +112,9 @@ const breadcrumbs = [
                     id={createApiSymbolAnchorId(entrypoint.name, symbol.name)}
                   >
                     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <h3 class="font-mono text-lg font-semibold break-all">{symbol.name}</h3>
+                      <h3 class="min-w-0 font-mono text-lg font-semibold">
+                        <CodeText value={symbol.name} />
+                      </h3>
                       <span class="rounded-full border bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground uppercase">
                         {symbol.kind}
                       </span>
@@ -122,6 +125,7 @@ const breadcrumbs = [
                     <CodeBlock
                       source={symbol.signature}
                       language="typescript"
+                      copyable={false}
                       ariaLabel={`${symbol.name} signature`}
                     />
                   </article>

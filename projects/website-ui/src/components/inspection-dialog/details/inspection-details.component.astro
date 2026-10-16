@@ -1,5 +1,6 @@
 ---
-import { ArrowLeft } from '@lucide/astro';
+import { ArrowLeft, ChevronRight } from '@lucide/astro';
+import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
 import {
   DIAGNOSTIC_GROUP_PRESENTATIONS,
   FINDING_CATEGORY_PRESENTATIONS,
@@ -23,6 +24,15 @@ interface Props {
   findings: IInspectionFindingView[];
 }
 const { id, resultTitle, findings } = Astro.props;
+/*
+ * Decodes JSON Pointer tokens for display; the exact pointer remains in the tooltip and output.
+ * Segments render inline like Code and Location, so chip padding never changes the row's spacing.
+ */
+const toPointerSegments = (pointer: string): string[] =>
+  pointer
+    .split('/')
+    .slice(1)
+    .map((segment) => segment.replaceAll('~1', '/').replaceAll('~0', '~'));
 ---
 
 <div class="min-w-0">
@@ -153,14 +163,34 @@ const { id, resultTitle, findings } = Astro.props;
                     <dd class="min-w-0">
                       <CodeText
                         class="inline-code font-normal"
-                        value={finding.path}
+                        value={formatRepositoryPath(finding.path)}
                       />
-                      {finding.pointer && (
-                        <CodeText
-                          class="inline-code mt-1 block w-fit font-normal text-muted-foreground"
-                          value={finding.pointer}
-                        />
-                      )}
+                    </dd>
+                  </div>
+                )}
+                {finding.path && finding.pointer && (
+                  <div class="grid min-w-0 gap-1 sm:grid-cols-[4rem_minmax(0,1fr)]">
+                    <dt class="text-muted-foreground">Field</dt>
+                    <dd class="min-w-0">
+                      <span
+                        title={finding.pointer}
+                        data-inspection-field
+                      >
+                        {toPointerSegments(finding.pointer).map((segment, index) => (
+                          <>
+                            {index > 0 && (
+                              <ChevronRight
+                                class="mx-1 inline size-3 align-middle text-muted-foreground"
+                                aria-hidden="true"
+                              />
+                            )}
+                            <CodeText
+                              class="inline-code font-normal"
+                              value={segment}
+                            />
+                          </>
+                        ))}
+                      </span>
                     </dd>
                   </div>
                 )}
@@ -194,7 +224,7 @@ const { id, resultTitle, findings } = Astro.props;
                     language={evidence.language}
                     variant="plain"
                     contextLines={Infinity}
-                    ariaLabel={`${evidence.path}: Before and after`}
+                    ariaLabel={`${formatRepositoryPath(evidence.path)}: Before and after`}
                   />
                 ) : (
                   evidence.content !== undefined && (
@@ -204,7 +234,7 @@ const { id, resultTitle, findings } = Astro.props;
                         language={evidence.language}
                         variant="plain"
                         copyable={false}
-                        ariaLabel={evidence.path}
+                        ariaLabel={formatRepositoryPath(evidence.path)}
                       />
                     </div>
                   )

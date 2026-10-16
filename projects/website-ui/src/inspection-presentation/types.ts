@@ -54,6 +54,8 @@ export type IInspectionResultView = {
   label: string;
   tone: 'danger' | 'info' | 'neutral' | 'success' | 'warning';
   findings: IInspectionFindingView[];
+  // the native code of an operation that ended without findings, such as a refusal
+  code?: string;
   redactions: string[];
   command?: string;
   exitStatus?: number;

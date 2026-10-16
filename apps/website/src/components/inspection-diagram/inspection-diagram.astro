@@ -1,5 +1,7 @@
 ---
 import { ArrowDownRight, FileCodeCorner, FileText } from '@lucide/astro';
+import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
+import CodeText from '@moldea.ai/website-ui/code-text';
 
 import type { IInspectionExampleState } from '../../lib/inspection-example/index.ts';
 
@@ -22,7 +24,10 @@ const { state } = Astro.props;
     />
     <div class="min-w-0">
       <p class="mb-1 text-xs text-muted-foreground">Project knowledge</p>
-      <code class="text-sm break-all">{state.projectPath.slice(1)}</code>
+      <CodeText
+        class="text-sm"
+        value={formatRepositoryPath(state.projectPath)}
+      />
     </div>
   </div>
   <div class="ml-5 flex items-center gap-3 py-2">
@@ -55,12 +60,13 @@ const { state } = Astro.props;
       class="size-5 shrink-0 text-muted-foreground"
       aria-hidden="true"
     />
-    <code
+    <CodeText
       class:list={[
-        'min-w-0 flex-1 text-sm break-all',
+        'min-w-0 flex-1 text-sm',
         !state.result.valid && 'line-through decoration-destructive',
-      ]}>{state.declaredPath.slice(1)}</code
-    >
+      ]}
+      value={formatRepositoryPath(state.declaredPath)}
+    />
     {!state.result.valid && <span class="shrink-0 text-xs font-semibold">Missing</span>}
   </div>
   {
@@ -76,7 +82,10 @@ const { state } = Astro.props;
         />
         <div class="min-w-0">
           <p class="mb-1 text-xs text-muted-foreground">File now lives here</p>
-          <code class="text-sm break-all">{state.sourcePath.slice(1)}</code>
+          <CodeText
+            class="text-sm"
+            value={formatRepositoryPath(state.sourcePath)}
+          />
         </div>
       </div>
     )

@@ -1,5 +1,7 @@
 ---
 import { FileDiff, FileMinus, FilePlus, Folder } from '@lucide/astro';
+import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
+import CodeText from '@moldea.ai/website-ui/code-text';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 
 import { getCapabilityFactRows, type ICapabilityCase } from '../../../lib/capabilities/index.ts';
@@ -29,7 +31,7 @@ const changeIcons = {
 ---
 
 <ul
-  class="divide-y rounded-lg border px-3"
+  class="divide-y rounded-lg border"
   aria-label="Changed repository paths"
 >
   {
@@ -41,7 +43,7 @@ const changeIcons = {
       if (kind === 'type-changed' && (change.fromType !== 'file' || change.toType !== 'directory'))
         throw new Error('Snapshot illustration requires its file-to-folder change.');
       return (
-        <li class="flex items-center gap-3 py-3">
+        <li class="flex items-center gap-3 p-3">
           <Icon
             class:list={[
               'size-4 shrink-0',
@@ -54,7 +56,10 @@ const changeIcons = {
             aria-hidden="true"
           />
           <span class="min-w-0 flex-1">
-            <code class="inline-code text-xs break-all">{String(change.path)}</code>
+            <CodeText
+              class="inline-code text-xs"
+              value={formatRepositoryPath(String(change.path))}
+            />
           </span>
           <StatusBadge
             size="sm"

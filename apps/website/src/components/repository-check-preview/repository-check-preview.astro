@@ -1,6 +1,8 @@
 ---
 import { FileCodeCorner, FileText } from '@lucide/astro';
 import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
+import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
+import CodeText from '@moldea.ai/website-ui/code-text';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
 
@@ -8,25 +10,32 @@ import type { IInstructionExample } from '../../lib/instruction-example/index.ts
 import { InspectionResult } from '../inspection-result/index.ts';
 
 // a second real Core check complements the moved-file sequence below the hero
+// the example's build guard admits only a failing check, so the header states that outcome
 interface Props {
   example: IInstructionExample;
 }
 const { example } = Astro.props;
 const instructionHtml = await renderMarkdownFragment(example.instruction);
-const instructionPath = example.instructionPath.slice(1);
 ---
 
 <figure
-  class="min-w-0 border-y bg-background/80 py-5 sm:rounded-2xl sm:border sm:bg-card sm:p-6 sm:shadow-surface"
+  class="example-card max-sm:border-y max-sm:bg-background/80 max-sm:py-5"
   aria-label="Repository check preview"
 >
-  <figcaption class="mb-5 flex min-h-12 items-center gap-3">
-    <span class="min-w-0 flex-1 text-base leading-snug font-bold sm:text-lg">
+  <figcaption class="example-card-header">
+    <span class="example-card-title flex-1">
       The instruction is here,<br />but the code is missing.
+    </span>
+    <span class="shrink-0 pt-px sm:pt-0.5">
+      <StatusBadge
+        label="Check failed"
+        tone="danger"
+        size="sm"
+      />
     </span>
   </figcaption>
   <FilePreview
-    path={instructionPath}
+    path={example.instructionPath}
     label="Agent instruction"
   >
     <FileText
@@ -59,14 +68,17 @@ const instructionPath = example.instructionPath.slice(1);
       class="size-5 shrink-0 text-muted-foreground"
       aria-hidden="true"
     />
-    <code class="min-w-0 flex-1 text-sm break-all">{example.implementationPath.slice(1)}</code>
+    <CodeText
+      class="min-w-0 flex-1 text-sm"
+      value={formatRepositoryPath(example.implementationPath)}
+    />
     <StatusBadge
       label="Missing"
       size="sm"
       tone="danger"
     />
   </div>
-  <div class="mt-5 border-t pt-4">
+  <div class="example-card-footer">
     <InspectionResult
       id="hero-check"
       result={example.result}

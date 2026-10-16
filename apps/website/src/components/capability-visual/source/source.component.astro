@@ -87,7 +87,7 @@ if (isMissingGuidance && guidanceLines.length !== 3)
           ]}
         />
         <FilePreview
-          path={file.path.slice(1)}
+          path={file.path}
           label="Still declared in the manifest"
         >
           <div class="p-3">
@@ -103,7 +103,7 @@ if (isMissingGuidance && guidanceLines.length !== 3)
       </>
     ) : (
       <FilePreview
-        path={file.path.slice(1)}
+        path={file.path}
         label={representation}
         tone={diagnostic?.severity === 'error' ? 'danger' : diagnostic ? 'warning' : 'neutral'}
       >

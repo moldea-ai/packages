@@ -31,11 +31,12 @@ for (const width of [320, 768, 1440]) {
           ).toContainText('return-policy.md');
           await expect(code).toContainText('listChangesPage');
         } else if (slug === 'repository-fs') {
-          await expect(
-            section.getByRole('group', {
-              name: 'Select the files your inspection can read execution facts',
-            }),
-          ).toContainText('/node_modules/left-pad/index.js');
+          const selection = section.getByRole('group', {
+            name: 'Select the files your inspection can read execution facts',
+          });
+          // repository paths display without their leading slash
+          await expect(selection).toContainText('node_modules/left-pad/index.js');
+          await expect(selection).not.toContainText('/node_modules/left-pad/index.js');
           await expect(code).toContainText('/moldea/moldea.yaml');
           await expect(section).toContainText(
             'Output also lists parent directories and byte lengths.',
@@ -45,6 +46,8 @@ for (const width of [320, 768, 1440]) {
             'Blocking',
           );
           await expect(section.locator('svg.lucide-link-2').first()).toBeVisible();
+          // a local CLI run is not a pull request, so its title has no leading icon
+          await expect(section.locator('.example-card-header svg')).toHaveCount(0);
         }
         if (slug === 'cli' && width >= 1024) {
           const columns = await section
