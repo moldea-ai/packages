@@ -190,10 +190,10 @@ test.each(['success', 'skipped', 'failure', 'cancelled'])(
   (result) => {
     const plan = select(['projects/core/src/a.ts']);
     const results = Object.fromEntries(
-      ['plan', 'checks', ...CI_COMPATIBILITY_LANES, 'test-cross-platform'].map((name) => [
+      ['plan', 'checks', 'pack', ...CI_COMPATIBILITY_LANES, 'test-cross-platform'].map((name) => [
         name,
         {
-          result: ['plan', 'checks', 'test-cross-platform', ...plan.lanes].includes(name)
+          result: ['plan', 'checks', 'pack', 'test-cross-platform', ...plan.lanes].includes(name)
             ? 'success'
             : 'skipped',
         },
@@ -206,13 +206,16 @@ test.each(['success', 'skipped', 'failure', 'cancelled'])(
       expect(() => validateCiJobResults(plan, JSON.stringify(results))).toThrow(
         'cli-runtime-compatibility',
       );
+    expect(() =>
+      validateCiJobResults(plan, JSON.stringify({ ...results, pack: { result: 'skipped' } })),
+    ).toThrow('pack');
   },
 );
 
 test('final gate rejects planner failure and missing/malformed results; permits only unselected skips', () => {
   const plan = select([]);
   const results = Object.fromEntries(
-    ['plan', 'checks', ...CI_COMPATIBILITY_LANES, 'test-cross-platform'].map((name) => [
+    ['plan', 'checks', 'pack', ...CI_COMPATIBILITY_LANES, 'test-cross-platform'].map((name) => [
       name,
       { result: ['plan', 'checks'].includes(name) ? 'success' : 'skipped' },
     ]),
@@ -231,6 +234,9 @@ test('final gate rejects planner failure and missing/malformed results; permits 
       JSON.stringify({ ...results, 'cli-runtime-compatibility': { result: 'success' } }),
     ),
   ).toThrow('skipped');
+  expect(() =>
+    validateCiJobResults(plan, JSON.stringify({ ...results, pack: { result: 'success' } })),
+  ).toThrow('pack');
 });
 
 test('large mixed path sets produce a bounded deterministic explanation without losing selection', () => {
