@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/website-ui",
-  "version": "3.3.2",
+  "version": "4.0.0",
   "description": "Shared Astro foundations for moldea public websites.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/website-ui#readme",
   "bugs": {
@@ -69,6 +69,9 @@
     "./code-copy-controls": {
       "import": "./src/components/code-copy-controls/code-copy-controls.component.astro"
     },
+    "./code-text": {
+      "import": "./src/components/code-text/code-text.component.astro"
+    },
     "./connection-label": {
       "import": "./src/components/connection-label/connection-label.component.astro"
     },
@@ -93,6 +96,9 @@
     },
     "./hero-backdrop": {
       "import": "./src/components/hero-backdrop/hero-backdrop.component.astro"
+    },
+    "./icon-tile": {
+      "import": "./src/components/icon-tile/icon-tile.component.astro"
     },
     "./local-search": {
       "import": "./src/components/local-search/local-search.component.astro"

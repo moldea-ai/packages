@@ -8,6 +8,7 @@ import {
 } from '@moldea.ai/website-ui/inspection-presentation';
 
 import ActionLink from '../../action-link/action-link.component.astro';
+import IconTile from '../../icon-tile/icon-tile.component.astro';
 
 interface Props {
   id: string;
@@ -47,23 +48,15 @@ const ordered = findings.toSorted((left, right) => priority(left) - priority(rig
               aria-describedby={`${id}-summary-${finding.id}${finding.path ? ` ${id}-path-${finding.id}` : ''}`}
               variant="ghost"
               size="sm"
-              class="h-auto w-full min-w-0 justify-start gap-3 rounded-lg p-3 text-start text-foreground motion-reduce:transition-none sm:p-5"
+              class="h-auto w-full min-w-0 items-start justify-start gap-3 rounded-lg p-3 text-start text-foreground motion-reduce:transition-none sm:p-5"
             >
-              <span
-                class:list={[
-                  'flex size-9 shrink-0 items-center justify-center rounded-lg',
-                  finding.accepted
-                    ? 'bg-info/10 text-info'
-                    : finding.severity === 'error'
-                      ? 'bg-destructive/10 text-destructive'
-                      : 'bg-warning/10 text-warning-foreground dark:text-warning',
-                ]}
+              <IconTile
+                tone={
+                  finding.accepted ? 'info' : finding.severity === 'error' ? 'danger' : 'warning'
+                }
               >
-                <Icon
-                  class="size-4"
-                  aria-hidden="true"
-                />
-              </span>
+                <Icon />
+              </IconTile>
               <span class="grid min-w-0 flex-1 gap-2">
                 <span
                   id={`${id}-summary-${finding.id}`}

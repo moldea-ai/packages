@@ -54,6 +54,15 @@ for (const width of [320, 768, 1440]) {
             if (element.naturalWidth === 0) throw new Error('Runtime icon did not decode.');
           });
         }
+        // runtime IDs without separators stay on one line with their full value as a title
+        const unbreakableId = grid.locator('code').filter({ hasText: /^anthropic$/u });
+        await expect(unbreakableId).toHaveAttribute('data-code-text', 'unbreakable');
+        await expect(unbreakableId).toHaveAttribute('title', 'anthropic');
+        await expect(unbreakableId).toHaveCSS('white-space', 'nowrap');
+        await expect(unbreakableId).toHaveCSS('text-overflow', 'ellipsis');
+        const breakableId = grid.locator('code').filter({ hasText: /^vercel-ai-sdk$/u });
+        await expect(breakableId).not.toHaveAttribute('data-code-text');
+        await expect(breakableId).not.toHaveAttribute('title');
         const first = grid.getByRole('link').first();
         await first.focus();
         await page.keyboard.press('Tab');

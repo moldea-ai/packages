@@ -2,6 +2,7 @@
 import { ArrowDown, FileX } from '@lucide/astro';
 import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
+import IconTile from '@moldea.ai/website-ui/icon-tile';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 
 import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
@@ -60,11 +61,10 @@ const cycleTargets = isCycle
   {
     typeof missingDecisionId === 'string' && (
       <>
-        <div class="flex items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4">
-          <FileX
-            class="size-5 shrink-0 text-destructive"
-            aria-hidden="true"
-          />
+        <div class="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4">
+          <IconTile tone="danger">
+            <FileX />
+          </IconTile>
           <div class="min-w-0">
             <p class="text-sm font-semibold">Earlier decision not found</p>
             <p class="mt-1 text-xs leading-5 text-muted-foreground">

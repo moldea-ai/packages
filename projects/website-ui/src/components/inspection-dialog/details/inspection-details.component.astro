@@ -11,6 +11,7 @@ import CodeBlock from '../../code-block/code-block.component.astro';
 import CodeDiff from '../../code-diff/code-diff.component.astro';
 import CodeText from '../../code-text/code-text.component.astro';
 import FilePreview from '../../file-preview/file-preview.component.astro';
+import IconTile from '../../icon-tile/icon-tile.component.astro';
 import ActionLink from '../../action-link/action-link.component.astro';
 import StatusBadge from '../../status-badge/status-badge.component.astro';
 
@@ -92,21 +93,13 @@ const { id, resultTitle, findings } = Astro.props;
               ]}
               data-inspection-finding-header
             >
-              <span
-                class:list={[
-                  'flex size-9 shrink-0 items-center justify-center rounded-lg',
-                  finding.accepted
-                    ? 'bg-info/10 text-info'
-                    : finding.severity === 'error'
-                      ? 'bg-destructive/10 text-destructive'
-                      : 'bg-warning/10 text-warning-foreground dark:text-warning',
-                ]}
+              <IconTile
+                tone={
+                  finding.accepted ? 'info' : finding.severity === 'error' ? 'danger' : 'warning'
+                }
               >
-                <GroupIcon
-                  class="size-4"
-                  aria-hidden="true"
-                />
-              </span>
+                <GroupIcon />
+              </IconTile>
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <p class="text-xs font-medium text-muted-foreground">{group.label}</p>
