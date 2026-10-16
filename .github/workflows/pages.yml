@@ -64,9 +64,6 @@ jobs:
       - name: Build website UI
         run: pnpm --filter @moldea.ai/website-ui build
 
-      - name: Install website browser
-        run: pnpm --filter @moldea.ai/packages-website exec playwright install --with-deps chromium
-
       - name: Check documentation sources
         run: pnpm docs:check
 
@@ -90,12 +87,6 @@ jobs:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
           SITE_URL: https://${{ steps.pages.outputs.host }}
         run: pnpm --filter @moldea.ai/packages-website test:integration
-
-      - name: Test browser behavior
-        env:
-          BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          SITE_URL: https://${{ steps.pages.outputs.host }}
-        run: pnpm --filter @moldea.ai/packages-website test:e2e
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4

@@ -53,8 +53,6 @@ export default defineConfig({
   testMatch: '**/*.test-e2e.ts',
   testIgnore: ['**/{_archive,_archives,_backup,_backups}/**'],
   fullyParallel: true,
-  // dedicated CI runners can use every core instead of Playwright's default half
-  workers: process.env.CI ? '100%' : undefined,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'github' : 'list',

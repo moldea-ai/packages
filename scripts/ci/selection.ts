@@ -14,7 +14,7 @@ export const CI_COMPATIBILITY_LANES = [
   'repository-fs-runtime-compatibility',
   'cli-runtime-compatibility',
 ];
-// the packages website, whose browser suite runs only in the Linux checks job
+// the packages website, whose browser suite runs locally instead of in CI
 export const CI_WEBSITE_WORKSPACE = '@moldea.ai/packages-website';
 // literal lowercase identifiers prevent Turbo filter expressions from entering a plan
 const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u;

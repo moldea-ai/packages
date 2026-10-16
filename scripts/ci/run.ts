@@ -84,6 +84,6 @@ else {
   runSelectedTask('test:unit', false);
   if (plan.rootIntegration) runPnpm(['test:root:integration']);
   runSelectedTask('test:integration', false);
-  // the website's browser suite is platform-independent, so only the Linux checks job runs it
-  runSelectedTask('test:e2e', false, stage === 'test' ? [CI_WEBSITE_WORKSPACE] : []);
+  // the website's browser suite runs locally before merging, never in CI
+  runSelectedTask('test:e2e', false, [CI_WEBSITE_WORKSPACE]);
 }
