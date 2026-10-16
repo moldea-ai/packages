@@ -407,6 +407,7 @@ describe('published website UI package', () => {
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
         '    <InspectionFinding title="Declared export missing" code="MOLDEA_REFERENCE_EXPORT_MISSING" severity="error" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} />',
+        '    <InspectionFinding title="Impact pattern documented early" code="MOLDEA_IMPACT_PATTERN_UNMATCHED" severity="warning" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} accepted />',
         '    <CodeDiff patch={"--- a/policy.ts\\n+++ b/policy.ts\\n@@ -1000 +1000 @@\\n-export const days = 30;\\n+export const days = 60;\\n"} ariaLabel="Four-digit lines" overflow="wrap" />',
         '    <TabbedPanels ariaLabel="Fixture views" id="fixture-tabs" items={[{ id: "first", label: "First", slotName: "first" }, { id: "second", label: "Second", slotName: "second" }]}><p slot="first">First panel</p><p slot="second">Second panel</p></TabbedPanels>',
         '    <EvaluationReplay id="fixture-replay" replay={replay} />',
@@ -536,6 +537,53 @@ describe('published website UI package', () => {
                 weight: getComputedStyle(node).fontWeight,
               }));
             expect(badgeStyle).toStrictEqual({ transform: 'none', weight: '600' });
+            // axe skips icons, so the info tile's icon is held to 3:1 against its composited tint
+            const acceptedTileContrast = await page
+              .getByRole('article', {
+                name: 'Impact pattern documented early: MOLDEA_IMPACT_PATTERN_UNMATCHED',
+              })
+              .locator('[data-icon-tile="info"]')
+              .evaluate((tile) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = 1;
+                const context = canvas.getContext('2d', { willReadFrequently: true })!;
+                const paint = (colors: string[]) => {
+                  context.clearRect(0, 0, 1, 1);
+                  for (const color of colors) {
+                    context.fillStyle = color;
+                    context.fillRect(0, 0, 1, 1);
+                  }
+                  return context.getImageData(0, 0, 1, 1).data;
+                };
+                const layers: string[] = [];
+                for (let node: Element | null = tile; node; node = node.parentElement) {
+                  layers.unshift(getComputedStyle(node).backgroundColor);
+                  if (paint([layers[0]!])[3] === 255) break;
+                }
+                const luminance = (colors: string[]) => {
+                  const [red, green, blue] = Array.from(paint(colors).slice(0, 3), (channel) => {
+                    const value = channel / 255;
+                    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+                  });
+                  return 0.2126 * red! + 0.7152 * green! + 0.0722 * blue!;
+                };
+                const tint = luminance(layers);
+                const icon = luminance([
+                  ...layers,
+                  getComputedStyle(tile.querySelector('svg')!).color,
+                ]);
+                return (Math.max(tint, icon) + 0.05) / (Math.min(tint, icon) + 0.05);
+              });
+            expect(acceptedTileContrast).toBeGreaterThanOrEqual(3);
+            // the accepted label's text contrast is scanned on its own, before any dialog covers the page
+            expect(
+              (
+                await new AxeBuilder({ page })
+                  .include('[data-finding-code="MOLDEA_IMPACT_PATTERN_UNMATCHED"]')
+                  .analyze()
+              ).violations,
+            ).toStrictEqual([]);
             // finding codes wrap only after separators, never mid-word
             const separatedCode = finding.locator('code');
             expect(await separatedCode.textContent()).toBe('MOLDEA_REFERENCE_EXPORT_MISSING');
