@@ -143,10 +143,11 @@ test('real Turbo builds dependencies but never executes their unselected tests o
   expect(result.status, result.stdout + result.stderr).toBe(0);
   const log = await readFile(join(directory, 'execution.log'), 'utf8');
   expect(log).toContain('@moldea.ai/website-ui:build');
-  for (const task of ['lint', 'typecheck', 'test:unit', 'test:integration', 'test:e2e']) {
+  for (const task of ['lint', 'typecheck', 'test:unit', 'test:integration']) {
     expect(log).toContain(`@moldea.ai/packages-website:${task}`);
     expect(log).not.toContain(`@moldea.ai/website-ui:${task}`);
   }
+  expect(log).not.toContain('@moldea.ai/packages-website:test:e2e');
   expect(log).toContain('website:prepare\n');
   expect(log).not.toMatch(/test:root:integration|upstream:check/u);
 });
@@ -169,6 +170,9 @@ test('cross-platform runner executes selected correctness tasks and propagates r
   const selected = planFor(['apps/website/page.astro']);
   const success = run(selected, 'test');
   expect(success.status, success.stdout + success.stderr).toBe(0);
+  const log = await readFile(join(directory, 'execution.log'), 'utf8');
+  expect(log).toContain('@moldea.ai/packages-website:test:integration');
+  expect(log).not.toContain('@moldea.ai/packages-website:test:e2e');
   await writeFile(join(directory, 'apps/website/task.mjs'), 'process.exit(19);');
   const failed = run(selected, 'test');
   expect(failed.status).not.toBe(0);

@@ -196,12 +196,54 @@ jobs:
       previous_version: ${{ needs.plan.outputs.cli_previous_version }}
       project: cli
 
+  # npm releases are permanent, so a Website UI release also passes the consumer site's browser suite,
+  # which runs locally rather than in pull requests
+  website_browser:
+    name: Test Website Browser Behavior
+    needs: plan
+    if: ${{ needs.plan.outputs.website_ui == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      options: --ipc=host --init
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Trust Container Workspace for Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Website Prerequisites
+        run: pnpm website:prepare
+
+      - name: Test Website Browser Behavior
+        run: pnpm --filter @moldea.ai/packages-website test:e2e
+
   release_website_ui:
     name: Release Website UI
     needs:
       - plan
       - verify
-    if: ${{ needs.plan.outputs.website_ui == 'true' && needs.verify.result == 'success' }}
+      - website_browser
+    if: ${{ needs.plan.outputs.website_ui == 'true' && needs.verify.result == 'success' && needs.website_browser.result == 'success' }}
     permissions:
       contents: write
       id-token: write
