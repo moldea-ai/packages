@@ -56,16 +56,16 @@ for (const width of [320, 768, 1440]) {
       await expect(findingDialog.locator('[data-file-preview]')).toHaveCount(2);
       const rule = findingDialog
         .locator('[data-file-preview]')
-        .filter({ hasText: '/moldea/project.md' });
+        .filter({ hasText: 'moldea/project.md' });
       const changedInstruction = findingDialog
         .locator('[data-file-preview]')
-        .filter({ hasText: '/moldea/agents/support/instruction.md' });
+        .filter({ hasText: 'moldea/agents/support/instruction.md' });
       await expect(rule).toHaveAttribute('data-file-preview-tone', 'neutral');
       await expect(rule).toContainText('Project rule excerpt');
       await expect(changedInstruction).toHaveAttribute('data-file-preview-tone', 'danger');
       await expect(changedInstruction).toContainText('Violates project rule');
       const diff = changedInstruction.getByRole('region', {
-        name: '/moldea/agents/support/instruction.md: Before and after',
+        name: 'moldea/agents/support/instruction.md: Before and after',
         exact: true,
       });
       await expect(diff).toContainText('Explain eligibility. Never approve refunds.');
@@ -136,7 +136,7 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
   await expect(
     assurance.locator(
-      '[data-file-preview-header]:visible code[title="/moldea/agents/support/instruction.md"]',
+      '[data-file-preview-header]:visible code[title="moldea/agents/support/instruction.md"]',
     ),
   ).toBeVisible();
 });

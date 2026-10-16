@@ -240,17 +240,14 @@ const assuranceIllustration = {
         </div>
         <figure
           aria-labelledby={`example-${connectionExample.id}-title`}
-          class="min-w-0 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
+          class="example-card"
         >
-          <figcaption class="mb-6">
+          <figcaption class="example-card-header">
+            <GitPullRequest aria-hidden="true" />
             <h3
               id={`example-${connectionExample.id}-title`}
-              class="flex items-start gap-2 text-lg font-semibold"
+              class="example-card-title"
             >
-              <GitPullRequest
-                class="mt-1 size-5 shrink-0"
-                aria-hidden="true"
-              />
               {connectionExample.title}
             </h3>
           </figcaption>
@@ -290,14 +287,13 @@ const assuranceIllustration = {
           >
         </div>
         <figure
-          class="min-w-0 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
+          class="example-card"
           aria-label="Illustrative Cloud project context"
         >
-          <figcaption class="mb-5 flex items-center gap-3 text-sm font-semibold">
-            <GitBranch
-              class="size-5"
-              aria-hidden="true"
-            />Project context in Git<StatusBadge
+          <figcaption class="example-card-header">
+            <GitBranch aria-hidden="true" />
+            <span class="example-card-title">Project context in Git</span>
+            <StatusBadge
               label="Illustrative"
               tone="neutral"
               size="sm"
@@ -359,39 +355,40 @@ const assuranceIllustration = {
           >
         </div>
         <figure
-          class="grid min-w-0 gap-5 sm:rounded-2xl sm:border sm:bg-card sm:p-6"
+          class="example-card"
           aria-label="Illustrative PR Assurance review"
         >
-          <figcaption class="flex items-center gap-3 text-sm font-semibold">
-            <GitPullRequest
-              class="size-5"
-              aria-hidden="true"
-            />Let support approve refunds<StatusBadge
+          <figcaption class="example-card-header">
+            <GitPullRequest aria-hidden="true" />
+            <span class="example-card-title">Let support approve refunds</span>
+            <StatusBadge
               label="Illustrative"
               tone="neutral"
               size="sm"
             />
           </figcaption>
-          <FilePreview
-            path="/moldea/project.md"
-            label="Project rule"
-          >
-            <p class="p-4 text-sm leading-7">{supportPolicy}</p>
-          </FilePreview>
-          <FilePreview
-            path="/moldea/agents/support/instruction.md"
-            label="Changed support instruction"
-            tone="danger"
-          >
-            <CodeDiff
-              oldValue={beforeInstruction}
-              newValue={afterInstruction}
-              language="markdown"
-              variant="plain"
-              ariaLabel="Changed support instruction"
-            />
-          </FilePreview>
-          <div class="border-t pt-4">
+          <div class="grid gap-3">
+            <FilePreview
+              path="/moldea/project.md"
+              label="Project rule"
+            >
+              <p class="p-4 text-sm leading-7">{supportPolicy}</p>
+            </FilePreview>
+            <FilePreview
+              path="/moldea/agents/support/instruction.md"
+              label="Changed support instruction"
+              tone="danger"
+            >
+              <CodeDiff
+                oldValue={beforeInstruction}
+                newValue={afterInstruction}
+                language="markdown"
+                variant="plain"
+                ariaLabel="Changed support instruction"
+              />
+            </FilePreview>
+          </div>
+          <div class="example-card-footer">
             <InspectionList
               id="assurance-illustration"
               result={assuranceIllustration}

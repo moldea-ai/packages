@@ -13,12 +13,12 @@ const rows = getDigestIllustration(Astro.props.example);
 ---
 
 <ul
-  class="min-w-0 divide-y rounded-lg border px-4"
+  class="min-w-0 divide-y rounded-lg border"
   aria-label="Text fingerprint comparison"
 >
   {
     rows.map((row, index) => (
-      <li class="py-4">
+      <li class="p-4">
         <p class="mb-2 text-xs text-muted-foreground">{row.label}</p>
         <p class="text-sm leading-7">
           {row.before}

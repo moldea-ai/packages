@@ -12,13 +12,13 @@ const { state } = Astro.props;
 
 <article
   id={`inspection-${state.id}`}
-  class="flex min-w-0 flex-col border-t py-5 sm:rounded-2xl sm:border sm:bg-card sm:p-6 sm:shadow-surface"
+  class="example-card flex flex-col max-sm:border-t max-sm:py-5"
   aria-labelledby={`inspection-${state.id}-title`}
 >
-  <header class="mb-5 flex min-h-12 items-center gap-3">
+  <header class="example-card-header">
     <h3
       id={`inspection-${state.id}-title`}
-      class="min-w-0 flex-1 text-base leading-snug font-bold sm:text-lg"
+      class="example-card-title flex-1"
     >
       {state.label}
     </h3>
@@ -26,7 +26,7 @@ const { state } = Astro.props;
   <div class="flex-1">
     <InspectionDiagram {state} />
   </div>
-  <div class="mt-5 border-t pt-4">
+  <div class="example-card-footer">
     <InspectionResult
       id={`inspection-${state.id}`}
       result={state.result}

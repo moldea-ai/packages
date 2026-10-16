@@ -575,7 +575,7 @@ test('preserves ordinary guide headings and complete technical tokens', async ({
     page
       .getByRole('figure', { name: 'Illustrative PR Assurance review' })
       .locator('[data-file-preview-header]:visible')
-      .getByText('/moldea/project.md', { exact: true }),
+      .getByText('moldea/project.md', { exact: true }),
   ).toBeVisible();
   await page.goto(toPublicPath('/packages/'));
   await expect(
@@ -800,16 +800,15 @@ ${'long-line-'.repeat(32)}
       '#cli-invalid-project pre[aria-label="Manifest binding for the eligibility check"]',
     ),
   ).not.toHaveAttribute('data-code-copy-enhanced');
+  // recorded output is evidence, so only the commands above stay copyable
+  expect(await page.locator('[data-inspection-output] pre').count()).toBeGreaterThan(0);
   await expect(
-    page.locator('[data-inspection-output] pre:not([data-code-copy-enhanced="true"])'),
+    page.locator('[data-inspection-output] pre[data-code-copy-enhanced="true"]'),
   ).toHaveCount(0);
-  expect(
-    await page.locator('[data-inspection-output] pre[data-code-copy-enhanced="true"]').count(),
-  ).toBeGreaterThan(0);
 });
 
 for (const colorScheme of ['light', 'dark'] as const) {
-  test(`keeps command and JSON copy actions in their own headers in ${colorScheme}`, async ({
+  test(`copies the command but not the recorded JSON output in ${colorScheme}`, async ({
     context,
     page,
   }) => {
@@ -843,11 +842,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await expect(output.locator('[data-code-copy-header]')).toHaveCount(0);
     const json = await output.locator('pre code').innerText();
     expect(JSON.parse(json)).toHaveProperty('schemaVersion', 7);
-    await outputHeader.getByRole('button', { name: 'Copy code', exact: true }).click();
-    // native clipboards may represent copied line breaks as CRLF
-    expect(
-      (await page.evaluate(() => navigator.clipboard.readText())).replaceAll('\r\n', '\n'),
-    ).toBe(json);
+    await expect(output.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(0);
     for (const header of [commandHeader, outputHeader]) {
       expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
         true,

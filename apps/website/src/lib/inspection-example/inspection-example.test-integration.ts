@@ -17,6 +17,11 @@ test('generates reproducible pass, fail, pass responses from real Core checks', 
     [1, 0],
     [0, 0],
   ]);
+  expect(states.map(({ result }) => result.coverageCounts)).toStrictEqual([
+    { bindings: 1, exportsPassed: 1, exportsFailed: 0, exportsNotChecked: 0 },
+    { bindings: 0, exportsPassed: 0, exportsFailed: 0, exportsNotChecked: 0 },
+    { bindings: 1, exportsPassed: 1, exportsFailed: 0, exportsNotChecked: 0 },
+  ]);
   expect(states.map(({ declaredPath, sourcePath }) => [declaredPath, sourcePath])).toStrictEqual([
     ['/src/refund-policy.ts', '/src/refund-policy.ts'],
     ['/src/refund-policy.ts', '/src/payments/refund-policy.ts'],
@@ -53,7 +58,8 @@ test('generates reproducible pass, fail, pass responses from real Core checks', 
       JSON.parse(JSON.stringify(expected)),
     );
 
-    expect(JSON.stringify(state.result)).not.toMatch(/manager approval|reviewRefund/iu);
+    // the declared symbol is manifest data; project and source bodies must stay out of results
+    expect(JSON.stringify(state.result)).not.toMatch(/manager approval|pending-approval/iu);
   }
 });
 
@@ -83,6 +89,15 @@ test.each(['connected', 'broken', 'repaired'])(
     );
   },
 );
+
+test('rejects a resolved state whose export check cannot run', async () => {
+  const snapshots = structuredClone(INSPECTION_SNAPSHOTS);
+  snapshots[0].manifest = snapshots[0].manifest.replace('        symbol: reviewRefund\n', '');
+
+  await expect(createInspectionExample(snapshots)).rejects.toThrow(
+    'unexpected Core results for connected',
+  );
+});
 
 test('rejects additional diagnostics, malformed fixtures, and missing or reordered states', async () => {
   const snapshots = structuredClone(INSPECTION_SNAPSHOTS);

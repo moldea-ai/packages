@@ -79,7 +79,7 @@ if (binding && !boundSource) throw new Error('The bound source illustration is m
     binding && manifest && boundSource && (
       <>
         <FilePreview
-          path={manifest.path.slice(1)}
+          path={manifest.path}
           label="Declared connection excerpt"
         >
           <div class="p-3">
@@ -93,7 +93,7 @@ if (binding && !boundSource) throw new Error('The bound source illustration is m
           </div>
         </FilePreview>
         <FilePreview
-          path={boundSource.path.slice(1)}
+          path={boundSource.path}
           label="Changed implementation"
         >
           <div class="p-3">
@@ -101,7 +101,7 @@ if (binding && !boundSource) throw new Error('The bound source illustration is m
               source={boundSource.content}
               language={boundSource.language}
               variant="plain"
-              copyable={!boundSource.isExcerpt}
+              copyable={false}
               ariaLabel="Changed eligibility implementation"
             />
           </div>
@@ -112,7 +112,7 @@ if (binding && !boundSource) throw new Error('The bound source illustration is m
   {
     typeof path === 'string' && (
       <FilePreview
-        path={path.slice(1)}
+        path={path}
         label="Returned document"
       >
         <div
