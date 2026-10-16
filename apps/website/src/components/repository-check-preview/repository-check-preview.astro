@@ -10,6 +10,7 @@ import type { IInstructionExample } from '../../lib/instruction-example/index.ts
 import { InspectionResult } from '../inspection-result/index.ts';
 
 // a second real Core check complements the moved-file sequence below the hero
+// the example's build guard admits only a failing check, so the header states that outcome
 interface Props {
   example: IInstructionExample;
 }
@@ -24,6 +25,13 @@ const instructionHtml = await renderMarkdownFragment(example.instruction);
   <figcaption class="example-card-header">
     <span class="example-card-title flex-1">
       The instruction is here,<br />but the code is missing.
+    </span>
+    <span class="shrink-0 pt-px sm:pt-0.5">
+      <StatusBadge
+        label="Check failed"
+        tone="danger"
+        size="sm"
+      />
     </span>
   </figcaption>
   <FilePreview

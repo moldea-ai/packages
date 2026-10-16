@@ -22,6 +22,26 @@ for (const width of [320, 768, 1440]) {
       const assurance = page.getByRole('figure', { name: 'Illustrative PR Assurance review' });
       await expect(assurance).toContainText('It cannot approve refunds or change orders.');
       await expect(assurance).toContainText('Approve eligible refunds using the order details.');
+      // the platform website's pull request header bar keeps one-line identity beside the outcome
+      const pullRequest = assurance.locator('figcaption');
+      const pullRequestTitle = pullRequest.getByTitle(
+        'feat(support): let support approve refunds',
+        {
+          exact: true,
+        },
+      );
+      const mergeOutcome = pullRequest.getByText('Merge blocked', { exact: true });
+      await expect(pullRequest).toContainText('PR #418');
+      await expect(pullRequest).toContainText('refund_approvals into main');
+      await expect(mergeOutcome).toBeVisible();
+      await expect(assurance.getByText('Illustrative', { exact: true })).toHaveCount(0);
+      const titleBounds = (await pullRequestTitle.boundingBox())!;
+      expect((await mergeOutcome.boundingBox())!.x).toBeGreaterThanOrEqual(
+        titleBounds.x + titleBounds.width,
+      );
+      expect(titleBounds.height).toBe(
+        await pullRequestTitle.evaluate((node) => parseFloat(getComputedStyle(node).lineHeight)),
+      );
       const findingOpener = assurance.getByRole('link', {
         name: 'Blocking CONTEXT_CONTRADICTED: View result: Refund approval boundary',
         exact: true,
