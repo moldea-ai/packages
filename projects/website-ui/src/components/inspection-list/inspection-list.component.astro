@@ -24,6 +24,8 @@ const icons = {
   warning: TriangleAlert,
 };
 const single = result.findings.length === 1 ? result.findings[0] : undefined;
+// one finding shows its own code; an operation without findings shows its result code
+const code = single?.code ?? (result.findings.length === 0 ? result.code : undefined);
 const label = result.findings.length > 1 ? `${result.findings.length} findings` : result.label;
 const Icon = single
   ? (single.category === undefined
@@ -66,7 +68,7 @@ const counts = [
     data-inspection-select={single?.id ?? ''}
     aria-controls={dialogId}
     aria-haspopup="dialog"
-    aria-label={`${label}${single ? ` ${single.code}` : result.findings.length > 1 ? `: ${counts}` : ''}: View result: ${single?.title ?? result.title}`}
+    aria-label={`${label}${code ? ` ${code}` : result.findings.length > 1 ? `: ${counts}` : ''}: View result: ${single?.title ?? result.title}`}
     variant="outline"
     size="sm"
     class={`min-h-10 w-full min-w-0 justify-start gap-3 text-foreground transition-colors motion-reduce:transition-none ${toneClasses[result.tone]}`}
@@ -83,12 +85,12 @@ const counts = [
         )
       }
       {
-        single && (
+        code && (
           <code
             class="min-w-0 truncate font-mono text-[11px] font-normal text-muted-foreground"
-            title={single.code}
+            title={code}
           >
-            {single.code}
+            {code}
           </code>
         )
       }

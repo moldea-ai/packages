@@ -336,6 +336,7 @@ describe('published website UI package', () => {
         'const multiple = { ...failed, title: "Inspection complete", findings: [{ id: "accepted", title: "Unmatched relationship", code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", accepted: true, reason: "Generated files arrive during the release build.", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", evidence: [] }, ...failed.findings, { ...failed.findings[0], id: "warning", title: "Integration needs attention", severity: "warning", group: "integration" }] } satisfies IInspectionResultView;',
         'const illustrated = { title: "Illustrative policy review", label: "Blocking", tone: "danger", findings: [{ id: "authority", title: "Approval authority", code: "CONTEXT_CONTRADICTED", severity: "error", category: "context", message: "Only managers can approve refunds.", evidence: [{ path: "project.md", language: "markdown", content: "Only managers can approve refunds.", isExcerpt: true }, { path: "instruction.md", language: "markdown", beforeContent: "Explain the refund policy.", content: "Approve refunds for customers.", isExcerpt: true, issueLabel: "Violates project rule" }] }], redactions: [], limitation: "Illustrative finding." } satisfies IInspectionResultView;',
         'const many = { ...illustrated, title: "Policy findings", findings: Array.from({ length: 32 }, (_, index) => ({ ...illustrated.findings[0], id: `policy-${index}`, title: `Policy finding ${index + 1}`, evidence: [] })) } satisfies IInspectionResultView;',
+        'const refused = { ...passed, title: "Operation refused", label: "Refused", tone: "warning", code: "INVALID_PAGE_REQUEST" } satisfies IInspectionResultView;',
         'const statusResults = [{ ...passed, title: "Reader result", label: "Result", tone: "neutral" }, { ...failed, title: "Review warning", label: "Warning", tone: "warning", findings: [{ ...failed.findings[0], severity: "warning" }] }, { ...failed, title: "Accepted warning", label: "Accepted", tone: "info", findings: [{ ...failed.findings[0], severity: "warning", accepted: true }] }] satisfies IInspectionResultView[];',
         '---',
         '<html lang="en" data-theme="system">',
@@ -403,7 +404,7 @@ describe('published website UI package', () => {
         '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
         '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
         '    <Dialog {...iconDialogProps}><p>Expanded source content</p></Dialog>',
-        '    <main data-inspection-fixture class="mx-auto max-w-3xl px-3"><h2>Inspection examples</h2><InspectionList id="passed" result={passed} /><InspectionList id="single" result={failed} /><InspectionList id="illustrated" result={illustrated} /><InspectionList id="many" result={many} />{statusResults.map((result) => <InspectionList id={`hover-${result.tone}`} result={result} />)}<Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><a href="#standalone" data-dialog-open="standalone">Open standalone output</a><InspectionDialog id="standalone" result={passed} /><a href="/runtimes/">Navigate to runtimes</a></main>',
+        '    <main data-inspection-fixture class="mx-auto max-w-3xl px-3"><h2>Inspection examples</h2><InspectionList id="passed" result={passed} /><InspectionList id="single" result={failed} /><InspectionList id="illustrated" result={illustrated} /><InspectionList id="many" result={many} /><InspectionList id="refused" result={refused} />{statusResults.map((result) => <InspectionList id={`hover-${result.tone}`} result={result} />)}<Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><a href="#standalone" data-dialog-open="standalone">Open standalone output</a><InspectionDialog id="standalone" result={passed} /><a href="/runtimes/">Navigate to runtimes</a></main>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
         '    <InspectionFinding title="Declared export missing" code="MOLDEA_REFERENCE_EXPORT_MISSING" severity="error" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} />',
@@ -1040,7 +1041,21 @@ describe('published website UI package', () => {
             const replayMarkdown = page.locator('.replay-markdown');
             expect(await replayMarkdown.locator('pre code').count()).toBe(1);
             expect(await replayMarkdown.locator('[data-code-copy-button]').count()).toBe(0);
-            for (const id of ['passed', 'single', 'hover-neutral', 'hover-warning', 'hover-info']) {
+            // an operation without findings shows its result code the way one finding shows its own
+            const refusedOpener = page.getByRole('link', {
+              name: 'Refused INVALID_PAGE_REQUEST: View result: Operation refused',
+              exact: true,
+            });
+            expect(await refusedOpener.locator('code').innerText()).toBe('INVALID_PAGE_REQUEST');
+            expect(await page.locator('[data-dialog-open="passed-result"] code').count()).toBe(0);
+            for (const id of [
+              'passed',
+              'single',
+              'refused',
+              'hover-neutral',
+              'hover-warning',
+              'hover-info',
+            ]) {
               const opener = page.locator(`[data-dialog-open="${id}-result"]`);
               await expectInspectionActionAlignment(opener);
               await page.mouse.move(0, 0);
