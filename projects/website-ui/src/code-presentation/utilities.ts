@@ -14,6 +14,17 @@ const BREAK_AFTER_SEPARATOR = /(?<=[^/_.-][/_.-])(?=[^/_.-])/u;
 export const splitCodeSegments = (value: string): string[] => value.split(BREAK_AFTER_SEPARATOR);
 
 /**
+ * Formats a root-relative repository path for display without its leading slash.
+ * Native output, copied values, and code samples keep the exact path.
+ * @param path The repository path, usually as reported by Core (`/moldea/moldea.yaml`).
+ * @returns The path without one leading slash; other values are returned unchanged.
+ * @example
+ * formatRepositoryPath('/moldea/moldea.yaml'); // 'moldea/moldea.yaml'
+ */
+export const formatRepositoryPath = (path: string): string =>
+  path.startsWith('/') ? path.slice(1) : path;
+
+/**
  * Resolves shared source-line presentation while preserving explicit consumer choices.
  * @param language Syntax language; unlabelled source preserves its line layout.
  * @param overflow Optional consumer override.

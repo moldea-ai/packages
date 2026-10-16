@@ -172,6 +172,41 @@
     @apply rounded-xl border border-border bg-card shadow-surface;
   }
 
+  /*
+   * Example cards flatten below sm and share one header, title, and result-footer rhythm.
+   * The footer's sm:-mx-6/px-6 pair cancels the card's 24px inset (and a website-ui dialog body's),
+   * so its divider runs edge to edge with 24px on each side; below sm it spans the content column,
+   * except inside a full-screen dialog, where it also cancels the body's 16px mobile inset.
+   */
+  .example-card {
+    @apply min-w-0 sm:rounded-2xl sm:border sm:bg-card sm:p-6 sm:shadow-surface;
+  }
+
+  .example-card-header {
+    @apply mb-4 flex min-w-0 items-start gap-2 sm:mb-6;
+  }
+
+  .example-card-header > svg {
+    @apply mt-px size-5 shrink-0 sm:mt-0.5;
+  }
+
+  .example-card-title {
+    @apply min-w-0 text-base leading-snug font-semibold break-words sm:text-lg;
+  }
+
+  .example-card-footer {
+    @apply mt-4 border-t pt-4 sm:-mx-6 sm:mt-6 sm:px-6 sm:pt-6;
+  }
+
+  [data-website-ui-dialog] .example-card-footer {
+    @apply max-sm:-mx-4 max-sm:px-4;
+  }
+
+  /* cancels the assistant ConversationMessage bubble's p-3 sm:p-5 so its footer divider meets the border */
+  .conversation-message-footer {
+    @apply -mx-3 mt-4 border-t px-3 pt-4 sm:-mx-5 sm:px-5;
+  }
+
   .interactive-card {
     @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:border-foreground/25 focus-visible:ring-offset-0 active:translate-y-px motion-reduce:translate-none motion-reduce:transform-none motion-reduce:transition-none motion-reduce:hover:translate-none motion-reduce:active:translate-none;
   }

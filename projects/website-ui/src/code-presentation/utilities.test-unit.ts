@@ -1,8 +1,18 @@
 // @vitest-environment node
 import { expect, test } from 'vitest';
 
-import { resolveCodeOverflow } from './index.js';
+import { formatRepositoryPath, resolveCodeOverflow } from './index.js';
 import { splitCodeSegments } from './utilities.js';
+
+test.each([
+  ['/moldea/moldea.yaml', 'moldea/moldea.yaml'],
+  ['moldea/moldea.yaml', 'moldea/moldea.yaml'],
+  ['/', ''],
+  ['', ''],
+  ['//a', '/a'],
+])('formatRepositoryPath(%s) -> %s', (path, expected) => {
+  expect(formatRepositoryPath(path)).toBe(expected);
+});
 
 test.each([
   ['markdown', 'wrap'],
