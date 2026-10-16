@@ -1065,7 +1065,18 @@ describe('published website UI package', () => {
               coverage: { checked: ['references'], unchecked: [] },
             });
             expect(await passedDialog.evaluate((dialog) => dialog.getAnimations().length)).toBe(0);
+            /*
+             * the browser restores focus on close, but the dialog's own close handler refocuses the
+             * opener in a later task; a listener added now runs after that handler, so moving focus
+             * only after it fires keeps the late refocus from stealing it back
+             */
+            const passedClose = await passedDialog.evaluateHandle((dialog) => ({
+              done: new Promise<void>((resolve) => {
+                dialog.addEventListener('close', () => resolve(), { once: true });
+              }),
+            }));
             await page.keyboard.press('Escape');
+            await passedClose.evaluate(({ done }) => done);
             await expect
               .poll(() => passedOpener.evaluate((node) => node === document.activeElement))
               .toBe(true);
