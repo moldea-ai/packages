@@ -169,6 +169,9 @@ test('cross-platform runner executes selected correctness tasks and propagates r
   const selected = planFor(['apps/website/page.astro']);
   const success = run(selected, 'test');
   expect(success.status, success.stdout + success.stderr).toBe(0);
+  const log = await readFile(join(directory, 'execution.log'), 'utf8');
+  expect(log).toContain('@moldea.ai/packages-website:test:integration');
+  expect(log).not.toContain('@moldea.ai/packages-website:test:e2e');
   await writeFile(join(directory, 'apps/website/task.mjs'), 'process.exit(19);');
   const failed = run(selected, 'test');
   expect(failed.status).not.toBe(0);

@@ -4,7 +4,12 @@ import { pathToFileURL } from 'node:url';
 
 import { getGitHead, loadGitWorkspaceSnapshot } from '../workspace-graph/index.ts';
 
-import { parseCiPlan, validateCiJobResults, validateCiWorkspaceSelection } from './selection.ts';
+import {
+  CI_WEBSITE_WORKSPACE,
+  parseCiPlan,
+  validateCiJobResults,
+  validateCiWorkspaceSelection,
+} from './selection.ts';
 
 const repositoryRoot = pathToFileURL(`${resolve(process.cwd())}${sep}`);
 const plan = parseCiPlan(process.env['MOLDEA_CI_PLAN'] ?? '');
@@ -38,8 +43,14 @@ const runPnpm = (args: string[]): void => {
 };
 
 /** Builds prerequisites when requested and isolates quality tasks to their selected owners. */
-const runSelectedTask = (task: string, includeDependencies: boolean): void => {
-  const selected = plan.workspaces.filter((name) => snapshot.get(name)?.scripts.includes(task));
+const runSelectedTask = (
+  task: string,
+  includeDependencies: boolean,
+  excluded: string[] = [],
+): void => {
+  const selected = plan.workspaces.filter(
+    (name) => snapshot.get(name)?.scripts.includes(task) && !excluded.includes(name),
+  );
   if (selected.length === 0) return;
   runPnpm([
     'exec',
@@ -73,5 +84,6 @@ else {
   runSelectedTask('test:unit', false);
   if (plan.rootIntegration) runPnpm(['test:root:integration']);
   runSelectedTask('test:integration', false);
-  runSelectedTask('test:e2e', false);
+  // the website's browser suite is platform-independent, so only the Linux checks job runs it
+  runSelectedTask('test:e2e', false, stage === 'test' ? [CI_WEBSITE_WORKSPACE] : []);
 }

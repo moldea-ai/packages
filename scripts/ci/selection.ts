@@ -14,7 +14,8 @@ export const CI_COMPATIBILITY_LANES = [
   'repository-fs-runtime-compatibility',
   'cli-runtime-compatibility',
 ];
-const WEBSITE = '@moldea.ai/packages-website';
+// the packages website, whose browser suite runs only in the Linux checks job
+export const CI_WEBSITE_WORKSPACE = '@moldea.ai/packages-website';
 // literal lowercase identifiers prevent Turbo filter expressions from entering a plan
 const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u;
 const PLAN_FIELDS = [
@@ -29,7 +30,7 @@ const PLAN_FIELDS = [
 ];
 
 const isRuntimePackage = (name: string): boolean =>
-  name !== WEBSITE && name !== '@moldea.ai/website-ui';
+  name !== CI_WEBSITE_WORKSPACE && name !== '@moldea.ai/website-ui';
 
 /** Maps selected package identities to the existing packed-consumer jobs. */
 const selectLanes = (workspaces: string[], full: boolean): string[] => {
@@ -75,7 +76,7 @@ export const createCiPlan = (sources: ICiSelectionSources): ICiPlan => {
   let firstGlobalPath: string | undefined;
   for (const path of changedPaths) {
     if (path === 'specifications/repository-format.md') {
-      selected.add(WEBSITE);
+      selected.add(CI_WEBSITE_WORKSPACE);
       continue;
     }
     const segments = path.split('/');
@@ -202,10 +203,11 @@ export const validateCiJobResults = (plan: ICiPlan, source: string): void => {
   const required = new Set([
     'plan',
     'checks',
+    ...(plan.artifacts ? ['pack'] : []),
     ...plan.lanes,
     ...(plan.workspaces.length > 0 ? ['test-cross-platform'] : []),
   ]);
-  const jobs = ['plan', 'checks', ...CI_COMPATIBILITY_LANES, 'test-cross-platform'];
+  const jobs = ['plan', 'checks', 'pack', ...CI_COMPATIBILITY_LANES, 'test-cross-platform'];
   if (Object.keys(results).length !== jobs.length)
     throw new TypeError('The CI job results are invalid or incomplete.');
   for (const job of jobs) {

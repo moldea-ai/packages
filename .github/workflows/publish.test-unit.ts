@@ -115,7 +115,7 @@ describe('npm release workflow', () => {
     expect(skillCommit).toMatch(/^[0-9a-f]{40}$/u);
     expect(consumers).toStrictEqual({
       name: 'Exact Artifact Skill Consumers',
-      needs: ['plan', 'checks'],
+      needs: ['plan', 'pack'],
       if: "${{ needs.plan.outputs.consumer_conformance == 'true' }}",
       permissions: { contents: 'read' },
       uses: `moldea-ai/skill/.github/workflows/release-candidate.yml@${skillCommit}`,
@@ -124,6 +124,7 @@ describe('npm release workflow', () => {
         packages_ref: '${{ github.sha }}',
         skill_ref: skillCommit,
         skill_version: '8.1.0',
+        registry_snapshot: '${{ needs.plan.outputs.registry_snapshot }}',
       },
     });
     expect(ciSource).toContain('pnpm release:checksums verify-consumers');

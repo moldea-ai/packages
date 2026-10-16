@@ -1,44 +1,49 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
-import { posix } from 'node:path';
 
 import { parse } from 'yaml';
 import { expect, test } from 'vitest';
 
-// only the workflow and cache fields that define deployment input coverage
-interface IPagesWorkflow {
-  on: { push: { branches: string[]; paths: string[] }; workflow_dispatch: unknown };
-  jobs: Record<string, { needs?: string[]; steps?: { name?: string; run?: string }[] }>;
-}
-interface ITurboConfiguration {
-  tasks: Record<string, { inputs?: string[] }>;
+// only the workflow fields that define when and what the site deploys
+interface IWorkflow {
+  name: string;
+  on: Record<string, unknown>;
+  concurrency?: { group?: string; 'cancel-in-progress'?: boolean };
+  jobs: Record<
+    string,
+    {
+      if?: string;
+      needs?: string | string[];
+      steps?: { name?: string; run?: string; with?: Record<string, unknown> }[];
+    }
+  >;
 }
 
-const repositoryRoot = new URL('../../', import.meta.url);
-const workflow = parse(
-  readFileSync(new URL('pages.yml', import.meta.url), 'utf8'),
-) as IPagesWorkflow;
-const turbo = JSON.parse(
-  readFileSync(new URL('turbo.json', repositoryRoot), 'utf8'),
-) as ITurboConfiguration;
-const buildInputs = turbo.tasks['@moldea.ai/packages-website#build']?.inputs ?? [];
+const workflow = parse(readFileSync(new URL('pages.yml', import.meta.url), 'utf8')) as IWorkflow;
+const publish = parse(readFileSync(new URL('publish.yml', import.meta.url), 'utf8')) as IWorkflow;
 
-test('retains main-only automatic deployment and manual dispatch', () => {
-  expect(workflow.on.push.branches).toStrictEqual(['main']);
-  expect(workflow.on).toHaveProperty('workflow_dispatch');
+test('deploys after every completed main publish run and retains manual dispatch', () => {
+  expect(workflow.on).toStrictEqual({
+    workflow_run: { workflows: [publish.name], types: ['completed'], branches: ['main'] },
+    workflow_dispatch: null,
+  });
+  // publication runs on every main push, so every website input change reaches a deployment
+  expect(publish.on['push']).toStrictEqual({ branches: ['main'] });
+  expect(workflow.jobs['build']?.if).toBe(
+    "${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}",
+  );
 });
 
-test.each([
-  'specifications/repository-format.md',
-  'projects/core/src/index.ts',
-  'projects/website-ui/src/components/dialog/dialog.component.astro',
-  'apps/website/content/getting-started.md',
-  'consumers/SHA256SUMS',
-  'scripts/npm-release/availability.ts',
-])('deploys when %s changes alone', (sourcePath) => {
-  expect(workflow.on.push.paths.some((pattern) => posix.matchesGlob(sourcePath, pattern))).toBe(
-    true,
+test('builds, verifies and announces the exact published commit', () => {
+  const checkouts = Object.values(workflow.jobs).flatMap(({ steps = [] }) =>
+    steps.filter(({ name }) => name === 'Checkout exact main commit'),
   );
+  expect(checkouts).toHaveLength(3);
+  for (const checkout of checkouts)
+    expect(checkout.with).toStrictEqual({
+      ref: '${{ github.event.workflow_run.head_sha || github.sha }}',
+    });
+  expect(workflow.jobs['submit-sitemap']?.if).toBe("${{ github.event_name == 'workflow_run' }}");
 });
 
 test('requires npm availability before deploying the built artifact', () => {
@@ -48,20 +53,9 @@ test('requires npm availability before deploying the built artifact', () => {
   ).toBe(true);
 });
 
-test('covers every repository-level website build input with a deployment trigger', () => {
-  expect(buildInputs.length).toBeGreaterThan(0);
-  const externalInputs = buildInputs
-    .filter((input) => input.startsWith('$TURBO_ROOT$/'))
-    .map((input) => input.slice('$TURBO_ROOT$/'.length));
-  expect(externalInputs.length).toBeGreaterThan(0);
-  for (const input of externalInputs) {
-    // Exact patterns or a whole-directory trigger cover every path matched by a build input.
-    expect(
-      workflow.on.push.paths.some(
-        (pattern) =>
-          pattern === input || (pattern.endsWith('/**') && input.startsWith(pattern.slice(0, -2))),
-      ),
-      `Missing deployment trigger for ${input}`,
-    ).toBe(true);
-  }
+test('queues a newer deployment instead of cancelling one in progress', () => {
+  expect(workflow.concurrency).toStrictEqual({
+    group: 'github-pages',
+    'cancel-in-progress': false,
+  });
 });

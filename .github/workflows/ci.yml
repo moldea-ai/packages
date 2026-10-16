@@ -42,6 +42,9 @@ env:
   PNPM_VERSION: 11.9.0
   # packed consumers resolve from the reviewed registry snapshot unless the canary asks for live
   MOLDEA_LIVE_REGISTRY: ${{ inputs.live_registry == true && 'true' || 'false' }}
+  # retry transient registry resets, including pnpm's own installation through npm
+  npm_config_fetch_retries: '5'
+  pnpm_config_fetch_retries: '5'
 
 jobs:
   plan:
@@ -57,6 +60,7 @@ jobs:
       cli_testing_peer_compatibility: ${{ steps.selection.outputs.cli_testing_peer_compatibility }}
       repository_fs_runtime_compatibility: ${{ steps.selection.outputs.repository_fs_runtime_compatibility }}
       cli_runtime_compatibility: ${{ steps.selection.outputs.cli_runtime_compatibility }}
+      registry_snapshot: ${{ steps.registry.outputs.registry_snapshot }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -76,6 +80,16 @@ jobs:
           CI_TESTED_COMMIT: ${{ github.sha }}
           CI_RELEASE_BUILD: ${{ inputs.release_build == true && 'true' || 'false' }}
         run: node scripts/ci/plan.ts
+
+      # the Skill consumer lanes receive the same snapshot; the canary passes none, so they resolve live
+      - name: Resolve Registry Snapshot
+        id: registry
+        if: ${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}
+        run: >-
+          node --input-type=module --eval
+          "import { REGISTRY_SNAPSHOT } from './configs/registry-snapshot/index.mjs';
+          console.log('registry_snapshot=' + REGISTRY_SNAPSHOT);"
+          >> "$GITHUB_OUTPUT"
 
   checks:
     name: Check Selected Workspaces
@@ -130,8 +144,48 @@ jobs:
       - name: Verify Selected Workspaces and Shared Contracts
         run: pnpm ci:run checks
 
+  pack:
+    name: Pack Public Package Artifacts
+    needs: plan
+    if: ${{ needs.plan.outputs.artifacts == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # packs in the checks image, so lanes can start without changing the tarballs' build environment
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      options: --ipc=host --init
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Trust Container Workspace for Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js with dependency caching
+        if: ${{ inputs.release_build != true }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Setup Node.js for a release build
+        if: ${{ inputs.release_build == true }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Public Packages
+        run: pnpm exec turbo run build --filter=@moldea.ai/cli... --filter=@moldea.ai/website-ui
+
       - name: Pack Public Package Artifacts
-        if: ${{ needs.plan.outputs.artifacts == 'true' }}
         run: |
           public_packages_directory="$GITHUB_WORKSPACE/artifacts/public-package-tarballs"
           mkdir -p "$public_packages_directory"
@@ -152,7 +206,6 @@ jobs:
           fi
 
       - name: Upload Public Package Artifacts
-        if: ${{ needs.plan.outputs.artifacts == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: public-package-tarballs
@@ -166,20 +219,21 @@ jobs:
 
   consumer-conformance:
     name: Exact Artifact Skill Consumers
-    needs: [plan, checks]
+    needs: [plan, pack]
     if: ${{ needs.plan.outputs.consumer_conformance == 'true' }}
     permissions:
       contents: read
-    uses: moldea-ai/skill/.github/workflows/release-candidate.yml@b62013c8797247cbde21dccf517f722d0e412b0d
+    uses: moldea-ai/skill/.github/workflows/release-candidate.yml@97ff9946a43ab29f21436407201bed7ee1ea8007
     with:
       artifact_name: public-package-tarballs
       packages_ref: ${{ github.sha }}
-      skill_ref: b62013c8797247cbde21dccf517f722d0e412b0d
+      skill_ref: 97ff9946a43ab29f21436407201bed7ee1ea8007
       skill_version: '8.1.0'
+      registry_snapshot: ${{ needs.plan.outputs.registry_snapshot }}
 
   repository-testing-peer-compatibility:
     name: Repository Testing Peers (Vitest ${{ matrix.vitest-version }})
-    needs: [plan, checks]
+    needs: [plan, pack]
     if: ${{ needs.plan.outputs.repository_testing_peer_compatibility == 'true' }}
     runs-on: ubuntu-latest
     env:
@@ -227,7 +281,7 @@ jobs:
 
   cli-testing-peer-compatibility:
     name: CLI Existing Vitest 3.2.4 Compatibility
-    needs: [plan, checks]
+    needs: [plan, pack]
     if: ${{ needs.plan.outputs.cli_testing_peer_compatibility == 'true' }}
     runs-on: ubuntu-latest
     env:
@@ -265,7 +319,7 @@ jobs:
 
   repository-fs-runtime-compatibility:
     name: Repository FS Runtime (Node.js ${{ matrix.node-version }})
-    needs: [plan, checks]
+    needs: [plan, pack]
     if: ${{ needs.plan.outputs.repository_fs_runtime_compatibility == 'true' }}
     runs-on: ubuntu-latest
     strategy:
@@ -303,7 +357,7 @@ jobs:
 
   cli-runtime-compatibility:
     name: CLI Runtime (${{ matrix.os }}, Node.js ${{ matrix.node-version }})
-    needs: [plan, checks]
+    needs: [plan, pack]
     if: ${{ needs.plan.outputs.cli_runtime_compatibility == 'true' }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -394,6 +448,7 @@ jobs:
     needs:
       - plan
       - checks
+      - pack
       - consumer-conformance
       - repository-testing-peer-compatibility
       - cli-testing-peer-compatibility

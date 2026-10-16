@@ -10,6 +10,7 @@ import { CI_COMPATIBILITY_LANES } from '../../scripts/ci/index.ts';
 interface IJob {
   name?: string;
   if?: string;
+  container?: { image?: string; options?: string };
   needs?: string | string[];
   env?: Record<string, string>;
   outputs?: Record<string, string>;
@@ -40,6 +41,13 @@ test('packed consumers use the reviewed registry snapshot unless the canary requ
       run: 'node configs/registry-snapshot/write-environment.mjs >> "$GITHUB_ENV"',
     });
   }
+  // the Skill consumer lanes receive the same snapshot, or none when the canary resolves live
+  expect(
+    workflow.jobs['plan']?.steps?.find(({ name }) => name === 'Resolve Registry Snapshot'),
+  ).toMatchObject({ if: "${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}" });
+  expect(workflow.jobs['plan']?.outputs?.['registry_snapshot']).toBe(
+    '${{ steps.registry.outputs.registry_snapshot }}',
+  );
 });
 
 test('planner uses the tested merge checkout and explicit main comparison, with closed outputs', () => {
@@ -59,7 +67,7 @@ test('planner uses the tested merge checkout and explicit main comparison, with 
   expect(source).toContain('RELEASE_CURRENT_COMMIT: ${{ github.event.pull_request.head.sha }}');
 });
 
-test('heavy checks consume the validated plan and retain conditional complete artifacts', () => {
+test('heavy checks consume the validated plan without packing artifacts', () => {
   const checks = workflow.jobs['checks'];
   expect(checks?.needs).toBe('plan');
   expect(checks?.env?.['MOLDEA_CI_PLAN']).toBe('${{ needs.plan.outputs.plan }}');
@@ -67,17 +75,31 @@ test('heavy checks consume the validated plan and retain conditional complete ar
     checks?.steps?.find(({ name }) => name === 'Verify Selected Workspaces and Shared Contracts')
       ?.run,
   ).toBe('pnpm ci:run checks');
-  for (const name of ['Pack Public Package Artifacts', 'Upload Public Package Artifacts'])
-    expect(checks?.steps?.find((step) => step.name === name)?.if).toBe(
-      "${{ needs.plan.outputs.artifacts == 'true' }}",
-    );
+  expect(checks?.steps?.map(({ name }) => name)).not.toContain('Pack Public Package Artifacts');
   expect(source).not.toContain('run: pnpm docs:check');
+});
+
+test('a conditional pack job builds the complete artifacts in the checks image', () => {
+  const pack = workflow.jobs['pack'];
+  expect(pack).toMatchObject({
+    needs: 'plan',
+    if: "${{ needs.plan.outputs.artifacts == 'true' }}",
+    container: workflow.jobs['checks']?.container,
+  });
+  expect(pack?.steps?.map(({ name }) => name).slice(-3)).toStrictEqual([
+    'Build Public Packages',
+    'Pack Public Package Artifacts',
+    'Upload Public Package Artifacts',
+  ]);
+  expect(pack?.steps?.find(({ name }) => name === 'Build Public Packages')?.run).toBe(
+    'pnpm exec turbo run build --filter=@moldea.ai/cli... --filter=@moldea.ai/website-ui',
+  );
   expect(source).toContain('expected_tarball_count=5');
 });
 
-test('each compatibility lane depends on successful checks and its matching selection output', () => {
+test('each compatibility lane depends on the packed artifacts and its matching selection output', () => {
   for (const lane of CI_COMPATIBILITY_LANES) {
-    expect(workflow.jobs[lane]?.needs).toStrictEqual(['plan', 'checks']);
+    expect(workflow.jobs[lane]?.needs).toStrictEqual(['plan', 'pack']);
     expect(workflow.jobs[lane]?.if).toBe(
       `\${{ needs.plan.outputs.${lane.replaceAll('-', '_')} == 'true' }}`,
     );
@@ -99,7 +121,7 @@ test('stable required gate always evaluates every lane without gaining publicati
   expect(workflow.jobs['verify']).toMatchObject({
     name: 'Verify Repository',
     if: '${{ always() }}',
-    needs: ['plan', 'checks', ...CI_COMPATIBILITY_LANES, 'test-cross-platform'],
+    needs: ['plan', 'checks', 'pack', ...CI_COMPATIBILITY_LANES, 'test-cross-platform'],
   });
   expect(
     workflow.jobs['verify']?.steps?.find(({ name }) => name === 'Require Successful Selected Jobs'),

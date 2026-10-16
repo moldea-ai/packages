@@ -1,28 +1,14 @@
 name: Deploy Packages Website
 
 on:
-  push:
+  # deploys after npm publication finishes, so every advertised version already exists
+  workflow_run:
+    workflows:
+      - Publish npm Packages
+    types:
+      - completed
     branches:
       - main
-    paths:
-      - .github/workflows/pages.yml
-      - apps/website/**
-      - consumers/**
-      - configs/**
-      - docs/**
-      - packages/**
-      - projects/**
-      - scripts/npm-release/**
-      - scripts/website/**
-      - specifications/repository-format.md
-      - .prettierignore
-      - .prettierrc
-      - eslint.config.js
-      - package.json
-      - pnpm-lock.yaml
-      - pnpm-workspace.yaml
-      - tsconfig.json
-      - turbo.json
   workflow_dispatch:
 
 permissions:
@@ -30,9 +16,10 @@ permissions:
   id-token: write
   pages: write
 
+# queues a newer deployment instead of cancelling one in progress
 concurrency:
   group: github-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 defaults:
   run:
@@ -41,14 +28,20 @@ defaults:
 env:
   NODE_VERSION: 24.15.0
   PNPM_VERSION: 11.9.0
+  # retry transient registry resets, including pnpm's own installation through npm
+  npm_config_fetch_retries: '5'
+  pnpm_config_fetch_retries: '5'
 
 jobs:
   build:
     name: Build Pages Artifact
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact main commit
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -117,6 +110,8 @@ jobs:
     steps:
       - name: Checkout exact main commit
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -149,7 +144,7 @@ jobs:
   submit-sitemap:
     name: Submit Sitemap to Google Search Console
     needs: deploy
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: ${{ github.event_name == 'workflow_run' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -159,6 +154,8 @@ jobs:
     steps:
       - name: Checkout exact main commit
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
