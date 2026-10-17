@@ -90,6 +90,91 @@ describeRepositoryReaderConformance('filesystem', {
 });
 
 describe('filesystem repository reader', () => {
+  const verifyInvalidSiblingLookup = async (
+    location: string,
+    invalidName: Buffer,
+  ): Promise<void> => {
+    const rootDirectory = await mkdtemp(path.join(tmpdir(), 'moldea-invalid-sibling-'));
+    const parentDirectory =
+      location === 'root' ? rootDirectory : path.join(rootDirectory, 'nested');
+    const selectedPath = parseRepositoryPath(location === 'root' ? '/z.txt' : '/nested/z.txt');
+    const originalOpendir = fsPromises.opendir;
+    const spy = vi.spyOn(fsPromises, 'opendir').mockImplementation(async (...args) => {
+      const directory = await originalOpendir(...args);
+      const iterate = directory[Symbol.asyncIterator].bind(directory);
+      directory[Symbol.asyncIterator] = async function* () {
+        const entries = [];
+        for await (const entry of iterate()) entries.push(entry);
+        entries.sort((left, right) =>
+          Buffer.compare(Buffer.from(left.name), Buffer.from(right.name)),
+        );
+        for (const entry of entries) yield entry;
+      };
+      return directory;
+    });
+    syncBuiltinESMExports();
+
+    try {
+      await mkdir(parentDirectory, { recursive: true });
+      await writeFile(
+        Buffer.concat([Buffer.from(`${parentDirectory}${path.sep}`), invalidName]),
+        'invalid sibling',
+      );
+      await writeFile(path.join(parentDirectory, 'z.txt'), 'selected');
+      const reader = await createFilesystemRepositoryReader({
+        rootDirectory,
+        selection: { kind: 'paths', paths: [selectedPath] },
+      });
+      await expect(reader.getEntry(selectedPath)).resolves.toMatchObject({
+        path: selectedPath,
+        type: 'file',
+      });
+      await expect(
+        reader.readFilePage(selectedPath, { maxBytes: 8, offset: 0 }),
+      ).resolves.toMatchObject({
+        bytes: new TextEncoder().encode('selected'),
+      });
+      const entries = await collectEntries(reader);
+      expect(entries.map((entry) => entry.path)).toStrictEqual(
+        location === 'root' ? [selectedPath] : ['/nested', selectedPath],
+      );
+
+      const limitedSelection = createFilesystemRepositoryReader({
+        limits: { maxDirectoryEntries: 1 },
+        rootDirectory,
+        selection: { kind: 'paths', paths: [selectedPath] },
+      });
+      await expectToRejectCode(limitedSelection, 'RESOURCE_LIMIT_EXCEEDED');
+      await expect(limitedSelection).rejects.toMatchObject({
+        resource: { dimension: 'directoryEntries', limit: 1, observed: 2 },
+      });
+
+      const directoryReader = await createFilesystemRepositoryReader({
+        rootDirectory,
+        selection: { kind: 'directory' },
+      });
+      await expectToRejectCode(collectEntries(directoryReader), 'INVALID_SOURCE_DATA');
+    } finally {
+      spy.mockRestore();
+      syncBuiltinESMExports();
+      await rm(rootDirectory, { force: true, recursive: true });
+    }
+  };
+
+  test.skipIf(process.platform === 'win32').each(['root', 'nested'])(
+    'reads a selected path beside an invalid logical name at %s',
+    async (location) => {
+      await verifyInvalidSiblingLookup(location, Buffer.from('a\n.txt'));
+    },
+  );
+
+  test.skipIf(process.platform !== 'linux').each(['root', 'nested'])(
+    'reads a selected path beside an undecodable name at %s',
+    async (location) => {
+      await verifyInvalidSiblingLookup(location, Buffer.from([97, 255]));
+    },
+  );
+
   test.each([
     ['paths', 256],
     ['paths', 1024],

@@ -9,5 +9,5 @@ export const MOLDEA_CLI_FOUNDATIONAL_PACKAGE_NAMES = Object.freeze([
 export const MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES = Object.freeze({
   '@moldea.ai/core': '^7.0.4',
   '@moldea.ai/repository': '^2.0.0',
-  '@moldea.ai/repository-fs': '^2.0.3',
+  '@moldea.ai/repository-fs': '^2.0.7',
 } as const);

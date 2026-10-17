@@ -1108,7 +1108,15 @@ class FilesystemRepositoryReader implements IRepositoryReader {
           });
         }
 
-        const name = decodeName(directoryEntry.name, operation, logicalPath);
+        let name: string;
+        try {
+          name = decodeName(directoryEntry.name, operation, logicalPath);
+        } catch (cause) {
+          if (cause instanceof RepositorySourceException && cause.code === 'INVALID_SOURCE_DATA') {
+            continue;
+          }
+          throw cause;
+        }
 
         if (name !== '.git' && targets.has(name)) {
           names.add(name);

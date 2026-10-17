@@ -11,13 +11,13 @@ const INSTALLED_PACKAGE_METADATA = Object.freeze({
   dependencies: Object.freeze({
     '@moldea.ai/core': 'workspace:^7.0.0',
     '@moldea.ai/repository': 'workspace:^2.0.0',
-    '@moldea.ai/repository-fs': 'workspace:^2.0.3',
+    '@moldea.ai/repository-fs': 'workspace:^2.0.7',
     semver: '7.8.5',
   }),
   installedPackageVersions: Object.freeze({
     '@moldea.ai/core': '7.0.0',
     '@moldea.ai/repository': '2.0.0',
-    '@moldea.ai/repository-fs': '2.0.3',
+    '@moldea.ai/repository-fs': '2.0.7',
   }),
   supportedNodeRange: '>=22.17.0',
   version: '11.0.0',

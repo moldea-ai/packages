@@ -4,9 +4,11 @@ The `consumer-conformance` CI lane gives the skill manager and closed launcher t
 
 ## Recorded verification
 
-The selected closure contains CLI `11.0.5`, Core `7.0.4`, Repository `2.0.2`, and Repository FS `2.0.6`; CLI and Repository FS raise their supported runtime to Node.js `>=22.17.0`. A clean, uncached build of the floor release reproduced the unchanged Core and Repository tarballs byte for byte against the previous selection and produced the new CLI and Repository FS bytes using Node `24.15.0` and pnpm `11.9.0`. Local checksum verification, Repository FS runtime checks, and CLI runtime checks passed on Linux with Node `24.15.0` and `22.17.0` under the reviewed registry snapshot.
+The selected closure contains CLI `11.0.6`, Core `7.0.4`, Repository `2.0.2`, and Repository FS `2.0.7`; CLI and Repository FS require Node.js `>=22.17.0`. Qualification started from `e9ba5c974a11e1116963af0792091a8cfac85e17` using Node `24.15.0` and pnpm `11.9.0`. The built Core and Repository tarballs match the retained selection byte for byte. Local checksum verification, Repository FS runtime checks, and CLI runtime checks passed on Linux with Node `24.15.0` under the reviewed registry snapshot. The installed CLI regressions also verify that invalid external paths are omitted while invalid canonical paths still fail.
 
-Consumer tooling remains pinned to skill commit `b62013c8797247cbde21dccf517f722d0e412b0d`. Fresh-client consumer conformance for these exact bytes runs in the trusted packages CI consumer lane; local Linux checks do not replace it.
+The local correctness run passed its unit, integration and installed-CLI suites. Six existing runtimes-page browser variants timed out during the concurrent run; all six passed unchanged in isolation with one worker. These were recorded as environmental timeouts, not product regressions.
+
+Consumer tooling remains pinned to skill commit `7f3bd1dcf38a49c634b294d00731b606b667347c`. Fresh-client consumer conformance for these exact bytes runs in the trusted packages CI consumer lane; local Linux checks do not replace it.
 
 The trusted workflow records its exact candidate commit in `public-package-tarballs/packages-commit.txt`. Publication requires fresh qualification through all 14 package-manager consumer profiles, 15 CLI runtime cases across Linux/macOS/Windows, five Repository FS runtime cases, four Repository testing-peer profiles, the existing-Vitest consumer check, both cross-platform correctness suites, and the final repository gate. Local Linux checks do not establish the other matrix results.
 

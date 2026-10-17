@@ -6,7 +6,7 @@ import type { IMoldeaCliCompositionStateInput } from './types.js';
 const PACKAGE_VERSIONS = {
   '@moldea.ai/core': '7.0.4',
   '@moldea.ai/repository': '2.0.0',
-  '@moldea.ai/repository-fs': '2.0.3',
+  '@moldea.ai/repository-fs': '2.0.7',
 } as const;
 
 // exact installed package metadata used by composition tests
