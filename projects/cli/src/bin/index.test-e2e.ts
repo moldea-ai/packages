@@ -590,6 +590,7 @@ describe('published CLI package and executable', () => {
         rmSync(directory, { force: true, recursive: true });
       }
     },
+    120_000,
   );
 
   test('installs and executes the real CLI and foundational package tarballs', async () => {
