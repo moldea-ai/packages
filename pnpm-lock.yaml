@@ -133,7 +133,7 @@ importers:
         specifier: workspace:^2.0.0
         version: link:../repository
       '@moldea.ai/repository-fs':
-        specifier: workspace:^2.0.3
+        specifier: workspace:^2.0.7
         version: link:../repository-fs
       semver:
         specifier: 7.8.5

@@ -16,9 +16,9 @@ import {
   type IGitInventoryEntryTypeNormalizer,
 } from './entry-type/index.js';
 import {
+  filterGitInventoryCandidateLogicalPaths,
   normalizeGitInventoryLogicalPaths,
   type IGitInventoryLogicalPathNormalizer,
-  validateGitInventoryCandidateLogicalPaths,
 } from './logical-path/index.js';
 import { createTrackedGitInventoryParser, createUntrackedGitInventoryParser } from './parser.js';
 import {
@@ -174,14 +174,14 @@ export const createGitInventoryProbe =
     }
 
     const candidates = Object.freeze([...trackedCandidates, ...untrackedCandidates]);
-    const logicalPathValidationResult = validateGitInventoryCandidateLogicalPaths({ candidates });
+    const logicalPathFilterResult = filterGitInventoryCandidateLogicalPaths({ candidates });
 
-    if (logicalPathValidationResult.kind === 'failed') {
-      return logicalPathValidationResult;
+    if (logicalPathFilterResult.kind === 'failed') {
+      return logicalPathFilterResult;
     }
 
     const ownershipResult = await ownershipFilter({
-      candidates,
+      candidates: logicalPathFilterResult.candidates,
       maxMetadataBytes:
         input.maxMetadataBytes -
         trackedProcessResult.stdoutBytes -

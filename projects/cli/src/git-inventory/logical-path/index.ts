@@ -8,6 +8,6 @@ export type {
 
 // logical-path normalization
 export {
+  filterGitInventoryCandidateLogicalPaths,
   normalizeGitInventoryLogicalPaths,
-  validateGitInventoryCandidateLogicalPaths,
 } from './normalizer.js';

@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/cli",
-  "version": "11.0.5",
+  "version": "11.0.6",
   "description": "The canonical read-only local command-line composition for moldea repositories.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/cli#readme",
   "bugs": {
@@ -41,7 +41,7 @@
   "dependencies": {
     "@moldea.ai/core": "workspace:^7.0.4",
     "@moldea.ai/repository": "workspace:^2.0.0",
-    "@moldea.ai/repository-fs": "workspace:^2.0.3",
+    "@moldea.ai/repository-fs": "workspace:^2.0.7",
     "semver": "7.8.5"
   },
   "devDependencies": {

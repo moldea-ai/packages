@@ -2,8 +2,8 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+  filterGitInventoryCandidateLogicalPaths,
   normalizeGitInventoryLogicalPaths,
-  validateGitInventoryCandidateLogicalPaths,
 } from './normalizer.js';
 
 const CONTENT_TRANSFORMATION = Object.freeze({
@@ -13,37 +13,90 @@ const CONTENT_TRANSFORMATION = Object.freeze({
   workingTreeEncoding: 'unspecified',
 });
 
-describe('validateGitInventoryCandidateLogicalPaths', () => {
-  test('validates every candidate while allowing repeated unmerged paths', () => {
-    expect(
-      validateGitInventoryCandidateLogicalPaths({
-        candidates: [
-          { kind: 'tracked', path: 'conflict' },
-          { kind: 'tracked', path: 'conflict' },
-          { kind: 'untracked', path: 'nested/😀.txt' },
-          { kind: 'untracked', path: 'nested/worktree/' },
-        ],
-      }),
-    ).toStrictEqual({ kind: 'validated' });
+describe('filterGitInventoryCandidateLogicalPaths', () => {
+  test('preserves complete candidate metadata, repeated stages, and exact valid paths', () => {
+    const candidates = [
+      { kind: 'tracked', mode: '100644', path: 'conflict', stage: 1 },
+      { kind: 'tracked', mode: '100755', path: 'conflict', stage: 2 },
+      { kind: 'untracked', path: 'nested/😀.txt' },
+      { kind: 'untracked', path: 'nested/worktree/' },
+      { kind: 'tracked', mode: '100644', path: 'moldea', stage: 0 },
+      { kind: 'untracked', path: 'moldea/' },
+      { kind: 'untracked', path: 'moldea/C:/source' },
+    ] as const;
+    const result = filterGitInventoryCandidateLogicalPaths({ candidates });
+
+    expect(result).toStrictEqual({ candidates, kind: 'filtered' });
+    expect(Object.isFrozen(result)).toBe(true);
+    if (result.kind === 'filtered') {
+      expect(Object.isFrozen(result.candidates)).toBe(true);
+      expect(result.candidates.every((candidate, index) => candidate === candidates[index])).toBe(
+        true,
+      );
+    }
   });
 
-  test('rejects one non-portable candidate before later exclusions', () => {
-    expect(
-      validateGitInventoryCandidateLogicalPaths({
-        candidates: [
-          { kind: 'untracked', path: 'ordinary.txt' },
-          { kind: 'tracked', path: 'control\npath.txt' },
-        ],
-      }),
-    ).toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+  test.each([
+    '',
+    '/absolute',
+    'control\npath.txt',
+    'control\u007fpath.txt',
+    'windows\\separator',
+    'C:/drive-path',
+    'C:drive-relative',
+    'empty//segment',
+    './relative',
+    'parent/../escape',
+    'moldea-other/../escape',
+    'Moldea/control\npath.txt',
+    'moldea\\context\\file.md',
+  ])('omits the invalid external candidate %o without altering retained candidates', (path) => {
+    for (const kind of ['tracked', 'untracked'] as const) {
+      const retained = { kind: 'untracked', path: 'moldea/project.md' } as const;
+      expect(
+        filterGitInventoryCandidateLogicalPaths({
+          candidates: [retained, { kind, path }],
+        }),
+      ).toStrictEqual({ candidates: [retained], kind: 'filtered' });
+    }
+  });
+
+  test.each([
+    'moldea/control\npath.md',
+    'moldea/control\u007fpath.md',
+    'moldea/windows\\separator',
+    'moldea//segment',
+    'moldea/./relative',
+    'moldea/../escape',
+  ])('rejects the invalid canonical candidate %o atomically', (path) => {
+    for (const kind of ['tracked', 'untracked'] as const) {
+      expect(
+        filterGitInventoryCandidateLogicalPaths({
+          candidates: [
+            { kind: 'untracked', path: 'ordinary.txt' },
+            { kind, path },
+          ],
+        }),
+      ).toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+    }
   });
 
   test.each([
     { kind: 'tracked' as const, path: 'tracked-directory/' },
     { kind: 'untracked' as const, path: 'empty//directory/' },
     { kind: 'untracked' as const, path: '/' },
-  ])('rejects the malformed candidate record $path', (candidate) => {
-    expect(validateGitInventoryCandidateLogicalPaths({ candidates: [candidate] })).toStrictEqual({
+  ])('omits the malformed external candidate record $path', (candidate) => {
+    expect(filterGitInventoryCandidateLogicalPaths({ candidates: [candidate] })).toStrictEqual({
+      candidates: [],
+      kind: 'filtered',
+    });
+  });
+
+  test.each([
+    { kind: 'tracked' as const, path: 'moldea/' },
+    { kind: 'untracked' as const, path: 'moldea//' },
+  ])('rejects the malformed canonical candidate record $path', (candidate) => {
+    expect(filterGitInventoryCandidateLogicalPaths({ candidates: [candidate] })).toStrictEqual({
       errorCode: 'GIT_OUTPUT_INVALID',
       kind: 'failed',
     });

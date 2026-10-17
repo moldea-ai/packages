@@ -50,6 +50,8 @@ Exact-path construction verifies only selected paths and required parents. Direc
 
 Version `2.0.3` groups exact selections by parent. One bounded scan proves the selected names for a parent, retaining only those names and the parent identity. Later accesses reuse that proof only while the identity remains unchanged. Recursive listing reuses the names already held by its current traversal frames instead of rescanning a parent for each child. This bounds retained names by the selection or active frames; it adds no repository-wide directory cache.
 
+Exact-name lookups skip sibling entries whose names cannot be decoded or validated. Those entries still count against `maxDirectoryEntries`; full directory listings reject them.
+
 ## Default limits
 
 | Limit                     |          Default | Purpose                                     |

@@ -472,7 +472,7 @@ describe('real Git inventory probe', () => {
   );
 
   test.skipIf(process.platform === 'win32')(
-    'rejects an absent tracked path outside the portable logical-path grammar',
+    'omits an absent tracked path outside the portable logical-path grammar',
     async () => {
       const repository = createGitRepository();
 
@@ -489,7 +489,51 @@ describe('real Git inventory probe', () => {
             maxMetadataBytes: 4096,
             repositoryRoot: repository.directory,
           }),
-        ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+        ).resolves.toStrictEqual({ entries: [], kind: 'probed' });
+      } finally {
+        repository.remove();
+      }
+    },
+  );
+
+  test.skipIf(process.platform === 'win32')(
+    'omits tracked and untracked invalid external paths but rejects canonical paths',
+    async () => {
+      const repository = createGitRepository();
+
+      try {
+        writeFileSync(path.join(repository.directory, 'retained.txt'), 'retained');
+        writeFileSync(path.join(repository.directory, 'tracked\nexternal.txt'), 'tracked');
+        runFixtureGit(repository, ['add', '--', 'retained.txt', 'tracked\nexternal.txt']);
+        writeFileSync(path.join(repository.directory, 'untracked\\external.txt'), 'untracked');
+
+        const result = await probeGitInventory({
+          maxEntries: 4,
+          maxMetadataBytes: 4096,
+          repositoryRoot: repository.directory,
+        });
+        expect(result).toMatchObject({ kind: 'probed', entries: [{ path: '/retained.txt' }] });
+        if (result.kind === 'probed') expect(result.entries).toHaveLength(1);
+
+        mkdirSync(path.join(repository.directory, 'moldea'));
+        const canonicalPath = 'moldea/control\npath.md';
+        writeFileSync(path.join(repository.directory, canonicalPath), 'canonical');
+        const probe = () =>
+          probeGitInventory({
+            maxEntries: 4,
+            maxMetadataBytes: 4096,
+            repositoryRoot: repository.directory,
+          });
+        await expect(probe()).resolves.toStrictEqual({
+          errorCode: 'GIT_OUTPUT_INVALID',
+          kind: 'failed',
+        });
+        runFixtureGit(repository, ['add', '--', canonicalPath]);
+        unlinkSync(path.join(repository.directory, canonicalPath));
+        await expect(probe()).resolves.toStrictEqual({
+          errorCode: 'GIT_OUTPUT_INVALID',
+          kind: 'failed',
+        });
       } finally {
         repository.remove();
       }

@@ -111,7 +111,7 @@ describe('isMoldeaCliCompositionStateValid', () => {
     ).toBe(false);
   });
 
-  test.each(['2.0.0', '2.0.2'])(
+  test.each(['2.0.0', '2.0.2', '2.0.6'])(
     'rejects Repository FS %s below the corrected minimum',
     (version) => {
       const state = createTestCompositionState();
@@ -129,4 +129,29 @@ describe('isMoldeaCliCompositionStateValid', () => {
       ).toBe(false);
     },
   );
+
+  test.each([
+    ['^2.0.7', '2.0.7'],
+    ['workspace:^2.0.7', '2.0.7'],
+    ['^2.0.7', '2.0.8'],
+    ['workspace:^2.0.7', '2.0.8'],
+  ])('accepts Repository FS declaration %s with installed %s', (range, version) => {
+    const state = createTestCompositionState();
+    expect(
+      isMoldeaCliCompositionStateValid({
+        ...state,
+        packageMetadata: {
+          ...state.packageMetadata,
+          dependencies: {
+            ...(state.packageMetadata.dependencies ?? {}),
+            '@moldea.ai/repository-fs': range,
+          },
+          installedPackageVersions: {
+            ...(state.packageMetadata.installedPackageVersions ?? {}),
+            '@moldea.ai/repository-fs': version,
+          },
+        },
+      }),
+    ).toBe(true);
+  });
 });

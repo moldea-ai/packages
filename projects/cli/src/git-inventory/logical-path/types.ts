@@ -25,20 +25,25 @@ export interface IGitUntrackedInventoryEntry extends Omit<
 // one normalized entry in the effective selected-repository inventory
 export type IGitInventoryEntry = IGitTrackedInventoryEntry | IGitUntrackedInventoryEntry;
 
-// decoded Git candidates entering pre-exclusion logical-path validation
+// decoded Git candidates entering pre-exclusion logical-path filtering
 export interface IGitInventoryLogicalPathCandidate {
   readonly kind: 'tracked' | 'untracked';
   readonly path: string;
 }
 
-// complete decoded candidate set entering pre-exclusion logical-path validation
-export interface IGitInventoryCandidateLogicalPathValidatorInput {
-  readonly candidates: readonly IGitInventoryLogicalPathCandidate[];
+// complete decoded candidate set entering pre-exclusion logical-path filtering
+export interface IGitInventoryCandidateLogicalPathFilterInput<
+  TCandidate extends IGitInventoryLogicalPathCandidate,
+> {
+  readonly candidates: readonly TCandidate[];
 }
 
-// complete candidate path validation before inventory exclusions
-export interface IGitInventoryCandidateLogicalPathsValidatedResult {
-  readonly kind: 'validated';
+// portable candidates retained with their complete decoded metadata
+export interface IGitInventoryCandidateLogicalPathsFilteredResult<
+  TCandidate extends IGitInventoryLogicalPathCandidate,
+> {
+  readonly candidates: readonly TCandidate[];
+  readonly kind: 'filtered';
 }
 
 // non-portable or contradictory Git path state
@@ -47,9 +52,12 @@ export interface IGitInventoryLogicalPathFailedResult {
   readonly kind: 'failed';
 }
 
-// all-or-nothing candidate logical-path validation result
-export type IGitInventoryCandidateLogicalPathValidationResult =
-  IGitInventoryCandidateLogicalPathsValidatedResult | IGitInventoryLogicalPathFailedResult;
+// filtered candidates or an invalid canonical path failure
+export type IGitInventoryCandidateLogicalPathFilterResult<
+  TCandidate extends IGitInventoryLogicalPathCandidate,
+> =
+  | IGitInventoryCandidateLogicalPathsFilteredResult<TCandidate>
+  | IGitInventoryLogicalPathFailedResult;
 
 // entry-type-normalized paths entering logical-path normalization
 export interface IGitInventoryLogicalPathNormalizerInput {

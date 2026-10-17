@@ -1,8 +1,8 @@
 import { isRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 
 import type {
-  IGitInventoryCandidateLogicalPathValidationResult,
-  IGitInventoryCandidateLogicalPathValidatorInput,
+  IGitInventoryCandidateLogicalPathFilterInput,
+  IGitInventoryCandidateLogicalPathFilterResult,
   IGitInventoryEntry,
   IGitInventoryLogicalPathFailedResult,
   IGitInventoryLogicalPathCandidate,
@@ -60,20 +60,30 @@ const compareRepositoryPaths = (left: IRepositoryPath, right: IRepositoryPath): 
 };
 
 /**
- * Validates every decoded Git candidate before ownership or filesystem exclusions.
+ * Omits invalid external paths and rejects invalid canonical paths before inspection.
  * @param input The complete decoded tracked and untracked candidate set.
- * @returns A validated result, or failure when any candidate is not portable.
+ * @returns Retained candidates, or failure when a canonical candidate is not portable.
  */
-export const validateGitInventoryCandidateLogicalPaths = (
-  input: IGitInventoryCandidateLogicalPathValidatorInput,
-): IGitInventoryCandidateLogicalPathValidationResult => {
+export const filterGitInventoryCandidateLogicalPaths = <
+  TCandidate extends IGitInventoryLogicalPathCandidate,
+>(
+  input: IGitInventoryCandidateLogicalPathFilterInput<TCandidate>,
+): IGitInventoryCandidateLogicalPathFilterResult<TCandidate> => {
+  const candidates: TCandidate[] = [];
+
   for (const candidate of input.candidates) {
     if (resolveCandidateRepositoryPath(candidate) === null) {
-      return createLogicalPathFailure();
+      if (candidate.path === 'moldea' || candidate.path.startsWith('moldea/')) {
+        return createLogicalPathFailure();
+      }
+
+      continue;
     }
+
+    candidates.push(candidate);
   }
 
-  return Object.freeze({ kind: 'validated' });
+  return Object.freeze({ candidates: Object.freeze(candidates), kind: 'filtered' });
 };
 
 /**
