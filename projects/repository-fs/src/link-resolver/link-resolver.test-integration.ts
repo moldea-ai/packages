@@ -158,23 +158,31 @@ await mkdir(path.join(outsideDirectory, 'a', 'b'), { recursive: true });
 await link(path.join(outsideDirectory, 'a', 'b'), path.join(rootDirectory, 'jump-out'), 'dir');
 await link('jump-out/../../elsewhere/x.md', path.join(rootDirectory, 'parent-outside'));
 
-// refused targets: none of these may reach the filesystem beneath the refused path
+/*
+ * Refused targets: none of these may reach the filesystem beneath the refused path. `/net` and
+ * `/Network` are automount roots only on POSIX hosts; on Windows, Node stores such a target as
+ * the local `\\?\C:\net` path, so Windows uses a UNC share for the intermediate directory link.
+ */
 const deepPrefix = '../'.repeat(24);
 const unsafeLinks: Record<string, string> = {
   'unsafe-drive-relative': 'C:AGENTS.md',
-  'unsafe-net': '/net/host/share/AGENTS.md',
-  'unsafe-network': '/Network/Servers/host/AGENTS.md',
   'unsafe-unc': isWindows ? '\\\\server\\share\\AGENTS.md' : '//server/share/AGENTS.md',
   'unsafe-unc-device': '\\\\?\\UNC\\server\\share\\AGENTS.md',
   'unsafe-intermediate': 'net-host/share/AGENTS.md',
   ...(isWindows
     ? {}
     : {
+        'unsafe-net': '/net/host/share/AGENTS.md',
+        'unsafe-network': '/Network/Servers/host/AGENTS.md',
         'unsafe-deep-net': `${deepPrefix}net/host/share/AGENTS.md`,
         'unsafe-deep-network': `${deepPrefix}Network/Servers/host/AGENTS.md`,
       }),
 };
-await link('/net/host', path.join(rootDirectory, 'net-host'), 'dir');
+await link(
+  isWindows ? '\\\\server\\share' : '/net/host',
+  path.join(rootDirectory, 'net-host'),
+  'dir',
+);
 
 for (const [name, target] of Object.entries(unsafeLinks)) {
   await link(target, path.join(rootDirectory, name));
