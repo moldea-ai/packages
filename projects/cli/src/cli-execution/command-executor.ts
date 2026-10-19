@@ -183,7 +183,7 @@ export const createMoldeaCliCommandExecutor = (
 
       const resourceLimits = options.resourceLimits;
       const snapshotResult = await workingTreeSnapshotExecutor({
-        operation: async (repository, signal) => {
+        operation: async (repository, signal, instructions) => {
           if (command === MOLDEA_CLI_COMMANDS.Scope && scopePaths !== null) {
             return projectScopeExecutor({
               paths: scopePaths,
@@ -212,6 +212,7 @@ export const createMoldeaCliCommandExecutor = (
             packageMetadata: input.packageMetadata,
             command: command === MOLDEA_CLI_COMMANDS.Inspect ? 'inspect' : 'validate',
             ...(inspectionCursor === null ? {} : { cursor: inspectionCursor }),
+            ...(instructions === undefined ? {} : { instructions }),
             repository,
             resourceLimits,
             ...(signal === undefined ? {} : { signal }),
@@ -219,6 +220,9 @@ export const createMoldeaCliCommandExecutor = (
         },
         repositoryRoot: discoveryResult.repositoryRoot,
         resourceLimits,
+        ...(command === MOLDEA_CLI_COMMANDS.Validate || command === MOLDEA_CLI_COMMANDS.Inspect
+          ? { includeInstructions: true }
+          : {}),
         ...(command === MOLDEA_CLI_COMMANDS.Scope
           ? { selectionPaths: [MOLDEA_MANIFEST_PATH] }
           : contentPath === null

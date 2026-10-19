@@ -32,8 +32,12 @@ export type IGitInventoryCandidate =
 // operational errors that can terminate a raw Git inventory probe
 export type IGitInventoryProbeErrorCode = IMoldeaCliGitErrorCode | 'RESOURCE_LIMIT_EXCEEDED';
 
-// limits, selected repository root, and cancellation for one normalized inventory probe
+/*
+ * Limits, selected repository root, and cancellation for one normalized inventory probe.
+ * `includeIgnored` also lists Git-ignored files, and applies only with `selectionPaths`.
+ */
 export interface IGitInventoryProbeInput {
+  readonly includeIgnored?: boolean;
   readonly maxEntries: number;
   readonly maxMetadataBytes: number;
   readonly repositoryRoot: string;

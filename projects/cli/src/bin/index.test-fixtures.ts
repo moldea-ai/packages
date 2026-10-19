@@ -140,7 +140,7 @@ export const expectPackageManifest = (
     name: '@moldea.ai/cli',
     preferUnplugged: true,
     type: 'module',
-    version: '11.0.6',
+    version: '11.1.0',
   });
   expect(manifest.dependencies).toStrictEqual({
     '@moldea.ai/core': coreRange,

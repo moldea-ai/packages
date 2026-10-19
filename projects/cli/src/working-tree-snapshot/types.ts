@@ -1,17 +1,23 @@
+import type { IProjectInstructionSource } from '@moldea.ai/core';
 import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
 
 import type { IMoldeaCliResourceLimits } from '../command-line/index.js';
 import type { IGitInventoryEntry } from '../git-inventory/index.js';
 import type { IMoldeaCliOwnedErrorCode } from '../presentation/index.js';
 
-// attempt-local operation that consumes one accepted reader and optional signal
+// attempt-local operation that consumes one accepted reader, optional signal, and instructions
 export type IWorkingTreeSnapshotOperation<TResult> = (
   reader: IRepositoryReader,
   signal?: AbortSignal,
+  instructions?: IProjectInstructionSource,
 ) => Promise<TResult>;
 
-// immutable inputs for one bounded cancellable snapshot execution
+/*
+ * Immutable inputs for one bounded cancellable snapshot execution. `includeInstructions` also
+ * pins the coding-agent instruction paths, including Git-ignored ones, as a separate source.
+ */
 export interface IWorkingTreeSnapshotExecutionInput<TResult> {
+  readonly includeInstructions?: boolean;
   readonly operation: IWorkingTreeSnapshotOperation<TResult>;
   readonly repositoryRoot: string;
   readonly resourceLimits: IMoldeaCliResourceLimits;

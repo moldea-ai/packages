@@ -174,6 +174,8 @@ During local development, the skill and `@moldea.ai/core` may inspect modified, 
 
 A local working tree therefore may temporarily contain new canonical assets or mirrors that are not yet Git-tracked. They become part of the authoritative `moldea` project only when committed.
 
+Git-ignored files are outside the local repository view. Only the coding-agent integration check may read the four instruction paths `/AGENTS.md`, `/CLAUDE.md`, `/.claude/CLAUDE.md`, and `/CLAUDE.local.md` when Git ignores them, through a separate instruction source; they never enter the project inventory, impact patterns, or any other check.
+
 ## Text encoding and normalization
 
 Canonical text assets and the manifest use UTF-8.
@@ -252,6 +254,8 @@ The following must not be symlinks:
 - mirror files
 
 A path resolution that encounters a symlink is invalid rather than being followed implicitly.
+
+The coding-agent instruction files are the one exception. The integration check may follow a symlinked `/AGENTS.md`, `/CLAUDE.md`, `/.claude/CLAUDE.md`, or `/CLAUDE.local.md` to a regular-file target inside or outside the repository through a caller-supplied link resolver, as described under Coding-agent integration warnings. Following such a link never makes its target part of the repository view.
 
 ## Simple glob rules
 

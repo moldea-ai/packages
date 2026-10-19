@@ -26,6 +26,9 @@ export type {
   IGitUntrackedInventoryEntry,
 } from './logical-path/index.js';
 
+// coding-agent instruction paths
+export { INSTRUCTION_PATHS } from './constants.js';
+
 // normalized inventory probe
 export { createGitInventoryProbe, probeGitInventory } from './probe.js';
 
