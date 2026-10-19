@@ -160,18 +160,19 @@ await link('jump-out/../../elsewhere/x.md', path.join(rootDirectory, 'parent-out
 
 /*
  * Refused targets: none of these may reach the filesystem beneath the refused path. `/net` and
- * `/Network` are automount roots only on POSIX hosts; on Windows, Node stores such a target as
- * the local `\\?\C:\net` path, so Windows uses a UNC share for the intermediate directory link.
+ * `/Network` are automount roots only on POSIX hosts. Windows stores rooted and drive-relative
+ * targets as full local paths when the link is created, so it cannot hold `/net` or `C:name`
+ * link text and uses a UNC share for the intermediate directory link instead.
  */
 const deepPrefix = '../'.repeat(24);
 const unsafeLinks: Record<string, string> = {
-  'unsafe-drive-relative': 'C:AGENTS.md',
   'unsafe-unc': isWindows ? '\\\\server\\share\\AGENTS.md' : '//server/share/AGENTS.md',
   'unsafe-unc-device': '\\\\?\\UNC\\server\\share\\AGENTS.md',
   'unsafe-intermediate': 'net-host/share/AGENTS.md',
   ...(isWindows
     ? {}
     : {
+        'unsafe-drive-relative': 'C:AGENTS.md',
         'unsafe-net': '/net/host/share/AGENTS.md',
         'unsafe-network': '/Network/Servers/host/AGENTS.md',
         'unsafe-deep-net': `${deepPrefix}net/host/share/AGENTS.md`,
@@ -331,9 +332,10 @@ describe('filesystem link resolver', () => {
 
     try {
       for (const name of Object.keys(unsafeLinks)) {
-        await expect(resolver.resolveLink(parseRepositoryPath(`/${name}`))).resolves.toStrictEqual({
-          state: 'unsafe',
-        });
+        await expect(
+          resolver.resolveLink(parseRepositoryPath(`/${name}`)),
+          name,
+        ).resolves.toStrictEqual({ state: 'unsafe' });
       }
     } finally {
       vi.restoreAllMocks();

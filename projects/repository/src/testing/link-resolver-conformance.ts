@@ -200,7 +200,7 @@ export const describeRepositoryLinkResolverConformance = <TPath extends string>(
       const resolver = await fixture.createResolver();
 
       for (const path of fixture[key]) {
-        await expect(resolver.resolveLink(fixture.parsePath(path))).resolves.toStrictEqual({
+        await expect(resolver.resolveLink(fixture.parsePath(path)), path).resolves.toStrictEqual({
           state,
         });
         await expectToRejectCode(
