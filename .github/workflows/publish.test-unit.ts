@@ -124,7 +124,7 @@ describe('npm release workflow', () => {
         artifact_name: 'public-package-tarballs',
         packages_ref: '${{ github.sha }}',
         skill_ref: skillCommit,
-        skill_version: '8.2.8',
+        skill_version: '8.3.0',
         registry_snapshot: '${{ needs.plan.outputs.registry_snapshot }}',
       },
     });
