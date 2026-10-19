@@ -121,6 +121,7 @@ export const REQUIRED_CASE_IDS: string[] = [
   'integration-block-missing',
   'integration-skill-missing',
   'integration-block-stale',
+  'integration-unverified',
 ];
 
 // each public Core operation has a real executable example
@@ -658,6 +659,12 @@ export const CORE_DIAGNOSTIC_COVERAGE: Record<ICoreDiagnosticCode, IDiagnosticCo
   },
   MOLDEA_INTEGRATION_BLOCK_STALE: {
     caseIds: ['integration-block-stale'],
+    mode: 'demonstrated',
+    note: 'The linked example executes this exact diagnostic code.',
+    sourcePath: 'projects/core/docs/diagnostics.md',
+  },
+  MOLDEA_INTEGRATION_UNVERIFIED: {
+    caseIds: ['integration-unverified'],
     mode: 'demonstrated',
     note: 'The linked example executes this exact diagnostic code.',
     sourcePath: 'projects/core/docs/diagnostics.md',

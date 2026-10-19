@@ -1,9 +1,14 @@
 import { getHeapStatistics } from 'node:v8';
 import { parentPort, workerData } from 'node:worker_threads';
 
-import { RepositorySourceException, type IRepositoryReader } from '@moldea.ai/repository';
+import {
+  RepositorySourceException,
+  type IRepositoryLinkResolver,
+  type IRepositoryReader,
+  type IRepositorySnapshot,
+} from '@moldea.ai/repository';
 
-import type { IProjectInspection } from '../contracts/index.js';
+import type { IProjectInspection, IProjectInstructionSource } from '../contracts/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 import { normalizeCoreOptions } from '../options/index.js';
 
@@ -18,8 +23,13 @@ import {
   decodeInspectionMessage,
   encodeInspectionMessage,
 } from './protocol.js';
-import { parseRpcEntry, parseRpcEntryPage, parseRpcFilePage } from './repository-rpc.js';
-import type { INodeInspectionMessage, INodeReaderRequest } from './types.js';
+import {
+  parseRpcEntry,
+  parseRpcEntryPage,
+  parseRpcFilePage,
+  parseRpcLinkResolution,
+} from './repository-rpc.js';
+import type { INodeInspectionMessage, INodeReaderRequest, INodeReaderSource } from './types.js';
 
 const port = parentPort;
 if (port === null) throw createInspectionProcessFailure();
@@ -64,18 +74,32 @@ const requestReader = (request: INodeReaderRequest): Promise<unknown> => {
   });
 };
 
-const repository: IRepositoryReader = {
-  snapshot: start.snapshot,
-  getEntry: async (path) => parseRpcEntry(await requestReader({ method: 'getEntry', path })),
+/** Proxies one caller-owned reader; only the repository source lists entries. */
+const createProxyReader = (
+  source: INodeReaderSource,
+  snapshot: IRepositorySnapshot,
+): IRepositoryReader => ({
+  snapshot,
+  getEntry: async (path) =>
+    parseRpcEntry(await requestReader({ method: 'getEntry', path, source })),
   listEntriesPage: async (options) =>
-    parseRpcEntryPage(
-      await requestReader({
-        method: 'listEntriesPage',
-        maxEntries: Math.min(128, options.maxEntries),
-        ...(options.cursor === undefined ? {} : { cursor: options.cursor }),
-        ...(options.prefix === undefined ? {} : { prefix: options.prefix }),
-      }),
-    ),
+    source === 'repository'
+      ? parseRpcEntryPage(
+          await requestReader({
+            method: 'listEntriesPage',
+            maxEntries: Math.min(128, options.maxEntries),
+            ...(options.cursor === undefined ? {} : { cursor: options.cursor }),
+            ...(options.prefix === undefined ? {} : { prefix: options.prefix }),
+          }),
+        )
+      : Promise.reject(
+          new RepositorySourceException({
+            code: 'SOURCE_UNAVAILABLE',
+            operation: 'list-entries-page',
+            path: null,
+            retryable: false,
+          }),
+        ),
   readFilePage: async (path, options) =>
     parseRpcFilePage(
       await requestReader({
@@ -83,6 +107,7 @@ const repository: IRepositoryReader = {
         path,
         offset: options.offset,
         maxBytes: Math.min(NODE_INSPECTION_FILE_PAGE_BYTES, options.maxBytes),
+        source,
       }),
     ),
   compare: () =>
@@ -94,7 +119,34 @@ const repository: IRepositoryReader = {
         retryable: false,
       }),
     ),
-};
+});
+
+/** Proxies the caller-owned link resolver of the instruction source. */
+const createProxyLinkResolver = (snapshot: IRepositorySnapshot): IRepositoryLinkResolver => ({
+  snapshot,
+  resolveLink: async (path) =>
+    parseRpcLinkResolution(await requestReader({ method: 'resolveLink', path })),
+  readLinkTargetPage: async (path, options) =>
+    parseRpcFilePage(
+      await requestReader({
+        method: 'readLinkTargetPage',
+        path,
+        offset: options.offset,
+        maxBytes: Math.min(NODE_INSPECTION_FILE_PAGE_BYTES, options.maxBytes),
+      }),
+    ),
+});
+
+const repository = createProxyReader('repository', start.snapshot);
+const instructions: IProjectInstructionSource | null =
+  start.instructions === null
+    ? null
+    : {
+        reader: createProxyReader('instructions', start.instructions.snapshot),
+        ...(start.instructions.hasLinkResolver
+          ? { linkResolver: createProxyLinkResolver(start.instructions.snapshot) }
+          : {}),
+      };
 
 /** Prepares the fixed Core implementation after the parent acknowledges the heap. */
 const prepare = async (): Promise<void> => {
@@ -106,7 +158,10 @@ const prepare = async (): Promise<void> => {
     },
   });
   const core = createCore(options);
-  inspection = await core.createProjectInspection({ repository });
+  inspection = await core.createProjectInspection({
+    repository,
+    ...(instructions === null ? {} : { instructions }),
+  });
   const metadata = {
     source: inspection.source,
     formatVersion: inspection.formatVersion,

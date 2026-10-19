@@ -158,7 +158,7 @@ importers:
   projects/core:
     dependencies:
       '@moldea.ai/repository':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^2.1.0
         version: link:../repository
       error-message-utils:
         specifier: 1.2.11

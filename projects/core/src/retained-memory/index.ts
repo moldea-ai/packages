@@ -2,12 +2,18 @@ import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 
+// one complete temporary source buffer and the release of its retained-memory reservation
+export interface IRetainedSource {
+  bytes: Uint8Array;
+  release: () => void;
+}
+
 // private session-owned admission and temporary source-buffer lifetime
 export interface IRetainedMemory {
   reserve(bytes: number): void;
   tryReserve(bytes: number): boolean;
   release(bytes: number): void;
-  readSourceFile(path: IRepositoryPath): Promise<{ bytes: Uint8Array; release: () => void }>;
+  readSourceFile(path: IRepositoryPath): Promise<IRetainedSource>;
 }
 
 const ledgers = new WeakMap<IRepositoryInspectionReader, IRetainedMemory>();

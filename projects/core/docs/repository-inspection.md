@@ -50,11 +50,30 @@ Structural repository errors and proven missing runtime exports return error dia
 
 ## Coding-agent integration
 
-After required repository checks, validation and inspection read `/AGENTS.md` without following symlinks. One complete, ordered `<!-- moldea:start -->` and `<!-- moldea:end -->` region must contain the fixed relevance-gate command. `parseIntegrationBlock(text)`, exported from the main entry, returns `{ kind: 'found', skillPath }` or `{ kind: 'missing', reason }`. The relative installation path allows only `^[A-Za-z0-9._/-]+$` and rejects empty, absolute, and traversal segments.
+After required repository checks, validation and inspection read `/AGENTS.md`. One complete, ordered `<!-- moldea:start -->` and `<!-- moldea:end -->` region must contain the fixed relevance-gate command. `parseIntegrationBlock(text)`, exported from the main entry, returns `{ kind: 'found', skillPath }` or `{ kind: 'missing', reason }`. The relative installation path allows only `^[A-Za-z0-9._/-]+$` and rejects empty, absolute, and traversal segments.
 
-The installation's `SKILL.md` and `scripts/relevance-gate.mjs` must be regular files. Core reads `assets/managed-agents-block.md`, substitutes `{{skill-path}}`, renders the document's LF or CRLF line ending, and compares the complete managed region including its markers. Missing or non-regular files and drift produce `integration` warnings, with subject `/AGENTS.md` and qualifier `null`. The three integration warning codes may be accepted with a manifest reason. See [diagnostics](/packages/core/diagnostics/).
+The installation's `SKILL.md` and `scripts/relevance-gate.mjs` must be regular files. Core reads `assets/managed-agents-block.md`, substitutes `{{skill-path}}`, renders the document's LF or CRLF line ending, and compares the complete managed region including its markers. Missing or non-regular files and drift produce `integration` warnings, with subject `/AGENTS.md` and qualifier `null`. The four integration warning codes may be accepted with a manifest reason. See [diagnostics](/packages/core/diagnostics/).
 
-This check performs at most two bounded file reads and two entry lookups. Source bytes, decoded text, and rendering copies are reserved through the operation ledger; only comparison diagnostics survive preparation. No cache is needed because each snapshot is checked once. Access failures, cancellation, snapshot drift, and resource exhaustion reject the whole operation. Manifest-only operations and the standalone scope entry never read this integration.
+### Instruction source and linked files
+
+`validateProject`, `createProjectInspection`, and `createNodeProjectInspection` accept an optional `instructions` source `{ reader, linkResolver? }` beside `repository`:
+
+```typescript
+import { createCore } from '@moldea.ai/core';
+import type { IRepositoryLinkResolver, IRepositoryReader } from '@moldea.ai/repository';
+
+export const validateWithInstructions = async (
+  repository: IRepositoryReader,
+  reader: IRepositoryReader,
+  linkResolver: IRepositoryLinkResolver,
+) => createCore().validateProject({ instructions: { linkResolver, reader }, repository });
+```
+
+The instruction reader holds only `/AGENTS.md`, `/CLAUDE.md`, `/.claude/CLAUDE.md`, and `/CLAUDE.local.md`, and only the integration check reads it. The referenced skill files, the managed asset, and every other check read `repository`, so files the instruction source adds never reach reference checks, pattern matching, discovery, coverage, or the inventory. A resolver whose snapshot differs from the instruction reader's is `INVALID_ARGUMENT`.
+
+A symlinked `/AGENTS.md` whose final target is a readable regular file, inside or outside the repository, gets every integration check on the target text, still reported against `/AGENTS.md`. Any other link, and any link without a resolver, is `MOLDEA_INTEGRATION_UNVERIFIED`. Diagnostics carry the link state only, never document text, link text, or outside paths.
+
+This check performs at most three entry lookups, one link resolution, and two bounded file reads. Source bytes, decoded text, and rendering copies are reserved through the operation ledger; only comparison diagnostics survive preparation. No cache is needed because each snapshot is checked once. Access failures, cancellation, snapshot drift, and resource exhaustion reject the whole operation. Manifest-only operations and the standalone scope entry never read this integration.
 
 ## Resource limits
 
@@ -144,4 +163,4 @@ Callers should request canonical content only after a concrete task requires tha
 
 ## Security and source neutrality
 
-Core treats repository bytes as untrusted, executes no repository code, follows no symlink, receives no host path or source credential, and performs no network access. Results use logical paths and bounded data only.
+Core treats repository bytes as untrusted, executes no repository code, follows only resolver-provided instruction links, receives no host path or source credential, and performs no network access. Results use logical paths and bounded data only.

@@ -28,7 +28,7 @@ const DEFINITIONS: {
   codes: IDiagnostic['code'][];
   pattern?: boolean;
   acceptance?: 'matched' | 'unmatched';
-  integration?: 'missing' | 'skill-missing' | 'stale';
+  integration?: 'missing' | 'skill-missing' | 'stale' | 'unverified';
 }[] = [
   {
     id: 'binding-export-passed',
@@ -134,6 +134,14 @@ const DEFINITIONS: {
     integration: 'stale',
     codes: ['MOLDEA_INTEGRATION_BLOCK_STALE'],
   },
+  {
+    id: 'integration-unverified',
+    title: 'A linked AGENTS.md cannot be verified',
+    description:
+      'The root AGENTS.md is a symlink and the memory reader offers no link resolver, so Core reports that it cannot verify the integration instead of following the link.',
+    integration: 'unverified',
+    codes: ['MOLDEA_INTEGRATION_UNVERIFIED'],
+  },
 ];
 
 /**
@@ -176,6 +184,10 @@ export const createBindingExamples = async (): Promise<ICapabilityCase[]> => {
         !(definition.integration === 'missing' && path === '/AGENTS.md') &&
         !(definition.integration === 'skill-missing' && path.endsWith('/SKILL.md')),
     );
+    if (definition.integration === 'unverified')
+      integration = integration.map((entry) =>
+        entry.path === '/AGENTS.md' ? { path: entry.path, type: 'symlink' } : entry,
+      );
     if (definition.integration === 'stale') {
       const block = integration.find(({ path }) => path === '/AGENTS.md');
       if (block?.type !== 'file' || typeof block.content !== 'string')

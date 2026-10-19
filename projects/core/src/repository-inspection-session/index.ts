@@ -5,17 +5,26 @@ import {
   isRepositoryPath,
   parseRepositoryPath,
   type IRepositoryEntry,
+  type IRepositoryFilePage,
+  type IRepositoryFilePageOptions,
+  type IRepositoryLinkResolution,
   type IRepositoryOperation,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
   type IRepositoryReader,
 } from '@moldea.ai/repository';
 
-import type { ICoreResourceLimits } from '../contracts/index.js';
-import { registerRetainedMemory } from '../retained-memory/index.js';
+import type { ICoreResourceLimits, IProjectInstructionSource } from '../contracts/index.js';
+import { registerRetainedMemory, type IRetainedSource } from '../retained-memory/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 
 const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
+// the only paths an instruction source may supply; every other read uses the repository
+const INSTRUCTION_PATHS: ReadonlySet<IRepositoryPath> = new Set(
+  ['/AGENTS.md', '/CLAUDE.md', '/.claude/CLAUDE.md', '/CLAUDE.local.md'].map((path) =>
+    parseRepositoryPath(path),
+  ),
+);
 const SOURCE_PAGE_ENTRIES = 256;
 const SOURCE_PAGE_BYTES = 65_536;
 const CANONICAL_BYTE_RETENTION_MULTIPLIER = 4;
@@ -42,8 +51,21 @@ export interface IRepositoryInspectionReader {
   ): Promise<Uint8Array>;
 }
 
+/*
+ * Private view of the coding-agent instruction paths, used only by the integration check. It reads
+ * the instruction source when one was supplied and the repository otherwise; `resolveLink` returns
+ * `null` when no link resolver is available, so callers report "cannot verify".
+ */
+export interface IRepositoryInstructionView {
+  getEntry(path: IRepositoryPath): Promise<IRepositoryEntry | null>;
+  readLinkedSourceFile(path: IRepositoryPath): Promise<IRetainedSource>;
+  readSourceFile(path: IRepositoryPath): Promise<IRetainedSource>;
+  resolveLink(path: IRepositoryPath): Promise<IRepositoryLinkResolution | null>;
+}
+
 // private resource state shared by every reader consumer during one validation
 export interface IRepositoryInspectionSession {
+  readonly instructions: IRepositoryInstructionView;
   readonly reader: IRepositoryInspectionReader;
 
   /** Returns deterministic logical resource usage for the current validation state. */
@@ -125,6 +147,66 @@ const copyReaderEntry = (
   };
 };
 
+// bounded page reads from one snapshot-bound source
+interface IFilePageSource {
+  readonly readPage: (
+    path: IRepositoryPath,
+    options: IRepositoryFilePageOptions,
+  ) => Promise<IRepositoryFilePage>;
+  readonly snapshotId: string;
+}
+
+const REFUSED_LINK_STATES = ['broken', 'denied', 'loop', 'unsafe'] as const;
+const LINK_TARGET_TYPES = ['directory', 'file', 'other'] as const;
+
+/** Copies one untrusted link resolution, rejecting any shape outside the closed contract. */
+const copyLinkResolution = (
+  candidate: unknown,
+  path: IRepositoryPath,
+): IRepositoryLinkResolution => {
+  if (typeof candidate !== 'object' || candidate === null) {
+    return invalidSourceData('get-entry', path);
+  }
+
+  const record = candidate as Readonly<Record<string, unknown>>;
+  const keys = Object.keys(record).sort().join();
+  const refusedState = REFUSED_LINK_STATES.find((state) => state === record['state']);
+
+  if (Reflect.ownKeys(record).length !== Object.keys(record).length) {
+    return invalidSourceData('get-entry', path);
+  }
+
+  if (record['state'] === 'not-link' || refusedState !== undefined) {
+    return keys === 'state'
+      ? { state: refusedState ?? 'not-link' }
+      : invalidSourceData('get-entry', path);
+  }
+
+  const targetIdentity = record['targetIdentity'];
+  const targetType = LINK_TARGET_TYPES.find((type) => type === record['targetType']);
+
+  if (
+    typeof targetIdentity !== 'string' ||
+    targetIdentity.length === 0 ||
+    targetType === undefined
+  ) {
+    return invalidSourceData('get-entry', path);
+  }
+
+  if (record['state'] === 'outside' && keys === 'state,targetIdentity,targetType') {
+    return { state: 'outside', targetIdentity, targetType };
+  }
+
+  const targetPath = record['targetPath'];
+
+  return record['state'] === 'inside' &&
+    keys === 'state,targetIdentity,targetPath,targetType' &&
+    typeof targetPath === 'string' &&
+    isRepositoryPath(targetPath)
+    ? { state: 'inside', targetIdentity, targetPath: parseRepositoryPath(targetPath), targetType }
+    : invalidSourceData('get-entry', path);
+};
+
 const isStrictDescendant = (path: IRepositoryPath, prefix: IRepositoryPath): boolean => {
   if (path === prefix) {
     return false;
@@ -167,6 +249,7 @@ const createSourceOptions = (
  * @param repository The source-neutral reader bound to one coherent snapshot.
  * @param limits The immutable resource limits for the inspection.
  * @param signal Optional cancellation shared by every inspection operation.
+ * @param instructions Optional instruction source read only through the instruction view.
  * @returns A session that pages source metadata and range-reads bounded canonical files.
  * @throws
  * - ABORTED: The Core operation was aborted.
@@ -175,6 +258,7 @@ export const createRepositoryInspectionSession = (
   repository: IRepositoryReader,
   limits: ICoreResourceLimits,
   signal?: AbortSignal,
+  instructions?: IProjectInstructionSource,
 ): IRepositoryInspectionSession => {
   const seenPaths = new Set<IRepositoryPath>();
   let canonicalBytes = 0;
@@ -263,14 +347,20 @@ export const createRepositoryInspectionSession = (
     totalBytesRead += byteLength;
   };
 
-  const getEntry = async (
+  const repositoryPages: IFilePageSource = {
+    readPage: (path, options) => repository.readFilePage(path, options),
+    snapshotId: repository.snapshot.id,
+  };
+
+  const getEntryFrom = async (
+    source: IRepositoryReader,
     path: IRepositoryPath,
     options?: IRepositoryOperationOptions,
   ): Promise<IRepositoryEntry | null> => {
     const parsedPath = parseRepositoryPath(path);
     throwIfSignalAborted(options?.signal);
     registerPath(parsedPath);
-    const candidate = await repository.getEntry(
+    const candidate = await source.getEntry(
       parsedPath,
       createSourceOptions(signal, options?.signal),
     );
@@ -280,6 +370,11 @@ export const createRepositoryInspectionSession = (
       ? null
       : copyReaderEntry(candidate, 'get-entry', parsedPath, parsedPath);
   };
+
+  const getEntry = (
+    path: IRepositoryPath,
+    options?: IRepositoryOperationOptions,
+  ): Promise<IRepositoryEntry | null> => getEntryFrom(repository, path, options);
 
   const iterateEntries = (
     options?: IRepositoryInspectionListOptions,
@@ -350,6 +445,7 @@ export const createRepositoryInspectionSession = (
     path: IRepositoryPath,
     operationSignal?: AbortSignal,
     isSource = false,
+    pages: IFilePageSource = repositoryPages,
   ): Promise<Uint8Array> => {
     const multiplier = isSource ? 1 : CANONICAL_BYTE_RETENTION_MULTIPLIER;
     const fileLimit: IInspectionFileByteLimit =
@@ -370,7 +466,7 @@ export const createRepositoryInspectionSession = (
       availableRetainedBytes,
     );
     observeTransientBytes(firstPageMaximumBytes);
-    const firstPage = await repository.readFilePage(path, {
+    const firstPage = await pages.readPage(path, {
       maxBytes: firstPageMaximumBytes,
       offset: 0,
       ...(createSourceOptions(signal, operationSignal) ?? {}),
@@ -378,7 +474,7 @@ export const createRepositoryInspectionSession = (
     throwIfSignalAborted(operationSignal);
 
     if (
-      firstPage.snapshot.id !== repository.snapshot.id ||
+      firstPage.snapshot.id !== pages.snapshotId ||
       firstPage.offset !== 0 ||
       !(firstPage.bytes instanceof Uint8Array) ||
       !Number.isSafeInteger(firstPage.totalBytes) ||
@@ -425,7 +521,7 @@ export const createRepositoryInspectionSession = (
     while (isFirstPage || offset < content.byteLength) {
       isFirstPage = false;
       if (
-        page.snapshot.id !== repository.snapshot.id ||
+        page.snapshot.id !== pages.snapshotId ||
         page.offset !== offset ||
         page.totalBytes !== content.byteLength ||
         !(page.bytes instanceof Uint8Array) ||
@@ -451,7 +547,7 @@ export const createRepositoryInspectionSession = (
         return invalidSourceData('read-file-page', path);
       }
 
-      page = await repository.readFilePage(path, {
+      page = await pages.readPage(path, {
         maxBytes: Math.min(SOURCE_PAGE_BYTES, Math.max(1, content.byteLength - offset)),
         offset,
         ...(createSourceOptions(signal, operationSignal) ?? {}),
@@ -520,6 +616,70 @@ export const createRepositoryInspectionSession = (
     return content.slice();
   };
 
+  /** Loads one complete temporary source buffer whose reservation the caller releases. */
+  const readRetainedSource = async (
+    path: IRepositoryPath,
+    pages: IFilePageSource,
+  ): Promise<IRetainedSource> => {
+    throwIfSignalAborted();
+    registerPath(path);
+    const bytes = await awaitWithCancellation(loadFile(path, undefined, true, pages));
+    throwIfSignalAborted();
+    let isReleased = false;
+    return {
+      bytes,
+      release: (): void => {
+        if (!isReleased) retainedBytes -= bytes.byteLength;
+        isReleased = true;
+      },
+    };
+  };
+
+  const instructionReader = instructions?.reader ?? repository;
+  const instructionPages: IFilePageSource =
+    instructions === undefined
+      ? repositoryPages
+      : {
+          readPage: (path, options) => instructions.reader.readFilePage(path, options),
+          snapshotId: instructions.reader.snapshot.id,
+        };
+  const linkResolver = instructions?.linkResolver;
+  const linkPages: IFilePageSource | undefined =
+    linkResolver === undefined
+      ? undefined
+      : {
+          readPage: (path, options) => linkResolver.readLinkTargetPage(path, options),
+          snapshotId: linkResolver.snapshot.id,
+        };
+  const requireInstructionPath = (path: IRepositoryPath): IRepositoryPath => {
+    const parsedPath = parseRepositoryPath(path);
+    if (!INSTRUCTION_PATHS.has(parsedPath))
+      throw new TypeError('The instruction view reads only coding-agent instruction paths.');
+    return parsedPath;
+  };
+  const instructionView: IRepositoryInstructionView = Object.freeze({
+    getEntry: (path: IRepositoryPath) =>
+      getEntryFrom(instructionReader, requireInstructionPath(path)),
+    readLinkedSourceFile: (path: IRepositoryPath) => {
+      if (linkPages === undefined)
+        throw new TypeError('The instruction view has no link resolver to read through.');
+      return readRetainedSource(requireInstructionPath(path), linkPages);
+    },
+    readSourceFile: (path: IRepositoryPath) =>
+      readRetainedSource(requireInstructionPath(path), instructionPages),
+    resolveLink: async (path: IRepositoryPath) => {
+      const parsedPath = requireInstructionPath(path);
+      if (linkResolver === undefined) return null;
+      throwIfSignalAborted();
+      registerPath(parsedPath);
+      const candidate = await awaitWithCancellation(
+        linkResolver.resolveLink(parsedPath, createSourceOptions(signal, undefined)),
+      );
+      throwIfSignalAborted();
+      return copyLinkResolution(candidate, parsedPath);
+    },
+  });
+
   const reader = Object.freeze({ getEntry, iterateEntries, readCompleteFile });
   registerRetainedMemory(reader, {
     reserve: reserveRetainedBytes,
@@ -538,24 +698,12 @@ export const createRepositoryInspectionSession = (
         throw new TypeError('The retained-memory release is invalid.');
       retainedBytes -= bytes;
     },
-    readSourceFile: async (path) => {
-      throwIfSignalAborted();
-      registerPath(path);
-      const bytes = await awaitWithCancellation(loadFile(path, undefined, true));
-      throwIfSignalAborted();
-      let isReleased = false;
-      return {
-        bytes,
-        release: (): void => {
-          if (!isReleased) retainedBytes -= bytes.byteLength;
-          isReleased = true;
-        },
-      };
-    },
+    readSourceFile: (path) => readRetainedSource(path, repositoryPages),
   });
   return Object.freeze({
     getResourceUsage: () =>
       Object.freeze({ canonicalBytes, peakRetainedBytes, retainedBytes, totalBytesRead }),
+    instructions: instructionView,
     reader,
     throwIfAborted: throwIfSignalAborted,
   });

@@ -38,11 +38,12 @@ Mirror path validity, presence, type, and digest coherence use `MOLDEA_MIRROR_*`
 
 ### [Coding-agent integration](#coding-agent-integration)
 
-Validation and inspection check `/AGENTS.md` as untrusted text, without following symlinks. Integration warnings identify that repository integration with `entity.integrationPath` and `subject` set to `/AGENTS.md`, and `qualifier: null`.
+Validation and inspection check `/AGENTS.md` as untrusted text. A symlinked `/AGENTS.md` is followed only through the link resolver of a caller-supplied instruction source. Integration warnings identify that repository integration with `entity.integrationPath` and `subject` set to `/AGENTS.md`, and `qualifier: null`.
 
-- `MOLDEA_INTEGRATION_BLOCK_MISSING`: The AGENTS.md moldea block is missing. Details report a missing, non-regular, or regular entry and, where relevant, an invalid managed region or invalid UTF-8.
+- `MOLDEA_INTEGRATION_BLOCK_MISSING`: The AGENTS.md moldea block is missing. Details report a missing, directory, regular, or linked entry and, where relevant, an invalid managed region or invalid UTF-8.
 - `MOLDEA_INTEGRATION_SKILL_MISSING`: The skill installation referenced by the AGENTS.md moldea block was not found. Details identify an unextractable installation path or the referenced installation and missing or non-regular contract file.
 - `MOLDEA_INTEGRATION_BLOCK_STALE`: The AGENTS.md moldea block differs from its skill installation. Details identify the referenced installation and an invalid asset encoding where applicable.
+- `MOLDEA_INTEGRATION_UNVERIFIED`: The instruction file's moldea integration cannot be verified. Reported for a link that resolves to a directory or other non-file, is broken, loops, is denied or unsafe, is a Git-materialized link, or has no resolver. Details report the link state, never the link text or target path.
 
 The installation must have regular `SKILL.md`, `scripts/relevance-gate.mjs`, and `assets/managed-agents-block.md` files. Core renders the installed asset with the relative skill path and the managed region's line ending before comparison. A current block produces no warning. These checks do not run during manifest-only operations or scope matching.
 

@@ -24,7 +24,7 @@ Core implements Repository Format version `1`. The [Repository Format specificat
 - bounded content-free agent-assignment, asset-metadata, diagnostic, coverage, or combined pages
 - explicit canonical content pages by path and byte range
 - identical universal checks for 35 runtime labels plus `custom`
-- bounded coding-agent integration checks and explicit warning acceptance
+- bounded coding-agent integration checks, including linked instruction files through an optional instruction source, and explicit warning acceptance
 - bounded repository reads, syntax analysis, and coverage
 
 ## Entry points

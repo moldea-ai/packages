@@ -6,7 +6,7 @@ import { createBindingExamples } from './binding-examples.ts';
 
 test('executes the binding and warning inventory without treating unchecked exports as errors', async () => {
   const cases = await createBindingExamples();
-  expect(cases).toHaveLength(12);
+  expect(cases).toHaveLength(13);
   expect(await createBindingExamples()).toStrictEqual(cases);
   for (const id of ['binding-commonjs', 'binding-unresolved', 'binding-unparseable']) {
     const example = cases.find((example) => example.id === id)!;

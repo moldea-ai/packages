@@ -208,7 +208,12 @@ export const inspectUniversalProject = async (
   session.throwIfAborted();
   addDiagnostics(
     collector,
-    await inspectCodingAgentIntegration(session.reader, options.limits, signal),
+    await inspectCodingAgentIntegration(
+      session.reader,
+      session.instructions,
+      options.limits,
+      signal,
+    ),
   );
   const patterns =
     indexedManifest === null
@@ -224,6 +229,7 @@ export const inspectUniversalProject = async (
         'MOLDEA_INTEGRATION_BLOCK_MISSING',
         'MOLDEA_INTEGRATION_SKILL_MISSING',
         'MOLDEA_INTEGRATION_BLOCK_STALE',
+        'MOLDEA_INTEGRATION_UNVERIFIED',
       ] as const),
       ...(patterns.completed ? ['MOLDEA_IMPACT_PATTERN_UNMATCHED' as const] : []),
     ]),
