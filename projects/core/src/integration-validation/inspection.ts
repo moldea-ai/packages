@@ -8,11 +8,13 @@ import type {
 import { getRetainedMemory } from '../retained-memory/index.js';
 
 import { inspectAgentsIntegration } from './agents-inspection.js';
+import { inspectClaudeIntegration } from './claude-inspection.js';
+import type { IIntegrationInspectionContext } from './types.js';
 
 /**
- * Checks the coding-agent integration: root AGENTS.md through the instruction view, and the
- * referenced skill installation through the repository reader, with at most three entry
- * lookups, one link resolution, and two bounded reads.
+ * Checks the coding-agent integration: root AGENTS.md and the Claude Code instruction files
+ * through the instruction view, and the referenced skill installation through the repository
+ * reader, with at most six entry lookups, four link resolutions, and five bounded reads.
  * @param reader The repository inspection reader for skill files and the managed asset.
  * @param instructions The instruction view for the coding-agent instruction paths.
  * @param limits The immutable resource limits for the inspection.
@@ -35,7 +37,7 @@ export const inspectCodingAgentIntegration = async (
   signal?: AbortSignal,
 ): Promise<readonly ICoreDiagnostic[]> => {
   const collector = createCoreDiagnosticCollector(limits, 'validate-project');
-  await inspectAgentsIntegration({
+  const context: IIntegrationInspectionContext = {
     instructions,
     ledger: getRetainedMemory(reader),
     reader,
@@ -50,6 +52,8 @@ export const inspectCodingAgentIntegration = async (
       });
     },
     ...(signal === undefined ? {} : { signal }),
-  });
+  };
+  const agents = await inspectAgentsIntegration(context);
+  await inspectClaudeIntegration(context, agents);
   return collector.finalize();
 };

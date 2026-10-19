@@ -81,6 +81,7 @@ const CORE_DIAGNOSTIC_MESSAGES: Record<ICoreDiagnosticCode, string> = {
     'The skill installation referenced by the AGENTS.md moldea block was not found.',
   MOLDEA_INTEGRATION_BLOCK_STALE: 'The AGENTS.md moldea block differs from its skill installation.',
   MOLDEA_INTEGRATION_UNVERIFIED: "The instruction file's moldea integration cannot be verified.",
+  MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING: 'Claude Code instructions do not load AGENTS.md.',
   MOLDEA_IMPACT_PATTERN_UNMATCHED: 'The impact pattern matches no files.',
   MOLDEA_ACCEPTANCE_UNMATCHED: 'The warning acceptance matches no reported warning.',
   MOLDEA_REFERENCE_EXPORT_MISSING: 'The referenced export is missing.',
@@ -417,7 +418,8 @@ export const createCoreDiagnostic = (input: ICoreDiagnosticInput): ICoreDiagnost
     input.code === 'MOLDEA_INTEGRATION_BLOCK_MISSING' ||
     input.code === 'MOLDEA_INTEGRATION_SKILL_MISSING' ||
     input.code === 'MOLDEA_INTEGRATION_BLOCK_STALE' ||
-    input.code === 'MOLDEA_INTEGRATION_UNVERIFIED'
+    input.code === 'MOLDEA_INTEGRATION_UNVERIFIED' ||
+    input.code === 'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING'
   ) {
     if (input.subject === undefined) throw new TypeError('A warning subject is required.');
     return freezeRecursively({

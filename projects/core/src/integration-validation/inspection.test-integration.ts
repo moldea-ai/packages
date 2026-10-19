@@ -471,6 +471,9 @@ describe('linked AGENTS.md through an instruction source', () => {
       `get:${agentsPath}`,
       `resolve:${agentsPath}`,
       `read-target:${agentsPath}`,
+      'get:/CLAUDE.md',
+      'get:/.claude/CLAUDE.md',
+      'get:/CLAUDE.local.md',
     ]);
     expect(repositoryCalls).toStrictEqual([
       `get:${skillPath}/SKILL.md`,
@@ -557,7 +560,7 @@ describe('linked AGENTS.md through an instruction source', () => {
     ).rejects.toMatchObject({ code: 'INVALID_ARGUMENT' });
   });
 
-  test('uses three entry lookups, one link resolution, and two bounded reads for a link', async () => {
+  test('uses six entry lookups, one link resolution, and two bounded reads for a link', async () => {
     const input = createLinkedInput(outsideFile(currentText));
     const operations: string[] = [];
     const { reader, linkResolver } = input.instructions;
@@ -602,6 +605,308 @@ describe('linked AGENTS.md through an instruction source', () => {
       `lookup:${skillPath}/SKILL.md`,
       `lookup:${skillPath}/scripts/relevance-gate.mjs`,
       `read:${skillPath}/assets/managed-agents-block.md`,
+      'lookup:/CLAUDE.md',
+      'lookup:/.claude/CLAUDE.md',
+      'lookup:/CLAUDE.local.md',
     ]);
   });
+});
+
+const agentsFile: IMemoryRepositoryEntry = { path: agentsPath, type: 'file', content: currentText };
+const symlink = (path: string): IMemoryRepositoryEntry => ({ path, type: 'symlink' });
+const textFile = (path: string, content: string): IMemoryRepositoryEntry => ({
+  path,
+  type: 'file',
+  content,
+});
+const outsideTarget = (targetIdentity: string, content?: string): IMemoryLinkFixture => ({
+  ...(content === undefined ? {} : { content }),
+  resolution: { state: 'outside', targetIdentity, targetType: 'file' },
+});
+
+/** Creates a repository with a current installation and an instruction source of the given files. */
+const createClaudeInput = (
+  entries: IMemoryRepositoryEntry[],
+  links: Record<string, IMemoryLinkFixture> = {},
+  acceptedWarnings?: unknown[],
+) => {
+  const repository = createRepository(
+    INTEGRATION_TEST_ENTRIES.filter((entry) => entry.path !== agentsPath),
+    acceptedWarnings,
+  );
+  const reader = createMemoryRepositoryReader(entries);
+  return {
+    instructions: { linkResolver: createMemoryLinkResolver(reader, links), reader },
+    repository,
+  };
+};
+
+describe('Claude Code integration', () => {
+  test.each([
+    ['no Claude file', [agentsFile], {}, []],
+    ['a root import', [agentsFile, textFile('/CLAUDE.md', '# Claude\n@AGENTS.md\n')], {}, []],
+    [
+      'a root file without an import',
+      [agentsFile, textFile('/CLAUDE.md', '# Claude\n')],
+      {},
+      [['MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING', '/CLAUDE.md']],
+    ],
+    [
+      'a nested relative import',
+      [agentsFile, textFile('/.claude/CLAUDE.md', '@../AGENTS.md\n')],
+      {},
+      [],
+    ],
+    [
+      'a nested import relative to the root',
+      [agentsFile, textFile('/.claude/CLAUDE.md', '@AGENTS.md\n')],
+      {},
+      [['MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING', '/.claude/CLAUDE.md']],
+    ],
+    [
+      'either shared file importing AGENTS.md',
+      [
+        agentsFile,
+        textFile('/CLAUDE.md', '# Claude\n'),
+        textFile('/.claude/CLAUDE.md', '@../AGENTS.md\n'),
+      ],
+      {},
+      [],
+    ],
+    [
+      'shared files before the personal file',
+      [
+        agentsFile,
+        textFile('/CLAUDE.md', '# Claude\n'),
+        textFile('/CLAUDE.local.md', '@AGENTS.md\n'),
+      ],
+      {},
+      [['MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING', '/CLAUDE.md']],
+    ],
+    ['only a personal import', [agentsFile, textFile('/CLAUDE.local.md', '@AGENTS.md\n')], {}, []],
+    [
+      'only a personal file without an import',
+      [agentsFile, textFile('/CLAUDE.local.md', '# Mine\n')],
+      {},
+      [['MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING', '/CLAUDE.local.md']],
+    ],
+    [
+      'a CLAUDE.md directory',
+      [agentsFile, { path: '/CLAUDE.md', type: 'directory' }],
+      {},
+      [['MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING', '/CLAUDE.md']],
+    ],
+    [
+      'a CLAUDE.md link to a regular AGENTS.md',
+      [agentsFile, symlink('/CLAUDE.md')],
+      {
+        '/CLAUDE.md': {
+          resolution: {
+            state: 'inside',
+            targetIdentity: 'identity:agents',
+            targetPath: parseRepositoryPath(agentsPath),
+            targetType: 'file',
+          },
+        },
+      },
+      [],
+    ],
+    [
+      'AGENTS.md linking to CLAUDE.md',
+      [symlink(agentsPath), textFile('/CLAUDE.md', currentText)],
+      {
+        [agentsPath]: {
+          content: currentText,
+          resolution: {
+            state: 'inside',
+            targetIdentity: 'identity:claude',
+            targetPath: parseRepositoryPath('/CLAUDE.md'),
+            targetType: 'file',
+          },
+        },
+      },
+      [],
+    ],
+    [
+      'CLAUDE.md and AGENTS.md reaching one outside file',
+      [symlink(agentsPath), symlink('/CLAUDE.md')],
+      {
+        [agentsPath]: outsideTarget('identity:shared', currentText),
+        '/CLAUDE.md': outsideTarget('identity:shared', '# Shared\n'),
+      },
+      [],
+    ],
+    [
+      'CLAUDE.md and AGENTS.md reaching different outside files',
+      [symlink(agentsPath), symlink('/CLAUDE.md')],
+      {
+        [agentsPath]: outsideTarget('identity:shared', currentText),
+        '/CLAUDE.md': outsideTarget('identity:other', '# Other\n'),
+      },
+      [['MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING', '/CLAUDE.md']],
+    ],
+    [
+      'a linked CLAUDE.md whose target imports AGENTS.md',
+      [agentsFile, symlink('/CLAUDE.md')],
+      { '/CLAUDE.md': outsideTarget('identity:other', '@AGENTS.md\n') },
+      [],
+    ],
+    [
+      'a linked nested file checked at its own location',
+      [agentsFile, symlink('/.claude/CLAUDE.md')],
+      { '/.claude/CLAUDE.md': outsideTarget('identity:other', '@../AGENTS.md\n') },
+      [],
+    ],
+    [
+      'an unverifiable shared file',
+      [agentsFile, symlink('/CLAUDE.md')],
+      { '/CLAUDE.md': { resolution: { state: 'broken' } } },
+      [['MOLDEA_INTEGRATION_UNVERIFIED', '/CLAUDE.md']],
+    ],
+    [
+      'an unverifiable shared file beside a loading one',
+      [agentsFile, symlink('/CLAUDE.md'), textFile('/.claude/CLAUDE.md', '@../AGENTS.md\n')],
+      { '/CLAUDE.md': { resolution: { state: 'broken' } } },
+      [],
+    ],
+    [
+      'a non-loading and an unverifiable shared file',
+      [agentsFile, textFile('/CLAUDE.md', '# Claude\n'), symlink('/.claude/CLAUDE.md')],
+      { '/.claude/CLAUDE.md': { resolution: { state: 'loop' } } },
+      [['MOLDEA_INTEGRATION_UNVERIFIED', '/.claude/CLAUDE.md']],
+    ],
+    [
+      'an unverifiable personal file',
+      [agentsFile, symlink('/CLAUDE.local.md')],
+      { '/CLAUDE.local.md': { resolution: { state: 'denied' } } },
+      [['MOLDEA_INTEGRATION_UNVERIFIED', '/CLAUDE.local.md']],
+    ],
+  ] satisfies [string, IMemoryRepositoryEntry[], Record<string, IMemoryLinkFixture>, string[][]][])(
+    'reports %s',
+    async (_label, entries, links, expected) => {
+      const result = await createCore().validateProject(createClaudeInput(entries, links));
+      expect(result.valid).toBe(true);
+      expect(
+        result.diagnostics.map((diagnostic) => [
+          diagnostic.code,
+          diagnostic.severity === 'warning' ? diagnostic.subject : null,
+        ]),
+      ).toStrictEqual(expected);
+    },
+  );
+
+  test('identifies a missing import with its message, entity, and entry kind', async () => {
+    const result = await createCore().validateProject(
+      createClaudeInput([agentsFile, textFile('/CLAUDE.md', '# Claude\n')]),
+    );
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING',
+        message: 'Claude Code instructions do not load AGENTS.md.',
+        group: 'integration',
+        severity: 'warning',
+        subject: '/CLAUDE.md',
+        qualifier: null,
+        acceptable: true,
+        entity: { integrationPath: '/CLAUDE.md' },
+        details: { entryKind: 'file' },
+      },
+    ]);
+  });
+
+  test('reports a linked CLAUDE.md read without a resolver as unverifiable', async () => {
+    const result = await createCore().validateProject({
+      repository: createRepository([...INTEGRATION_TEST_ENTRIES, symlink('/CLAUDE.md')]),
+    });
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'MOLDEA_INTEGRATION_UNVERIFIED',
+        subject: '/CLAUDE.md',
+        details: { entryKind: 'symlink', linkState: 'unavailable' },
+      },
+    ]);
+  });
+
+  test('accepts a missing import and reports the acceptance unmatched once it loads', async () => {
+    const reason = 'Claude Code is configured to load both files.';
+    const acceptance = {
+      code: 'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING',
+      subject: '/CLAUDE.md',
+      reason,
+    };
+    const accepted = await createCore().validateProject(
+      createClaudeInput([agentsFile, textFile('/CLAUDE.md', '# Claude\n')], {}, [acceptance]),
+    );
+    expect(accepted.diagnostics).toMatchObject([{ accepted: true, reason }]);
+    expect(accepted.warningCount).toBe(0);
+    const repaired = await createCore().validateProject(
+      createClaudeInput([agentsFile, textFile('/CLAUDE.md', '@AGENTS.md\n')], {}, [acceptance]),
+    );
+    expect(repaired.diagnostics).toMatchObject([
+      { code: 'MOLDEA_ACCEPTANCE_UNMATCHED', acceptable: false },
+    ]);
+  });
+
+  test.each([
+    [
+      'the most link resolutions and reads',
+      [symlink(agentsPath), symlink('/CLAUDE.md'), symlink('/.claude/CLAUDE.md')],
+      {
+        [agentsPath]: outsideTarget('identity:shared', currentText),
+        '/CLAUDE.md': outsideTarget('identity:one', '# One\n'),
+        '/.claude/CLAUDE.md': outsideTarget('identity:two', '# Two\n'),
+      },
+    ],
+    [
+      'the most entry lookups',
+      [symlink(agentsPath), symlink('/CLAUDE.local.md')],
+      {
+        [agentsPath]: outsideTarget('identity:shared', currentText),
+        '/CLAUDE.local.md': outsideTarget('identity:local', '# Local\n'),
+      },
+    ],
+  ] satisfies [string, IMemoryRepositoryEntry[], Record<string, IMemoryLinkFixture>][])(
+    'stays within six lookups, four resolutions, and five reads for %s',
+    async (_label, entries, links) => {
+      const input = createClaudeInput(entries, links);
+      const counts = { lookups: 0, reads: 0, resolutions: 0 };
+      const { reader, linkResolver } = input.instructions;
+      await createCore().validateProject({
+        instructions: {
+          reader: {
+            ...reader,
+            getEntry: (path, options) => {
+              counts.lookups++;
+              return reader.getEntry(path, options);
+            },
+          },
+          linkResolver: {
+            ...linkResolver,
+            resolveLink: (path, options) => {
+              counts.resolutions++;
+              return linkResolver.resolveLink(path, options);
+            },
+            readLinkTargetPage: (path, options) => {
+              counts.reads++;
+              return linkResolver.readLinkTargetPage(path, options);
+            },
+          },
+        },
+        repository: {
+          ...input.repository,
+          getEntry: (path, options) => {
+            if (path.startsWith(skillPath)) counts.lookups++;
+            return input.repository.getEntry(path, options);
+          },
+          readFilePage: (path, options) => {
+            if (path.startsWith(skillPath)) counts.reads++;
+            return input.repository.readFilePage(path, options);
+          },
+        },
+      });
+      expect(counts.lookups).toBeLessThanOrEqual(6);
+      expect(counts.resolutions).toBeLessThanOrEqual(4);
+      expect(counts.reads).toBeLessThanOrEqual(5);
+    },
+  );
 });

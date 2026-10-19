@@ -3,16 +3,18 @@ import { parseRepositoryPath } from '@moldea.ai/repository';
 import type { IRetainedSource } from '../retained-memory/index.js';
 
 import { parseIntegrationBlock, parseManagedIntegrationRegion } from './parser.js';
-import type { IIntegrationInspectionContext } from './types.js';
+import type { IAgentsInstructionTarget, IIntegrationInspectionContext } from './types.js';
 import { getAbsentKind, getUnreadableLinkState, readRetainedText } from './utilities.js';
 
 const AGENTS_PATH = parseRepositoryPath('/AGENTS.md');
 
+type IReport = (
+  code: Parameters<IIntegrationInspectionContext['report']>[0],
+  details: Record<string, string>,
+) => void;
+
 /**
- * Checks root AGENTS.md against its referenced skill installation. A symlinked AGENTS.md whose
- * final target is a readable regular file, inside or outside the repository, is checked on the
- * target text; any other link is reported as unverifiable without reading it.
- * @param context The instruction view, repository reader, ledger, and warning recorder.
+ * Checks one readable AGENTS.md text against its referenced skill installation.
  * @returns A promise that settles after at most one integration warning was recorded.
  * @throws
  * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
@@ -24,42 +26,20 @@ const AGENTS_PATH = parseRepositoryPath('/AGENTS.md');
  * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
  * - INVALID_SOURCE_DATA: The repository source returned invalid data.
  */
-export const inspectAgentsIntegration = async (
+const checkAgentsDocument = async (
   context: IIntegrationInspectionContext,
+  report: IReport,
+  load: () => Promise<IRetainedSource>,
+  entryDetails: Record<string, string>,
 ): Promise<void> => {
-  const { instructions, ledger, reader, signal } = context;
-  const report = (
-    code: Parameters<IIntegrationInspectionContext['report']>[0],
-    details: Record<string, string>,
-  ): void => context.report(code, AGENTS_PATH, details);
-  const entry = await instructions.getEntry(AGENTS_PATH);
-
-  if (entry === null) return report('MOLDEA_INTEGRATION_BLOCK_MISSING', { entryKind: 'missing' });
-  if (entry.type === 'directory')
-    return report('MOLDEA_INTEGRATION_BLOCK_MISSING', { entryKind: 'directory' });
-
-  let load: () => Promise<IRetainedSource> = () => instructions.readSourceFile(AGENTS_PATH);
-  let entryDetails: Record<string, string> = { entryKind: 'file' };
-
-  if (entry.type === 'symlink') {
-    const resolution = await instructions.resolveLink(AGENTS_PATH);
-    const linkState = getUnreadableLinkState(resolution);
-    if (linkState !== null || resolution === null)
-      return report('MOLDEA_INTEGRATION_UNVERIFIED', {
-        entryKind: 'symlink',
-        linkState: linkState ?? 'unavailable',
-      });
-    load = () => instructions.readLinkedSourceFile(AGENTS_PATH);
-    entryDetails = { entryKind: 'symlink', linkTarget: resolution.state };
-  }
-
+  const { ledger, reader, signal } = context;
   let document: Awaited<ReturnType<typeof readRetainedText>>;
   try {
     document = await readRetainedText(ledger, load);
   } catch (error) {
     const absentKind = getAbsentKind(error);
     if (absentKind === null) throw error;
-    return entry.type === 'symlink'
+    return entryDetails['entryKind'] === 'symlink'
       ? report('MOLDEA_INTEGRATION_UNVERIFIED', { entryKind: 'symlink', linkState: 'not-file' })
       : report('MOLDEA_INTEGRATION_BLOCK_MISSING', { entryKind: absentKind });
   }
@@ -133,4 +113,64 @@ export const inspectAgentsIntegration = async (
   } finally {
     document.release();
   }
+};
+
+/**
+ * Checks root AGENTS.md against its referenced skill installation. A symlinked AGENTS.md whose
+ * final target is a readable regular file, inside or outside the repository, is checked on the
+ * target text; any other link is reported as unverifiable without reading it.
+ * @param context The instruction view, repository reader, ledger, and warning recorder.
+ * @returns What AGENTS.md is, including its link resolution, for the Claude Code check.
+ * @throws
+ * - RESOURCE_LIMIT_EXCEEDED: A Core resource limit was exceeded.
+ * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+ * - ABORTED: The Core operation was aborted.
+ * - ABORTED: The repository operation was aborted.
+ * - ACCESS_DENIED: Access to the repository source was denied.
+ * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+ * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+ * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+ */
+export const inspectAgentsIntegration = async (
+  context: IIntegrationInspectionContext,
+): Promise<IAgentsInstructionTarget> => {
+  const { instructions } = context;
+  const report: IReport = (code, details) => context.report(code, AGENTS_PATH, details);
+  const entry = await instructions.getEntry(AGENTS_PATH);
+
+  if (entry === null) {
+    report('MOLDEA_INTEGRATION_BLOCK_MISSING', { entryKind: 'missing' });
+    return { kind: 'missing' };
+  }
+
+  if (entry.type === 'directory') {
+    report('MOLDEA_INTEGRATION_BLOCK_MISSING', { entryKind: 'directory' });
+    return { kind: 'directory' };
+  }
+
+  if (entry.type === 'file') {
+    await checkAgentsDocument(context, report, () => instructions.readSourceFile(AGENTS_PATH), {
+      entryKind: 'file',
+    });
+    return { kind: 'file' };
+  }
+
+  const resolution = await instructions.resolveLink(AGENTS_PATH);
+  const linkState = getUnreadableLinkState(resolution);
+
+  if (linkState !== null || resolution === null) {
+    report('MOLDEA_INTEGRATION_UNVERIFIED', {
+      entryKind: 'symlink',
+      linkState: linkState ?? 'unavailable',
+    });
+  } else {
+    await checkAgentsDocument(
+      context,
+      report,
+      () => instructions.readLinkedSourceFile(AGENTS_PATH),
+      { entryKind: 'symlink', linkTarget: resolution.state },
+    );
+  }
+
+  return { kind: 'link', resolution };
 };

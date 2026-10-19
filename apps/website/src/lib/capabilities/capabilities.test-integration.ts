@@ -22,9 +22,9 @@ beforeAll(async () => {
 
 test('accounts for every release-owned operation and diagnostic', () => {
   const catalog = model.capabilities;
-  expect(catalog.cases).toHaveLength(118);
+  expect(catalog.cases).toHaveLength(119);
   expect(Object.keys(catalog.coreOperations)).toHaveLength(8);
-  expect(Object.keys(catalog.diagnostics)).toHaveLength(87);
+  expect(Object.keys(catalog.diagnostics)).toHaveLength(88);
   expect(() => validateCapabilities(catalog, sourcePaths)).not.toThrow();
   for (const coverage of Object.values(catalog.diagnostics)) {
     expect(coverage.mode === 'demonstrated').toBe(coverage.caseIds.length > 0);

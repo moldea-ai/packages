@@ -59,3 +59,35 @@ export const parseIntegrationBlock = (text: string): IIntegrationBlockResult => 
     return { kind: 'missing', reason: 'skill-path-invalid' };
   return { kind: 'found', skillPath };
 };
+
+// import lines Claude Code resolves to the root AGENTS.md, by the importing file's directory
+const ROOT_AGENTS_IMPORTS: ReadonlySet<string> = new Set(['@AGENTS.md', '@./AGENTS.md']);
+const NESTED_AGENTS_IMPORTS: ReadonlySet<string> = new Set(['@../AGENTS.md']);
+
+/**
+ * Reports whether Claude Code instruction text imports the root AGENTS.md on a line of its own.
+ * Lines inside fenced code blocks and imports embedded in other text do not count.
+ * @param text The decoded instruction text.
+ * @param isNested Whether the text belongs to `/.claude/CLAUDE.md` rather than a root file.
+ * @returns `true` when one unfenced line, trimmed of spaces and tabs, is an AGENTS.md import.
+ */
+export const hasAgentsImport = (text: string, isNested: boolean): boolean => {
+  const imports = isNested ? NESTED_AGENTS_IMPORTS : ROOT_AGENTS_IMPORTS;
+  let fence: string | null = null;
+
+  for (const rawLine of text.replace(/^\uFEFF/u, '').split(/\r\n|\n|\r/u)) {
+    const line = rawLine.replace(/^[ \t]+|[ \t]+$/gu, '');
+    const marker = /^(`{3,}|~{3,})/u.exec(line)?.[1];
+
+    if (fence !== null) {
+      if (marker !== undefined && marker[0] === fence[0] && marker.length >= fence.length)
+        fence = null;
+    } else if (marker !== undefined) {
+      fence = marker;
+    } else if (imports.has(line)) {
+      return true;
+    }
+  }
+
+  return false;
+};

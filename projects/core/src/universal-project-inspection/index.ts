@@ -230,6 +230,7 @@ export const inspectUniversalProject = async (
         'MOLDEA_INTEGRATION_SKILL_MISSING',
         'MOLDEA_INTEGRATION_BLOCK_STALE',
         'MOLDEA_INTEGRATION_UNVERIFIED',
+        'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING',
       ] as const),
       ...(patterns.completed ? ['MOLDEA_IMPACT_PATTERN_UNMATCHED' as const] : []),
     ]),

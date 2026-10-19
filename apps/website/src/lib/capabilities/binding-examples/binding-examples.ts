@@ -28,7 +28,7 @@ const DEFINITIONS: {
   codes: IDiagnostic['code'][];
   pattern?: boolean;
   acceptance?: 'matched' | 'unmatched';
-  integration?: 'missing' | 'skill-missing' | 'stale' | 'unverified';
+  integration?: 'claude-import-missing' | 'missing' | 'skill-missing' | 'stale' | 'unverified';
 }[] = [
   {
     id: 'binding-export-passed',
@@ -142,6 +142,14 @@ const DEFINITIONS: {
     integration: 'unverified',
     codes: ['MOLDEA_INTEGRATION_UNVERIFIED'],
   },
+  {
+    id: 'integration-claude-import-missing',
+    title: 'Claude Code does not load AGENTS.md',
+    description:
+      'A root CLAUDE.md exists without an @AGENTS.md import, so Claude Code would not read the managed moldea block.',
+    integration: 'claude-import-missing',
+    codes: ['MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING'],
+  },
 ];
 
 /**
@@ -184,6 +192,15 @@ export const createBindingExamples = async (): Promise<ICapabilityCase[]> => {
         !(definition.integration === 'missing' && path === '/AGENTS.md') &&
         !(definition.integration === 'skill-missing' && path.endsWith('/SKILL.md')),
     );
+    if (definition.integration === 'claude-import-missing')
+      integration = [
+        ...integration,
+        {
+          path: '/CLAUDE.md',
+          type: 'file',
+          content: '# Claude Code\n\nFollow the review checklist.\n',
+        },
+      ];
     if (definition.integration === 'unverified')
       integration = integration.map((entry) =>
         entry.path === '/AGENTS.md' ? { path: entry.path, type: 'symlink' } : entry,

@@ -1,4 +1,4 @@
-import type { IRepositoryPath } from '@moldea.ai/repository';
+import type { IRepositoryLinkResolution, IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICoreWarningCode } from '../diagnostics/index.js';
 import type {
@@ -46,3 +46,8 @@ export interface IIntegrationInspectionContext {
   ) => void;
   readonly signal?: AbortSignal;
 }
+
+// what root AGENTS.md is, as the Claude Code check needs it to recognize links to it
+export type IAgentsInstructionTarget =
+  | { readonly kind: 'directory' | 'file' | 'missing' }
+  | { readonly kind: 'link'; readonly resolution: IRepositoryLinkResolution | null };

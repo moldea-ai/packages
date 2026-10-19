@@ -6,7 +6,7 @@ import { createBindingExamples } from './binding-examples.ts';
 
 test('executes the binding and warning inventory without treating unchecked exports as errors', async () => {
   const cases = await createBindingExamples();
-  expect(cases).toHaveLength(13);
+  expect(cases).toHaveLength(14);
   expect(await createBindingExamples()).toStrictEqual(cases);
   for (const id of ['binding-commonjs', 'binding-unresolved', 'binding-unparseable']) {
     const example = cases.find((example) => example.id === id)!;
@@ -30,7 +30,12 @@ test('executes the binding and warning inventory without treating unchecked expo
       valid: true,
       warningCount: 1,
       diagnostics: [
-        { group: 'integration', severity: 'warning', subject: '/AGENTS.md', qualifier: null },
+        {
+          group: 'integration',
+          severity: 'warning',
+          subject: example.id === 'integration-claude-import-missing' ? '/CLAUDE.md' : '/AGENTS.md',
+          qualifier: null,
+        },
       ],
     });
   }

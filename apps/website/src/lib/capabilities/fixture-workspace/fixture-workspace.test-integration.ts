@@ -98,4 +98,12 @@ test('accepts exact integration filenames without allowing arbitrary uppercase p
   expect(resolveFixturePath(root, '/.agents/skills/moldea/SKILL.md')).toBe(
     path.join(root, '.agents', 'skills', 'moldea', 'SKILL.md'),
   );
+  expect(resolveFixturePath(root, '/CLAUDE.md')).toBe(path.join(root, 'CLAUDE.md'));
+  expect(resolveFixturePath(root, '/.claude/CLAUDE.md')).toBe(
+    path.join(root, '.claude', 'CLAUDE.md'),
+  );
+  expect(resolveFixturePath(root, '/CLAUDE.local.md')).toBe(path.join(root, 'CLAUDE.local.md'));
+  expect(() => resolveFixturePath(root, '/README.md')).toThrow(
+    'A capability fixture path is unsafe.',
+  );
 });

@@ -8,6 +8,7 @@ export const ACCEPTABLE_WARNING_CODES = Object.freeze([
   'MOLDEA_INTEGRATION_SKILL_MISSING',
   'MOLDEA_INTEGRATION_BLOCK_STALE',
   'MOLDEA_INTEGRATION_UNVERIFIED',
+  'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING',
 ] as const);
 
 // runtime labels selecting guidance without asserting SDK compatibility
