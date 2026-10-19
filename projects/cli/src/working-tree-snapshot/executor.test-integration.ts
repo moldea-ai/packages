@@ -217,6 +217,87 @@ describe('working-tree snapshot integration', () => {
     }
   });
 
+  test('pins ignored instruction files as a separate source and retries when they change', async () => {
+    const temporaryDirectory = realpathSync(
+      mkdtempSync(path.join(tmpdir(), 'moldea-cli-working-tree-instructions-')),
+    );
+    const repositoryRoot = path.join(temporaryDirectory, 'repository');
+    const homeDirectory = path.join(temporaryDirectory, 'home');
+    const configDirectory = path.join(temporaryDirectory, 'config');
+    const hooksDirectory = path.join(temporaryDirectory, 'hooks');
+    const environment = createGitProcessEnvironment({
+      ...process.env,
+      HOME: homeDirectory,
+      XDG_CONFIG_HOME: configDirectory,
+    });
+
+    try {
+      for (const directory of [repositoryRoot, homeDirectory, configDirectory, hooksDirectory]) {
+        mkdirSync(directory, { recursive: true });
+      }
+
+      executeFixtureGit(repositoryRoot, environment, hooksDirectory, ['init']);
+      writeFileSync(path.join(repositoryRoot, '.gitignore'), 'AGENTS.md\nCLAUDE.local.md\n');
+      writeFileSync(path.join(repositoryRoot, 'AGENTS.md'), '# Shared\n', 'utf8');
+      executeFixtureGit(repositoryRoot, environment, hooksDirectory, ['add', '--', '.gitignore']);
+
+      let instructionProbes = 0;
+      const inventoryProbe: IGitInventoryProbe = async (input) => {
+        const result = await probeGitInventory(input);
+
+        if (input.includeIgnored === true) {
+          instructionProbes += 1;
+
+          if (instructionProbes === 1) {
+            writeFileSync(path.join(repositoryRoot, 'CLAUDE.local.md'), '@AGENTS.md\n', 'utf8');
+          }
+        }
+
+        return result;
+      };
+      const executeSnapshot = createWorkingTreeSnapshotExecutor(
+        inspectGitWorkingTreeIdentity,
+        inventoryProbe,
+      );
+      const result = await executeSnapshot({
+        includeInstructions: true,
+        operation: async (reader, _signal, instructions) => ({
+          instructionEntries: await Promise.all(
+            ['/AGENTS.md', '/CLAUDE.local.md'].map(
+              async (entryPath) =>
+                (await instructions?.reader.getEntry(parseRepositoryPath(entryPath)))?.type ?? null,
+            ),
+          ),
+          linkResolution: await instructions?.linkResolver?.resolveLink(
+            parseRepositoryPath('/AGENTS.md'),
+          ),
+          repositoryEntry: await reader.getEntry(parseRepositoryPath('/AGENTS.md')),
+        }),
+        repositoryRoot,
+        resourceLimits: {
+          maxDiagnostics: 16,
+          maxEntries: 16,
+          maxCoverage: 16,
+          maxFileBytes: 1024,
+          maxManifestBytes: 1024,
+          maxTotalBytes: 4096,
+        },
+      });
+
+      expect(result).toStrictEqual({
+        kind: 'completed',
+        result: {
+          instructionEntries: ['file', 'file'],
+          linkResolution: { state: 'not-link' },
+          repositoryEntry: null,
+        },
+      });
+      expect(instructionProbes).toBe(4);
+    } finally {
+      rmSync(temporaryDirectory, { force: true, recursive: true });
+    }
+  });
+
   test('does not adopt a replacement of the pinned repository during an active snapshot', async () => {
     const temporaryDirectory = realpathSync(
       mkdtempSync(path.join(tmpdir(), 'moldea-cli-working-tree-identity-')),

@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest';
 import { INTEGRATION_TEST_TEMPLATE } from '../repository.test-fixtures.js';
 
 import { parseIntegrationBlock } from './index.js';
+import { hasAgentsImport } from './parser.js';
 
 const block = INTEGRATION_TEST_TEMPLATE.replaceAll('{{skill-path}}', '.agents/skills/moldea');
 
@@ -44,5 +45,34 @@ describe('public integration block parser', () => {
         '<!-- moldea:start -->\n' + command.repeat(1024) + '<!-- moldea:end -->\n',
       ),
     ).toStrictEqual({ kind: 'missing', reason: 'skill-path-missing' });
+  });
+});
+
+describe('Claude Code AGENTS.md import lines', () => {
+  test.each([
+    ['@AGENTS.md\n', false, true],
+    ['# Project\n\n@AGENTS.md\n', false, true],
+    ['@./AGENTS.md', false, true],
+    ['# Project\r\n@AGENTS.md\r\n', false, true],
+    ['# Project\r@AGENTS.md\r', false, true],
+    ['  \t@AGENTS.md \t\n', false, true],
+    ['\uFEFF@AGENTS.md\n', false, true],
+    ['@../AGENTS.md\n', true, true],
+    ['  @../AGENTS.md\r\n', true, true],
+    ['@../AGENTS.md\n', false, false],
+    ['@AGENTS.md\n', true, false],
+    ['@./AGENTS.md\n', true, false],
+    ['See @AGENTS.md for shared rules.\n', false, false],
+    ['`@AGENTS.md`\n', false, false],
+    ['- @AGENTS.md\n', false, false],
+    ['@agents.md\n', false, false],
+    ['@AGENTS.md.bak\n', false, false],
+    ['```\n@AGENTS.md\n```\n', false, false],
+    ['~~~md\n@AGENTS.md\n~~~\n', false, false],
+    ['````\n```\n@AGENTS.md\n````\n', false, false],
+    ['```\nexample\n```\n@AGENTS.md\n', false, true],
+    ['', false, false],
+  ])('hasAgentsImport(%o, nested %s) -> %s', (text, isNested, expected) => {
+    expect(hasAgentsImport(text, isNested)).toBe(expected);
   });
 });

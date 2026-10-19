@@ -1,8 +1,9 @@
-import type { IRepositoryReader } from '@moldea.ai/repository';
+import type { IRepositoryLinkResolver, IRepositoryReader } from '@moldea.ai/repository';
 
 import { countBindingCoverage } from '../binding-coverage/index.js';
 import type {
   IMoldeaProjectIndex,
+  IProjectInstructionSource,
   IProjectValidationInput,
   IProjectValidationResult,
 } from '../contracts/index.js';
@@ -16,6 +17,7 @@ import type { IRepositoryInspectionResourceUsage } from '../repository-inspectio
 import { inspectUniversalProject } from '../universal-project-inspection/index.js';
 
 interface IValidatedProjectValidationInput {
+  readonly instructions?: IProjectInstructionSource;
   readonly repository: IRepositoryReader;
   readonly signal?: AbortSignal;
 }
@@ -44,6 +46,44 @@ const isRepositoryReader = (candidate: unknown): candidate is IRepositoryReader 
   );
 };
 
+const isLinkResolver = (candidate: unknown): candidate is IRepositoryLinkResolver => {
+  return (
+    isRecord(candidate) &&
+    isRecord(candidate['snapshot']) &&
+    typeof candidate['snapshot']['id'] === 'string' &&
+    typeof candidate['snapshot']['sourceKind'] === 'string' &&
+    typeof candidate['resolveLink'] === 'function' &&
+    typeof candidate['readLinkTargetPage'] === 'function'
+  );
+};
+
+// a resolver must observe the same snapshot as the instruction reader it resolves for
+const validateInstructions = (candidate: unknown): IProjectInstructionSource => {
+  if (
+    !isRecord(candidate) ||
+    Reflect.ownKeys(candidate).some((key) => key !== 'reader' && key !== 'linkResolver')
+  ) {
+    return invalidArgument();
+  }
+
+  const reader = candidate['reader'];
+  const linkResolver = candidate['linkResolver'];
+
+  if (!isRepositoryReader(reader)) {
+    return invalidArgument();
+  }
+
+  if (linkResolver === undefined) {
+    return { reader };
+  }
+
+  if (!isLinkResolver(linkResolver) || linkResolver.snapshot.id !== reader.snapshot.id) {
+    return invalidArgument();
+  }
+
+  return { linkResolver, reader };
+};
+
 const isAbortSignal = (candidate: unknown): candidate is AbortSignal => {
   return (
     isRecord(candidate) &&
@@ -60,10 +100,13 @@ const validateInput = (candidate: unknown): IValidatedProjectValidationInput => 
     }
 
     const repository = candidate['repository'];
+    const instructions = candidate['instructions'];
     const signal = candidate['signal'];
 
     if (
-      Reflect.ownKeys(candidate).some((key) => key !== 'repository' && key !== 'signal') ||
+      Reflect.ownKeys(candidate).some(
+        (key) => key !== 'repository' && key !== 'instructions' && key !== 'signal',
+      ) ||
       !isRepositoryReader(repository) ||
       (signal !== undefined && !isAbortSignal(signal))
     ) {
@@ -71,6 +114,7 @@ const validateInput = (candidate: unknown): IValidatedProjectValidationInput => 
     }
 
     return {
+      ...(instructions === undefined ? {} : { instructions: validateInstructions(instructions) }),
       repository,
       ...(signal === undefined ? {} : { signal }),
     };
@@ -92,7 +136,7 @@ export interface IProjectValidationState {
 
 /**
  * Inspects one coherent repository snapshot through universal file and export validation.
- * @param input The untrusted source-neutral reader and optional cancellation signal.
+ * @param input The untrusted source-neutral reader, optional instruction source, and signal.
  * @param options The immutable Core configuration snapshot.
  * @returns A promise resolving to the frozen all-or-nothing project inspection result.
  * @throws
@@ -121,6 +165,7 @@ export const validateProjectState = async (
     validatedInput.repository,
     operationOptions.limits,
     validatedInput.signal,
+    validatedInput.instructions,
   );
   const universal = await inspectUniversalProject(
     {

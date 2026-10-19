@@ -1,4 +1,8 @@
-import type { IProjectInspectionPageResult, IProjectValidationResult } from '@moldea.ai/core';
+import type {
+  IProjectInspectionPageResult,
+  IProjectInstructionSource,
+  IProjectValidationResult,
+} from '@moldea.ai/core';
 import type { INodeProjectInspection, INodeProjectInspectionInput } from '@moldea.ai/core/node';
 import type { IRepositoryReader } from '@moldea.ai/repository';
 
@@ -9,6 +13,7 @@ import type { IMoldeaCliPackageMetadata } from '../package-metadata/index.js';
 export interface IMoldeaCliCoreInspectionInput {
   readonly command: 'inspect' | 'validate';
   readonly cursor?: string;
+  readonly instructions?: IProjectInstructionSource;
   readonly repository: IRepositoryReader;
   readonly packageMetadata: IMoldeaCliPackageMetadata;
   readonly resourceLimits: IMoldeaCliResourceLimits;

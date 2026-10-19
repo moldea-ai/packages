@@ -1,7 +1,16 @@
 // @vitest-environment node
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
 import { describe, expect, test } from 'vitest';
 
+import { parseRepositoryPath } from '@moldea.ai/repository';
 import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+import {
+  createFilesystemRepositoryLinkResolver,
+  createFilesystemRepositoryReader,
+} from '@moldea.ai/repository-fs';
 
 import { INSTALLED_PACKAGE_METADATA } from '../composition/composition.test-fixtures.js';
 
@@ -155,4 +164,84 @@ describe('CLI Core composition through the real isolated boundary', () => {
     ).rejects.toMatchObject({ code: 'RESOURCE_LIMIT_EXCEEDED', limit: 'maxCoverage' });
     expect((await execute('validate')).valid).toBe(true);
   });
+});
+
+const BLOCK_ASSET =
+  '<!-- moldea:start -->\nnode "<repo-root>/{{skill-path}}/scripts/relevance-gate.mjs" --repository "<repo-root>"\n<!-- moldea:end -->\n';
+const CURRENT_BLOCK = BLOCK_ASSET.replaceAll('{{skill-path}}', '.agents/skills/moldea');
+
+/** Creates real instruction links beside a shared file and returns the instruction source. */
+const createLinkedInstructions = async (
+  directory: string,
+  links: Readonly<Record<string, string>>,
+) => {
+  const root = path.join(directory, 'repository');
+  await mkdir(root, { recursive: true });
+  await writeFile(path.join(directory, 'shared.md'), CURRENT_BLOCK);
+
+  for (const [name, target] of Object.entries(links)) {
+    await symlink(target, path.join(root, name), process.platform === 'win32' ? 'file' : undefined);
+  }
+
+  const reader = await createFilesystemRepositoryReader({
+    rootDirectory: root,
+    selection: {
+      kind: 'paths',
+      paths: Object.keys(links).map((name) => parseRepositoryPath(`/${name}`)),
+    },
+  });
+
+  return { linkResolver: createFilesystemRepositoryLinkResolver(reader), reader };
+};
+
+describe('CLI Core composition with a real filesystem link resolver', () => {
+  test.each([
+    ['an outside AGENTS.md link', { 'AGENTS.md': '../shared.md' }, []],
+    [
+      'CLAUDE.md and AGENTS.md links to one outside file',
+      { 'AGENTS.md': '../shared.md', 'CLAUDE.md': '../shared.md' },
+      [],
+    ],
+    [
+      'a broken AGENTS.md link',
+      { 'AGENTS.md': '../missing.md' },
+      [['MOLDEA_INTEGRATION_UNVERIFIED', '/AGENTS.md']],
+    ],
+  ] satisfies [string, Record<string, string>, string[][]][])(
+    'checks %s through the worker bridge',
+    async (_label, links, expected) => {
+      const directory = await realpath(await mkdtemp(path.join(tmpdir(), 'moldea-cli-links-')));
+
+      try {
+        const result = await executeMoldeaCliCoreInspection({
+          command: 'validate',
+          instructions: await createLinkedInstructions(directory, links),
+          packageMetadata: INSTALLED_PACKAGE_METADATA,
+          repository: createMemoryRepositoryReader([
+            { path: '/moldea/moldea.yaml', type: 'file', content: 'version: 1\n' },
+            { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
+            { path: '/.agents/skills/moldea/SKILL.md', type: 'file', content: '# Skill\n' },
+            {
+              path: '/.agents/skills/moldea/scripts/relevance-gate.mjs',
+              type: 'file',
+              content: '// Gate\n',
+            },
+            {
+              path: '/.agents/skills/moldea/assets/managed-agents-block.md',
+              type: 'file',
+              content: BLOCK_ASSET,
+            },
+          ]),
+          resourceLimits: RESOURCE_LIMITS,
+        });
+
+        expect('diagnostics' in result ? result.diagnostics : result).toMatchObject(
+          expected.map(([code, subject]) => ({ code, subject })),
+        );
+        expect('diagnostics' in result ? result.diagnostics : result).toHaveLength(expected.length);
+      } finally {
+        await rm(directory, { force: true, recursive: true });
+      }
+    },
+  );
 });

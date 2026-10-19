@@ -25,6 +25,7 @@ export const createMoldeaCliCoreInspectionExecutor =
   async (input) => {
     const inspection = await nodeInspectionFactory({
       repository: input.repository,
+      ...(input.instructions === undefined ? {} : { instructions: input.instructions }),
       limits: {
         maxDiagnostics: input.resourceLimits.maxDiagnostics,
         maxEntries: input.resourceLimits.maxEntries,

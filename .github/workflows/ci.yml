@@ -223,12 +223,12 @@ jobs:
     if: ${{ needs.plan.outputs.consumer_conformance == 'true' }}
     permissions:
       contents: read
-    uses: moldea-ai/skill/.github/workflows/release-candidate.yml@eef10915257084bf3477cc232c5aa4ecfca76e04
+    uses: moldea-ai/skill/.github/workflows/release-candidate.yml@37dea8ecb454b92746520e5c3beb958241565170
     with:
       artifact_name: public-package-tarballs
       packages_ref: ${{ github.sha }}
-      skill_ref: eef10915257084bf3477cc232c5aa4ecfca76e04
-      skill_version: '8.2.2'
+      skill_ref: 37dea8ecb454b92746520e5c3beb958241565170
+      skill_version: '8.2.8'
       registry_snapshot: ${{ needs.plan.outputs.registry_snapshot }}
 
   repository-testing-peer-compatibility:

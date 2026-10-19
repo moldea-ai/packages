@@ -75,6 +75,45 @@ interface ISelectedDirectoryProof {
   readonly names: ReadonlySet<string>;
 }
 
+// package-internal reader capabilities that the link resolver reuses instead of duplicating
+export interface IFilesystemLinkHost {
+  readonly limits: IFilesystemRepositoryResourceLimits;
+  readonly rootDirectory: string;
+  readonly snapshot: IRepositorySnapshot;
+  readonly assertRootUnchanged: (
+    operation: IRepositoryOperation,
+    logicalPath: IRepositoryPath,
+  ) => Promise<void>;
+  readonly getHostPath: (logicalPath: IRepositoryPath) => string;
+  readonly identifyStatistics: (statistics: BigIntStats, type: string) => string;
+  readonly observeEntry: (
+    logicalPath: IRepositoryPath,
+    operation: IRepositoryOperation,
+    signal: AbortSignal | undefined,
+  ) => Promise<IRepositoryEntry | null>;
+  readonly parseFilePageOptions: (
+    options: IRepositoryFilePageOptions,
+    logicalPath: IRepositoryPath,
+  ) => { readonly maxBytes: number; readonly offset: number };
+  readonly run: <T>(
+    operation: IRepositoryOperation,
+    logicalPath: IRepositoryPath,
+    signal: AbortSignal | undefined,
+    callback: () => Promise<T>,
+  ) => Promise<T>;
+}
+
+// readers created by this package, keyed weakly so the registry never retains a reader
+const linkHosts = new WeakMap<object, IFilesystemLinkHost>();
+
+/**
+ * Returns the internal link host of a reader this package created.
+ * @param candidate The value claimed to be a filesystem repository reader.
+ * @returns Its link host, or `undefined` for any other value.
+ */
+export const getFilesystemLinkHost = (candidate: unknown): IFilesystemLinkHost | undefined =>
+  typeof candidate === 'object' && candidate !== null ? linkHosts.get(candidate) : undefined;
+
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 const MAX_CURSOR_BYTES = 65_536;
 const DIRECTORY_CURSOR_KEYS = new Set(['frames', 'kind', 'prefix', 'snapshotId', 'version']);
@@ -163,7 +202,7 @@ const throwIfAborted = (
   }
 };
 
-const getStatisticsIdentity = (statistics: BigIntStats, type: IRepositoryEntryType): string => {
+const getStatisticsIdentity = (statistics: BigIntStats, type: string): string => {
   return hashParts([
     type,
     statistics.dev.toString(),
@@ -422,6 +461,8 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       names.add(logicalPath.slice(separatorIndex + 1));
       this.#selectedNamesByParent.set(parentPath, names);
     }
+
+    linkHosts.set(this, this.#createLinkHost());
   }
 
   /** Completes bounded initialization for exact-path selections. */
@@ -578,6 +619,49 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       );
 
       return this.#createFilePage(bytes.slice(), entry.byteLength, offset);
+    });
+  }
+
+  #createLinkHost(): IFilesystemLinkHost {
+    return Object.freeze({
+      assertRootUnchanged: async (
+        operation: IRepositoryOperation,
+        logicalPath: IRepositoryPath,
+      ) => {
+        await this.#assertRootUnchanged(operation, logicalPath);
+      },
+      getHostPath: (logicalPath: IRepositoryPath) => this.#getHostPath(logicalPath),
+      identifyStatistics: getStatisticsIdentity,
+      limits: this.#limits,
+      observeEntry: async (
+        logicalPath: IRepositoryPath,
+        operation: IRepositoryOperation,
+        signal: AbortSignal | undefined,
+      ) =>
+        this.#isVisible(logicalPath)
+          ? this.#observeEntry(logicalPath, operation, undefined, signal)
+          : null,
+      parseFilePageOptions: (
+        options: IRepositoryFilePageOptions,
+        logicalPath: IRepositoryPath,
+      ) => ({
+        maxBytes: this.#parseBoundedPositiveInteger(
+          options.maxBytes,
+          this.#limits.maxReadBytes,
+          'readBytes',
+          'read-file-page',
+          logicalPath,
+        ),
+        offset: this.#parseOffset(options.offset, logicalPath),
+      }),
+      rootDirectory: this.#rootDirectory,
+      run: async <T>(
+        operation: IRepositoryOperation,
+        logicalPath: IRepositoryPath,
+        signal: AbortSignal | undefined,
+        callback: () => Promise<T>,
+      ) => this.#gate.run(operation, logicalPath, signal, callback),
+      snapshot: this.snapshot,
     });
   }
 

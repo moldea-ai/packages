@@ -9,6 +9,7 @@ import {
   type IGitStreamingProcessExecutor,
 } from '../git-process/index.js';
 
+import { INSTRUCTION_PATHS } from './constants.js';
 import { createGitInventoryProbe, probeGitInventory } from './probe.js';
 import {
   commitFixtureGitIndex,
@@ -38,6 +39,66 @@ describe('real Git inventory probe', () => {
       expect(result).toStrictEqual({ entries: [], kind: 'probed' });
       expect(Object.isFrozen(result)).toBe(true);
       expect(result.kind === 'probed' && Object.isFrozen(result.entries)).toBe(true);
+    } finally {
+      repository.remove();
+    }
+  });
+
+  test('lists ignored instruction files only in the explicit instruction probe', async () => {
+    const repository = createGitRepository();
+
+    try {
+      mkdirSync(path.join(repository.directory, '.claude'));
+      writeFileSync(
+        path.join(repository.directory, '.gitignore'),
+        'AGENTS.md\nCLAUDE.local.md\n.claude/\nignored.txt\n',
+        'utf8',
+      );
+      writeFileSync(path.join(repository.directory, 'AGENTS.md'), 'shared\n', 'utf8');
+      writeFileSync(path.join(repository.directory, 'CLAUDE.md'), '@AGENTS.md\n', 'utf8');
+      writeFileSync(path.join(repository.directory, 'CLAUDE.local.md'), 'mine\n', 'utf8');
+      writeFileSync(path.join(repository.directory, '.claude', 'CLAUDE.md'), 'nested\n', 'utf8');
+      writeFileSync(path.join(repository.directory, 'ignored.txt'), 'ignored\n', 'utf8');
+      runFixtureGit(repository, ['add', '--', '.gitignore', 'CLAUDE.md']);
+
+      const general = await probeGitInventory({
+        includeIgnored: true,
+        maxEntries: 16,
+        maxMetadataBytes: 4096,
+        repositoryRoot: repository.directory,
+      });
+      const instructions = await probeGitInventory({
+        includeIgnored: true,
+        maxEntries: 16,
+        maxMetadataBytes: 4096,
+        repositoryRoot: repository.directory,
+        selectionPaths: INSTRUCTION_PATHS,
+      });
+      const withoutIgnored = await probeGitInventory({
+        maxEntries: 16,
+        maxMetadataBytes: 4096,
+        repositoryRoot: repository.directory,
+        selectionPaths: INSTRUCTION_PATHS,
+      });
+
+      expect(
+        general.kind === 'probed' ? general.entries.map((entry) => entry.path) : general,
+      ).toStrictEqual(['/.gitignore', '/CLAUDE.md']);
+      expect(
+        instructions.kind === 'probed'
+          ? instructions.entries.map((entry) => [entry.path, entry.kind])
+          : instructions,
+      ).toStrictEqual([
+        ['/.claude/CLAUDE.md', 'untracked'],
+        ['/AGENTS.md', 'untracked'],
+        ['/CLAUDE.local.md', 'untracked'],
+        ['/CLAUDE.md', 'tracked'],
+      ]);
+      expect(
+        withoutIgnored.kind === 'probed'
+          ? withoutIgnored.entries.map((entry) => entry.path)
+          : withoutIgnored,
+      ).toStrictEqual(['/CLAUDE.md']);
     } finally {
       repository.remove();
     }

@@ -387,7 +387,7 @@ test('uses the authored guide and excludes Website UI from public discovery', ()
 test('regenerates the same source-backed model with Core 7 examples', async () => {
   const model = getCurrentWebsiteModel();
   expect(await createWebsiteModel()).toStrictEqual(model);
-  expect(model.capabilities.cases).toHaveLength(117);
+  expect(model.capabilities.cases).toHaveLength(119);
   expect(model.inspectionExample.map(({ result }) => result.valid)).toStrictEqual([
     true,
     false,

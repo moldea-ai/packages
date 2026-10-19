@@ -10,6 +10,9 @@ import {
   type IRepositoryEntry,
   type IRepositoryEntryPageOptions,
   type IRepositoryEntryType,
+  type IRepositoryLinkResolution,
+  type IRepositoryLinkResolver,
+  type IRepositoryLinkTargetType,
   type IRepositoryOperation,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
@@ -23,7 +26,9 @@ import {
   type IMemoryRepositoryEntry,
 } from '@moldea.ai/repository/memory';
 import {
+  describeRepositoryLinkResolverConformance,
   describeRepositoryReaderConformance,
+  type IRepositoryLinkResolverConformanceResolution,
   type IRepositoryReaderConformanceEntry,
 } from '@moldea.ai/repository/testing';
 
@@ -60,6 +65,22 @@ const reader: IRepositoryReader = createMemoryRepositoryReader(memoryEntries);
 const conformanceEntry: IRepositoryReaderConformanceEntry<IRepositoryPath> = entry;
 const conformanceRunner: typeof describeRepositoryReaderConformance =
   describeRepositoryReaderConformance;
+const linkConformanceRunner: typeof describeRepositoryLinkResolverConformance =
+  describeRepositoryLinkResolverConformance;
+const linkTargetType: IRepositoryLinkTargetType = 'file';
+const linkResolution: IRepositoryLinkResolution = {
+  state: 'inside',
+  targetIdentity: 'fixture:target',
+  targetPath: repositoryPath,
+  targetType: linkTargetType,
+};
+const conformanceResolution: IRepositoryLinkResolverConformanceResolution<IRepositoryPath> =
+  linkResolution;
+const linkResolver: IRepositoryLinkResolver = {
+  readLinkTargetPage: (path, options) => reader.readFilePage(path, options),
+  resolveLink: async () => linkResolution,
+  snapshot: reader.snapshot,
+};
 const pathException = new RepositoryPathException(pathExceptionOptions);
 const sourceException = new RepositorySourceException(sourceExceptionOptions);
 const comparisonOrder: number = compareRepositoryPaths(root, repositoryPath);
@@ -76,6 +97,9 @@ void [
   reader,
   conformanceEntry,
   conformanceRunner,
+  linkConformanceRunner,
+  conformanceResolution,
+  linkResolver,
   pathException,
   sourceException,
   comparison,

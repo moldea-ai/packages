@@ -1,7 +1,9 @@
+import type { IProjectInstructionSource } from '@moldea.ai/core';
 import { RepositorySourceException, type IRepositoryReader } from '@moldea.ai/repository';
 
 import {
   areGitInventoriesEqual,
+  INSTRUCTION_PATHS,
   probeGitInventory,
   type IGitInventoryProbe,
   type IGitInventoryProbedResult,
@@ -14,7 +16,9 @@ import {
 } from '../git-working-tree/index.js';
 import type { IMoldeaCliOwnedErrorCode } from '../presentation/index.js';
 import {
+  createWorkingTreeInstructionSource,
   createWorkingTreeRepositoryReader,
+  type IWorkingTreeInstructionSourceFactory,
   type IWorkingTreeRepositoryReaderFactory,
 } from '../repository-reader/index.js';
 
@@ -52,6 +56,7 @@ const isPinnedIdentityUnavailable = (errorCode: IMoldeaCliOwnedErrorCode): boole
  * @param inventoryProbe The complete normalized Git inventory probe.
  * @param repositoryReaderFactory The exact-path guarded reader factory.
  * @param compareInventories The exact normalized inventory comparator.
+ * @param instructionSourceFactory The instruction-source composition over instruction entries.
  * @returns An executor that discards and retries complete provisional attempts.
  */
 export const createWorkingTreeSnapshotExecutor = (
@@ -59,6 +64,7 @@ export const createWorkingTreeSnapshotExecutor = (
   inventoryProbe: IGitInventoryProbe = probeGitInventory,
   repositoryReaderFactory: IWorkingTreeRepositoryReaderFactory = createWorkingTreeRepositoryReader,
   compareInventories: IWorkingTreeSnapshotInventoryComparator = areGitInventoriesEqual,
+  instructionSourceFactory: IWorkingTreeInstructionSourceFactory = createWorkingTreeInstructionSource,
 ): IWorkingTreeSnapshotExecutor => {
   const executeSnapshot = async <TResult>(
     input: IWorkingTreeSnapshotExecutionInput<TResult>,
@@ -96,6 +102,26 @@ export const createWorkingTreeSnapshotExecutor = (
         maxMetadataBytes: resourceLimits.maxTotalBytes,
         repositoryRoot,
         ...(input.selectionPaths === undefined ? {} : { selectionPaths: input.selectionPaths }),
+        ...(input.signal === undefined ? {} : { signal: input.signal }),
+      });
+
+      return result.kind === 'failed' ? createSnapshotFailure(result.errorCode) : result;
+    };
+
+    // the instruction paths, including ignored files, form a separate pinned inventory
+    const probeInstructions = async (): Promise<
+      IGitInventoryProbedResult | IWorkingTreeSnapshotFailedResult | null
+    > => {
+      if (input.includeInstructions !== true) {
+        return null;
+      }
+
+      const result = await inventoryProbe({
+        includeIgnored: true,
+        maxEntries: resourceLimits.maxEntries,
+        maxMetadataBytes: resourceLimits.maxTotalBytes,
+        repositoryRoot,
+        selectionPaths: INSTRUCTION_PATHS,
         ...(input.signal === undefined ? {} : { signal: input.signal }),
       });
 
@@ -141,7 +167,18 @@ export const createWorkingTreeSnapshotExecutor = (
         return firstInventoryResult;
       }
 
+      const firstInstructionResult = await probeInstructions();
+
+      if (input.signal?.aborted) {
+        return createSnapshotFailure('GIT_OPERATION_ABORTED');
+      }
+
+      if (firstInstructionResult?.kind === 'failed') {
+        return firstInstructionResult;
+      }
+
       let reader: IRepositoryReader;
+      let instructions: IProjectInstructionSource | undefined;
 
       try {
         reader = await repositoryReaderFactory({
@@ -150,6 +187,15 @@ export const createWorkingTreeSnapshotExecutor = (
           resourceLimits,
           ...(input.signal === undefined ? {} : { signal: input.signal }),
         });
+        instructions =
+          firstInstructionResult === null
+            ? undefined
+            : await instructionSourceFactory({
+                entries: firstInstructionResult.entries,
+                repositoryRoot,
+                resourceLimits,
+                ...(input.signal === undefined ? {} : { signal: input.signal }),
+              });
       } catch (error) {
         if (input.signal?.aborted) {
           return createSnapshotFailure('GIT_OPERATION_ABORTED');
@@ -173,7 +219,22 @@ export const createWorkingTreeSnapshotExecutor = (
           return freshInventoryResult;
         }
 
-        if (!compareInventories(firstInventoryResult.entries, freshInventoryResult.entries)) {
+        const freshInstructionResult = await probeInstructions();
+
+        if (input.signal?.aborted) {
+          return createSnapshotFailure('GIT_OPERATION_ABORTED');
+        }
+
+        if (freshInstructionResult?.kind === 'failed') {
+          return freshInstructionResult;
+        }
+
+        if (
+          !compareInventories(firstInventoryResult.entries, freshInventoryResult.entries) ||
+          (firstInstructionResult !== null &&
+            freshInstructionResult !== null &&
+            !compareInventories(firstInstructionResult.entries, freshInstructionResult.entries))
+        ) {
           continue;
         }
 
@@ -194,15 +255,35 @@ export const createWorkingTreeSnapshotExecutor = (
         continue;
       }
 
+      const secondInstructionResult = await probeInstructions();
+
+      if (input.signal?.aborted) {
+        return createSnapshotFailure('GIT_OPERATION_ABORTED');
+      }
+
+      if (secondInstructionResult?.kind === 'failed') {
+        return secondInstructionResult;
+      }
+
+      if (
+        firstInstructionResult !== null &&
+        secondInstructionResult !== null &&
+        !compareInventories(firstInstructionResult.entries, secondInstructionResult.entries)
+      ) {
+        continue;
+      }
+
       try {
         if (input.signal?.aborted) {
           return createSnapshotFailure('GIT_OPERATION_ABORTED');
         }
 
         const result =
-          input.signal === undefined
-            ? await input.operation(reader)
-            : await input.operation(reader, input.signal);
+          instructions !== undefined
+            ? await input.operation(reader, input.signal, instructions)
+            : input.signal === undefined
+              ? await input.operation(reader)
+              : await input.operation(reader, input.signal);
 
         if (input.signal?.aborted) {
           return createSnapshotFailure('GIT_OPERATION_ABORTED');

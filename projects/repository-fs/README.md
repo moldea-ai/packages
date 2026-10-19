@@ -14,7 +14,7 @@ pnpm add @moldea.ai/repository@2 @moldea.ai/repository-fs@2
 
 ## Responsibility
 
-The reader is read-only and Git-agnostic. Callers provide an absolute host root and choose exact logical paths or recursive directory access. The package does not discover a repository, interpret Git rules, execute content filters, parse `moldea`, or expose host paths. It treats stable descendant symlinks as metadata instead of traversing them.
+The reader is read-only and Git-agnostic. Callers provide an absolute host root and choose exact logical paths or recursive directory access. The package does not discover a repository, interpret Git rules, execute content filters, parse `moldea`, or expose host paths. It treats stable descendant symlinks as metadata instead of traversing them; only the separate link resolver follows a link, and only for an entry a caller names.
 
 Directory selection includes every eligible raw entry reached by the requested pages. It may expose ignored files, credentials, dependencies, caches, and generated output. Trust-sensitive callers should derive an exact path selection outside this package.
 
@@ -51,6 +51,30 @@ Exact-path construction verifies only selected paths and required parents. Direc
 Version `2.0.3` groups exact selections by parent. One bounded scan proves the selected names for a parent, retaining only those names and the parent identity. Later accesses reuse that proof only while the identity remains unchanged. Recursive listing reuses the names already held by its current traversal frames instead of rescanning a parent for each child. This bounds retained names by the selection or active frames; it adds no repository-wide directory cache.
 
 Exact-name lookups skip sibling entries whose names cannot be decoded or validated. Those entries still count against `maxDirectoryEntries`; full directory listings reject them.
+
+## Link resolver
+
+`createFilesystemRepositoryLinkResolver(reader)` returns the Repository `IRepositoryLinkResolver` for a reader this package created. It shares the reader's snapshot, root checks, operation gate, and limits, and follows only the symlink entries a caller names:
+
+```typescript
+import { parseRepositoryPath } from '@moldea.ai/repository';
+import {
+  createFilesystemRepositoryLinkResolver,
+  createFilesystemRepositoryReader,
+} from '@moldea.ai/repository-fs';
+
+const instructionPath = parseRepositoryPath('/AGENTS.md');
+const instructionReader = await createFilesystemRepositoryReader({
+  rootDirectory: '/absolute/path/to/repository',
+  selection: { kind: 'paths', paths: [instructionPath] },
+});
+const resolver = createFilesystemRepositoryLinkResolver(instructionReader);
+const resolution = await resolver.resolveLink(instructionPath);
+
+void resolution;
+```
+
+The resolver walks a chain one link and one component at a time instead of calling `realpath`. On POSIX, `..` moves to the parent of the directory reached so far, exactly as the operating system resolves it; on Windows, relative link text resolves against the link's directory, as Windows does. It refuses UNC, device-namespace, and drive-relative Windows paths and the automount roots `/net` and `/Network` with `unsafe`, checking each link's text, its textual candidate, and every path reached before any filesystem call beneath it. More than 32 hops is `loop`. Resolved targets carry an HMAC identity under a per-resolver key, and `readLinkTargetPage` proves the opened handle is the resolved target before and after each bounded read. Results and exceptions never contain host paths or link text. A network filesystem already mounted at an ordinary path cannot be recognized from its path; reads there stay bounded and content-free.
 
 ## Default limits
 
@@ -92,4 +116,4 @@ pnpm --filter @moldea.ai/repository-fs test:integration
 pnpm --filter @moldea.ai/repository-fs test
 ```
 
-Unit and integration tests cover resource ceilings, cursor integrity, snapshot drift, symlink boundaries, cancellation, cache eviction, cross-platform path behavior, and the shared repository reader conformance contract. Real 256-, 1,024-, and 4,096-file cases also verify selected-parent and traversal-frame scan reuse without per-child directory scans.
+Unit and integration tests cover resource ceilings, cursor integrity, snapshot drift, symlink boundaries, cancellation, cache eviction, cross-platform path behavior, and the shared repository reader and link-resolver conformance contracts. Link tests use real file links, directory links, and Windows junctions, and check every result against the file the operating system opens through the link. Real 256-, 1,024-, and 4,096-file cases also verify selected-parent and traversal-frame scan reuse without per-child directory scans.

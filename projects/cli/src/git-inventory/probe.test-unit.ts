@@ -8,7 +8,12 @@ import type {
   IGitStreamingProcessFailureReason,
 } from '../git-process/index.js';
 
-import { GIT_TRACKED_INVENTORY_ARGUMENTS, GIT_UNTRACKED_INVENTORY_ARGUMENTS } from './constants.js';
+import {
+  GIT_IGNORED_INVENTORY_ARGUMENTS,
+  GIT_TRACKED_INVENTORY_ARGUMENTS,
+  GIT_UNTRACKED_INVENTORY_ARGUMENTS,
+  INSTRUCTION_PATHS,
+} from './constants.js';
 import type { IGitContentTransformationClassifier } from './content-transformation/index.js';
 import type { IGitInventoryEntryTypeNormalizer } from './entry-type/index.js';
 import type { IGitInventoryLogicalPathNormalizer } from './logical-path/index.js';
@@ -301,6 +306,88 @@ describe('createGitInventoryProbe', () => {
       ...GIT_UNTRACKED_INVENTORY_ARGUMENTS,
       ':(top,literal)moldea/moldea.yaml',
     ]);
+  });
+
+  test('adds ignored instruction candidates only for an explicit selection', async () => {
+    const processExecutor = createProcessExecutor([
+      { stdout: new Uint8Array() },
+      { stdout: ENCODER.encode('CLAUDE.md\0') },
+      { stdout: ENCODER.encode('AGENTS.md\0CLAUDE.md\0') },
+    ]);
+    const ownershipFilter = vi
+      .fn<IGitInventoryOwnershipFilter>()
+      .mockResolvedValue(
+        Object.freeze({ candidates: Object.freeze([]), gitMetadataBytes: 0, kind: 'filtered' }),
+      );
+    const entryTypeNormalizer = vi
+      .fn<IGitInventoryEntryTypeNormalizer>()
+      .mockResolvedValue(
+        Object.freeze({ entries: Object.freeze([]), gitMetadataBytes: 0, kind: 'normalized' }),
+      );
+    const probe = createGitInventoryProbe(
+      processExecutor,
+      ownershipFilter,
+      entryTypeNormalizer,
+      createContentTransformationClassifier(),
+    );
+
+    await probe({
+      includeIgnored: true,
+      maxEntries: 8,
+      maxMetadataBytes: 1024,
+      repositoryRoot: '/repository',
+      selectionPaths: INSTRUCTION_PATHS,
+    });
+
+    const pathspecs = [
+      ':(top,literal)AGENTS.md',
+      ':(top,literal)CLAUDE.md',
+      ':(top,literal).claude/CLAUDE.md',
+      ':(top,literal)CLAUDE.local.md',
+    ];
+    expect(
+      vi.mocked(processExecutor).mock.calls.map(([options]) => options.arguments),
+    ).toStrictEqual([
+      ['-C', '/repository', ...GIT_TRACKED_INVENTORY_ARGUMENTS, ...pathspecs],
+      ['-C', '/repository', ...GIT_UNTRACKED_INVENTORY_ARGUMENTS, ...pathspecs],
+      ['-C', '/repository', ...GIT_IGNORED_INVENTORY_ARGUMENTS, ...pathspecs],
+    ]);
+    expect(vi.mocked(processExecutor).mock.calls[2]?.[0].maxStdoutBytes).toBe(1024 - 10);
+    expect(ownershipFilter.mock.calls[0]?.[0].candidates).toStrictEqual([
+      { kind: 'untracked', path: 'CLAUDE.md' },
+      { kind: 'untracked', path: 'AGENTS.md' },
+    ]);
+    expect(ownershipFilter.mock.calls[0]?.[0].maxMetadataBytes).toBe(1024 - 10 - 20);
+  });
+
+  test('never lists ignored files without a selection', async () => {
+    const processExecutor = createProcessExecutor([
+      { stdout: new Uint8Array() },
+      { stdout: new Uint8Array() },
+    ]);
+    const probe = createGitInventoryProbe(
+      processExecutor,
+      vi
+        .fn<IGitInventoryOwnershipFilter>()
+        .mockResolvedValue(
+          Object.freeze({ candidates: Object.freeze([]), gitMetadataBytes: 0, kind: 'filtered' }),
+        ),
+      vi
+        .fn<IGitInventoryEntryTypeNormalizer>()
+        .mockResolvedValue(
+          Object.freeze({ entries: Object.freeze([]), gitMetadataBytes: 0, kind: 'normalized' }),
+        ),
+      createContentTransformationClassifier(),
+    );
+
+    await probe({
+      includeIgnored: true,
+      maxEntries: 8,
+      maxMetadataBytes: 1024,
+      repositoryRoot: '/repository',
+    });
+
+    expect(vi.mocked(processExecutor).mock.calls).toHaveLength(2);
   });
 
   test.each([

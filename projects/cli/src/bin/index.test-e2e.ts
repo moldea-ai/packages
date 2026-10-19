@@ -10,6 +10,7 @@ import {
   readdirSync,
   renameSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -267,7 +268,7 @@ describe('published CLI package and executable', () => {
     const manifest = readCliPackageManifest();
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '11.0.6' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '11.1.0' });
     expect(packedPaths).toContain('dist/moldea.js');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
@@ -284,7 +285,7 @@ describe('published CLI package and executable', () => {
       ),
     ).toBe(true);
     expect(packedPaths.every((filePath) => !filePath.includes('.test-'))).toBe(true);
-    expectPackageManifest(manifest, 'workspace:^7.0.4', 'workspace:^2.0.0', 'workspace:^2.0.7');
+    expectPackageManifest(manifest, 'workspace:^7.1.0', 'workspace:^2.1.0', 'workspace:^2.1.0');
     const executable = readFileSync(CLI_DISTRIBUTION_PATH, 'utf8');
     const executableChunks = packedPaths
       .filter((filePath) => filePath.startsWith('dist/chunks/') && filePath.endsWith('.js'))
@@ -317,7 +318,7 @@ describe('published CLI package and executable', () => {
       ) as IMoldeaCliPackageManifest;
       const executable = readTarEntry(tarball, 'package/dist/moldea.js').toString('utf8');
 
-      expectPackageManifest(manifest, '^7.0.4', '^2.0.0', '^2.0.7');
+      expectPackageManifest(manifest, '^7.1.0', '^2.1.0', '^2.1.0');
       expect(executable.startsWith('#!/usr/bin/env node\n')).toBe(true);
       expect(executable).toContain('import("./chunks/');
     } finally {
@@ -481,6 +482,232 @@ describe('published CLI package and executable', () => {
       rmSync(directory, { recursive: true, force: true });
     }
   }, 120_000);
+
+  test('checks linked and ignored coding-agent instruction files through the installed CLI', () => {
+    const packageManagerEntrypoint = process.env['npm_execpath'];
+    if (packageManagerEntrypoint === undefined) {
+      throw new Error('The package-manager entrypoint is unavailable.');
+    }
+    const directory = mkdtempSync(path.join(tmpdir(), 'moldea-cli-instructions-'));
+    const gitHome = path.join(directory, 'home');
+    const gitConfig = path.join(directory, 'config');
+    const environment = createGitProcessEnvironment({
+      ...process.env,
+      HOME: gitHome,
+      XDG_CONFIG_HOME: gitConfig,
+    });
+    const asset =
+      '<!-- moldea:start -->\nnode "<repo-root>/{{skill-path}}/scripts/relevance-gate.mjs" --repository "<repo-root>"\n<!-- moldea:end -->\n';
+    const block = asset.replaceAll('{{skill-path}}', '.agents/skills/moldea');
+    const installation: Record<string, string> = {
+      '/.agents/skills/moldea/SKILL.md': '# Skill\n',
+      '/.agents/skills/moldea/scripts/relevance-gate.mjs': '// Gate\n',
+      '/.agents/skills/moldea/assets/managed-agents-block.md': asset,
+      '/moldea/project.md': '# Project\n',
+    };
+    const git = (repository: string, arguments_: string[], input?: string): string =>
+      execFileSync('git', arguments_, {
+        cwd: repository,
+        encoding: 'utf8',
+        env: environment,
+        ...(input === undefined ? {} : { input }),
+      });
+    const createRepository = (
+      name: string,
+      files: Record<string, string>,
+      manifest: Record<string, unknown> = { version: 1 },
+    ): string => {
+      const repository = path.join(directory, name);
+      mkdirSync(repository);
+      git(repository, ['init', '--quiet']);
+      for (const [logicalPath, content] of Object.entries({
+        ...installation,
+        '/moldea/moldea.yaml': JSON.stringify(manifest),
+        ...files,
+      })) {
+        const target = path.join(repository, logicalPath.slice(1));
+        mkdirSync(path.dirname(target), { recursive: true });
+        writeFileSync(target, content);
+      }
+      return repository;
+    };
+    const link = (repository: string, name: string, target: string): void => {
+      symlinkSync(target, path.join(repository, name), 'file');
+    };
+    const run = (repository: string, arguments_: string[]) => {
+      const response = spawnSync(process.execPath, [executable, ...arguments_, '--json'], {
+        cwd: repository,
+        encoding: 'utf8',
+        env: environment,
+      });
+      expect(response.stderr).toBe('');
+      return {
+        envelope: JSON.parse(response.stdout) as {
+          error: { code: string } | null;
+          result: IMoldeaCliValidateResult;
+        },
+        status: response.status,
+      };
+    };
+    const integrationRecords = (repository: string) =>
+      run(repository, ['validate']).envelope.result.page.records.filter(
+        (record) => record.kind === 'diagnostic' && record.group === 'integration',
+      );
+    let executable = '';
+
+    try {
+      for (const target of [gitHome, gitConfig]) mkdirSync(target);
+      const tarballs = Object.fromEntries(
+        (
+          [
+            ['@moldea.ai/repository', REPOSITORY_PROJECT_DIRECTORY],
+            ['@moldea.ai/repository-fs', REPOSITORY_FILESYSTEM_PROJECT_DIRECTORY],
+            ['@moldea.ai/core', CORE_PROJECT_DIRECTORY],
+            ['@moldea.ai/cli', CLI_PROJECT_DIRECTORY],
+          ] as const
+        ).map(([name, project]) => [
+          name,
+          `file:./${packPackageTarball(packageManagerEntrypoint, project, directory)}`,
+        ]),
+      );
+      writeFileSync(
+        path.join(directory, 'package.json'),
+        JSON.stringify({
+          name: 'moldea-cli-instructions',
+          private: true,
+          type: 'module',
+          dependencies: tarballs,
+        }),
+      );
+      writeFileSync(
+        path.join(directory, 'pnpm-workspace.yaml'),
+        `packages:\n  - .\noverrides:\n${Object.entries(tarballs)
+          .map(([name, tarball]) => `  '${name}': ${tarball}`)
+          .join('\n')}\n`,
+      );
+      runPackageManager(
+        packageManagerEntrypoint,
+        ['install', '--ignore-scripts', '--prefer-offline'],
+        { cwd: directory, encoding: 'utf8', env: { ...process.env, CI: 'true' } },
+      );
+      executable = path.join(directory, 'node_modules', '@moldea.ai', 'cli', 'dist', 'moldea.js');
+      writeFileSync(path.join(directory, 'shared.md'), block);
+
+      // a healthy installation: a regular file, an inside link, and outside links
+      const regular = createRepository('regular', { '/AGENTS.md': block });
+      const inside = createRepository('inside', {
+        '/.gitignore': '/AGENTS.md\n',
+        '/docs/AGENTS.md': block,
+      });
+      link(inside, 'AGENTS.md', path.join('docs', 'AGENTS.md'));
+      const ignoredOutside = createRepository('ignored-outside', {
+        '/.gitignore': '/AGENTS.md\n',
+        '/CLAUDE.md': '# Claude\n@AGENTS.md\n',
+      });
+      link(ignoredOutside, 'AGENTS.md', path.join('..', 'shared.md'));
+      git(ignoredOutside, ['add', '--', 'CLAUDE.md']);
+      const untrackedOutside = createRepository('untracked-outside', {});
+      link(untrackedOutside, 'AGENTS.md', path.join('..', 'shared.md'));
+      const trackedOutside = createRepository('tracked-outside', {});
+      link(trackedOutside, 'AGENTS.md', path.join('..', 'shared.md'));
+      git(trackedOutside, ['add', '--', 'AGENTS.md']);
+      for (const repository of [
+        regular,
+        inside,
+        ignoredOutside,
+        untrackedOutside,
+        trackedOutside,
+      ]) {
+        const { envelope, status } = run(repository, ['validate']);
+        expect(status, repository).toBe(0);
+        expect(envelope.result.warningCount, repository).toBe(0);
+      }
+
+      // an ignored personal file changes only the integration result
+      const isolated = createRepository(
+        'isolated',
+        { '/AGENTS.md': block, '/.gitignore': '/CLAUDE.local.md\n' },
+        {
+          version: 1,
+          context: { '/moldea/project.md': { affectedBy: ['/CLAUDE.local*', '/**'] } },
+        },
+      );
+      const before = run(isolated, ['validate']).envelope.result;
+      const inspectBefore = run(isolated, ['inspect']).envelope.result.page.records;
+      writeFileSync(path.join(isolated, 'CLAUDE.local.md'), '# Mine\n');
+      const after = run(isolated, ['validate']).envelope.result;
+      const inspectAfter = run(isolated, ['inspect']).envelope.result.page.records;
+      const outsideIntegration = (records: readonly { kind: string; group?: string }[]) =>
+        records.filter((record) => record.kind !== 'diagnostic' || record.group !== 'integration');
+      expect(
+        before.page.records.map((record) => record.kind === 'diagnostic' && record.code),
+      ).toContain('MOLDEA_IMPACT_PATTERN_UNMATCHED');
+      expect(outsideIntegration(after.page.records)).toStrictEqual(
+        outsideIntegration(before.page.records),
+      );
+      expect(outsideIntegration(inspectAfter)).toStrictEqual(outsideIntegration(inspectBefore));
+      expect(integrationRecords(isolated)).toMatchObject([
+        {
+          code: 'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING',
+          message: 'Claude Code instructions do not load AGENTS.md.',
+          subject: '/CLAUDE.local.md',
+        },
+      ]);
+      for (const record of integrationRecords(isolated)) {
+        expect(Object.keys(record)).not.toContain('details');
+      }
+
+      // a Git-materialized link and a broken link cannot be verified
+      const materialized = createRepository('materialized', {});
+      const blob = git(materialized, ['hash-object', '-w', '--stdin'], '../shared.md').trim();
+      git(materialized, ['update-index', '--add', '--cacheinfo', `120000,${blob},AGENTS.md`]);
+      git(materialized, ['config', 'core.symlinks', 'false']);
+      git(materialized, ['checkout', '--', 'AGENTS.md']);
+      const broken = createRepository('broken', {});
+      link(broken, 'AGENTS.md', path.join('..', 'missing.md'));
+      for (const repository of [materialized, broken]) {
+        const records = integrationRecords(repository);
+        expect(records, repository).toMatchObject([
+          {
+            code: 'MOLDEA_INTEGRATION_UNVERIFIED',
+            message: "The instruction file's moldea integration cannot be verified.",
+            subject: '/AGENTS.md',
+          },
+        ]);
+        expect(Object.keys(records[0] ?? {})).not.toContain('details');
+      }
+
+      // a page cursor is rejected once an outside target change alters the result
+      const paged = createRepository(
+        'paged',
+        {},
+        {
+          version: 1,
+          context: {
+            '/moldea/project.md': {
+              affectedBy: Array.from({ length: 64 }, (_, index) => `/future-${String(index)}/**`),
+            },
+          },
+        },
+      );
+      writeFileSync(path.join(directory, 'paged-shared.md'), block);
+      link(paged, 'AGENTS.md', path.join('..', 'paged-shared.md'));
+      const firstPage = run(paged, ['validate', '--max-output-bytes', '4096']).envelope.result;
+      expect(firstPage.page.cursor).not.toBeNull();
+      writeFileSync(path.join(directory, 'paged-shared.md'), '# Changed\n');
+      const stale = run(paged, [
+        'validate',
+        '--max-output-bytes',
+        '4096',
+        '--cursor',
+        firstPage.page.cursor!,
+      ]);
+      expect(stale.status).toBe(3);
+      expect(stale.envelope.error).toMatchObject({ code: 'CURSOR_SNAPSHOT_CHANGED' });
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  }, 180_000);
 
   test.skipIf(process.platform === 'win32')(
     'omits invalid external filenames and rejects canonical filenames in installed commands',
@@ -694,7 +921,7 @@ describe('published CLI package and executable', () => {
           cwd: consumerDirectory,
           encoding: 'utf8',
         }),
-      ).toBe('11.0.6\n');
+      ).toBe('11.1.0\n');
 
       const warningRepositoryDirectory = path.join(testDirectory, 'warning-repository');
       mkdirSync(path.join(warningRepositoryDirectory, 'moldea'), { recursive: true });
@@ -973,7 +1200,7 @@ describe('published CLI package and executable', () => {
       expect(humanComposition.status).toBe(0);
       expect(humanComposition.stderr).toBe('');
       expect(humanComposition.stdout).toContain(
-        'The installed CLI composition state is valid.\nCLI version: 11.0.6\n',
+        'The installed CLI composition state is valid.\nCLI version: 11.1.0\n',
       );
 
       const jsonComposition = spawnPackageManager(
@@ -1018,7 +1245,7 @@ describe('published CLI package and executable', () => {
       expect(jsonUsageFailure.status).toBe(2);
       expect(jsonUsageFailure.stderr).toBe('');
       expect(jsonUsageFailure.stdout).toBe(
-        '{"cliVersion":"11.0.6","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"11.1.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const nonRepositoryCommand = spawnPackageManager(
@@ -1066,7 +1293,7 @@ describe('published CLI package and executable', () => {
       expect(discoveredRepositoryCommand.stderr).toBe('');
       expect(discoveredRepositoryCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(discoveredRepositoryCommand.stdout)).toMatchObject({
-        cliVersion: '11.0.6',
+        cliVersion: '11.1.0',
         command: 'inspect',
         result: {
           counts: { diagnostics: 3, errors: 2, warnings: 1, acceptedWarnings: 0 },
@@ -1091,7 +1318,7 @@ describe('published CLI package and executable', () => {
       expect(invalidValidationCommand.stderr).toBe('');
       expect(invalidValidationCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(invalidValidationCommand.stdout)).toMatchObject({
-        cliVersion: '11.0.6',
+        cliVersion: '11.1.0',
         command: 'validate',
         result: {
           diagnosticCount: 3,
@@ -1234,7 +1461,7 @@ process.exit(0);
       expect(validJsonValidationCommand.status).toBe(0);
       expect(validJsonValidationCommand.stderr).toBe('');
       expect(JSON.parse(validJsonValidationCommand.stdout)).toMatchObject({
-        cliVersion: '11.0.6',
+        cliVersion: '11.1.0',
         command: 'validate',
         result: {
           diagnosticCount: 0,
@@ -1297,7 +1524,7 @@ acceptedWarnings: 0
       expect(validJsonInspectionCommand.status).toBe(0);
       expect(validJsonInspectionCommand.stderr).toBe('');
       expect(validInspectionEnvelope).toMatchObject({
-        cliVersion: '11.0.6',
+        cliVersion: '11.1.0',
         command: 'inspect',
         error: null,
         result: {
@@ -1347,7 +1574,7 @@ acceptedWarnings: 0
       expect(unrelatedScopeCommand.stderr).toBe('');
       expect(Buffer.byteLength(unrelatedScopeCommand.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
       expect(JSON.parse(unrelatedScopeCommand.stdout)).toMatchObject({
-        cliVersion: '11.0.6',
+        cliVersion: '11.1.0',
         command: 'scope',
         result: {
           counts: { declarations: 0, inputPaths: 1, matches: 0 },
@@ -1396,7 +1623,7 @@ acceptedWarnings: 0
         expect(invalidScope.status).toBe(3);
         expect(invalidScope.stderr).toBe('');
         expect(JSON.parse(invalidScope.stdout)).toStrictEqual({
-          cliVersion: '11.0.6',
+          cliVersion: '11.1.0',
           command: 'scope',
           schemaVersion: 7,
           status: 'error',
@@ -1454,7 +1681,7 @@ acceptedWarnings: 0
       expect(explicitContentCommand.status).toBe(0);
       expect(explicitContentCommand.stderr).toBe('');
       expect(JSON.parse(explicitContentCommand.stdout)).toMatchObject({
-        cliVersion: '11.0.6',
+        cliVersion: '11.1.0',
         command: 'content',
         result: {
           asset: { path: '/moldea/project.md' },
@@ -1758,7 +1985,7 @@ acceptedWarnings: 0
       expect(inventoryLimitCommand.status).toBe(3);
       expect(inventoryLimitCommand.stderr).toBe('');
       expect(inventoryLimitCommand.stdout).toBe(
-        '{"cliVersion":"11.0.6","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"11.1.0","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const environmentWithoutPath = Object.fromEntries(
@@ -1780,7 +2007,7 @@ acceptedWarnings: 0
       expect(missingGitResult.status).toBe(3);
       expect(missingGitResult.stderr).toBe('');
       expect(missingGitResult.stdout).toBe(
-        '{"cliVersion":"11.0.6","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"11.1.0","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const compositionWithoutGit = spawnSync(

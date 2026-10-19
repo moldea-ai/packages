@@ -267,7 +267,8 @@ describe('bounded impact warnings and manifest acceptance through Core', () => {
         content: '',
       })),
     );
-    const result = await createCore({ limits: { maxEntries: 8 } }).validateProject({ repository });
+    // ten required entries, including the three Claude Code lookups, leave one for patterns
+    const result = await createCore({ limits: { maxEntries: 11 } }).validateProject({ repository });
     expect(result.valid).toBe(true);
     expect(result.diagnostics).toStrictEqual([]);
   });

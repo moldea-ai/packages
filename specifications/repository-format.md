@@ -174,6 +174,8 @@ During local development, the skill and `@moldea.ai/core` may inspect modified, 
 
 A local working tree therefore may temporarily contain new canonical assets or mirrors that are not yet Git-tracked. They become part of the authoritative `moldea` project only when committed.
 
+Git-ignored files are outside the local repository view. Only the coding-agent integration check may read the four instruction paths `/AGENTS.md`, `/CLAUDE.md`, `/.claude/CLAUDE.md`, and `/CLAUDE.local.md` when Git ignores them, through a separate instruction source; they never enter the project inventory, impact patterns, or any other check.
+
 ## Text encoding and normalization
 
 Canonical text assets and the manifest use UTF-8.
@@ -252,6 +254,8 @@ The following must not be symlinks:
 - mirror files
 
 A path resolution that encounters a symlink is invalid rather than being followed implicitly.
+
+The coding-agent instruction files are the one exception. The integration check may follow a symlinked `/AGENTS.md`, `/CLAUDE.md`, `/.claude/CLAUDE.md`, or `/CLAUDE.local.md` to a regular-file target inside or outside the repository through a caller-supplied link resolver, as described under Coding-agent integration warnings. Following such a link never makes its target part of the repository view.
 
 ## Simple glob rules
 
@@ -1483,21 +1487,27 @@ Core diagnostics have `source: 'core'`, `severity: 'error' | 'warning'`, and a `
 
 ### Coding-agent integration warnings
 
-Project validation and inspection check the root `/AGENTS.md` managed region as untrusted text without following symlinks. A missing or non-regular file, absent or malformed marker region, or invalid UTF-8 produces `MOLDEA_INTEGRATION_BLOCK_MISSING`: The AGENTS.md moldea block is missing. Details identify the entry kind and, where relevant, the invalid region or encoding.
+Project validation and inspection check the root `/AGENTS.md` managed region as untrusted text. A missing file, a directory, an absent or malformed marker region, or invalid UTF-8 produces `MOLDEA_INTEGRATION_BLOCK_MISSING`: The AGENTS.md moldea block is missing. Details identify the entry kind and, where relevant, the invalid region or encoding.
+
+A symlinked `/AGENTS.md` is followed only through a link resolver that the caller supplies with the optional instruction source. When the link's final target is a readable regular file, inside or outside the repository, the target text gets every check in this section, still reported against `/AGENTS.md`. A link that resolves to a directory or other non-file, is broken, loops, is denied or refused as unsafe, is a Git-materialized link, or has no resolver produces `MOLDEA_INTEGRATION_UNVERIFIED`: The instruction file's moldea integration cannot be verified. Details identify the link state without the link text or target path. Readers without a resolver, such as the memory reader and hosted providers, therefore report a symlinked `/AGENTS.md` as unverifiable.
 
 A conforming installation has exactly one managed region in `/AGENTS.md`, delimited by `<!-- moldea:start -->` and `<!-- moldea:end -->` markers on complete lines. The region contains exactly one gate command line beginning `node "<repo-root>/<skill-path>/scripts/relevance-gate.mjs"`; command arguments may follow it. The relative `<skill-path>` matches `^[A-Za-z0-9._/-]+$` and has no empty, absolute, or traversal segments. The installation provides regular `SKILL.md`, `scripts/relevance-gate.mjs`, and `assets/managed-agents-block.md` files. Core renders the asset with `{{skill-path}}` replaced by that path and compares the full managed region, including markers, using its LF or CRLF line ending.
 
 An unextractable gate path or missing or non-regular installation file produces `MOLDEA_INTEGRATION_SKILL_MISSING`: The skill installation referenced by the AGENTS.md moldea block was not found. Details identify the reason or referenced installation and missing file.
 
-A difference from the rendered region or an invalid asset encoding produces `MOLDEA_INTEGRATION_BLOCK_STALE`: The AGENTS.md moldea block differs from its skill installation. A current block produces no warning. All three codes belong to `integration`, identify `entity.integrationPath: /AGENTS.md`, and use subject `/AGENTS.md` and qualifier `null`.
+A difference from the rendered region or an invalid asset encoding produces `MOLDEA_INTEGRATION_BLOCK_STALE`: The AGENTS.md moldea block differs from its skill installation. A current block produces no warning.
 
-The check makes at most two bounded reads and two entry lookups, reserved through the shared resource ledger; only its comparison findings are retained. Access failures, snapshot drift, cancellation, and resource exhaustion reject the operation. Manifest-only operations, the relevance gate, and `scope` do not run this check. Core's main entry exports `parseIntegrationBlock(text)`, returning the installation path or the reason none was found.
+The check also determines whether Claude Code loads AGENTS.md. When `/CLAUDE.md` or `/.claude/CLAUDE.md` exists, only those shared files count; `/CLAUDE.local.md` counts only when neither exists, and no Claude file means no Claude warning. A file loads AGENTS.md when one line outside fenced code blocks, trimmed of surrounding spaces and tabs, is exactly `@AGENTS.md` or `@./AGENTS.md`, or `@../AGENTS.md` in `/.claude/CLAUDE.md`; when it is a link whose final target is AGENTS.md's final target; or when AGENTS.md is a link resolving to it. A linked Claude file with a regular-file target is checked for an import line as if it were at the link's own location. When no counted file loads AGENTS.md, an unverifiable counted file produces `MOLDEA_INTEGRATION_UNVERIFIED` for it; otherwise `MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING`: Claude Code instructions do not load AGENTS.md, with subject `/CLAUDE.md` when it exists, else `/.claude/CLAUDE.md`, or `/CLAUDE.local.md` when only it counts. Validation reports at most one Claude warning.
+
+All five codes belong to `integration`, use the checked instruction file as subject and `entity.integrationPath`, and use qualifier `null`.
+
+The instruction source supplies only the coding-agent instruction paths. The referenced skill files and the managed asset are always read from the repository, and no other check reads the instruction source. The check makes at most six entry lookups, four link resolutions, and five bounded reads, each limited by `maxFileBytes` and reserved through the shared resource ledger; only its comparison findings are retained. Access failures, snapshot drift, cancellation, and resource exhaustion reject the operation. Manifest-only operations, the relevance gate, and `scope` do not run this check. Core's main entry exports `parseIntegrationBlock(text)`, returning the installation path or the reason none was found.
 
 ### Warning identity and manifest acceptance
 
 `MOLDEA_IMPACT_PATTERN_UNMATCHED` is a warning in `references`: The impact pattern matches no files. It is not a format error because impact patterns may cover future files. The check runs after required validation, uses only remaining resource budgets, shares one bounded traversal for patterns with the same fixed directory prefix, and stops checking each pattern at its first regular-file match. If the optional pass reaches a Core or reader resource limit, it returns no pattern warnings and is marked incomplete. Cancellation and source failures propagate. Manifest-only operations and `scope` do not run it.
 
-Every warning carries `subject`, `qualifier`, and `acceptable`. Impact-pattern subjects identify the owner's canonical context or decision path; agent, tool, and skill patterns use the owning agent's instruction path. Integration warnings use subject `/AGENTS.md` and qualifier `null`. Pattern qualifiers contain the exact pattern. `ACCEPTABLE_WARNING_CODES`, exported from Core's main entry, contains `MOLDEA_IMPACT_PATTERN_UNMATCHED`, `MOLDEA_INTEGRATION_BLOCK_MISSING`, `MOLDEA_INTEGRATION_SKILL_MISSING`, and `MOLDEA_INTEGRATION_BLOCK_STALE`. Every warning's `acceptable` flag is true exactly when its code appears in that list.
+Every warning carries `subject`, `qualifier`, and `acceptable`. Impact-pattern subjects identify the owner's canonical context or decision path; agent, tool, and skill patterns use the owning agent's instruction path. Integration warnings use the checked instruction file as subject and qualifier `null`. Pattern qualifiers contain the exact pattern. `ACCEPTABLE_WARNING_CODES`, exported from Core's main entry, contains `MOLDEA_IMPACT_PATTERN_UNMATCHED`, `MOLDEA_INTEGRATION_BLOCK_MISSING`, `MOLDEA_INTEGRATION_SKILL_MISSING`, `MOLDEA_INTEGRATION_BLOCK_STALE`, `MOLDEA_INTEGRATION_UNVERIFIED`, and `MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING`. Every warning's `acceptable` flag is true exactly when its code appears in that list. A Core release that predates a code rejects an `acceptedWarnings` entry naming it as `code-not-acceptable`; Core 7.0 accepts neither `MOLDEA_INTEGRATION_UNVERIFIED` nor `MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING`.
 
 The optional top-level `acceptedWarnings` list is the sole acceptance mechanism:
 

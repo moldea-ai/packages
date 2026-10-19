@@ -24,8 +24,10 @@ import { createInspectionProcessFailure, decodeInspectionMessage } from './proto
 import { executeRepositoryRpc } from './repository-rpc.js';
 import type {
   INodeInspectionMetadata,
+  INodeInstructionSourceMetadata,
   INodeProjectInspection,
   INodeProjectInspectionInput,
+  INodeReaderSources,
 } from './types.js';
 import type { IProjectInspectionPageResult } from '../contracts/index.js';
 
@@ -45,6 +47,49 @@ const createCompletion = <T>(): {
   });
   void promise.catch(() => {});
   return { promise, resolve, reject };
+};
+
+const isRecord = (input: unknown): input is Record<string, unknown> =>
+  input !== null && typeof input === 'object';
+const isSnapshot = (input: unknown): input is { id: string; sourceKind: string } =>
+  isRecord(input) &&
+  typeof input['id'] === 'string' &&
+  input['id'].length > 0 &&
+  typeof input['sourceKind'] === 'string' &&
+  input['sourceKind'].length > 0;
+
+/** Describes a supplied instruction source for the worker, or rejects one Core could not use. */
+const describeInstructions = (
+  instructions: unknown,
+): INodeInstructionSourceMetadata | null | undefined => {
+  if (instructions === undefined) return null;
+  if (
+    !isRecord(instructions) ||
+    Reflect.ownKeys(instructions).some((key) => key !== 'reader' && key !== 'linkResolver')
+  )
+    return undefined;
+  const reader = instructions['reader'];
+  const linkResolver = instructions['linkResolver'];
+  if (
+    !isRecord(reader) ||
+    typeof reader['getEntry'] !== 'function' ||
+    typeof reader['readFilePage'] !== 'function' ||
+    !isSnapshot(reader['snapshot'])
+  )
+    return undefined;
+  if (
+    linkResolver !== undefined &&
+    (!isRecord(linkResolver) ||
+      typeof linkResolver['resolveLink'] !== 'function' ||
+      typeof linkResolver['readLinkTargetPage'] !== 'function' ||
+      !isSnapshot(linkResolver['snapshot']) ||
+      linkResolver['snapshot'].id !== reader['snapshot'].id)
+  )
+    return undefined;
+  return {
+    hasLinkResolver: linkResolver !== undefined,
+    snapshot: { id: reader['snapshot'].id, sourceKind: reader['snapshot'].sourceKind },
+  };
 };
 
 const aborted = (cause?: unknown): CoreOperationException =>
@@ -102,8 +147,20 @@ export const createNodeProjectInspection = async (
       operation: 'create-project-inspection',
     });
   }
-  let repository: INodeProjectInspectionInput['repository'] | undefined = input.repository;
-  const snapshot = { id: repository.snapshot.id, sourceKind: repository.snapshot.sourceKind };
+  const instructions = describeInstructions(input.instructions);
+  if (instructions === undefined)
+    throw new CoreOperationException({
+      code: 'INVALID_ARGUMENT',
+      operation: 'create-project-inspection',
+    });
+  let sources: INodeReaderSources | undefined = {
+    repository: input.repository,
+    ...(input.instructions === undefined ? {} : { instructions: input.instructions }),
+  };
+  const snapshot = {
+    id: input.repository.snapshot.id,
+    sourceKind: input.repository.snapshot.sourceKind,
+  };
   const signal = input.signal;
   if (
     signal !== undefined &&
@@ -194,7 +251,7 @@ export const createNodeProjectInspection = async (
       supervision.terminate();
       await supervision.closed;
       await Promise.allSettled([...readerWork, ...relayWork]);
-      repository = undefined;
+      sources = undefined;
       clearTimeout(timer);
       if (failure === undefined && Date.now() >= deadline) {
         fail(
@@ -279,8 +336,8 @@ export const createNodeProjectInspection = async (
         )
           throw createInspectionProcessFailure();
         lastReaderRequestId = message.requestId;
-        if (repository === undefined) throw createInspectionProcessFailure();
-        const work = executeRepositoryRpc(repository, message.request, controller.signal);
+        if (sources === undefined) throw createInspectionProcessFailure();
+        const work = executeRepositoryRpc(sources, message.request, controller.signal);
         readerWork.add(work);
         const relay = (async () => {
           try {
@@ -340,6 +397,7 @@ export const createNodeProjectInspection = async (
       attemptId,
       kind: 'start',
       snapshot,
+      instructions,
       limits,
       deadline,
     });

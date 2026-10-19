@@ -482,10 +482,14 @@ describe('Core universal project inspection through the memory repository reader
       'get:/moldea/project.md',
       'read:/moldea/project.md',
       'list:/moldea',
+      'get:/AGENTS.md',
       'read:/AGENTS.md',
       'get:/.agents/skills/moldea/SKILL.md',
       'get:/.agents/skills/moldea/scripts/relevance-gate.mjs',
       'read:/.agents/skills/moldea/assets/managed-agents-block.md',
+      'get:/CLAUDE.md',
+      'get:/.claude/CLAUDE.md',
+      'get:/CLAUDE.local.md',
     ]);
   });
 

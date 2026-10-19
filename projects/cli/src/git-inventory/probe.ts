@@ -4,7 +4,11 @@ import {
   type IGitStreamingProcessExecutor,
   type IGitStreamingProcessFailureReason,
 } from '../git-process/index.js';
-import { GIT_TRACKED_INVENTORY_ARGUMENTS, GIT_UNTRACKED_INVENTORY_ARGUMENTS } from './constants.js';
+import {
+  GIT_IGNORED_INVENTORY_ARGUMENTS,
+  GIT_TRACKED_INVENTORY_ARGUMENTS,
+  GIT_UNTRACKED_INVENTORY_ARGUMENTS,
+} from './constants.js';
 import {
   createGitContentTransformationClassifier,
   type IGitContentTransformationClassifier,
@@ -173,7 +177,61 @@ export const createGitInventoryProbe =
       return untrackedCandidates;
     }
 
-    const candidates = Object.freeze([...trackedCandidates, ...untrackedCandidates]);
+    let ignoredCandidates: readonly IGitInventoryCandidate[] = [];
+    let ignoredStdoutBytes = 0;
+
+    // ignored files enter only an explicit selection, never the general inventory
+    if (input.includeIgnored === true && selectionPathspecs.length > 0) {
+      const ignoredParser = createUntrackedGitInventoryParser(
+        input.maxEntries - trackedCandidates.length - untrackedCandidates.length,
+      );
+      const ignoredProcessResult = await processExecutor({
+        arguments: [
+          '-C',
+          input.repositoryRoot,
+          ...GIT_IGNORED_INVENTORY_ARGUMENTS,
+          ...selectionPathspecs,
+        ],
+        consumeStdout: (chunk) => ignoredParser.consume(chunk),
+        maxStderrBytes: MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
+        maxStdoutBytes:
+          input.maxMetadataBytes -
+          trackedProcessResult.stdoutBytes -
+          untrackedProcessResult.stdoutBytes,
+        ...(input.signal === undefined ? {} : { signal: input.signal }),
+      });
+
+      if (ignoredProcessResult.kind === 'failed') {
+        return createProbeFailure(mapGitProcessFailure(ignoredProcessResult.reason));
+      }
+
+      if (ignoredProcessResult.stderr.byteLength > 0) {
+        return createProbeFailure('GIT_OUTPUT_INVALID');
+      }
+
+      const parsedIgnoredCandidates = resolveParserResult(ignoredParser.finish());
+
+      if (isProbeFailure(parsedIgnoredCandidates)) {
+        return parsedIgnoredCandidates;
+      }
+
+      const untrackedPaths = new Set(untrackedCandidates.map((candidate) => candidate.path));
+      ignoredCandidates = parsedIgnoredCandidates.filter(
+        (candidate) => !untrackedPaths.has(candidate.path),
+      );
+      ignoredStdoutBytes = ignoredProcessResult.stdoutBytes;
+    }
+
+    const candidates = Object.freeze([
+      ...trackedCandidates,
+      ...untrackedCandidates,
+      ...ignoredCandidates,
+    ]);
+    const metadataBytesAfterListing =
+      input.maxMetadataBytes -
+      trackedProcessResult.stdoutBytes -
+      untrackedProcessResult.stdoutBytes -
+      ignoredStdoutBytes;
     const logicalPathFilterResult = filterGitInventoryCandidateLogicalPaths({ candidates });
 
     if (logicalPathFilterResult.kind === 'failed') {
@@ -182,10 +240,7 @@ export const createGitInventoryProbe =
 
     const ownershipResult = await ownershipFilter({
       candidates: logicalPathFilterResult.candidates,
-      maxMetadataBytes:
-        input.maxMetadataBytes -
-        trackedProcessResult.stdoutBytes -
-        untrackedProcessResult.stdoutBytes,
+      maxMetadataBytes: metadataBytesAfterListing,
       repositoryRoot: input.repositoryRoot,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     });
@@ -196,11 +251,7 @@ export const createGitInventoryProbe =
 
     const entryTypeResult = await entryTypeNormalizer({
       candidates: ownershipResult.candidates,
-      maxMetadataBytes:
-        input.maxMetadataBytes -
-        trackedProcessResult.stdoutBytes -
-        untrackedProcessResult.stdoutBytes -
-        ownershipResult.gitMetadataBytes,
+      maxMetadataBytes: metadataBytesAfterListing - ownershipResult.gitMetadataBytes,
       repositoryRoot: input.repositoryRoot,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     });
@@ -212,9 +263,7 @@ export const createGitInventoryProbe =
     const contentTransformationResult = await contentTransformationClassifier({
       entries: entryTypeResult.entries,
       maxMetadataBytes:
-        input.maxMetadataBytes -
-        trackedProcessResult.stdoutBytes -
-        untrackedProcessResult.stdoutBytes -
+        metadataBytesAfterListing -
         ownershipResult.gitMetadataBytes -
         entryTypeResult.gitMetadataBytes,
       repositoryRoot: input.repositoryRoot,

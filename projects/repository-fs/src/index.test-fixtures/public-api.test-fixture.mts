@@ -1,5 +1,6 @@
 import {
   parseRepositoryPath,
+  type IRepositoryLinkResolver,
   type IRepositoryPath,
   type IRepositoryReader,
 } from '@moldea.ai/repository';
@@ -7,6 +8,7 @@ import {
 import repositoryFilesystemDefault from '@moldea.ai/repository-fs';
 import {
   DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS,
+  createFilesystemRepositoryLinkResolver,
   createFilesystemRepositoryReader,
   type IFilesystemRepositoryDirectorySelection,
   type IFilesystemRepositoryPathSelection,
@@ -32,8 +34,12 @@ const options: IFilesystemRepositoryReaderOptions = {
   signal: new AbortController().signal,
 };
 const reader: Promise<IRepositoryReader> = createFilesystemRepositoryReader(options);
+const linkResolver: Promise<IRepositoryLinkResolver> = reader.then((created) =>
+  createFilesystemRepositoryLinkResolver(created),
+);
 
 void repositoryFilesystemDefault;
 void reader;
+void linkResolver;
 void selections;
 void options;

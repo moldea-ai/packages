@@ -5,11 +5,13 @@ import type {
   IProjectInspection,
   IProjectInspectionPageInput,
   IProjectInspectionPageResult,
+  IProjectInstructionSource,
 } from '../contracts/index.js';
 
-// callers own the source-neutral reader
+// callers own the source-neutral reader and the optional instruction source
 export interface INodeProjectInspectionInput {
   repository: IRepositoryReader;
+  instructions?: IProjectInstructionSource;
   limits?: Partial<ICoreResourceLimits>;
   signal?: AbortSignal;
   deadline?: number;
@@ -46,11 +48,34 @@ export interface INodeProjectInspection extends INodeInspectionMetadata {
   dispose(): Promise<void>;
 }
 
-// closed, bounded transport records shared by both message bridges
+// the caller-owned source one entry or file request targets
+export type INodeReaderSource = 'instructions' | 'repository';
+
+// the caller-owned readers one inspection serves over the bridge
+export interface INodeReaderSources {
+  readonly instructions?: IProjectInstructionSource;
+  readonly repository: IRepositoryReader;
+}
+
+// what the worker knows about the instruction source; its resolver shares the reader's snapshot
+export interface INodeInstructionSourceMetadata {
+  hasLinkResolver: boolean;
+  snapshot: IRepositorySnapshot;
+}
+
+// closed, bounded transport records shared by both message bridges; links resolve for instructions only
 export type INodeReaderRequest =
-  | { method: 'getEntry'; path: string }
+  | { method: 'getEntry'; path: string; source: INodeReaderSource }
   | { method: 'listEntriesPage'; maxEntries: number; cursor?: string; prefix?: string }
-  | { method: 'readFilePage'; path: string; maxBytes: number; offset: number };
+  | {
+      method: 'readFilePage';
+      path: string;
+      maxBytes: number;
+      offset: number;
+      source: INodeReaderSource;
+    }
+  | { method: 'resolveLink'; path: string }
+  | { method: 'readLinkTargetPage'; path: string; maxBytes: number; offset: number };
 
 export interface INodeInspectionFailure {
   family: 'configuration' | 'operation' | 'repository' | 'path';
@@ -61,6 +86,7 @@ export type INodeInspectionMessage = { attemptId: string } & (
   | {
       kind: 'start';
       snapshot: IRepositorySnapshot;
+      instructions: INodeInstructionSourceMetadata | null;
       limits: ICoreResourceLimits;
       deadline: number;
     }

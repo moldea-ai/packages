@@ -153,10 +153,29 @@ const isPage = (input: unknown): boolean =>
       hasKeys(record['item'], ['kind', record['item']['kind']]) &&
       isRecord(record['item'][record['item']['kind']]),
   );
+const isSource = (input: unknown): boolean => input === 'instructions' || input === 'repository';
+const isFilePageRequest = (input: Record<string, unknown>): boolean =>
+  isRepositoryPath(input['path']) &&
+  isInteger(input['offset']) &&
+  isInteger(input['maxBytes']) &&
+  input['maxBytes'] > 0 &&
+  input['maxBytes'] <= NODE_INSPECTION_FILE_PAGE_BYTES;
+const isInstructionSource = (input: unknown): boolean =>
+  input === null ||
+  (isRecord(input) &&
+    hasKeys(input, ['hasLinkResolver', 'snapshot']) &&
+    typeof input['hasLinkResolver'] === 'boolean' &&
+    isSnapshot(input['snapshot']));
 const isRequest = (input: unknown): boolean => {
   if (!isRecord(input)) return false;
   switch (input['method']) {
     case 'getEntry':
+      return (
+        hasKeys(input, ['method', 'path', 'source']) &&
+        isRepositoryPath(input['path']) &&
+        isSource(input['source'])
+      );
+    case 'resolveLink':
       return hasKeys(input, ['method', 'path']) && isRepositoryPath(input['path']);
     case 'listEntriesPage':
       return (
@@ -169,13 +188,12 @@ const isRequest = (input: unknown): boolean => {
       );
     case 'readFilePage':
       return (
-        hasKeys(input, ['method', 'path', 'maxBytes', 'offset']) &&
-        isRepositoryPath(input['path']) &&
-        isInteger(input['offset']) &&
-        isInteger(input['maxBytes']) &&
-        input['maxBytes'] > 0 &&
-        input['maxBytes'] <= NODE_INSPECTION_FILE_PAGE_BYTES
+        hasKeys(input, ['method', 'path', 'maxBytes', 'offset', 'source']) &&
+        isSource(input['source']) &&
+        isFilePageRequest(input)
       );
+    case 'readLinkTargetPage':
+      return hasKeys(input, ['method', 'path', 'maxBytes', 'offset']) && isFilePageRequest(input);
     default:
       return false;
   }
@@ -193,8 +211,9 @@ const isMessage = (input: unknown): input is INodeInspectionMessage => {
   switch (input['kind']) {
     case 'start':
       return (
-        hasKeys(input, [...keys, 'snapshot', 'limits', 'deadline']) &&
+        hasKeys(input, [...keys, 'snapshot', 'instructions', 'limits', 'deadline']) &&
         isSnapshot(input['snapshot']) &&
+        isInstructionSource(input['instructions']) &&
         isLimits(input['limits']) &&
         isInteger(input['deadline'])
       );
