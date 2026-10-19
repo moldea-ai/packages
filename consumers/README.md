@@ -4,9 +4,9 @@ The `consumer-conformance` CI lane gives the skill manager and closed launcher t
 
 ## Recorded verification
 
-The selected closure contains CLI `11.0.6`, Core `7.0.4`, Repository `2.0.2`, and Repository FS `2.0.7`; CLI and Repository FS require Node.js `>=22.17.0`. Qualification started from `e9ba5c974a11e1116963af0792091a8cfac85e17` using Node `24.15.0` and pnpm `11.9.0`. The built Core and Repository tarballs match the retained selection byte for byte. Local checksum verification, Repository FS runtime checks, and CLI runtime checks passed on Linux with Node `24.15.0` under the reviewed registry snapshot. The installed CLI regressions also verify that invalid external paths are omitted while invalid canonical paths still fail.
+The selected closure contains CLI `11.1.0`, Core `7.1.0`, Repository `2.1.0`, and Repository FS `2.1.0`; CLI and Repository FS require Node.js `>=22.17.0`. Qualification started from `338d13ddf598a87984e7bc227b036811bc95b9d8` using Node `24.15.0` and pnpm `11.9.0`. Tarballs packed locally and by the skill `8.2.8` candidate workflow from that commit match byte for byte. Local checksum verification, Repository FS runtime checks, CLI runtime checks, and the existing-Vitest `3.2.4` check passed on Linux with Node `24.15.0` under the reviewed registry snapshot. The installed CLI regressions also verify linked and Git-ignored coding-agent instruction files, including the isolation of ignored files from the project inventory.
 
-The local correctness run passed its unit, integration and installed-CLI suites. Six existing runtimes-page browser variants timed out during the concurrent run; all six passed unchanged in isolation with one worker. These were recorded as environmental timeouts, not product regressions.
+The local correctness run passed its unit, integration and installed-CLI suites, together with the lint, typecheck, build, documentation and website checks.
 
 Consumer tooling uses released Skill `8.2.8`, pinned to commit `37dea8ecb454b92746520e5c3beb958241565170`. Fresh-client consumer conformance for these exact bytes runs in the trusted packages CI consumer lane; local Linux checks do not replace it.
 
