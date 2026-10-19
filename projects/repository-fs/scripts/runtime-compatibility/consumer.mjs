@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -35,6 +35,7 @@ const collectEntries = async (reader) => {
 
 assert.deepStrictEqual(Object.keys(repositoryFilesystem).sort(), [
   'DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS',
+  'createFilesystemRepositoryLinkResolver',
   'createFilesystemRepositoryReader',
 ]);
 assert.deepStrictEqual(repositoryFilesystem.DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS, {
@@ -57,11 +58,31 @@ const temporaryDirectory = await mkdtemp(
 const rootDirectory = path.join(temporaryDirectory, 'repository');
 const nestedDirectory = path.join(rootDirectory, 'nested');
 const filePath = parseRepositoryPath('/nested/fixture.bin');
+const linkPath = parseRepositoryPath('/nested/link.bin');
 const fileBytes = Uint8Array.from([0x00, 0x7f, 0x80, 0xff]);
 
 try {
   await mkdir(nestedDirectory, { recursive: true });
   await writeFile(path.join(nestedDirectory, 'fixture.bin'), fileBytes);
+  await symlink('fixture.bin', path.join(nestedDirectory, 'link.bin'));
+
+  const linkReader = await repositoryFilesystem.createFilesystemRepositoryReader({
+    rootDirectory,
+    selection: { kind: 'paths', paths: [linkPath] },
+  });
+  const linkResolver = repositoryFilesystem.createFilesystemRepositoryLinkResolver(linkReader);
+  const linkResolution = await linkResolver.resolveLink(linkPath);
+
+  assert.equal(Object.isFrozen(linkResolver), true);
+  assert.deepStrictEqual(linkResolver.snapshot, linkReader.snapshot);
+  assert.deepStrictEqual(
+    { ...linkResolution, targetIdentity: typeof linkResolution.targetIdentity },
+    { state: 'inside', targetIdentity: 'string', targetPath: filePath, targetType: 'file' },
+  );
+  assert.deepStrictEqual(
+    (await linkResolver.readLinkTargetPage(linkPath, { maxBytes: 4, offset: 0 })).bytes,
+    fileBytes,
+  );
 
   const reader = await repositoryFilesystem.createFilesystemRepositoryReader({
     rootDirectory,

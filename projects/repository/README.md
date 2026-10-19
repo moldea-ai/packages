@@ -54,6 +54,25 @@ Entries include `byteLength` and `contentIdentity` for regular files. Callers mu
 
 Malformed paths use `RepositoryPathException`. Invalid page requests and source, resource, cancellation, or snapshot failures use `RepositorySourceException`.
 
+## Optional link resolution
+
+Reader operations never follow symlinks. A source may additionally offer an `IRepositoryLinkResolver` bound to one reader, which follows only the symlink entries a caller names:
+
+```typescript
+import { parseRepositoryPath, type IRepositoryLinkResolver } from '@moldea.ai/repository';
+
+export const isLinkedFile = async (resolver: IRepositoryLinkResolver): Promise<boolean> => {
+  const resolution = await resolver.resolveLink(parseRepositoryPath('/AGENTS.md'));
+
+  return (
+    (resolution.state === 'inside' || resolution.state === 'outside') &&
+    resolution.targetType === 'file'
+  );
+};
+```
+
+`resolveLink` returns `not-link`, `inside` with the logical `targetPath`, `outside`, `broken`, `loop`, `denied`, or `unsafe`. Resolved targets carry an opaque `targetIdentity` that is equal exactly when two resolutions from the same resolver reach the same final target. `readLinkTargetPage` reads one bounded range of a regular-file target. Results and exceptions never contain host paths. The memory reader offers no resolver; callers treat a missing resolver as "cannot verify".
+
 ## Immutable memory reader
 
 The `memory` subpath is the reference implementation for fixtures and already-fetched content:
@@ -92,6 +111,8 @@ export const registerReaderConformance = <TPath extends string>(
   describeRepositoryReaderConformance('provider', fixture);
 };
 ```
+
+Sources that offer a link resolver also register `describeRepositoryLinkResolverConformance` with real prepared links.
 
 ## Development
 

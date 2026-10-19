@@ -1,2 +1,8 @@
+// types
+export type { IFilesystemLinkHost } from './filesystem-repository-reader.js';
+
 // factory
-export { createFilesystemRepositoryReader } from './filesystem-repository-reader.js';
+export {
+  createFilesystemRepositoryReader,
+  getFilesystemLinkHost,
+} from './filesystem-repository-reader.js';

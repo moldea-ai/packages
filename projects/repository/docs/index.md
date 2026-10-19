@@ -21,17 +21,18 @@ The package keeps Core independent from source mechanics. `@moldea.ai/repository
 - bounded deterministic comparison pages
 - integrity-protected, source-bound continuation cursors
 - source and path exception contracts
+- the optional [link-resolver contract](./link-resolution/) for explicitly named symlinks
 - an immutable in-memory reference reader
-- shared conformance tests for official readers
+- shared conformance tests for official readers and link resolvers
 
 ## What it does not own
 
-The package does not access a filesystem or network, discover repositories, follow symlinks, decode file content, interpret the `moldea` format, apply Git ignore rules, or expose writes. Source implementations decide how to preserve snapshot coherence. Consumers decide what returned bytes mean.
+The package does not access a filesystem or network, discover repositories, follow symlinks itself, decode file content, interpret the `moldea` format, apply Git ignore rules, or expose writes. Source implementations decide how to preserve snapshot coherence. Consumers decide what returned bytes mean.
 
 ## Entry points
 
 - `@moldea.ai/repository` exports contracts, logical-path functions, exceptions, identity, and comparison.
 - `@moldea.ai/repository/memory` exports the immutable reference reader.
-- `@moldea.ai/repository/testing` exports the shared reader conformance suite.
+- `@moldea.ai/repository/testing` exports the shared reader and link-resolver conformance suites.
 
 Use the generated [API reference](./api/) for the exact exported surface.

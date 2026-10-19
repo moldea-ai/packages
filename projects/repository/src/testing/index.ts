@@ -1,5 +1,11 @@
 // types
 export type {
+  IRepositoryLinkResolverConformanceFileLink,
+  IRepositoryLinkResolverConformanceFixture,
+  IRepositoryLinkResolverConformanceInsideLink,
+  IRepositoryLinkResolverConformanceResolution,
+  IRepositoryLinkResolverConformanceResolver,
+  IRepositoryLinkResolverMutationFixture,
   IRepositoryReaderCasePathFixture,
   IRepositoryReaderConformanceEntry,
   IRepositoryReaderConformanceFixture,
@@ -9,4 +15,5 @@ export type {
 } from './types.js';
 
 // conformance
+export { describeRepositoryLinkResolverConformance } from './link-resolver-conformance.js';
 export { describeRepositoryReaderConformance } from './reader-conformance.js';

@@ -188,3 +188,73 @@ export interface IRepositoryReader {
     options?: IRepositoryOperationOptions,
   ): Promise<IRepositoryComparison>;
 }
+
+// final target kinds a link resolver reports
+export type IRepositoryLinkTargetType = 'directory' | 'file' | 'other';
+
+/*
+ * Classification of one explicitly named repository symlink. `targetIdentity` is opaque and
+ * equal for two resolutions from the same resolver exactly when they reach the same final
+ * target; it reveals nothing about the target and is meaningless across resolvers or runs.
+ */
+export type IRepositoryLinkResolution =
+  | { readonly state: 'not-link' }
+  | {
+      readonly state: 'inside';
+      readonly targetIdentity: string;
+      readonly targetPath: IRepositoryPath;
+      readonly targetType: IRepositoryLinkTargetType;
+    }
+  | {
+      readonly state: 'outside';
+      readonly targetIdentity: string;
+      readonly targetType: IRepositoryLinkTargetType;
+    }
+  | { readonly state: 'broken' | 'denied' | 'loop' | 'unsafe' };
+
+// optional capability that follows explicitly named symlinks of one reader's snapshot
+export interface IRepositoryLinkResolver {
+  readonly snapshot: IRepositorySnapshot;
+
+  /**
+   * Resolves one exact symlink entry to a content-free classification of its final target.
+   * @param path The validated repository-logical path of the entry.
+   * @param options Optional cancellation controls.
+   * @returns The target classification, or `not-link` when the entry is not a symlink.
+   * @throws
+   * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+   * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+   * - ACCESS_DENIED: Access to the repository source was denied.
+   * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+   * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+   * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+   * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+   * - ABORTED: The repository operation was aborted.
+   */
+  resolveLink(
+    path: IRepositoryPath,
+    options?: IRepositoryOperationOptions,
+  ): Promise<IRepositoryLinkResolution>;
+
+  /**
+   * Reads one bounded byte range of the regular file a symlink entry resolves to.
+   * @param path The validated repository-logical path of the symlink entry.
+   * @param options The offset, byte bound, and cancellation controls.
+   * @returns One detached source-bound byte page of the final target.
+   * @throws
+   * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+   * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+   * - ENTRY_NOT_FILE: The requested repository entry is not a file.
+   * - INVALID_PAGE_REQUEST: The repository page request is invalid.
+   * - ACCESS_DENIED: Access to the repository source was denied.
+   * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+   * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+   * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+   * - RESOURCE_LIMIT_EXCEEDED: A named repository resource limit was exceeded.
+   * - ABORTED: The repository operation was aborted.
+   */
+  readLinkTargetPage(
+    path: IRepositoryPath,
+    options: IRepositoryFilePageOptions,
+  ): Promise<IRepositoryFilePage>;
+}

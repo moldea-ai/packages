@@ -23,7 +23,7 @@ export const readManifestPage = async (reader: IRepositoryReader): Promise<Uint8
 
 ## Operations
 
-This reference describes `repository` 2.0.0.
+This reference describes `repository` 2.1.0.
 
 - `getEntry(path, options?)` performs exact content-free lookup and returns `null` when absent.
 - `listEntriesPage(options)` returns at most `maxEntries` deterministic descendants, optionally below `prefix`.
