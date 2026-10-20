@@ -47,7 +47,7 @@ TypeScript performs strict source checking and emits declarations separately so 
 
 Environment-neutral packages extend `configs/typescript/environment-neutral.json` and must not import Node.js modules or inherit Node globals; Node.js packages extend `configs/typescript/node.json`. Declaration builds use the corresponding `environment-neutral-library.json` or `node-library.json` configuration and set package-local `rootDir` and `outDir` values.
 
-Turborepo derives execution order from declared workspace dependencies. Package dependencies must remain explicit and acyclic, and no task may depend on workspace enumeration order or undeclared cross-project state.
+Turborepo derives execution order from declared workspace dependencies. Package dependencies must remain explicit and acyclic, and no task may depend on workspace enumeration order or undeclared cross-project state. A package whose typechecked tests import its own package name, such as Repository, Repository FS, Core and Website UI, reads its own `dist`, so its `typecheck` task in `turbo.json` also depends on its own `build`.
 
 ## Test conventions
 

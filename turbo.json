@@ -36,6 +36,18 @@
       "dependsOn": ["build", "^test:integration"],
       "env": ["PLAYWRIGHT_BROWSERS_PATH"]
     },
+    "@moldea.ai/core#typecheck": {
+      "dependsOn": ["build", "^typecheck"]
+    },
+    "@moldea.ai/repository#typecheck": {
+      "dependsOn": ["build", "^typecheck"]
+    },
+    "@moldea.ai/repository-fs#typecheck": {
+      "dependsOn": ["build", "^typecheck"]
+    },
+    "@moldea.ai/website-ui#typecheck": {
+      "dependsOn": ["build", "^typecheck"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
