@@ -146,6 +146,11 @@ export const expectPackageManifest = (
     '@moldea.ai/core': coreRange,
     '@moldea.ai/repository': repositoryRange,
     '@moldea.ai/repository-fs': repositoryFilesystemRange,
+    'jg-crypto': '0.3.0',
+    'jg-exception': '1.7.0',
+    'jg-git-commands': '0.3.1',
+    'jg-process': '1.6.0',
+    'jg-utilities': '1.7.0',
     semver: '7.8.5',
   });
   expect(manifest).not.toHaveProperty('main');

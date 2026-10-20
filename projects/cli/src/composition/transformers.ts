@@ -1,32 +1,9 @@
+import { deepFreeze } from 'jg-utilities';
+
 import type { IMoldeaCliCompositionResult, IMoldeaCliCompositionStateInput } from './types.js';
 
 const compareIdentifiers = (left: string, right: string): number =>
   left < right ? -1 : left > right ? 1 : 0;
-
-/** Recursively freezes a composition result without retaining mutable input ownership. */
-const freezeCompositionValue = <TValue extends object>(value: TValue): TValue => {
-  const pendingValues: object[] = [value];
-  const visitedValues = new Set<object>();
-
-  while (pendingValues.length > 0) {
-    const currentValue = pendingValues.pop();
-
-    if (currentValue === undefined || visitedValues.has(currentValue)) {
-      continue;
-    }
-
-    visitedValues.add(currentValue);
-    for (const nestedValue of Object.values(currentValue as Readonly<Record<string, unknown>>)) {
-      if (typeof nestedValue === 'object' && nestedValue !== null) {
-        pendingValues.push(nestedValue);
-      }
-    }
-
-    Object.freeze(currentValue);
-  }
-
-  return value;
-};
 
 /**
  * Creates the compact immutable composition result from validated installed state.
@@ -40,7 +17,7 @@ export const createMoldeaCliCompositionResult = (
     .map(([name, version]) => ({ name, version }))
     .sort((left, right) => compareIdentifiers(left.name, right.name));
 
-  return freezeCompositionValue({
+  return deepFreeze({
     minimumGitVersion: input.minimumGitVersion,
     packages,
     repositoryFormatVersions: [...input.coreSupportedRepositoryFormatVersions].sort(

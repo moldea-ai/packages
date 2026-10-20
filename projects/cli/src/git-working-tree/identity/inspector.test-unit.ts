@@ -2,40 +2,35 @@
 import path from 'node:path';
 import { describe, expect, test, vi } from 'vitest';
 
-import type { IGitProcessExecutor } from '../../git-process/index.js';
+import type { IGitCommandRunner } from '../../git-command/index.js';
+
+import { MAX_GIT_DISCOVERY_OUTPUT_BYTES } from '../constants.js';
 
 import { GIT_WORKING_TREE_IDENTITY_ARGUMENTS } from './constants.js';
 import { createGitWorkingTreeIdentityInspector } from './inspector.js';
 import type { IGitWorkingTreeIdentityStat } from './types.js';
 
-const ENCODER = new TextEncoder();
 const REPOSITORY_ROOT = path.resolve('repository');
 const GIT_DIRECTORY = path.join(REPOSITORY_ROOT, '.git', 'worktrees', 'selected');
 const COMMON_DIRECTORY = path.join(REPOSITORY_ROOT, '.git');
 
-/** Creates one successful Git path-query process boundary. */
-const createProcessExecutor = (
+/** Creates one successful Git path-query boundary. */
+const createGitRunner = (
   outputs: Readonly<Record<string, string>> = {
     '--absolute-git-dir': GIT_DIRECTORY,
     '--git-common-dir': '.git',
     '--show-toplevel': REPOSITORY_ROOT,
   },
-): IGitProcessExecutor =>
-  vi.fn<IGitProcessExecutor>((options) => {
-    const query = options.arguments.at(-1);
+): IGitCommandRunner =>
+  vi.fn<IGitCommandRunner>((args) => {
+    const query = args.at(-1);
     const output = query === undefined ? undefined : outputs[query];
 
     if (output === undefined) {
       return Promise.resolve(Object.freeze({ kind: 'failed', reason: 'command-failed' }));
     }
 
-    return Promise.resolve(
-      Object.freeze({
-        kind: 'completed',
-        stderr: new Uint8Array(),
-        stdout: ENCODER.encode(`${output}\n`),
-      }),
-    );
+    return Promise.resolve(Object.freeze({ kind: 'completed', value: Buffer.from(`${output}\n`) }));
   });
 
 /** Creates deterministic directory identity observations. */
@@ -56,9 +51,9 @@ const createStat = (): IGitWorkingTreeIdentityStat =>
 
 describe('createGitWorkingTreeIdentityInspector', () => {
   test('captures one immutable root, Git directory, and resolved common directory identity', async () => {
-    const processExecutor = createProcessExecutor();
+    const runGit = createGitRunner();
     const inspectPath = createStat();
-    const inspectIdentity = createGitWorkingTreeIdentityInspector(processExecutor, inspectPath);
+    const inspectIdentity = createGitWorkingTreeIdentityInspector(runGit, inspectPath);
     const result = await inspectIdentity({ repositoryRoot: REPOSITORY_ROOT });
 
     expect(result).toStrictEqual({
@@ -78,13 +73,16 @@ describe('createGitWorkingTreeIdentityInspector', () => {
       );
     }
 
-    expect(
-      vi.mocked(processExecutor).mock.calls.map(([options]) => options.arguments),
-    ).toStrictEqual([
-      ['-C', REPOSITORY_ROOT, ...GIT_WORKING_TREE_IDENTITY_ARGUMENTS.RepositoryRoot],
-      ['-C', REPOSITORY_ROOT, ...GIT_WORKING_TREE_IDENTITY_ARGUMENTS.GitDirectory],
-      ['-C', REPOSITORY_ROOT, ...GIT_WORKING_TREE_IDENTITY_ARGUMENTS.CommonDirectory],
-    ]);
+    expect(vi.mocked(runGit).mock.calls).toStrictEqual(
+      [
+        GIT_WORKING_TREE_IDENTITY_ARGUMENTS.RepositoryRoot,
+        GIT_WORKING_TREE_IDENTITY_ARGUMENTS.GitDirectory,
+        GIT_WORKING_TREE_IDENTITY_ARGUMENTS.CommonDirectory,
+      ].map((args) => [
+        args,
+        { cwd: REPOSITORY_ROOT, maxOutputBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES },
+      ]),
+    );
     expect(vi.mocked(inspectPath).mock.calls.map(([hostPath]) => hostPath)).toStrictEqual([
       REPOSITORY_ROOT,
       GIT_DIRECTORY,
@@ -93,19 +91,21 @@ describe('createGitWorkingTreeIdentityInspector', () => {
   });
 
   test.each([
+    ['aborted', 'GIT_OPERATION_ABORTED'],
     ['not-found', 'GIT_NOT_FOUND'],
     ['repository-not-found', 'GIT_REPOSITORY_NOT_FOUND'],
     ['access-denied', 'GIT_ACCESS_DENIED'],
     ['output-limit-exceeded', 'GIT_OUTPUT_INVALID'],
+    ['output-invalid', 'GIT_OUTPUT_INVALID'],
     ['command-failed', 'GIT_COMMAND_FAILED'],
-  ] as const)('maps Git process failure %s without host diagnostics', async (reason, errorCode) => {
-    const processExecutor = vi
-      .fn<IGitProcessExecutor>()
+  ] as const)('maps Git failure %s without host diagnostics', async (reason, errorCode) => {
+    const runGit = vi
+      .fn<IGitCommandRunner>()
       .mockResolvedValue(Object.freeze({ kind: 'failed', reason }));
 
     await expect(
       createGitWorkingTreeIdentityInspector(
-        processExecutor,
+        runGit,
         createStat(),
       )({
         repositoryRoot: REPOSITORY_ROOT,
@@ -115,7 +115,7 @@ describe('createGitWorkingTreeIdentityInspector', () => {
 
   test('rejects a Git root that no longer matches the selected repository', async () => {
     const replacementRoot = path.resolve('replacement');
-    const processExecutor = createProcessExecutor({
+    const runGit = createGitRunner({
       '--absolute-git-dir': GIT_DIRECTORY,
       '--git-common-dir': '.git',
       '--show-toplevel': replacementRoot,
@@ -130,7 +130,7 @@ describe('createGitWorkingTreeIdentityInspector', () => {
 
     await expect(
       createGitWorkingTreeIdentityInspector(
-        processExecutor,
+        runGit,
         inspectPath,
       )({
         repositoryRoot: REPOSITORY_ROOT,
@@ -146,7 +146,7 @@ describe('createGitWorkingTreeIdentityInspector', () => {
     const selectedRoot = path.resolve('selected-alias');
     const discoveredRoot = path.resolve('canonical-repository');
     const gitDirectory = path.join(discoveredRoot, '.git');
-    const processExecutor = createProcessExecutor({
+    const runGit = createGitRunner({
       '--absolute-git-dir': gitDirectory,
       '--git-common-dir': gitDirectory,
       '--show-toplevel': discoveredRoot,
@@ -164,7 +164,7 @@ describe('createGitWorkingTreeIdentityInspector', () => {
 
       return Promise.resolve({ dev: 1n, ino: inode, isDirectory: () => true });
     });
-    const inspectIdentity = createGitWorkingTreeIdentityInspector(processExecutor, inspectPath);
+    const inspectIdentity = createGitWorkingTreeIdentityInspector(runGit, inspectPath);
 
     await expect(inspectIdentity({ repositoryRoot: selectedRoot })).resolves.toStrictEqual({
       identity: {
@@ -195,7 +195,7 @@ describe('createGitWorkingTreeIdentityInspector', () => {
 
     await expect(
       createGitWorkingTreeIdentityInspector(
-        createProcessExecutor(),
+        createGitRunner(),
         inspectPath,
       )({
         repositoryRoot: REPOSITORY_ROOT,
@@ -215,7 +215,7 @@ describe('createGitWorkingTreeIdentityInspector', () => {
 
     await expect(
       createGitWorkingTreeIdentityInspector(
-        createProcessExecutor(),
+        createGitRunner(),
         inspectPath,
       )({
         repositoryRoot: REPOSITORY_ROOT,
@@ -233,7 +233,7 @@ describe('createGitWorkingTreeIdentityInspector', () => {
 
     await expect(
       createGitWorkingTreeIdentityInspector(
-        createProcessExecutor(),
+        createGitRunner(),
         unavailableIdentity,
       )({
         repositoryRoot: REPOSITORY_ROOT,
@@ -241,7 +241,7 @@ describe('createGitWorkingTreeIdentityInspector', () => {
     ).resolves.toStrictEqual({ errorCode: 'GIT_WORK_TREE_REQUIRED', kind: 'failed' });
     await expect(
       createGitWorkingTreeIdentityInspector(
-        createProcessExecutor(),
+        createGitRunner(),
         nonDirectory,
       )({
         repositoryRoot: REPOSITORY_ROOT,

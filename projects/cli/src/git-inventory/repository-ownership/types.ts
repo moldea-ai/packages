@@ -1,5 +1,6 @@
 import type { Buffer } from 'node:buffer';
 import type { BigIntStats } from 'node:fs';
+import type { readTopLevel } from 'jg-git-commands';
 
 import type {
   IGitInventoryCandidate,
@@ -36,6 +37,9 @@ export type IGitInventoryOwnershipStatistics = Pick<
   BigIntStats,
   'dev' | 'ino' | 'isDirectory' | 'isFile' | 'isSymbolicLink'
 >;
+
+// injectable typed Git working-tree root read
+export type IGitTopLevelReader = typeof readTopLevel;
 
 // injectable no-follow filesystem stat boundary
 export type IGitInventoryOwnershipLstat = (

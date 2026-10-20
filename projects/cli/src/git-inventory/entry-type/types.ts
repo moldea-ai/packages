@@ -1,3 +1,5 @@
+import type { readConfigBoolean } from 'jg-git-commands';
+
 import type {
   IGitInventoryCandidate,
   IGitInventoryProbeErrorCode,
@@ -107,6 +109,9 @@ export interface IGitSymlinkConfigurationFailedResult {
 // result of resolving the selected repository's effective core.symlinks value
 export type IGitSymlinkConfigurationResult =
   IGitSymlinkConfigurationFailedResult | IGitSymlinkConfigurationResolvedResult;
+
+// injectable typed Git boolean config read
+export type IGitConfigBooleanReader = typeof readConfigBoolean;
 
 // injectable effective Git symlink configuration boundary
 export type IGitSymlinkConfigurationResolver = (

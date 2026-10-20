@@ -1,43 +1,27 @@
 // @vitest-environment node
 import { describe, expect, test, vi } from 'vitest';
 
-import type {
-  IGitStreamingProcessExecutor,
-  IGitStreamingProcessFailureReason,
-} from '../../git-process/index.js';
+import type { IGitCommandRunner, IGitFailureReason } from '../../git-command/index.js';
 
 import { GIT_CONTENT_TRANSFORMATION_ARGUMENTS } from './constants.js';
 import { createGitContentTransformationClassifier } from './classifier.js';
 
 const ENCODER = new TextEncoder();
 
-interface IProcessFixture {
-  readonly failureReason?: IGitStreamingProcessFailureReason;
-  readonly reportedStdoutBytes?: number;
-  readonly stderr?: Uint8Array;
+interface IGitFixture {
+  readonly failureReason?: IGitFailureReason;
   readonly stdout?: Uint8Array;
 }
 
-/** Creates a streamed Git process boundary for one deterministic fixture. */
-const createProcessExecutor = (fixture: IProcessFixture): IGitStreamingProcessExecutor =>
-  vi.fn<IGitStreamingProcessExecutor>((options) => {
-    if (fixture.failureReason !== undefined) {
-      return Promise.resolve(Object.freeze({ kind: 'failed', reason: fixture.failureReason }));
-    }
-
-    const stdout = fixture.stdout ?? new Uint8Array();
-
-    options.consumeStdout(stdout.subarray(0, 3));
-    options.consumeStdout(stdout.subarray(3));
-
-    return Promise.resolve(
-      Object.freeze({
-        kind: 'completed',
-        stderr: fixture.stderr ?? new Uint8Array(),
-        stdoutBytes: fixture.reportedStdoutBytes ?? stdout.byteLength,
-      }),
-    );
-  });
+/** Creates a Git command boundary for one deterministic fixture. */
+const createGitRunner = (fixture: IGitFixture): IGitCommandRunner =>
+  vi.fn<IGitCommandRunner>(() =>
+    Promise.resolve(
+      fixture.failureReason === undefined
+        ? Object.freeze({ kind: 'completed', value: Buffer.from(fixture.stdout ?? []) })
+        : Object.freeze({ kind: 'failed', reason: fixture.failureReason }),
+    ),
+  );
 
 /** Encodes the exact three `check-attr` records for one path. */
 const encodeAttributes = (
@@ -56,8 +40,8 @@ describe('createGitContentTransformationClassifier', () => {
       ...encodeAttributes('ordinary.txt', 'unspecified', 'unset', 'unspecified'),
       ...encodeAttributes('guarded.txt', 'lfs', 'unspecified', 'set'),
     ]);
-    const processExecutor = createProcessExecutor({ stdout: output });
-    const classify = createGitContentTransformationClassifier(processExecutor);
+    const runGit = createGitRunner({ stdout: output });
+    const classify = createGitContentTransformationClassifier(runGit);
     const result = await classify({
       entries: [
         {
@@ -120,28 +104,26 @@ describe('createGitContentTransformationClassifier', () => {
       ).toBe(true);
     }
 
-    const processOptions = vi.mocked(processExecutor).mock.calls[0]?.[0];
-
-    expect(processOptions?.arguments).toStrictEqual([
-      '-C',
-      '/repository',
-      ...GIT_CONTENT_TRANSFORMATION_ARGUMENTS,
+    expect(vi.mocked(runGit).mock.calls).toStrictEqual([
+      [
+        GIT_CONTENT_TRANSFORMATION_ARGUMENTS,
+        {
+          cwd: '/repository',
+          input: ENCODER.encode('ordinary.txt\u0000guarded.txt\u0000'),
+          maxOutputBytes: output.byteLength,
+        },
+      ],
     ]);
-    expect(processOptions?.maxStderrBytes).toBe(4096);
-    expect(processOptions?.maxStdoutBytes).toBe(output.byteLength);
-    expect(processOptions?.stdin).toStrictEqual(
-      ENCODER.encode('ordinary.txt\u0000guarded.txt\u0000'),
-    );
   });
 
   test('does not invoke Git for an empty effective inventory', async () => {
-    const processExecutor = vi.fn<IGitStreamingProcessExecutor>();
-    const classify = createGitContentTransformationClassifier(processExecutor);
+    const runGit = vi.fn<IGitCommandRunner>();
+    const classify = createGitContentTransformationClassifier(runGit);
 
     await expect(
       classify({ entries: [], maxMetadataBytes: 0, repositoryRoot: '/repository' }),
     ).resolves.toStrictEqual({ entries: [], gitMetadataBytes: 0, kind: 'classified' });
-    expect(processExecutor).not.toHaveBeenCalled();
+    expect(runGit).not.toHaveBeenCalled();
   });
 
   test.each([
@@ -153,7 +135,7 @@ describe('createGitContentTransformationClassifier', () => {
     async (_attribute, filter, workingTreeEncoding, ident) => {
       const output = encodeAttributes('guarded.txt', filter, workingTreeEncoding, ident);
       const classify = createGitContentTransformationClassifier(
-        createProcessExecutor({ stdout: output }),
+        createGitRunner({ stdout: output }),
       );
 
       await expect(
@@ -177,17 +159,15 @@ describe('createGitContentTransformationClassifier', () => {
   );
 
   test.each([
+    ['aborted', 'GIT_OPERATION_ABORTED'],
     ['not-found', 'GIT_NOT_FOUND'],
     ['repository-not-found', 'GIT_REPOSITORY_NOT_FOUND'],
     ['access-denied', 'GIT_ACCESS_DENIED'],
-    ['stderr-limit-exceeded', 'GIT_OUTPUT_INVALID'],
+    ['output-invalid', 'GIT_OUTPUT_INVALID'],
     ['output-limit-exceeded', 'RESOURCE_LIMIT_EXCEEDED'],
-    ['stdout-limit-exceeded', 'RESOURCE_LIMIT_EXCEEDED'],
     ['command-failed', 'GIT_COMMAND_FAILED'],
   ] as const)('maps %s without exposing Git diagnostics', async (failureReason, errorCode) => {
-    const classify = createGitContentTransformationClassifier(
-      createProcessExecutor({ failureReason }),
-    );
+    const classify = createGitContentTransformationClassifier(createGitRunner({ failureReason }));
 
     await expect(
       classify({
@@ -205,55 +185,39 @@ describe('createGitContentTransformationClassifier', () => {
     ).resolves.toStrictEqual({ errorCode, kind: 'failed' });
   });
 
-  test('rejects stderr, parser failures, and process byte-count contradictions atomically', async () => {
+  test('rejects parser failures and output beyond the remaining budget atomically', async () => {
     const entry = {
       entryType: 'file' as const,
       kind: 'untracked' as const,
       path: 'file.txt',
       requiresSymlinkOverlay: false as const,
     };
-    const stderrClassifier = createGitContentTransformationClassifier(
-      createProcessExecutor({
-        stderr: ENCODER.encode('private warning'),
-        stdout: encodeAttributes('file.txt', 'unspecified', 'unspecified', 'unspecified'),
-      }),
-    );
-
-    await expect(
-      stderrClassifier({ entries: [entry], maxMetadataBytes: 256, repositoryRoot: '/private' }),
-    ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
-
     const malformedClassifier = createGitContentTransformationClassifier(
-      createProcessExecutor({ stdout: ENCODER.encode('file.txt\u0000filter\u0000') }),
+      createGitRunner({ stdout: ENCODER.encode('file.txt\u0000filter\u0000') }),
     );
 
     await expect(
       malformedClassifier({ entries: [entry], maxMetadataBytes: 256, repositoryRoot: '/private' }),
     ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
 
-    const contradictoryClassifier = createGitContentTransformationClassifier(
-      createProcessExecutor({
-        reportedStdoutBytes: 1,
+    const oversizedClassifier = createGitContentTransformationClassifier(
+      createGitRunner({
         stdout: encodeAttributes('file.txt', 'unspecified', 'unspecified', 'unspecified'),
       }),
     );
 
     await expect(
-      contradictoryClassifier({
-        entries: [entry],
-        maxMetadataBytes: 256,
-        repositoryRoot: '/private',
-      }),
-    ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+      oversizedClassifier({ entries: [entry], maxMetadataBytes: 8, repositoryRoot: '/private' }),
+    ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
   });
 
   test('rejects an invalid remaining metadata budget before invoking Git', async () => {
-    const processExecutor = vi.fn<IGitStreamingProcessExecutor>();
-    const classify = createGitContentTransformationClassifier(processExecutor);
+    const runGit = vi.fn<IGitCommandRunner>();
+    const classify = createGitContentTransformationClassifier(runGit);
 
     await expect(
       classify({ entries: [], maxMetadataBytes: -1, repositoryRoot: '/repository' }),
     ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
-    expect(processExecutor).not.toHaveBeenCalled();
+    expect(runGit).not.toHaveBeenCalled();
   });
 });

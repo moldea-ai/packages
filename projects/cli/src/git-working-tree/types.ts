@@ -1,6 +1,13 @@
 import type { Stats } from 'node:fs';
+import type { readConfigBoolean, readTopLevel } from 'jg-git-commands';
 
 import type { IMoldeaCliGitErrorCode } from '../presentation/index.js';
+
+// injectable typed Git reads used by working-tree discovery
+export interface IGitWorkingTreeDiscoveryReads {
+  readonly readConfigBoolean: typeof readConfigBoolean;
+  readonly readTopLevel: typeof readTopLevel;
+}
 
 // paths available when selecting a Git discovery starting directory
 export interface IGitStartingDirectoryInspectionInput {

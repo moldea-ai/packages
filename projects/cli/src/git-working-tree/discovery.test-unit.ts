@@ -1,25 +1,32 @@
 // @vitest-environment node
 import path from 'node:path';
+import { Exception } from 'jg-exception';
+import { ERRORS as PROCESS_ERRORS } from 'jg-process';
+import { ERRORS as GIT_ERRORS } from 'jg-git-commands';
 import { describe, expect, test, vi } from 'vitest';
 
-import type { IGitProcessExecutor, IGitProcessFailureReason } from '../git-process/index.js';
+import { GIT_TIMEOUT_SECONDS } from '../git-command/index.js';
 import type { IGitVersionPreflight } from '../git-version/index.js';
 
 import { MAX_GIT_DISCOVERY_OUTPUT_BYTES } from './constants.js';
 import { createGitWorkingTreeDiscovery } from './discovery.js';
-import type { IGitStartingDirectoryInspector } from './types.js';
+import type { IGitStartingDirectoryInspector, IGitWorkingTreeDiscoveryReads } from './types.js';
 
-const ENCODER = new TextEncoder();
 const STARTING_DIRECTORY = path.resolve('workspace', 'nested');
 const REPOSITORY_ROOT = path.resolve('workspace');
+const GIT_OPTIONS = {
+  maxOutputBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES,
+  timeoutSeconds: GIT_TIMEOUT_SECONDS,
+};
+const INPUT = { invocationDirectory: STARTING_DIRECTORY, repositoryDirectory: null };
 
-/** Creates one immutable completed Git process result. */
-const createCompletedResult = (stdout: string, stderr = '') =>
-  Object.freeze({
-    kind: 'completed' as const,
-    stderr: ENCODER.encode(stderr),
-    stdout: ENCODER.encode(stdout),
-  });
+/** Creates typed Git reads that find the repository root and the sparse-checkout setting. */
+const createGitReads = (topLevel: string | null = REPOSITORY_ROOT, isSparseCheckout = false) => ({
+  readConfigBoolean: vi
+    .fn<IGitWorkingTreeDiscoveryReads['readConfigBoolean']>()
+    .mockResolvedValue(isSparseCheckout),
+  readTopLevel: vi.fn<IGitWorkingTreeDiscoveryReads['readTopLevel']>().mockResolvedValue(topLevel),
+});
 
 /** Creates the default successful starting-directory inspector. */
 const createStartingDirectoryInspector = (): ReturnType<
@@ -35,91 +42,79 @@ const createVersionPreflight = (): ReturnType<typeof vi.fn<IGitVersionPreflight>
   vi.fn<IGitVersionPreflight>().mockResolvedValue(
     Object.freeze({
       kind: 'supported',
-      version: Object.freeze({ major: 2, minor: 30, patch: 0 }),
+      version: Object.freeze({ major: 2, minor: 32, patch: 0 }),
     }),
   );
 
 describe('createGitWorkingTreeDiscovery', () => {
   test('discovers one accessible nonsparse working tree in the required order', async () => {
-    const processExecutor = vi
-      .fn<IGitProcessExecutor>()
-      .mockResolvedValueOnce(createCompletedResult('true\n'))
-      .mockResolvedValueOnce(createCompletedResult(`${REPOSITORY_ROOT}\n`))
-      .mockResolvedValueOnce(createCompletedResult('false\n'));
+    const git = createGitReads();
     const startingDirectoryInspector = createStartingDirectoryInspector();
     const gitVersionPreflight = createVersionPreflight();
     const discoverWorkingTree = createGitWorkingTreeDiscovery(
-      processExecutor,
+      git,
       startingDirectoryInspector,
       gitVersionPreflight,
     );
 
-    const result = await discoverWorkingTree({
-      invocationDirectory: STARTING_DIRECTORY,
-      repositoryDirectory: null,
-    });
+    const result = await discoverWorkingTree(INPUT);
 
     expect(result).toStrictEqual({ kind: 'discovered', repositoryRoot: REPOSITORY_ROOT });
     expect(Object.isFrozen(result)).toBe(true);
-    expect(startingDirectoryInspector).toHaveBeenNthCalledWith(1, {
-      invocationDirectory: STARTING_DIRECTORY,
-      repositoryDirectory: null,
-    });
+    expect(startingDirectoryInspector).toHaveBeenNthCalledWith(1, INPUT);
     expect(startingDirectoryInspector).toHaveBeenNthCalledWith(2, {
       invocationDirectory: STARTING_DIRECTORY,
       repositoryDirectory: REPOSITORY_ROOT,
     });
-    expect(processExecutor.mock.calls).toStrictEqual([
-      [
-        {
-          arguments: ['-C', STARTING_DIRECTORY, 'rev-parse', '--is-inside-work-tree'],
-          maxBufferBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES,
-        },
-      ],
-      [
-        {
-          arguments: ['-C', STARTING_DIRECTORY, 'rev-parse', '--show-toplevel'],
-          maxBufferBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES,
-        },
-      ],
-      [
-        {
-          arguments: [
-            '-C',
-            REPOSITORY_ROOT,
-            'config',
-            '--type=bool',
-            '--default=false',
-            '--get',
-            'core.sparseCheckout',
-          ],
-          maxBufferBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES,
-        },
-      ],
+    expect(git.readTopLevel.mock.calls).toStrictEqual([[STARTING_DIRECTORY, GIT_OPTIONS]]);
+    expect(gitVersionPreflight).toHaveBeenCalledExactlyOnceWith(REPOSITORY_ROOT, undefined);
+    expect(git.readConfigBoolean.mock.calls).toStrictEqual([
+      [REPOSITORY_ROOT, 'core.sparseCheckout', false, GIT_OPTIONS],
     ]);
-    expect(gitVersionPreflight).toHaveBeenCalledOnce();
+  });
+
+  test('passes the caller signal to every Git read', async () => {
+    const git = createGitReads();
+    const gitVersionPreflight = createVersionPreflight();
+    const { signal } = new AbortController();
+
+    await createGitWorkingTreeDiscovery(
+      git,
+      createStartingDirectoryInspector(),
+      gitVersionPreflight,
+    )({ ...INPUT, signal });
+
+    expect(git.readTopLevel).toHaveBeenCalledWith(STARTING_DIRECTORY, { ...GIT_OPTIONS, signal });
+    expect(gitVersionPreflight).toHaveBeenCalledWith(REPOSITORY_ROOT, signal);
+    expect(git.readConfigBoolean).toHaveBeenCalledWith(
+      REPOSITORY_ROOT,
+      'core.sparseCheckout',
+      false,
+      { ...GIT_OPTIONS, signal },
+    );
   });
 
   test.each([
-    ['not-found', 'GIT_NOT_FOUND'],
-    ['repository-not-found', 'GIT_REPOSITORY_NOT_FOUND'],
-    ['access-denied', 'GIT_ACCESS_DENIED'],
-    ['output-limit-exceeded', 'GIT_OUTPUT_INVALID'],
-    ['command-failed', 'GIT_COMMAND_FAILED'],
+    [GIT_ERRORS.GIT_NOT_FOUND, 'GIT_NOT_FOUND'],
+    [GIT_ERRORS.GIT_REPOSITORY_NOT_FOUND, 'GIT_REPOSITORY_NOT_FOUND'],
+    [GIT_ERRORS.GIT_ACCESS_DENIED, 'GIT_ACCESS_DENIED'],
+    [GIT_ERRORS.GIT_OUTPUT_INVALID, 'GIT_OUTPUT_INVALID'],
+    [GIT_ERRORS.GIT_COMMAND_FAILED, 'GIT_COMMAND_FAILED'],
+    [PROCESS_ERRORS.PROCESS_OUTPUT_TOO_LARGE, 'GIT_OUTPUT_INVALID'],
   ] as const)(
-    'maps initial Git failure %s without leaking diagnostics',
-    async (reason, errorCode) => {
-      const processExecutor = vi
-        .fn<IGitProcessExecutor>()
-        .mockResolvedValue(
-          Object.freeze({ kind: 'failed', reason: reason satisfies IGitProcessFailureReason }),
-        );
-      const startingDirectoryInspector = createStartingDirectoryInspector();
+    'maps initial Git failure %s to %s without leaking diagnostics',
+    async (code, errorCode) => {
+      const git = createGitReads();
+
+      git.readTopLevel.mockRejectedValue(
+        new Exception(`Git failed in ${STARTING_DIRECTORY}.`, { code }),
+      );
+
       const result = await createGitWorkingTreeDiscovery(
-        processExecutor,
-        startingDirectoryInspector,
+        git,
+        createStartingDirectoryInspector(),
         createVersionPreflight(),
-      )({ invocationDirectory: STARTING_DIRECTORY, repositoryDirectory: null });
+      )(INPUT);
 
       expect(result).toStrictEqual({ errorCode, kind: 'failed' });
       expect(Object.isFrozen(result)).toBe(true);
@@ -127,62 +122,35 @@ describe('createGitWorkingTreeDiscovery', () => {
     },
   );
 
-  test('rejects a non-working-tree repository before root resolution', async () => {
-    const processExecutor = vi
-      .fn<IGitProcessExecutor>()
-      .mockResolvedValue(createCompletedResult('false\n'));
+  test('rejects a directory without a working tree before root resolution', async () => {
+    const git = createGitReads(null);
+    const startingDirectoryInspector = createStartingDirectoryInspector();
     const gitVersionPreflight = createVersionPreflight();
 
     await expect(
-      createGitWorkingTreeDiscovery(
-        processExecutor,
-        createStartingDirectoryInspector(),
-        gitVersionPreflight,
-      )({ invocationDirectory: STARTING_DIRECTORY, repositoryDirectory: null }),
+      createGitWorkingTreeDiscovery(git, startingDirectoryInspector, gitVersionPreflight)(INPUT),
     ).resolves.toStrictEqual({ errorCode: 'GIT_WORK_TREE_REQUIRED', kind: 'failed' });
-    expect(processExecutor).toHaveBeenCalledOnce();
+    expect(startingDirectoryInspector).toHaveBeenCalledOnce();
     expect(gitVersionPreflight).not.toHaveBeenCalled();
+    expect(git.readConfigBoolean).not.toHaveBeenCalled();
   });
 
-  test.each([
-    [createCompletedResult('maybe\n'), 'GIT_OUTPUT_INVALID'],
-    [createCompletedResult('true\n', 'private diagnostic'), 'GIT_OUTPUT_INVALID'],
-  ] as const)('rejects invalid initial Git output', async (processResult, errorCode) => {
-    const processExecutor = vi.fn<IGitProcessExecutor>().mockResolvedValue(processResult);
-
-    await expect(
-      createGitWorkingTreeDiscovery(
-        processExecutor,
-        createStartingDirectoryInspector(),
-        createVersionPreflight(),
-      )({ invocationDirectory: STARTING_DIRECTORY, repositoryDirectory: null }),
-    ).resolves.toStrictEqual({ errorCode, kind: 'failed' });
-  });
-
-  test('rejects an invalid repository root before revalidation or version preflight', async () => {
-    const processExecutor = vi
-      .fn<IGitProcessExecutor>()
-      .mockResolvedValueOnce(createCompletedResult('true\n'))
-      .mockResolvedValueOnce(createCompletedResult('relative-root\n'));
+  test('rejects a relative repository root before revalidation or version preflight', async () => {
     const startingDirectoryInspector = createStartingDirectoryInspector();
     const gitVersionPreflight = createVersionPreflight();
 
     await expect(
       createGitWorkingTreeDiscovery(
-        processExecutor,
+        createGitReads('relative-root'),
         startingDirectoryInspector,
         gitVersionPreflight,
-      )({ invocationDirectory: STARTING_DIRECTORY, repositoryDirectory: null }),
+      )(INPUT),
     ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
     expect(startingDirectoryInspector).toHaveBeenCalledOnce();
     expect(gitVersionPreflight).not.toHaveBeenCalled();
   });
 
   test('returns a safe failure when the discovered root is no longer accessible', async () => {
-    const processExecutor = vi
-      .fn<IGitProcessExecutor>()
-      .mockResolvedValueOnce(createCompletedResult('true\n'))
-      .mockResolvedValueOnce(createCompletedResult(`${REPOSITORY_ROOT}\n`));
     const startingDirectoryInspector = vi
       .fn<IGitStartingDirectoryInspector>()
       .mockResolvedValueOnce(Object.freeze({ directory: STARTING_DIRECTORY, kind: 'found' }))
@@ -190,10 +158,10 @@ describe('createGitWorkingTreeDiscovery', () => {
     const gitVersionPreflight = createVersionPreflight();
 
     const result = await createGitWorkingTreeDiscovery(
-      processExecutor,
+      createGitReads(),
       startingDirectoryInspector,
       gitVersionPreflight,
-    )({ invocationDirectory: STARTING_DIRECTORY, repositoryDirectory: null });
+    )(INPUT);
 
     expect(result).toStrictEqual({ errorCode: 'GIT_REPOSITORY_NOT_FOUND', kind: 'failed' });
     expect(Object.isFrozen(result)).toBe(true);
@@ -201,73 +169,61 @@ describe('createGitWorkingTreeDiscovery', () => {
   });
 
   test('stops before sparse-checkout inspection when version preflight fails', async () => {
-    const processExecutor = vi
-      .fn<IGitProcessExecutor>()
-      .mockResolvedValueOnce(createCompletedResult('true\n'))
-      .mockResolvedValueOnce(createCompletedResult(`${REPOSITORY_ROOT}\n`));
+    const git = createGitReads();
     const gitVersionPreflight = vi
       .fn<IGitVersionPreflight>()
       .mockResolvedValue(Object.freeze({ errorCode: 'GIT_VERSION_UNSUPPORTED', kind: 'failed' }));
 
     await expect(
       createGitWorkingTreeDiscovery(
-        processExecutor,
+        git,
         createStartingDirectoryInspector(),
         gitVersionPreflight,
-      )({ invocationDirectory: STARTING_DIRECTORY, repositoryDirectory: null }),
+      )(INPUT),
     ).resolves.toStrictEqual({ errorCode: 'GIT_VERSION_UNSUPPORTED', kind: 'failed' });
-    expect(processExecutor).toHaveBeenCalledTimes(2);
+    expect(git.readConfigBoolean).not.toHaveBeenCalled();
   });
 
   test('rejects sparse checkout after successful version preflight', async () => {
-    const processExecutor = vi
-      .fn<IGitProcessExecutor>()
-      .mockResolvedValueOnce(createCompletedResult('true\n'))
-      .mockResolvedValueOnce(createCompletedResult(`${REPOSITORY_ROOT}\n`))
-      .mockResolvedValueOnce(createCompletedResult('true\n'));
-
     await expect(
       createGitWorkingTreeDiscovery(
-        processExecutor,
+        createGitReads(REPOSITORY_ROOT, true),
         createStartingDirectoryInspector(),
         createVersionPreflight(),
-      )({ invocationDirectory: STARTING_DIRECTORY, repositoryDirectory: null }),
-    ).resolves.toStrictEqual({
-      errorCode: 'GIT_SPARSE_CHECKOUT_UNSUPPORTED',
-      kind: 'failed',
-    });
+      )(INPUT),
+    ).resolves.toStrictEqual({ errorCode: 'GIT_SPARSE_CHECKOUT_UNSUPPORTED', kind: 'failed' });
   });
 
-  test('rejects malformed sparse-checkout configuration output', async () => {
-    const processExecutor = vi
-      .fn<IGitProcessExecutor>()
-      .mockResolvedValueOnce(createCompletedResult('true\n'))
-      .mockResolvedValueOnce(createCompletedResult(`${REPOSITORY_ROOT}\n`))
-      .mockResolvedValueOnce(createCompletedResult('invalid\n'));
+  test('maps a sparse-checkout setting Git cannot read as a boolean to invalid output', async () => {
+    const git = createGitReads();
+
+    git.readConfigBoolean.mockRejectedValue(
+      new Exception('Git failed.', { code: GIT_ERRORS.GIT_COMMAND_FAILED }),
+    );
 
     await expect(
       createGitWorkingTreeDiscovery(
-        processExecutor,
+        git,
         createStartingDirectoryInspector(),
         createVersionPreflight(),
-      )({ invocationDirectory: STARTING_DIRECTORY, repositoryDirectory: null }),
-    ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+      )(INPUT),
+    ).resolves.toStrictEqual({ errorCode: 'GIT_COMMAND_FAILED', kind: 'failed' });
   });
 
   test('returns a starting-directory failure without invoking Git', async () => {
-    const processExecutor = vi.fn<IGitProcessExecutor>();
+    const git = createGitReads();
     const startingDirectoryInspector = vi
       .fn<IGitStartingDirectoryInspector>()
       .mockResolvedValue({ errorCode: 'GIT_REPOSITORY_NOT_FOUND', kind: 'failed' });
 
     const result = await createGitWorkingTreeDiscovery(
-      processExecutor,
+      git,
       startingDirectoryInspector,
       createVersionPreflight(),
-    )({ invocationDirectory: STARTING_DIRECTORY, repositoryDirectory: null });
+    )(INPUT);
 
     expect(result).toStrictEqual({ errorCode: 'GIT_REPOSITORY_NOT_FOUND', kind: 'failed' });
     expect(Object.isFrozen(result)).toBe(true);
-    expect(processExecutor).not.toHaveBeenCalled();
+    expect(git.readTopLevel).not.toHaveBeenCalled();
   });
 });

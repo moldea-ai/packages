@@ -9,6 +9,12 @@ import { isCompatiblePackageDependency } from '../compatible-dependency/index.mj
 const EXPECTED_PNPM_VERSION = '11.21.0';
 const EXPECTED_VITEST_VERSION = '3.2.4';
 const PEER_WARNING_PATTERN = /(?:unmet peer|peer dependenc(?:y|ies)|ERR_PNPM_PEER_DEP_ISSUES)/iu;
+// the CLI's exact third-party dependencies, which the packed manifest must keep unchanged
+const EXTERNAL_CLI_DEPENDENCIES = Object.fromEntries(
+  Object.entries(
+    JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).dependencies,
+  ).filter(([packageName]) => !packageName.startsWith('@moldea.ai/')),
+);
 const TARBALL_PATTERNS = {
   '@moldea.ai/cli': /^moldea\.ai-cli-.+\.tgz$/u,
   '@moldea.ai/core': /^moldea\.ai-core-.+\.tgz$/u,
@@ -539,9 +545,14 @@ const runTestingPeerCompatibilityCheck = async (artifactDirectory, vitestVersion
         typeof cliDependencies === 'object' &&
         JSON.stringify(Object.keys(cliDependencies).sort()) ===
           JSON.stringify(
-            [...firstPartyEntries.map(([packageName]) => packageName), 'semver'].sort(),
+            [
+              ...firstPartyEntries.map(([packageName]) => packageName),
+              ...Object.keys(EXTERNAL_CLI_DEPENDENCIES),
+            ].sort(),
           ) &&
-        cliDependencies.semver === '7.8.5' &&
+        Object.entries(EXTERNAL_CLI_DEPENDENCIES).every(
+          ([packageName, version]) => cliDependencies[packageName] === version,
+        ) &&
         firstPartyEntries.every(([packageName, manifest]) =>
           isCompatiblePackageDependency(manifest.version, cliDependencies[packageName]),
         ),

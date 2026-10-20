@@ -1,23 +1,28 @@
-import {
-  executeGitProcess,
-  type IGitProcessExecutor,
-  type IGitProcessFailureReason,
-} from '../git-process/index.js';
+import path from 'node:path';
+import { readConfigBoolean, readTopLevel } from 'jg-git-commands';
+
+import { GIT_TIMEOUT_SECONDS, readGit, type IGitFailureReason } from '../git-command/index.js';
 import { createGitVersionPreflight, type IGitVersionPreflight } from '../git-version/index.js';
 import type { IMoldeaCliGitErrorCode } from '../presentation/index.js';
 
 import { MAX_GIT_DISCOVERY_OUTPUT_BYTES } from './constants.js';
-import { parseGitAbsolutePathOutput, parseGitBooleanOutput } from './parser.js';
 import { inspectGitStartingDirectory } from './starting-directory.js';
 import type {
   IGitStartingDirectoryInspector,
   IGitWorkingTreeDiscovery,
   IGitWorkingTreeDiscoveryFailedResult,
+  IGitWorkingTreeDiscoveryReads,
   IGitWorkingTreeDiscoveryResult,
 } from './types.js';
 
-/** Maps a normalized Git process failure to a safe discovery error. */
-const mapGitProcessFailure = (reason: IGitProcessFailureReason): IMoldeaCliGitErrorCode => {
+// the typed Git reads discovery uses outside tests
+const GIT_DISCOVERY_READS: IGitWorkingTreeDiscoveryReads = Object.freeze({
+  readConfigBoolean,
+  readTopLevel,
+});
+
+/** Maps a normalized Git failure to a safe discovery error. */
+const mapGitFailure = (reason: IGitFailureReason): IMoldeaCliGitErrorCode => {
   switch (reason) {
     case 'aborted':
       return 'GIT_OPERATION_ABORTED';
@@ -28,6 +33,7 @@ const mapGitProcessFailure = (reason: IGitProcessFailureReason): IMoldeaCliGitEr
     case 'access-denied':
       return 'GIT_ACCESS_DENIED';
     case 'output-limit-exceeded':
+    case 'output-invalid':
       return 'GIT_OUTPUT_INVALID';
     case 'command-failed':
       return 'GIT_COMMAND_FAILED';
@@ -40,17 +46,17 @@ const createDiscoveryFailure = (
 ): IGitWorkingTreeDiscoveryFailedResult => Object.freeze({ errorCode, kind: 'failed' });
 
 /**
- * Creates Git working-tree discovery around injectable process and filesystem boundaries.
- * @param processExecutor The normalized Git subprocess executor.
+ * Creates Git working-tree discovery around injectable Git and filesystem boundaries.
+ * @param git The typed Git reads.
  * @param startingDirectoryInspector The safe directory inspection boundary.
  * @param gitVersionPreflight The Git version prerequisite check.
  * @returns A working-tree discovery operation.
  */
 export const createGitWorkingTreeDiscovery =
   (
-    processExecutor: IGitProcessExecutor = executeGitProcess,
+    git: IGitWorkingTreeDiscoveryReads = GIT_DISCOVERY_READS,
     startingDirectoryInspector: IGitStartingDirectoryInspector = inspectGitStartingDirectory,
-    gitVersionPreflight: IGitVersionPreflight = createGitVersionPreflight(processExecutor),
+    gitVersionPreflight: IGitVersionPreflight = createGitVersionPreflight(),
   ): IGitWorkingTreeDiscovery =>
   async (input): Promise<IGitWorkingTreeDiscoveryResult> => {
     const startingDirectoryResult = await startingDirectoryInspector(input);
@@ -59,47 +65,27 @@ export const createGitWorkingTreeDiscovery =
       return createDiscoveryFailure(startingDirectoryResult.errorCode);
     }
 
-    const workTreeResult = await processExecutor({
-      arguments: ['-C', startingDirectoryResult.directory, 'rev-parse', '--is-inside-work-tree'],
-      maxBufferBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES,
+    const gitOptions = {
+      maxOutputBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES,
+      timeoutSeconds: GIT_TIMEOUT_SECONDS,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
-    });
+    };
+    const rootResult = await readGit(
+      () => git.readTopLevel(startingDirectoryResult.directory, gitOptions),
+      input.signal,
+    );
 
-    if (workTreeResult.kind === 'failed') {
-      return createDiscoveryFailure(mapGitProcessFailure(workTreeResult.reason));
+    if (rootResult.kind === 'failed') {
+      return createDiscoveryFailure(mapGitFailure(rootResult.reason));
     }
 
-    if (workTreeResult.stderr.byteLength > 0) {
-      return createDiscoveryFailure('GIT_OUTPUT_INVALID');
-    }
-
-    const isInsideWorkTree = parseGitBooleanOutput(workTreeResult.stdout);
-
-    if (isInsideWorkTree === null) {
-      return createDiscoveryFailure('GIT_OUTPUT_INVALID');
-    }
-
-    if (!isInsideWorkTree) {
+    if (rootResult.value === null) {
       return createDiscoveryFailure('GIT_WORK_TREE_REQUIRED');
     }
 
-    const rootResult = await processExecutor({
-      arguments: ['-C', startingDirectoryResult.directory, 'rev-parse', '--show-toplevel'],
-      maxBufferBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES,
-      ...(input.signal === undefined ? {} : { signal: input.signal }),
-    });
+    const repositoryRoot = rootResult.value;
 
-    if (rootResult.kind === 'failed') {
-      return createDiscoveryFailure(mapGitProcessFailure(rootResult.reason));
-    }
-
-    if (rootResult.stderr.byteLength > 0) {
-      return createDiscoveryFailure('GIT_OUTPUT_INVALID');
-    }
-
-    const repositoryRoot = parseGitAbsolutePathOutput(rootResult.stdout);
-
-    if (repositoryRoot === null) {
+    if (!path.isAbsolute(repositoryRoot)) {
       return createDiscoveryFailure('GIT_OUTPUT_INVALID');
     }
 
@@ -112,41 +98,28 @@ export const createGitWorkingTreeDiscovery =
       return createDiscoveryFailure(rootDirectoryResult.errorCode);
     }
 
-    const versionResult = await gitVersionPreflight(input.signal);
+    const versionResult = await gitVersionPreflight(rootDirectoryResult.directory, input.signal);
 
     if (versionResult.kind === 'failed') {
       return createDiscoveryFailure(versionResult.errorCode);
     }
 
-    const sparseCheckoutResult = await processExecutor({
-      arguments: [
-        '-C',
-        rootDirectoryResult.directory,
-        'config',
-        '--type=bool',
-        '--default=false',
-        '--get',
-        'core.sparseCheckout',
-      ],
-      maxBufferBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES,
-      ...(input.signal === undefined ? {} : { signal: input.signal }),
-    });
+    const sparseCheckoutResult = await readGit(
+      () =>
+        git.readConfigBoolean(
+          rootDirectoryResult.directory,
+          'core.sparseCheckout',
+          false,
+          gitOptions,
+        ),
+      input.signal,
+    );
 
     if (sparseCheckoutResult.kind === 'failed') {
-      return createDiscoveryFailure(mapGitProcessFailure(sparseCheckoutResult.reason));
+      return createDiscoveryFailure(mapGitFailure(sparseCheckoutResult.reason));
     }
 
-    if (sparseCheckoutResult.stderr.byteLength > 0) {
-      return createDiscoveryFailure('GIT_OUTPUT_INVALID');
-    }
-
-    const isSparseCheckout = parseGitBooleanOutput(sparseCheckoutResult.stdout);
-
-    if (isSparseCheckout === null) {
-      return createDiscoveryFailure('GIT_OUTPUT_INVALID');
-    }
-
-    if (isSparseCheckout) {
+    if (sparseCheckoutResult.value) {
       return createDiscoveryFailure('GIT_SPARSE_CHECKOUT_UNSUPPORTED');
     }
 

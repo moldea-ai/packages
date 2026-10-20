@@ -1,13 +1,8 @@
 // @vitest-environment node
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { describe, expect, test } from 'vitest';
-
-import {
-  executeGitStreamingProcess,
-  type IGitStreamingProcessExecutor,
-} from '../git-process/index.js';
+import { describe, expect, test, vi } from 'vitest';
 
 import { INSTRUCTION_PATHS } from './constants.js';
 import { createGitInventoryProbe, probeGitInventory } from './probe.js';
@@ -43,6 +38,32 @@ describe('real Git inventory probe', () => {
       repository.remove();
     }
   });
+
+  // a directory's permissions stop neither Windows' owner nor root from reading it
+  test.skipIf(process.platform === 'win32' || process.getuid?.() === 0)(
+    'fails instead of leaving out an untracked directory Git could not open',
+    async () => {
+      const repository = createGitRepository();
+      const lockedDirectory = path.join(repository.directory, 'locked');
+
+      try {
+        mkdirSync(lockedDirectory);
+        writeFileSync(path.join(lockedDirectory, 'secret.txt'), 'secret', 'utf8');
+        chmodSync(lockedDirectory, 0o000);
+
+        await expect(
+          probeGitInventory({
+            maxEntries: 4,
+            maxMetadataBytes: 4096,
+            repositoryRoot: repository.directory,
+          }),
+        ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+      } finally {
+        chmodSync(lockedDirectory, 0o755);
+        repository.remove();
+      }
+    },
+  );
 
   test('lists ignored instruction files only in the explicit instruction probe', async () => {
     const repository = createGitRepository();
@@ -843,15 +864,10 @@ describe('real Git inventory probe', () => {
         'utf8',
       );
 
-      const processExecutor: IGitStreamingProcessExecutor = (options) =>
-        executeGitStreamingProcess({
-          ...options,
-          environment: {
-            ...repository.environment,
-            GIT_ATTR_SOURCE: 'HEAD',
-          },
-        });
-      const probe = createGitInventoryProbe(processExecutor);
+      // an inherited attribute source would classify the committed attributes instead
+      vi.stubEnv('GIT_ATTR_SOURCE', 'HEAD');
+
+      const probe = createGitInventoryProbe();
 
       await expect(
         probe({
@@ -875,6 +891,7 @@ describe('real Git inventory probe', () => {
         kind: 'probed',
       });
     } finally {
+      vi.unstubAllEnvs();
       repository.remove();
     }
   });

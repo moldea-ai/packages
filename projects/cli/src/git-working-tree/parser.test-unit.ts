@@ -4,27 +4,11 @@ import process from 'node:process';
 import { describe, expect, test } from 'vitest';
 
 import { MAX_GIT_DISCOVERY_OUTPUT_BYTES } from './constants.js';
-import { parseGitAbsolutePathOutput, parseGitBooleanOutput, parseGitPathOutput } from './parser.js';
+import { parseGitAbsolutePathOutput, parseGitPathOutput } from './parser.js';
 
 const ENCODER = new TextEncoder();
 
 describe('Git working-tree output parsers', () => {
-  test.each([
-    ['true\n', true],
-    ['false\n', false],
-    ['true\r\n', true],
-    ['false\r\n', false],
-  ] as const)('parses canonical boolean output %s', (output, expectedValue) => {
-    expect(parseGitBooleanOutput(ENCODER.encode(output))).toBe(expectedValue);
-  });
-
-  test.each(['true', 'TRUE\n', 'false\n\n', ' true\n', '\n'])(
-    'rejects noncanonical boolean output %s',
-    (output) => {
-      expect(parseGitBooleanOutput(ENCODER.encode(output))).toBeNull();
-    },
-  );
-
   test('parses an absolute repository root terminated by LF', () => {
     const repositoryRoot = path.resolve('repository root');
 

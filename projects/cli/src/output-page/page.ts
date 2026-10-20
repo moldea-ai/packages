@@ -1,4 +1,4 @@
-import { serializeJsonDeterministically } from '../json-serialization/index.js';
+import { takeWithinByteBudget } from 'jg-utilities';
 
 import { decodeMoldeaCliCursor, encodeMoldeaCliCursor } from './cursor.js';
 import { MoldeaCliOutputPageException } from './exception.js';
@@ -69,31 +69,15 @@ export const createMoldeaCliOutputPage = <TRecord extends IMoldeaCliOutputRecord
     return emptyPage;
   }
 
-  const selectedRecords: TRecord[] = [];
-  let selectedCursor: string | null = null;
-  let serializedRecordsUtf8Bytes = 2;
-
-  for (let endIndex = startIndex + 1; endIndex <= input.records.length; endIndex += 1) {
-    const record = input.records[endIndex - 1];
-
-    if (record === undefined) {
-      throw new TypeError('An output page record is missing.');
-    }
-
-    const serializedRecordUtf8Bytes = Buffer.byteLength(
-      serializeJsonDeterministically(record),
-      'utf8',
-    );
-
-    serializedRecordsUtf8Bytes += serializedRecordUtf8Bytes + (endIndex > startIndex + 1 ? 1 : 0);
-    selectedRecords.push(record);
-
+  /** Creates the cursor that continues after a page ending with the record at this end index. */
+  const createCursor = (record: TRecord, endIndex: number): string | null => {
     const sourceCursor = input.sourceCursorForRecord?.(record) ?? null;
     const hasMore =
       input.sourceCursorForRecord === undefined
         ? endIndex < input.records.length
         : sourceCursor !== null;
-    const cursor = hasMore
+
+    return hasMore
       ? encodeMoldeaCliCursor(
           input.command,
           input.filters,
@@ -102,22 +86,27 @@ export const createMoldeaCliOutputPage = <TRecord extends IMoldeaCliOutputRecord
           sourceCursor,
         )
       : null;
-    const candidate = Object.freeze({ cursor, records: selectedRecords });
+  };
 
-    if (input.measure(candidate, serializedRecordsUtf8Bytes) > input.maxOutputBytes) {
-      selectedRecords.pop();
-      break;
-    }
+  const selectedRecords = takeWithinByteBudget(input.records.slice(startIndex), {
+    maxBytes: input.maxOutputBytes,
+    measurePage: (page, itemsBytes) =>
+      input.measure(
+        Object.freeze({
+          cursor: createCursor(page[page.length - 1] as TRecord, startIndex + page.length),
+          records: page,
+        }),
+        itemsBytes,
+      ),
+  });
+  const lastRecord = selectedRecords[selectedRecords.length - 1];
 
-    selectedCursor = cursor;
-  }
-
-  if (selectedRecords.length === 0) {
+  if (lastRecord === undefined) {
     throw new MoldeaCliOutputPageException('OUTPUT_BUDGET_TOO_SMALL');
   }
 
   return Object.freeze({
-    cursor: selectedCursor,
-    records: Object.freeze([...selectedRecords]),
+    cursor: createCursor(lastRecord, startIndex + selectedRecords.length),
+    records: Object.freeze(selectedRecords),
   });
 };

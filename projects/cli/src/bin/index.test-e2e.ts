@@ -15,11 +15,10 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { createGitEnvironment } from 'jg-git-commands';
 import { describe, expect, test } from 'vitest';
 
 import type { IMoldeaCliValidateResult } from '../presentation/index.js';
-
-import { createGitProcessEnvironment } from '../git-process/index.js';
 
 import {
   CLI_DISTRIBUTION_PATH,
@@ -335,10 +334,8 @@ describe('published CLI package and executable', () => {
     const repository = path.join(directory, 'repository');
     const gitHome = path.join(directory, 'home');
     const gitConfig = path.join(directory, 'config');
-    const environment = createGitProcessEnvironment({
-      ...process.env,
-      HOME: gitHome,
-      XDG_CONFIG_HOME: gitConfig,
+    const environment = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: gitHome, XDG_CONFIG_HOME: gitConfig },
     });
 
     try {
@@ -491,10 +488,8 @@ describe('published CLI package and executable', () => {
     const directory = mkdtempSync(path.join(tmpdir(), 'moldea-cli-instructions-'));
     const gitHome = path.join(directory, 'home');
     const gitConfig = path.join(directory, 'config');
-    const environment = createGitProcessEnvironment({
-      ...process.env,
-      HOME: gitHome,
-      XDG_CONFIG_HOME: gitConfig,
+    const environment = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: gitHome, XDG_CONFIG_HOME: gitConfig },
     });
     const asset =
       '<!-- moldea:start -->\nnode "<repo-root>/{{skill-path}}/scripts/relevance-gate.mjs" --repository "<repo-root>"\n<!-- moldea:end -->\n';
@@ -725,10 +720,8 @@ describe('published CLI package and executable', () => {
       const directory = mkdtempSync(path.join(tmpdir(), 'moldea-cli-paths-'));
       const gitHome = path.join(directory, 'home');
       const gitConfig = path.join(directory, 'config');
-      const environment = createGitProcessEnvironment({
-        ...process.env,
-        HOME: gitHome,
-        XDG_CONFIG_HOME: gitConfig,
+      const environment = createGitEnvironment({
+        baseEnv: { ...process.env, HOME: gitHome, XDG_CONFIG_HOME: gitConfig },
       });
 
       try {
@@ -838,10 +831,8 @@ describe('published CLI package and executable', () => {
     const gitHomeDirectory = path.join(testDirectory, 'home');
     const gitConfigDirectory = path.join(testDirectory, 'config');
     const gitHooksDirectory = path.join(testDirectory, 'hooks');
-    const gitEnvironment: NodeJS.ProcessEnv = createGitProcessEnvironment({
-      ...process.env,
-      HOME: gitHomeDirectory,
-      XDG_CONFIG_HOME: gitConfigDirectory,
+    const gitEnvironment: NodeJS.ProcessEnv = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: gitHomeDirectory, XDG_CONFIG_HOME: gitConfigDirectory },
     });
 
     for (const directory of [
@@ -2047,7 +2038,7 @@ acceptedWarnings: 0
           `#!/usr/bin/env node
 const { spawnSync } = require('node:child_process');
 
-if (process.argv.includes('--version')) {
+if (process.argv.at(-1) === 'version') {
   process.stdout.write(process.env.MOLDEA_TEST_GIT_VERSION_OUTPUT);
   process.exit(0);
 }

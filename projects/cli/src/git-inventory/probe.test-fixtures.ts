@@ -2,8 +2,8 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { createGitEnvironment } from 'jg-git-commands';
 
-import { createGitProcessEnvironment } from '../git-process/index.js';
 import { parseGitAbsolutePathOutput } from '../git-working-tree/index.js';
 
 // isolated Git repository and configuration used by inventory integration tests
@@ -62,11 +62,13 @@ export const createGitRepository = (): IGitRepositoryFixture => {
   const homeDirectory = path.join(testDirectory, 'home');
   const configDirectory = path.join(testDirectory, 'config');
   const hooksDirectory = path.join(testDirectory, 'hooks');
-  const environment = createGitProcessEnvironment({
-    ...process.env,
-    HOME: homeDirectory,
-    XDG_CONFIG_HOME: configDirectory,
-  });
+  // fixture Git may clone a local repository as a submodule, which jg-git-commands' environment refuses
+  const environment = {
+    ...createGitEnvironment({
+      baseEnv: { ...process.env, HOME: homeDirectory, XDG_CONFIG_HOME: configDirectory },
+    }),
+    GIT_ALLOW_PROTOCOL: 'file',
+  };
 
   for (const fixtureDirectory of [homeDirectory, configDirectory, hooksDirectory]) {
     mkdirSync(fixtureDirectory, { recursive: true });

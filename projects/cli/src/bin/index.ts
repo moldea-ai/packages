@@ -1,39 +1,36 @@
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { hasErrorCode } from 'jg-exception';
+import { ERRORS as PROCESS_ERRORS, createShutdownSignal, readStdin } from 'jg-process';
 
 import { runMoldeaCli } from '../cli-execution/index.js';
 import type { IMoldeaCliStdinReader } from '../cli-execution/index.js';
 import { loadMoldeaCliPackageMetadata } from '../package-metadata/index.js';
 import { createMoldeaCliOwnedError, formatMoldeaCliHumanError } from '../presentation/index.js';
-import { createMoldeaCliProcessSignalSession } from '../process-signal/index.js';
 
 const executableDirectory = path.dirname(fileURLToPath(import.meta.url));
 const packageManifestPath = path.resolve(executableDirectory, '..', 'package.json');
-const signalSession = createMoldeaCliProcessSignalSession();
 
-/** Reads process stdin incrementally without retaining bytes above the requested limit. */
+// SIGINT, SIGTERM, or the launcher closing the IPC channel stops the run; the exit code is set here
+const shutdown = createShutdownSignal({ disconnect: true, setExitCode: false });
+
+/** Reads process stdin without retaining bytes above the requested limit. */
 const readProcessStdin: IMoldeaCliStdinReader = async (maxBytes, signal) => {
-  const chunks: Uint8Array[] = [];
-  let totalBytes = 0;
-
-  for await (const chunk of process.stdin) {
-    if (signal?.aborted) {
-      return { bytes: new Uint8Array(), kind: 'completed' };
-    }
-
-    const bytes = typeof chunk === 'string' ? Buffer.from(chunk, 'utf8') : new Uint8Array(chunk);
-    totalBytes += bytes.byteLength;
-
-    if (totalBytes > maxBytes) {
-      process.stdin.pause();
+  try {
+    return { bytes: await readStdin({ maxBytes, signal }), kind: 'completed' };
+  } catch (error) {
+    if (hasErrorCode(error, PROCESS_ERRORS.STDIN_TOO_LARGE)) {
       return { kind: 'limit-exceeded' };
     }
 
-    chunks.push(bytes);
-  }
+    // a stopped run ends the read early and never uses its bytes
+    if (signal?.aborted === true) {
+      return { bytes: new Uint8Array(), kind: 'completed' };
+    }
 
-  return { bytes: Buffer.concat(chunks, totalBytes), kind: 'completed' };
+    throw error;
+  }
 };
 
 /**
@@ -70,35 +67,33 @@ try {
     invocationDirectory,
     packageMetadata,
     readStdin: readProcessStdin,
-    signal: signalSession.signal,
+    signal: shutdown.signal,
   });
 
-  if (signalSession.hasReceivedSignal) {
-    process.exitCode = signalSession.exitCode;
-  } else {
+  if (shutdown.receivedSignal() === null) {
     await writeProcessOutput(process.stdout, executionResult.stdout);
 
-    if (!signalSession.hasReceivedSignal) {
+    if (shutdown.receivedSignal() === null) {
       await writeProcessOutput(process.stderr, executionResult.stderr);
     }
-
-    if (!signalSession.hasReceivedSignal) {
-      signalSession.completeOutput();
-    }
-
-    process.exitCode = signalSession.exitCode ?? executionResult.exitCode;
   }
+
+  // a signal after the output is complete no longer changes the exit code
+  process.exitCode = shutdown.exitCode() ?? executionResult.exitCode;
 } catch {
-  if (signalSession.hasReceivedSignal) {
-    process.exitCode = signalSession.exitCode;
-  } else {
+  const signalExitCode = shutdown.exitCode();
+
+  if (signalExitCode === null) {
     await writeProcessOutput(
       process.stderr,
       formatMoldeaCliHumanError(createMoldeaCliOwnedError('INTERNAL_ERROR')),
     ).catch(() => undefined);
-    signalSession.completeOutput();
-    process.exitCode = 3;
   }
+
+  process.exitCode = signalExitCode ?? 3;
 } finally {
-  signalSession.dispose();
+  shutdown.dispose();
+
+  // an open IPC channel to the launcher would keep the process alive
+  if (process.connected) process.disconnect();
 }

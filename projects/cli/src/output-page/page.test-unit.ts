@@ -1,7 +1,8 @@
 // @vitest-environment node
+import { stringifyJsonDeterministically } from 'jg-utilities';
 import { describe, expect, test } from 'vitest';
 
-import { serializeJsonDeterministically, type IJsonValue } from '../json-serialization/index.js';
+import type { IJsonValue } from '../json-serialization/index.js';
 
 import {
   calculateMoldeaCliJsonDigest,
@@ -17,7 +18,10 @@ const measurePage = (
   page: { readonly cursor: string | null },
   serializedRecordsUtf8Bytes: number,
 ): number =>
-  Buffer.byteLength(serializeJsonDeterministically({ cursor: page.cursor, records: [] }), 'utf8') -
+  Buffer.byteLength(
+    stringifyJsonDeterministically({ cursor: page.cursor, records: [] }, { strict: true }),
+    'utf8',
+  ) -
   2 +
   serializedRecordsUtf8Bytes;
 
@@ -36,7 +40,10 @@ describe('output pages', () => {
 
     const firstCursor = encodeMoldeaCliCursor('inspect', {}, SNAPSHOT_DIGEST, firstRecord.key);
     const exactFirstPageBytes = Buffer.byteLength(
-      serializeJsonDeterministically({ cursor: firstCursor, records: [firstRecord] }),
+      stringifyJsonDeterministically(
+        { cursor: firstCursor, records: [firstRecord] },
+        { strict: true },
+      ),
       'utf8',
     );
     const firstPage = createMoldeaCliOutputPage({
@@ -58,9 +65,9 @@ describe('output pages', () => {
       snapshotDigest: SNAPSHOT_DIGEST,
     });
 
-    expect(Buffer.byteLength(serializeJsonDeterministically(firstPage), 'utf8')).toBe(
-      exactFirstPageBytes,
-    );
+    expect(
+      Buffer.byteLength(stringifyJsonDeterministically(firstPage, { strict: true }), 'utf8'),
+    ).toBe(exactFirstPageBytes);
     expect(firstPage.records.map(({ key }) => key)).toStrictEqual(['a']);
     expect(secondPage.records.map(({ key }) => key)).toStrictEqual(['b', 'c']);
     expect(secondPage.cursor).toBeNull();
@@ -243,10 +250,13 @@ describe('output cursors', () => {
       version: 2,
     } satisfies IJsonValue;
     const unsupportedCursor = Buffer.from(
-      serializeJsonDeterministically({
-        ...payload,
-        checksum: calculateMoldeaCliJsonDigest(payload),
-      }),
+      stringifyJsonDeterministically(
+        {
+          ...payload,
+          checksum: calculateMoldeaCliJsonDigest(payload),
+        },
+        { strict: true },
+      ),
       'utf8',
     ).toString('base64url');
 

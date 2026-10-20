@@ -1,5 +1,8 @@
+import type { listUntrackedFiles, readIndexEntries } from 'jg-git-commands';
+
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
+import type { IGitCommandRunner } from '../git-command/index.js';
 import type { IMoldeaCliGitErrorCode } from '../presentation/index.js';
 
 import type { GIT_TRACKED_ENTRY_MODES } from './constants.js';
@@ -59,6 +62,13 @@ export interface IGitInventoryProbeFailedResult {
 
 // all-or-nothing normalized inventory probe result
 export type IGitInventoryProbeResult = IGitInventoryProbeFailedResult | IGitInventoryProbedResult;
+
+// injectable typed Git reads and command that list the raw inventory candidates
+export interface IGitInventoryListingReads {
+  readonly listUntrackedFiles: typeof listUntrackedFiles;
+  readonly readIndexEntries: typeof readIndexEntries;
+  readonly runGit: IGitCommandRunner;
+}
 
 // injectable normalized inventory probe boundary
 export type IGitInventoryProbe = (

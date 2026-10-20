@@ -8,7 +8,7 @@ order: 30
 
 ## JSON envelope
 
-`--json` writes one deterministic schema 7 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`. No command mixes a partial success result with an operational error.
+`--json` writes one deterministic schema 7 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`, and every object's keys follow RFC 8785 order. No command mixes a partial success result with an operational error.
 
 `validate`, `inspect`, `scope`, and `composition` are recursively content-free. `inspect` projects only allowlisted records and splits unbounded collections into independent keys. Its `agent` record contains exactly one canonical `agentId` and manifest-declared `runtimeId`; it remains distinct from installed composition and binding coverage. `content` is the only command allowed to return a `content` property, and it does so only for one explicitly selected canonical asset.
 

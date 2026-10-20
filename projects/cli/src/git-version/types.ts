@@ -1,3 +1,5 @@
+import type { readGitVersion } from 'jg-git-commands';
+
 import type { IMoldeaCliGitErrorCode } from '../presentation/index.js';
 
 // parsed numeric Git version used for compatibility decisions
@@ -22,5 +24,11 @@ export interface IGitVersionFailedResult {
 // result of the Git prerequisite preflight
 export type IGitVersionPreflightResult = IGitVersionSupportedResult | IGitVersionFailedResult;
 
-// injectable Git prerequisite preflight
-export type IGitVersionPreflight = (signal?: AbortSignal) => Promise<IGitVersionPreflightResult>;
+// injectable Git prerequisite preflight that runs Git in one existing directory
+export type IGitVersionPreflight = (
+  directory: string,
+  signal?: AbortSignal,
+) => Promise<IGitVersionPreflightResult>;
+
+// injectable typed Git version read
+export type IGitVersionReader = typeof readGitVersion;
