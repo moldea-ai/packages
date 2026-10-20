@@ -8,7 +8,7 @@ The selected closure contains CLI `12.0.0`, Core `8.0.0`, Repository `3.0.0`, an
 
 The local correctness run passed its unit, integration and installed-CLI suites, together with the lint, typecheck, build, documentation and website checks.
 
-Consumer tooling uses the Skill `9.0.0` candidate, pinned to commit `c09b0da9a2438b267dd0de8bbfe10e7a9c5deaee` on the skill branch `repository_link_rule`. Fresh-client consumer conformance for these exact bytes runs in the trusted packages CI consumer lane; local Linux checks do not replace it.
+Consumer tooling uses released Skill `9.0.0`, pinned to commit `8a2770d1eab28f92b3a8107f7774e33e7e492d57`. Fresh-client consumer conformance for these exact bytes runs in the trusted packages CI consumer lane; local Linux checks do not replace it.
 
 The trusted workflow records its exact candidate commit in `public-package-tarballs/packages-commit.txt`. Publication requires fresh qualification through all 15 package-manager consumer profiles, 15 CLI runtime cases across Linux/macOS/Windows, five Repository FS runtime cases, four Repository testing-peer profiles, the existing-Vitest consumer check, both cross-platform correctness suites, and the final repository gate. Local Linux checks do not establish the other matrix results.
 
