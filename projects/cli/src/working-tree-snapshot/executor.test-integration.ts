@@ -265,11 +265,8 @@ describe('working-tree snapshot integration', () => {
           instructionEntries: await Promise.all(
             ['/AGENTS.md', '/CLAUDE.local.md'].map(
               async (entryPath) =>
-                (await instructions?.reader.getEntry(parseRepositoryPath(entryPath)))?.type ?? null,
+                (await instructions?.getEntry(parseRepositoryPath(entryPath)))?.type ?? null,
             ),
-          ),
-          linkResolution: await instructions?.linkResolver?.resolveLink(
-            parseRepositoryPath('/AGENTS.md'),
           ),
           repositoryEntry: await reader.getEntry(parseRepositoryPath('/AGENTS.md')),
         }),
@@ -288,7 +285,6 @@ describe('working-tree snapshot integration', () => {
         kind: 'completed',
         result: {
           instructionEntries: ['file', 'file'],
-          linkResolution: { state: 'not-link' },
           repositoryEntry: null,
         },
       });

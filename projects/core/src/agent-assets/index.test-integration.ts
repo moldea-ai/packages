@@ -224,9 +224,9 @@ describe('Core agent assets through the memory repository reader', () => {
     const repository = createMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
-      { path: blockedDirectory, type: 'symlink' },
+      { path: blockedDirectory, target: 'linked-target.md', type: 'symlink' },
       { path: '/moldea/agents/present', type: 'directory' },
-      { path: descriptionPath, type: 'symlink' },
+      { path: descriptionPath, target: 'linked-target.md', type: 'symlink' },
       { path: instructionPath, type: 'directory' },
     ]);
     const discovery = await discoverCanonicalAssets(repository, options.limits);
@@ -274,7 +274,7 @@ describe('Core agent assets through the memory repository reader', () => {
     const repository = createMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
-      { path: agentsPath, type: 'symlink' },
+      { path: agentsPath, target: 'linked-target.md', type: 'symlink' },
     ]);
     const discovery = await discoverCanonicalAssets(repository, options.limits);
     const manifestResult = await createCore().parseManifest({

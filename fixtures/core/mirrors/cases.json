@@ -89,7 +89,8 @@
         },
         {
           "path": "/mirrors/c-link.md",
-          "type": "symlink"
+          "type": "symlink",
+          "target": "linked-target.md"
         },
         {
           "path": "/mirrors/d-stale-space.md",

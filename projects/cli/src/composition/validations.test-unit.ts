@@ -57,9 +57,9 @@ describe('isMoldeaCliCompositionStateValid', () => {
   });
 
   test.each([
-    ['a future breaking major', '8.0.0'],
-    ['a prerelease', '7.1.0-rc.1'],
-    ['a release below the corrected minimum', '7.0.4'],
+    ['a future breaking major', '9.0.0'],
+    ['a prerelease', '8.0.0-rc.1'],
+    ['a release below the corrected minimum', '7.1.0'],
   ])('rejects %s for a first-party package', (_description, version) => {
     const state = createTestCompositionState();
 
@@ -87,7 +87,7 @@ describe('isMoldeaCliCompositionStateValid', () => {
           ...state.packageMetadata,
           installedPackageVersions: {
             ...(state.packageMetadata.installedPackageVersions ?? {}),
-            '@moldea.ai/core': '7.9.9',
+            '@moldea.ai/core': '8.9.9',
           },
         },
       }),
@@ -111,7 +111,7 @@ describe('isMoldeaCliCompositionStateValid', () => {
     ).toBe(false);
   });
 
-  test.each(['2.0.0', '2.0.6', '2.0.7'])(
+  test.each(['2.0.0', '2.1.0', '2.9.9'])(
     'rejects Repository FS %s below the corrected minimum',
     (version) => {
       const state = createTestCompositionState();
@@ -131,10 +131,10 @@ describe('isMoldeaCliCompositionStateValid', () => {
   );
 
   test.each([
-    ['^2.1.0', '2.1.0'],
-    ['workspace:^2.1.0', '2.1.0'],
-    ['^2.1.0', '2.1.1'],
-    ['workspace:^2.1.0', '2.1.1'],
+    ['^3.0.0', '3.0.0'],
+    ['workspace:^3.0.0', '3.0.0'],
+    ['^3.0.0', '3.0.1'],
+    ['workspace:^3.0.0', '3.0.1'],
   ])('accepts Repository FS declaration %s with installed %s', (range, version) => {
     const state = createTestCompositionState();
     expect(

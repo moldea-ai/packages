@@ -3,12 +3,11 @@ import { parentPort, workerData } from 'node:worker_threads';
 
 import {
   RepositorySourceException,
-  type IRepositoryLinkResolver,
   type IRepositoryReader,
   type IRepositorySnapshot,
 } from '@moldea.ai/repository';
 
-import type { IProjectInspection, IProjectInstructionSource } from '../contracts/index.js';
+import type { IProjectInspection } from '../contracts/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 import { normalizeCoreOptions } from '../options/index.js';
 
@@ -27,7 +26,7 @@ import {
   parseRpcEntry,
   parseRpcEntryPage,
   parseRpcFilePage,
-  parseRpcLinkResolution,
+  parseRpcLinkText,
 } from './repository-rpc.js';
 import type { INodeInspectionMessage, INodeReaderRequest, INodeReaderSource } from './types.js';
 
@@ -110,6 +109,8 @@ const createProxyReader = (
         source,
       }),
     ),
+  readLinkText: async (path) =>
+    parseRpcLinkText(await requestReader({ method: 'readLinkText', path, source })),
   compare: () =>
     Promise.reject(
       new RepositorySourceException({
@@ -121,32 +122,11 @@ const createProxyReader = (
     ),
 });
 
-/** Proxies the caller-owned link resolver of the instruction source. */
-const createProxyLinkResolver = (snapshot: IRepositorySnapshot): IRepositoryLinkResolver => ({
-  snapshot,
-  resolveLink: async (path) =>
-    parseRpcLinkResolution(await requestReader({ method: 'resolveLink', path })),
-  readLinkTargetPage: async (path, options) =>
-    parseRpcFilePage(
-      await requestReader({
-        method: 'readLinkTargetPage',
-        path,
-        offset: options.offset,
-        maxBytes: Math.min(NODE_INSPECTION_FILE_PAGE_BYTES, options.maxBytes),
-      }),
-    ),
-});
-
 const repository = createProxyReader('repository', start.snapshot);
-const instructions: IProjectInstructionSource | null =
+const instructions: IRepositoryReader | null =
   start.instructions === null
     ? null
-    : {
-        reader: createProxyReader('instructions', start.instructions.snapshot),
-        ...(start.instructions.hasLinkResolver
-          ? { linkResolver: createProxyLinkResolver(start.instructions.snapshot) }
-          : {}),
-      };
+    : createProxyReader('instructions', start.instructions.snapshot);
 
 /** Prepares the fixed Core implementation after the parent acknowledges the heap. */
 const prepare = async (): Promise<void> => {

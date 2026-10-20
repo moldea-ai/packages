@@ -10,7 +10,7 @@
       "expectedPath": "/duplicate",
       "entries": [
         { "path": "/duplicate", "type": "directory" },
-        { "path": "/duplicate", "type": "symlink" }
+        { "path": "/duplicate", "type": "symlink", "target": "README.md" }
       ]
     },
     {
@@ -25,7 +25,7 @@
       "name": "descendant beneath symlink",
       "expectedPath": "/link/child.txt",
       "entries": [
-        { "path": "/link", "type": "symlink" },
+        { "path": "/link", "type": "symlink", "target": "README.md" },
         { "path": "/link/child.txt", "type": "file", "text": "child" }
       ]
     },

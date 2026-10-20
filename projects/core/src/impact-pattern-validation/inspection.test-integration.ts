@@ -250,7 +250,7 @@ describe('bounded impact warnings and manifest acceptance through Core', () => {
         [],
         [
           { path: '/src/directory.ts', type: 'directory' },
-          { path: '/src/link.ts', type: 'symlink' },
+          { path: '/src/link.ts', target: 'linked-target.md', type: 'symlink' },
         ],
       ),
     });

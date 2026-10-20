@@ -1,14 +1,19 @@
-import { parseRepositoryPath, type IRepositoryLinkResolution } from '@moldea.ai/repository';
+import {
+  parseRepositoryPath,
+  resolveRepositoryLink,
+  type IRepositoryLinkResolution,
+  type IRepositoryPath,
+} from '@moldea.ai/repository';
 
 import type { IRetainedSource } from '../retained-memory/index.js';
 
 import { hasAgentsImport } from './parser.js';
 import type {
   IAgentsInstructionTarget,
-  IInstructionLinkState,
   IIntegrationInspectionContext,
+  IUnresolvedLinkState,
 } from './types.js';
-import { getAbsentKind, getUnreadableLinkState, readRetainedText } from './utilities.js';
+import { getAbsentKind, readRetainedText } from './utilities.js';
 
 const AGENTS_PATH = parseRepositoryPath('/AGENTS.md');
 const CLAUDE_PATH = parseRepositoryPath('/CLAUDE.md');
@@ -19,28 +24,29 @@ const LOCAL_CLAUDE_PATH = parseRepositoryPath('/CLAUDE.local.md');
 type IClaudeAssessment =
   | { readonly kind: 'absent' | 'loads' }
   | { readonly entryKind: string; readonly kind: 'not-loading' }
-  | { readonly kind: 'unverified'; readonly linkState: IInstructionLinkState };
+  | { readonly kind: 'unresolved'; readonly reason: IUnresolvedLinkState };
 
 type IClaudePath = typeof CLAUDE_PATH;
 
-/** Recognizes a link between a Claude file and AGENTS.md without reading either file. */
+/** Returns the regular file AGENTS.md leads to, or null when it leads to none. */
+const getAgentsTargetPath = (agents: IAgentsInstructionTarget): IRepositoryPath | null => {
+  if (agents.kind === 'file') return AGENTS_PATH;
+  return agents.kind === 'link' && agents.resolution.state === 'file'
+    ? agents.resolution.targetPath
+    : null;
+};
+
+/** Recognizes a link between a Claude file and AGENTS.md by final target path, without reading. */
 const isLinkedToAgents = (
   path: IClaudePath,
   resolution: IRepositoryLinkResolution | null,
   agents: IAgentsInstructionTarget,
 ): boolean => {
-  const agentsResolution = agents.kind === 'link' ? agents.resolution : null;
+  const agentsTargetPath = getAgentsTargetPath(agents);
 
   // AGENTS.md itself links to this Claude file
-  if (agentsResolution?.state === 'inside' && agentsResolution.targetPath === path) return true;
-  if (resolution === null || (resolution.state !== 'inside' && resolution.state !== 'outside'))
-    return false;
-  if (agents.kind === 'file')
-    return resolution.state === 'inside' && resolution.targetPath === AGENTS_PATH;
-  return (
-    (agentsResolution?.state === 'inside' || agentsResolution?.state === 'outside') &&
-    agentsResolution.targetIdentity === resolution.targetIdentity
-  );
+  if (agents.kind === 'link' && agentsTargetPath === path) return true;
+  return resolution?.state === 'file' && resolution.targetPath === agentsTargetPath;
 };
 
 /**
@@ -73,21 +79,21 @@ const assessClaudeFile = async (
   let load: () => Promise<IRetainedSource> = () => instructions.readSourceFile(path);
 
   if (entry.type === 'symlink') {
-    const resolution = await instructions.resolveLink(path);
+    const resolution = await resolveRepositoryLink(instructions, path);
     if (isLinkedToAgents(path, resolution, agents)) return { kind: 'loads' };
-    const linkState = getUnreadableLinkState(resolution);
-    if (linkState !== null) return { kind: 'unverified', linkState };
-    load = () => instructions.readLinkedSourceFile(path);
+    if (resolution.state !== 'file') return { kind: 'unresolved', reason: resolution.state };
+    const { targetPath } = resolution;
+    load = () => instructions.readSourceFile(targetPath);
   }
 
   let document: Awaited<ReturnType<typeof readRetainedText>>;
   try {
     document = await readRetainedText(ledger, load);
   } catch (error) {
-    if (getAbsentKind(error) === null) throw error;
-    return entry.type === 'symlink'
-      ? { kind: 'unverified', linkState: 'not-file' }
-      : { kind: 'absent' };
+    const absentKind = getAbsentKind(error);
+    if (absentKind === null) throw error;
+    if (entry.type !== 'symlink') return { kind: 'absent' };
+    return { kind: 'unresolved', reason: absentKind === 'missing' ? 'missing' : 'not-file' };
   }
   try {
     return document.text !== null && hasAgentsImport(document.text, path === NESTED_CLAUDE_PATH)
@@ -101,8 +107,9 @@ const assessClaudeFile = async (
 /**
  * Checks whether Claude Code loads AGENTS.md. When `/CLAUDE.md` or `/.claude/CLAUDE.md` exists,
  * only those shared files count; `/CLAUDE.local.md` counts only when neither exists. At most one
- * Claude warning is recorded: unverifiable for the first unverifiable counted file when none
- * loads AGENTS.md, otherwise a missing import for the governing file.
+ * Claude warning is recorded: an unresolved link for the first counted file whose link doesn't
+ * lead to a file in the repository when none loads AGENTS.md, otherwise a missing import for the
+ * governing file.
  * @param context The instruction view, ledger, and warning recorder.
  * @param agents What root AGENTS.md is, as the AGENTS.md check observed it.
  * @returns A promise that settles after at most one Claude warning was recorded.
@@ -134,13 +141,16 @@ export const inspectClaudeIntegration = async (
     counted.push({ assessment, path: LOCAL_CLAUDE_PATH });
   }
 
-  const unverifiable = counted.find(({ assessment }) => assessment.kind === 'unverified');
+  const unresolved = counted.find(({ assessment }) => assessment.kind === 'unresolved');
 
-  if (unverifiable?.assessment.kind === 'unverified') {
-    context.report('MOLDEA_INTEGRATION_UNVERIFIED', unverifiable.path, {
-      entryKind: 'symlink',
-      linkState: unverifiable.assessment.linkState,
-    });
+  if (unresolved?.assessment.kind === 'unresolved') {
+    const { reason } = unresolved.assessment;
+    context.report(
+      'MOLDEA_INTEGRATION_LINK_UNRESOLVED',
+      unresolved.path,
+      { entryKind: 'symlink', reason },
+      reason,
+    );
     return;
   }
 

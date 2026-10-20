@@ -7,7 +7,7 @@ order: 0
 
 # Bounded filesystem access behind the common reader contract
 
-`@moldea.ai/repository-fs` version 2 exposes an explicitly selected local directory through `IRepositoryReader`. It maps host entries to portable logical paths, observes only the paths needed by current operations, and returns bounded metadata pages and byte ranges without materializing a repository-wide inventory.
+`@moldea.ai/repository-fs` version 3 exposes an explicitly selected local directory through `IRepositoryReader`. It maps host entries to portable logical paths, observes only the paths needed by current operations, and returns bounded metadata pages and byte ranges without materializing a repository-wide inventory.
 
 The package is Git-agnostic. The CLI owns repository discovery, Git-aware path selection, nested-repository policy, and content-transformation guards. Trust-sensitive callers supply an exact path selection; raw directory mode deliberately exposes all eligible entries reached through it.
 

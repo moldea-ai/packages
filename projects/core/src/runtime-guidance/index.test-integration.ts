@@ -196,7 +196,7 @@ describe('Core runtime guidance through the memory repository reader', () => {
     const repository = createMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
-      { path: symlinkPath, type: 'symlink' },
+      { path: symlinkPath, target: 'linked-target.md', type: 'symlink' },
       { path: wrongTypePath, type: 'directory' },
     ]);
     const discovery = await discoverCanonicalAssets(repository, options.limits);
@@ -231,7 +231,7 @@ describe('Core runtime guidance through the memory repository reader', () => {
     const repository = createMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
-      { path: runtimesPath, type: 'symlink' },
+      { path: runtimesPath, target: 'linked-target.md', type: 'symlink' },
     ]);
     const discovery = await discoverCanonicalAssets(repository, options.limits);
     const manifestResult = await createCore().parseManifest({

@@ -22,6 +22,7 @@ import { discoverCanonicalAssets } from './index.js';
 
 interface IFixtureEntry {
   readonly path: string;
+  readonly target?: string;
   readonly type: 'file' | 'directory' | 'symlink';
   readonly text?: string;
 }
@@ -64,6 +65,12 @@ const toMemoryEntries = (entries: readonly IFixtureEntry[]): readonly IMemoryRep
       }
 
       return { content: entry.text, path: entry.path, type: 'file' };
+    }
+
+    if (entry.type === 'symlink') {
+      if (entry.target === undefined)
+        throw new TypeError('A symlink fixture must define its target.');
+      return { path: entry.path, target: entry.target, type: 'symlink' };
     }
 
     return { path: entry.path, type: entry.type };

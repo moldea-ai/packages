@@ -12,8 +12,6 @@ export type {
   IRepositoryFilePage,
   IRepositoryFilePageOptions,
   IRepositoryLinkResolution,
-  IRepositoryLinkResolver,
-  IRepositoryLinkTargetType,
   IRepositoryOperationOptions,
   IRepositoryReader,
   IRepositorySnapshot,
@@ -36,6 +34,16 @@ export { createRepositoryComparison } from './comparison.js';
 
 // deterministic identity
 export { createRepositoryIdentity } from './identity.js';
+
+// link contracts
+export type { IRepositoryLinkSource } from './links.js';
+
+// link limits and resolution
+export {
+  REPOSITORY_LINK_MAX_HOPS,
+  REPOSITORY_LINK_TEXT_MAX_BYTES,
+  resolveRepositoryLink,
+} from './links.js';
 
 // logical path contract
 export type { IRepositoryPath } from './repository-path.js';

@@ -1,4 +1,5 @@
 import {
+  REPOSITORY_LINK_TEXT_MAX_BYTES,
   REPOSITORY_ROOT,
   RepositorySourceException,
   compareRepositoryPaths,
@@ -7,19 +8,19 @@ import {
   type IRepositoryEntry,
   type IRepositoryFilePage,
   type IRepositoryFilePageOptions,
-  type IRepositoryLinkResolution,
+  type IRepositoryLinkSource,
   type IRepositoryOperation,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
   type IRepositoryReader,
 } from '@moldea.ai/repository';
 
-import type { ICoreResourceLimits, IProjectInstructionSource } from '../contracts/index.js';
+import type { ICoreResourceLimits } from '../contracts/index.js';
 import { registerRetainedMemory, type IRetainedSource } from '../retained-memory/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 
 const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
-// the only paths an instruction source may supply; every other read uses the repository
+// the only paths an instruction reader may supply; every other read uses the repository
 const INSTRUCTION_PATHS: ReadonlySet<IRepositoryPath> = new Set(
   ['/AGENTS.md', '/CLAUDE.md', '/.claude/CLAUDE.md', '/CLAUDE.local.md'].map((path) =>
     parseRepositoryPath(path),
@@ -52,15 +53,12 @@ export interface IRepositoryInspectionReader {
 }
 
 /*
- * Private view of the coding-agent instruction paths, used only by the integration check. It reads
- * the instruction source when one was supplied and the repository otherwise; `resolveLink` returns
- * `null` when no link resolver is available, so callers report "cannot verify".
+ * Private view used only by the integration check. The four coding-agent instruction paths read
+ * the instruction reader when one was supplied, and every other path reads the repository, so a
+ * link between an instruction file and a repository file resolves the same way everywhere.
  */
-export interface IRepositoryInstructionView {
-  getEntry(path: IRepositoryPath): Promise<IRepositoryEntry | null>;
-  readLinkedSourceFile(path: IRepositoryPath): Promise<IRetainedSource>;
+export interface IRepositoryInstructionView extends IRepositoryLinkSource {
   readSourceFile(path: IRepositoryPath): Promise<IRetainedSource>;
-  resolveLink(path: IRepositoryPath): Promise<IRepositoryLinkResolution | null>;
 }
 
 // private resource state shared by every reader consumer during one validation
@@ -156,57 +154,6 @@ interface IFilePageSource {
   readonly snapshotId: string;
 }
 
-const REFUSED_LINK_STATES = ['broken', 'denied', 'loop', 'unsafe'] as const;
-const LINK_TARGET_TYPES = ['directory', 'file', 'other'] as const;
-
-/** Copies one untrusted link resolution, rejecting any shape outside the closed contract. */
-const copyLinkResolution = (
-  candidate: unknown,
-  path: IRepositoryPath,
-): IRepositoryLinkResolution => {
-  if (typeof candidate !== 'object' || candidate === null) {
-    return invalidSourceData('get-entry', path);
-  }
-
-  const record = candidate as Readonly<Record<string, unknown>>;
-  const keys = Object.keys(record).sort().join();
-  const refusedState = REFUSED_LINK_STATES.find((state) => state === record['state']);
-
-  if (Reflect.ownKeys(record).length !== Object.keys(record).length) {
-    return invalidSourceData('get-entry', path);
-  }
-
-  if (record['state'] === 'not-link' || refusedState !== undefined) {
-    return keys === 'state'
-      ? { state: refusedState ?? 'not-link' }
-      : invalidSourceData('get-entry', path);
-  }
-
-  const targetIdentity = record['targetIdentity'];
-  const targetType = LINK_TARGET_TYPES.find((type) => type === record['targetType']);
-
-  if (
-    typeof targetIdentity !== 'string' ||
-    targetIdentity.length === 0 ||
-    targetType === undefined
-  ) {
-    return invalidSourceData('get-entry', path);
-  }
-
-  if (record['state'] === 'outside' && keys === 'state,targetIdentity,targetType') {
-    return { state: 'outside', targetIdentity, targetType };
-  }
-
-  const targetPath = record['targetPath'];
-
-  return record['state'] === 'inside' &&
-    keys === 'state,targetIdentity,targetPath,targetType' &&
-    typeof targetPath === 'string' &&
-    isRepositoryPath(targetPath)
-    ? { state: 'inside', targetIdentity, targetPath: parseRepositoryPath(targetPath), targetType }
-    : invalidSourceData('get-entry', path);
-};
-
 const isStrictDescendant = (path: IRepositoryPath, prefix: IRepositoryPath): boolean => {
   if (path === prefix) {
     return false;
@@ -249,7 +196,7 @@ const createSourceOptions = (
  * @param repository The source-neutral reader bound to one coherent snapshot.
  * @param limits The immutable resource limits for the inspection.
  * @param signal Optional cancellation shared by every inspection operation.
- * @param instructions Optional instruction source read only through the instruction view.
+ * @param instructions Optional reader of the four instruction paths, used only by the instruction view.
  * @returns A session that pages source metadata and range-reads bounded canonical files.
  * @throws
  * - ABORTED: The Core operation was aborted.
@@ -258,7 +205,7 @@ export const createRepositoryInspectionSession = (
   repository: IRepositoryReader,
   limits: ICoreResourceLimits,
   signal?: AbortSignal,
-  instructions?: IProjectInstructionSource,
+  instructions?: IRepositoryReader,
 ): IRepositoryInspectionSession => {
   const seenPaths = new Set<IRepositoryPath>();
   let canonicalBytes = 0;
@@ -635,48 +582,54 @@ export const createRepositoryInspectionSession = (
     };
   };
 
-  const instructionReader = instructions?.reader ?? repository;
-  const instructionPages: IFilePageSource =
-    instructions === undefined
+  const readerFor = (path: IRepositoryPath): IRepositoryReader =>
+    instructions !== undefined && INSTRUCTION_PATHS.has(path) ? instructions : repository;
+  const pagesFor = (path: IRepositoryPath): IFilePageSource => {
+    const source = readerFor(path);
+
+    return source === repository
       ? repositoryPages
       : {
-          readPage: (path, options) => instructions.reader.readFilePage(path, options),
-          snapshotId: instructions.reader.snapshot.id,
+          readPage: (pagePath, options) => source.readFilePage(pagePath, options),
+          snapshotId: source.snapshot.id,
         };
-  const linkResolver = instructions?.linkResolver;
-  const linkPages: IFilePageSource | undefined =
-    linkResolver === undefined
-      ? undefined
-      : {
-          readPage: (path, options) => linkResolver.readLinkTargetPage(path, options),
-          snapshotId: linkResolver.snapshot.id,
-        };
-  const requireInstructionPath = (path: IRepositoryPath): IRepositoryPath => {
-    const parsedPath = parseRepositoryPath(path);
-    if (!INSTRUCTION_PATHS.has(parsedPath))
-      throw new TypeError('The instruction view reads only coding-agent instruction paths.');
-    return parsedPath;
   };
+
+  /** Reads one link's stored text from the routed source, rejecting text past the shared limit. */
+  const readLinkText = async (
+    path: IRepositoryPath,
+    options?: IRepositoryOperationOptions,
+  ): Promise<string | null> => {
+    const parsedPath = parseRepositoryPath(path);
+    throwIfSignalAborted(options?.signal);
+    registerPath(parsedPath);
+    const text: unknown = await awaitWithCancellation(
+      readerFor(parsedPath).readLinkText(parsedPath, createSourceOptions(signal, options?.signal)),
+      options?.signal,
+    );
+    throwIfSignalAborted(options?.signal);
+
+    if (
+      text !== null &&
+      (typeof text !== 'string' || encoder.encode(text).byteLength > REPOSITORY_LINK_TEXT_MAX_BYTES)
+    ) {
+      return invalidSourceData('read-link-text', parsedPath);
+    }
+
+    return text;
+  };
+
   const instructionView: IRepositoryInstructionView = Object.freeze({
-    getEntry: (path: IRepositoryPath) =>
-      getEntryFrom(instructionReader, requireInstructionPath(path)),
-    readLinkedSourceFile: (path: IRepositoryPath) => {
-      if (linkPages === undefined)
-        throw new TypeError('The instruction view has no link resolver to read through.');
-      return readRetainedSource(requireInstructionPath(path), linkPages);
+    getEntry: (path: IRepositoryPath, options?: IRepositoryOperationOptions) => {
+      const parsedPath = parseRepositoryPath(path);
+
+      return getEntryFrom(readerFor(parsedPath), parsedPath, options);
     },
-    readSourceFile: (path: IRepositoryPath) =>
-      readRetainedSource(requireInstructionPath(path), instructionPages),
-    resolveLink: async (path: IRepositoryPath) => {
-      const parsedPath = requireInstructionPath(path);
-      if (linkResolver === undefined) return null;
-      throwIfSignalAborted();
-      registerPath(parsedPath);
-      const candidate = await awaitWithCancellation(
-        linkResolver.resolveLink(parsedPath, createSourceOptions(signal, undefined)),
-      );
-      throwIfSignalAborted();
-      return copyLinkResolution(candidate, parsedPath);
+    readLinkText,
+    readSourceFile: (path: IRepositoryPath) => {
+      const parsedPath = parseRepositoryPath(path);
+
+      return readRetainedSource(parsedPath, pagesFor(parsedPath));
     },
   });
 

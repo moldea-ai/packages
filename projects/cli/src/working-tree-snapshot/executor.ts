@@ -1,4 +1,3 @@
-import type { IProjectInstructionSource } from '@moldea.ai/core';
 import { RepositorySourceException, type IRepositoryReader } from '@moldea.ai/repository';
 
 import {
@@ -178,7 +177,7 @@ export const createWorkingTreeSnapshotExecutor = (
       }
 
       let reader: IRepositoryReader;
-      let instructions: IProjectInstructionSource | undefined;
+      let instructions: IRepositoryReader | undefined;
 
       try {
         reader = await repositoryReaderFactory({

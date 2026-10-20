@@ -1,18 +1,24 @@
 // @vitest-environment node
-import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
-import { parseRepositoryPath } from '@moldea.ai/repository';
-import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
+import type { IRepositoryReader } from '@moldea.ai/repository';
 import {
-  createFilesystemRepositoryLinkResolver,
-  createFilesystemRepositoryReader,
-} from '@moldea.ai/repository-fs';
+  createMemoryRepositoryReader,
+  type IMemoryRepositoryEntry,
+} from '@moldea.ai/repository/memory';
 
 import { INSTALLED_PACKAGE_METADATA } from '../composition/composition.test-fixtures.js';
+import {
+  commitFixtureGitIndex,
+  createGitRepository,
+  runFixtureGit,
+  type IGitRepositoryFixture,
+} from '../git-inventory/probe.test-fixtures.js';
+import { executeWorkingTreeSnapshot } from '../working-tree-snapshot/index.js';
 
 import { executeMoldeaCliCoreInspection } from './executor.js';
 
@@ -170,77 +176,195 @@ const BLOCK_ASSET =
   '<!-- moldea:start -->\nnode "<repo-root>/{{skill-path}}/scripts/relevance-gate.mjs" --repository "<repo-root>"\n<!-- moldea:end -->\n';
 const CURRENT_BLOCK = BLOCK_ASSET.replaceAll('{{skill-path}}', '.agents/skills/moldea');
 
-/** Creates real instruction links beside a shared file and returns the instruction source. */
-const createLinkedInstructions = async (
-  directory: string,
-  links: Readonly<Record<string, string>>,
-) => {
-  const root = path.join(directory, 'repository');
-  await mkdir(root, { recursive: true });
-  await writeFile(path.join(directory, 'shared.md'), CURRENT_BLOCK);
+// one committed fixture entry: a regular file with text, or a link with its stored text
+type IParityEntry = readonly [path: string, kind: 'file' | 'link', text: string];
 
-  for (const [name, target] of Object.entries(links)) {
-    await symlink(target, path.join(root, name), process.platform === 'win32' ? 'file' : undefined);
-  }
+const PARITY_BASE_ENTRIES: readonly IParityEntry[] = [
+  ['moldea/moldea.yaml', 'file', 'version: 1\n'],
+  ['moldea/project.md', 'file', '# Project\n'],
+  ['.agents/skills/moldea/SKILL.md', 'file', '# Skill\n'],
+  ['.agents/skills/moldea/scripts/relevance-gate.mjs', 'file', '// Gate\n'],
+  ['.agents/skills/moldea/assets/managed-agents-block.md', 'file', BLOCK_ASSET],
+  ['docs/AGENTS.md', 'file', CURRENT_BLOCK],
+];
 
-  const reader = await createFilesystemRepositoryReader({
-    rootDirectory: root,
-    selection: {
-      kind: 'paths',
-      paths: Object.keys(links).map((name) => parseRepositoryPath(`/${name}`)),
-    },
+/** Reads one fixture Git command's stdout as bytes. */
+const readFixtureGit = (repository: IGitRepositoryFixture, gitArguments: readonly string[]) =>
+  execFileSync('git', [...gitArguments], {
+    cwd: repository.directory,
+    env: repository.environment,
+    stdio: ['ignore', 'pipe', 'ignore'],
   });
 
-  return { linkResolver: createFilesystemRepositoryLinkResolver(reader), reader };
+/** Commits regular files to the work tree and links straight into the index, on every host. */
+const commitParityFixture = async (
+  repository: IGitRepositoryFixture,
+  entries: readonly IParityEntry[],
+): Promise<void> => {
+  for (const [entryPath, kind, text] of entries) {
+    if (kind === 'file') {
+      await mkdir(path.dirname(path.join(repository.directory, entryPath)), { recursive: true });
+      await writeFile(path.join(repository.directory, entryPath), text);
+      runFixtureGit(repository, ['add', '--', entryPath]);
+      continue;
+    }
+
+    const objectId = execFileSync('git', ['hash-object', '-w', '--stdin'], {
+      cwd: repository.directory,
+      env: repository.environment,
+      input: text,
+    })
+      .toString('utf8')
+      .trim();
+    runFixtureGit(repository, [
+      'update-index',
+      '--add',
+      '--cacheinfo',
+      `120000,${objectId},${entryPath}`,
+    ]);
+  }
+
+  commitFixtureGitIndex(repository);
 };
 
-describe('CLI Core composition with a real filesystem link resolver', () => {
+/** Builds the reader a hosted provider sees: the committed tree, with link blobs as link text. */
+const createCommittedReader = (repository: IGitRepositoryFixture): IRepositoryReader => {
+  const records = readFixtureGit(repository, ['ls-tree', '-r', '-z', 'HEAD'])
+    .toString('utf8')
+    .split('\0')
+    .filter((record) => record !== '');
+  const entries = records.map((record): IMemoryRepositoryEntry => {
+    const [metadata = '', entryPath = ''] = record.split('\t');
+    const [mode, , objectId = ''] = metadata.split(' ');
+    const blob = readFixtureGit(repository, ['cat-file', 'blob', objectId]);
+
+    return mode === '120000'
+      ? { path: `/${entryPath}`, target: blob.toString('utf8'), type: 'symlink' }
+      : { content: new Uint8Array(blob), path: `/${entryPath}`, type: 'file' };
+  });
+
+  return createMemoryRepositoryReader(entries);
+};
+
+/** Runs the CLI's working-tree snapshot and Core validation over one checkout. */
+const validateCheckout = async (directory: string) => {
+  const result = await executeWorkingTreeSnapshot({
+    includeInstructions: true,
+    operation: (repository, signal, instructions) =>
+      executeMoldeaCliCoreInspection({
+        command: 'validate',
+        ...(instructions === undefined ? {} : { instructions }),
+        packageMetadata: INSTALLED_PACKAGE_METADATA,
+        repository,
+        resourceLimits: RESOURCE_LIMITS,
+        ...(signal === undefined ? {} : { signal }),
+      }),
+    repositoryRoot: directory,
+    resourceLimits: RESOURCE_LIMITS,
+  });
+
+  if (result.kind !== 'completed') {
+    throw new Error(`The working-tree snapshot failed with ${result.errorCode}.`);
+  }
+
+  return result.result;
+};
+
+/** Projects the integration warnings onto the identity an acceptance would match. */
+const toIntegrationIdentities = (result: Awaited<ReturnType<typeof validateCheckout>>) =>
+  ('diagnostics' in result ? result.diagnostics : [])
+    .filter((diagnostic) => diagnostic.group === 'integration')
+    .map((diagnostic) =>
+      diagnostic.severity === 'warning'
+        ? [diagnostic.code, diagnostic.subject, diagnostic.qualifier]
+        : [diagnostic.code],
+    );
+
+describe('link parity between hosted and local readers', () => {
   test.each([
-    ['an outside AGENTS.md link', { 'AGENTS.md': '../shared.md' }, []],
+    ['a regular AGENTS.md', [['AGENTS.md', 'file', CURRENT_BLOCK]], []],
+    ['an inside link', [['AGENTS.md', 'link', 'docs/AGENTS.md']], []],
     [
-      'CLAUDE.md and AGENTS.md links to one outside file',
-      { 'AGENTS.md': '../shared.md', 'CLAUDE.md': '../shared.md' },
+      'a chained link',
+      [
+        ['AGENTS.md', 'link', 'shared/AGENTS.md'],
+        ['shared/AGENTS.md', 'link', '../docs/AGENTS.md'],
+      ],
       [],
     ],
     [
-      'a broken AGENTS.md link',
-      { 'AGENTS.md': '../missing.md' },
-      [['MOLDEA_INTEGRATION_UNVERIFIED', '/AGENTS.md']],
+      'an outside link',
+      [['AGENTS.md', 'link', '../outside/AGENTS.md']],
+      [['MOLDEA_INTEGRATION_LINK_UNRESOLVED', '/AGENTS.md', 'outside']],
     ],
-  ] satisfies [string, Record<string, string>, string[][]][])(
-    'checks %s through the worker bridge',
-    async (_label, links, expected) => {
-      const directory = await realpath(await mkdtemp(path.join(tmpdir(), 'moldea-cli-links-')));
+    [
+      'a missing target',
+      [['AGENTS.md', 'link', 'docs/missing.md']],
+      [['MOLDEA_INTEGRATION_LINK_UNRESOLVED', '/AGENTS.md', 'missing']],
+    ],
+    [
+      'a looping chain',
+      [
+        ['AGENTS.md', 'link', 'docs/loop.md'],
+        ['docs/loop.md', 'link', '../AGENTS.md'],
+      ],
+      [['MOLDEA_INTEGRATION_LINK_UNRESOLVED', '/AGENTS.md', 'loop']],
+    ],
+    [
+      'a .. after a folder',
+      [['AGENTS.md', 'link', 'docs/../docs/AGENTS.md']],
+      [['MOLDEA_INTEGRATION_LINK_UNRESOLVED', '/AGENTS.md', 'unsupported']],
+    ],
+  ] satisfies [string, IParityEntry[], (string | null)[][]][])(
+    'gives identical results for %s',
+    async (_label, entries, expected) => {
+      const repository = createGitRepository();
 
       try {
-        const result = await executeMoldeaCliCoreInspection({
-          command: 'validate',
-          instructions: await createLinkedInstructions(directory, links),
-          packageMetadata: INSTALLED_PACKAGE_METADATA,
-          repository: createMemoryRepositoryReader([
-            { path: '/moldea/moldea.yaml', type: 'file', content: 'version: 1\n' },
-            { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
-            { path: '/.agents/skills/moldea/SKILL.md', type: 'file', content: '# Skill\n' },
-            {
-              path: '/.agents/skills/moldea/scripts/relevance-gate.mjs',
-              type: 'file',
-              content: '// Gate\n',
-            },
-            {
-              path: '/.agents/skills/moldea/assets/managed-agents-block.md',
-              type: 'file',
-              content: BLOCK_ASSET,
-            },
-          ]),
-          resourceLimits: RESOURCE_LIMITS,
-        });
-
-        expect('diagnostics' in result ? result.diagnostics : result).toMatchObject(
-          expected.map(([code, subject]) => ({ code, subject })),
+        await commitParityFixture(repository, [...PARITY_BASE_ENTRIES, ...entries]);
+        const realLinks = path.join(repository.testDirectory, 'real-links');
+        const materializedLinks = path.join(repository.testDirectory, 'materialized-links');
+        runFixtureGit(
+          repository,
+          [
+            'clone',
+            '--config',
+            'core.symlinks=true',
+            '--no-hardlinks',
+            repository.directory,
+            realLinks,
+          ],
+          repository.testDirectory,
         );
-        expect('diagnostics' in result ? result.diagnostics : result).toHaveLength(expected.length);
+        runFixtureGit(
+          repository,
+          [
+            'clone',
+            '--config',
+            'core.symlinks=false',
+            '--no-hardlinks',
+            repository.directory,
+            materializedLinks,
+          ],
+          repository.testDirectory,
+        );
+
+        const committed = toIntegrationIdentities(
+          await executeMoldeaCliCoreInspection({
+            command: 'validate',
+            packageMetadata: INSTALLED_PACKAGE_METADATA,
+            repository: createCommittedReader(repository),
+            resourceLimits: RESOURCE_LIMITS,
+          }),
+        );
+
+        expect(committed).toStrictEqual(expected);
+        expect(toIntegrationIdentities(await validateCheckout(realLinks))).toStrictEqual(committed);
+        expect(toIntegrationIdentities(await validateCheckout(materializedLinks))).toStrictEqual(
+          committed,
+        );
       } finally {
-        await rm(directory, { force: true, recursive: true });
+        repository.remove();
       }
     },
   );

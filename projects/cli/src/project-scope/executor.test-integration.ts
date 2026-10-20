@@ -34,6 +34,7 @@ describe('project scope execution', () => {
           readPaths.push(path);
           return reader.readFilePage(path, options);
         },
+        readLinkText: (path, options) => reader.readLinkText(path, options),
         snapshot: reader.snapshot,
       },
       resourceLimits: {

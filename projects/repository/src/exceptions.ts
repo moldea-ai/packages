@@ -7,6 +7,7 @@ export type IRepositorySourceErrorCode =
   | 'ENTRY_NOT_FOUND'
   | 'ENTRY_NOT_FILE'
   | 'ENTRY_NOT_DIRECTORY'
+  | 'ENTRY_NOT_LINK'
   | 'INVALID_PAGE_REQUEST'
   | 'ACCESS_DENIED'
   | 'SOURCE_UNAVAILABLE'
@@ -21,6 +22,7 @@ export type IRepositoryOperation =
   | 'create-comparison'
   | 'get-entry'
   | 'read-file-page'
+  | 'read-link-text'
   | 'list-entries-page'
   | 'list-changes-page';
 
@@ -50,6 +52,7 @@ const SOURCE_ERROR_MESSAGES = {
   ENTRY_NOT_DIRECTORY: 'The requested repository entry is not a directory.',
   ENTRY_NOT_FILE: 'The requested repository entry is not a file.',
   ENTRY_NOT_FOUND: 'The requested repository entry was not found.',
+  ENTRY_NOT_LINK: 'The requested repository entry is not a symlink.',
   INVALID_PAGE_REQUEST: 'The repository page request is invalid.',
   INVALID_SOURCE_DATA: 'The repository source returned invalid data.',
   PROVIDER_INCOMPLETE: 'The repository provider cannot expose a complete result.',

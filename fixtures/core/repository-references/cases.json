@@ -27,7 +27,8 @@
         },
         {
           "path": "/src/c-link.ts",
-          "type": "symlink"
+          "type": "symlink",
+          "target": "linked-target.md"
         },
         {
           "path": "/impact/b-directory",
@@ -35,11 +36,13 @@
         },
         {
           "path": "/impact/c-link.ts",
-          "type": "symlink"
+          "type": "symlink",
+          "target": "linked-target.md"
         },
         {
           "path": "/skills/link.ts",
-          "type": "symlink"
+          "type": "symlink",
+          "target": "linked-target.md"
         }
       ],
       "expectedDiagnostics": [

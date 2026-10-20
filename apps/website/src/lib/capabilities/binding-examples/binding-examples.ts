@@ -28,7 +28,7 @@ const DEFINITIONS: {
   codes: IDiagnostic['code'][];
   pattern?: boolean;
   acceptance?: 'matched' | 'unmatched';
-  integration?: 'claude-import-missing' | 'missing' | 'skill-missing' | 'stale' | 'unverified';
+  integration?: 'claude-import-missing' | 'link-unresolved' | 'missing' | 'skill-missing' | 'stale';
 }[] = [
   {
     id: 'binding-export-passed',
@@ -135,12 +135,12 @@ const DEFINITIONS: {
     codes: ['MOLDEA_INTEGRATION_BLOCK_STALE'],
   },
   {
-    id: 'integration-unverified',
-    title: 'A linked AGENTS.md cannot be verified',
+    id: 'integration-link-unresolved',
+    title: "A linked AGENTS.md doesn't lead to a file in the repository",
     description:
-      'The root AGENTS.md is a symlink and the memory reader offers no link resolver, so Core reports that it cannot verify the integration instead of following the link.',
-    integration: 'unverified',
-    codes: ['MOLDEA_INTEGRATION_UNVERIFIED'],
+      'The root AGENTS.md links outside the repository, so Core reports the reason as the warning qualifier instead of reading anything outside it.',
+    integration: 'link-unresolved',
+    codes: ['MOLDEA_INTEGRATION_LINK_UNRESOLVED'],
   },
   {
     id: 'integration-claude-import-missing',
@@ -201,9 +201,11 @@ export const createBindingExamples = async (): Promise<ICapabilityCase[]> => {
           content: '# Claude Code\n\nFollow the review checklist.\n',
         },
       ];
-    if (definition.integration === 'unverified')
+    if (definition.integration === 'link-unresolved')
       integration = integration.map((entry) =>
-        entry.path === '/AGENTS.md' ? { path: entry.path, type: 'symlink' } : entry,
+        entry.path === '/AGENTS.md'
+          ? { path: entry.path, target: '../shared/AGENTS.md', type: 'symlink' }
+          : entry,
       );
     if (definition.integration === 'stale') {
       const block = integration.find(({ path }) => path === '/AGENTS.md');

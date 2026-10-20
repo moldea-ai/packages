@@ -20,6 +20,7 @@ interface IProjectIndexFixture {
     readonly entries: readonly {
       readonly bytes?: readonly number[];
       readonly path: string;
+      readonly target?: string;
       readonly text?: string;
       readonly type: 'directory' | 'file' | 'symlink';
     }[];
@@ -46,6 +47,12 @@ const inspectCompleteProject = async (): Promise<IProjectInspectionPageResult> =
   const entries: IMemoryRepositoryEntry[] = [
     { content: fixtureCase.manifest, path: '/moldea/moldea.yaml', type: 'file' },
     ...fixtureCase.entries.map((entry): IMemoryRepositoryEntry => {
+      if (entry.type === 'symlink') {
+        if (entry.target === undefined)
+          throw new TypeError('A symlink fixture must define its target.');
+        return { path: entry.path, target: entry.target, type: 'symlink' };
+      }
+
       if (entry.type !== 'file') {
         return { path: entry.path, type: entry.type };
       }

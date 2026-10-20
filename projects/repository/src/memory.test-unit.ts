@@ -35,6 +35,7 @@ const withoutContentIdentities = (
 
       return page;
     },
+    readLinkText: (path, options) => reader.readLinkText(path, options),
     snapshot: reader.snapshot,
   };
 
@@ -70,6 +71,7 @@ const withContentIdentity = (
 
       return { ...page, snapshot };
     },
+    readLinkText: (path, options) => reader.readLinkText(path, options),
     snapshot,
   };
 
@@ -108,7 +110,7 @@ describe('createMemoryRepositoryReader', () => {
 
   test('copies caller bytes and returns bounded exact pages', async () => {
     const content = new Uint8Array([1, 2, 3]);
-    const entry: { content: Uint8Array; path: string; type: 'file' | 'symlink' } = {
+    const entry: { content: Uint8Array; path: string; type: 'file' | 'directory' } = {
       content,
       path: '/bytes.bin',
       type: 'file',
@@ -116,7 +118,7 @@ describe('createMemoryRepositoryReader', () => {
     const reader = createMemoryRepositoryReader([entry]);
     content[0] = 99;
     entry.path = '/changed.bin';
-    entry.type = 'symlink';
+    entry.type = 'directory';
 
     await expect(
       reader.readFilePage(parseRepositoryPath('/bytes.bin'), { maxBytes: 2, offset: 0 }),
@@ -127,6 +129,39 @@ describe('createMemoryRepositoryReader', () => {
       totalBytes: 3,
     });
     await expect(reader.getEntry(parseRepositoryPath('/changed.bin'))).resolves.toBeNull();
+  });
+
+  test('returns stored link text up to 4096 UTF-8 bytes', async () => {
+    const reader = createMemoryRepositoryReader([
+      { path: '/at-limit', target: `${'é'.repeat(2047)}xy`, type: 'symlink' },
+      { path: '/over-limit', target: `${'é'.repeat(2048)}x`, type: 'symlink' },
+      { path: '/empty', target: '', type: 'symlink' },
+    ]);
+
+    await expect(reader.readLinkText(parseRepositoryPath('/at-limit'))).resolves.toBe(
+      `${'é'.repeat(2047)}xy`,
+    );
+    await expect(reader.readLinkText(parseRepositoryPath('/over-limit'))).resolves.toBeNull();
+    await expect(reader.readLinkText(parseRepositoryPath('/empty'))).resolves.toBe('');
+  });
+
+  test.each([
+    ['missing', { path: '/link', type: 'symlink' }],
+    ['non-string', { path: '/link', target: 7, type: 'symlink' }],
+    ['lone surrogate', { path: '/link', target: '\ud800', type: 'symlink' }],
+  ])('createMemoryRepositoryReader(%s symlink target) -> INVALID_SOURCE_DATA', (_name, entry) => {
+    expectToThrowCode(() => createMemoryRepositoryReader([entry as never]), 'INVALID_SOURCE_DATA');
+  });
+
+  test('binds link text to the snapshot identity', () => {
+    const first = createMemoryRepositoryReader([
+      { path: '/link', target: 'a.md', type: 'symlink' },
+    ]);
+    const second = createMemoryRepositoryReader([
+      { path: '/link', target: 'b.md', type: 'symlink' },
+    ]);
+
+    expect(first.snapshot.id).not.toBe(second.snapshot.id);
   });
 
   test('compares snapshots through bounded changed-path pages', async () => {
@@ -176,6 +211,7 @@ describe('createMemoryRepositoryReader', () => {
         return candidate.listEntriesPage(options);
       },
       readFilePage: (path, options) => candidate.readFilePage(path, options),
+      readLinkText: (path, options) => candidate.readLinkText(path, options),
       snapshot: candidate.snapshot,
     };
     const comparison = await base.compare(countedCandidate);

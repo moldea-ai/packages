@@ -23,16 +23,45 @@ export const readManifestPage = async (reader: IRepositoryReader): Promise<Uint8
 
 ## Operations
 
-This reference describes `repository` 2.1.0.
+This reference describes `repository` 3.0.0.
 
 - `getEntry(path, options?)` performs exact content-free lookup and returns `null` when absent.
 - `listEntriesPage(options)` returns at most `maxEntries` deterministic descendants, optionally below `prefix`.
 - `readFilePage(path, options)` returns at most `maxBytes` from an explicit byte `offset`.
+- `readLinkText(path, options?)` returns the exact text stored for one symlink, without observing its target.
 - `compare(candidate, options?)` creates a source-neutral comparison whose `listChangesPage` method has independent change, entry-visit, and byte-read budgets. `maxBytesRead` must be at least `2`, allowing a source-neutral comparison to read one byte from each snapshot when content identities are unavailable.
 
 Every operation accepts cancellation. Each result identifies the source snapshot it belongs to. File pages report their total length, returned offset, completion state, and next offset.
 
 A non-null file `contentIdentity` is source-defined. Equal identities may prove byte equality only when both snapshots have the same `sourceKind`. Missing identities, unequal identities, and identities from different source kinds require bounded byte comparison; they are never evidence of a modification by themselves.
+
+## Links
+
+Reader operations never follow a symlink. `readLinkText` returns a link's stored text, or `null` when that text is longer than `REPOSITORY_LINK_TEXT_MAX_BYTES` (4096 UTF-8 bytes) or is not valid UTF-8. An entry that is not a symlink fails with `ENTRY_NOT_LINK`.
+
+`resolveRepositoryLink(source, path, options?)` follows links inside one snapshot with only `getEntry` and `readLinkText`, so every reader resolves links the same way:
+
+```typescript
+import {
+  parseRepositoryPath,
+  resolveRepositoryLink,
+  type IRepositoryReader,
+} from '@moldea.ai/repository';
+
+export const findInstructionFile = async (reader: IRepositoryReader): Promise<string | null> => {
+  const resolution = await resolveRepositoryLink(reader, parseRepositoryPath('/AGENTS.md'));
+
+  return resolution.state === 'file' ? resolution.targetPath : null;
+};
+```
+
+A regular file resolves to its own path. Link text is a POSIX path relative to the link's directory: `.` segments and repeated `/` are ignored, a leading run of `..` climbs toward the root, and at most `REPOSITORY_LINK_MAX_HOPS` (32) links are followed. Every other result names why the path doesn't lead to a regular file:
+
+- `outside`: the text is absolute, starts with a drive prefix such as `C:`, or climbs above the root;
+- `missing`: the path or a link's target does not exist in the snapshot;
+- `loop`: the chain revisits a path or would follow a 33rd link;
+- `not-file`: the path or a link's target is a directory;
+- `unsupported`: the text is unreadable, empty, ends in `/`, or uses `..` after a named segment, where lexical and operating-system resolution can disagree.
 
 ## Continuation cursors
 

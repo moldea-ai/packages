@@ -162,21 +162,17 @@ const isFilePageRequest = (input: Record<string, unknown>): boolean =>
   input['maxBytes'] <= NODE_INSPECTION_FILE_PAGE_BYTES;
 const isInstructionSource = (input: unknown): boolean =>
   input === null ||
-  (isRecord(input) &&
-    hasKeys(input, ['hasLinkResolver', 'snapshot']) &&
-    typeof input['hasLinkResolver'] === 'boolean' &&
-    isSnapshot(input['snapshot']));
+  (isRecord(input) && hasKeys(input, ['snapshot']) && isSnapshot(input['snapshot']));
 const isRequest = (input: unknown): boolean => {
   if (!isRecord(input)) return false;
   switch (input['method']) {
     case 'getEntry':
+    case 'readLinkText':
       return (
         hasKeys(input, ['method', 'path', 'source']) &&
         isRepositoryPath(input['path']) &&
         isSource(input['source'])
       );
-    case 'resolveLink':
-      return hasKeys(input, ['method', 'path']) && isRepositoryPath(input['path']);
     case 'listEntriesPage':
       return (
         hasKeys(input, ['method', 'maxEntries'], ['cursor', 'prefix']) &&
@@ -192,8 +188,6 @@ const isRequest = (input: unknown): boolean => {
         isSource(input['source']) &&
         isFilePageRequest(input)
       );
-    case 'readLinkTargetPage':
-      return hasKeys(input, ['method', 'path', 'maxBytes', 'offset']) && isFilePageRequest(input);
     default:
       return false;
   }

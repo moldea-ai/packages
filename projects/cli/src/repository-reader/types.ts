@@ -1,4 +1,3 @@
-import type { IProjectInstructionSource } from '@moldea.ai/core';
 import type { IRepositoryReader } from '@moldea.ai/repository';
 
 import type { IMoldeaCliResourceLimits } from '../command-line/index.js';
@@ -17,7 +16,7 @@ export type IWorkingTreeRepositoryReaderFactory = (
   input: IWorkingTreeRepositoryReaderInput,
 ) => Promise<IRepositoryReader>;
 
-// injectable instruction-source composition boundary over the probed instruction entries
+// injectable instruction-reader composition boundary over the probed instruction entries
 export type IWorkingTreeInstructionSourceFactory = (
   input: IWorkingTreeRepositoryReaderInput,
-) => Promise<IProjectInstructionSource>;
+) => Promise<IRepositoryReader>;

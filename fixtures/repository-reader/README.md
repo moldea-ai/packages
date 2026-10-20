@@ -8,6 +8,6 @@ logical repository entries rather than host filesystem state and are maintained 
 - `invalid-memory-definitions.json` contains construction failures specific to the baseline
   in-memory reader.
 
-File content is represented as either Unicode scalar text or an explicit byte array. JSON escaped
+File content is represented as either Unicode scalar text or an explicit byte array, and a symlink records its stored text as `target`. JSON escaped
 unpaired surrogates are intentional invalid-input fixtures and must never be encoded with lossy
 replacement.

@@ -1,4 +1,5 @@
 import {
+  REPOSITORY_LINK_TEXT_MAX_BYTES,
   REPOSITORY_ROOT,
   RepositorySourceException,
   createRepositoryComparison,
@@ -15,6 +16,8 @@ import {
   type IRepositoryReader,
   type IRepositorySnapshot,
 } from '@moldea.ai/repository';
+
+const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 
 /** Throws the common cancellation contract for wrapper-owned operations. */
 const throwIfAborted = (
@@ -157,6 +160,78 @@ class GitSymlinkOverlayRepositoryReader implements IRepositoryReader {
       path: parsedPath,
       retryable: false,
     });
+  }
+
+  /**
+   * Reads a link's stored text. A Git link checked out as a plain file holds exactly the text Git
+   * stored, so its bounded bytes are that text; other paths read the underlying reader.
+   * @param path The validated repository path of the symlink entry.
+   * @param options Optional cancellation controls.
+   * @returns A promise resolving to the text, or `null` past 4096 UTF-8 bytes or for invalid UTF-8.
+   * @throws
+   * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+   * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+   * - ENTRY_NOT_LINK: The requested repository entry is not a symlink.
+   * - ACCESS_DENIED: Access to the repository source was denied.
+   * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+   * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+   * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+   * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
+   * - ABORTED: The repository operation was aborted.
+   */
+  public async readLinkText(
+    path: IRepositoryPath,
+    options?: IRepositoryOperationOptions,
+  ): Promise<string | null> {
+    const parsedPath = parseRepositoryPath(path);
+
+    if (!this.#overlayPaths.has(parsedPath)) {
+      return this.#reader.readLinkText(parsedPath, options);
+    }
+
+    throwIfAborted(options?.signal, 'read-link-text', parsedPath);
+
+    const entry = await this.#reader.getEntry(parsedPath, options);
+
+    validateOverlayEntry(entry, 'read-link-text', parsedPath);
+    throwIfAborted(options?.signal, 'read-link-text', parsedPath);
+
+    const byteLength = entry?.byteLength ?? null;
+
+    if (byteLength === null) {
+      throw createInvalidOverlayException('read-link-text', parsedPath);
+    }
+
+    if (byteLength > REPOSITORY_LINK_TEXT_MAX_BYTES) {
+      return null;
+    }
+
+    if (byteLength === 0) {
+      return '';
+    }
+
+    // reading exactly the known length keeps the request within the reader's own range limit
+    const page = await this.#reader.readFilePage(parsedPath, {
+      maxBytes: byteLength,
+      offset: 0,
+      ...(options?.signal === undefined ? {} : { signal: options.signal }),
+    });
+
+    throwIfAborted(options?.signal, 'read-link-text', parsedPath);
+
+    if (
+      !page.isComplete ||
+      page.totalBytes !== byteLength ||
+      page.bytes.byteLength !== byteLength
+    ) {
+      throw createInvalidOverlayException('read-link-text', parsedPath);
+    }
+
+    try {
+      return decoder.decode(page.bytes);
+    } catch {
+      return null;
+    }
   }
 
   /**

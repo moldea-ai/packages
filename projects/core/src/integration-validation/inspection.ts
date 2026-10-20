@@ -14,9 +14,11 @@ import type { IIntegrationInspectionContext } from './types.js';
 /**
  * Checks the coding-agent integration: root AGENTS.md and the Claude Code instruction files
  * through the instruction view, and the referenced skill installation through the repository
- * reader, with at most six entry lookups, four link resolutions, and five bounded reads.
+ * reader. It reads at most four instruction files, follows at most 32 links for each with one
+ * lookup and one link-text read per link, and makes at most five bounded reads, all inside the
+ * repository.
  * @param reader The repository inspection reader for skill files and the managed asset.
- * @param instructions The instruction view for the coding-agent instruction paths.
+ * @param instructions The instruction view that routes the four instruction paths and links.
  * @param limits The immutable resource limits for the inspection.
  * @param signal Optional cancellation for repository lookups.
  * @returns Completed content-free integration warnings, never an execution or runtime-wiring claim.
@@ -41,12 +43,12 @@ export const inspectCodingAgentIntegration = async (
     instructions,
     ledger: getRetainedMemory(reader),
     reader,
-    report: (code, subject, details) => {
+    report: (code, subject, details, qualifier) => {
       collector.add({
         code,
         path: subject,
         subject,
-        qualifier: null,
+        qualifier: qualifier ?? null,
         entity: { integrationPath: subject },
         details,
       });
