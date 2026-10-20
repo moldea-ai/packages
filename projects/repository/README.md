@@ -99,20 +99,23 @@ Construction validates the input, copies buffers, synthesizes missing parent dir
 
 ## Shared reader conformance
 
-Official source implementations use the `testing` subpath to register the same version 3 contract checks. Compatible Vitest and `web-utils-kit` peers are required only when importing this entry point.
+Official source implementations use the `testing` subpath to register the same version 3 contract checks. The suite registers its checks with the `describe`, `test`, and `expect` functions you pass, such as Vitest's, so the package imports no test runner and has no peer dependencies.
 
 ```typescript
 import {
   describeRepositoryReaderConformance,
   type IRepositoryReaderConformanceFixture,
 } from '@moldea.ai/repository/testing';
+import { describe, expect, test } from 'vitest';
 
 export const registerReaderConformance = <TPath extends string>(
   fixture: IRepositoryReaderConformanceFixture<TPath>,
 ): void => {
-  describeRepositoryReaderConformance('provider', fixture);
+  describeRepositoryReaderConformance({ describe, expect, test }, 'provider', fixture);
 };
 ```
+
+The runner's type, `IRepositoryReaderConformanceRunner`, names only the calls the suite makes, so any runner whose `expect` offers `toBe`, `toBeGreaterThan`, `toMatchObject`, `toStrictEqual`, `not.toBe`, and the matching `resolves` assertions fits.
 
 ## Development
 

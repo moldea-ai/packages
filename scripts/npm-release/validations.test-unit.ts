@@ -17,12 +17,12 @@ const createManifest = (project: INpmReleaseProject): Record<string, unknown> =>
   return {
     dependencies:
       project === 'repository'
-        ? { 'error-message-utils': '1.2.11' }
+        ? { 'jg-exception': '1.7.0' }
         : project === 'website-ui'
           ? {
               '@fontsource-variable/ubuntu-sans': '5.2.10',
               '@lucide/astro': '1.31.0',
-              'error-message-utils': '1.2.11',
+              'jg-exception': '1.7.0',
             }
           : project === 'cli'
             ? {

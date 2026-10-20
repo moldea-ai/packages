@@ -16,7 +16,7 @@ import { createRequire } from 'node:module';
 
 import { AxeBuilder } from '@axe-core/playwright';
 import { chromium, type Locator } from '@playwright/test';
-import { extractMessage } from 'error-message-utils';
+import { extractMessage } from 'jg-exception';
 import { afterEach, describe, expect, test } from 'vitest';
 
 import { RUNTIME_CATALOG } from './runtime-catalog/index.js';

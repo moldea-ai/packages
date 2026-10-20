@@ -1,4 +1,4 @@
-import { Exception } from 'error-message-utils';
+import { Exception } from 'jg-exception';
 
 import type { IRepositoryPath } from './repository-path.js';
 
@@ -61,29 +61,18 @@ const SOURCE_ERROR_MESSAGES = {
   SOURCE_UNAVAILABLE: 'The repository source is unavailable.',
 } as const satisfies Readonly<Record<IRepositorySourceErrorCode, string>>;
 
-const attachCause = (exception: Error, cause: unknown): void => {
-  if (cause === undefined) {
-    return;
-  }
-
-  Object.defineProperty(exception, 'cause', {
-    configurable: true,
-    enumerable: false,
-    value: cause,
-    writable: false,
-  });
-};
-
 /** Represents malformed repository-root logical path input. */
 export class RepositoryPathException extends Exception {
   public override readonly code: 'INVALID_REPOSITORY_PATH';
 
   /** Creates a safe path exception without exposing the rejected value. */
   public constructor(options?: IRepositoryPathExceptionOptions) {
-    super('The repository path is invalid.', 'INVALID_REPOSITORY_PATH');
+    super('The repository path is invalid.', {
+      code: 'INVALID_REPOSITORY_PATH',
+      cause: options?.cause,
+    });
     this.code = 'INVALID_REPOSITORY_PATH';
     this.name = 'RepositoryPathException';
-    attachCause(this, options?.cause);
   }
 }
 
@@ -101,13 +90,12 @@ export class RepositorySourceException extends Exception {
 
   /** Creates a source exception with documented operation and resource metadata. */
   public constructor(options: IRepositorySourceExceptionOptions) {
-    super(SOURCE_ERROR_MESSAGES[options.code], options.code);
+    super(SOURCE_ERROR_MESSAGES[options.code], { code: options.code, cause: options.cause });
     this.code = options.code;
     this.name = 'RepositorySourceException';
     this.operation = options.operation;
     this.path = options.path;
     this.resource = options.resource ?? null;
     this.retryable = options.retryable;
-    attachCause(this, options.cause);
   }
 }

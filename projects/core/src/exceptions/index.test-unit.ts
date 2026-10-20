@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { Exception } from 'error-message-utils';
+import { Exception } from 'jg-exception';
 import { describe, expect, test } from 'vitest';
 
 import { CoreConfigurationException, CoreOperationException } from './index.js';

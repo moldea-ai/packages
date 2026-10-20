@@ -1,10 +1,10 @@
-import { describe, expect, test } from 'vitest';
-import { expectToRejectCode } from 'web-utils-kit';
+import { expectToRejectCode } from 'jg-exception/testing';
 
 import type {
   IRepositoryReaderConformanceEntry,
   IRepositoryReaderConformanceFixture,
   IRepositoryReaderConformanceReader,
+  IRepositoryReaderConformanceRunner,
 } from './types.js';
 
 const listAllEntries = async <TPath extends string>(
@@ -71,11 +71,19 @@ const readAllBytes = async <TPath extends string>(
   throw new Error('Repository byte traversal ended without a complete page.');
 };
 
-/** Defines the contract checks shared by every official repository reader. */
+/**
+ * Defines the contract checks shared by every official repository reader, registered with the test
+ * functions the caller passes, such as Vitest's.
+ * @param runner The test runner's describe, test, and expect.
+ * @param implementationName The reader's name, which names the suite.
+ * @param fixture The reader under test and the source it reads.
+ */
 export const describeRepositoryReaderConformance = <TPath extends string>(
+  runner: IRepositoryReaderConformanceRunner,
   implementationName: string,
   fixture: IRepositoryReaderConformanceFixture<TPath>,
 ): void => {
+  const { describe, expect, test } = runner;
   describe(`${implementationName} repository reader conformance`, () => {
     test('returns detached exact entries with source metadata', async () => {
       const reader = await fixture.createReader();

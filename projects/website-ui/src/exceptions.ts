@@ -1,4 +1,4 @@
-import { Exception } from 'error-message-utils';
+import { Exception } from 'jg-exception';
 
 // stable configuration failure contracts exposed by the package
 export type IWebsiteUiConfigurationErrorCode = 'INVALID_BASE_PATH' | 'INVALID_SEARCH_INDEX';
@@ -14,7 +14,7 @@ export class WebsiteUiConfigurationException extends Exception {
 
   /** Creates the stable configuration exception for one failed boundary. */
   public constructor(code: IWebsiteUiConfigurationErrorCode) {
-    super(CONFIGURATION_ERROR_MESSAGES[code], code);
+    super(CONFIGURATION_ERROR_MESSAGES[code], { code });
     this.code = code;
     this.name = 'WebsiteUiConfigurationException';
   }

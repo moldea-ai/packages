@@ -33,6 +33,6 @@ The package does not access a filesystem or network, discover repositories, foll
 
 - `@moldea.ai/repository` exports contracts, logical-path functions, link resolution, exceptions, identity, and comparison.
 - `@moldea.ai/repository/memory` exports the immutable reference reader.
-- `@moldea.ai/repository/testing` exports the shared reader conformance suite.
+- `@moldea.ai/repository/testing` exports the shared reader conformance suite, which registers its checks with the `describe`, `test`, and `expect` functions its caller passes.
 
 Use the generated [API reference](./api/) for the exact exported surface.

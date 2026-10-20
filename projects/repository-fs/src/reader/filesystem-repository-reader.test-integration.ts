@@ -15,7 +15,7 @@ import {
 } from '@moldea.ai/repository';
 import { describeRepositoryReaderConformance } from '@moldea.ai/repository/testing';
 import { afterAll, describe, expect, test, vi } from 'vitest';
-import { expectToRejectCode } from 'web-utils-kit';
+import { expectToRejectCode } from 'jg-exception/testing';
 
 import { createFilesystemRepositoryTestFixtures } from './factory.test-fixtures.js';
 import { createFilesystemRepositoryReader } from './filesystem-repository-reader.js';
@@ -52,7 +52,7 @@ const collectEntries = async (reader: IRepositoryReader): Promise<IRepositoryEnt
   return entries;
 };
 
-describeRepositoryReaderConformance('filesystem', {
+describeRepositoryReaderConformance({ describe, expect, test }, 'filesystem', {
   casePaths: fixtures.primary.casePaths,
   createReader: () =>
     createFilesystemRepositoryReader({

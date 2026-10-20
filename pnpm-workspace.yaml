@@ -4,3 +4,5 @@ packages:
   - apps/*
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - jg-exception@1.7.0
