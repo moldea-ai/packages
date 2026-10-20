@@ -4,9 +4,9 @@ import { MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES } from './constants.js';
 import type { IMoldeaCliCompositionStateInput } from './types.js';
 
 const PACKAGE_VERSIONS = {
-  '@moldea.ai/core': '7.1.0',
-  '@moldea.ai/repository': '2.1.0',
-  '@moldea.ai/repository-fs': '2.1.0',
+  '@moldea.ai/core': '8.0.0',
+  '@moldea.ai/repository': '3.0.0',
+  '@moldea.ai/repository-fs': '3.0.0',
 } as const;
 
 // exact installed package metadata used by composition tests

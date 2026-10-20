@@ -7,10 +7,10 @@ order: 0
 
 # The local package composition
 
-`@moldea.ai/cli` version 11 provides the `moldea` executable. It emits concise human results or deterministic schema 7 JSON pages. Full validation and metadata inspection use Core universal checks; changed-path scope and explicit canonical content use path-selected repository reads.
+`@moldea.ai/cli` version 12 provides the `moldea` executable. It emits concise human results or deterministic schema 7 JSON pages. Full validation and metadata inspection use Core universal checks; changed-path scope and explicit canonical content use path-selected repository reads.
 
 ```bash
-pnpm add -D @moldea.ai/cli@11
+pnpm add -D @moldea.ai/cli@12
 pnpm exec moldea validate
 ```
 

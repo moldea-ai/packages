@@ -6,11 +6,11 @@ order: 30
 
 # Security and operational limits
 
-Filesystem names and content are untrusted. The reader validates closed option and cursor contracts, copies caller-owned configuration, rejects stable descendant symlinks during traversal, executes no file, and exposes no host path through `IRepositoryReader`, its link resolver, or their exceptions. Its path-based checks require a selected tree trusted against hostile concurrent directory replacement; they do not provide containment against a process racing those checks and opens.
+Filesystem names and content are untrusted. The reader validates closed option and cursor contracts, copies caller-owned configuration, rejects stable descendant symlinks during traversal, executes no file, and exposes no host path through `IRepositoryReader` or its exceptions. Its path-based checks require a selected tree trusted against hostile concurrent directory replacement; they do not provide containment against a process racing those checks and opens.
 
 ## Resource limits
 
-This reference describes `repository-fs` 2.1.0.
+This reference describes `repository-fs` 3.0.0.
 
 | Limit                     |          Default | Meaning                                                       |
 | ------------------------- | ---------------: | ------------------------------------------------------------- |
@@ -26,16 +26,9 @@ Configured values must be positive safe integers. Limits are independent so larg
 
 The file-page cache also retains at most 4,096 nonempty pages, independently of `maxCachedBytes`; empty ranges are returned without caching.
 
-## Link resolution
+## Link text
 
-`createFilesystemRepositoryLinkResolver(reader)` accepts only a reader this package created; any other value fails with `INVALID_SOURCE_DATA`. It resolves only entries the reader reports as `symlink` and returns `not-link` for others.
-
-- **Refusal before access.** Each link's raw text and its lexical candidate (the text joined to the link's directory with `..` removed textually) are classified before any filesystem call beneath them. UNC paths, device-namespace paths other than the local long-path form `\\?\X:\`, drive-relative Windows paths, and anything under `/net` or `/Network` are `unsafe`. The lexical candidate is only a refusal check, never the walked path.
-- **Host semantics.** The walk takes the raw text one component at a time from the link's resolved directory. On POSIX, `..` moves to the parent of the directory reached so far, so `shared/../docs/AGENTS.md` with `shared` linking elsewhere reaches the file the operating system opens. On Windows, relative link text resolves against the link's directory, as the Windows I/O manager does. Every new absolute path is classified before its `lstat`.
-- **Outcomes.** More than 32 hops is `loop`, a missing component is `broken`, an access failure is `denied`, and an inside target without a safe logical path is `unsafe`. Containment compares the final target with the resolved root using platform path semantics.
-- **Identity and reads.** `targetIdentity` is an HMAC of the final target's device and inode under a per-resolver key. `readLinkTargetPage` opens the target without following a further link, checks the handle identity before and after the bounded read, and resolves the chain again before returning; reads use `maxReadBytes` and the operation gate and are not cached.
-
-A network filesystem already mounted at an ordinary path, such as an SMB volume under `/Volumes`, cannot be recognized from its path; reads there stay bounded and content-free. The trusted-tree requirement above applies to resolution as well.
+`readLinkText` checks that the exact path is selected, observes it without following it, requires a symlink or junction, and reads its text with `readlink` inside the operation gate, after the same root check as every other operation. It never opens, stats, or resolves the target, and link text is not cached. On Windows, `\` becomes `/`. Text longer than 4096 UTF-8 bytes, or not valid UTF-8, returns `null`. The link is observed again after the read, so a link replaced in between fails with `SNAPSHOT_CHANGED`.
 
 ## Error mapping
 

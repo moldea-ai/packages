@@ -248,7 +248,7 @@ describe('Core manifest relationships through the memory repository reader', () 
         type: 'file',
       },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
-      { path: contextPath, type: 'symlink' },
+      { path: contextPath, target: 'linked-target.md', type: 'symlink' },
       { content: 'Not decision frontmatter.\n', path: decisionPath, type: 'file' },
     ]);
     const discovery = await discoverCanonicalAssets(repository, options.limits);

@@ -36,7 +36,8 @@
     },
     {
       "path": "/link",
-      "type": "symlink"
+      "type": "symlink",
+      "target": "README.md"
     }
   ]
 }

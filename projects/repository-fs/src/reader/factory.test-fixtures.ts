@@ -24,6 +24,7 @@ interface ICanonicalFileEntry {
 
 interface ICanonicalSymlinkEntry {
   readonly path: string;
+  readonly target: string;
   readonly type: 'symlink';
 }
 
@@ -39,6 +40,7 @@ export interface IFilesystemRepositoryTestSnapshot {
   readonly expectedEntries: readonly Pick<IRepositoryEntry, 'path' | 'type'>[];
   readonly fileBytes: Uint8Array;
   readonly rootDirectory: string;
+  readonly symlinkText: string;
   readonly unicodePath: string;
 }
 
@@ -130,10 +132,8 @@ const materializeFilesystemRepositorySnapshot = async (
   canonicalFixture: ICanonicalFixture,
 ): Promise<IFilesystemRepositoryTestSnapshot> => {
   const rootDirectory = path.join(suiteDirectory, snapshotName);
-  const linkTargetDirectory = path.join(suiteDirectory, `${snapshotName}-link-target`);
 
   await mkdir(rootDirectory);
-  await mkdir(linkTargetDirectory);
 
   const upperCaseEntry = canonicalFixture.entries.find((entry) => entry.path === '/Case.txt');
   const lowerCaseEntry = canonicalFixture.entries.find((entry) => entry.path === '/case.txt');
@@ -146,7 +146,7 @@ const materializeFilesystemRepositorySnapshot = async (
     upperCaseEntry?.type !== 'file' ||
     lowerCaseEntry?.type !== 'file' ||
     unicodeEntry?.type !== 'file' ||
-    symlinkEntry === undefined
+    symlinkEntry?.type !== 'symlink'
   ) {
     throw new Error('The canonical repository-reader fixture is incomplete.');
   }
@@ -197,10 +197,11 @@ const materializeFilesystemRepositorySnapshot = async (
   const actualUnicodePath = parseRepositoryPath(`/unicode/${textDecoder.decode(unicodeNames[0])}`);
   const symlinkHostPath = resolveFixtureHostPath(rootDirectory, symlinkEntry.path);
 
+  // the canonical link names a sibling file with relative text, so every host stores the same text
   await symlink(
-    linkTargetDirectory,
+    symlinkEntry.target,
     symlinkHostPath,
-    process.platform === 'win32' ? 'junction' : 'dir',
+    process.platform === 'win32' ? 'file' : undefined,
   );
 
   const entriesByPath = new Map<IRepositoryPath, Pick<IRepositoryEntry, 'path' | 'type'>>();
@@ -238,6 +239,7 @@ const materializeFilesystemRepositorySnapshot = async (
     ),
     fileBytes: new Uint8Array(fileEntry.bytes),
     rootDirectory,
+    symlinkText: symlinkEntry.target,
     unicodePath: actualUnicodePath,
   });
 };

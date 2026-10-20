@@ -57,5 +57,7 @@ describeRepositoryReaderConformance('in-memory', {
   parsePath: parseRepositoryPath,
   rootPath: REPOSITORY_ROOT,
   symlinkPath: '/link',
+  symlinkText: 'README.md',
   unicodePath: '/unicode/café-😀.txt',
+  unreadableSymlinkPaths: [],
 });

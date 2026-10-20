@@ -7,7 +7,7 @@ order: 0
 
 # Bounded repository access without source assumptions
 
-`@moldea.ai/repository` version 2 defines the public boundary through which `moldea` code observes one coherent repository snapshot. Metadata lookup is content-free. Descendant enumeration, file content, and repository comparison are explicitly bounded and resumable.
+`@moldea.ai/repository` version 3 defines the public boundary through which `moldea` code observes one coherent repository snapshot. Metadata lookup is content-free. Descendant enumeration, file content, and repository comparison are explicitly bounded and resumable.
 
 The package keeps Core independent from source mechanics. `@moldea.ai/repository-fs` implements this contract for an explicitly selected local directory, other source packages can implement the same contract, and Core interprets only the portable entries and bytes returned through it.
 
@@ -21,18 +21,18 @@ The package keeps Core independent from source mechanics. `@moldea.ai/repository
 - bounded deterministic comparison pages
 - integrity-protected, source-bound continuation cursors
 - source and path exception contracts
-- the optional [link-resolver contract](./link-resolution/) for explicitly named symlinks
+- one bounded read of a symlink's stored text, and [link resolution](./reader-contract/#links) inside the repository
 - an immutable in-memory reference reader
-- shared conformance tests for official readers and link resolvers
+- shared conformance tests for official readers
 
 ## What it does not own
 
-The package does not access a filesystem or network, discover repositories, follow symlinks itself, decode file content, interpret the `moldea` format, apply Git ignore rules, or expose writes. Source implementations decide how to preserve snapshot coherence. Consumers decide what returned bytes mean.
+The package does not access a filesystem or network, discover repositories, follow links outside the repository, decode file content, interpret the `moldea` format, apply Git ignore rules, or expose writes. Source implementations decide how to preserve snapshot coherence. Consumers decide what returned bytes mean.
 
 ## Entry points
 
-- `@moldea.ai/repository` exports contracts, logical-path functions, exceptions, identity, and comparison.
+- `@moldea.ai/repository` exports contracts, logical-path functions, link resolution, exceptions, identity, and comparison.
 - `@moldea.ai/repository/memory` exports the immutable reference reader.
-- `@moldea.ai/repository/testing` exports the shared reader and link-resolver conformance suites.
+- `@moldea.ai/repository/testing` exports the shared reader conformance suite.
 
 Use the generated [API reference](./api/) for the exact exported surface.

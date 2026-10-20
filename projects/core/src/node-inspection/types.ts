@@ -5,13 +5,12 @@ import type {
   IProjectInspection,
   IProjectInspectionPageInput,
   IProjectInspectionPageResult,
-  IProjectInstructionSource,
 } from '../contracts/index.js';
 
-// callers own the source-neutral reader and the optional instruction source
+// callers own the source-neutral reader and the optional instruction reader
 export interface INodeProjectInspectionInput {
   repository: IRepositoryReader;
-  instructions?: IProjectInstructionSource;
+  instructions?: IRepositoryReader;
   limits?: Partial<ICoreResourceLimits>;
   signal?: AbortSignal;
   deadline?: number;
@@ -53,19 +52,19 @@ export type INodeReaderSource = 'instructions' | 'repository';
 
 // the caller-owned readers one inspection serves over the bridge
 export interface INodeReaderSources {
-  readonly instructions?: IProjectInstructionSource;
+  readonly instructions?: IRepositoryReader;
   readonly repository: IRepositoryReader;
 }
 
-// what the worker knows about the instruction source; its resolver shares the reader's snapshot
+// what the worker knows about the instruction reader
 export interface INodeInstructionSourceMetadata {
-  hasLinkResolver: boolean;
   snapshot: IRepositorySnapshot;
 }
 
-// closed, bounded transport records shared by both message bridges; links resolve for instructions only
+// closed, bounded transport records shared by both message bridges
 export type INodeReaderRequest =
   | { method: 'getEntry'; path: string; source: INodeReaderSource }
+  | { method: 'readLinkText'; path: string; source: INodeReaderSource }
   | { method: 'listEntriesPage'; maxEntries: number; cursor?: string; prefix?: string }
   | {
       method: 'readFilePage';
@@ -73,9 +72,7 @@ export type INodeReaderRequest =
       maxBytes: number;
       offset: number;
       source: INodeReaderSource;
-    }
-  | { method: 'resolveLink'; path: string }
-  | { method: 'readLinkTargetPage'; path: string; maxBytes: number; offset: number };
+    };
 
 export interface INodeInspectionFailure {
   family: 'configuration' | 'operation' | 'repository' | 'path';

@@ -8,6 +8,7 @@ export const REPOSITORY_SOURCE_ERROR_MESSAGES = Object.freeze({
   ENTRY_NOT_DIRECTORY: 'The requested repository entry is not a directory.',
   ENTRY_NOT_FILE: 'The requested repository entry is not a file.',
   ENTRY_NOT_FOUND: 'The requested repository entry was not found.',
+  ENTRY_NOT_LINK: 'The requested repository entry is not a symlink.',
   INVALID_PAGE_REQUEST: 'The repository page request is invalid.',
   INVALID_SOURCE_DATA: 'The repository source returned invalid data.',
   PROVIDER_INCOMPLETE: 'The repository provider could not expose a complete result.',

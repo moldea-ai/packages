@@ -58,37 +58,21 @@ const isSnapshot = (input: unknown): input is { id: string; sourceKind: string }
   typeof input['sourceKind'] === 'string' &&
   input['sourceKind'].length > 0;
 
-/** Describes a supplied instruction source for the worker, or rejects one Core could not use. */
+/** Describes a supplied instruction reader for the worker, or rejects one Core could not use. */
 const describeInstructions = (
   instructions: unknown,
 ): INodeInstructionSourceMetadata | null | undefined => {
   if (instructions === undefined) return null;
   if (
     !isRecord(instructions) ||
-    Reflect.ownKeys(instructions).some((key) => key !== 'reader' && key !== 'linkResolver')
-  )
-    return undefined;
-  const reader = instructions['reader'];
-  const linkResolver = instructions['linkResolver'];
-  if (
-    !isRecord(reader) ||
-    typeof reader['getEntry'] !== 'function' ||
-    typeof reader['readFilePage'] !== 'function' ||
-    !isSnapshot(reader['snapshot'])
-  )
-    return undefined;
-  if (
-    linkResolver !== undefined &&
-    (!isRecord(linkResolver) ||
-      typeof linkResolver['resolveLink'] !== 'function' ||
-      typeof linkResolver['readLinkTargetPage'] !== 'function' ||
-      !isSnapshot(linkResolver['snapshot']) ||
-      linkResolver['snapshot'].id !== reader['snapshot'].id)
+    typeof instructions['getEntry'] !== 'function' ||
+    typeof instructions['readFilePage'] !== 'function' ||
+    typeof instructions['readLinkText'] !== 'function' ||
+    !isSnapshot(instructions['snapshot'])
   )
     return undefined;
   return {
-    hasLinkResolver: linkResolver !== undefined,
-    snapshot: { id: reader['snapshot'].id, sourceKind: reader['snapshot'].sourceKind },
+    snapshot: { id: instructions['snapshot'].id, sourceKind: instructions['snapshot'].sourceKind },
   };
 };
 
@@ -135,6 +119,7 @@ export const createNodeProjectInspection = async (
     typeof input.repository.getEntry !== 'function' ||
     typeof input.repository.listEntriesPage !== 'function' ||
     typeof input.repository.readFilePage !== 'function' ||
+    typeof input.repository.readLinkText !== 'function' ||
     input.repository.snapshot === null ||
     typeof input.repository.snapshot !== 'object' ||
     typeof input.repository.snapshot.id !== 'string' ||

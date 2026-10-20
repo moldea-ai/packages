@@ -9,7 +9,6 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { RepositorySourceException } from '@moldea.ai/repository';
 import {
-  createMemoryLinkResolver,
   createMemoryRepositoryReader,
   createIntegratedMemoryRepositoryReader,
   INTEGRATION_TEST_ENTRIES,
@@ -30,6 +29,7 @@ const createRepository = () => {
     getEntry: reader.getEntry.bind(reader),
     listEntriesPage: reader.listEntriesPage.bind(reader),
     readFilePage: reader.readFilePage.bind(reader),
+    readLinkText: reader.readLinkText.bind(reader),
     compare: reader.compare.bind(reader),
   };
 };
@@ -192,7 +192,7 @@ describe('real isolated Node inspection', () => {
         const {createNodeProjectInspection} = await import(${JSON.stringify(import.meta.resolve('@moldea.ai/core/node'))});
         const {createMemoryRepositoryReader} = await import(${JSON.stringify(import.meta.resolve('@moldea.ai/repository/memory'))});
         const source = createMemoryRepositoryReader([]);
-        const repository = {snapshot: source.snapshot, compare: source.compare.bind(source), listEntriesPage: source.listEntriesPage.bind(source), readFilePage: source.readFilePage.bind(source), getEntry: async () => {
+        const repository = {snapshot: source.snapshot, compare: source.compare.bind(source), listEntriesPage: source.listEntriesPage.bind(source), readFilePage: source.readFilePage.bind(source), readLinkText: source.readLinkText.bind(source), getEntry: async () => {
           writeFileSync(${JSON.stringify(markerPath)}, JSON.stringify({pid: child.pid, parentPid: process.pid}));
           await new Promise(() => {});
         }};
@@ -331,7 +331,9 @@ describe('real isolated Node inspection', () => {
       const repository = createMemoryRepositoryReader([
         { path: '/moldea/moldea.yaml', type: 'file', content: 'version: 1\n' },
         { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
-        ...(entryKind === 'symlink' ? [{ path: '/AGENTS.md', type: 'symlink' as const }] : []),
+        ...(entryKind === 'symlink'
+          ? [{ path: '/AGENTS.md', target: '../shared/AGENTS.md', type: 'symlink' as const }]
+          : []),
       ]);
       const inspection = await createNodeProjectInspection({ repository });
       try {
@@ -345,8 +347,9 @@ describe('real isolated Node inspection', () => {
               diagnostic:
                 entryKind === 'symlink'
                   ? {
-                      code: 'MOLDEA_INTEGRATION_UNVERIFIED',
-                      details: { entryKind: 'symlink', linkState: 'unavailable' },
+                      code: 'MOLDEA_INTEGRATION_LINK_UNRESOLVED',
+                      qualifier: 'outside',
+                      details: { entryKind: 'symlink', reason: 'outside' },
                     }
                   : { code: 'MOLDEA_INTEGRATION_BLOCK_MISSING', details: { entryKind: 'missing' } },
             },
@@ -358,100 +361,89 @@ describe('real isolated Node inspection', () => {
     },
   );
 
-  test('reads a linked AGENTS.md through the instruction source and its resolver over both bridges', async () => {
+  test('resolves links across the instruction reader and the repository over both bridges', async () => {
     const agents = INTEGRATION_TEST_ENTRIES.find((entry) => entry.path === '/AGENTS.md')!;
+    const agentsText = agents.type === 'file' ? String(agents.content) : '';
     const repository = createMemoryRepositoryReader([
       { path: '/moldea/moldea.yaml', type: 'file', content: 'version: 1\n' },
       { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
+      { path: '/docs/AGENTS.md', type: 'file', content: agentsText },
       ...INTEGRATION_TEST_ENTRIES.filter((entry) => entry.path !== '/AGENTS.md'),
     ]);
-    const reader = createMemoryRepositoryReader([{ path: '/AGENTS.md', type: 'symlink' }]);
-    const linkResolver = createMemoryLinkResolver(reader, {
-      '/AGENTS.md': {
-        content: agents.type === 'file' ? String(agents.content) : '',
-        resolution: { state: 'outside', targetIdentity: 'identity:shared', targetType: 'file' },
-      },
-    });
-    const inspection = await createNodeProjectInspection({
-      instructions: { linkResolver, reader },
+    const toRepository = await createNodeProjectInspection({
+      instructions: createMemoryRepositoryReader([
+        { path: '/AGENTS.md', target: 'docs/AGENTS.md', type: 'symlink' },
+      ]),
       repository,
     });
     try {
-      expect(inspection.counts).toMatchObject({ errors: 0, warnings: 0 });
+      expect(toRepository.counts).toMatchObject({ errors: 0, warnings: 0 });
     } finally {
-      await inspection.dispose();
+      await toRepository.dispose();
     }
 
-    const unresolvable = await createNodeProjectInspection({
-      instructions: {
-        linkResolver: createMemoryLinkResolver(reader, {
-          '/AGENTS.md': { resolution: { state: 'denied' } },
-        }),
-        reader,
-      },
+    const toIgnoredInstruction = await createNodeProjectInspection({
+      instructions: createMemoryRepositoryReader([
+        { path: '/AGENTS.md', target: 'CLAUDE.local.md', type: 'symlink' },
+        { path: '/CLAUDE.local.md', type: 'file', content: agentsText },
+      ]),
+      repository,
+    });
+    try {
+      expect(toIgnoredInstruction.counts).toMatchObject({ errors: 0, warnings: 0 });
+    } finally {
+      await toIgnoredInstruction.dispose();
+    }
+
+    const unresolved = await createNodeProjectInspection({
+      instructions: createMemoryRepositoryReader([
+        { path: '/AGENTS.md', target: 'docs/missing.md', type: 'symlink' },
+      ]),
       repository,
     });
     try {
       expect(
-        (await unresolvable.readPage({ view: 'diagnostics', maxItems: 8 })).page.records,
+        (await unresolved.readPage({ view: 'diagnostics', maxItems: 8 })).page.records,
       ).toMatchObject([
         {
           item: {
             diagnostic: {
-              code: 'MOLDEA_INTEGRATION_UNVERIFIED',
-              details: { entryKind: 'symlink', linkState: 'denied' },
+              code: 'MOLDEA_INTEGRATION_LINK_UNRESOLVED',
+              qualifier: 'missing',
+              details: { entryKind: 'symlink', reason: 'missing' },
             },
           },
         },
       ]);
     } finally {
-      await unresolvable.dispose();
-    }
-  });
-
-  test('reports a linked AGENTS.md from an instruction source without a resolver as unavailable', async () => {
-    const repository = createRepository();
-    const reader = createMemoryRepositoryReader([{ path: '/AGENTS.md', type: 'symlink' }]);
-    const inspection = await createNodeProjectInspection({ instructions: { reader }, repository });
-    try {
-      expect(
-        (await inspection.readPage({ view: 'diagnostics', maxItems: 8 })).page.records,
-      ).toMatchObject([
-        {
-          item: {
-            diagnostic: {
-              code: 'MOLDEA_INTEGRATION_UNVERIFIED',
-              details: { linkState: 'unavailable' },
-            },
-          },
-        },
-      ]);
-    } finally {
-      await inspection.dispose();
+      await unresolved.dispose();
     }
   });
 
   test.each([
+    ['a wrapper object', (reader: ReturnType<typeof createMemoryRepositoryReader>) => ({ reader })],
     [
-      'an unknown property',
-      (reader: ReturnType<typeof createMemoryRepositoryReader>) => ({ reader, extra: true }),
-    ],
-    [
-      'a resolver of another snapshot',
+      'a reader without link text',
       (reader: ReturnType<typeof createMemoryRepositoryReader>) => ({
-        linkResolver: createMemoryLinkResolver(createMemoryRepositoryReader([]), {}),
-        reader,
+        getEntry: reader.getEntry.bind(reader),
+        readFilePage: reader.readFilePage.bind(reader),
+        snapshot: reader.snapshot,
       }),
     ],
-  ])('rejects an instruction source with %s before starting a worker', async (_label, create) => {
-    const reader = createMemoryRepositoryReader([{ path: '/AGENTS.md', type: 'symlink' }]);
-    await expect(
-      createNodeProjectInspection({
-        instructions: create(reader),
-        repository: createRepository(),
-      }),
-    ).rejects.toMatchObject({ code: 'INVALID_ARGUMENT' });
-  });
+  ])(
+    'rejects an instruction reader that is %s before starting a worker',
+    async (_label, create) => {
+      const reader = createMemoryRepositoryReader([
+        { path: '/AGENTS.md', target: 'docs/AGENTS.md', type: 'symlink' },
+      ]);
+      await expect(
+        createNodeProjectInspection({
+          instructions: create(reader) as never,
+          repository: createRepository(),
+        }),
+      ).rejects.toMatchObject({ code: 'INVALID_ARGUMENT' });
+    },
+  );
 
   test('suppresses an incomplete optional pattern check after a reader resource refusal across both bridges', async () => {
     const source = createIntegratedMemoryRepositoryReader([

@@ -1,8 +1,6 @@
-import { RepositorySourceException, type IRepositoryLinkResolution } from '@moldea.ai/repository';
+import { RepositorySourceException } from '@moldea.ai/repository';
 
 import type { IRetainedMemory, IRetainedSource } from '../retained-memory/index.js';
-
-import type { IInstructionLinkState } from './types.js';
 
 /**
  * Reads bounded untrusted text with a reservation for decoding and temporary string copies.
@@ -55,22 +53,3 @@ export const getAbsentKind = (error: unknown): 'missing' | 'non-regular' | null 
         ? 'non-regular'
         : null
     : null;
-
-/**
- * Explains why a linked instruction file cannot be read, or returns null for a readable link.
- * @param resolution The resolver's classification, or null when no resolver is available.
- * @returns The content-free link state, or null when the final target is a regular file.
- */
-export const getUnreadableLinkState = (
-  resolution: IRepositoryLinkResolution | null,
-): IInstructionLinkState | null => {
-  if (resolution === null) {
-    return 'unavailable';
-  }
-
-  if (resolution.state === 'inside' || resolution.state === 'outside') {
-    return resolution.targetType === 'file' ? null : resolution.targetType;
-  }
-
-  return resolution.state;
-};

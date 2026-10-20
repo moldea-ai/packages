@@ -12,6 +12,3 @@ export { DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS } from './constants/index
 
 // reader
 export { createFilesystemRepositoryReader } from './reader/index.js';
-
-// link resolver
-export { createFilesystemRepositoryLinkResolver } from './link-resolver/index.js';

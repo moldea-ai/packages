@@ -17,7 +17,7 @@ describe('Git content-transformation guard with logical repository overlays', ()
     const memoryReader = createMemoryRepositoryReader([
       { content: 'guarded bytes', path: guardedPath, type: 'file' },
       { content: '../target', path: materializedLinkPath, type: 'file' },
-      { path: nativeLinkPath, type: 'symlink' },
+      { path: nativeLinkPath, target: 'ordinary.txt', type: 'symlink' },
       { content: 'ordinary bytes', path: ordinaryPath, type: 'file' },
     ]);
     const overlaidReader = createGitSymlinkOverlayRepositoryReader(memoryReader, [

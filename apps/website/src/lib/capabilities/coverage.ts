@@ -121,7 +121,7 @@ export const REQUIRED_CASE_IDS: string[] = [
   'integration-block-missing',
   'integration-skill-missing',
   'integration-block-stale',
-  'integration-unverified',
+  'integration-link-unresolved',
   'integration-claude-import-missing',
 ];
 
@@ -664,8 +664,8 @@ export const CORE_DIAGNOSTIC_COVERAGE: Record<ICoreDiagnosticCode, IDiagnosticCo
     note: 'The linked example executes this exact diagnostic code.',
     sourcePath: 'projects/core/docs/diagnostics.md',
   },
-  MOLDEA_INTEGRATION_UNVERIFIED: {
-    caseIds: ['integration-unverified'],
+  MOLDEA_INTEGRATION_LINK_UNRESOLVED: {
+    caseIds: ['integration-link-unresolved'],
     mode: 'demonstrated',
     note: 'The linked example executes this exact diagnostic code.',
     sourcePath: 'projects/core/docs/diagnostics.md',

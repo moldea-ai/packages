@@ -1,13 +1,10 @@
 import {
-  RepositorySourceException,
   type IRepositoryComparison,
   type IRepositoryEntry,
   type IRepositoryEntryPage,
   type IRepositoryEntryPageOptions,
   type IRepositoryFilePage,
   type IRepositoryFilePageOptions,
-  type IRepositoryLinkResolution,
-  type IRepositoryLinkResolver,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
   type IRepositoryReader,
@@ -91,6 +88,7 @@ export const overrideCoreTestRepositoryReader = (
     listEntriesPage,
     readCompleteFile,
     readFilePage,
+    readLinkText: overrides.readLinkText ?? ((path, options) => source.readLinkText(path, options)),
   });
 };
 
@@ -123,6 +121,10 @@ export const createMemoryRepositoryReader = (
       path: IRepositoryPath,
       options: IRepositoryFilePageOptions,
     ): Promise<IRepositoryFilePage> => source.readFilePage(path, options),
+    readLinkText: (
+      path: IRepositoryPath,
+      options?: IRepositoryOperationOptions,
+    ): Promise<string | null> => source.readLinkText(path, options),
   });
 };
 
@@ -153,69 +155,4 @@ export const createIntegratedMemoryRepositoryReader = (
     ...INTEGRATION_TEST_ENTRIES.filter((entry) => !paths.has(entry.path)),
     ...entries,
   ]);
-};
-
-// one configured outcome of the memory link-resolver fixture, with target text for file targets
-export interface IMemoryLinkFixture {
-  readonly content?: string;
-  readonly resolution: IRepositoryLinkResolution;
-}
-
-/**
- * Creates a link resolver that reports configured resolutions for one reader's symlink entries
- * and serves configured target text, so Core tests need no filesystem or Repository FS.
- */
-export const createMemoryLinkResolver = (
-  reader: IRepositoryReader,
-  links: Readonly<Record<string, IMemoryLinkFixture>>,
-): IRepositoryLinkResolver => {
-  const targets = createSourceMemoryRepositoryReader(
-    Object.entries(links).flatMap(([path, link]) =>
-      link.content === undefined ? [] : [{ content: link.content, path, type: 'file' as const }],
-    ),
-  );
-
-  return Object.freeze({
-    snapshot: reader.snapshot,
-    resolveLink: async (
-      path: IRepositoryPath,
-      options?: IRepositoryOperationOptions,
-    ): Promise<IRepositoryLinkResolution> => {
-      const entry = await reader.getEntry(path, options);
-
-      if (entry === null) {
-        throw new RepositorySourceException({
-          code: 'ENTRY_NOT_FOUND',
-          operation: 'get-entry',
-          path,
-          retryable: false,
-        });
-      }
-
-      return entry.type === 'symlink'
-        ? (links[path]?.resolution ?? { state: 'broken' })
-        : { state: 'not-link' };
-    },
-    readLinkTargetPage: async (
-      path: IRepositoryPath,
-      options: IRepositoryFilePageOptions,
-    ): Promise<IRepositoryFilePage> => {
-      const link = links[path];
-
-      if (
-        link?.content === undefined ||
-        (link.resolution.state !== 'inside' && link.resolution.state !== 'outside') ||
-        link.resolution.targetType !== 'file'
-      ) {
-        throw new RepositorySourceException({
-          code: 'ENTRY_NOT_FILE',
-          operation: 'read-file-page',
-          path,
-          retryable: false,
-        });
-      }
-
-      return { ...(await targets.readFilePage(path, options)), snapshot: reader.snapshot };
-    },
-  });
 };

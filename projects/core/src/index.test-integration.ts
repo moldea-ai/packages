@@ -190,7 +190,7 @@ describe('published Core package artifacts', () => {
     ) as { readonly dependencies?: Readonly<Record<string, string>> };
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '7.1.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '8.0.0' });
     for (const entryName of [
       'index',
       'format',
@@ -223,7 +223,7 @@ describe('published Core package artifacts', () => {
       ),
     ).toBe(true);
     expect(manifest.dependencies).toStrictEqual({
-      '@moldea.ai/repository': 'workspace:^2.1.0',
+      '@moldea.ai/repository': 'workspace:^3.0.0',
       'error-message-utils': '1.2.11',
       yaml: '2.9.0',
       typescript: '6.0.3',
@@ -292,7 +292,7 @@ describe('published Core package artifacts', () => {
       ) as { readonly dependencies?: Readonly<Record<string, string>> };
 
       expect(manifest.dependencies).toStrictEqual({
-        '@moldea.ai/repository': '^2.1.0',
+        '@moldea.ai/repository': '^3.0.0',
         'error-message-utils': '1.2.11',
         yaml: '2.9.0',
         typescript: '6.0.3',

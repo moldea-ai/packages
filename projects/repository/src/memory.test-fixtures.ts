@@ -5,6 +5,7 @@ import type { IMemoryRepositoryEntry } from './memory.js';
 interface IFixtureEntry {
   readonly bytes?: readonly number[];
   readonly path: string;
+  readonly target?: string;
   readonly text?: string;
   readonly type: string;
 }
@@ -40,7 +41,11 @@ const toMemoryEntry = (entry: IFixtureEntry): IMemoryRepositoryEntry => {
     case 'directory':
       return { path: entry.path, type: 'directory' };
     case 'symlink':
-      return { path: entry.path, type: 'symlink' };
+      if (entry.target === undefined) {
+        throw new TypeError('A symlink fixture must define its target.');
+      }
+
+      return { path: entry.path, target: entry.target, type: 'symlink' };
     case 'file':
       if (entry.text !== undefined) {
         return { content: entry.text, path: entry.path, type: 'file' };

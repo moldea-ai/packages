@@ -112,7 +112,7 @@ const createEntries = () => [
   { content: '# Consumer\\n', path: '/README.md', type: 'file' },
   { content: 'lower', path: '/case.txt', type: 'file' },
   { content: new Uint8Array(), path: '/empty.bin', type: 'file' },
-  { path: '/link', type: 'symlink' },
+  { path: '/link', target: 'README.md', type: 'symlink' },
   { content: new Uint8Array([0, 1, 13, 10, 128, 255]), path: '/nested/deep/data.bin', type: 'file' },
   { path: '/nested/empty', type: 'directory' },
   { content: 'unicode', path: '/unicode/café-😀.txt', type: 'file' },
@@ -167,7 +167,9 @@ describeRepositoryReaderConformance('packed consumer', {
   parsePath: parseRepositoryPath,
   rootPath: REPOSITORY_ROOT,
   symlinkPath: '/link',
+  symlinkText: 'README.md',
   unicodePath: '/unicode/café-😀.txt',
+  unreadableSymlinkPaths: [],
 });
 `;
 

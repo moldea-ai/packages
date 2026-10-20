@@ -34,7 +34,7 @@ test('executes the binding and warning inventory without treating unchecked expo
           group: 'integration',
           severity: 'warning',
           subject: example.id === 'integration-claude-import-missing' ? '/CLAUDE.md' : '/AGENTS.md',
-          qualifier: null,
+          qualifier: example.id === 'integration-link-unresolved' ? 'outside' : null,
         },
       ],
     });

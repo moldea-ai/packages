@@ -22,19 +22,13 @@ export type IIntegrationBlockResult =
       reason: 'block-missing' | 'block-invalid' | 'skill-path-missing' | 'skill-path-invalid';
     };
 
-// why a linked instruction file cannot be verified, reported only in Core-internal details
-export type IInstructionLinkState =
-  | 'broken'
-  | 'denied'
-  | 'directory'
-  | 'loop'
-  | 'not-file'
-  | 'not-link'
-  | 'other'
-  | 'unavailable'
-  | 'unsafe';
+// why an instruction file's link doesn't lead to a file in the repository, used as its qualifier
+export type IUnresolvedLinkState = Exclude<IRepositoryLinkResolution['state'], 'file'>;
 
-// shared state for one integration check; `report` records one completed integration warning
+/*
+ * Shared state for one integration check. `report` records one completed integration warning;
+ * its qualifier is null for every code except `MOLDEA_INTEGRATION_LINK_UNRESOLVED`.
+ */
 export interface IIntegrationInspectionContext {
   readonly instructions: IRepositoryInstructionView;
   readonly ledger: IRetainedMemory;
@@ -43,6 +37,7 @@ export interface IIntegrationInspectionContext {
     code: ICoreWarningCode,
     subject: IRepositoryPath,
     details: Record<string, string>,
+    qualifier?: IUnresolvedLinkState,
   ) => void;
   readonly signal?: AbortSignal;
 }
@@ -50,4 +45,4 @@ export interface IIntegrationInspectionContext {
 // what root AGENTS.md is, as the Claude Code check needs it to recognize links to it
 export type IAgentsInstructionTarget =
   | { readonly kind: 'directory' | 'file' | 'missing' }
-  | { readonly kind: 'link'; readonly resolution: IRepositoryLinkResolution | null };
+  | { readonly kind: 'link'; readonly resolution: IRepositoryLinkResolution };

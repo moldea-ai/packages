@@ -132,6 +132,29 @@ class GitContentTransformationGuardRepositoryReader implements IRepositoryReader
   }
 
   /**
+   * Reads a link's stored text unchanged, because Git applies no content transformation to links.
+   * @param path The validated repository path of the symlink entry.
+   * @param options Optional cancellation controls.
+   * @returns A promise resolving to the text, or `null` past 4096 UTF-8 bytes or for invalid UTF-8.
+   * @throws
+   * - INVALID_REPOSITORY_PATH: The repository path is invalid.
+   * - ENTRY_NOT_FOUND: The requested repository entry was not found.
+   * - ENTRY_NOT_LINK: The requested repository entry is not a symlink.
+   * - ACCESS_DENIED: Access to the repository source was denied.
+   * - SOURCE_UNAVAILABLE: The repository source is unavailable.
+   * - SNAPSHOT_CHANGED: The repository snapshot changed during the operation.
+   * - INVALID_SOURCE_DATA: The repository source returned invalid data.
+   * - RESOURCE_LIMIT_EXCEEDED: A repository reading resource limit was exceeded.
+   * - ABORTED: The repository operation was aborted.
+   */
+  public readLinkText(
+    path: IRepositoryPath,
+    options?: IRepositoryOperationOptions,
+  ): Promise<string | null> {
+    return this.#reader.readLinkText(path, options);
+  }
+
+  /**
    * Recursively lists entries without changing the underlying logical inventory.
    * @param options Optional prefix and cancellation controls.
    * @returns The underlying async iterable of detached repository entries.

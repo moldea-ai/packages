@@ -39,7 +39,6 @@ export type {
   IProjectInspectionPageResult,
   IProjectInspectionResourceUsage,
   IProjectInspectionView,
-  IProjectInstructionSource,
   IProjectSummaryCounts,
   IProjectValidationInput,
   IProjectValidationResult,

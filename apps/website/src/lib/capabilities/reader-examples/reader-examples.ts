@@ -50,7 +50,7 @@ export const createReaderExamples = async (): Promise<ICapabilityCase[]> => {
   const repository = createMemoryRepositoryReader([
     { path: policyPath, type: 'file', content },
     { path: '/scratch', type: 'directory' },
-    { path: '/shortcut', type: 'symlink' },
+    { path: '/shortcut', target: 'policy.md', type: 'symlink' },
   ]);
   content.fill(0);
   const firstBytes = await repository.readFilePage(policyPath, { offset: 0, maxBytes: 2 });

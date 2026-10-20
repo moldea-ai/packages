@@ -21,6 +21,7 @@ import { createFilesystemRepositoryTestFixtures } from './factory.test-fixtures.
 import { createFilesystemRepositoryReader } from './filesystem-repository-reader.js';
 
 const fixtures = await createFilesystemRepositoryTestFixtures();
+const isWindows = process.platform === 'win32';
 
 afterAll(async () => {
   await fixtures.cleanup();
@@ -86,7 +87,9 @@ describeRepositoryReaderConformance('filesystem', {
   parsePath: parseRepositoryPath,
   rootPath: REPOSITORY_ROOT,
   symlinkPath: '/link',
+  symlinkText: fixtures.primary.symlinkText,
   unicodePath: fixtures.primary.unicodePath,
+  unreadableSymlinkPaths: [],
 });
 
 describe('filesystem repository reader', () => {
@@ -318,17 +321,147 @@ describe('filesystem repository reader', () => {
   });
 
   test('does not traverse a descendant symlink during exact lookup', async () => {
+    const suiteDirectory = await mkdtemp(path.join(tmpdir(), 'moldea-no-traversal-'));
+    const rootDirectory = path.join(suiteDirectory, 'root');
+    const outsideDirectory = path.join(suiteDirectory, 'outside');
     const redirectedPath = parseRepositoryPath('/link/deep/data.bin');
-    const reader = await createFilesystemRepositoryReader({
-      rootDirectory: fixtures.primary.rootDirectory,
-      selection: { kind: 'directory' },
+
+    try {
+      await mkdir(rootDirectory);
+      await mkdir(path.join(outsideDirectory, 'deep'), { recursive: true });
+      await writeFile(path.join(outsideDirectory, 'deep', 'data.bin'), 'outside content');
+      await symlink(
+        outsideDirectory,
+        path.join(rootDirectory, 'link'),
+        isWindows ? 'junction' : 'dir',
+      );
+      const reader = await createFilesystemRepositoryReader({
+        rootDirectory,
+        selection: { kind: 'directory' },
+      });
+
+      await expect(reader.getEntry(parseRepositoryPath('/link'))).resolves.toMatchObject({
+        type: 'symlink',
+      });
+      await expect(reader.getEntry(redirectedPath)).resolves.toBeNull();
+      await expectToRejectCode(
+        reader.readFilePage(redirectedPath, { maxBytes: 1, offset: 0 }),
+        'ENTRY_NOT_FOUND',
+      );
+    } finally {
+      await rm(suiteDirectory, { force: true, recursive: true });
+    }
+  });
+
+  describe('readLinkText', () => {
+    const createLinkRoot = async (
+      prefix: string,
+    ): Promise<{ readonly rootDirectory: string; readonly suiteDirectory: string }> => {
+      const suiteDirectory = await mkdtemp(path.join(tmpdir(), prefix));
+      const rootDirectory = path.join(suiteDirectory, 'root');
+      await mkdir(rootDirectory);
+
+      return { rootDirectory, suiteDirectory };
+    };
+
+    test("returns a dangling link's text without observing its target", async () => {
+      const { rootDirectory, suiteDirectory } = await createLinkRoot('moldea-link-text-');
+
+      try {
+        await symlink(
+          'missing/AGENTS.md',
+          path.join(rootDirectory, 'AGENTS.md'),
+          isWindows ? 'file' : undefined,
+        );
+        const reader = await createFilesystemRepositoryReader({
+          rootDirectory,
+          selection: { kind: 'paths', paths: [parseRepositoryPath('/AGENTS.md')] },
+        });
+
+        await expect(reader.readLinkText(parseRepositoryPath('/AGENTS.md'))).resolves.toBe(
+          'missing/AGENTS.md',
+        );
+        await expectToRejectCode(
+          reader.readLinkText(parseRepositoryPath('/CLAUDE.md')),
+          'ENTRY_NOT_FOUND',
+        );
+      } finally {
+        await rm(suiteDirectory, { force: true, recursive: true });
+      }
     });
 
-    await expect(reader.getEntry(redirectedPath)).resolves.toBeNull();
-    await expectToRejectCode(
-      reader.readFilePage(redirectedPath, { maxBytes: 1, offset: 0 }),
-      'ENTRY_NOT_FOUND',
+    test('rejects an unselected link and a link replaced after observation', async () => {
+      const { rootDirectory, suiteDirectory } = await createLinkRoot('moldea-link-drift-');
+      const linkPath = path.join(rootDirectory, 'CLAUDE.md');
+
+      try {
+        await writeFile(path.join(rootDirectory, 'AGENTS.md'), '# Agents\n');
+        await symlink('AGENTS.md', linkPath, isWindows ? 'file' : undefined);
+        const selected = await createFilesystemRepositoryReader({
+          rootDirectory,
+          selection: { kind: 'paths', paths: [parseRepositoryPath('/AGENTS.md')] },
+        });
+        const reader = await createFilesystemRepositoryReader({
+          rootDirectory,
+          selection: { kind: 'directory' },
+        });
+
+        await expectToRejectCode(
+          selected.readLinkText(parseRepositoryPath('/CLAUDE.md')),
+          'ENTRY_NOT_FOUND',
+        );
+        await expect(reader.readLinkText(parseRepositoryPath('/CLAUDE.md'))).resolves.toBe(
+          'AGENTS.md',
+        );
+        await rm(linkPath);
+        await symlink('docs/AGENTS.md', linkPath, isWindows ? 'file' : undefined);
+        await expectToRejectCode(
+          reader.readLinkText(parseRepositoryPath('/CLAUDE.md')),
+          'SNAPSHOT_CHANGED',
+        );
+      } finally {
+        await rm(suiteDirectory, { force: true, recursive: true });
+      }
+    });
+
+    test.runIf(process.platform === 'linux')(
+      'returns null for link text that is not valid UTF-8',
+      async () => {
+        const { rootDirectory, suiteDirectory } = await createLinkRoot('moldea-link-bytes-');
+
+        try {
+          await symlink(Buffer.from([0x61, 0xff, 0x62]), path.join(rootDirectory, 'AGENTS.md'));
+          const reader = await createFilesystemRepositoryReader({
+            rootDirectory,
+            selection: { kind: 'directory' },
+          });
+
+          await expect(reader.readLinkText(parseRepositoryPath('/AGENTS.md'))).resolves.toBeNull();
+        } finally {
+          await rm(suiteDirectory, { force: true, recursive: true });
+        }
+      },
     );
+
+    test.runIf(isWindows)('converts Windows separators to the stored Git form', async () => {
+      const { rootDirectory, suiteDirectory } = await createLinkRoot('moldea-link-windows-');
+
+      try {
+        await mkdir(path.join(rootDirectory, 'docs'));
+        await writeFile(path.join(rootDirectory, 'docs', 'AGENTS.md'), '# Agents\n');
+        await symlink('docs\\AGENTS.md', path.join(rootDirectory, 'AGENTS.md'), 'file');
+        const reader = await createFilesystemRepositoryReader({
+          rootDirectory,
+          selection: { kind: 'directory' },
+        });
+
+        await expect(reader.readLinkText(parseRepositoryPath('/AGENTS.md'))).resolves.toBe(
+          'docs/AGENTS.md',
+        );
+      } finally {
+        await rm(suiteDirectory, { force: true, recursive: true });
+      }
+    });
   });
 
   test('rejects a selected root replaced by a symlink before reading outside files', async () => {

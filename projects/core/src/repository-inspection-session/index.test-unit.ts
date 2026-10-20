@@ -91,6 +91,8 @@ const createReader = (overrides: IReaderOverrides = {}): IRepositoryReader => {
     compare: (candidate: IRepositoryReader, options?: IRepositoryOperationOptions) =>
       base.compare(candidate, options),
     getEntry: overrides.getEntry ?? (() => Promise.resolve(null)),
+    readLinkText: (path: IRepositoryPath, options?: IRepositoryOperationOptions) =>
+      base.readLinkText(path, options),
     listEntriesPage: async (
       options: IRepositoryEntryPageOptions,
     ): Promise<IRepositoryEntryPage> => {

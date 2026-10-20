@@ -13,6 +13,7 @@ import type {
 import { createRepositoryCursor, decodeRepositoryCursor } from './cursor.js';
 import { RepositorySourceException, type IRepositoryOperation } from './exceptions.js';
 import { createRepositoryIdentity } from './identity.js';
+import { REPOSITORY_LINK_TEXT_MAX_BYTES } from './links.js';
 import { parsePageOffset, parsePositivePageInteger } from './page-validation.js';
 import {
   REPOSITORY_ROOT,
@@ -22,7 +23,7 @@ import {
 } from './repository-path.js';
 import { hasOnlyUnicodeScalarValues } from './unicode.js';
 
-// accepted file, directory, and symlink definitions for an in-memory snapshot
+// accepted file, directory, and symlink definitions for an in-memory snapshot; a symlink stores its text
 export type IMemoryRepositoryEntry =
   | {
       readonly content: string | Uint8Array;
@@ -35,6 +36,7 @@ export type IMemoryRepositoryEntry =
     }
   | {
       readonly path: string;
+      readonly target: string;
       readonly type: 'symlink';
     };
 
@@ -47,7 +49,12 @@ type IStoredRepositoryEntry =
     }
   | {
       readonly path: IRepositoryPath;
-      readonly type: 'directory' | 'symlink';
+      readonly type: 'directory';
+    }
+  | {
+      readonly path: IRepositoryPath;
+      readonly target: string;
+      readonly type: 'symlink';
     };
 
 const encoder = new TextEncoder();
@@ -129,8 +136,18 @@ const normalizeEntry = (candidate: unknown): IStoredRepositoryEntry => {
     throw invalidSourceData(path);
   }
 
-  if (entry['type'] === 'directory' || entry['type'] === 'symlink') {
-    return { path, type: entry['type'] };
+  if (entry['type'] === 'directory') {
+    return { path, type: 'directory' };
+  }
+
+  if (entry['type'] === 'symlink') {
+    const target = entry['target'];
+
+    if (typeof target !== 'string' || !hasOnlyUnicodeScalarValues(target)) {
+      throw invalidSourceData(path);
+    }
+
+    return { path, target, type: 'symlink' };
   }
 
   if (entry['type'] !== 'file') {
@@ -221,6 +238,8 @@ const getSnapshotIdentityParts = function* (
 
     if (entry.type === 'file') {
       yield entry.content;
+    } else if (entry.type === 'symlink') {
+      yield encoder.encode(entry.target);
     }
   }
 };
@@ -453,6 +472,38 @@ class MemoryRepositoryReader implements IRepositoryReader {
       snapshot: this.snapshot,
       totalBytes: entry.content.byteLength,
     };
+  }
+
+  public async readLinkText(
+    path: IRepositoryPath,
+    options?: IRepositoryOperationOptions,
+  ): Promise<string | null> {
+    const parsedPath = parseRepositoryPath(path);
+    await Promise.resolve();
+    throwIfAborted(options?.signal, 'read-link-text', parsedPath);
+    const entry = this.#entries.get(parsedPath);
+
+    if (entry === undefined) {
+      throw new RepositorySourceException({
+        code: 'ENTRY_NOT_FOUND',
+        operation: 'read-link-text',
+        path: parsedPath,
+        retryable: false,
+      });
+    }
+
+    if (entry.type !== 'symlink') {
+      throw new RepositorySourceException({
+        code: 'ENTRY_NOT_LINK',
+        operation: 'read-link-text',
+        path: parsedPath,
+        retryable: false,
+      });
+    }
+
+    return encoder.encode(entry.target).byteLength > REPOSITORY_LINK_TEXT_MAX_BYTES
+      ? null
+      : entry.target;
   }
 }
 

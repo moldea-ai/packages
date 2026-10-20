@@ -1,17 +1,26 @@
-import { parseRepositoryPath } from '@moldea.ai/repository';
+import { parseRepositoryPath, resolveRepositoryLink } from '@moldea.ai/repository';
 
 import type { IRetainedSource } from '../retained-memory/index.js';
 
 import { parseIntegrationBlock, parseManagedIntegrationRegion } from './parser.js';
-import type { IAgentsInstructionTarget, IIntegrationInspectionContext } from './types.js';
-import { getAbsentKind, getUnreadableLinkState, readRetainedText } from './utilities.js';
+import type {
+  IAgentsInstructionTarget,
+  IIntegrationInspectionContext,
+  IUnresolvedLinkState,
+} from './types.js';
+import { getAbsentKind, readRetainedText } from './utilities.js';
 
 const AGENTS_PATH = parseRepositoryPath('/AGENTS.md');
 
 type IReport = (
   code: Parameters<IIntegrationInspectionContext['report']>[0],
   details: Record<string, string>,
+  qualifier?: IUnresolvedLinkState,
 ) => void;
+
+/** Reports an AGENTS.md link that doesn't lead to a file, with its reason as the qualifier. */
+const reportUnresolvedLink = (report: IReport, reason: IUnresolvedLinkState): void =>
+  report('MOLDEA_INTEGRATION_LINK_UNRESOLVED', { entryKind: 'symlink', reason }, reason);
 
 /**
  * Checks one readable AGENTS.md text against its referenced skill installation.
@@ -40,7 +49,7 @@ const checkAgentsDocument = async (
     const absentKind = getAbsentKind(error);
     if (absentKind === null) throw error;
     return entryDetails['entryKind'] === 'symlink'
-      ? report('MOLDEA_INTEGRATION_UNVERIFIED', { entryKind: 'symlink', linkState: 'not-file' })
+      ? reportUnresolvedLink(report, absentKind === 'missing' ? 'missing' : 'not-file')
       : report('MOLDEA_INTEGRATION_BLOCK_MISSING', { entryKind: absentKind });
   }
   try {
@@ -116,9 +125,9 @@ const checkAgentsDocument = async (
 };
 
 /**
- * Checks root AGENTS.md against its referenced skill installation. A symlinked AGENTS.md whose
- * final target is a readable regular file, inside or outside the repository, is checked on the
- * target text; any other link is reported as unverifiable without reading it.
+ * Checks root AGENTS.md against its referenced skill installation. A symlinked AGENTS.md that
+ * leads to a regular file in the repository is checked on that file's text; any other link is
+ * reported with its reason, without reading anything outside the repository.
  * @param context The instruction view, repository reader, ledger, and warning recorder.
  * @returns What AGENTS.md is, including its link resolution, for the Claude Code check.
  * @throws
@@ -135,7 +144,8 @@ export const inspectAgentsIntegration = async (
   context: IIntegrationInspectionContext,
 ): Promise<IAgentsInstructionTarget> => {
   const { instructions } = context;
-  const report: IReport = (code, details) => context.report(code, AGENTS_PATH, details);
+  const report: IReport = (code, details, qualifier) =>
+    context.report(code, AGENTS_PATH, details, qualifier);
   const entry = await instructions.getEntry(AGENTS_PATH);
 
   if (entry === null) {
@@ -155,21 +165,15 @@ export const inspectAgentsIntegration = async (
     return { kind: 'file' };
   }
 
-  const resolution = await instructions.resolveLink(AGENTS_PATH);
-  const linkState = getUnreadableLinkState(resolution);
+  const resolution = await resolveRepositoryLink(instructions, AGENTS_PATH);
 
-  if (linkState !== null || resolution === null) {
-    report('MOLDEA_INTEGRATION_UNVERIFIED', {
+  if (resolution.state === 'file') {
+    const { targetPath } = resolution;
+    await checkAgentsDocument(context, report, () => instructions.readSourceFile(targetPath), {
       entryKind: 'symlink',
-      linkState: linkState ?? 'unavailable',
     });
   } else {
-    await checkAgentsDocument(
-      context,
-      report,
-      () => instructions.readLinkedSourceFile(AGENTS_PATH),
-      { entryKind: 'symlink', linkTarget: resolution.state },
-    );
+    reportUnresolvedLink(report, resolution.state);
   }
 
   return { kind: 'link', resolution };

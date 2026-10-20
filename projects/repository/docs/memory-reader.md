@@ -15,7 +15,7 @@ import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';
 const reader = createMemoryRepositoryReader([
   { path: '/moldea/moldea.yaml', type: 'file', content: 'version: 1\n' },
   { path: '/empty-directory', type: 'directory' },
-  { path: '/link', type: 'symlink' },
+  { path: '/link', target: 'moldea/moldea.yaml', type: 'symlink' },
 ]);
 
 const page = await reader.readFilePage(parseRepositoryPath('/moldea/moldea.yaml'), {
@@ -24,7 +24,7 @@ const page = await reader.readFilePage(parseRepositoryPath('/moldea/moldea.yaml'
 });
 ```
 
-Construction validates the complete input, copies file buffers, and synthesizes missing parent directories. Conflicting paths, invalid entry shapes, impossible hierarchies, and duplicate definitions fail atomically with `INVALID_SOURCE_DATA`.
+Construction validates the complete input, copies file buffers, and synthesizes missing parent directories. A symlink stores its text as `target`, which `readLinkText` returns and the snapshot identity includes. Conflicting paths, invalid entry shapes, impossible hierarchies, and duplicate definitions fail atomically with `INVALID_SOURCE_DATA`.
 
 Snapshot identity is hashed incrementally, so identity construction does not retain a second encoded copy of the repository. The immutable reader stores one ordered entry index, returns detached metadata and byte ranges, and never observes later caller mutations.
 

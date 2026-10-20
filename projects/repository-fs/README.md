@@ -4,17 +4,17 @@
 
 Lazy, bounded Node.js filesystem access through `@moldea.ai/repository` version 2.
 
-The version 2 reader validates an explicit root and selection, observes entries only as operations need them, returns deterministic metadata pages and byte ranges, enforces independent memory and work limits, and fails when an already-observed source identity changes. It does not build or retain an eager repository-wide inventory.
+The version 3 reader validates an explicit root and selection, observes entries only as operations need them, returns deterministic metadata pages and byte ranges, enforces independent memory and work limits, and fails when an already-observed source identity changes. It does not build or retain an eager repository-wide inventory.
 
 ## Install
 
 ```bash
-pnpm add @moldea.ai/repository@2 @moldea.ai/repository-fs@2
+pnpm add @moldea.ai/repository@3 @moldea.ai/repository-fs@3
 ```
 
 ## Responsibility
 
-The reader is read-only and Git-agnostic. Callers provide an absolute host root and choose exact logical paths or recursive directory access. The package does not discover a repository, interpret Git rules, execute content filters, parse `moldea`, or expose host paths. It treats stable descendant symlinks as metadata instead of traversing them; only the separate link resolver follows a link, and only for an entry a caller names.
+The reader is read-only and Git-agnostic. Callers provide an absolute host root and choose exact logical paths or recursive directory access. The package does not discover a repository, interpret Git rules, execute content filters, parse `moldea`, or expose host paths. It treats stable descendant symlinks as metadata instead of traversing them, and `readLinkText` reads a link's own text without its target.
 
 Directory selection includes every eligible raw entry reached by the requested pages. It may expose ignored files, credentials, dependencies, caches, and generated output. Trust-sensitive callers should derive an exact path selection outside this package.
 
@@ -52,29 +52,24 @@ Version `2.0.3` groups exact selections by parent. One bounded scan proves the s
 
 Exact-name lookups skip sibling entries whose names cannot be decoded or validated. Those entries still count against `maxDirectoryEntries`; full directory listings reject them.
 
-## Link resolver
+## Link text
 
-`createFilesystemRepositoryLinkResolver(reader)` returns the Repository `IRepositoryLinkResolver` for a reader this package created. It shares the reader's snapshot, root checks, operation gate, and limits, and follows only the symlink entries a caller names:
+`readLinkText(path)` returns the exact text stored for a selected symlink or junction. It observes the path without following it, reads the text with `readlink` inside the reader's operation gate, and never opens or resolves the target. On Windows it converts `\` to `/`, the form Git stores. Text longer than 4096 UTF-8 bytes, or not valid UTF-8, returns `null`. A link replaced after it was observed fails with `SNAPSHOT_CHANGED`.
+
+To follow links inside the repository, pass the reader to Repository's `resolveRepositoryLink`:
 
 ```typescript
-import { parseRepositoryPath } from '@moldea.ai/repository';
-import {
-  createFilesystemRepositoryLinkResolver,
-  createFilesystemRepositoryReader,
-} from '@moldea.ai/repository-fs';
+import { parseRepositoryPath, resolveRepositoryLink } from '@moldea.ai/repository';
+import { createFilesystemRepositoryReader } from '@moldea.ai/repository-fs';
 
-const instructionPath = parseRepositoryPath('/AGENTS.md');
-const instructionReader = await createFilesystemRepositoryReader({
+const reader = await createFilesystemRepositoryReader({
   rootDirectory: '/absolute/path/to/repository',
-  selection: { kind: 'paths', paths: [instructionPath] },
+  selection: { kind: 'directory' },
 });
-const resolver = createFilesystemRepositoryLinkResolver(instructionReader);
-const resolution = await resolver.resolveLink(instructionPath);
+const resolution = await resolveRepositoryLink(reader, parseRepositoryPath('/AGENTS.md'));
 
 void resolution;
 ```
-
-The resolver walks a chain one link and one component at a time instead of calling `realpath`. On POSIX, `..` moves to the parent of the directory reached so far, exactly as the operating system resolves it; on Windows, relative link text resolves against the link's directory, as Windows does. It refuses UNC, device-namespace, and drive-relative Windows paths and the automount roots `/net` and `/Network` with `unsafe`, checking each link's text, its textual candidate, and every path reached before any filesystem call beneath it. More than 32 hops is `loop`. Resolved targets carry an HMAC identity under a per-resolver key, and `readLinkTargetPage` proves the opened handle is the resolved target before and after each bounded read. Results and exceptions never contain host paths or link text. A network filesystem already mounted at an ordinary path cannot be recognized from its path; reads there stay bounded and content-free.
 
 ## Default limits
 
@@ -116,4 +111,4 @@ pnpm --filter @moldea.ai/repository-fs test:integration
 pnpm --filter @moldea.ai/repository-fs test
 ```
 
-Unit and integration tests cover resource ceilings, cursor integrity, snapshot drift, symlink boundaries, cancellation, cache eviction, cross-platform path behavior, and the shared repository reader and link-resolver conformance contracts. Link tests use real file links, directory links, and Windows junctions, and check every result against the file the operating system opens through the link. Real 256-, 1,024-, and 4,096-file cases also verify selected-parent and traversal-frame scan reuse without per-child directory scans.
+Unit and integration tests cover resource ceilings, cursor integrity, snapshot drift, symlink boundaries, cancellation, cache eviction, cross-platform path behavior, and the shared repository reader conformance contract. Link-text tests use real links, including invalid UTF-8 text on Linux and separator conversion on Windows. Real 256-, 1,024-, and 4,096-file cases also verify selected-parent and traversal-frame scan reuse without per-child directory scans.

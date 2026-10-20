@@ -7,6 +7,7 @@ import {
   REPOSITORY_ROOT,
   RepositorySourceException,
   parseRepositoryPath,
+  resolveRepositoryLink,
 } from '@moldea.ai/repository';
 import * as repositoryFilesystem from '@moldea.ai/repository-fs';
 
@@ -35,7 +36,6 @@ const collectEntries = async (reader) => {
 
 assert.deepStrictEqual(Object.keys(repositoryFilesystem).sort(), [
   'DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS',
-  'createFilesystemRepositoryLinkResolver',
   'createFilesystemRepositoryReader',
 ]);
 assert.deepStrictEqual(repositoryFilesystem.DEFAULT_FILESYSTEM_REPOSITORY_RESOURCE_LIMITS, {
@@ -68,21 +68,14 @@ try {
 
   const linkReader = await repositoryFilesystem.createFilesystemRepositoryReader({
     rootDirectory,
-    selection: { kind: 'paths', paths: [linkPath] },
+    selection: { kind: 'paths', paths: [filePath, linkPath] },
   });
-  const linkResolver = repositoryFilesystem.createFilesystemRepositoryLinkResolver(linkReader);
-  const linkResolution = await linkResolver.resolveLink(linkPath);
 
-  assert.equal(Object.isFrozen(linkResolver), true);
-  assert.deepStrictEqual(linkResolver.snapshot, linkReader.snapshot);
-  assert.deepStrictEqual(
-    { ...linkResolution, targetIdentity: typeof linkResolution.targetIdentity },
-    { state: 'inside', targetIdentity: 'string', targetPath: filePath, targetType: 'file' },
-  );
-  assert.deepStrictEqual(
-    (await linkResolver.readLinkTargetPage(linkPath, { maxBytes: 4, offset: 0 })).bytes,
-    fileBytes,
-  );
+  assert.equal(await linkReader.readLinkText(linkPath), 'fixture.bin');
+  assert.deepStrictEqual(await resolveRepositoryLink(linkReader, linkPath), {
+    state: 'file',
+    targetPath: filePath,
+  });
 
   const reader = await repositoryFilesystem.createFilesystemRepositoryReader({
     rootDirectory,
@@ -93,6 +86,7 @@ try {
   assert.equal(typeof reader.getEntry, 'function');
   assert.equal(typeof reader.listEntriesPage, 'function');
   assert.equal(typeof reader.readFilePage, 'function');
+  assert.equal(typeof reader.readLinkText, 'function');
   assert.equal(typeof reader.compare, 'function');
   assert.deepStrictEqual(await reader.getEntry(REPOSITORY_ROOT), {
     byteLength: null,

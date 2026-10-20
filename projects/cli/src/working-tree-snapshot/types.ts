@@ -1,4 +1,3 @@
-import type { IProjectInstructionSource } from '@moldea.ai/core';
 import type { IRepositoryPath, IRepositoryReader } from '@moldea.ai/repository';
 
 import type { IMoldeaCliResourceLimits } from '../command-line/index.js';
@@ -9,7 +8,7 @@ import type { IMoldeaCliOwnedErrorCode } from '../presentation/index.js';
 export type IWorkingTreeSnapshotOperation<TResult> = (
   reader: IRepositoryReader,
   signal?: AbortSignal,
-  instructions?: IProjectInstructionSource,
+  instructions?: IRepositoryReader,
 ) => Promise<TResult>;
 
 /*

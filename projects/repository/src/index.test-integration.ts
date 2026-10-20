@@ -142,7 +142,7 @@ describe('published package artifacts', () => {
     ) as IRepositoryPackageManifest;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/repository', version: '2.1.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/repository', version: '3.0.0' });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/memory.js');
@@ -208,6 +208,8 @@ describe('published package artifacts', () => {
     expect(JSON.parse(output)).toStrictEqual({
       memory: ['createMemoryRepositoryReader'],
       root: [
+        'REPOSITORY_LINK_MAX_HOPS',
+        'REPOSITORY_LINK_TEXT_MAX_BYTES',
         'REPOSITORY_ROOT',
         'RepositoryPathException',
         'RepositorySourceException',
@@ -216,6 +218,7 @@ describe('published package artifacts', () => {
         'createRepositoryIdentity',
         'isRepositoryPath',
         'parseRepositoryPath',
+        'resolveRepositoryLink',
       ],
     });
   });
@@ -224,7 +227,6 @@ describe('published package artifacts', () => {
     const repositoryTesting = await import('@moldea.ai/repository/testing');
 
     expect(Object.keys(repositoryTesting).sort()).toStrictEqual([
-      'describeRepositoryLinkResolverConformance',
       'describeRepositoryReaderConformance',
     ]);
   });
@@ -239,8 +241,9 @@ describe('published package artifacts', () => {
     const allDeclarations = readDistributionFiles('.d.ts').join('\n');
 
     expect(indexDeclaration).toContain('IRepositoryReader');
-    expect(indexDeclaration).toContain('IRepositoryLinkResolver');
     expect(indexDeclaration).toContain('IRepositoryLinkResolution');
+    expect(indexDeclaration).toContain('IRepositoryLinkSource');
+    expect(indexDeclaration).toContain('resolveRepositoryLink');
     expect(indexDeclaration).toContain('parseRepositoryPath');
     expect(memoryDeclaration).toContain('IMemoryRepositoryEntry');
     expect(memoryDeclaration).toContain('createMemoryRepositoryReader');
@@ -250,8 +253,6 @@ describe('published package artifacts', () => {
     expect(testingDeclaration).toContain('IRepositoryReaderConformanceReader');
     expect(testingDeclaration).toContain('IRepositoryReaderSnapshotMutationFixture');
     expect(testingDeclaration).toContain('describeRepositoryReaderConformance');
-    expect(testingDeclaration).toContain('IRepositoryLinkResolverConformanceFixture');
-    expect(testingDeclaration).toContain('describeRepositoryLinkResolverConformance');
     expect(allDeclarations).not.toMatch(/from ['"]@moldea\.ai\//u);
     expect(allDeclarations).not.toContain('packages/');
   });

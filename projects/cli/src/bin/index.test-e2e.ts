@@ -268,7 +268,7 @@ describe('published CLI package and executable', () => {
     const manifest = readCliPackageManifest();
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '11.1.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '12.0.0' });
     expect(packedPaths).toContain('dist/moldea.js');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
@@ -285,7 +285,7 @@ describe('published CLI package and executable', () => {
       ),
     ).toBe(true);
     expect(packedPaths.every((filePath) => !filePath.includes('.test-'))).toBe(true);
-    expectPackageManifest(manifest, 'workspace:^7.1.0', 'workspace:^2.1.0', 'workspace:^2.1.0');
+    expectPackageManifest(manifest, 'workspace:^8.0.0', 'workspace:^3.0.0', 'workspace:^3.0.0');
     const executable = readFileSync(CLI_DISTRIBUTION_PATH, 'utf8');
     const executableChunks = packedPaths
       .filter((filePath) => filePath.startsWith('dist/chunks/') && filePath.endsWith('.js'))
@@ -318,7 +318,7 @@ describe('published CLI package and executable', () => {
       ) as IMoldeaCliPackageManifest;
       const executable = readTarEntry(tarball, 'package/dist/moldea.js').toString('utf8');
 
-      expectPackageManifest(manifest, '^7.1.0', '^2.1.0', '^2.1.0');
+      expectPackageManifest(manifest, '^8.0.0', '^3.0.0', '^3.0.0');
       expect(executable.startsWith('#!/usr/bin/env node\n')).toBe(true);
       expect(executable).toContain('import("./chunks/');
     } finally {
@@ -592,35 +592,61 @@ describe('published CLI package and executable', () => {
       );
       executable = path.join(directory, 'node_modules', '@moldea.ai', 'cli', 'dist', 'moldea.js');
       writeFileSync(path.join(directory, 'shared.md'), block);
+      const materialize = (repository: string, name: string, target: string): void => {
+        const blob = git(repository, ['hash-object', '-w', '--stdin'], target).trim();
+        git(repository, ['update-index', '--add', '--cacheinfo', `120000,${blob},${name}`]);
+        git(repository, ['config', 'core.symlinks', 'false']);
+        git(repository, ['checkout', '--', name]);
+      };
 
-      // a healthy installation: a regular file, an inside link, and outside links
+      // a healthy installation: a regular file, an inside link, and a Git-materialized inside link
       const regular = createRepository('regular', { '/AGENTS.md': block });
       const inside = createRepository('inside', {
         '/.gitignore': '/AGENTS.md\n',
         '/docs/AGENTS.md': block,
       });
       link(inside, 'AGENTS.md', path.join('docs', 'AGENTS.md'));
+      const materializedInside = createRepository('materialized-inside', {
+        '/docs/AGENTS.md': block,
+      });
+      materialize(materializedInside, 'AGENTS.md', 'docs/AGENTS.md');
+      for (const repository of [regular, inside, materializedInside]) {
+        const { envelope, status } = run(repository, ['validate']);
+        expect(status, repository).toBe(0);
+        expect(envelope.result.warningCount, repository).toBe(0);
+      }
+
+      // links that don't lead to a file in the repository report their reason, never the target
       const ignoredOutside = createRepository('ignored-outside', {
         '/.gitignore': '/AGENTS.md\n',
         '/CLAUDE.md': '# Claude\n@AGENTS.md\n',
       });
       link(ignoredOutside, 'AGENTS.md', path.join('..', 'shared.md'));
       git(ignoredOutside, ['add', '--', 'CLAUDE.md']);
-      const untrackedOutside = createRepository('untracked-outside', {});
-      link(untrackedOutside, 'AGENTS.md', path.join('..', 'shared.md'));
       const trackedOutside = createRepository('tracked-outside', {});
       link(trackedOutside, 'AGENTS.md', path.join('..', 'shared.md'));
       git(trackedOutside, ['add', '--', 'AGENTS.md']);
-      for (const repository of [
-        regular,
-        inside,
-        ignoredOutside,
-        untrackedOutside,
-        trackedOutside,
-      ]) {
-        const { envelope, status } = run(repository, ['validate']);
-        expect(status, repository).toBe(0);
-        expect(envelope.result.warningCount, repository).toBe(0);
+      const materializedOutside = createRepository('materialized-outside', {});
+      materialize(materializedOutside, 'AGENTS.md', '../shared.md');
+      const missing = createRepository('missing', {});
+      link(missing, 'AGENTS.md', path.join('docs', 'missing.md'));
+      for (const [repository, reason] of [
+        [ignoredOutside, 'outside'],
+        [trackedOutside, 'outside'],
+        [materializedOutside, 'outside'],
+        [missing, 'missing'],
+      ] as const) {
+        const records = integrationRecords(repository);
+        expect(records, repository).toMatchObject([
+          {
+            code: 'MOLDEA_INTEGRATION_LINK_UNRESOLVED',
+            message: "This instruction file's link doesn't lead to a file in the repository.",
+            qualifier: reason,
+            subject: '/AGENTS.md',
+          },
+        ]);
+        expect(records, repository).toHaveLength(1);
+        expect(Object.keys(records[0] ?? {})).not.toContain('details');
       }
 
       // an ignored personal file changes only the integration result
@@ -650,6 +676,7 @@ describe('published CLI package and executable', () => {
         {
           code: 'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING',
           message: 'Claude Code instructions do not load AGENTS.md.',
+          qualifier: null,
           subject: '/CLAUDE.local.md',
         },
       ]);
@@ -657,30 +684,10 @@ describe('published CLI package and executable', () => {
         expect(Object.keys(record)).not.toContain('details');
       }
 
-      // a Git-materialized link and a broken link cannot be verified
-      const materialized = createRepository('materialized', {});
-      const blob = git(materialized, ['hash-object', '-w', '--stdin'], '../shared.md').trim();
-      git(materialized, ['update-index', '--add', '--cacheinfo', `120000,${blob},AGENTS.md`]);
-      git(materialized, ['config', 'core.symlinks', 'false']);
-      git(materialized, ['checkout', '--', 'AGENTS.md']);
-      const broken = createRepository('broken', {});
-      link(broken, 'AGENTS.md', path.join('..', 'missing.md'));
-      for (const repository of [materialized, broken]) {
-        const records = integrationRecords(repository);
-        expect(records, repository).toMatchObject([
-          {
-            code: 'MOLDEA_INTEGRATION_UNVERIFIED',
-            message: "The instruction file's moldea integration cannot be verified.",
-            subject: '/AGENTS.md',
-          },
-        ]);
-        expect(Object.keys(records[0] ?? {})).not.toContain('details');
-      }
-
-      // a page cursor is rejected once an outside target change alters the result
+      // a page cursor is rejected once a linked target inside the repository changes
       const paged = createRepository(
         'paged',
-        {},
+        { '/docs/paged.md': block },
         {
           version: 1,
           context: {
@@ -690,11 +697,10 @@ describe('published CLI package and executable', () => {
           },
         },
       );
-      writeFileSync(path.join(directory, 'paged-shared.md'), block);
-      link(paged, 'AGENTS.md', path.join('..', 'paged-shared.md'));
+      link(paged, 'AGENTS.md', path.join('docs', 'paged.md'));
       const firstPage = run(paged, ['validate', '--max-output-bytes', '4096']).envelope.result;
       expect(firstPage.page.cursor).not.toBeNull();
-      writeFileSync(path.join(directory, 'paged-shared.md'), '# Changed\n');
+      writeFileSync(path.join(paged, 'docs', 'paged.md'), '# Changed\n');
       const stale = run(paged, [
         'validate',
         '--max-output-bytes',
@@ -921,7 +927,7 @@ describe('published CLI package and executable', () => {
           cwd: consumerDirectory,
           encoding: 'utf8',
         }),
-      ).toBe('11.1.0\n');
+      ).toBe('12.0.0\n');
 
       const warningRepositoryDirectory = path.join(testDirectory, 'warning-repository');
       mkdirSync(path.join(warningRepositoryDirectory, 'moldea'), { recursive: true });
@@ -1200,7 +1206,7 @@ describe('published CLI package and executable', () => {
       expect(humanComposition.status).toBe(0);
       expect(humanComposition.stderr).toBe('');
       expect(humanComposition.stdout).toContain(
-        'The installed CLI composition state is valid.\nCLI version: 11.1.0\n',
+        'The installed CLI composition state is valid.\nCLI version: 12.0.0\n',
       );
 
       const jsonComposition = spawnPackageManager(
@@ -1245,7 +1251,7 @@ describe('published CLI package and executable', () => {
       expect(jsonUsageFailure.status).toBe(2);
       expect(jsonUsageFailure.stderr).toBe('');
       expect(jsonUsageFailure.stdout).toBe(
-        '{"cliVersion":"11.1.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"12.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const nonRepositoryCommand = spawnPackageManager(
@@ -1293,7 +1299,7 @@ describe('published CLI package and executable', () => {
       expect(discoveredRepositoryCommand.stderr).toBe('');
       expect(discoveredRepositoryCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(discoveredRepositoryCommand.stdout)).toMatchObject({
-        cliVersion: '11.1.0',
+        cliVersion: '12.0.0',
         command: 'inspect',
         result: {
           counts: { diagnostics: 3, errors: 2, warnings: 1, acceptedWarnings: 0 },
@@ -1318,7 +1324,7 @@ describe('published CLI package and executable', () => {
       expect(invalidValidationCommand.stderr).toBe('');
       expect(invalidValidationCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(invalidValidationCommand.stdout)).toMatchObject({
-        cliVersion: '11.1.0',
+        cliVersion: '12.0.0',
         command: 'validate',
         result: {
           diagnosticCount: 3,
@@ -1461,7 +1467,7 @@ process.exit(0);
       expect(validJsonValidationCommand.status).toBe(0);
       expect(validJsonValidationCommand.stderr).toBe('');
       expect(JSON.parse(validJsonValidationCommand.stdout)).toMatchObject({
-        cliVersion: '11.1.0',
+        cliVersion: '12.0.0',
         command: 'validate',
         result: {
           diagnosticCount: 0,
@@ -1524,7 +1530,7 @@ acceptedWarnings: 0
       expect(validJsonInspectionCommand.status).toBe(0);
       expect(validJsonInspectionCommand.stderr).toBe('');
       expect(validInspectionEnvelope).toMatchObject({
-        cliVersion: '11.1.0',
+        cliVersion: '12.0.0',
         command: 'inspect',
         error: null,
         result: {
@@ -1574,7 +1580,7 @@ acceptedWarnings: 0
       expect(unrelatedScopeCommand.stderr).toBe('');
       expect(Buffer.byteLength(unrelatedScopeCommand.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
       expect(JSON.parse(unrelatedScopeCommand.stdout)).toMatchObject({
-        cliVersion: '11.1.0',
+        cliVersion: '12.0.0',
         command: 'scope',
         result: {
           counts: { declarations: 0, inputPaths: 1, matches: 0 },
@@ -1623,7 +1629,7 @@ acceptedWarnings: 0
         expect(invalidScope.status).toBe(3);
         expect(invalidScope.stderr).toBe('');
         expect(JSON.parse(invalidScope.stdout)).toStrictEqual({
-          cliVersion: '11.1.0',
+          cliVersion: '12.0.0',
           command: 'scope',
           schemaVersion: 7,
           status: 'error',
@@ -1681,7 +1687,7 @@ acceptedWarnings: 0
       expect(explicitContentCommand.status).toBe(0);
       expect(explicitContentCommand.stderr).toBe('');
       expect(JSON.parse(explicitContentCommand.stdout)).toMatchObject({
-        cliVersion: '11.1.0',
+        cliVersion: '12.0.0',
         command: 'content',
         result: {
           asset: { path: '/moldea/project.md' },
@@ -1985,7 +1991,7 @@ acceptedWarnings: 0
       expect(inventoryLimitCommand.status).toBe(3);
       expect(inventoryLimitCommand.stderr).toBe('');
       expect(inventoryLimitCommand.stdout).toBe(
-        '{"cliVersion":"11.1.0","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"12.0.0","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const environmentWithoutPath = Object.fromEntries(
@@ -2007,7 +2013,7 @@ acceptedWarnings: 0
       expect(missingGitResult.status).toBe(3);
       expect(missingGitResult.stderr).toBe('');
       expect(missingGitResult.stdout).toBe(
-        '{"cliVersion":"11.1.0","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"12.0.0","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const compositionWithoutGit = spawnSync(

@@ -1,13 +1,13 @@
 import { Buffer } from 'node:buffer';
 
 import {
+  REPOSITORY_LINK_TEXT_MAX_BYTES,
   isRepositoryPath,
   parseRepositoryPath,
   RepositorySourceException,
   type IRepositoryEntry,
   type IRepositoryEntryPage,
   type IRepositoryFilePage,
-  type IRepositoryLinkResolution,
   type IRepositoryReader,
   type IRepositorySnapshot,
 } from '@moldea.ai/repository';
@@ -89,28 +89,15 @@ export const parseRpcEntryPage = (input: unknown): IRepositoryEntryPage => {
   };
 };
 
-const REFUSED_LINK_STATES = ['broken', 'denied', 'loop', 'unsafe'] as const;
-const LINK_TARGET_TYPES = ['directory', 'file', 'other'] as const;
-
-/** Converts one content-free link resolution without admitting fields outside the closed union. */
-export const parseRpcLinkResolution = (input: unknown): IRepositoryLinkResolution => {
-  if (!isRecord(input)) return invalidSource();
-  const refusedState = REFUSED_LINK_STATES.find((state) => state === input['state']);
-  if (input['state'] === 'not-link' || refusedState !== undefined)
-    return keysMatch(input, ['state']) ? { state: refusedState ?? 'not-link' } : invalidSource();
-  const targetType = LINK_TARGET_TYPES.find((type) => type === input['targetType']);
-  const targetIdentity = input['targetIdentity'];
-  if (targetType === undefined || typeof targetIdentity !== 'string' || targetIdentity.length === 0)
-    return invalidSource();
-  if (input['state'] === 'outside' && keysMatch(input, ['state', 'targetIdentity', 'targetType']))
-    return { state: 'outside', targetIdentity, targetType };
+/** Converts one link's stored text, admitting only text within the shared byte limit. */
+export const parseRpcLinkText = (input: unknown): string | null => {
+  if (input === null) return null;
   if (
-    input['state'] !== 'inside' ||
-    !keysMatch(input, ['state', 'targetIdentity', 'targetPath', 'targetType']) ||
-    !isRepositoryPath(input['targetPath'])
+    typeof input !== 'string' ||
+    Buffer.byteLength(input, 'utf8') > REPOSITORY_LINK_TEXT_MAX_BYTES
   )
     return invalidSource();
-  return { state: 'inside', targetIdentity, targetPath: input['targetPath'], targetType };
+  return input;
 };
 
 /** Decodes only an admitted 64 KiB binary page, never a complete repository file. */
@@ -158,14 +145,15 @@ const encodeFilePage = (page: IRepositoryFilePage, maxBytes: number): unknown =>
 };
 
 /**
- * Calls the real reader or link resolver with inspection cancellation and returns a bounded
- * transport value. Reader failures propagate unchanged to the parent inspection owner.
- * @returns A metadata value or encoded byte page after actual reader settlement.
+ * Calls the real reader with inspection cancellation and returns a bounded transport value.
+ * Reader failures propagate unchanged to the parent inspection owner.
+ * @returns A metadata value, link text, or encoded byte page after actual reader settlement.
  * @throws
  * - INVALID_REPOSITORY_PATH: The repository path is invalid.
  * - ENTRY_NOT_FOUND: The requested repository entry was not found.
  * - ENTRY_NOT_FILE: The requested repository entry is not a file.
  * - ENTRY_NOT_DIRECTORY: The requested repository entry is not a directory.
+ * - ENTRY_NOT_LINK: The requested repository entry is not a symlink.
  * - INVALID_PAGE_REQUEST: The repository page request is invalid.
  * - ACCESS_DENIED: Access to the repository source was denied.
  * - SOURCE_UNAVAILABLE: The repository source is unavailable.
@@ -180,27 +168,11 @@ export const executeRepositoryRpc = async (
   request: INodeReaderRequest,
   signal: AbortSignal,
 ): Promise<unknown> => {
-  const instructionReader = sources.instructions?.reader;
-  const linkResolver = sources.instructions?.linkResolver;
   const getReader = (source: 'instructions' | 'repository'): IRepositoryReader =>
-    source === 'repository' ? sources.repository : (instructionReader ?? invalidSource());
-  if (request.method === 'resolveLink')
-    return parseRpcLinkResolution(
-      await (linkResolver ?? invalidSource()).resolveLink(parseRepositoryPath(request.path), {
-        signal,
-      }),
-    );
-  if (request.method === 'readLinkTargetPage')
-    return encodeFilePage(
-      await (linkResolver ?? invalidSource()).readLinkTargetPage(
-        parseRepositoryPath(request.path),
-        {
-          maxBytes: request.maxBytes,
-          offset: request.offset,
-          signal,
-        },
-      ),
-      request.maxBytes,
+    source === 'repository' ? sources.repository : (sources.instructions ?? invalidSource());
+  if (request.method === 'readLinkText')
+    return parseRpcLinkText(
+      await getReader(request.source).readLinkText(parseRepositoryPath(request.path), { signal }),
     );
   if (request.method === 'getEntry')
     return parseRpcEntry(

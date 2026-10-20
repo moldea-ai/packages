@@ -1,4 +1,6 @@
 import {
+  REPOSITORY_LINK_MAX_HOPS,
+  REPOSITORY_LINK_TEXT_MAX_BYTES,
   REPOSITORY_ROOT,
   RepositoryPathException,
   RepositorySourceException,
@@ -7,12 +9,12 @@ import {
   createRepositoryIdentity,
   isRepositoryPath,
   parseRepositoryPath,
+  resolveRepositoryLink,
   type IRepositoryEntry,
   type IRepositoryEntryPageOptions,
   type IRepositoryEntryType,
   type IRepositoryLinkResolution,
-  type IRepositoryLinkResolver,
-  type IRepositoryLinkTargetType,
+  type IRepositoryLinkSource,
   type IRepositoryOperation,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
@@ -26,9 +28,7 @@ import {
   type IMemoryRepositoryEntry,
 } from '@moldea.ai/repository/memory';
 import {
-  describeRepositoryLinkResolverConformance,
   describeRepositoryReaderConformance,
-  type IRepositoryLinkResolverConformanceResolution,
   type IRepositoryReaderConformanceEntry,
 } from '@moldea.ai/repository/testing';
 
@@ -60,27 +60,19 @@ const sourceExceptionOptions: IRepositorySourceExceptionOptions = {
 };
 const memoryEntries: readonly IMemoryRepositoryEntry[] = [
   { content: new Uint8Array([1]), path: repositoryPath, type: 'file' },
+  { path: '/link.txt', target: 'file.txt', type: 'symlink' },
 ];
 const reader: IRepositoryReader = createMemoryRepositoryReader(memoryEntries);
 const conformanceEntry: IRepositoryReaderConformanceEntry<IRepositoryPath> = entry;
 const conformanceRunner: typeof describeRepositoryReaderConformance =
   describeRepositoryReaderConformance;
-const linkConformanceRunner: typeof describeRepositoryLinkResolverConformance =
-  describeRepositoryLinkResolverConformance;
-const linkTargetType: IRepositoryLinkTargetType = 'file';
-const linkResolution: IRepositoryLinkResolution = {
-  state: 'inside',
-  targetIdentity: 'fixture:target',
-  targetPath: repositoryPath,
-  targetType: linkTargetType,
-};
-const conformanceResolution: IRepositoryLinkResolverConformanceResolution<IRepositoryPath> =
-  linkResolution;
-const linkResolver: IRepositoryLinkResolver = {
-  readLinkTargetPage: (path, options) => reader.readFilePage(path, options),
-  resolveLink: async () => linkResolution,
-  snapshot: reader.snapshot,
-};
+const linkSource: IRepositoryLinkSource = reader;
+const linkResolution: Promise<IRepositoryLinkResolution> = resolveRepositoryLink(
+  linkSource,
+  parseRepositoryPath('/link.txt'),
+);
+const linkText: Promise<string | null> = reader.readLinkText(parseRepositoryPath('/link.txt'));
+const linkLimits: readonly number[] = [REPOSITORY_LINK_MAX_HOPS, REPOSITORY_LINK_TEXT_MAX_BYTES];
 const pathException = new RepositoryPathException(pathExceptionOptions);
 const sourceException = new RepositorySourceException(sourceExceptionOptions);
 const comparisonOrder: number = compareRepositoryPaths(root, repositoryPath);
@@ -97,9 +89,9 @@ void [
   reader,
   conformanceEntry,
   conformanceRunner,
-  linkConformanceRunner,
-  conformanceResolution,
-  linkResolver,
+  linkResolution,
+  linkText,
+  linkLimits,
   pathException,
   sourceException,
   comparison,

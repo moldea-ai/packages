@@ -189,6 +189,37 @@ export const describeRepositoryReaderConformance = <TPath extends string>(
       );
     });
 
+    test('reads exact link text without observing link targets', async () => {
+      const reader = await fixture.createReader();
+      const symlinkPath = fixture.parsePath(fixture.symlinkPath);
+      const aborted = new AbortController();
+      aborted.abort(new Error('cancelled by test'));
+
+      await expect(reader.readLinkText(symlinkPath)).resolves.toBe(fixture.symlinkText);
+      await expect(reader.readLinkText(symlinkPath)).resolves.toBe(fixture.symlinkText);
+
+      for (const unreadablePath of fixture.unreadableSymlinkPaths) {
+        await expect(reader.readLinkText(fixture.parsePath(unreadablePath))).resolves.toBeNull();
+      }
+
+      await expectToRejectCode(
+        reader.readLinkText(fixture.parsePath(fixture.filePath)),
+        'ENTRY_NOT_LINK',
+      );
+      await expectToRejectCode(
+        reader.readLinkText(fixture.parsePath(fixture.nestedDirectoryPath)),
+        'ENTRY_NOT_LINK',
+      );
+      await expectToRejectCode(
+        reader.readLinkText(fixture.parsePath(fixture.missingPath)),
+        'ENTRY_NOT_FOUND',
+      );
+      await expectToRejectCode(
+        reader.readLinkText(symlinkPath, { signal: aborted.signal }),
+        'ABORTED',
+      );
+    });
+
     test('runtime-validates forged paths and honors cancellation', async () => {
       const reader = await fixture.createReader();
       const forgedPath = '../host-secret' as never;

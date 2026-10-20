@@ -1,5 +1,4 @@
 import type {
-  IRepositoryLinkResolver,
   IRepositoryPath,
   IRepositoryReader,
   IRepositorySnapshot,
@@ -82,18 +81,12 @@ export interface IDecisionParseResult {
 }
 
 /*
- * Optional coding-agent instruction files read only by the integration check. `reader` holds
- * only `/AGENTS.md`, `/CLAUDE.md`, `/.claude/CLAUDE.md`, and `/CLAUDE.local.md`; `linkResolver`,
- * when present, must share its snapshot. Without a resolver, linked files cannot be verified.
+ * Repository-level validation input. `instructions` optionally holds only `/AGENTS.md`,
+ * `/CLAUDE.md`, `/.claude/CLAUDE.md`, and `/CLAUDE.local.md`, read only by the integration check
+ * in place of the same paths in `repository`.
  */
-export interface IProjectInstructionSource {
-  readonly linkResolver?: IRepositoryLinkResolver;
-  readonly reader: IRepositoryReader;
-}
-
-// repository-level validation input and content-free structural result
 export interface IProjectValidationInput {
-  readonly instructions?: IProjectInstructionSource;
+  readonly instructions?: IRepositoryReader;
   readonly repository: IRepositoryReader;
   readonly signal?: AbortSignal;
 }

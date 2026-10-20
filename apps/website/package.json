@@ -24,10 +24,10 @@
     "typecheck": "node scripts/generate.ts && astro check"
   },
   "devDependencies": {
-    "@moldea.ai/cli": "workspace:^11.0.0",
-    "@moldea.ai/core": "workspace:^7.0.0",
-    "@moldea.ai/repository": "workspace:^2.0.0",
-    "@moldea.ai/repository-fs": "workspace:^2.0.3",
+    "@moldea.ai/cli": "workspace:^12.0.0",
+    "@moldea.ai/core": "workspace:^8.0.0",
+    "@moldea.ai/repository": "workspace:^3.0.0",
+    "@moldea.ai/repository-fs": "workspace:^3.0.0",
     "@astrojs/check": "0.9.10",
     "@astrojs/sitemap": "3.7.3",
     "@axe-core/playwright": "4.13.0",

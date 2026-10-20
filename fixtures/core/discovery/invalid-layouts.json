@@ -47,7 +47,8 @@
         },
         {
           "path": "/moldea/project.md",
-          "type": "symlink"
+          "type": "symlink",
+          "target": "linked-target.md"
         }
       ],
       "expectedDiagnostics": [
@@ -71,7 +72,8 @@
       "entries": [
         {
           "path": "/moldea",
-          "type": "symlink"
+          "type": "symlink",
+          "target": "linked-target.md"
         }
       ],
       "expectedDiagnostics": [
@@ -100,7 +102,8 @@
         },
         {
           "path": "/moldea/context/product.md",
-          "type": "symlink"
+          "type": "symlink",
+          "target": "linked-target.md"
         },
         {
           "path": "/moldea/decisions/nested/1786131723456-choice.md",
@@ -114,7 +117,8 @@
         },
         {
           "path": "/moldea/runtimes/readme.txt",
-          "type": "symlink"
+          "type": "symlink",
+          "target": "linked-target.md"
         }
       ],
       "expectedDiagnostics": [
