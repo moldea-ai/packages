@@ -15,7 +15,7 @@ const libraryConfig = createLibraryConfig({
     site: 'src/site/index.ts',
     theme: 'src/theme/index.ts',
   },
-  externalPackages: ['jg-exception', '@lucide/astro'],
+  externalPackages: ['jg-exception', 'jg-site', '@lucide/astro'],
   platform: 'node',
   rootDirectory: import.meta.dirname,
 });

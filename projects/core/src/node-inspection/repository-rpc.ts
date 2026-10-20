@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+import { isObjectValid } from 'jg-utilities';
 
 import {
   REPOSITORY_LINK_TEXT_MAX_BYTES,
@@ -23,17 +24,15 @@ const invalidSource = (): never => {
     retryable: false,
   });
 };
-const isRecord = (input: unknown): input is Record<string, unknown> =>
-  input !== null && typeof input === 'object' && !Array.isArray(input);
 const isInteger = (input: unknown): input is number =>
   typeof input === 'number' && Number.isSafeInteger(input) && input >= 0;
-const keysMatch = (input: Record<string, unknown>, keys: string[]): boolean =>
+const keysMatch = (input: Readonly<Record<string, unknown>>, keys: string[]): boolean =>
   Object.keys(input).length === keys.length && keys.every((key) => Object.hasOwn(input, key));
 
 /** Validates the immutable source identity without coercing unknown boundary fields. */
 const parseSnapshot = (input: unknown): IRepositorySnapshot => {
   if (
-    !isRecord(input) ||
+    !isObjectValid(input, true) ||
     !keysMatch(input, ['id', 'sourceKind']) ||
     typeof input['id'] !== 'string' ||
     input['id'].length === 0 ||
@@ -47,45 +46,47 @@ const parseSnapshot = (input: unknown): IRepositorySnapshot => {
 /** Converts one validated metadata-only repository entry. */
 export const parseRpcEntry = (input: unknown): IRepositoryEntry | null => {
   if (input === null) return null;
+  if (!isObjectValid(input, true)) return invalidSource();
+  const entry: Readonly<Record<string, unknown>> = input;
   if (
-    !isRecord(input) ||
-    !keysMatch(input, ['path', 'type', 'byteLength', 'contentIdentity']) ||
-    !isRepositoryPath(input['path']) ||
-    (input['type'] !== 'file' && input['type'] !== 'directory' && input['type'] !== 'symlink') ||
-    (input['byteLength'] !== null && !isInteger(input['byteLength'])) ||
-    (input['contentIdentity'] !== null && typeof input['contentIdentity'] !== 'string')
+    !keysMatch(entry, ['path', 'type', 'byteLength', 'contentIdentity']) ||
+    !isRepositoryPath(entry['path']) ||
+    (entry['type'] !== 'file' && entry['type'] !== 'directory' && entry['type'] !== 'symlink') ||
+    (entry['byteLength'] !== null && !isInteger(entry['byteLength'])) ||
+    (entry['contentIdentity'] !== null && typeof entry['contentIdentity'] !== 'string')
   )
     return invalidSource();
   return {
-    path: input['path'],
-    type: input['type'],
-    byteLength: input['byteLength'],
-    contentIdentity: input['contentIdentity'],
+    path: entry['path'],
+    type: entry['type'],
+    byteLength: entry['byteLength'],
+    contentIdentity: entry['contentIdentity'],
   };
 };
 
 /** Converts a bounded listing page while retaining snapshot and continuation contracts. */
 export const parseRpcEntryPage = (input: unknown): IRepositoryEntryPage => {
+  if (!isObjectValid(input, true)) return invalidSource();
+  const page: Readonly<Record<string, unknown>> = input;
   if (
-    !isRecord(input) ||
-    !keysMatch(input, ['entries', 'isComplete', 'nextCursor', 'snapshot']) ||
-    !Array.isArray(input['entries']) ||
-    input['entries'].length > 128 ||
-    typeof input['isComplete'] !== 'boolean' ||
-    (input['nextCursor'] !== null && typeof input['nextCursor'] !== 'string')
+    !keysMatch(page, ['entries', 'isComplete', 'nextCursor', 'snapshot']) ||
+    !Array.isArray(page['entries']) ||
+    page['entries'].length > 128 ||
+    typeof page['isComplete'] !== 'boolean' ||
+    (page['nextCursor'] !== null && typeof page['nextCursor'] !== 'string')
   )
     return invalidSource();
   const entries: IRepositoryEntry[] = [];
-  for (const candidate of input['entries']) {
+  for (const candidate of page['entries']) {
     const entry = parseRpcEntry(candidate);
     if (entry === null) return invalidSource();
     entries.push(entry);
   }
   return {
     entries,
-    isComplete: input['isComplete'],
-    nextCursor: input['nextCursor'],
-    snapshot: parseSnapshot(input['snapshot']),
+    isComplete: page['isComplete'],
+    nextCursor: page['nextCursor'],
+    snapshot: parseSnapshot(page['snapshot']),
   };
 };
 
@@ -102,31 +103,39 @@ export const parseRpcLinkText = (input: unknown): string | null => {
 
 /** Decodes only an admitted 64 KiB binary page, never a complete repository file. */
 export const parseRpcFilePage = (input: unknown): IRepositoryFilePage => {
+  if (!isObjectValid(input, true)) return invalidSource();
+  const filePage: Readonly<Record<string, unknown>> = input;
   if (
-    !isRecord(input) ||
-    !keysMatch(input, ['bytes', 'isComplete', 'nextOffset', 'offset', 'snapshot', 'totalBytes']) ||
-    typeof input['bytes'] !== 'string' ||
-    input['bytes'].length > Math.ceil(NODE_INSPECTION_FILE_PAGE_BYTES / 3) * 4 ||
-    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(input['bytes']) ||
-    typeof input['isComplete'] !== 'boolean' ||
-    !isInteger(input['offset']) ||
-    !isInteger(input['totalBytes']) ||
-    (input['nextOffset'] !== null && !isInteger(input['nextOffset']))
+    !keysMatch(filePage, [
+      'bytes',
+      'isComplete',
+      'nextOffset',
+      'offset',
+      'snapshot',
+      'totalBytes',
+    ]) ||
+    typeof filePage['bytes'] !== 'string' ||
+    filePage['bytes'].length > Math.ceil(NODE_INSPECTION_FILE_PAGE_BYTES / 3) * 4 ||
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(filePage['bytes']) ||
+    typeof filePage['isComplete'] !== 'boolean' ||
+    !isInteger(filePage['offset']) ||
+    !isInteger(filePage['totalBytes']) ||
+    (filePage['nextOffset'] !== null && !isInteger(filePage['nextOffset']))
   )
     return invalidSource();
-  const bytes = Buffer.from(input['bytes'], 'base64');
+  const bytes = Buffer.from(filePage['bytes'], 'base64');
   if (
     bytes.byteLength > NODE_INSPECTION_FILE_PAGE_BYTES ||
-    bytes.toString('base64') !== input['bytes']
+    bytes.toString('base64') !== filePage['bytes']
   )
     return invalidSource();
   return {
     bytes,
-    isComplete: input['isComplete'],
-    nextOffset: input['nextOffset'],
-    offset: input['offset'],
-    snapshot: parseSnapshot(input['snapshot']),
-    totalBytes: input['totalBytes'],
+    isComplete: filePage['isComplete'],
+    nextOffset: filePage['nextOffset'],
+    offset: filePage['offset'],
+    snapshot: parseSnapshot(filePage['snapshot']),
+    totalBytes: filePage['totalBytes'],
   };
 };
 

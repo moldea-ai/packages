@@ -165,7 +165,10 @@ describe('published package artifacts', () => {
           filePath === 'package.json',
       ),
     ).toBe(true);
-    expect(manifest.dependencies).toStrictEqual({ 'jg-exception': '1.7.0' });
+    expect(manifest.dependencies).toStrictEqual({
+      'jg-exception': '1.7.0',
+      'jg-utilities': '1.7.0',
+    });
     expect(manifest.exports).toStrictEqual({
       '.': {
         import: './dist/index.js',

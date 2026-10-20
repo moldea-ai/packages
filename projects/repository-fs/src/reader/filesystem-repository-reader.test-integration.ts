@@ -665,6 +665,67 @@ describe('filesystem repository reader', () => {
     ).resolves.toMatchObject({ bytes: fixtures.primary.fileBytes.slice(0, 2) });
   });
 
+  test('reports queue overflow and queued cancellation with their operation context', async () => {
+    const logicalPath = parseRepositoryPath('/nested/deep/data.bin');
+    const reader = await createFilesystemRepositoryReader({
+      limits: { maxConcurrentOperations: 1, maxQueuedOperations: 1 },
+      rootDirectory: fixtures.primary.rootDirectory,
+      selection: { kind: 'directory' },
+    });
+    const reason = new Error('cancelled while queued');
+    const controller = new AbortController();
+    const firstRead = reader.readFilePage(logicalPath, { maxBytes: 2, offset: 0 });
+    const queuedRead = reader.readFilePage(logicalPath, {
+      maxBytes: 2,
+      offset: 0,
+      signal: controller.signal,
+    });
+    const overflowRead = reader.readFilePage(logicalPath, { maxBytes: 2, offset: 0 });
+    const queuedFailure = expectToRejectCode(queuedRead, 'ABORTED');
+    const overflowFailure = expectToRejectCode(overflowRead, 'RESOURCE_LIMIT_EXCEEDED');
+
+    controller.abort(reason);
+
+    await Promise.all([queuedFailure, overflowFailure]);
+    await expect(overflowRead).rejects.toMatchObject({
+      operation: 'read-file-page',
+      path: logicalPath,
+      resource: { dimension: 'queuedOperations', limit: 1, observed: 2 },
+      retryable: true,
+    });
+    await expect(queuedRead).rejects.toMatchObject({
+      cause: reason,
+      operation: 'read-file-page',
+      path: logicalPath,
+      retryable: false,
+    });
+    await expect(firstRead).resolves.toMatchObject({
+      bytes: fixtures.primary.fileBytes.slice(0, 2),
+    });
+  });
+
+  test('reports a signal aborted before the operation with its reason as the cause', async () => {
+    const logicalPath = parseRepositoryPath('/nested/deep/data.bin');
+    const reader = await createFilesystemRepositoryReader({
+      rootDirectory: fixtures.primary.rootDirectory,
+      selection: { kind: 'directory' },
+    });
+    const reason = new Error('cancelled before reading');
+    const read = reader.readFilePage(logicalPath, {
+      maxBytes: 2,
+      offset: 0,
+      signal: AbortSignal.abort(reason),
+    });
+
+    await expectToRejectCode(read, 'ABORTED');
+    await expect(read).rejects.toMatchObject({
+      cause: reason,
+      operation: 'read-file-page',
+      path: logicalPath,
+      retryable: false,
+    });
+  });
+
   test('stops streaming a wide directory at the configured entry limit', async () => {
     const reader = await createFilesystemRepositoryReader({
       limits: { maxDirectoryEntries: 1 },

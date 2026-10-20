@@ -1,3 +1,5 @@
+import { compareCodePoints } from 'jg-utilities';
+
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import {
@@ -5,7 +7,7 @@ import {
   type ICoreDiagnosticCollector,
 } from '../diagnostic-utilities/index.js';
 import type { IDiagnosticEntity, ISourceRange } from '../diagnostics/index.js';
-import { compareExactStrings, hasNonWhitespace } from '../format-validation/index.js';
+import { hasNonWhitespace } from '../format-validation/index.js';
 import type { IDecisionStatus, IParsedDecision } from '../format/index.js';
 import type { ISourceLocator } from '../source-location/index.js';
 import type { IYamlNode } from '../yaml/index.js';
@@ -204,7 +206,7 @@ const readSupersedes = (
     }
   });
 
-  return supersedes.sort(compareExactStrings);
+  return supersedes.sort(compareCodePoints);
 };
 
 /**

@@ -225,6 +225,7 @@ describe('published Core package artifacts', () => {
     expect(manifest.dependencies).toStrictEqual({
       '@moldea.ai/repository': 'workspace:^3.0.0',
       'jg-exception': '1.7.0',
+      'jg-utilities': '1.7.0',
       yaml: '2.9.0',
       typescript: '6.0.3',
     });
@@ -294,6 +295,7 @@ describe('published Core package artifacts', () => {
       expect(manifest.dependencies).toStrictEqual({
         '@moldea.ai/repository': '^3.0.0',
         'jg-exception': '1.7.0',
+        'jg-utilities': '1.7.0',
         yaml: '2.9.0',
         typescript: '6.0.3',
       });

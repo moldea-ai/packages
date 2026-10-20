@@ -62,6 +62,9 @@ importers:
       '@moldea.ai/website-ui':
         specifier: workspace:*
         version: link:../../projects/website-ui
+      jg-site:
+        specifier: 0.1.0
+        version: 0.1.0
     devDependencies:
       '@astrojs/check':
         specifier: 0.9.10
@@ -163,6 +166,9 @@ importers:
       jg-exception:
         specifier: 1.7.0
         version: 1.7.0
+      jg-utilities:
+        specifier: 1.7.0
+        version: 1.7.0
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -185,6 +191,9 @@ importers:
       jg-exception:
         specifier: 1.7.0
         version: 1.7.0
+      jg-utilities:
+        specifier: 1.7.0
+        version: 1.7.0
     devDependencies:
       '@types/node':
         specifier: 22.20.1
@@ -204,6 +213,12 @@ importers:
       '@moldea.ai/repository':
         specifier: workspace:^3.0.0
         version: link:../repository
+      jg-crypto:
+        specifier: 0.3.0
+        version: 0.3.0
+      jg-utilities:
+        specifier: 1.7.0
+        version: 1.7.0
     devDependencies:
       '@types/node':
         specifier: 22.20.1
@@ -229,9 +244,15 @@ importers:
       '@lucide/astro':
         specifier: 1.31.0
         version: 1.31.0(astro@7.2.8(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
+      jg-clipboard:
+        specifier: 0.3.0
+        version: 0.3.0
       jg-exception:
         specifier: 1.7.0
         version: 1.7.0
+      jg-site:
+        specifier: 0.1.0
+        version: 0.1.0
     devDependencies:
       '@axe-core/playwright':
         specifier: 4.13.0
@@ -1863,8 +1884,24 @@ packages:
   isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
 
+  jg-clipboard@0.3.0:
+    resolution: {integrity: sha512-KB4KDxoSU7c/oGRLVDis5H139JN7iwYCc8pw4i9Jfoeasg4mi2mXu4BDfyOWfHhqyh0D+dQR+B6QqRDiZF+cLQ==}
+    engines: {node: '>=22.17.0'}
+
+  jg-crypto@0.3.0:
+    resolution: {integrity: sha512-S7Bq9kmAK43xZeNQ41iubJ2LYxxyW3yMEoh2ciFkmm0/LAD3i2OgKOV4YPUL4j8NVGdjFuyJ5L8Ew6ti3wwVIQ==}
+    engines: {node: '>=22.17.0'}
+
   jg-exception@1.7.0:
     resolution: {integrity: sha512-EmhkDdWxunZdYt+xjqe1G9tPbaSkVqF6xu/TxxChz7yVI+vXiWk8K5D+0J+masNL4MJwJv1sTDPC2x3QYMbJxA==}
+    engines: {node: '>=22.17.0'}
+
+  jg-site@0.1.0:
+    resolution: {integrity: sha512-wHL9HvqU+mzECiqKwVB0iiln5C/mP3EdIW43KfFFFf/Kk4zWSIEfXg6W0Iq6VjRFMfRFAOaFr4unSbf2/X/Nig==}
+    engines: {node: '>=22.17.0'}
+
+  jg-utilities@1.7.0:
+    resolution: {integrity: sha512-Cdec4v/QW7TPaY68/McjGxLCvrwH7aKI9H0DsXoo3qi27R81DTbxVZpsg7/LVZ3Ah3Kai1OHiUgpju2rmF2VEA==}
     engines: {node: '>=22.17.0'}
 
   jiti@2.7.0:
@@ -2743,6 +2780,10 @@ packages:
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
+
+  uuid@14.0.3:
+    resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
+    hasBin: true
 
   vfile-message@4.0.3:
     resolution: {integrity: sha512-QTHzsGd1EhbZs4AsQ20JX1rC3cOlt/IWJruk893DfLRr57lcnOeMaWG4K0JrRta4mIJZKth2Au3mM3u03/JWKw==}
@@ -4506,7 +4547,22 @@ snapshots:
 
   isexe@2.0.0: {}
 
+  jg-clipboard@0.3.0:
+    dependencies:
+      jg-exception: 1.7.0
+
+  jg-crypto@0.3.0:
+    dependencies:
+      jg-exception: 1.7.0
+
   jg-exception@1.7.0: {}
+
+  jg-site@0.1.0: {}
+
+  jg-utilities@1.7.0:
+    dependencies:
+      jg-exception: 1.7.0
+      uuid: 14.0.3
 
   jiti@2.7.0: {}
 
@@ -5469,6 +5525,8 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
+
+  uuid@14.0.3: {}
 
   vfile-message@4.0.3:
     dependencies:

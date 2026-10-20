@@ -4,6 +4,7 @@ import CodeCopyControls from '@moldea.ai/website-ui/code-copy-controls';
 import NavigationProgress from '@moldea.ai/website-ui/navigation-progress';
 import ThemeBootstrap from '@moldea.ai/website-ui/theme-bootstrap';
 import { withBase } from '@moldea.ai/website-ui/site';
+import { buildBreadcrumbStructuredData, serializeStructuredData } from 'jg-site';
 
 import SiteFooter from '../components/site-footer.astro';
 import SiteHeader from '../components/site-header.astro';
@@ -36,23 +37,17 @@ const structuredWebsite =
       }
     : null;
 const structuredBreadcrumbs = breadcrumbs.length
-  ? {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: breadcrumbs.map((item, index) => ({
-        '@type': 'ListItem',
-        position: index + 1,
+  ? buildBreadcrumbStructuredData(
+      breadcrumbs.map((item) => ({
         name: item.label,
-        ...(item.href ? { item: new URL(withBase(item.href, basePath), Astro.site).href } : {}),
+        url: item.href ? new URL(withBase(item.href, basePath), Astro.site).href : undefined,
       })),
-    }
+    )
   : null;
 const structuredBreadcrumbJson = structuredBreadcrumbs
-  ? JSON.stringify(structuredBreadcrumbs).replaceAll('<', '\\u003c')
+  ? serializeStructuredData(structuredBreadcrumbs)
   : '';
-const structuredWebsiteJson = structuredWebsite
-  ? JSON.stringify(structuredWebsite).replaceAll('<', '\\u003c')
-  : '';
+const structuredWebsiteJson = structuredWebsite ? serializeStructuredData(structuredWebsite) : '';
 ---
 
 <!doctype html>

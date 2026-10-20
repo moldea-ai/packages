@@ -6,7 +6,7 @@ export default createLibraryConfig({
     memory: 'src/memory.ts',
     testing: 'src/testing/index.ts',
   },
-  externalPackages: ['jg-exception'],
+  externalPackages: ['jg-exception', 'jg-utilities'],
   platform: 'environment-neutral',
   rootDirectory: import.meta.dirname,
 });

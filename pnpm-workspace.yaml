@@ -5,4 +5,8 @@ packages:
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
+  - jg-clipboard@0.3.0
+  - jg-crypto@0.3.0
   - jg-exception@1.7.0
+  - jg-site@0.1.0
+  - jg-utilities@1.7.0

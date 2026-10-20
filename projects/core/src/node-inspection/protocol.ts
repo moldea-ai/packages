@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+import { isObjectValid, measureJsonBytes } from 'jg-utilities';
 
 import { isRepositoryPath } from '@moldea.ai/repository';
 
@@ -16,9 +17,6 @@ export const createInspectionProcessFailure = (cause?: unknown): CoreOperationEx
     ...(cause === undefined ? {} : { cause }),
   });
 
-const isRecord = (input: unknown): input is Record<string, unknown> =>
-  input !== null && typeof input === 'object' && !Array.isArray(input);
-const JSON_SHORT_ESCAPES = new Set([8, 9, 10, 12, 13]);
 const isInteger = (input: unknown): input is number =>
   typeof input === 'number' && Number.isSafeInteger(input) && input >= 0;
 const hasKeys = (
@@ -29,7 +27,7 @@ const hasKeys = (
   required.every((key) => Object.hasOwn(input, key)) &&
   Object.keys(input).every((key) => required.includes(key) || optional.includes(key));
 const isSnapshot = (input: unknown): boolean =>
-  isRecord(input) &&
+  isObjectValid(input, true) &&
   hasKeys(input, ['id', 'sourceKind']) &&
   typeof input['id'] === 'string' &&
   input['id'].length > 0 &&
@@ -38,14 +36,14 @@ const isSnapshot = (input: unknown): boolean =>
 const isOptionalString = (input: Record<string, unknown>, key: string): boolean =>
   !Object.hasOwn(input, key) || typeof input[key] === 'string';
 const isPageInput = (input: unknown): boolean =>
-  isRecord(input) &&
+  isObjectValid(input, true) &&
   hasKeys(input, ['maxItems', 'view'], ['cursor']) &&
   isInteger(input['maxItems']) &&
   input['maxItems'] > 0 &&
   ['all', 'diagnostics', 'coverage', 'metadata'].includes(String(input['view'])) &&
   isOptionalString(input, 'cursor');
 const isLimits = (input: unknown): input is ICoreResourceLimits =>
-  isRecord(input) &&
+  isObjectValid(input, true) &&
   hasKeys(input, [
     'maxEntries',
     'maxTotalBytesRead',
@@ -58,7 +56,7 @@ const isLimits = (input: unknown): input is ICoreResourceLimits =>
   ]) &&
   Object.values(input).every((limit) => isInteger(limit) && limit > 0);
 const isCounts = (input: unknown): boolean =>
-  isRecord(input) &&
+  isObjectValid(input, true) &&
   hasKeys(input, [
     'agents',
     'context',
@@ -76,9 +74,9 @@ const isCounts = (input: unknown): boolean =>
   Object.values(input).every(isInteger);
 const isSummary = (input: unknown): boolean =>
   input === null ||
-  (isRecord(input) &&
+  (isObjectValid(input, true) &&
     hasKeys(input, ['counts', 'manifestDigest', 'manifestPath', 'projectDigest', 'projectPath']) &&
-    isRecord(input['counts']) &&
+    isObjectValid(input['counts'], true) &&
     hasKeys(input['counts'], [
       'agents',
       'context',
@@ -94,7 +92,7 @@ const isSummary = (input: unknown): boolean =>
     isRepositoryPath(input['projectPath']));
 const isInspectionBase = (input: Record<string, unknown>): boolean =>
   isCounts(input['counts']) &&
-  isRecord(input['coverageCounts']) &&
+  isObjectValid(input['coverageCounts'], true) &&
   hasKeys(input['coverageCounts'], [
     'bindings',
     'exportsPassed',
@@ -117,12 +115,12 @@ const INSPECTION_KEYS = [
   'summary',
 ];
 const isMetadata = (input: unknown): boolean =>
-  isRecord(input) &&
+  isObjectValid(input, true) &&
   hasKeys(input, [...INSPECTION_KEYS, 'resourceUsage', 'maxAnalysisHeapBytes']) &&
   isInspectionBase(input) &&
   isInteger(input['maxAnalysisHeapBytes']) &&
   input['maxAnalysisHeapBytes'] > 0 &&
-  isRecord(input['resourceUsage']) &&
+  isObjectValid(input['resourceUsage'], true) &&
   hasKeys(input['resourceUsage'], [
     'canonicalBytes',
     'peakRetainedBytes',
@@ -132,11 +130,11 @@ const isMetadata = (input: unknown): boolean =>
   ]) &&
   Object.values(input['resourceUsage']).every(isInteger);
 const isPage = (input: unknown): boolean =>
-  isRecord(input) &&
+  isObjectValid(input, true) &&
   hasKeys(input, [...INSPECTION_KEYS, 'page', 'view']) &&
   isInspectionBase(input) &&
   ['all', 'diagnostics', 'coverage', 'metadata'].includes(String(input['view'])) &&
-  isRecord(input['page']) &&
+  isObjectValid(input['page'], true) &&
   hasKeys(input['page'], ['isComplete', 'records', 'nextCursor', 'totalItems']) &&
   typeof input['page']['isComplete'] === 'boolean' &&
   isInteger(input['page']['totalItems']) &&
@@ -144,14 +142,14 @@ const isPage = (input: unknown): boolean =>
   Array.isArray(input['page']['records']) &&
   input['page']['records'].every(
     (record: unknown) =>
-      isRecord(record) &&
+      isObjectValid(record, true) &&
       hasKeys(record, ['item', 'nextCursor']) &&
       (record['nextCursor'] === null || typeof record['nextCursor'] === 'string') &&
-      isRecord(record['item']) &&
+      isObjectValid(record['item'], true) &&
       typeof record['item']['kind'] === 'string' &&
       ['agent', 'diagnostic', 'coverage', 'metadata'].includes(record['item']['kind']) &&
       hasKeys(record['item'], ['kind', record['item']['kind']]) &&
-      isRecord(record['item'][record['item']['kind']]),
+      isObjectValid(record['item'][record['item']['kind']], true),
   );
 const isSource = (input: unknown): boolean => input === 'instructions' || input === 'repository';
 const isFilePageRequest = (input: Record<string, unknown>): boolean =>
@@ -162,9 +160,9 @@ const isFilePageRequest = (input: Record<string, unknown>): boolean =>
   input['maxBytes'] <= NODE_INSPECTION_FILE_PAGE_BYTES;
 const isInstructionSource = (input: unknown): boolean =>
   input === null ||
-  (isRecord(input) && hasKeys(input, ['snapshot']) && isSnapshot(input['snapshot']));
+  (isObjectValid(input, true) && hasKeys(input, ['snapshot']) && isSnapshot(input['snapshot']));
 const isRequest = (input: unknown): boolean => {
-  if (!isRecord(input)) return false;
+  if (!isObjectValid(input, true)) return false;
   switch (input['method']) {
     case 'getEntry':
     case 'readLinkText':
@@ -196,7 +194,7 @@ const isRequest = (input: unknown): boolean => {
 /** Validates closed control envelopes and their typed operation payloads on both bridges. */
 const isMessage = (input: unknown): input is INodeInspectionMessage => {
   if (
-    !isRecord(input) ||
+    !isObjectValid(input, true) ||
     typeof input['attemptId'] !== 'string' ||
     !/^[a-f0-9]{32}$/.test(input['attemptId'])
   )
@@ -251,68 +249,16 @@ const isMessage = (input: unknown): input is INodeInspectionMessage => {
           ...(input['kind'] === 'reader-failure' ? ['requestId'] : []),
         ]) &&
         (input['kind'] !== 'reader-failure' || isInteger(input['requestId'])) &&
-        isRecord(input['failure']) &&
+        isObjectValid(input['failure'], true) &&
         hasKeys(input['failure'], ['family', 'options']) &&
         ['configuration', 'operation', 'repository', 'path'].includes(
           String(input['failure']['family']),
         ) &&
-        isRecord(input['failure']['options'])
+        isObjectValid(input['failure']['options'], true)
       );
     default:
       return false;
   }
-};
-
-/** Counts escaped JSON bytes without first allocating a serialized oversized message. */
-const countJsonBytes = (input: unknown, ancestors: WeakSet<object>, depth: number): number => {
-  if (depth > 64) throw createInspectionProcessFailure();
-  if (input === null) return 4;
-  if (typeof input === 'boolean') return input ? 4 : 5;
-  if (typeof input === 'number' && Number.isFinite(input)) return String(input).length;
-  if (typeof input === 'string') {
-    let bytes = 2;
-    for (let index = 0; index < input.length; index++) {
-      const code = input.charCodeAt(index);
-      if (code === 34 || code === 92 || JSON_SHORT_ESCAPES.has(code)) bytes += 2;
-      else if (code < 32) bytes += 6;
-      else if (code < 128) bytes++;
-      else if (code < 2048) bytes += 2;
-      else if (
-        code >= 0xd800 &&
-        code <= 0xdbff &&
-        index + 1 < input.length &&
-        input.charCodeAt(index + 1) >= 0xdc00 &&
-        input.charCodeAt(index + 1) <= 0xdfff
-      ) {
-        bytes += 4;
-        index++;
-      } else bytes += code >= 0xd800 && code <= 0xdfff ? 6 : 3;
-      if (bytes > NODE_INSPECTION_MESSAGE_BYTES) return bytes;
-    }
-    return bytes;
-  }
-  if (typeof input !== 'object' || ancestors.has(input)) throw createInspectionProcessFailure();
-  ancestors.add(input);
-  let bytes = 2;
-  let count = 0;
-  if (Array.isArray(input)) {
-    for (const element of input) {
-      bytes += (count++ === 0 ? 0 : 1) + countJsonBytes(element, ancestors, depth + 1);
-      if (bytes > NODE_INSPECTION_MESSAGE_BYTES) break;
-    }
-  } else {
-    for (const key in input) {
-      if (!Object.hasOwn(input, key)) continue;
-      bytes +=
-        (count++ === 0 ? 0 : 1) +
-        countJsonBytes(key, ancestors, depth + 1) +
-        1 +
-        countJsonBytes((input as Record<string, unknown>)[key], ancestors, depth + 1);
-      if (bytes > NODE_INSPECTION_MESSAGE_BYTES) break;
-    }
-  }
-  ancestors.delete(input);
-  return bytes;
 };
 
 /**
@@ -323,7 +269,12 @@ const countJsonBytes = (input: unknown, ancestors: WeakSet<object>, depth: numbe
  * - INSPECTION_PROCESS_FAILED: The isolated project inspection failed.
  */
 export const encodeInspectionMessage = (message: INodeInspectionMessage): string => {
-  const bytes = countJsonBytes(message, new WeakSet(), 0);
+  let bytes: number;
+  try {
+    bytes = measureJsonBytes(message, NODE_INSPECTION_MESSAGE_BYTES);
+  } catch (error) {
+    throw createInspectionProcessFailure(error);
+  }
   if (bytes > NODE_INSPECTION_MESSAGE_BYTES)
     throw new CoreOperationException({
       code: 'RESOURCE_LIMIT_EXCEEDED',

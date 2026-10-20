@@ -1,9 +1,11 @@
+import { compareCodePoints, countUtf8Bytes, deepFreeze } from 'jg-utilities';
+
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import type { IContentDigest, ICoreResourceLimits } from '../contracts/index.js';
 import { escapeJsonPointerSegment } from '../diagnostic-utilities/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
-import { compareExactStrings, countUnicodeScalars } from '../format-validation/index.js';
+import { countUnicodeScalars } from '../format-validation/index.js';
 import type {
   IAgentManifestEntry,
   IMoldeaManifestV1,
@@ -12,7 +14,6 @@ import type {
   IToolManifestEntry,
   IUnresolvedRequirementManifestEntry,
 } from '../format/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { calculateNormalizedTextDigest } from '../text/index.js';
 
 import type {
@@ -22,7 +23,6 @@ import type {
   IManifestScopeOwner,
   IManifestScopeRelationshipField,
 } from './types.js';
-import { measureUtf8ByteLength } from './validations.js';
 import { matchesRepositoryGlob } from './patterns.js';
 
 interface IManifestScopeRelationshipDeclaration {
@@ -60,9 +60,9 @@ const createOwner = (
 
 const compareOwners = (left: IManifestScopeOwner, right: IManifestScopeOwner): number => {
   return (
-    compareExactStrings(left.kind, right.kind) ||
-    compareExactStrings(left.agentId ?? '', right.agentId ?? '') ||
-    compareExactStrings(left.id, right.id)
+    compareCodePoints(left.kind, right.kind) ||
+    compareCodePoints(left.agentId ?? '', right.agentId ?? '') ||
+    compareCodePoints(left.id, right.id)
   );
 };
 
@@ -76,12 +76,12 @@ const compareDeclarations = (
 ): number => {
   return (
     compareOwners(left.owner, right.owner) ||
-    compareExactStrings(left.field, right.field) ||
-    compareExactStrings(
+    compareCodePoints(left.field, right.field) ||
+    compareCodePoints(
       getDeclarationValue(left.declaration),
       getDeclarationValue(right.declaration),
     ) ||
-    compareExactStrings(left.pointer, right.pointer)
+    compareCodePoints(left.pointer, right.pointer)
   );
 };
 
@@ -149,7 +149,7 @@ const addUnresolvedDeclarations = (
   pointer: string,
   agentId: string | null,
 ): void => {
-  for (const requirementId of Object.keys(requirements ?? {}).sort(compareExactStrings)) {
+  for (const requirementId of Object.keys(requirements ?? {}).sort(compareCodePoints)) {
     const requirement = requirements?.[requirementId];
 
     if (requirement === undefined) {
@@ -242,7 +242,7 @@ const addAgentDeclarations = (
   }
 
   for (const variableId of Object.keys(agent.bindings?.variableProviders ?? {}).sort(
-    compareExactStrings,
+    compareCodePoints,
   )) {
     const reference = agent.bindings?.variableProviders?.[variableId];
 
@@ -264,7 +264,7 @@ const addAgentDeclarations = (
     childPointer(pointer, 'affectedBy'),
   );
 
-  for (const capabilityId of Object.keys(agent.tools ?? {}).sort(compareExactStrings)) {
+  for (const capabilityId of Object.keys(agent.tools ?? {}).sort(compareCodePoints)) {
     const tool = agent.tools?.[capabilityId];
 
     if (tool !== undefined) {
@@ -278,7 +278,7 @@ const addAgentDeclarations = (
     }
   }
 
-  for (const capabilityId of Object.keys(agent.skills ?? {}).sort(compareExactStrings)) {
+  for (const capabilityId of Object.keys(agent.skills ?? {}).sort(compareCodePoints)) {
     const skill = agent.skills?.[capabilityId];
 
     if (skill !== undefined) {
@@ -319,7 +319,7 @@ export const collectManifestScopeDeclarations = (
   for (const kind of ['context', 'decision'] as const) {
     const relationships = kind === 'context' ? manifest.context : manifest.decisions;
 
-    for (const ownerId of Object.keys(relationships ?? {}).sort(compareExactStrings)) {
+    for (const ownerId of Object.keys(relationships ?? {}).sort(compareCodePoints)) {
       const relationship = relationships?.[ownerId];
 
       if (relationship === undefined) {
@@ -346,7 +346,7 @@ export const collectManifestScopeDeclarations = (
 
   addUnresolvedDeclarations(declarations, manifest.unresolved, '/unresolved', null);
 
-  for (const agentId of Object.keys(manifest.agents ?? {}).sort(compareExactStrings)) {
+  for (const agentId of Object.keys(manifest.agents ?? {}).sort(compareCodePoints)) {
     const agent = manifest.agents?.[agentId];
 
     if (agent !== undefined) {
@@ -406,13 +406,13 @@ const compileManifestScope = (
 const compareMatches = (left: IManifestScopeMatch, right: IManifestScopeMatch): number => {
   return (
     compareOwners(left.owner, right.owner) ||
-    compareExactStrings(left.field, right.field) ||
-    compareExactStrings(
+    compareCodePoints(left.field, right.field) ||
+    compareCodePoints(
       getDeclarationValue(left.declaration),
       getDeclarationValue(right.declaration),
     ) ||
-    compareExactStrings(left.inputPath, right.inputPath) ||
-    compareExactStrings(left.pointer, right.pointer)
+    compareCodePoints(left.inputPath, right.inputPath) ||
+    compareCodePoints(left.pointer, right.pointer)
   );
 };
 
@@ -470,7 +470,7 @@ export const calculateManifestScopeInputDigest = async (
 
   return calculateNormalizedTextDigest({
     scalarLength: countUnicodeScalars(value),
-    utf8ByteLength: measureUtf8ByteLength(value),
+    utf8ByteLength: countUtf8Bytes(value),
     value,
   });
 };
@@ -513,7 +513,7 @@ export const matchParsedManifestScope = (
     matchedPaths.add(match.inputPath);
   }
 
-  return freezeRecursively({
+  return deepFreeze({
     counts: {
       declarations: compiled.declarations.length,
       inputPaths: paths.length,

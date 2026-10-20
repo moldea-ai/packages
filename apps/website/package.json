@@ -5,7 +5,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@moldea.ai/website-ui": "workspace:*"
+    "@moldea.ai/website-ui": "workspace:*",
+    "jg-site": "0.1.0"
   },
   "scripts": {
     "build": "node scripts/generate.ts && astro build && node scripts/verify-build.ts",

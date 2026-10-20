@@ -1,3 +1,5 @@
+import { deepFreeze } from 'jg-utilities';
+
 import type {
   ICoreResourceLimits,
   IIndexedDescriptionAsset,
@@ -10,7 +12,6 @@ import {
   hasNonWhitespace,
   trimRepositoryFormatWhitespace,
 } from '../format-validation/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 
 const OPENING_HEADING_PATTERN = /^#{1,6} /u;
 
@@ -89,7 +90,7 @@ export const validateAgentDescription = (
 
   const finalizedDiagnostics = diagnostics.finalize();
 
-  return freezeRecursively({
+  return deepFreeze({
     description: finalizedDiagnostics.length === 0 ? { asset, scalarLength, value } : null,
     diagnostics: finalizedDiagnostics,
     valid: finalizedDiagnostics.length === 0,
@@ -119,7 +120,7 @@ export const validateAgentInstruction = (
       path: asset.path,
     });
 
-    return freezeRecursively({
+    return deepFreeze({
       diagnostics: diagnostics.finalize(),
       instruction: null,
       valid: false,
@@ -146,7 +147,7 @@ export const validateAgentInstruction = (
 
   const finalizedDiagnostics = diagnostics.finalize();
 
-  return freezeRecursively({
+  return deepFreeze({
     diagnostics: finalizedDiagnostics,
     instruction: asset,
     valid: finalizedDiagnostics.length === 0,

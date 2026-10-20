@@ -1,5 +1,6 @@
+import { deepFreeze } from 'jg-utilities';
+
 import type { ICoreOptionsSnapshot } from '../options/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { parseManifestDocument } from '../manifest/index.js';
 
 import { calculateManifestScopeInputDigest, matchParsedManifestScope } from './matching.js';
@@ -25,7 +26,7 @@ export const matchManifestScope = async (
   const parsed = await parseManifestDocument(normalized.manifest, options, 'match-manifest-scope');
 
   if (!parsed.valid || parsed.asset === null || parsed.manifest === null) {
-    return freezeRecursively({
+    return deepFreeze({
       counts: {
         declarations: 0,
         inputPaths: normalized.paths.length,
@@ -44,7 +45,7 @@ export const matchManifestScope = async (
 
   const matched = matchParsedManifestScope(parsed.manifest, normalized.paths, options.limits);
 
-  return freezeRecursively({
+  return deepFreeze({
     counts: matched.counts,
     diagnostics: [],
     inputDigest,

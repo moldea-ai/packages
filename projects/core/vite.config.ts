@@ -12,6 +12,7 @@ export default createLibraryConfig({
   externalPackages: [
     '@moldea.ai/repository',
     'jg-exception',
+    'jg-utilities',
     'yaml',
     'typescript',
     'node:buffer',

@@ -1,3 +1,5 @@
+import { compareCodePoints, deepFreeze } from 'jg-utilities';
+
 import type {
   IRepositoryEntry,
   IRepositoryOperationOptions,
@@ -12,8 +14,6 @@ import {
   type ICoreDiagnosticCollector,
 } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic, ICoreDiagnosticCode } from '../diagnostics/index.js';
-import { compareExactStrings } from '../format-validation/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { readRepositoryTextAsset } from '../repository-text/index.js';
@@ -179,7 +179,7 @@ export const inspectMirrors = async (
   const operationOptions: IRepositoryOperationOptions | undefined =
     signal === undefined ? undefined : { signal };
 
-  for (const agent of [...agents].sort((left, right) => compareExactStrings(left.id, right.id))) {
+  for (const agent of [...agents].sort((left, right) => compareCodePoints(left.id, right.id))) {
     const mirrors: IIndexedMirror[] = [];
 
     if (agent.instruction !== null) {
@@ -210,7 +210,7 @@ export const inspectMirrors = async (
 
   const diagnostics = collector.finalize();
 
-  return freezeRecursively({
+  return deepFreeze({
     agentMirrors,
     diagnostics,
     valid: diagnostics.length === 0,

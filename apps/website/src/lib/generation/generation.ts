@@ -5,6 +5,12 @@ import { fileURLToPath } from 'node:url';
 
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
+import {
+  buildLlmsText,
+  escapeMarkdownLabel,
+  normalizeDescription,
+  type ILlmsTextLink,
+} from 'jg-site';
 
 import { RUNTIME_CATALOG } from '@moldea.ai/website-ui/runtime-catalog';
 
@@ -396,72 +402,99 @@ export const createSearchRecords = (
   );
 };
 
+/** Writes one link as an llms.txt list item, for the lists that sit outside a links section. */
+const toLlmsLinkItem = ({ description, title, url }: ILlmsTextLink): string =>
+  `- [${escapeMarkdownLabel(title)}](${url})${description === undefined ? '' : `: ${normalizeDescription(description)}`}`;
+
 /** Creates the concise machine-oriented ecosystem map from generated public models. */
 export const createLlmsText = (
   packages: IPublicPackage[],
   specification: IRepositoryFormatSpecification,
   gettingStarted: IPackageDocument,
 ): string => {
-  const lines = [
-    '# moldea packages',
-    '',
-    '> Open-source CLI and TypeScript packages for project context, decision records, and structural checks in Git.',
-    '',
-    'These tools read project knowledge, check declared files, and inspect explicit TypeScript and JavaScript ESM exports. Coverage states which checks ran. Runtime wiring, code semantics, and agent behavior are not checked.',
-    '',
-    `- [${gettingStarted.title}](${gettingStarted.route}): ${gettingStarted.description}`,
-    '- [Capabilities](/capabilities/): Executable examples of project context, structure, decisions, declared binding checks, repository inspection, and CLI operations.',
-    '- [moldea Agent Skill](https://skill.moldea.ai/): Repository adoption, installation, workflows, and tutorials.',
-    '',
-    '## Packages',
-    '',
-  ];
-
   const orderedPackages = [...packages].sort((left, right) => left.name.localeCompare(right.name));
 
-  for (const packageModel of orderedPackages) {
-    const overview = packageModel.documents.find(({ slug }) => slug === '');
-    lines.push(
-      `- [${packageModel.name}](${packageModel.route}): ${overview?.description ?? packageModel.description}`,
-    );
-  }
+  return buildLlmsText({
+    name: 'moldea packages',
+    summary:
+      'Open-source CLI and TypeScript packages for project context, decision records, and structural checks in Git.',
+    details: [
+      'These tools read project knowledge, check declared files, and inspect explicit TypeScript and JavaScript ESM exports. Coverage states which checks ran. Runtime wiring, code semantics, and agent behavior are not checked.',
+      [
+        {
+          title: gettingStarted.title,
+          url: gettingStarted.route,
+          description: gettingStarted.description,
+        },
+        {
+          title: 'Capabilities',
+          url: '/capabilities/',
+          description:
+            'Executable examples of project context, structure, decisions, declared binding checks, repository inspection, and CLI operations.',
+        },
+        {
+          title: 'moldea Agent Skill',
+          url: 'https://skill.moldea.ai/',
+          description: 'Repository adoption, installation, workflows, and tutorials.',
+        },
+      ]
+        .map(toLlmsLinkItem)
+        .join('\n'),
+    ],
+    sections: [
+      {
+        heading: 'Packages',
+        links: orderedPackages.map((packageModel) => ({
+          title: packageModel.name,
+          url: packageModel.route,
+          description:
+            packageModel.documents.find(({ slug }) => slug === '')?.description ??
+            packageModel.description,
+        })),
+      },
+      {
+        heading: 'Package architecture',
+        body: orderedPackages
+          .map((packageModel) => {
+            const dependencies = packageModel.dependencies.filter((name) =>
+              orderedPackages.some((candidate) => candidate.name === name),
+            );
 
-  lines.push('', '## Package architecture', '');
-
-  for (const packageModel of orderedPackages) {
-    const dependencies = packageModel.dependencies.filter((name) =>
-      orderedPackages.some((candidate) => candidate.name === name),
-    );
-
-    lines.push(
-      dependencies.length > 0
-        ? `- ${packageModel.name} -> ${dependencies.join(', ')}`
-        : `- ${packageModel.name} -> foundational`,
-    );
-  }
-
-  lines.push(
-    '',
-    '## Runtimes',
-    '',
-    'Runtime IDs select agent guidance. Labels do not claim SDK compatibility, certification, or vendor endorsement.',
-    'The coding agent reads the installed SDK type definitions and reviews how the application uses its declarations.',
-    '',
-  );
-  for (const runtime of RUNTIME_CATALOG)
-    lines.push(`- [${runtime.displayName}](/runtimes/#${runtime.id}): ${runtime.id}`);
-
-  lines.push(
-    '',
-    '## Canonical references',
-    '',
-    `- [Repository Format specification](${specification.route}): Official version ${specification.formatVersion} repository contract.`,
-    '- [Runtimes](/runtimes/)',
-    `- [Source repository](${REPOSITORY_URL})`,
-    '',
-  );
-
-  return lines.join('\n');
+            return dependencies.length > 0
+              ? `- ${packageModel.name} -> ${dependencies.join(', ')}`
+              : `- ${packageModel.name} -> foundational`;
+          })
+          .join('\n'),
+      },
+      {
+        heading: 'Runtimes',
+        body: [
+          'Runtime IDs select agent guidance. Labels do not claim SDK compatibility, certification, or vendor endorsement.',
+          'The coding agent reads the installed SDK type definitions and reviews how the application uses its declarations.',
+          '',
+          ...RUNTIME_CATALOG.map((runtime) =>
+            toLlmsLinkItem({
+              title: runtime.displayName,
+              url: `/runtimes/#${runtime.id}`,
+              description: runtime.id,
+            }),
+          ),
+        ].join('\n'),
+      },
+      {
+        heading: 'Canonical references',
+        links: [
+          {
+            title: 'Repository Format specification',
+            url: specification.route,
+            description: `Official version ${specification.formatVersion} repository contract.`,
+          },
+          { title: 'Runtimes', url: '/runtimes/' },
+          { title: 'Source repository', url: REPOSITORY_URL },
+        ],
+      },
+    ],
+  });
 };
 
 /**

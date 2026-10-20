@@ -192,7 +192,9 @@
   "dependencies": {
     "@fontsource-variable/ubuntu-sans": "5.2.10",
     "@lucide/astro": "1.31.0",
-    "jg-exception": "1.7.0"
+    "jg-clipboard": "0.3.0",
+    "jg-exception": "1.7.0",
+    "jg-site": "0.1.0"
   },
   "peerDependencies": {
     "astro": "7.2.8",

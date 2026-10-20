@@ -1,3 +1,5 @@
+import { countUtf8Bytes, deepFreeze, isObjectValid } from 'jg-utilities';
+
 import { parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 
 import type {
@@ -14,77 +16,10 @@ import {
 } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
 import { CoreOperationException, type ICoreOperation } from '../exceptions/index.js';
-import { freezeRecursively } from '../immutable/index.js';
+import { countUnicodeScalars } from '../format-validation/index.js';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
-
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> => {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
-
-/**
- * Measures valid scalar UTF-8 bytes and stops once the operation budget is exceeded.
- * @param value The decoded string to measure without lossy replacement.
- * @param maximumByteLength The threshold after which measurement may stop early.
- * @returns The measured bytes, a value above the threshold, or `null` for invalid Unicode.
- */
-const measureScalarUtf8ByteLength = (value: string, maximumByteLength: number): number | null => {
-  let byteLength = 0;
-
-  for (let index = 0; index < value.length; index += 1) {
-    const codeUnit = value.charCodeAt(index);
-
-    if (codeUnit >= 0xd800 && codeUnit <= 0xdbff) {
-      if (index + 1 >= value.length) {
-        return null;
-      }
-
-      const nextCodeUnit = value.charCodeAt(index + 1);
-
-      if (nextCodeUnit < 0xdc00 || nextCodeUnit > 0xdfff) {
-        return null;
-      }
-
-      byteLength += 4;
-
-      if (byteLength > maximumByteLength) {
-        return byteLength;
-      }
-
-      index += 1;
-      continue;
-    }
-
-    if (codeUnit >= 0xdc00 && codeUnit <= 0xdfff) {
-      return null;
-    }
-
-    byteLength += codeUnit <= 0x7f ? 1 : codeUnit <= 0x7ff ? 2 : 3;
-
-    if (byteLength > maximumByteLength) {
-      return byteLength;
-    }
-  }
-
-  return byteLength;
-};
-
-const countUnicodeScalars = (value: string): number => {
-  let count = 0;
-
-  for (let index = 0; index < value.length; count += 1) {
-    const codePoint = value.codePointAt(index);
-
-    if (codePoint === undefined) {
-      break;
-    }
-
-    index += codePoint > 0xffff ? 2 : 1;
-  }
-
-  return count;
-};
 
 /**
  * Collects every normalized NUL location or rejects when the diagnostic budget is exhausted.
@@ -154,7 +89,7 @@ const enforceFileLimit = (
 };
 
 const invalidResult = (diagnostics: readonly ICoreDiagnostic[]): ITextNormalizationResult => {
-  return freezeRecursively({
+  return deepFreeze({
     diagnostics: [...diagnostics],
     text: null,
     valid: false,
@@ -181,7 +116,7 @@ const readInput = (
   limit: 'maxFileBytes' | 'maxManifestBytes',
   diagnostics: ICoreDiagnosticCollector,
 ): { readonly path: IRepositoryPath; readonly value: string } | ITextNormalizationResult => {
-  if (!isRecord(input)) {
+  if (!isObjectValid(input, true)) {
     return invalidArgument(operation);
   }
 
@@ -198,14 +133,13 @@ const readInput = (
   const path = parseRepositoryPath(pathCandidate);
 
   if (typeof content === 'string') {
-    const byteLength = measureScalarUtf8ByteLength(content, limits[limit]);
+    enforceFileLimit(countUtf8Bytes(content, limits[limit]), limits, operation, limit);
 
-    if (byteLength === null) {
+    if (!content.isWellFormed()) {
       diagnostics.add({ code: 'MOLDEA_TEXT_INVALID_UNICODE', path });
       return invalidResult(diagnostics.finalize());
     }
 
-    enforceFileLimit(byteLength, limits, operation, limit);
     return { path, value: content };
   }
 
@@ -255,13 +189,13 @@ export const normalizeTextDocument = (
     return invalidResult(diagnostics.finalize());
   }
 
-  const text: INormalizedText = freezeRecursively({
+  const text: INormalizedText = deepFreeze({
     scalarLength: countUnicodeScalars(value),
-    utf8ByteLength: encoder.encode(value).byteLength,
+    utf8ByteLength: countUtf8Bytes(value),
     value,
   });
 
-  return freezeRecursively({
+  return deepFreeze({
     diagnostics: [],
     text,
     valid: true,
@@ -309,7 +243,7 @@ export const calculateContentDigest = async (
   const normalized = normalizeTextDocument(input, limits, 'calculate-content-digest');
 
   if (!normalized.valid || normalized.text === null) {
-    return freezeRecursively({
+    return deepFreeze({
       diagnostics: normalized.diagnostics,
       digest: null,
       text: null,
@@ -319,7 +253,7 @@ export const calculateContentDigest = async (
 
   const digest = await calculateNormalizedTextDigest(normalized.text);
 
-  return freezeRecursively({
+  return deepFreeze({
     diagnostics: [],
     digest,
     text: normalized.text,

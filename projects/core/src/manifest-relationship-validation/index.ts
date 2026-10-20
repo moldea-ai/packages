@@ -1,3 +1,5 @@
+import { compareCodePoints } from 'jg-utilities';
+
 import { parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICanonicalDiscoveryResult } from '../canonical-discovery/index.js';
@@ -8,7 +10,7 @@ import {
   type ICoreDiagnosticCollector,
 } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic, IDiagnosticEntity } from '../diagnostics/index.js';
-import { compareExactStrings, parseDecisionIdFromPath } from '../format-validation/index.js';
+import { parseDecisionIdFromPath } from '../format-validation/index.js';
 import type { IMoldeaManifestV1, IParsedDecision } from '../format/index.js';
 
 // trusted repository indexes shared by relationship validation helpers
@@ -137,7 +139,7 @@ export const validateManifestRelationships = (
     validTopLevelContextPaths,
   };
 
-  for (const referencedPathValue of Object.keys(manifest.context ?? {}).sort(compareExactStrings)) {
+  for (const referencedPathValue of Object.keys(manifest.context ?? {}).sort(compareCodePoints)) {
     const referencedPath = parseRepositoryPath(referencedPathValue);
     validateContextRelationship(
       referencedPath,
@@ -147,9 +149,7 @@ export const validateManifestRelationships = (
     );
   }
 
-  for (const referencedPathValue of Object.keys(manifest.decisions ?? {}).sort(
-    compareExactStrings,
-  )) {
+  for (const referencedPathValue of Object.keys(manifest.decisions ?? {}).sort(compareCodePoints)) {
     const referencedPath = parseRepositoryPath(referencedPathValue);
     validateDecisionRelationship(
       referencedPath,
@@ -158,7 +158,7 @@ export const validateManifestRelationships = (
     );
   }
 
-  for (const agentId of Object.keys(manifest.agents ?? {}).sort(compareExactStrings)) {
+  for (const agentId of Object.keys(manifest.agents ?? {}).sort(compareCodePoints)) {
     const agent = manifest.agents?.[agentId];
     if (agent === undefined) {
       continue;

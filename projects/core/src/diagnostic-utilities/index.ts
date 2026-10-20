@@ -1,3 +1,5 @@
+import { compareCodePoints, deepFreeze } from 'jg-utilities';
+
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import { ACCEPTABLE_WARNING_CODES } from '../constants/index.js';
@@ -11,8 +13,7 @@ import type {
   ISourceRange,
 } from '../diagnostics/index.js';
 import { CoreOperationException, type ICoreOperation } from '../exceptions/index.js';
-import { compareExactStrings } from '../format-validation/index.js';
-import { createNullPrototypeRecord, freezeRecursively } from '../immutable/index.js';
+import { createNullPrototypeRecord } from '../immutable/index.js';
 
 const CORE_DIAGNOSTIC_MESSAGES: Record<ICoreDiagnosticCode, string> = {
   MOLDEA_AGENT_DESCRIPTION_INVALID: 'The agent description is invalid.',
@@ -201,7 +202,7 @@ const compareNullableStrings = (left: string | null, right: string | null): numb
     return right === null ? 0 : -1;
   }
 
-  return right === null ? 1 : compareExactStrings(left, right);
+  return right === null ? 1 : compareCodePoints(left, right);
 };
 
 /**
@@ -213,13 +214,13 @@ export const normalizeDiagnosticDetails = (
   details: Readonly<Record<string, string | number | boolean | null>> | undefined,
 ): IDiagnosticDetails => {
   const entries = Object.entries(details ?? {})
-    .sort(([left], [right]) => compareExactStrings(left, right))
+    .sort(([left], [right]) => compareCodePoints(left, right))
     .map(
       ([key, value]) =>
         [key, typeof value === 'number' && Object.is(value, -0) ? 0 : value] as const,
     );
 
-  return freezeRecursively(createNullPrototypeRecord(entries));
+  return deepFreeze(createNullPrototypeRecord(entries));
 };
 
 /**
@@ -239,14 +240,12 @@ export const normalizeDiagnosticEntity = (
     return value === undefined ? [] : ([[key, value]] as const);
   });
 
-  return freezeRecursively(createNullPrototypeRecord(entries) as IDiagnosticEntity);
+  return deepFreeze(createNullPrototypeRecord(entries) as IDiagnosticEntity);
 };
 
 /** Serializes unordered diagnostic details with explicit exact-code-point key ordering. */
 export const serializeDiagnosticDetails = (details: IDiagnosticDetails): string => {
-  const entries = Object.entries(details).sort(([left], [right]) =>
-    compareExactStrings(left, right),
-  );
+  const entries = Object.entries(details).sort(([left], [right]) => compareCodePoints(left, right));
 
   return JSON.stringify(entries);
 };
@@ -320,10 +319,10 @@ const compareDiagnostics = (left: IDiagnostic, right: IDiagnostic): number => {
     compareNullableStrings(left.path, right.path) ||
     compareRanges(left.range, right.range) ||
     compareNullableStrings(left.pointer, right.pointer) ||
-    compareExactStrings(left.source, right.source) ||
-    compareExactStrings(left.code, right.code) ||
-    compareExactStrings(left.severity, right.severity) ||
-    compareExactStrings(
+    compareCodePoints(left.source, right.source) ||
+    compareCodePoints(left.code, right.code) ||
+    compareCodePoints(left.severity, right.severity) ||
+    compareCodePoints(
       left.severity === 'warning'
         ? JSON.stringify([
             left.subject,
@@ -341,39 +340,39 @@ const compareDiagnostics = (left: IDiagnostic, right: IDiagnostic): number => {
           ])
         : '',
     ) ||
-    compareExactStrings(
+    compareCodePoints(
       readEntityValue(left.entity, 'agentId'),
       readEntityValue(right.entity, 'agentId'),
     ) ||
-    compareExactStrings(
+    compareCodePoints(
       readEntityValue(left.entity, 'capabilityKind'),
       readEntityValue(right.entity, 'capabilityKind'),
     ) ||
-    compareExactStrings(
+    compareCodePoints(
       readEntityValue(left.entity, 'capabilityId'),
       readEntityValue(right.entity, 'capabilityId'),
     ) ||
-    compareExactStrings(
+    compareCodePoints(
       readEntityValue(left.entity, 'decisionId'),
       readEntityValue(right.entity, 'decisionId'),
     ) ||
-    compareExactStrings(
+    compareCodePoints(
       readEntityValue(left.entity, 'variableId'),
       readEntityValue(right.entity, 'variableId'),
     ) ||
-    compareExactStrings(
+    compareCodePoints(
       readEntityValue(left.entity, 'contextPath'),
       readEntityValue(right.entity, 'contextPath'),
     ) ||
-    compareExactStrings(
+    compareCodePoints(
       readEntityValue(left.entity, 'integrationPath'),
       readEntityValue(right.entity, 'integrationPath'),
     ) ||
-    compareExactStrings(
+    compareCodePoints(
       serializeDiagnosticDetails(left.details),
       serializeDiagnosticDetails(right.details),
     ) ||
-    compareExactStrings(left.message, right.message)
+    compareCodePoints(left.message, right.message)
   );
 };
 
@@ -423,7 +422,7 @@ export const createCoreDiagnostic = (input: ICoreDiagnosticInput): ICoreDiagnost
     input.code === 'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING'
   ) {
     if (input.subject === undefined) throw new TypeError('A warning subject is required.');
-    return freezeRecursively({
+    return deepFreeze({
       ...base,
       code: input.code,
       severity: 'warning' as const,
@@ -432,7 +431,7 @@ export const createCoreDiagnostic = (input: ICoreDiagnosticInput): ICoreDiagnost
       acceptable: ACCEPTABLE_WARNING_CODES.some((code) => code === input.code),
     });
   }
-  return freezeRecursively({ ...base, code: input.code, severity: 'error' as const });
+  return deepFreeze({ ...base, code: input.code, severity: 'error' as const });
 };
 
 /**
@@ -455,7 +454,7 @@ export const normalizeDiagnostics = (
     diagnostics.set(key, diagnostic);
   }
 
-  return freezeRecursively([...diagnostics.values()].sort(compareDiagnostics));
+  return deepFreeze([...diagnostics.values()].sort(compareDiagnostics));
 };
 
 /** Counts the complete normalized diagnostic result by severity once. */

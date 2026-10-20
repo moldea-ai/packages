@@ -70,26 +70,6 @@ const addUnsupportedFeature = (
   });
 };
 
-const isUnicodeScalarString = (value: string): boolean => {
-  for (let index = 0; index < value.length; index += 1) {
-    const codeUnit = value.charCodeAt(index);
-
-    if (codeUnit >= 0xd800 && codeUnit <= 0xdbff) {
-      const nextCodeUnit = value.charCodeAt(index + 1);
-
-      if (!(nextCodeUnit >= 0xdc00 && nextCodeUnit <= 0xdfff)) {
-        return false;
-      }
-
-      index += 1;
-    } else if (codeUnit >= 0xdc00 && codeUnit <= 0xdfff) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
 const isCoreTagCompatible = (node: ParsedNode): boolean => {
   switch (node.tag) {
     case 'tag:yaml.org,2002:bool':
@@ -164,7 +144,7 @@ const convertNode = (
       return null;
     }
 
-    if (typeof value === 'string' && !isUnicodeScalarString(value)) {
+    if (typeof value === 'string' && !value.isWellFormed()) {
       diagnostics.add({
         code: 'MOLDEA_YAML_MALFORMED',
         details: { reason: 'invalid-unicode' },

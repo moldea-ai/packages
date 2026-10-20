@@ -1,9 +1,10 @@
+import { compareCodePoints } from 'jg-utilities';
+
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICoreResourceLimits } from '../contracts/index.js';
 import { createCoreDiagnosticCollector } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
-import { compareExactStrings } from '../format-validation/index.js';
 import type { IDecisionStatus } from '../format/index.js';
 
 // trustworthy document fields required by cross-file decision validation
@@ -30,7 +31,7 @@ interface IDecisionGraphIndex {
 const sortCandidates = (
   candidates: readonly IDecisionGraphCandidate[],
 ): IDecisionGraphCandidate[] => {
-  return [...candidates].sort((left, right) => compareExactStrings(left.path, right.path));
+  return [...candidates].sort((left, right) => compareCodePoints(left.path, right.path));
 };
 
 const buildGraphIndex = (candidates: readonly IDecisionGraphCandidate[]): IDecisionGraphIndex => {
@@ -49,7 +50,7 @@ const buildGraphIndex = (candidates: readonly IDecisionGraphCandidate[]): IDecis
   const candidateGroups = new Map<string, readonly IDecisionGraphCandidate[]>();
   const nodes = new Map<string, IDecisionGraphNode>();
 
-  for (const id of [...mutableGroups.keys()].sort(compareExactStrings)) {
+  for (const id of [...mutableGroups.keys()].sort(compareCodePoints)) {
     const group = mutableGroups.get(id) ?? [];
     candidateGroups.set(id, group);
 
@@ -226,7 +227,7 @@ const buildReverseEdges = (index: IDecisionGraphIndex): ReadonlyMap<string, read
   }
 
   for (const sources of reverseEdges.values()) {
-    sources.sort(compareExactStrings);
+    sources.sort(compareCodePoints);
   }
 
   return reverseEdges;
@@ -265,10 +266,10 @@ const findStronglyConnectedComponents = (
       }
     }
 
-    components.push(component.sort(compareExactStrings));
+    components.push(component.sort(compareCodePoints));
   }
 
-  return components.sort((left, right) => compareExactStrings(left[0] ?? '', right[0] ?? ''));
+  return components.sort((left, right) => compareCodePoints(left[0] ?? '', right[0] ?? ''));
 };
 
 const collectCycleDiagnostics = (

@@ -1,3 +1,5 @@
+import { deepFreeze } from 'jg-utilities';
+
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import type {
@@ -13,7 +15,6 @@ import {
 import { createCoreDiagnosticCollector } from '../diagnostic-utilities/index.js';
 import type { ICoreOperation } from '../exceptions/index.js';
 import { parseDecisionIdFromPath } from '../format-validation/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
 import { createSourceLocator } from '../source-location/index.js';
 import { calculateNormalizedTextDigest, normalizeTextDocument } from '../text/index.js';
@@ -50,7 +51,7 @@ export const parseDecisionDocument = async (
   }
 
   if (!normalized.valid || normalized.text === null) {
-    return freezeRecursively({
+    return deepFreeze({
       decision: null,
       diagnostics: diagnostics.finalize(),
       valid: false,
@@ -72,7 +73,7 @@ export const parseDecisionDocument = async (
   }
 
   if (decisionId === null || sections === null || metadata === null || diagnostics.size > 0) {
-    return freezeRecursively({
+    return deepFreeze({
       decision: null,
       diagnostics: diagnostics.finalize(),
       valid: false,
@@ -88,7 +89,7 @@ export const parseDecisionDocument = async (
     utf8ByteLength: normalized.text.utf8ByteLength,
   };
 
-  return freezeRecursively({
+  return deepFreeze({
     decision: {
       asset,
       body: sections.body,

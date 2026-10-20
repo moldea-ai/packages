@@ -1,11 +1,11 @@
 import { fork } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { deepFreeze, isObjectValid } from 'jg-utilities';
 
 import { RepositorySourceException } from '@moldea.ai/repository';
 
 import { CoreOperationException } from '../exceptions/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { normalizeCoreOptions } from '../options/index.js';
 
 import {
@@ -34,25 +34,14 @@ import type { IProjectInspectionPageResult } from '../contracts/index.js';
 let isInspectionActive = false;
 
 /** Stores one completion without an unhandled rejection before its owner begins awaiting it. */
-const createCompletion = <T>(): {
-  promise: Promise<T>;
-  resolve: (result: T) => void;
-  reject: (cause: unknown) => void;
-} => {
-  let resolve!: (result: T) => void;
-  let reject!: (cause: unknown) => void;
-  const promise = new Promise<T>((resolveResult, rejectResult) => {
-    resolve = resolveResult;
-    reject = rejectResult;
-  });
-  void promise.catch(() => {});
-  return { promise, resolve, reject };
+const createCompletion = <T>(): PromiseWithResolvers<T> => {
+  const completion = Promise.withResolvers<T>();
+  void completion.promise.catch(() => {});
+  return completion;
 };
 
-const isRecord = (input: unknown): input is Record<string, unknown> =>
-  input !== null && typeof input === 'object';
 const isSnapshot = (input: unknown): input is { id: string; sourceKind: string } =>
-  isRecord(input) &&
+  isObjectValid(input, true) &&
   typeof input['id'] === 'string' &&
   input['id'].length > 0 &&
   typeof input['sourceKind'] === 'string' &&
@@ -64,7 +53,7 @@ const describeInstructions = (
 ): INodeInstructionSourceMetadata | null | undefined => {
   if (instructions === undefined) return null;
   if (
-    !isRecord(instructions) ||
+    !isObjectValid(instructions, true) ||
     typeof instructions['getEntry'] !== 'function' ||
     typeof instructions['readFilePage'] !== 'function' ||
     typeof instructions['readLinkText'] !== 'function' ||
@@ -311,7 +300,7 @@ export const createNodeProjectInspection = async (
         )
           throw createInspectionProcessFailure();
         hasPrepared = true;
-        prepared.resolve(freezeRecursively(message.inspection));
+        prepared.resolve(deepFreeze(message.inspection));
       } else if (message.kind === 'reader-request') {
         if (
           !hasAcknowledgedHeap ||
@@ -364,7 +353,7 @@ export const createNodeProjectInspection = async (
           throw createInspectionProcessFailure();
         const completion = pendingPage;
         pendingPage = undefined;
-        completion.resolve(freezeRecursively(message.result));
+        completion.resolve(deepFreeze(message.result));
       } else if (message.kind === 'failure') {
         if (
           message.failure.options['nextAction'] === 'review-inspection-capacity' &&

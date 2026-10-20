@@ -47,7 +47,8 @@
     "typecheck": "tsc -p tsconfig.src.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "jg-exception": "1.7.0"
+    "jg-exception": "1.7.0",
+    "jg-utilities": "1.7.0"
   },
   "devDependencies": {
     "@types/node": "22.20.1",

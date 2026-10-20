@@ -27,32 +27,6 @@ export const isRepositoryFormatWhitespace = (codePoint: number): boolean => {
   );
 };
 
-/** Compares strings by exact Unicode code-point order without locale behavior. */
-export const compareExactStrings = (left: string, right: string): number => {
-  const leftScalars = left[Symbol.iterator]();
-  const rightScalars = right[Symbol.iterator]();
-
-  while (true) {
-    const leftScalar = leftScalars.next();
-    const rightScalar = rightScalars.next();
-
-    if (leftScalar.done === true) {
-      return rightScalar.done === true ? 0 : -1;
-    }
-
-    if (rightScalar.done === true) {
-      return 1;
-    }
-
-    const leftCodePoint = leftScalar.value.codePointAt(0) ?? 0;
-    const rightCodePoint = rightScalar.value.codePointAt(0) ?? 0;
-
-    if (leftCodePoint !== rightCodePoint) {
-      return leftCodePoint < rightCodePoint ? -1 : 1;
-    }
-  }
-};
-
 /** Counts Unicode scalar values in valid JavaScript text. */
 export const countUnicodeScalars = (value: string): number => {
   const scalars = value[Symbol.iterator]();
@@ -63,34 +37,6 @@ export const countUnicodeScalars = (value: string): number => {
   }
 
   return count;
-};
-
-/** Determines whether a JavaScript string contains only Unicode scalar values. */
-export const isUnicodeScalarText = (value: string): boolean => {
-  for (let index = 0; index < value.length; index += 1) {
-    const codeUnit = value.charCodeAt(index);
-
-    if (codeUnit >= 0xd800 && codeUnit <= 0xdbff) {
-      if (index + 1 >= value.length) {
-        return false;
-      }
-
-      const nextCodeUnit = value.charCodeAt(index + 1);
-
-      if (nextCodeUnit < 0xdc00 || nextCodeUnit > 0xdfff) {
-        return false;
-      }
-
-      index += 1;
-      continue;
-    }
-
-    if (codeUnit >= 0xdc00 && codeUnit <= 0xdfff) {
-      return false;
-    }
-  }
-
-  return true;
 };
 
 /** Determines whether a value contains at least one non-whitespace scalar. */

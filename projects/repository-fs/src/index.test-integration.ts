@@ -67,6 +67,8 @@ const expectPublicPackageManifest = (
   expect(manifest.engines).toStrictEqual({ node: '>=22.17.0' });
   expect(manifest.dependencies).toStrictEqual({
     '@moldea.ai/repository': repositoryVersionRange,
+    'jg-crypto': '0.3.0',
+    'jg-utilities': '1.7.0',
   });
 };
 

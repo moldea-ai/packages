@@ -1,3 +1,5 @@
+import { compareCodePoints } from 'jg-utilities';
+
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICoreResourceLimits } from '../contracts/index.js';
@@ -9,7 +11,6 @@ import {
 } from '../diagnostic-utilities/index.js';
 import type { IDiagnosticEntity, ISourceRange } from '../diagnostics/index.js';
 import {
-  compareExactStrings,
   countUnicodeScalars,
   hasNonWhitespace,
   hasUnsupportedGlobMetacharacter,
@@ -412,7 +413,7 @@ const readRelationshipRecord = (
   const normalized: Array<readonly [string, IRelationshipManifestEntry]> = [];
 
   for (const [key, entry] of [...entries].sort(([left], [right]) =>
-    compareExactStrings(left, right),
+    compareCodePoints(left, right),
   )) {
     const path = parseManifestPath(key);
     const validPath =
@@ -613,7 +614,7 @@ const readVariables = (
   const normalized: Array<readonly [string, IRuntimeVariableManifestEntry]> = [];
 
   for (const [variableId, entry] of [...entries].sort(([left], [right]) =>
-    compareExactStrings(left, right),
+    compareCodePoints(left, right),
   )) {
     const entity = { agentId, variableId };
 
@@ -709,7 +710,7 @@ const readBindings = (
       const normalized: Array<readonly [string, IRepositoryReference]> = [];
 
       for (const [variableId, providerEntry] of [...providers].sort(([left], [right]) =>
-        compareExactStrings(left, right),
+        compareCodePoints(left, right),
       )) {
         const variableEntity = { agentId, variableId };
         const providerPointer = childPointer(
@@ -886,7 +887,7 @@ const readCapabilities = <Value extends IToolManifestEntry | ISkillManifestEntry
   const normalized: Array<readonly [string, Value]> = [];
 
   for (const [capabilityId, entry] of [...entries].sort(([left], [right]) =>
-    compareExactStrings(left, right),
+    compareCodePoints(left, right),
   )) {
     const entity = { agentId, capabilityId, capabilityKind: kind } as const;
     const capabilityPointer = childPointer(pointer, capabilityId);
@@ -929,7 +930,7 @@ const readUnresolved = (
   const normalized: Array<readonly [string, IUnresolvedRequirementManifestEntry]> = [];
 
   for (const [requirementId, entry] of [...entries].sort(([left], [right]) =>
-    compareExactStrings(left, right),
+    compareCodePoints(left, right),
   )) {
     const entity = agentId === undefined ? null : { agentId };
     const requirementPointer = childPointer(pointer, requirementId);
@@ -1256,7 +1257,7 @@ const readAgents = (
   const normalized: Array<readonly [string, IAgentManifestEntry]> = [];
 
   for (const [agentId, entry] of [...entries].sort(([left], [right]) =>
-    compareExactStrings(left, right),
+    compareCodePoints(left, right),
   )) {
     const agentPointer = childPointer(pointer, agentId);
     validateStableId(agentId, entry.key.range, agentPointer, context, { agentId });

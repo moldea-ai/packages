@@ -1,3 +1,5 @@
+import { deepFreeze, isObjectValid } from 'jg-utilities';
+
 import type { IRepositoryReader } from '@moldea.ai/repository';
 
 import { countBindingCoverage } from '../binding-coverage/index.js';
@@ -8,7 +10,6 @@ import type {
 } from '../contracts/index.js';
 import { countDiagnosticsBySeverity } from '../diagnostic-utilities/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
 import { createProjectSummary } from '../project-metadata/index.js';
 import { createRepositoryInspectionSession } from '../repository-inspection-session/index.js';
@@ -21,10 +22,6 @@ interface IValidatedProjectValidationInput {
   readonly signal?: AbortSignal;
 }
 
-const isRecord = (candidate: unknown): candidate is Readonly<Record<string, unknown>> => {
-  return typeof candidate === 'object' && candidate !== null && !Array.isArray(candidate);
-};
-
 const invalidArgument = (): never => {
   throw new CoreOperationException({
     code: 'INVALID_ARGUMENT',
@@ -34,8 +31,8 @@ const invalidArgument = (): never => {
 
 const isRepositoryReader = (candidate: unknown): candidate is IRepositoryReader => {
   return (
-    isRecord(candidate) &&
-    isRecord(candidate['snapshot']) &&
+    isObjectValid(candidate, true) &&
+    isObjectValid(candidate['snapshot'], true) &&
     typeof candidate['snapshot']['id'] === 'string' &&
     typeof candidate['snapshot']['sourceKind'] === 'string' &&
     typeof candidate['compare'] === 'function' &&
@@ -48,7 +45,7 @@ const isRepositoryReader = (candidate: unknown): candidate is IRepositoryReader 
 
 const isAbortSignal = (candidate: unknown): candidate is AbortSignal => {
   return (
-    isRecord(candidate) &&
+    isObjectValid(candidate, true) &&
     typeof candidate['aborted'] === 'boolean' &&
     typeof candidate['addEventListener'] === 'function' &&
     typeof candidate['removeEventListener'] === 'function'
@@ -57,13 +54,13 @@ const isAbortSignal = (candidate: unknown): candidate is AbortSignal => {
 
 const validateInput = (candidate: unknown): IValidatedProjectValidationInput => {
   try {
-    if (!isRecord(candidate)) {
+    if (!isObjectValid(candidate, true)) {
       return invalidArgument();
     }
 
-    const repository = candidate['repository'];
-    const instructions = candidate['instructions'];
-    const signal = candidate['signal'];
+    const repository: unknown = candidate['repository'];
+    const instructions: unknown = candidate['instructions'];
+    const signal: unknown = candidate['signal'];
 
     if (
       Reflect.ownKeys(candidate).some(
@@ -140,7 +137,7 @@ export const validateProjectState = async (
 
   session.throwIfAborted();
   const counts = countDiagnosticsBySeverity(universal.diagnostics);
-  return freezeRecursively({
+  return deepFreeze({
     project: universal.project,
     resourceUsage: session.getResourceUsage(),
     result: {

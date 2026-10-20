@@ -1,10 +1,19 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { constants } from 'node:fs';
 import type { BigIntStats } from 'node:fs';
 import { lstat, open, opendir, readlink, realpath } from 'node:fs/promises';
 import type { FileHandle } from 'node:fs/promises';
 import path from 'node:path';
 import { TextDecoder } from 'node:util';
+import { signHmac, verifyHmac } from 'jg-crypto';
+import {
+  ERRORS,
+  createByteCache,
+  createRequestCoordinator,
+  isObjectValid,
+  type IByteCache,
+  type IRequestCoordinator,
+} from 'jg-utilities';
 
 import {
   REPOSITORY_LINK_TEXT_MAX_BYTES,
@@ -37,8 +46,6 @@ import {
   normalizeFilesystemRepositoryOptions,
   type INormalizedFilesystemRepositoryReaderOptions,
 } from '../options/index.js';
-
-import { cacheFilePage, type ICachedFilePage } from './page-cache.js';
 
 interface ICursorFrame {
   readonly lastName: string | null;
@@ -81,9 +88,6 @@ const MAX_CURSOR_BYTES = 65_536;
 const DIRECTORY_CURSOR_KEYS = new Set(['frames', 'kind', 'prefix', 'snapshotId', 'version']);
 const CURSOR_FRAME_KEYS = new Set(['lastName', 'namesIdentity', 'path', 'pathIdentity']);
 const PATH_CURSOR_KEYS = new Set(['kind', 'lastPath', 'prefix', 'snapshotId', 'version']);
-
-const isRecord = (candidate: unknown): candidate is Readonly<Record<string, unknown>> =>
-  typeof candidate === 'object' && candidate !== null && !Array.isArray(candidate);
 
 const hasOnlyKeys = (
   record: Readonly<Record<string, unknown>>,
@@ -272,107 +276,14 @@ const findSortedName = (names: readonly string[], target: string): number => {
   return names[lowerIndex] === target ? lowerIndex : -1;
 };
 
-class OperationGate {
-  readonly #limits: IFilesystemRepositoryResourceLimits;
-
-  #active = 0;
-
-  readonly #waiters: (() => void)[] = [];
-
-  public constructor(limits: IFilesystemRepositoryResourceLimits) {
-    this.#limits = limits;
-  }
-
-  /** Runs one operation while enforcing fixed active and queued work bounds. */
-  public async run<T>(
-    operation: IRepositoryOperation,
-    logicalPath: IRepositoryPath,
-    signal: AbortSignal | undefined,
-    callback: () => Promise<T>,
-  ): Promise<T> {
-    await this.#acquire(operation, logicalPath, signal);
-
-    try {
-      throwIfAborted(signal, operation, logicalPath);
-
-      return await callback();
-    } finally {
-      this.#active -= 1;
-      this.#waiters.shift()?.();
-    }
-  }
-
-  async #acquire(
-    operation: IRepositoryOperation,
-    logicalPath: IRepositoryPath,
-    signal: AbortSignal | undefined,
-  ): Promise<void> {
-    throwIfAborted(signal, operation, logicalPath);
-
-    if (this.#active < this.#limits.maxConcurrentOperations) {
-      this.#active += 1;
-      return;
-    }
-
-    if (this.#waiters.length >= this.#limits.maxQueuedOperations) {
-      throwSource('RESOURCE_LIMIT_EXCEEDED', operation, logicalPath, true, undefined, {
-        dimension: 'queuedOperations',
-        limit: this.#limits.maxQueuedOperations,
-        observed: this.#waiters.length + 1,
-      });
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      let isSettled = false;
-      const resume = (): void => {
-        if (isSettled) {
-          return;
-        }
-
-        isSettled = true;
-        signal?.removeEventListener('abort', abort);
-        this.#active += 1;
-        resolve();
-      };
-      const abort = (): void => {
-        if (isSettled) {
-          return;
-        }
-
-        isSettled = true;
-        const index = this.#waiters.indexOf(resume);
-
-        if (index >= 0) {
-          this.#waiters.splice(index, 1);
-        }
-
-        reject(
-          new RepositorySourceException({
-            cause: signal?.reason,
-            code: 'ABORTED',
-            operation,
-            path: logicalPath,
-            retryable: false,
-          }),
-        );
-      };
-
-      this.#waiters.push(resume);
-      signal?.addEventListener('abort', abort, { once: true });
-    });
-  }
-}
-
 class FilesystemRepositoryReader implements IRepositoryReader {
   public readonly snapshot: IRepositorySnapshot;
 
-  readonly #cache = new Map<string, ICachedFilePage>();
-
-  #cachedBytes = 0;
+  readonly #cache: IByteCache;
 
   readonly #cursorKey = randomBytes(32);
 
-  readonly #gate: OperationGate;
+  readonly #coordinator: IRequestCoordinator;
 
   readonly #limits: IFilesystemRepositoryResourceLimits;
 
@@ -400,7 +311,11 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     this.#limits = options.limits;
     this.#rootDirectory = rootDirectory;
     this.#selection = options.selection;
-    this.#gate = new OperationGate(options.limits);
+    this.#cache = createByteCache({ maxBytes: options.limits.maxCachedBytes, maxEntries: 4_096 });
+    this.#coordinator = createRequestCoordinator({
+      maxConcurrent: options.limits.maxConcurrentOperations,
+      maxQueued: options.limits.maxQueuedOperations,
+    });
     this.snapshot = Object.freeze({
       id: hashParts([rootIdentity, randomBytes(32)]),
       sourceKind: 'filesystem',
@@ -466,7 +381,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       return null;
     }
 
-    return this.#gate.run('get-entry', parsedPath, options?.signal, () =>
+    return this.#run('get-entry', parsedPath, options?.signal, () =>
       this.#observeEntry(parsedPath, 'get-entry', undefined, options?.signal),
     );
   }
@@ -477,7 +392,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
     const prefix =
       options.prefix === undefined ? REPOSITORY_ROOT : parseRepositoryPath(options.prefix);
 
-    return this.#gate.run('list-entries-page', prefix, options.signal, async () => {
+    return this.#run('list-entries-page', prefix, options.signal, async () => {
       const maxEntries = this.#parseBoundedPositiveInteger(
         options.maxEntries,
         this.#limits.maxPageEntries,
@@ -512,7 +427,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
   ): Promise<IRepositoryFilePage> {
     const parsedPath = parseRepositoryPath(logicalPath);
 
-    return this.#gate.run('read-file-page', parsedPath, options.signal, async () => {
+    return this.#run('read-file-page', parsedPath, options.signal, async () => {
       const offset = this.#parseOffset(options.offset, parsedPath);
       const maxBytes = this.#parseBoundedPositiveInteger(
         options.maxBytes,
@@ -552,14 +467,12 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       }
 
       const bytesToRead = Math.min(maxBytes, entry.byteLength - offset);
-      const cacheKey = `${parsedPath}\0${offset}\0${bytesToRead}`;
+      // the entry identity keeps a page of a changed file from ever matching
+      const cacheKey = `${parsedPath}\0${entryIdentity}\0${offset}\0${bytesToRead}`;
       const cached = this.#cache.get(cacheKey);
 
-      if (cached !== undefined && cached.entryIdentity === entryIdentity) {
-        this.#cache.delete(cacheKey);
-        this.#cache.set(cacheKey, cached);
-
-        return this.#createFilePage(cached.bytes.slice(), entry.byteLength, offset);
+      if (cached !== undefined) {
+        return this.#createFilePage(cached, entry.byteLength, offset);
       }
 
       const bytes = await this.#readExactRange(
@@ -569,16 +482,11 @@ class FilesystemRepositoryReader implements IRepositoryReader {
         bytesToRead,
         options.signal,
       );
-      this.#cachedBytes = cacheFilePage(
-        this.#cache,
-        this.#cachedBytes,
-        cacheKey,
-        bytes,
-        entryIdentity,
-        this.#limits.maxCachedBytes,
-      );
+      if (bytes.byteLength > 0) {
+        this.#cache.set(cacheKey, bytes);
+      }
 
-      return this.#createFilePage(bytes.slice(), entry.byteLength, offset);
+      return this.#createFilePage(bytes, entry.byteLength, offset);
     });
   }
 
@@ -588,7 +496,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
   ): Promise<string | null> {
     const parsedPath = parseRepositoryPath(logicalPath);
 
-    return this.#gate.run('read-link-text', parsedPath, options?.signal, async () => {
+    return this.#run('read-link-text', parsedPath, options?.signal, async () => {
       if (!this.#isVisible(parsedPath)) {
         return throwSource('ENTRY_NOT_FOUND', 'read-link-text', parsedPath, false);
       }
@@ -687,24 +595,16 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       }
 
       const encodedPayload = cursor.slice(0, separatorIndex);
-      const encodedSignature = cursor.slice(separatorIndex + 1);
-      const suppliedSignature = Buffer.from(encodedSignature, 'base64url');
-      const expectedSignature = createHmac('sha256', this.#cursorKey)
-        .update(encodedPayload)
-        .digest();
+      const signature = cursor.slice(separatorIndex + 1);
 
-      if (
-        suppliedSignature.toString('base64url') !== encodedSignature ||
-        suppliedSignature.byteLength !== expectedSignature.byteLength ||
-        !timingSafeEqual(suppliedSignature, expectedSignature)
-      ) {
+      if (!verifyHmac(encodedPayload, signature, this.#cursorKey)) {
         throw new Error('cursor signature does not match');
       }
 
       const parsed: unknown = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8'));
 
       if (
-        !isRecord(parsed) ||
+        !isObjectValid(parsed, true) ||
         parsed['version'] !== 1 ||
         parsed['snapshotId'] !== this.snapshot.id ||
         parsed['prefix'] !== prefix
@@ -735,22 +635,27 @@ class FilesystemRepositoryReader implements IRepositoryReader {
         Array.isArray(parsed['frames'])
       ) {
         const frames = parsed['frames'].map((candidate): ICursorFrame => {
+          if (!isObjectValid(candidate, true)) {
+            throw new Error('cursor frame is invalid');
+          }
+
+          const frame: Readonly<Record<string, unknown>> = candidate;
+
           if (
-            !isRecord(candidate) ||
-            !hasOnlyKeys(candidate, CURSOR_FRAME_KEYS) ||
-            (typeof candidate['lastName'] !== 'string' && candidate['lastName'] !== null) ||
-            typeof candidate['namesIdentity'] !== 'string' ||
-            typeof candidate['path'] !== 'string' ||
-            typeof candidate['pathIdentity'] !== 'string'
+            !hasOnlyKeys(frame, CURSOR_FRAME_KEYS) ||
+            (typeof frame['lastName'] !== 'string' && frame['lastName'] !== null) ||
+            typeof frame['namesIdentity'] !== 'string' ||
+            typeof frame['path'] !== 'string' ||
+            typeof frame['pathIdentity'] !== 'string'
           ) {
             throw new Error('cursor frame is invalid');
           }
 
           return {
-            lastName: candidate['lastName'],
-            namesIdentity: candidate['namesIdentity'],
-            path: parseRepositoryPath(candidate['path']),
-            pathIdentity: candidate['pathIdentity'],
+            lastName: frame['lastName'],
+            namesIdentity: frame['namesIdentity'],
+            path: parseRepositoryPath(frame['path']),
+            pathIdentity: frame['pathIdentity'],
           };
         });
 
@@ -771,9 +676,7 @@ class FilesystemRepositoryReader implements IRepositoryReader {
 
   #encodeCursor(cursor: IFilesystemCursor): string {
     const encodedPayload = Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64url');
-    const signature = createHmac('sha256', this.#cursorKey)
-      .update(encodedPayload)
-      .digest('base64url');
+    const signature = signHmac(encodedPayload, this.#cursorKey);
     const encodedCursor = `${encodedPayload}.${signature}`;
 
     if (Buffer.byteLength(encodedCursor, 'utf8') > MAX_CURSOR_BYTES) {
@@ -1414,6 +1317,46 @@ class FilesystemRepositoryReader implements IRepositoryReader {
       return throwMappedHostError(cause, 'read-file-page', logicalPath);
     } finally {
       await handle?.close().catch(() => undefined);
+    }
+  }
+
+  /**
+   * Runs one operation within the fixed active and queued work bounds. A refusal before the
+   * operation starts becomes the reader's own failure: a full queue exceeds the queued-operations
+   * limit, and anything else is the caller's abort, whose reason becomes the cause.
+   */
+  async #run<T>(
+    operation: IRepositoryOperation,
+    logicalPath: IRepositoryPath,
+    signal: AbortSignal | undefined,
+    callback: () => Promise<T>,
+  ): Promise<T> {
+    let isStarted = false;
+
+    try {
+      return await this.#coordinator.run(
+        async () => {
+          isStarted = true;
+          throwIfAborted(signal, operation, logicalPath);
+
+          return callback();
+        },
+        signal === undefined ? {} : { signal },
+      );
+    } catch (cause) {
+      if (isStarted) {
+        throw cause;
+      }
+
+      if (getErrorCode(cause) === ERRORS.REQUEST_QUEUE_FULL) {
+        return throwSource('RESOURCE_LIMIT_EXCEEDED', operation, logicalPath, true, undefined, {
+          dimension: 'queuedOperations',
+          limit: this.#limits.maxQueuedOperations,
+          observed: this.#limits.maxQueuedOperations + 1,
+        });
+      }
+
+      return throwSource('ABORTED', operation, logicalPath, false, cause);
     }
   }
 }

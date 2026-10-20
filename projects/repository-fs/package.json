@@ -42,7 +42,9 @@
     "typecheck": "tsc -p tsconfig.src.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@moldea.ai/repository": "workspace:^3.0.0"
+    "@moldea.ai/repository": "workspace:^3.0.0",
+    "jg-crypto": "0.3.0",
+    "jg-utilities": "1.7.0"
   },
   "devDependencies": {
     "@types/node": "22.20.1",

@@ -1,3 +1,5 @@
+import { deepFreeze } from 'jg-utilities';
+
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICoreResourceLimits } from '../contracts/index.js';
@@ -7,7 +9,6 @@ import {
 } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic, ICoreWarningCode } from '../diagnostics/index.js';
 import type { IAcceptedWarningManifestEntry } from '../format/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 
 const identity = (entry: { code: string; subject: string; qualifier?: string | null }): string =>
   JSON.stringify([entry.code, entry.subject, entry.qualifier ?? null]);
@@ -37,7 +38,7 @@ export const applyWarningAcceptances = (
     const acceptance = acceptances.get(key);
     if (acceptance === undefined) return diagnostic;
     matched.add(key);
-    return freezeRecursively({
+    return deepFreeze({
       ...diagnostic,
       accepted: true as const,
       reason: acceptance.entry.reason,

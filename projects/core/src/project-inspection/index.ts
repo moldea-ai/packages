@@ -1,3 +1,5 @@
+import { deepFreeze } from 'jg-utilities';
+
 import { createRepositoryIdentity } from '@moldea.ai/repository';
 
 import type {
@@ -11,7 +13,6 @@ import type {
   IProjectInspectionView,
 } from '../contracts/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import type { ICoreOptionsSnapshot } from '../options/index.js';
 import { iterateProjectAgentAssignments } from '../project-agent-assignments/index.js';
 import { iterateProjectMetadata } from '../project-metadata/index.js';
@@ -205,7 +206,7 @@ const decodeCursor = (
 };
 
 const createViews = (items: readonly IKeyedInspectionItem[]): IInspectionViews =>
-  freezeRecursively({
+  deepFreeze({
     all: items,
     diagnostics: items.filter(({ item }) => item.kind === 'diagnostic'),
     coverage: items.filter(({ item }) => item.kind === 'coverage'),
@@ -407,7 +408,7 @@ const createPreparedProjectInspection = (
     summary,
     valid,
   );
-  const resourceUsage: IProjectInspectionResourceUsage = freezeRecursively({
+  const resourceUsage: IProjectInspectionResourceUsage = deepFreeze({
     canonicalBytes: validationUsage.canonicalBytes,
     peakRetainedBytes: Math.max(
       validationUsage.peakRetainedBytes,
@@ -451,7 +452,7 @@ const createPreparedProjectInspection = (
     });
     const nextCursor = records.at(-1)?.nextCursor ?? null;
 
-    return freezeRecursively({
+    return deepFreeze({
       counts,
       coverageCounts,
       formatVersion,
@@ -469,7 +470,7 @@ const createPreparedProjectInspection = (
     });
   };
 
-  return freezeRecursively({
+  return deepFreeze({
     counts,
     coverageCounts,
     formatVersion,
@@ -526,8 +527,8 @@ export const createProjectInspection = async (
     baseCounts,
     options.limits.maxRetainedBytes,
   );
-  const counts = freezeRecursively(estimate.counts);
-  const items = freezeRecursively(createKeyedItems(iterateProjectInspectionItems(state)));
+  const counts = deepFreeze(estimate.counts);
+  const items = deepFreeze(createKeyedItems(iterateProjectInspectionItems(state)));
 
   return createPreparedProjectInspection({
     counts,

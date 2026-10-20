@@ -1,3 +1,5 @@
+import { compareCodePoints } from 'jg-utilities';
+
 import {
   parseRepositoryPath,
   type IRepositoryEntry,
@@ -21,7 +23,7 @@ import type {
   ICoreDiagnosticCode,
   IDiagnosticEntity,
 } from '../diagnostics/index.js';
-import { compareExactStrings, parseDecisionIdFromPath } from '../format-validation/index.js';
+import { parseDecisionIdFromPath } from '../format-validation/index.js';
 import type {
   IAgentManifestEntry,
   IMoldeaManifestV1,
@@ -120,7 +122,7 @@ const addUnresolvedCandidates = (
   pointer: string,
   entity: IDiagnosticEntity | null,
 ): void => {
-  for (const requirementId of Object.keys(requirements ?? {}).sort(compareExactStrings)) {
+  for (const requirementId of Object.keys(requirements ?? {}).sort(compareCodePoints)) {
     const requirement = requirements?.[requirementId];
 
     if (requirement === undefined) {
@@ -226,9 +228,7 @@ const addAgentCandidates = (
     }
   }
 
-  for (const variableId of Object.keys(bindings?.variableProviders ?? {}).sort(
-    compareExactStrings,
-  )) {
+  for (const variableId of Object.keys(bindings?.variableProviders ?? {}).sort(compareCodePoints)) {
     const reference = bindings?.variableProviders?.[variableId];
 
     if (reference !== undefined) {
@@ -247,7 +247,7 @@ const addAgentCandidates = (
 
   const toolsPointer = childPointer(pointer, 'tools');
 
-  for (const capabilityId of Object.keys(agent.tools ?? {}).sort(compareExactStrings)) {
+  for (const capabilityId of Object.keys(agent.tools ?? {}).sort(compareCodePoints)) {
     const capability = agent.tools?.[capabilityId];
 
     if (capability !== undefined) {
@@ -260,7 +260,7 @@ const addAgentCandidates = (
 
   const skillsPointer = childPointer(pointer, 'skills');
 
-  for (const capabilityId of Object.keys(agent.skills ?? {}).sort(compareExactStrings)) {
+  for (const capabilityId of Object.keys(agent.skills ?? {}).sort(compareCodePoints)) {
     const capability = agent.skills?.[capabilityId];
 
     if (capability !== undefined) {
@@ -290,7 +290,7 @@ const collectCandidates = (manifest: IMoldeaManifestV1): readonly IRepositoryCan
   for (const property of ['context', 'decisions'] as const) {
     const relationships = manifest[property];
 
-    for (const referencedPath of Object.keys(relationships ?? {}).sort(compareExactStrings)) {
+    for (const referencedPath of Object.keys(relationships ?? {}).sort(compareCodePoints)) {
       const relationship = relationships?.[referencedPath];
 
       if (relationship === undefined) {
@@ -313,7 +313,7 @@ const collectCandidates = (manifest: IMoldeaManifestV1): readonly IRepositoryCan
 
   addUnresolvedCandidates(candidates, manifest.unresolved, '/unresolved', null);
 
-  for (const agentId of Object.keys(manifest.agents ?? {}).sort(compareExactStrings)) {
+  for (const agentId of Object.keys(manifest.agents ?? {}).sort(compareCodePoints)) {
     const agent = manifest.agents?.[agentId];
 
     if (agent !== undefined) {
@@ -321,7 +321,7 @@ const collectCandidates = (manifest: IMoldeaManifestV1): readonly IRepositoryCan
     }
   }
 
-  return candidates.sort((left, right) => compareExactStrings(left.pointer, right.pointer));
+  return candidates.sort((left, right) => compareCodePoints(left.pointer, right.pointer));
 };
 
 /** Tests whether discovery already owns a diagnostic for a path or one of its ancestors. */
