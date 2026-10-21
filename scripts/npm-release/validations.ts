@@ -1,3 +1,4 @@
+import { isObjectValid } from 'jg-utilities';
 import { gt, prerelease, satisfies, valid, validRange } from 'semver';
 
 import {
@@ -20,9 +21,6 @@ import type {
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/u;
 const MOLDEA_PACKAGE_PREFIX = '@moldea.ai/';
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
 /** Checks whether a workflow value names one supported release mode. */
 export const isNpmReleaseMode = (value: string): value is INpmReleaseMode =>
   NPM_RELEASE_MODES.some((mode) => mode === value);
@@ -37,13 +35,13 @@ const requireManifest = (
 ): INpmReleaseManifest => {
   const configuration = NPM_RELEASE_PROJECTS[project];
 
-  if (!isRecord(manifestValue)) {
+  if (!isObjectValid(manifestValue, true)) {
     throw new TypeError(`The ${configuration.packageName} package manifest is invalid.`);
   }
 
-  const dependenciesValue = manifestValue['dependencies'];
-  const publishConfigValue = manifestValue['publishConfig'];
-  const repositoryValue = manifestValue['repository'];
+  const dependenciesValue: unknown = manifestValue['dependencies'];
+  const publishConfigValue: unknown = manifestValue['publishConfig'];
+  const repositoryValue: unknown = manifestValue['repository'];
 
   if (
     manifestValue['name'] !== configuration.packageName ||
@@ -51,9 +49,9 @@ const requireManifest = (
     valid(manifestValue['version']) !== manifestValue['version'] ||
     prerelease(manifestValue['version']) !== null ||
     manifestValue['private'] === true ||
-    !isRecord(publishConfigValue) ||
+    !isObjectValid(publishConfigValue, true) ||
     publishConfigValue['access'] !== 'public' ||
-    !isRecord(repositoryValue) ||
+    !isObjectValid(repositoryValue, true) ||
     repositoryValue['type'] !== 'git' ||
     repositoryValue['url'] !== NPM_RELEASE_REPOSITORY_URL ||
     repositoryValue['directory'] !== configuration.projectDirectory
@@ -61,7 +59,7 @@ const requireManifest = (
     throw new TypeError(`The ${configuration.packageName} release metadata is invalid.`);
   }
 
-  if (dependenciesValue !== undefined && !isRecord(dependenciesValue)) {
+  if (dependenciesValue !== undefined && !isObjectValid(dependenciesValue, true)) {
     throw new TypeError(`The ${configuration.packageName} dependencies are invalid.`);
   }
 

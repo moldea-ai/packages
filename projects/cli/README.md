@@ -4,7 +4,7 @@
 
 The canonical read-only local command-line composition for deterministic inspection of `moldea` repositories.
 
-The version 12 executable exposes one schema-7-only JSON contract. `validate` and `inspect` are content-free, `scope` matches changed paths by reading only the project manifest, and `content` retrieves one explicitly selected canonical text asset in bounded Unicode-safe chunks. Collection and content responses use deterministic snapshot-bound cursors, exact final UTF-8 byte accounting, a 65,536-byte default page budget, and a 1,048,576-byte hard page ceiling.
+The version 13 executable exposes one schema-7-only JSON contract. `validate` and `inspect` are content-free, `scope` matches changed paths by reading only the project manifest, and `content` retrieves one explicitly selected canonical text asset in bounded Unicode-safe chunks. Collection and content responses use deterministic snapshot-bound cursors, exact final UTF-8 byte accounting, a 65,536-byte default page budget, and a 1,048,576-byte hard page ceiling.
 
 Install and invoke the CLI from each adopted repository. Global or user-home installation is outside the supported trust boundary because it can make unrelated repositories share ambient skill and executable behavior.
 

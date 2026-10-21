@@ -102,7 +102,7 @@ const createInspectionResult = (nextCursor: string | null): IProjectInspectionPa
 const VALID_COMPOSITION = Object.freeze({
   kind: 'valid' as const,
   result: Object.freeze({
-    minimumGitVersion: '2.30.0',
+    minimumGitVersion: '2.32.0',
     packages: Object.freeze([]),
     repositoryFormatVersions: Object.freeze([1]),
     supportedNodeRange: '>=22.17.0',

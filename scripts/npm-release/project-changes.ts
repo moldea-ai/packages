@@ -9,7 +9,7 @@ import {
 } from '../workspace-graph/index.ts';
 
 import { NPM_RELEASE_PROJECT_ORDER, NPM_RELEASE_PROJECTS } from './constants.ts';
-import { hasGitLibraryBuildConfigChanges, hasGitProjectChanges } from './git.ts';
+import { hasLibraryBuildConfigChanges, hasProjectChanges, loadGitChangedPaths } from './git.ts';
 import type {
   INpmReleaseProject,
   INpmReleaseProjectChange,
@@ -78,6 +78,7 @@ const loadPrivateInputProjects = (
   repositoryRoot: URL,
   baseCommit: string,
   currentCommit: string,
+  changedPaths: readonly string[],
 ): Set<INpmReleaseProject> => {
   const previous = loadGitWorkspaceSnapshot(repositoryRoot, baseCommit);
   const current = loadGitWorkspaceSnapshot(repositoryRoot, currentCommit);
@@ -95,13 +96,7 @@ const loadPrivateInputProjects = (
       previousPackage?.directory !== currentPackage?.directory ||
       previousPackage?.isPrivate !== currentPackage?.isPrivate ||
       (currentPackage !== undefined &&
-        hasGitProjectChanges(
-          repositoryRoot,
-          baseCommit,
-          currentCommit,
-          currentPackage.directory,
-          false,
-        ))
+        hasProjectChanges(changedPaths, currentPackage.directory, false))
     ) {
       changedPrivateNames.add(packageName);
     }
@@ -185,6 +180,10 @@ export const loadNpmReleaseProjectChanges = async (
     throw new TypeError('The npm release comparison commits are incomplete.');
   }
 
+  const changedPaths =
+    baseCommit === null || currentCommit === null
+      ? []
+      : await loadGitChangedPaths(repositoryRoot, baseCommit, currentCommit);
   const publicChanges = Object.fromEntries(
     await Promise.all(
       NPM_RELEASE_PROJECT_ORDER.map(async (project) => {
@@ -208,17 +207,12 @@ export const loadNpmReleaseProjectChanges = async (
             : readManifestReleaseState(previousManifestSource, configuration.packageName);
         const change: INpmReleaseProjectChange = {
           currentVersion: currentManifest.version,
-          isChanged:
-            baseCommit !== null && currentCommit !== null
-              ? hasGitProjectChanges(
-                  repositoryRoot,
-                  baseCommit,
-                  currentCommit,
-                  configuration.projectDirectory,
-                  currentManifest.publishesDocumentation ||
-                    previousManifest?.publishesDocumentation === true,
-                )
-              : false,
+          isChanged: hasProjectChanges(
+            changedPaths,
+            configuration.projectDirectory,
+            currentManifest.publishesDocumentation ||
+              previousManifest?.publishesDocumentation === true,
+          ),
           previousVersion: previousManifest?.version ?? null,
         };
 
@@ -231,12 +225,13 @@ export const loadNpmReleaseProjectChanges = async (
     return publicChanges;
   }
 
-  const privateInputProjects = loadPrivateInputProjects(repositoryRoot, baseCommit, currentCommit);
-  const hasBuildConfigChanges = hasGitLibraryBuildConfigChanges(
+  const privateInputProjects = loadPrivateInputProjects(
     repositoryRoot,
     baseCommit,
     currentCommit,
+    changedPaths,
   );
+  const hasBuildConfigChanges = hasLibraryBuildConfigChanges(changedPaths);
 
   return Object.fromEntries(
     NPM_RELEASE_PROJECT_ORDER.map((project) => [

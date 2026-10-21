@@ -9,14 +9,14 @@ describe('createMoldeaCliCompositionResult', () => {
     const result = createMoldeaCliCompositionResult(createTestCompositionState());
 
     expect(result).toMatchObject({
-      minimumGitVersion: '2.30.0',
+      minimumGitVersion: '2.32.0',
       repositoryFormatVersions: [1],
       supportedNodeRange: '>=22.17.0',
     });
     expect(result.packages).toStrictEqual([
-      { name: '@moldea.ai/core', version: '8.0.0' },
-      { name: '@moldea.ai/repository', version: '3.0.0' },
-      { name: '@moldea.ai/repository-fs', version: '3.0.0' },
+      { name: '@moldea.ai/core', version: '9.0.0' },
+      { name: '@moldea.ai/repository', version: '4.0.0' },
+      { name: '@moldea.ai/repository-fs', version: '4.0.0' },
     ]);
     expect(JSON.stringify(result)).not.toContain('maturity');
     expect(JSON.stringify(result)).not.toContain('matrix');

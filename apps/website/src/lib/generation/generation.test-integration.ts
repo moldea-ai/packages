@@ -384,7 +384,7 @@ test('uses the authored guide and excludes Website UI from public discovery', ()
   ).not.toContain('/packages/website-ui/');
   expect(model.discoveryCopy.packages).not.toHaveProperty('@moldea.ai/website-ui');
 });
-test('regenerates the same source-backed model with Core 8 examples', async () => {
+test('regenerates the same source-backed model with Core 9 examples', async () => {
   const model = getCurrentWebsiteModel();
   expect(await createWebsiteModel()).toStrictEqual(model);
   expect(model.capabilities.cases).toHaveLength(119);

@@ -4,9 +4,9 @@ import { MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES } from './constants.js';
 import type { IMoldeaCliCompositionStateInput } from './types.js';
 
 const PACKAGE_VERSIONS = {
-  '@moldea.ai/core': '8.0.0',
-  '@moldea.ai/repository': '3.0.0',
-  '@moldea.ai/repository-fs': '3.0.0',
+  '@moldea.ai/core': '9.0.0',
+  '@moldea.ai/repository': '4.0.0',
+  '@moldea.ai/repository-fs': '4.0.0',
 } as const;
 
 // exact installed package metadata used by composition tests
@@ -27,7 +27,7 @@ export const INSTALLED_PACKAGE_METADATA: IMoldeaCliPackageMetadata = Object.free
 /** Creates the exact valid current runtime composition state. */
 export const createTestCompositionState = (): IMoldeaCliCompositionStateInput => ({
   coreSupportedRepositoryFormatVersions: [1],
-  minimumGitVersion: '2.30.0',
+  minimumGitVersion: '2.32.0',
   outputSchemaVersion: 7,
   packageMetadata: INSTALLED_PACKAGE_METADATA,
 });

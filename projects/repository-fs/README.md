@@ -4,12 +4,12 @@
 
 Lazy, bounded Node.js filesystem access through `@moldea.ai/repository` version 2.
 
-The version 3 reader validates an explicit root and selection, observes entries only as operations need them, returns deterministic metadata pages and byte ranges, enforces independent memory and work limits, and fails when an already-observed source identity changes. It does not build or retain an eager repository-wide inventory.
+The version 4 reader validates an explicit root and selection, observes entries only as operations need them, returns deterministic metadata pages and byte ranges, enforces independent memory and work limits, and fails when an already-observed source identity changes. It does not build or retain an eager repository-wide inventory.
 
 ## Install
 
 ```bash
-pnpm add @moldea.ai/repository@3 @moldea.ai/repository-fs@3
+pnpm add @moldea.ai/repository@4 @moldea.ai/repository-fs@4
 ```
 
 ## Responsibility

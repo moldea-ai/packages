@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 
+import { isObjectValid } from 'jg-utilities';
 import ts from 'typescript';
 
 import type { IApiEntrypoint, IApiSymbol } from '../model/types.ts';
@@ -38,10 +39,6 @@ const isPathWithinDirectory = (directory: string, candidatePath: string): boolea
     !relativeCandidatePath.startsWith(`..${sep}`) &&
     !isAbsolute(relativeCandidatePath)
   );
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 const getSourceEntrypoint = (projectDirectory: string, declarationPath: string): string => {
@@ -88,12 +85,16 @@ const getWorkspaceSourcePaths = (projectDirectory: string): Record<string, strin
 
       const manifest: unknown = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
-      if (!isRecord(manifest) || typeof manifest.name !== 'string' || !isRecord(manifest.exports)) {
+      if (
+        !isObjectValid(manifest, true) ||
+        typeof manifest.name !== 'string' ||
+        !isObjectValid(manifest.exports, true)
+      ) {
         continue;
       }
 
       for (const [subpath, conditions] of Object.entries(manifest.exports)) {
-        if (!isRecord(conditions) || typeof conditions.types !== 'string') continue;
+        if (!isObjectValid(conditions, true) || typeof conditions.types !== 'string') continue;
 
         const moduleName = subpath === '.' ? manifest.name : `${manifest.name}${subpath.slice(1)}`;
         sourcePaths[moduleName] = [

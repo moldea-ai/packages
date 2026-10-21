@@ -35,7 +35,12 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     path.join(tmpdir(), 'moldea-repository-fs-runtime-consumer-'),
   );
   const consumerPath = path.join(consumerDirectory, 'consumer.mjs');
-  const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  // the official Windows Node distribution bundles npm beside node.exe; .cmd needs a shell
+  const npmExecutable = process.platform === 'win32' ? process.execPath : 'npm';
+  const npmPrefixArguments =
+    process.platform === 'win32'
+      ? [path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js')]
+      : [];
 
   try {
     await writeFile(
@@ -48,6 +53,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     execFileSync(
       npmExecutable,
       [
+        ...npmPrefixArguments,
         'install',
         '--ignore-scripts',
         '--package-lock=false',

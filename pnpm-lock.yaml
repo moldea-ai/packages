@@ -26,6 +26,21 @@ importers:
       globals:
         specifier: 17.9.0
         version: 17.9.0
+      jg-exception:
+        specifier: 1.7.0
+        version: 1.7.0
+      jg-fetch:
+        specifier: 0.5.0
+        version: 0.5.0
+      jg-git-commands:
+        specifier: 0.3.1
+        version: 0.3.1
+      jg-process:
+        specifier: 1.6.0
+        version: 1.6.0
+      jg-utilities:
+        specifier: 1.7.0
+        version: 1.7.0
       prettier:
         specifier: 3.9.6
         version: 3.9.6
@@ -79,16 +94,16 @@ importers:
         specifier: 1.31.0
         version: 1.31.0(astro@7.2.8(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
       '@moldea.ai/cli':
-        specifier: workspace:^12.0.0
+        specifier: workspace:^13.0.0
         version: link:../../projects/cli
       '@moldea.ai/core':
-        specifier: workspace:^8.0.0
+        specifier: workspace:^9.0.0
         version: link:../../projects/core
       '@moldea.ai/repository':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../../projects/repository
       '@moldea.ai/repository-fs':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../../projects/repository-fs
       '@playwright/test':
         specifier: 1.62.1
@@ -105,6 +120,12 @@ importers:
       eslint:
         specifier: 10.8.1
         version: 10.8.1(jiti@2.7.0)
+      jg-process:
+        specifier: 1.6.0
+        version: 1.6.0
+      jg-utilities:
+        specifier: 1.7.0
+        version: 1.7.0
       parse5:
         specifier: 8.0.1
         version: 8.0.1
@@ -130,13 +151,13 @@ importers:
   projects/cli:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^8.0.0
+        specifier: workspace:^9.0.0
         version: link:../core
       '@moldea.ai/repository':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../repository
       '@moldea.ai/repository-fs':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../repository-fs
       jg-crypto:
         specifier: 0.3.0
@@ -176,7 +197,7 @@ importers:
   projects/core:
     dependencies:
       '@moldea.ai/repository':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../repository
       jg-exception:
         specifier: 1.7.0
@@ -226,7 +247,7 @@ importers:
   projects/repository-fs:
     dependencies:
       '@moldea.ai/repository':
-        specifier: workspace:^3.0.0
+        specifier: workspace:^4.0.0
         version: link:../repository
       jg-crypto:
         specifier: 0.3.0
@@ -273,7 +294,7 @@ importers:
         specifier: 4.13.0
         version: 4.13.0(playwright-core@1.62.1)
       '@moldea.ai/core':
-        specifier: workspace:^8.0.0
+        specifier: workspace:^9.0.0
         version: link:../core
       '@playwright/test':
         specifier: 1.62.1
@@ -1899,6 +1920,10 @@ packages:
   isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
 
+  jg-api-response@1.2.0:
+    resolution: {integrity: sha512-S3WE//moHLY7i65YF3Eng9vrGR0mucmg2UMDQS/qLc+IgJR1itrJwn+BAribKhVp18JyekOt+fI2Is6td3tjVQ==}
+    engines: {node: '>=22.17.0'}
+
   jg-clipboard@0.3.0:
     resolution: {integrity: sha512-KB4KDxoSU7c/oGRLVDis5H139JN7iwYCc8pw4i9Jfoeasg4mi2mXu4BDfyOWfHhqyh0D+dQR+B6QqRDiZF+cLQ==}
     engines: {node: '>=22.17.0'}
@@ -1909,6 +1934,10 @@ packages:
 
   jg-exception@1.7.0:
     resolution: {integrity: sha512-EmhkDdWxunZdYt+xjqe1G9tPbaSkVqF6xu/TxxChz7yVI+vXiWk8K5D+0J+masNL4MJwJv1sTDPC2x3QYMbJxA==}
+    engines: {node: '>=22.17.0'}
+
+  jg-fetch@0.5.0:
+    resolution: {integrity: sha512-F2f0WmwhrMTZj7QutWWchTQSmb9P3zwAGFVniHoV+8Xj6xB6pahW+IR0EuqwSuTtkqG9K6e7JKHUVUQd5d2usQ==}
     engines: {node: '>=22.17.0'}
 
   jg-git-commands@0.3.1:
@@ -4570,6 +4599,10 @@ snapshots:
 
   isexe@2.0.0: {}
 
+  jg-api-response@1.2.0:
+    dependencies:
+      jg-exception: 1.7.0
+
   jg-clipboard@0.3.0:
     dependencies:
       jg-exception: 1.7.0
@@ -4579,6 +4612,12 @@ snapshots:
       jg-exception: 1.7.0
 
   jg-exception@1.7.0: {}
+
+  jg-fetch@0.5.0:
+    dependencies:
+      jg-api-response: 1.2.0
+      jg-exception: 1.7.0
+      jg-utilities: 1.7.0
 
   jg-git-commands@0.3.1:
     dependencies:

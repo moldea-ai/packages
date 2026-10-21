@@ -1,7 +1,7 @@
-import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFile, readdir, realpath, lstat } from 'node:fs/promises';
 import path from 'node:path';
+import { runProcess, type IProcessResult } from 'jg-process';
 import { z } from 'zod';
 
 import type { IPublicPackage } from '../../model/types.ts';
@@ -27,36 +27,35 @@ const cliManifestSchema = z.object({
 const excludedDirectories = new Set(['_archive', '_archives', '_backup', '_backups']);
 
 /** Runs a native executable with bounded output and no shell, retaining ordinary CLI exit statuses. */
-const execute = (
+const execute = async (
   executable: string,
   args: string[],
   cwd: string,
   env: NodeJS.ProcessEnv,
   input = '',
-): Promise<{ exitStatus: number; stdout: string }> =>
-  new Promise((resolve, reject) => {
-    let inputFailure: Error | undefined;
-    const child = execFile(
-      executable,
+): Promise<{ exitStatus: number; stdout: string }> => {
+  let result: IProcessResult;
+
+  try {
+    result = await runProcess({
       args,
-      { cwd, env, encoding: 'utf8', maxBuffer: 1_048_576, timeout: 120_000 },
-      (error, stdout) => {
-        if (error !== null && (typeof error.code !== 'number' || error.killed)) {
-          reject(new Error('A capability fixture executable failed.', { cause: error }));
-          return;
-        }
-        if (inputFailure !== undefined && error === null) {
-          reject(inputFailure);
-          return;
-        }
-        resolve({ exitStatus: error?.code === undefined ? 0 : Number(error.code), stdout });
-      },
-    );
-    child.stdin?.on('error', (error: NodeJS.ErrnoException) => {
-      if (input !== '' || error.code !== 'EPIPE') inputFailure = error;
+      command: executable,
+      cwd,
+      env,
+      input,
+      maxOutputBytes: 1_048_576,
+      timeoutSeconds: 120,
     });
-    child.stdin?.end(input);
-  });
+  } catch (error) {
+    throw new Error('A capability fixture executable failed.', { cause: error });
+  }
+
+  if (result.exitCode === null) {
+    throw new Error('A capability fixture executable was stopped by a signal.');
+  }
+
+  return { exitStatus: result.exitCode, stdout: result.stdout };
+};
 
 /** Fingerprints only the disposable fixture, including its index, refs, objects, and configuration. */
 const captureFixtureState = async (directory: string): Promise<string> => {

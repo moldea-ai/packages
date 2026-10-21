@@ -4,12 +4,12 @@
 
 Source-neutral, deterministic, content-safe interpretation of the `moldea` repository format.
 
-Version 8 accepts caller-supplied text and `@moldea.ai/repository` version 3 readers. The main, format, and scope entry points remain environment-neutral. Repository access belongs to the caller-supplied reader. Project validation returns content-free summaries, diagnostics, binding coverage, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
+Version 9 accepts caller-supplied text and `@moldea.ai/repository` version 4 readers. The main, format, and scope entry points remain environment-neutral. Repository access belongs to the caller-supplied reader. Project validation returns content-free summaries, diagnostics, binding coverage, agent assignments, and metadata. Canonical document bodies are available only through an explicit path-scoped byte-range operation.
 
 ## Install
 
 ```bash
-pnpm add @moldea.ai/core@8 @moldea.ai/repository@3
+pnpm add @moldea.ai/core@9 @moldea.ai/repository@4
 ```
 
 ## Public entry points

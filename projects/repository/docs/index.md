@@ -7,7 +7,7 @@ order: 0
 
 # Bounded repository access without source assumptions
 
-`@moldea.ai/repository` version 3 defines the public boundary through which `moldea` code observes one coherent repository snapshot. Metadata lookup is content-free. Descendant enumeration, file content, and repository comparison are explicitly bounded and resumable.
+`@moldea.ai/repository` version 4 defines the public boundary through which `moldea` code observes one coherent repository snapshot. Metadata lookup is content-free. Descendant enumeration, file content, and repository comparison are explicitly bounded and resumable.
 
 The package keeps Core independent from source mechanics. `@moldea.ai/repository-fs` implements this contract for an explicitly selected local directory, other source packages can implement the same contract, and Core interprets only the portable entries and bytes returned through it.
 

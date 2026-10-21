@@ -8,6 +8,7 @@ minimumReleaseAgeExclude:
   - jg-clipboard@0.3.0
   - jg-crypto@0.3.0
   - jg-exception@1.7.0
+  - jg-fetch@0.5.0
   - jg-git-commands@0.3.1
   - jg-process@1.6.0
   - jg-site@0.1.0
