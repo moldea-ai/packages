@@ -9,9 +9,10 @@ export interface Props {
   path: string;
   label?: string;
   tone?: IStatusBadgeTone;
+  statusLayout?: 'responsive' | 'inline';
 }
 
-const { path, label, tone = 'neutral' } = Astro.props;
+const { path, label, tone = 'neutral', statusLayout = 'responsive' } = Astro.props;
 const displayPath = formatRepositoryPath(path);
 const filenameStart = displayPath.lastIndexOf('/');
 const directory = filenameStart < 0 ? '' : displayPath.slice(0, filenameStart);
@@ -80,13 +81,14 @@ const borderClasses = {
       </code>
     </div>
     {
-      /* narrow headers move the status below the path so it never takes the filename's space */
       hasStatusContent && (
         <span
           class:list={[
-            'order-last basis-full pl-8 @sm/file-preview:order-none @sm/file-preview:shrink-0 @sm/file-preview:basis-auto @sm/file-preview:pl-0',
+            statusLayout === 'inline'
+              ? 'shrink-0'
+              : 'order-last basis-full pl-8 @sm/file-preview:order-none @sm/file-preview:shrink-0 @sm/file-preview:basis-auto @sm/file-preview:pl-0',
             // beside a role and path, the status shares the role's first line
-            hasRole && '@sm/file-preview:self-start',
+            hasRole && (statusLayout === 'inline' ? 'self-start' : '@sm/file-preview:self-start'),
           ]}
           data-file-preview-status
         >

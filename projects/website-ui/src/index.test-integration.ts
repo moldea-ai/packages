@@ -133,7 +133,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.2.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.3.0' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -396,6 +396,7 @@ describe('published website UI package', () => {
         '    <section><h2>Fixture checks</h2><Accordion id="check-one" group="fixture-accordion" title="First check" description="One concise outcome."><StatusBadge slot="status" label="Valid" tone="success" size="sm" /><p>First visual</p></Accordion><Accordion {...accordionProps}><FilePreview path="src/policy.ts" label="Policy"><p>Second visual</p></FilePreview></Accordion></section>',
         '    <Accordion id="closed-check" title="Closed check"><p>Optional detail</p></Accordion>',
         '    <FilePreview {...fileProps}><span slot="icon">File</span><StatusBadge slot="status" label="Missing" size="sm" tone="danger" /><pre class="code-block" tabindex="0" role="region" aria-label="Return policy source"><code>export const returnWindowDays = 30;</code></pre></FilePreview>',
+        '    <section aria-label="Inline file markers" class="max-w-64"><FilePreview path="src/support/long-directory-name/order-lookup.ts" statusLayout="inline"><StatusBadge slot="status" label="M" size="sm" tone="warning" /></FilePreview><FilePreview path="moldea/agents/support/instruction.md" label="Instructions" statusLayout="inline"><StatusBadge slot="status" label="A" size="sm" tone="success" /></FilePreview></section>',
         '    <FileTree ariaLabel="Repository files" nodes={[{ kind: "file", name: "policy.md", path: "policy.md", removed: true }]} />',
         '    <Dialog id="composed-result" title="Reference not found" triggerLabel="Inspect composed result" isOverlayCloseEnabled><ResultSummary slot="heading" {...summaryProps}><span slot="icon">!</span><StatusBadge slot="status" label="Invalid" size="sm" tone="danger" /></ResultSummary><p>Composed result body</p></Dialog>',
         '    <ResultSummary title="Metadata available" description="Logical paths only." as="h3" />',
@@ -1008,6 +1009,37 @@ describe('published website UI package', () => {
             await page.evaluate((selectedTheme) => {
               document.documentElement.className = selectedTheme;
             }, theme);
+            const inlineFiles = page.getByRole('region', { name: 'Inline file markers' });
+            const layouts = await inlineFiles
+              .locator('[data-file-preview-header]')
+              .evaluateAll((headers) =>
+                headers.map((header) => {
+                  const path = header.querySelector('code[title]')!.getBoundingClientRect();
+                  const role = header
+                    .querySelector('[data-file-preview-role]')
+                    ?.getBoundingClientRect();
+                  const status = header
+                    .querySelector('[data-file-preview-status]')!
+                    .getBoundingClientRect();
+                  return {
+                    alignmentOffset:
+                      role === undefined
+                        ? Math.abs(path.y + path.height / 2 - status.y - status.height / 2)
+                        : Math.abs(role.y - status.y),
+                    gap: status.x - path.right,
+                    rightInset: header.getBoundingClientRect().right - status.right,
+                    paddingRight: parseFloat(getComputedStyle(header).paddingRight),
+                    overflow: header.scrollWidth > header.clientWidth,
+                  };
+                }),
+              );
+            expect(layouts).toHaveLength(2);
+            for (const layout of layouts) {
+              expect(layout.alignmentOffset).toBeLessThanOrEqual(1);
+              expect(layout.gap).toBeGreaterThan(0);
+              expect(layout.rightInset).toBeCloseTo(layout.paddingRight, 0);
+              expect(layout.overflow).toBe(false);
+            }
             const flatCode = page.getByRole('region', {
               name: 'Order status command',
               exact: true,
