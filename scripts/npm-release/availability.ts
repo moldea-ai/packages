@@ -1,15 +1,13 @@
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { isMainModule } from 'jg-process';
 
 import { NPM_RELEASE_PROJECTS } from './constants.ts';
-import { loadNpmRegistryDependencyVersions } from './registry.ts';
+import {
+  loadNpmRegistryDependencyVersions,
+  type INpmRegistryPropagation,
+  type INpmRegistryRequest,
+} from './registry.ts';
 import { createNpmReleaseIdentity } from './validations.ts';
-
-// a stalled registry request must not exhaust the Pages job's ten-minute availability window
-const REGISTRY_REQUEST_TIMEOUT_MS = 30_000;
-const requestRegistry: typeof fetch = (input, init) =>
-  fetch(input, { ...init, signal: AbortSignal.timeout(REGISTRY_REQUEST_TIMEOUT_MS) });
 
 /**
  * Requires every advertised exact package version to be visible in the public npm registry.
@@ -19,8 +17,8 @@ const requestRegistry: typeof fetch = (input, init) =>
  */
 export const verifyNpmReleaseAvailability = async (options: {
   repositoryRoot: URL;
-  request?: typeof fetch;
-  wait?: (delayMs: number) => Promise<unknown>;
+  request?: INpmRegistryRequest;
+  propagation?: INpmRegistryPropagation;
 }): Promise<void> => {
   // the release inventory has fifteen fixed entries; requests cannot grow with repository contents
   await Promise.all(
@@ -41,8 +39,8 @@ export const verifyNpmReleaseAvailability = async (options: {
       const versions = await loadNpmRegistryDependencyVersions(
         identity.name,
         `workspace:${identity.version}`,
-        options.request ?? requestRegistry,
-        options.wait,
+        options.request,
+        options.propagation,
       );
       if (!versions.includes(identity.version)) {
         throw new Error(
@@ -53,7 +51,7 @@ export const verifyNpmReleaseAvailability = async (options: {
   );
 };
 
-if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+if (isMainModule(import.meta.url)) {
   if (process.argv.length !== 2) throw new TypeError('Use availability.ts without arguments.');
   await verifyNpmReleaseAvailability({ repositoryRoot: new URL('../../', import.meta.url) });
 }

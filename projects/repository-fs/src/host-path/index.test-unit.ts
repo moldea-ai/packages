@@ -2,23 +2,19 @@
 import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 
-import { hasOnlyUnicodeScalarValues, isAbsoluteHostRootDirectory } from './index.js';
+import { isAbsoluteHostRootDirectory } from './index.js';
 
 describe('host root path validation', () => {
-  test.each([
-    ['', true],
-    ['plain text', true],
-    ['emoji 🚀', true],
-    ['\ud800', false],
-    ['\udc00', false],
-    ['before\ud800after', false],
-  ])('hasOnlyUnicodeScalarValues(%s) -> %s', (text, expectedResult) => {
-    expect(hasOnlyUnicodeScalarValues(text)).toBe(expectedResult);
-  });
-
   test('accepts one absolute scalar host path for the active platform', () => {
     expect(isAbsoluteHostRootDirectory(path.resolve('repository-root-🚀'))).toBe(true);
   });
+
+  test.each(['\ud800', '\udc00', 'before\ud800after'])(
+    'rejects an absolute host path holding the lone surrogate in %o',
+    (segment) => {
+      expect(isAbsoluteHostRootDirectory(path.resolve(segment))).toBe(false);
+    },
+  );
 
   test.skipIf(process.platform === 'win32')('accepts an absolute POSIX root', () => {
     expect(isAbsoluteHostRootDirectory('/repository')).toBe(true);

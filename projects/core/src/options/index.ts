@@ -1,8 +1,9 @@
+import { deepFreeze, isObjectValid } from 'jg-utilities';
+
 import { DEFAULT_CORE_RESOURCE_LIMITS } from '../constants/index.js';
 import type { ICoreOptions, ICoreResourceLimits } from '../contracts/index.js';
 import { createCoreOperationResourceLimits } from '../diagnostic-utilities/index.js';
 import { CoreConfigurationException } from '../exceptions/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 
 // complete immutable Core configuration
 export interface ICoreOptionsSnapshot {
@@ -29,10 +30,6 @@ const RESOURCE_LIMIT_KEYS = [
   'maxAcceptedWarnings',
 ] as const satisfies readonly (keyof ICoreResourceLimits)[];
 
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> => {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
-
 /**
  * Validates, copies, fills, and freezes all configured resource limits.
  * @param candidate The untrusted optional limit overrides.
@@ -45,7 +42,7 @@ const normalizeLimits = (candidate: unknown): ICoreResourceLimits => {
     return DEFAULT_CORE_RESOURCE_LIMITS;
   }
 
-  if (!isRecord(candidate)) {
+  if (!isObjectValid(candidate, true)) {
     throw new CoreConfigurationException({
       code: 'INVALID_RESOURCE_LIMIT',
       operation: 'create-core',
@@ -66,7 +63,7 @@ const normalizeLimits = (candidate: unknown): ICoreResourceLimits => {
   };
 
   for (const key of RESOURCE_LIMIT_KEYS) {
-    const value = candidate[key];
+    const value: unknown = candidate[key];
 
     if (value === undefined) {
       continue;
@@ -82,7 +79,7 @@ const normalizeLimits = (candidate: unknown): ICoreResourceLimits => {
     (normalized as Record<keyof ICoreResourceLimits, number>)[key] = value as number;
   }
 
-  return freezeRecursively(normalized);
+  return deepFreeze(normalized);
 };
 
 /**
@@ -94,12 +91,12 @@ const normalizeLimits = (candidate: unknown): ICoreResourceLimits => {
 export const normalizeCoreOptions = (options: ICoreOptions | undefined): ICoreOptionsSnapshot => {
   if (
     options !== undefined &&
-    (!isRecord(options) || Reflect.ownKeys(options).some((key) => key !== 'limits'))
+    (!isObjectValid(options, true) || Reflect.ownKeys(options).some((key) => key !== 'limits'))
   ) {
     throw new CoreConfigurationException({
       code: 'INVALID_RESOURCE_LIMIT',
       operation: 'create-core',
     });
   }
-  return freezeRecursively({ limits: normalizeLimits(options?.['limits']) });
+  return deepFreeze({ limits: normalizeLimits(options?.['limits']) });
 };

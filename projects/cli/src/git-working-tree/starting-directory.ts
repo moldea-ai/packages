@@ -1,10 +1,7 @@
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  hasOnlyUnicodeScalarValues,
-  isRepositoryDirectoryInputValid,
-} from '../command-line/index.js';
+import { isRepositoryDirectoryInputValid } from '../command-line/index.js';
 
 import type {
   IGitStartingDirectoryInspectionResult,
@@ -42,7 +39,7 @@ export const createGitStartingDirectoryInspector =
     if (
       !path.isAbsolute(input.invocationDirectory) ||
       input.invocationDirectory.includes('\0') ||
-      !hasOnlyUnicodeScalarValues(input.invocationDirectory) ||
+      !input.invocationDirectory.isWellFormed() ||
       (input.repositoryDirectory !== null &&
         !isRepositoryDirectoryInputValid(input.repositoryDirectory))
     ) {

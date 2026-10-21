@@ -1,3 +1,5 @@
+import { deepFreeze } from 'jg-utilities';
+
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
@@ -9,7 +11,6 @@ import type {
 import { createCoreDiagnosticCollector } from '../diagnostic-utilities/index.js';
 import type { ICoreOperation } from '../exceptions/index.js';
 import { isCanonicalManifestPath } from '../format-validation/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { detectSupportedManifestVersion, validateManifest } from '../manifest-validation/index.js';
 import { createSourceLocator } from '../source-location/index.js';
 import { calculateNormalizedTextDigest, normalizeTextDocument } from '../text/index.js';
@@ -53,7 +54,7 @@ export const inspectManifestDocument = async (
   }
 
   if (!normalized.valid || normalized.text === null) {
-    return freezeRecursively({
+    return deepFreeze({
       asset: null,
       diagnostics: diagnostics.finalize(),
       formatVersion: null,
@@ -71,7 +72,7 @@ export const inspectManifestDocument = async (
       : null;
 
   if (manifest === null || diagnostics.size > 0) {
-    return freezeRecursively({
+    return deepFreeze({
       asset: null,
       diagnostics: diagnostics.finalize(),
       formatVersion,
@@ -89,7 +90,7 @@ export const inspectManifestDocument = async (
     utf8ByteLength: normalized.text.utf8ByteLength,
   };
 
-  return freezeRecursively({
+  return deepFreeze({
     asset,
     diagnostics: diagnostics.finalize(),
     formatVersion,
@@ -115,7 +116,7 @@ export const parseManifestDocument = async (
 ): Promise<IManifestParseResult> => {
   const inspection = await inspectManifestDocument(input, options, operation);
 
-  return freezeRecursively({
+  return deepFreeze({
     asset: inspection.asset,
     diagnostics: inspection.diagnostics,
     manifest: inspection.manifest,

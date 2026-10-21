@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describeRepositoryReaderConformance } from '@moldea.ai/repository/testing';
+import { describe, expect, test } from 'vitest';
 
 import { RepositoryPathException, RepositorySourceException } from './exceptions.js';
 import { createMemoryRepositoryReader, type IMemoryRepositoryEntry } from './memory.js';
@@ -20,7 +21,7 @@ const expectedEntries = [
   { path: parseRepositoryPath('/unicode/café-😀.txt'), type: 'file' as const },
 ];
 
-describeRepositoryReaderConformance('in-memory', {
+describeRepositoryReaderConformance({ describe, expect, test }, 'in-memory', {
   casePaths: { kind: 'distinct', paths: ['/Case.txt', '/case.txt'] },
   createReader: () => createMemoryRepositoryReader(createValidMemoryEntries()),
   createSnapshotMutationFixture: () => {

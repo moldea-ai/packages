@@ -56,7 +56,6 @@ jobs:
       cross_platform: ${{ steps.selection.outputs.cross_platform }}
       website: ${{ steps.selection.outputs.website }}
       consumer_conformance: ${{ steps.selection.outputs.consumer_conformance }}
-      repository_testing_peer_compatibility: ${{ steps.selection.outputs.repository_testing_peer_compatibility }}
       cli_testing_peer_compatibility: ${{ steps.selection.outputs.cli_testing_peer_compatibility }}
       repository_fs_runtime_compatibility: ${{ steps.selection.outputs.repository_fs_runtime_compatibility }}
       cli_runtime_compatibility: ${{ steps.selection.outputs.cli_runtime_compatibility }}
@@ -223,61 +222,13 @@ jobs:
     if: ${{ needs.plan.outputs.consumer_conformance == 'true' }}
     permissions:
       contents: read
-    uses: moldea-ai/skill/.github/workflows/release-candidate.yml@8a2770d1eab28f92b3a8107f7774e33e7e492d57
+    uses: moldea-ai/skill/.github/workflows/release-candidate.yml@6d3fb3ea754ad463be348b5fd868937a50cb5056
     with:
       artifact_name: public-package-tarballs
       packages_ref: ${{ github.sha }}
-      skill_ref: 8a2770d1eab28f92b3a8107f7774e33e7e492d57
-      skill_version: '9.0.0'
+      skill_ref: 6d3fb3ea754ad463be348b5fd868937a50cb5056
+      skill_version: '10.0.0'
       registry_snapshot: ${{ needs.plan.outputs.registry_snapshot }}
-
-  repository-testing-peer-compatibility:
-    name: Repository Testing Peers (Vitest ${{ matrix.vitest-version }})
-    needs: [plan, pack]
-    if: ${{ needs.plan.outputs.repository_testing_peer_compatibility == 'true' }}
-    runs-on: ubuntu-latest
-    env:
-      PNPM_VERSION: 11.9.0
-      WEB_UTILS_KIT_VERSION: 1.3.1
-    strategy:
-      fail-fast: false
-      matrix:
-        vitest-version:
-          - 1.0.0
-          - 2.0.0
-          - 3.2.4
-          - 4.1.10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Download Public Package Artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: 'public-package-tarballs'
-          path: ${{ runner.temp }}/public-package-tarballs
-
-      - name: Pin Registry Snapshot
-        if: ${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}
-        run: node configs/registry-snapshot/write-environment.mjs >> "$GITHUB_ENV"
-
-      - name: Test Packed Repository Testing Peers
-        run: >-
-          node projects/repository/scripts/testing-peer-compatibility/index.mjs
-          "${{ runner.temp }}/public-package-tarballs"
-          "${{ matrix.vitest-version }}"
 
   cli-testing-peer-compatibility:
     name: CLI Existing Vitest 3.2.4 Compatibility
@@ -450,7 +401,6 @@ jobs:
       - checks
       - pack
       - consumer-conformance
-      - repository-testing-peer-compatibility
       - cli-testing-peer-compatibility
       - repository-fs-runtime-compatibility
       - cli-runtime-compatibility

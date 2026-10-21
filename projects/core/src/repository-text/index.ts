@@ -1,8 +1,9 @@
+import { deepFreeze } from 'jg-utilities';
+
 import { RepositorySourceException, type IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICoreResourceLimits, IIndexedTextAsset } from '../contracts/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { calculateNormalizedTextDigest, normalizeTextDocument } from '../text/index.js';
 
@@ -57,7 +58,7 @@ export const readRepositoryTextAsset = async (
   const normalized = normalizeTextDocument({ content, path }, limits, 'validate-project');
 
   if (!normalized.valid || normalized.text === null) {
-    return freezeRecursively({
+    return deepFreeze({
       asset: null,
       diagnostics: normalized.diagnostics,
       valid: false,
@@ -72,7 +73,7 @@ export const readRepositoryTextAsset = async (
     utf8ByteLength: normalized.text.utf8ByteLength,
   };
 
-  return freezeRecursively({
+  return deepFreeze({
     asset,
     diagnostics: [],
     valid: true,

@@ -1,3 +1,5 @@
+import { compareCodePoints, deepFreeze } from 'jg-utilities';
+
 import type { IInspectedAgentAssets } from '../agent-assets/index.js';
 import type {
   IIndexedAgent,
@@ -8,9 +10,8 @@ import type {
   IIndexedTextAsset,
   IMoldeaProjectIndex,
 } from '../contracts/index.js';
-import { compareExactStrings } from '../format-validation/index.js';
 import type { IParsedDecision } from '../format/index.js';
-import { createNullPrototypeRecord, freezeRecursively } from '../immutable/index.js';
+import { createNullPrototypeRecord } from '../immutable/index.js';
 import type { IAgentMirrorInspection } from '../mirrors/index.js';
 
 // complete universal inputs required to construct one provisional project index
@@ -31,7 +32,7 @@ const createIndexedDecisions = (
   return [...decisions]
     .sort(
       (left, right) =>
-        compareExactStrings(left.id, right.id) || compareExactStrings(left.path, right.path),
+        compareCodePoints(left.id, right.id) || compareCodePoints(left.path, right.path),
     )
     .map((decision) => ({
       decision,
@@ -50,7 +51,7 @@ const createIndexedAgents = (
     return null;
   }
 
-  for (const agent of [...agents].sort((left, right) => compareExactStrings(left.id, right.id))) {
+  for (const agent of [...agents].sort((left, right) => compareCodePoints(left.id, right.id))) {
     const mirrors = mirrorsByAgent.get(agent.id);
 
     if (agent.description === null || agent.instruction === null || mirrors === undefined) {
@@ -58,14 +59,14 @@ const createIndexedAgents = (
     }
 
     indexedAgents.push({
-      context: [...(agent.declaration.context ?? [])].sort(compareExactStrings),
-      decisions: [...(agent.declaration.decisions ?? [])].sort(compareExactStrings),
+      context: [...(agent.declaration.context ?? [])].sort(compareCodePoints),
+      decisions: [...(agent.declaration.decisions ?? [])].sort(compareCodePoints),
       declaration: agent.declaration,
       description: agent.description,
       handoffDescription: agent.handoffDescription,
       id: agent.id,
       instruction: agent.instruction,
-      mirrors: [...mirrors].sort((left, right) => compareExactStrings(left.path, right.path)),
+      mirrors: [...mirrors].sort((left, right) => compareCodePoints(left.path, right.path)),
     });
   }
 
@@ -86,17 +87,17 @@ export const createProjectIndex = (input: IProjectIndexInput): IMoldeaProjectInd
 
   const unresolved = input.manifest.value.unresolved ?? createNullPrototypeRecord([]);
 
-  return freezeRecursively({
+  return deepFreeze({
     agents,
     context: [...input.context].sort((left, right) =>
-      compareExactStrings(left.asset.path, right.asset.path),
+      compareCodePoints(left.asset.path, right.asset.path),
     ),
     decisions: createIndexedDecisions(input.decisions, input.manifest),
     formatVersion: 1 as const,
     manifest: input.manifest,
     project: input.project,
     runtimes: [...input.runtimes].sort((left, right) =>
-      compareExactStrings(left.asset.path, right.asset.path),
+      compareCodePoints(left.asset.path, right.asset.path),
     ),
     unresolved,
   });

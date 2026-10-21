@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
-import { Exception } from 'error-message-utils';
+import { Exception } from 'jg-exception';
 
 import { RepositoryPathException, RepositorySourceException } from './exceptions.js';
 import { parseRepositoryPath } from './repository-path.js';

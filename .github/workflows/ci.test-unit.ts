@@ -33,7 +33,8 @@ test('packed consumers use the reviewed registry snapshot unless the canary requ
     ),
   );
 
-  expect(consumerSteps).toHaveLength(4);
+  // the existing-Vitest CLI check and the CLI and Repository FS runtime checks
+  expect(consumerSteps).toHaveLength(3);
   for (const { previous } of consumerSteps) {
     expect(previous).toStrictEqual({
       name: 'Pin Registry Snapshot',

@@ -1,31 +1,33 @@
-import {
-  executeGitProcess,
-  type IGitProcessExecutor,
-  type IGitProcessFailureReason,
-} from '../git-process/index.js';
+import { readGitVersion } from 'jg-git-commands';
+
+import { GIT_TIMEOUT_SECONDS, readGit, type IGitFailureReason } from '../git-command/index.js';
 import type { IMoldeaCliGitErrorCode } from '../presentation/index.js';
 
 import { MAX_GIT_VERSION_OUTPUT_BYTES, MINIMUM_GIT_VERSION_COMPONENTS } from './constants.js';
-import { parseGitVersionOutput } from './parser.js';
-import type { IGitVersion, IGitVersionPreflight, IGitVersionPreflightResult } from './types.js';
+import type {
+  IGitVersion,
+  IGitVersionPreflight,
+  IGitVersionPreflightResult,
+  IGitVersionReader,
+} from './types.js';
 
 /**
- * Maps process failures to stable safe CLI errors.
- * @param reason The normalized subprocess failure reason.
+ * Maps Git failures to stable safe CLI errors.
+ * @param reason The normalized Git failure reason.
  * @returns The public Git error code.
  */
-const mapGitProcessFailure = (reason: IGitProcessFailureReason): IMoldeaCliGitErrorCode => {
+const mapGitFailure = (reason: IGitFailureReason): IMoldeaCliGitErrorCode => {
   switch (reason) {
     case 'aborted':
       return 'GIT_OPERATION_ABORTED';
     case 'not-found':
       return 'GIT_NOT_FOUND';
-    case 'repository-not-found':
-      return 'GIT_COMMAND_FAILED';
     case 'access-denied':
       return 'GIT_ACCESS_DENIED';
     case 'output-limit-exceeded':
+    case 'output-invalid':
       return 'GIT_VERSION_INVALID';
+    case 'repository-not-found':
     case 'command-failed':
       return 'GIT_COMMAND_FAILED';
   }
@@ -49,51 +51,30 @@ const isGitVersionSupported = (version: IGitVersion): boolean => {
 };
 
 /**
- * Creates a Git prerequisite check around an injectable process boundary.
- * @param processExecutor The normalized Git subprocess executor.
+ * Creates a Git prerequisite check around an injectable typed version read.
+ * @param readVersion The installed Git version read.
  * @returns A preflight that validates the installed Git version.
  */
 export const createGitVersionPreflight =
-  (processExecutor: IGitProcessExecutor = executeGitProcess): IGitVersionPreflight =>
-  async (signal): Promise<IGitVersionPreflightResult> => {
-    const processResult = await processExecutor({
-      arguments: ['--version'],
-      maxBufferBytes: MAX_GIT_VERSION_OUTPUT_BYTES,
-      ...(signal === undefined ? {} : { signal }),
-    });
+  (readVersion: IGitVersionReader = readGitVersion): IGitVersionPreflight =>
+  async (directory, signal): Promise<IGitVersionPreflightResult> => {
+    const versionResult = await readGit(
+      () =>
+        readVersion(directory, {
+          maxOutputBytes: MAX_GIT_VERSION_OUTPUT_BYTES,
+          timeoutSeconds: GIT_TIMEOUT_SECONDS,
+          ...(signal === undefined ? {} : { signal }),
+        }),
+      signal,
+    );
 
-    if (processResult.kind === 'failed') {
-      return Object.freeze({
-        errorCode: mapGitProcessFailure(processResult.reason),
-        kind: 'failed',
-      });
+    if (versionResult.kind === 'failed') {
+      return Object.freeze({ errorCode: mapGitFailure(versionResult.reason), kind: 'failed' });
     }
 
-    if (processResult.stderr.byteLength > 0) {
-      return Object.freeze({
-        errorCode: 'GIT_VERSION_INVALID',
-        kind: 'failed',
-      });
+    if (!isGitVersionSupported(versionResult.value)) {
+      return Object.freeze({ errorCode: 'GIT_VERSION_UNSUPPORTED', kind: 'failed' });
     }
 
-    const version = parseGitVersionOutput(processResult.stdout);
-
-    if (version === null) {
-      return Object.freeze({
-        errorCode: 'GIT_VERSION_INVALID',
-        kind: 'failed',
-      });
-    }
-
-    if (!isGitVersionSupported(version)) {
-      return Object.freeze({
-        errorCode: 'GIT_VERSION_UNSUPPORTED',
-        kind: 'failed',
-      });
-    }
-
-    return Object.freeze({ kind: 'supported', version });
+    return Object.freeze({ kind: 'supported', version: Object.freeze({ ...versionResult.value }) });
   };
-
-// default Git prerequisite preflight used by command execution
-export const checkGitVersion = createGitVersionPreflight();

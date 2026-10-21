@@ -1,3 +1,5 @@
+import { compareCodePoints, deepFreeze } from 'jg-utilities';
+
 import {
   RepositorySourceException,
   isRepositoryPath,
@@ -16,8 +18,6 @@ import {
   type ICoreDiagnosticCollector,
 } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
-import { compareExactStrings } from '../format-validation/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 
 const MOLDEA_ROOT = parseRepositoryPath('/moldea');
@@ -228,13 +228,13 @@ const retainCanonicalFile = (
 
 const finalizeInventory = (working: IWorkingInventory): ICanonicalDiscoveryInventory => {
   const sortPaths = (paths: ReadonlySet<IRepositoryPath>): IRepositoryPath[] => {
-    return [...paths].sort(compareExactStrings);
+    return [...paths].sort(compareCodePoints);
   };
   const agents = [...working.agents.values()]
-    .sort((left, right) => compareExactStrings(left.id, right.id))
-    .map((agent) => freezeRecursively({ ...agent }));
+    .sort((left, right) => compareCodePoints(left.id, right.id))
+    .map((agent) => deepFreeze({ ...agent }));
 
-  return freezeRecursively({
+  return deepFreeze({
     agents,
     context: sortPaths(working.context),
     decisions: sortPaths(working.decisions),
@@ -250,7 +250,7 @@ const finalizeResult = (
 ): ICanonicalDiscoveryResult => {
   const finalizedDiagnostics = diagnostics.finalize();
 
-  return freezeRecursively({
+  return deepFreeze({
     diagnostics: finalizedDiagnostics,
     inventory: finalizeInventory(working),
     valid: finalizedDiagnostics.length === 0,

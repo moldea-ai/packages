@@ -1,13 +1,17 @@
+import { listUntrackedFiles, readIndexEntries, type IIndexEntry } from 'jg-git-commands';
+import { countUtf8Bytes } from 'jg-utilities';
+
 import {
-  executeGitStreamingProcess,
-  MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
-  type IGitStreamingProcessExecutor,
-  type IGitStreamingProcessFailureReason,
-} from '../git-process/index.js';
+  GIT_TIMEOUT_SECONDS,
+  readGit,
+  runGitCommand,
+  type IGitFailureReason,
+} from '../git-command/index.js';
+
 import {
   GIT_IGNORED_INVENTORY_ARGUMENTS,
-  GIT_TRACKED_INVENTORY_ARGUMENTS,
-  GIT_UNTRACKED_INVENTORY_ARGUMENTS,
+  GIT_TRACKED_ENTRY_MODES,
+  GIT_TRACKED_RECORD_OVERHEAD_BYTES,
 } from './constants.js';
 import {
   createGitContentTransformationClassifier,
@@ -24,7 +28,7 @@ import {
   normalizeGitInventoryLogicalPaths,
   type IGitInventoryLogicalPathNormalizer,
 } from './logical-path/index.js';
-import { createTrackedGitInventoryParser, createUntrackedGitInventoryParser } from './parser.js';
+import { createUntrackedGitInventoryParser } from './parser.js';
 import {
   createGitInventoryBoundaryInspector,
   createGitInventoryOwnershipFilter,
@@ -32,17 +36,26 @@ import {
 } from './repository-ownership/index.js';
 import type {
   IGitInventoryCandidate,
+  IGitInventoryListingReads,
   IGitInventoryParserResult,
   IGitInventoryProbe,
   IGitInventoryProbeErrorCode,
   IGitInventoryProbeFailedResult,
   IGitInventoryProbeResult,
+  IGitTrackedEntryMode,
+  IGitTrackedInventoryCandidate,
+  IGitUntrackedInventoryCandidate,
 } from './types.js';
 
-/** Maps one normalized streamed Git failure to a safe inventory error. */
-const mapGitProcessFailure = (
-  reason: IGitStreamingProcessFailureReason,
-): IGitInventoryProbeErrorCode => {
+// the typed Git reads and command the probe uses outside tests
+const GIT_INVENTORY_LISTING_READS: IGitInventoryListingReads = Object.freeze({
+  listUntrackedFiles,
+  readIndexEntries,
+  runGit: runGitCommand,
+});
+
+/** Maps one normalized Git failure to a safe inventory error. */
+const mapGitFailure = (reason: IGitFailureReason): IGitInventoryProbeErrorCode => {
   switch (reason) {
     case 'aborted':
       return 'GIT_OPERATION_ABORTED';
@@ -52,15 +65,46 @@ const mapGitProcessFailure = (
       return 'GIT_REPOSITORY_NOT_FOUND';
     case 'access-denied':
       return 'GIT_ACCESS_DENIED';
-    case 'stderr-limit-exceeded':
+    case 'output-invalid':
       return 'GIT_OUTPUT_INVALID';
     case 'output-limit-exceeded':
-    case 'stdout-limit-exceeded':
       return 'RESOURCE_LIMIT_EXCEEDED';
     case 'command-failed':
       return 'GIT_COMMAND_FAILED';
   }
 };
+
+/** Determines whether one index mode belongs to the version 1 inventory grammar. */
+const isTrackedEntryMode = (mode: string): mode is IGitTrackedEntryMode =>
+  (GIT_TRACKED_ENTRY_MODES as readonly string[]).includes(mode);
+
+/** Converts index entries into tracked candidates, or null when one has an unsupported mode. */
+const toTrackedCandidates = (
+  entries: readonly IIndexEntry[],
+): readonly IGitTrackedInventoryCandidate[] | null => {
+  const candidates: IGitTrackedInventoryCandidate[] = [];
+
+  for (const { mode, path, stage } of entries) {
+    if (!isTrackedEntryMode(mode)) {
+      return null;
+    }
+
+    candidates.push(Object.freeze({ kind: 'tracked', mode, path, stage }));
+  }
+
+  return Object.freeze(candidates);
+};
+
+/** Measures the stdout `ls-files --stage -z` wrote for the index entries. */
+const measureTrackedOutput = (entries: readonly IIndexEntry[]): number =>
+  entries.reduce(
+    (bytes, { path }) => bytes + GIT_TRACKED_RECORD_OVERHEAD_BYTES + countUtf8Bytes(path),
+    0,
+  );
+
+/** Measures the stdout `ls-files --others -z` wrote for the untracked paths. */
+const measureUntrackedOutput = (paths: readonly string[]): number =>
+  paths.reduce((bytes, path) => bytes + countUtf8Bytes(path) + 1, 0);
 
 /** Creates one immutable inventory-probe failure. */
 const createProbeFailure = (
@@ -89,7 +133,7 @@ const isProbeFailure = (
 
 /**
  * Creates the strict normalized Git inventory probe around injectable boundaries.
- * @param processExecutor The bounded incremental Git process executor.
+ * @param git The typed Git reads and command that list raw candidates.
  * @param ownershipFilter The submodule and nested-repository ownership filter.
  * @param entryTypeNormalizer The current filesystem and Git mode entry-type normalizer.
  * @param contentTransformationClassifier The bounded effective Git attribute classifier.
@@ -98,17 +142,15 @@ const isProbeFailure = (
  */
 export const createGitInventoryProbe =
   (
-    processExecutor: IGitStreamingProcessExecutor = executeGitStreamingProcess,
+    git: IGitInventoryListingReads = GIT_INVENTORY_LISTING_READS,
     ownershipFilter: IGitInventoryOwnershipFilter = createGitInventoryOwnershipFilter(
-      createGitInventoryBoundaryInspector(processExecutor),
+      createGitInventoryBoundaryInspector(),
     ),
     entryTypeNormalizer: IGitInventoryEntryTypeNormalizer = createGitInventoryEntryTypeNormalizer(
       inspectGitInventoryEntry,
-      createGitSymlinkConfigurationResolver(processExecutor),
+      createGitSymlinkConfigurationResolver(),
     ),
-    contentTransformationClassifier: IGitContentTransformationClassifier = createGitContentTransformationClassifier(
-      processExecutor,
-    ),
+    contentTransformationClassifier: IGitContentTransformationClassifier = createGitContentTransformationClassifier(),
     logicalPathNormalizer: IGitInventoryLogicalPathNormalizer = normalizeGitInventoryLogicalPaths,
   ): IGitInventoryProbe =>
   async (input): Promise<IGitInventoryProbeResult> => {
@@ -116,98 +158,98 @@ export const createGitInventoryProbe =
       return createProbeFailure('GIT_OPERATION_ABORTED');
     }
 
-    const selectionPathspecs = (input.selectionPaths ?? []).map(
-      (selectionPath) => `:(top,literal)${selectionPath.slice(1)}`,
+    // Git reads these paths literally, from the repository root the commands run in
+    const selectionPaths = (input.selectionPaths ?? []).map((selectionPath) =>
+      selectionPath.slice(1),
     );
-    const trackedParser = createTrackedGitInventoryParser(input.maxEntries);
-    const trackedProcessResult = await processExecutor({
-      arguments: [
-        '-C',
-        input.repositoryRoot,
-        ...GIT_TRACKED_INVENTORY_ARGUMENTS,
-        ...selectionPathspecs,
-      ],
-      consumeStdout: (chunk) => trackedParser.consume(chunk),
-      maxStderrBytes: MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
-      maxStdoutBytes: input.maxMetadataBytes,
+    let remainingMetadataBytes = input.maxMetadataBytes;
+
+    /*
+     * Each read may use the rest of the shared metadata budget for its stdout and stderr together.
+     * Git needs a positive limit, so an exhausted budget still allows one byte, and the read fails
+     * once its measured output leaves the budget negative.
+     */
+    const createReadOptions = () => ({
+      maxOutputBytes: Math.max(remainingMetadataBytes, 1),
+      timeoutSeconds: GIT_TIMEOUT_SECONDS,
+      ...(selectionPaths.length === 0 ? {} : { paths: selectionPaths }),
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     });
 
-    if (trackedProcessResult.kind === 'failed') {
-      return createProbeFailure(mapGitProcessFailure(trackedProcessResult.reason));
-    }
-
-    if (trackedProcessResult.stderr.byteLength > 0) {
-      return createProbeFailure('GIT_OUTPUT_INVALID');
-    }
-
-    const trackedCandidates = resolveParserResult(trackedParser.finish());
-
-    if (isProbeFailure(trackedCandidates)) {
-      return trackedCandidates;
-    }
-
-    const untrackedParser = createUntrackedGitInventoryParser(
-      input.maxEntries - trackedCandidates.length,
+    const trackedResult = await readGit(
+      () => git.readIndexEntries(input.repositoryRoot, createReadOptions()),
+      input.signal,
     );
-    const untrackedProcessResult = await processExecutor({
-      arguments: [
-        '-C',
-        input.repositoryRoot,
-        ...GIT_UNTRACKED_INVENTORY_ARGUMENTS,
-        ...selectionPathspecs,
-      ],
-      consumeStdout: (chunk) => untrackedParser.consume(chunk),
-      maxStderrBytes: MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
-      maxStdoutBytes: input.maxMetadataBytes - trackedProcessResult.stdoutBytes,
-      ...(input.signal === undefined ? {} : { signal: input.signal }),
-    });
 
-    if (untrackedProcessResult.kind === 'failed') {
-      return createProbeFailure(mapGitProcessFailure(untrackedProcessResult.reason));
+    if (trackedResult.kind === 'failed') {
+      return createProbeFailure(mapGitFailure(trackedResult.reason));
     }
 
-    if (untrackedProcessResult.stderr.byteLength > 0) {
+    remainingMetadataBytes -= measureTrackedOutput(trackedResult.value);
+
+    if (trackedResult.value.length > input.maxEntries || remainingMetadataBytes < 0) {
+      return createProbeFailure('RESOURCE_LIMIT_EXCEEDED');
+    }
+
+    const trackedCandidates = toTrackedCandidates(trackedResult.value);
+
+    if (trackedCandidates === null) {
       return createProbeFailure('GIT_OUTPUT_INVALID');
     }
 
-    const untrackedCandidates = resolveParserResult(untrackedParser.finish());
+    const untrackedResult = await readGit(
+      () => git.listUntrackedFiles(input.repositoryRoot, createReadOptions()),
+      input.signal,
+    );
 
-    if (isProbeFailure(untrackedCandidates)) {
-      return untrackedCandidates;
+    if (untrackedResult.kind === 'failed') {
+      return createProbeFailure(mapGitFailure(untrackedResult.reason));
     }
 
+    remainingMetadataBytes -= measureUntrackedOutput(untrackedResult.value);
+
+    if (
+      trackedCandidates.length + untrackedResult.value.length > input.maxEntries ||
+      remainingMetadataBytes < 0
+    ) {
+      return createProbeFailure('RESOURCE_LIMIT_EXCEEDED');
+    }
+
+    if (untrackedResult.value.some((path) => path.length === 0)) {
+      return createProbeFailure('GIT_OUTPUT_INVALID');
+    }
+
+    const untrackedCandidates: readonly IGitUntrackedInventoryCandidate[] = Object.freeze(
+      untrackedResult.value.map((path) => Object.freeze({ kind: 'untracked', path })),
+    );
     let ignoredCandidates: readonly IGitInventoryCandidate[] = [];
-    let ignoredStdoutBytes = 0;
 
     // ignored files enter only an explicit selection, never the general inventory
-    if (input.includeIgnored === true && selectionPathspecs.length > 0) {
+    if (input.includeIgnored === true && selectionPaths.length > 0) {
+      const ignoredResult = await git.runGit(
+        [...GIT_IGNORED_INVENTORY_ARGUMENTS, ...selectionPaths],
+        {
+          cwd: input.repositoryRoot,
+          maxOutputBytes: Math.max(remainingMetadataBytes, 1),
+          ...(input.signal === undefined ? {} : { signal: input.signal }),
+        },
+      );
+
+      if (ignoredResult.kind === 'failed') {
+        return createProbeFailure(mapGitFailure(ignoredResult.reason));
+      }
+
+      remainingMetadataBytes -= ignoredResult.value.byteLength;
+
+      if (remainingMetadataBytes < 0) {
+        return createProbeFailure('RESOURCE_LIMIT_EXCEEDED');
+      }
+
       const ignoredParser = createUntrackedGitInventoryParser(
         input.maxEntries - trackedCandidates.length - untrackedCandidates.length,
       );
-      const ignoredProcessResult = await processExecutor({
-        arguments: [
-          '-C',
-          input.repositoryRoot,
-          ...GIT_IGNORED_INVENTORY_ARGUMENTS,
-          ...selectionPathspecs,
-        ],
-        consumeStdout: (chunk) => ignoredParser.consume(chunk),
-        maxStderrBytes: MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
-        maxStdoutBytes:
-          input.maxMetadataBytes -
-          trackedProcessResult.stdoutBytes -
-          untrackedProcessResult.stdoutBytes,
-        ...(input.signal === undefined ? {} : { signal: input.signal }),
-      });
 
-      if (ignoredProcessResult.kind === 'failed') {
-        return createProbeFailure(mapGitProcessFailure(ignoredProcessResult.reason));
-      }
-
-      if (ignoredProcessResult.stderr.byteLength > 0) {
-        return createProbeFailure('GIT_OUTPUT_INVALID');
-      }
+      ignoredParser.consume(ignoredResult.value);
 
       const parsedIgnoredCandidates = resolveParserResult(ignoredParser.finish());
 
@@ -219,7 +261,6 @@ export const createGitInventoryProbe =
       ignoredCandidates = parsedIgnoredCandidates.filter(
         (candidate) => !untrackedPaths.has(candidate.path),
       );
-      ignoredStdoutBytes = ignoredProcessResult.stdoutBytes;
     }
 
     const candidates = Object.freeze([
@@ -227,11 +268,6 @@ export const createGitInventoryProbe =
       ...untrackedCandidates,
       ...ignoredCandidates,
     ]);
-    const metadataBytesAfterListing =
-      input.maxMetadataBytes -
-      trackedProcessResult.stdoutBytes -
-      untrackedProcessResult.stdoutBytes -
-      ignoredStdoutBytes;
     const logicalPathFilterResult = filterGitInventoryCandidateLogicalPaths({ candidates });
 
     if (logicalPathFilterResult.kind === 'failed') {
@@ -240,7 +276,7 @@ export const createGitInventoryProbe =
 
     const ownershipResult = await ownershipFilter({
       candidates: logicalPathFilterResult.candidates,
-      maxMetadataBytes: metadataBytesAfterListing,
+      maxMetadataBytes: remainingMetadataBytes,
       repositoryRoot: input.repositoryRoot,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     });
@@ -251,7 +287,7 @@ export const createGitInventoryProbe =
 
     const entryTypeResult = await entryTypeNormalizer({
       candidates: ownershipResult.candidates,
-      maxMetadataBytes: metadataBytesAfterListing - ownershipResult.gitMetadataBytes,
+      maxMetadataBytes: remainingMetadataBytes - ownershipResult.gitMetadataBytes,
       repositoryRoot: input.repositoryRoot,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     });
@@ -263,7 +299,7 @@ export const createGitInventoryProbe =
     const contentTransformationResult = await contentTransformationClassifier({
       entries: entryTypeResult.entries,
       maxMetadataBytes:
-        metadataBytesAfterListing -
+        remainingMetadataBytes -
         ownershipResult.gitMetadataBytes -
         entryTypeResult.gitMetadataBytes,
       repositoryRoot: input.repositoryRoot,

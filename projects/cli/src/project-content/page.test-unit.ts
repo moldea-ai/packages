@@ -1,9 +1,9 @@
 // @vitest-environment node
+import { stringifyJsonDeterministically } from 'jg-utilities';
 import { describe, expect, test } from 'vitest';
 
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
-import { serializeJsonDeterministically } from '../json-serialization/index.js';
 import { MoldeaCliOutputPageException } from '../output-page/index.js';
 
 import { createMoldeaCliContentPage } from './page.js';
@@ -24,7 +24,7 @@ const createPage = (content: string, isComplete = true) => ({
 });
 
 const measureContentResult = (result: unknown): number =>
-  Buffer.byteLength(serializeJsonDeterministically(result), 'utf8');
+  Buffer.byteLength(stringifyJsonDeterministically(result, { strict: true }), 'utf8');
 
 describe('content pages', () => {
   test('splits a bounded source range on Unicode scalar boundaries', () => {

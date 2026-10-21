@@ -1,3 +1,5 @@
+import type { IMarkedRegion } from 'jg-utilities';
+
 import { parseRepositoryPath, resolveRepositoryLink } from '@moldea.ai/repository';
 
 import type { IRetainedSource } from '../retained-memory/index.js';
@@ -97,7 +99,7 @@ const checkAgentsDocument = async (
           referencedPath: `/${skillPath}`,
           reason: 'invalid-utf8-asset',
         });
-      const region = parseManagedIntegrationRegion(document.text)!;
+      const region = parseManagedIntegrationRegion(document.text) as IMarkedRegion;
       let occurrences = 0;
       let offset = 0;
       while ((offset = asset.text.indexOf('{{skill-path}}', offset)) !== -1) {

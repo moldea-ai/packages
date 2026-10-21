@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
-import { expectToRejectCode } from 'web-utils-kit';
+import { expectToRejectCode } from 'jg-exception/testing';
 
 import type { IRepositoryLinkResolution } from './contracts.js';
 import {

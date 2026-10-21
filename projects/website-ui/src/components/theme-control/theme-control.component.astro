@@ -28,29 +28,19 @@ const { class: className, storageKey } = Astro.props;
 </button>
 
 <script>
-  import { isDarkTheme, parseThemePreference, type IThemePreference } from '../../theme/index.ts';
-
-  const readPreference = (storageKey: string): IThemePreference => {
-    try {
-      return parseThemePreference(localStorage.getItem(storageKey));
-    } catch {
-      return 'system';
-    }
-  };
-
-  const persistPreference = (storageKey: string, preference: IThemePreference): void => {
-    try {
-      localStorage.setItem(storageKey, preference);
-    } catch {
-      // theme selection still applies to the active page when storage is unavailable
-    }
-  };
+  import {
+    readThemePreference,
+    resolveThemePreference,
+    writeThemePreference,
+    type IThemePreference,
+  } from 'jg-site';
 
   const applyTheme = (preference: IThemePreference, storageKey: string): void => {
-    const isDark = isDarkTheme(
-      preference,
-      window.matchMedia('(prefers-color-scheme: dark)').matches,
-    );
+    const isDark =
+      resolveThemePreference(
+        preference,
+        window.matchMedia('(prefers-color-scheme: dark)').matches,
+      ) === 'dark';
     const root = document.documentElement;
 
     root.classList.remove('light', 'dark');
@@ -79,7 +69,7 @@ const { class: className, storageKey } = Astro.props;
     );
 
     for (const storageKey of storageKeys) {
-      applyTheme(readPreference(storageKey), storageKey);
+      applyTheme(readThemePreference(storageKey), storageKey);
     }
   };
 
@@ -98,7 +88,8 @@ const { class: className, storageKey } = Astro.props;
 
       const preference = control.dataset.nextTheme === 'light' ? 'light' : 'dark';
 
-      persistPreference(storageKey, preference);
+      // the theme still applies to the page when storage is unavailable
+      writeThemePreference(storageKey, preference);
       applyTheme(preference, storageKey);
     });
 

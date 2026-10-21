@@ -1,14 +1,10 @@
 import { Buffer } from 'node:buffer';
 import { lstat, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { readTopLevel } from 'jg-git-commands';
+import { countUtf8Bytes } from 'jg-utilities';
 
-import {
-  executeGitStreamingProcess,
-  MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
-  type IGitStreamingProcessExecutor,
-  type IGitStreamingProcessFailureReason,
-} from '../../git-process/index.js';
-import { parseGitAbsolutePathOutput } from '../../git-working-tree/index.js';
+import { GIT_TIMEOUT_SECONDS, readGit, type IGitFailureReason } from '../../git-command/index.js';
 import {
   areHostPathsEquivalent,
   haveSameHostPathIdentity,
@@ -24,10 +20,13 @@ import type {
   IGitInventoryOwnershipLstat,
   IGitInventoryOwnershipReadDirectory,
   IGitInventoryOwnershipStatistics,
+  IGitTopLevelReader,
 } from './types.js';
 
 const GIT_CONTROL_SEGMENT = '.git';
-const GIT_REPOSITORY_ROOT_ARGUMENTS = ['rev-parse', '--show-toplevel'] as const;
+
+// stdout of readTopLevel's two commands besides the root itself: `true\n`, then the root's `\n`
+const TOP_LEVEL_OUTPUT_OVERHEAD_BYTES = 6;
 
 interface IGitInventoryDirectoryObservation {
   readonly encodedNameKeys: ReadonlySet<string>;
@@ -85,10 +84,8 @@ const mapFilesystemFailure = (error: unknown): IGitInventoryProbeErrorCode => {
   return 'GIT_COMMAND_FAILED';
 };
 
-/** Maps a streamed nested-root check failure into the existing safe CLI contract. */
-const mapGitProcessFailure = (
-  reason: IGitStreamingProcessFailureReason,
-): IGitInventoryProbeErrorCode => {
+/** Maps a nested-root check failure into the existing safe CLI contract. */
+const mapGitFailure = (reason: IGitFailureReason): IGitInventoryProbeErrorCode => {
   switch (reason) {
     case 'aborted':
       return 'GIT_OPERATION_ABORTED';
@@ -97,10 +94,9 @@ const mapGitProcessFailure = (
     case 'access-denied':
       return 'GIT_ACCESS_DENIED';
     case 'output-limit-exceeded':
-    case 'stdout-limit-exceeded':
       return 'RESOURCE_LIMIT_EXCEEDED';
     case 'repository-not-found':
-    case 'stderr-limit-exceeded':
+    case 'output-invalid':
       return 'GIT_OUTPUT_INVALID';
     case 'command-failed':
       return 'GIT_COMMAND_FAILED';
@@ -155,26 +151,13 @@ const hasStableDirectoryIdentity = (
   initialStatistics.dev === revalidatedStatistics.dev &&
   initialStatistics.ino === revalidatedStatistics.ino;
 
-/** Concatenates already bounded Git stdout chunks for strict root parsing. */
-const concatenateChunks = (chunks: readonly Uint8Array[], byteLength: number): Uint8Array => {
-  const output = new Uint8Array(byteLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    output.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
-  return output;
-};
-
 /**
  * Confirms whether a directory with an exact `.git` marker owns another working tree.
  * @param directory The exact no-follow directory being classified.
  * @param repositoryRoot The selected repository root.
  * @param directoryStatistics The stable no-follow boundary observation.
- * @param maxMetadataBytes The remaining bounded Git stdout budget.
- * @param processExecutor The sanitized streamed Git boundary.
+ * @param maxMetadataBytes The remaining bounded Git output budget.
+ * @param readRoot The typed Git working-tree root read.
  * @param inspectHostPath The no-follow filesystem stat operation.
  * @returns A safe ownership classification and the consumed Git metadata bytes.
  */
@@ -183,7 +166,7 @@ const validateGitBoundary = async (
   repositoryRoot: string,
   directoryStatistics: IGitInventoryOwnershipStatistics,
   maxMetadataBytes: number,
-  processExecutor: IGitStreamingProcessExecutor,
+  readRoot: IGitTopLevelReader,
   inspectHostPath: IGitInventoryOwnershipLstat,
   signal?: AbortSignal,
 ): Promise<IGitInventoryBoundaryValidationAttempt> => {
@@ -195,38 +178,39 @@ const validateGitBoundary = async (
     return createInspectionFailure('RESOURCE_LIMIT_EXCEEDED');
   }
 
-  const stdoutChunks: Uint8Array[] = [];
-  let consumedStdoutBytes = 0;
-  const processResult = await processExecutor({
-    arguments: ['-C', directory, ...GIT_REPOSITORY_ROOT_ARGUMENTS],
-    consumeStdout: (chunk): void => {
-      stdoutChunks.push(Uint8Array.from(chunk));
-      consumedStdoutBytes += chunk.byteLength;
-    },
-    maxStderrBytes: MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
-    maxStdoutBytes: maxMetadataBytes,
-    ...(signal === undefined ? {} : { signal }),
-  });
-
-  if (processResult.kind === 'failed') {
-    return createInspectionFailure(mapGitProcessFailure(processResult.reason));
-  }
-
-  if (processResult.stderr.byteLength > 0 || processResult.stdoutBytes !== consumedStdoutBytes) {
-    return createInspectionFailure('GIT_OUTPUT_INVALID');
-  }
-
-  const discoveredRoot = parseGitAbsolutePathOutput(
-    concatenateChunks(stdoutChunks, consumedStdoutBytes),
+  const rootResult = await readGit(
+    () =>
+      readRoot(directory, {
+        maxOutputBytes: Math.max(maxMetadataBytes, 1),
+        timeoutSeconds: GIT_TIMEOUT_SECONDS,
+        ...(signal === undefined ? {} : { signal }),
+      }),
+    signal,
   );
 
-  if (discoveredRoot === null) {
+  if (rootResult.kind === 'failed') {
+    return createInspectionFailure(mapGitFailure(rootResult.reason));
+  }
+
+  // a marker whose directory has no working tree, such as a bare repository, can't be resolved
+  if (rootResult.value === null) {
+    return createInspectionFailure('GIT_COMMAND_FAILED');
+  }
+
+  const discoveredRoot = rootResult.value;
+  const gitMetadataBytes = TOP_LEVEL_OUTPUT_OVERHEAD_BYTES + countUtf8Bytes(discoveredRoot);
+
+  if (gitMetadataBytes > maxMetadataBytes) {
+    return createInspectionFailure('RESOURCE_LIMIT_EXCEEDED');
+  }
+
+  if (!path.isAbsolute(discoveredRoot)) {
     return createInspectionFailure('GIT_OUTPUT_INVALID');
   }
 
   if (areHostPathsEquivalent(discoveredRoot, directory)) {
     return Object.freeze({
-      gitMetadataBytes: processResult.stdoutBytes,
+      gitMetadataBytes,
       kind: 'validated',
       ownership: 'nested-repository',
     });
@@ -234,7 +218,7 @@ const validateGitBoundary = async (
 
   if (areHostPathsEquivalent(discoveredRoot, repositoryRoot)) {
     return Object.freeze({
-      gitMetadataBytes: processResult.stdoutBytes,
+      gitMetadataBytes,
       kind: 'validated',
       ownership: 'selected-repository',
     });
@@ -259,7 +243,7 @@ const validateGitBoundary = async (
 
   if (haveSameHostPathIdentity(discoveredRootInspection.statistics, directoryStatistics)) {
     return Object.freeze({
-      gitMetadataBytes: processResult.stdoutBytes,
+      gitMetadataBytes,
       kind: 'validated',
       ownership: 'nested-repository',
     });
@@ -284,7 +268,7 @@ const validateGitBoundary = async (
     )
   ) {
     return Object.freeze({
-      gitMetadataBytes: processResult.stdoutBytes,
+      gitMetadataBytes,
       kind: 'validated',
       ownership: 'selected-repository',
     });
@@ -303,13 +287,13 @@ const readOwnershipDirectory: IGitInventoryOwnershipReadDirectory = async (hostP
 
 /**
  * Creates nested-repository inspection around injectable filesystem and Git boundaries.
- * @param processExecutor The sanitized bounded Git process executor.
+ * @param readRoot The typed Git working-tree root read.
  * @param inspectHostPath The no-follow filesystem stat operation.
  * @param readDirectory The raw native-name directory operation.
  * @returns An all-or-nothing ownership inspector for untracked candidate paths.
  */
 export const createGitInventoryBoundaryInspector = (
-  processExecutor: IGitStreamingProcessExecutor = executeGitStreamingProcess,
+  readRoot: IGitTopLevelReader = readTopLevel,
   inspectHostPath: IGitInventoryOwnershipLstat = inspectOwnershipPath,
   readDirectory: IGitInventoryOwnershipReadDirectory = readOwnershipDirectory,
 ): IGitInventoryBoundaryInspector => {
@@ -469,7 +453,7 @@ export const createGitInventoryBoundaryInspector = (
           input.repositoryRoot,
           revalidatedInspection.statistics,
           input.maxMetadataBytes - gitMetadataBytes,
-          processExecutor,
+          readRoot,
           inspectHostPath,
           input.signal,
         );

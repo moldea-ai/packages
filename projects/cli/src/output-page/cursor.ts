@@ -1,6 +1,8 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual } from 'node:crypto';
+import { hashValue } from 'jg-crypto';
+import { stringifyJsonDeterministically } from 'jg-utilities';
 
-import { serializeJsonDeterministically, type IJsonValue } from '../json-serialization/index.js';
+import type { IJsonValue } from '../json-serialization/index.js';
 
 import { MOLDEA_CLI_CURSOR_VERSION } from './constants.js';
 import { MoldeaCliOutputPageException } from './exception.js';
@@ -37,7 +39,7 @@ const CURSOR_DOCUMENT_KEYS = Object.freeze([
 
 /** Calculates one stable SHA-256 identifier for deterministic JSON text. */
 export const calculateMoldeaCliJsonDigest = (value: IJsonValue): string => {
-  return `sha256:${createHash('sha256').update(serializeJsonDeterministically(value), 'utf8').digest('hex')}`;
+  return `sha256:${hashValue(stringifyJsonDeterministically(value, { strict: true }))}`;
 };
 
 /** Calculates the checksum for one cursor payload without its checksum field. */
@@ -103,7 +105,9 @@ export const encodeMoldeaCliCursor = (
     checksum: calculateCursorChecksum(payload),
   };
 
-  return Buffer.from(serializeJsonDeterministically(document), 'utf8').toString('base64url');
+  return Buffer.from(stringifyJsonDeterministically(document, { strict: true }), 'utf8').toString(
+    'base64url',
+  );
 };
 
 /**

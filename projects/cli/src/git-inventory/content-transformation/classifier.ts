@@ -1,9 +1,8 @@
 import {
-  executeGitStreamingProcess,
-  MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
-  type IGitStreamingProcessExecutor,
-  type IGitStreamingProcessFailureReason,
-} from '../../git-process/index.js';
+  runGitCommand,
+  type IGitCommandRunner,
+  type IGitFailureReason,
+} from '../../git-command/index.js';
 import type { IGitInventoryProbeErrorCode } from '../types.js';
 
 import { GIT_CONTENT_TRANSFORMATION_ARGUMENTS } from './constants.js';
@@ -22,9 +21,7 @@ const createClassificationFailure = (
   Object.freeze({ errorCode, kind: 'failed' });
 
 /** Maps one bounded Git attribute failure to the existing safe inventory contract. */
-const mapGitProcessFailure = (
-  reason: IGitStreamingProcessFailureReason,
-): IGitInventoryProbeErrorCode => {
+const mapGitFailure = (reason: IGitFailureReason): IGitInventoryProbeErrorCode => {
   switch (reason) {
     case 'aborted':
       return 'GIT_OPERATION_ABORTED';
@@ -35,9 +32,8 @@ const mapGitProcessFailure = (
     case 'repository-not-found':
       return 'GIT_REPOSITORY_NOT_FOUND';
     case 'output-limit-exceeded':
-    case 'stdout-limit-exceeded':
       return 'RESOURCE_LIMIT_EXCEEDED';
-    case 'stderr-limit-exceeded':
+    case 'output-invalid':
       return 'GIT_OUTPUT_INVALID';
     case 'command-failed':
       return 'GIT_COMMAND_FAILED';
@@ -97,12 +93,12 @@ const createClassification = (
   });
 
 /**
- * Creates the effective Git content-transformation classifier around a process boundary.
- * @param processExecutor The sanitized streamed Git process executor.
+ * Creates the effective Git content-transformation classifier around a Git command boundary.
+ * @param runGit The bounded Git command boundary.
  * @returns An all-or-nothing bounded classifier for effective inventory entries.
  */
 export const createGitContentTransformationClassifier = (
-  processExecutor: IGitStreamingProcessExecutor = executeGitStreamingProcess,
+  runGit: IGitCommandRunner = runGitCommand,
 ): IGitContentTransformationClassifier => {
   return async (input): Promise<IGitContentTransformationClassificationResult> => {
     if (input.signal?.aborted) {
@@ -124,31 +120,24 @@ export const createGitContentTransformationClassifier = (
       return createClassificationFailure('GIT_OUTPUT_INVALID');
     }
 
-    const parser = createGitContentTransformationParser({ paths });
-    let consumedStdoutBytes = 0;
-    const processResult = await processExecutor({
-      arguments: ['-C', input.repositoryRoot, ...GIT_CONTENT_TRANSFORMATION_ARGUMENTS],
-      consumeStdout: (chunk): void => {
-        consumedStdoutBytes += chunk.byteLength;
-        parser.consume(chunk);
-      },
-      maxStderrBytes: MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
-      maxStdoutBytes: input.maxMetadataBytes,
+    const result = await runGit(GIT_CONTENT_TRANSFORMATION_ARGUMENTS, {
+      cwd: input.repositoryRoot,
+      input: stdin,
+      maxOutputBytes: Math.max(input.maxMetadataBytes, 1),
       ...(input.signal === undefined ? {} : { signal: input.signal }),
-      stdin,
     });
 
-    if (processResult.kind === 'failed') {
-      return createClassificationFailure(mapGitProcessFailure(processResult.reason));
+    if (result.kind === 'failed') {
+      return createClassificationFailure(mapGitFailure(result.reason));
     }
 
-    if (
-      processResult.stderr.byteLength > 0 ||
-      processResult.stdoutBytes !== consumedStdoutBytes ||
-      processResult.stdoutBytes > input.maxMetadataBytes
-    ) {
-      return createClassificationFailure('GIT_OUTPUT_INVALID');
+    if (result.value.byteLength > input.maxMetadataBytes) {
+      return createClassificationFailure('RESOURCE_LIMIT_EXCEEDED');
     }
+
+    const parser = createGitContentTransformationParser({ paths });
+
+    parser.consume(result.value);
 
     const parserResult = parser.finish();
 
@@ -179,7 +168,7 @@ export const createGitContentTransformationClassifier = (
 
     return Object.freeze({
       entries: Object.freeze(entries.filter((entry) => entry !== null)),
-      gitMetadataBytes: processResult.stdoutBytes,
+      gitMetadataBytes: result.value.byteLength,
       kind: 'classified',
     });
   };

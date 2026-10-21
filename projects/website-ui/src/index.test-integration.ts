@@ -16,7 +16,7 @@ import { createRequire } from 'node:module';
 
 import { AxeBuilder } from '@axe-core/playwright';
 import { chromium, type Locator } from '@playwright/test';
-import { extractMessage } from 'error-message-utils';
+import { extractMessage } from 'jg-exception';
 import { afterEach, describe, expect, test } from 'vitest';
 
 import { RUNTIME_CATALOG } from './runtime-catalog/index.js';
@@ -133,7 +133,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.1.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.2.0' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',

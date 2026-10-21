@@ -1,5 +1,4 @@
 import { RepositoryPathException } from './exceptions.js';
-import { hasOnlyUnicodeScalarValues } from './unicode.js';
 
 declare const repositoryPathBrand: unique symbol;
 
@@ -28,7 +27,7 @@ const hasASCIIControlCharacter = (value: string): boolean => {
  * @returns Whether the value satisfies the complete logical-path grammar.
  */
 export const isRepositoryPath = (value: unknown): value is IRepositoryPath => {
-  if (typeof value !== 'string' || !hasOnlyUnicodeScalarValues(value)) {
+  if (typeof value !== 'string' || !value.isWellFormed()) {
     return false;
   }
 

@@ -1,3 +1,5 @@
+import { compareCodePoints } from 'jg-utilities';
+
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICoreResourceLimits, IIndexedTextAsset } from '../contracts/index.js';
@@ -7,7 +9,7 @@ import {
   type ICoreDiagnosticCollector,
 } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic, ISourceRange } from '../diagnostics/index.js';
-import { compareExactStrings, isVariableId } from '../format-validation/index.js';
+import { isVariableId } from '../format-validation/index.js';
 import type { IRuntimeVariableManifestEntry } from '../format/index.js';
 import { createSourceLocator } from '../source-location/index.js';
 
@@ -243,7 +245,7 @@ export const validateRuntimePlaceholders = (
     }
   }
 
-  for (const variableId of [...occurrences.keys()].sort(compareExactStrings)) {
+  for (const variableId of [...occurrences.keys()].sort(compareCodePoints)) {
     if (declaredVariables[variableId] !== undefined) {
       continue;
     }
@@ -262,7 +264,7 @@ export const validateRuntimePlaceholders = (
     });
   }
 
-  for (const variableId of Object.keys(declaredVariables).sort(compareExactStrings)) {
+  for (const variableId of Object.keys(declaredVariables).sort(compareCodePoints)) {
     if (occurrences.has(variableId)) {
       continue;
     }

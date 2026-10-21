@@ -1,14 +1,10 @@
-import {
-  executeGitStreamingProcess,
-  MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
-  type IGitStreamingProcessExecutor,
-  type IGitStreamingProcessFailureReason,
-} from '../../git-process/index.js';
-import { parseGitBooleanOutput } from '../../git-working-tree/index.js';
+import { readConfigBoolean } from 'jg-git-commands';
+
+import { GIT_TIMEOUT_SECONDS, readGit, type IGitFailureReason } from '../../git-command/index.js';
 import type { IGitInventoryProbeErrorCode } from '../types.js';
 
-import { GIT_SYMLINK_CONFIGURATION_ARGUMENTS } from './constants.js';
 import type {
+  IGitConfigBooleanReader,
   IGitSymlinkConfigurationFailedResult,
   IGitSymlinkConfigurationResolver,
   IGitSymlinkConfigurationResult,
@@ -20,9 +16,7 @@ const createConfigurationFailure = (
 ): IGitSymlinkConfigurationFailedResult => Object.freeze({ errorCode, kind: 'failed' });
 
 /** Maps one bounded Git configuration failure to the existing safe CLI contract. */
-const mapGitProcessFailure = (
-  reason: IGitStreamingProcessFailureReason,
-): IGitInventoryProbeErrorCode => {
+const mapGitFailure = (reason: IGitFailureReason): IGitInventoryProbeErrorCode => {
   switch (reason) {
     case 'aborted':
       return 'GIT_OPERATION_ABORTED';
@@ -31,36 +25,22 @@ const mapGitProcessFailure = (
     case 'access-denied':
       return 'GIT_ACCESS_DENIED';
     case 'output-limit-exceeded':
-    case 'stdout-limit-exceeded':
       return 'RESOURCE_LIMIT_EXCEEDED';
     case 'repository-not-found':
-    case 'stderr-limit-exceeded':
+    case 'output-invalid':
       return 'GIT_OUTPUT_INVALID';
     case 'command-failed':
       return 'GIT_COMMAND_FAILED';
   }
 };
 
-/** Concatenates already bounded Git stdout chunks for strict boolean parsing. */
-const concatenateChunks = (chunks: readonly Uint8Array[], byteLength: number): Uint8Array => {
-  const output = new Uint8Array(byteLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    output.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
-  return output;
-};
-
 /**
- * Creates the bounded effective core.symlinks resolver around a Git process boundary.
- * @param processExecutor The sanitized streamed Git process executor.
+ * Creates the bounded effective core.symlinks resolver around a typed Git config read.
+ * @param readBoolean The typed Git boolean config read.
  * @returns A resolver for the selected repository's effective symlink behavior.
  */
 export const createGitSymlinkConfigurationResolver = (
-  processExecutor: IGitStreamingProcessExecutor = executeGitStreamingProcess,
+  readBoolean: IGitConfigBooleanReader = readConfigBoolean,
 ): IGitSymlinkConfigurationResolver => {
   return async (input): Promise<IGitSymlinkConfigurationResult> => {
     if (input.signal?.aborted) {
@@ -71,42 +51,28 @@ export const createGitSymlinkConfigurationResolver = (
       return createConfigurationFailure('RESOURCE_LIMIT_EXCEEDED');
     }
 
-    const stdoutChunks: Uint8Array[] = [];
-    let consumedStdoutBytes = 0;
-    const processResult = await processExecutor({
-      arguments: ['-C', input.repositoryRoot, ...GIT_SYMLINK_CONFIGURATION_ARGUMENTS],
-      consumeStdout: (chunk): void => {
-        stdoutChunks.push(Uint8Array.from(chunk));
-        consumedStdoutBytes += chunk.byteLength;
-      },
-      maxStderrBytes: MAX_GIT_PROCESS_DIAGNOSTIC_BYTES,
-      maxStdoutBytes: input.maxMetadataBytes,
-      ...(input.signal === undefined ? {} : { signal: input.signal }),
-    });
+    const result = await readGit(
+      () =>
+        readBoolean(input.repositoryRoot, 'core.symlinks', true, {
+          maxOutputBytes: Math.max(input.maxMetadataBytes, 1),
+          timeoutSeconds: GIT_TIMEOUT_SECONDS,
+          ...(input.signal === undefined ? {} : { signal: input.signal }),
+        }),
+      input.signal,
+    );
 
-    if (processResult.kind === 'failed') {
-      return createConfigurationFailure(mapGitProcessFailure(processResult.reason));
+    if (result.kind === 'failed') {
+      return createConfigurationFailure(mapGitFailure(result.reason));
     }
 
-    if (
-      processResult.stderr.byteLength > 0 ||
-      processResult.stdoutBytes !== consumedStdoutBytes ||
-      processResult.stdoutBytes > input.maxMetadataBytes
-    ) {
-      return createConfigurationFailure('GIT_OUTPUT_INVALID');
+    // Git writes `true\n` or `false\n`
+    const gitMetadataBytes = result.value ? 5 : 6;
+
+    if (gitMetadataBytes > input.maxMetadataBytes) {
+      return createConfigurationFailure('RESOURCE_LIMIT_EXCEEDED');
     }
 
-    const isEnabled = parseGitBooleanOutput(concatenateChunks(stdoutChunks, consumedStdoutBytes));
-
-    if (isEnabled === null) {
-      return createConfigurationFailure('GIT_OUTPUT_INVALID');
-    }
-
-    return Object.freeze({
-      gitMetadataBytes: processResult.stdoutBytes,
-      isEnabled,
-      kind: 'resolved',
-    });
+    return Object.freeze({ gitMetadataBytes, isEnabled: result.value, kind: 'resolved' });
   };
 };
 

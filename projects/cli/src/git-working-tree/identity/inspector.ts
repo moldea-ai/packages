@@ -1,12 +1,11 @@
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
 
-import { hasOnlyUnicodeScalarValues } from '../../command-line/index.js';
 import {
-  executeGitProcess,
-  type IGitProcessExecutor,
-  type IGitProcessFailureReason,
-} from '../../git-process/index.js';
+  runGitCommand,
+  type IGitCommandRunner,
+  type IGitFailureReason,
+} from '../../git-command/index.js';
 import {
   areHostPathsEquivalent,
   haveSameHostPathIdentity,
@@ -33,8 +32,8 @@ const createInspectionFailure = (
   errorCode: IMoldeaCliGitErrorCode,
 ): IGitWorkingTreeIdentityInspectionFailedResult => Object.freeze({ errorCode, kind: 'failed' });
 
-/** Maps one normalized Git process failure to the discovery error contract. */
-const mapGitProcessFailure = (reason: IGitProcessFailureReason): IMoldeaCliGitErrorCode => {
+/** Maps one normalized Git failure to the discovery error contract. */
+const mapGitFailure = (reason: IGitFailureReason): IMoldeaCliGitErrorCode => {
   switch (reason) {
     case 'aborted':
       return 'GIT_OPERATION_ABORTED';
@@ -45,6 +44,7 @@ const mapGitProcessFailure = (reason: IGitProcessFailureReason): IMoldeaCliGitEr
     case 'access-denied':
       return 'GIT_ACCESS_DENIED';
     case 'output-limit-exceeded':
+    case 'output-invalid':
       return 'GIT_OUTPUT_INVALID';
     case 'command-failed':
       return 'GIT_COMMAND_FAILED';
@@ -78,29 +78,25 @@ const mapFilesystemFailure = (error: unknown): IMoldeaCliGitErrorCode => {
 
 /** Executes one bounded Git identity-path query. */
 const queryGitPath = async (
-  processExecutor: IGitProcessExecutor,
+  runGit: IGitCommandRunner,
   repositoryRoot: string,
   arguments_: readonly string[],
   isAbsoluteRequired: boolean,
   signal?: AbortSignal,
 ): Promise<string | IGitWorkingTreeIdentityInspectionFailedResult> => {
-  const result = await processExecutor({
-    arguments: ['-C', repositoryRoot, ...arguments_],
-    maxBufferBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES,
+  const result = await runGit(arguments_, {
+    cwd: repositoryRoot,
+    maxOutputBytes: MAX_GIT_DISCOVERY_OUTPUT_BYTES,
     ...(signal === undefined ? {} : { signal }),
   });
 
   if (result.kind === 'failed') {
-    return createInspectionFailure(mapGitProcessFailure(result.reason));
-  }
-
-  if (result.stderr.byteLength > 0) {
-    return createInspectionFailure('GIT_OUTPUT_INVALID');
+    return createInspectionFailure(mapGitFailure(result.reason));
   }
 
   const gitPath = isAbsoluteRequired
-    ? parseGitAbsolutePathOutput(result.stdout)
-    : parseGitPathOutput(result.stdout);
+    ? parseGitAbsolutePathOutput(result.value)
+    : parseGitPathOutput(result.value);
 
   return gitPath ?? createInspectionFailure('GIT_OUTPUT_INVALID');
 };
@@ -132,25 +128,25 @@ const isInspectionFailure = (
 
 /**
  * Creates a bounded working-tree identity inspector around Git and filesystem boundaries.
- * @param processExecutor The sanitized bounded Git process executor.
+ * @param runGit The bounded Git command boundary.
  * @param inspectPath The followed directory identity operation.
  * @returns An inspector that captures one private immutable identity.
  */
 export const createGitWorkingTreeIdentityInspector = (
-  processExecutor: IGitProcessExecutor = executeGitProcess,
+  runGit: IGitCommandRunner = runGitCommand,
   inspectPath: IGitWorkingTreeIdentityStat = inspectDirectoryIdentity,
 ): IGitWorkingTreeIdentityInspector => {
   return async (input): Promise<IGitWorkingTreeIdentityInspectionResult> => {
     if (
       !path.isAbsolute(input.repositoryRoot) ||
       input.repositoryRoot.includes('\0') ||
-      !hasOnlyUnicodeScalarValues(input.repositoryRoot)
+      !input.repositoryRoot.isWellFormed()
     ) {
       return createInspectionFailure('GIT_OUTPUT_INVALID');
     }
 
     const discoveredRoot = await queryGitPath(
-      processExecutor,
+      runGit,
       input.repositoryRoot,
       GIT_WORKING_TREE_IDENTITY_ARGUMENTS.RepositoryRoot,
       true,
@@ -196,7 +192,7 @@ export const createGitWorkingTreeIdentityInspector = (
     }
 
     const gitDirectoryPath = await queryGitPath(
-      processExecutor,
+      runGit,
       input.repositoryRoot,
       GIT_WORKING_TREE_IDENTITY_ARGUMENTS.GitDirectory,
       true,
@@ -208,7 +204,7 @@ export const createGitWorkingTreeIdentityInspector = (
     }
 
     const commonDirectoryOutput = await queryGitPath(
-      processExecutor,
+      runGit,
       input.repositoryRoot,
       GIT_WORKING_TREE_IDENTITY_ARGUMENTS.CommonDirectory,
       false,

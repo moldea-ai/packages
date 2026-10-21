@@ -1,3 +1,5 @@
+import { compareCodePoints, deepFreeze } from 'jg-utilities';
+
 import { RepositorySourceException, type IRepositoryPath } from '@moldea.ai/repository';
 
 import { parseDecisionDocument } from '../decision/index.js';
@@ -7,9 +9,8 @@ import {
 } from '../decision-graph-validation/index.js';
 import { createCoreDiagnosticCollector } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
-import { compareExactStrings, parseDecisionIdFromPath } from '../format-validation/index.js';
+import { parseDecisionIdFromPath } from '../format-validation/index.js';
 import type { IParsedDecision } from '../format/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 
@@ -31,7 +32,7 @@ const invalidSourceData = (path: IRepositoryPath): never => {
 
 const sortDecisions = (decisions: readonly IParsedDecision[]): IParsedDecision[] => {
   return [...decisions].sort((left, right) => {
-    return compareExactStrings(left.id, right.id) || compareExactStrings(left.path, right.path);
+    return compareCodePoints(left.id, right.id) || compareCodePoints(left.path, right.path);
   });
 };
 
@@ -66,7 +67,7 @@ export const readDecisionGraph = async (
   const decisions: IParsedDecision[] = [];
   const readOptions = signal === undefined ? undefined : { signal };
 
-  for (const path of [...paths].sort(compareExactStrings)) {
+  for (const path of [...paths].sort(compareCodePoints)) {
     const content = await repository.readCompleteFile(path, readOptions);
 
     if (!(content instanceof Uint8Array)) {
@@ -100,7 +101,7 @@ export const readDecisionGraph = async (
 
   const finalizedDiagnostics = diagnostics.finalize();
 
-  return freezeRecursively({
+  return deepFreeze({
     decisions: sortDecisions(decisions),
     diagnostics: finalizedDiagnostics,
     valid: finalizedDiagnostics.length === 0,

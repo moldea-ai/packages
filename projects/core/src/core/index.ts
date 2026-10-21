@@ -1,3 +1,5 @@
+import { deepFreeze } from 'jg-utilities';
+
 import type {
   ICanonicalContentPageInput,
   ICore,
@@ -8,7 +10,6 @@ import type {
 } from '../contracts/index.js';
 import { readCanonicalContentPage } from '../canonical-content-page/index.js';
 import { parseDecisionDocument } from '../decision/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { parseManifestDocument } from '../manifest/index.js';
 import { createCoreOperationOptionsSnapshot, normalizeCoreOptions } from '../options/index.js';
 import { createProjectInspection } from '../project-inspection/index.js';
@@ -27,7 +28,7 @@ import { calculateContentDigest, normalizeTextDocument } from '../text/index.js'
 export const createCore = (options?: ICoreOptions): ICore => {
   const snapshot = normalizeCoreOptions(options);
 
-  return freezeRecursively({
+  return deepFreeze({
     calculateContentDigest: (input: ITextDocumentInput) => {
       const operation = createCoreOperationOptionsSnapshot(snapshot);
       return calculateContentDigest(input, operation.limits);

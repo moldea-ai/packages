@@ -60,7 +60,7 @@ describe('schema 7 CLI presentation formatters', () => {
 
   test('formats composition in human and schema 7 JSON forms', () => {
     const result: IMoldeaCliCompositionResult = {
-      minimumGitVersion: '2.30.0',
+      minimumGitVersion: '2.32.0',
       packages: [{ name: '@moldea.ai/core', version: '5.0.0' }],
       repositoryFormatVersions: [1],
       supportedNodeRange: '>=22.17.0',

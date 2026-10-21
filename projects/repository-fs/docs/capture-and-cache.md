@@ -16,7 +16,7 @@ Every successful result includes the page offset, total file length, completion 
 
 ## Bounded LRU cache
 
-Only complete, nonempty verified ranges enter the cache. The cache key contains path, offset, and range size. Reading a cached page refreshes its recency. Before retaining a new page, the reader evicts the oldest pages until total retained bytes fit `maxCachedBytes` and no more than 4,096 pages remain. A single page larger than the cache budget is returned but not retained.
+Only complete, nonempty verified ranges enter the cache. The cache key contains path, file identity, offset, and range size, so a page of a changed file never matches. Reading a cached page refreshes its recency. Before retaining a new page, the reader evicts the oldest pages until total retained bytes fit `maxCachedBytes` and no more than 4,096 pages remain. A single page larger than the cache budget is returned but not retained.
 
 ## Operation gate
 

@@ -4,12 +4,12 @@
 
 Source-neutral, read-only, resource-bounded repository contracts for the `moldea` ecosystem.
 
-Version 3 represents one coherent repository snapshot without assuming a filesystem, Git host, archive, or network protocol. Every collection, comparison, and file read is paged or ranged. Continuation cursors are opaque, integrity-protected, and bound to the source snapshot and request scope.
+Version 4 represents one coherent repository snapshot without assuming a filesystem, Git host, archive, or network protocol. Every collection, comparison, and file read is paged or ranged. Continuation cursors are opaque, integrity-protected, and bound to the source snapshot and request scope.
 
 ## Install
 
 ```bash
-pnpm add @moldea.ai/repository@3
+pnpm add @moldea.ai/repository@4
 ```
 
 ## Logical paths
@@ -99,20 +99,23 @@ Construction validates the input, copies buffers, synthesizes missing parent dir
 
 ## Shared reader conformance
 
-Official source implementations use the `testing` subpath to register the same version 3 contract checks. Compatible Vitest and `web-utils-kit` peers are required only when importing this entry point.
+Official source implementations use the `testing` subpath to register the same version 4 contract checks. The suite registers its checks with the `describe`, `test`, and `expect` functions you pass, such as Vitest's, so the package imports no test runner and has no peer dependencies.
 
 ```typescript
 import {
   describeRepositoryReaderConformance,
   type IRepositoryReaderConformanceFixture,
 } from '@moldea.ai/repository/testing';
+import { describe, expect, test } from 'vitest';
 
 export const registerReaderConformance = <TPath extends string>(
   fixture: IRepositoryReaderConformanceFixture<TPath>,
 ): void => {
-  describeRepositoryReaderConformance('provider', fixture);
+  describeRepositoryReaderConformance({ describe, expect, test }, 'provider', fixture);
 };
 ```
+
+The runner's type, `IRepositoryReaderConformanceRunner`, names only the calls the suite makes, so any runner whose `expect` offers `toBe`, `toBeGreaterThan`, `toMatchObject`, `toStrictEqual`, `not.toBe`, and the matching `resolves` assertions fits.
 
 ## Development
 

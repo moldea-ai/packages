@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
-import { expectToThrowCode } from 'web-utils-kit';
+import { expectToThrowCode } from 'jg-exception/testing';
 
 import { createCanonicalUrl, isPublicRouteActive, normalizeBasePath, withBase } from './index.js';
 

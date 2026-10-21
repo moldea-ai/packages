@@ -1,17 +1,20 @@
 // @vitest-environment node
+import { Exception } from 'jg-exception';
+import { ERRORS as PROCESS_ERRORS } from 'jg-process';
+import { ERRORS as GIT_ERRORS, type IIndexEntry } from 'jg-git-commands';
 import { describe, expect, test, vi } from 'vitest';
 
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
-import type {
-  IGitStreamingProcessExecutor,
-  IGitStreamingProcessFailureReason,
-} from '../git-process/index.js';
+import {
+  GIT_TIMEOUT_SECONDS,
+  type IGitCommandRunner,
+  type IGitReadResult,
+} from '../git-command/index.js';
 
 import {
   GIT_IGNORED_INVENTORY_ARGUMENTS,
-  GIT_TRACKED_INVENTORY_ARGUMENTS,
-  GIT_UNTRACKED_INVENTORY_ARGUMENTS,
+  GIT_TRACKED_RECORD_OVERHEAD_BYTES,
   INSTRUCTION_PATHS,
 } from './constants.js';
 import type { IGitContentTransformationClassifier } from './content-transformation/index.js';
@@ -19,9 +22,9 @@ import type { IGitInventoryEntryTypeNormalizer } from './entry-type/index.js';
 import type { IGitInventoryLogicalPathNormalizer } from './logical-path/index.js';
 import { createGitInventoryProbe } from './probe.js';
 import type { IGitInventoryOwnershipFilter } from './repository-ownership/index.js';
+import type { IGitInventoryListingReads } from './types.js';
 
 const ENCODER = new TextEncoder();
-const OBJECT_ID = '0123456789abcdef0123456789abcdef01234567';
 const CONTENT_TRANSFORMATION = Object.freeze({
   filter: 'unspecified',
   ident: 'unspecified',
@@ -29,47 +32,57 @@ const CONTENT_TRANSFORMATION = Object.freeze({
   workingTreeEncoding: 'unspecified',
 });
 
-interface IProcessFixture {
-  readonly failureReason?: IGitStreamingProcessFailureReason;
-  readonly stderr?: Uint8Array;
-  readonly stdout?: Uint8Array;
+interface IGitListingFixture {
+  readonly ignored?: IGitReadResult<Buffer>;
+  readonly tracked?: readonly IIndexEntry[] | Exception;
+  readonly untracked?: readonly string[] | Exception;
 }
 
-/** Creates an executor that streams deterministic fixtures through the real parser callbacks. */
-const createProcessExecutor = (
-  fixtures: readonly IProcessFixture[],
-): IGitStreamingProcessExecutor => {
-  let fixtureIndex = 0;
+/** Creates typed Git listing reads that resolve, or reject, with deterministic fixtures. */
+const createGitReads = ({ ignored, tracked = [], untracked = [] }: IGitListingFixture = {}) => ({
+  listUntrackedFiles: vi.fn<IGitInventoryListingReads['listUntrackedFiles']>(() =>
+    untracked instanceof Exception ? Promise.reject(untracked) : Promise.resolve([...untracked]),
+  ),
+  readIndexEntries: vi.fn<IGitInventoryListingReads['readIndexEntries']>(() =>
+    tracked instanceof Exception ? Promise.reject(tracked) : Promise.resolve([...tracked]),
+  ),
+  runGit: vi.fn<IGitCommandRunner>(() =>
+    Promise.resolve(ignored ?? Object.freeze({ kind: 'completed', value: Buffer.alloc(0) })),
+  ),
+});
 
-  return vi.fn<IGitStreamingProcessExecutor>((options) => {
-    const fixture = fixtures[fixtureIndex];
+/** Measures the stdout `ls-files --stage -z` is charged for, with the longest object name. */
+const measureTracked = (paths: readonly string[]): number =>
+  paths.reduce(
+    (bytes, path) => bytes + GIT_TRACKED_RECORD_OVERHEAD_BYTES + ENCODER.encode(path).byteLength,
+    0,
+  );
 
-    fixtureIndex += 1;
+/** Measures the stdout `ls-files --others -z` writes. */
+const measureUntracked = (paths: readonly string[]): number =>
+  paths.reduce((bytes, path) => bytes + ENCODER.encode(`${path}\u0000`).byteLength, 0);
 
-    if (fixture === undefined) {
-      throw new Error('The process fixture is unavailable.');
-    }
+/** Creates an ownership filter that keeps every candidate. */
+const createPassThroughOwnershipFilter = (
+  gitMetadataBytes = 0,
+): ReturnType<typeof vi.fn<IGitInventoryOwnershipFilter>> =>
+  vi.fn<IGitInventoryOwnershipFilter>((input) =>
+    Promise.resolve(
+      Object.freeze({ candidates: input.candidates, gitMetadataBytes, kind: 'filtered' }),
+    ),
+  );
 
-    if (fixture.failureReason !== undefined) {
-      return Promise.resolve(Object.freeze({ kind: 'failed', reason: fixture.failureReason }));
-    }
-
-    const stdout = fixture.stdout ?? new Uint8Array();
-
-    options.consumeStdout(stdout.subarray(0, 2));
-    options.consumeStdout(stdout.subarray(2));
-
-    return Promise.resolve(
-      Object.freeze({
-        kind: 'completed',
-        stderr: fixture.stderr ?? new Uint8Array(),
-        stdoutBytes: stdout.byteLength,
-      }),
+/** Creates an entry-type normalizer that resolves no entries. */
+const createEmptyEntryTypeNormalizer = (): ReturnType<
+  typeof vi.fn<IGitInventoryEntryTypeNormalizer>
+> =>
+  vi
+    .fn<IGitInventoryEntryTypeNormalizer>()
+    .mockResolvedValue(
+      Object.freeze({ entries: Object.freeze([]), gitMetadataBytes: 0, kind: 'normalized' }),
     );
-  });
-};
 
-/** Classifies every fixture entry without invoking another process fixture. */
+/** Classifies every fixture entry without invoking Git. */
 const createContentTransformationClassifier = (
   gitMetadataBytes = 0,
 ): ReturnType<typeof vi.fn<IGitContentTransformationClassifier>> =>
@@ -88,24 +101,17 @@ const createContentTransformationClassifier = (
   );
 
 describe('createGitInventoryProbe', () => {
-  test('streams tracked and untracked candidates under one combined budget', async () => {
-    const trackedOutput = ENCODER.encode(
-      `100644 ${OBJECT_ID} 0\ttracked\u0000100755 ${OBJECT_ID} 2\tconflict\u0000`,
-    );
-    const untrackedOutput = ENCODER.encode('untracked\u0000');
-    const processExecutor = createProcessExecutor([
-      { stdout: trackedOutput },
-      { stdout: untrackedOutput },
-    ]);
-    const ownershipFilter = vi.fn<IGitInventoryOwnershipFilter>((input) =>
-      Promise.resolve(
-        Object.freeze({
-          candidates: input.candidates,
-          gitMetadataBytes: 7,
-          kind: 'filtered',
-        }),
-      ),
-    );
+  test('lists tracked and untracked candidates under one combined budget', async () => {
+    const git = createGitReads({
+      tracked: [
+        { mode: '100644', path: 'tracked', stage: 0 },
+        { mode: '100755', path: 'conflict', stage: 2 },
+      ],
+      untracked: ['untracked'],
+    });
+    const trackedBytes = measureTracked(['tracked', 'conflict']);
+    const untrackedBytes = measureUntracked(['untracked']);
+    const ownershipFilter = createPassThroughOwnershipFilter(7);
     const entryTypeNormalizer = vi.fn<IGitInventoryEntryTypeNormalizer>().mockResolvedValue(
       Object.freeze({
         entries: Object.freeze([
@@ -136,7 +142,7 @@ describe('createGitInventoryProbe', () => {
     );
     const contentTransformationClassifier = createContentTransformationClassifier(11);
     const probe = createGitInventoryProbe(
-      processExecutor,
+      git,
       ownershipFilter,
       entryTypeNormalizer,
       contentTransformationClassifier,
@@ -181,46 +187,34 @@ describe('createGitInventoryProbe', () => {
       expect(Object.isFrozen(result.entries)).toBe(true);
     }
 
-    const processCalls = vi.mocked(processExecutor).mock.calls;
-
-    expect(processCalls[0]?.[0].arguments).toStrictEqual([
-      '-C',
-      '/repository',
-      ...GIT_TRACKED_INVENTORY_ARGUMENTS,
-    ]);
-    expect(processCalls[0]?.[0].maxStderrBytes).toBe(4096);
-    expect(processCalls[0]?.[0].maxStdoutBytes).toBe(512);
-    expect(typeof processCalls[0]?.[0].consumeStdout).toBe('function');
-    expect(processCalls[1]?.[0].arguments).toStrictEqual([
-      '-C',
-      '/repository',
-      ...GIT_UNTRACKED_INVENTORY_ARGUMENTS,
-    ]);
-    expect(processCalls[1]?.[0].maxStderrBytes).toBe(4096);
-    expect(processCalls[1]?.[0].maxStdoutBytes).toBe(512 - trackedOutput.byteLength);
-    expect(typeof processCalls[1]?.[0].consumeStdout).toBe('function');
-    expect(ownershipFilter).toHaveBeenCalledOnce();
-    expect(ownershipFilter).toHaveBeenCalledWith({
+    expect(git.readIndexEntries).toHaveBeenCalledExactlyOnceWith('/repository', {
+      maxOutputBytes: 512,
+      timeoutSeconds: GIT_TIMEOUT_SECONDS,
+    });
+    expect(git.listUntrackedFiles).toHaveBeenCalledExactlyOnceWith('/repository', {
+      maxOutputBytes: 512 - trackedBytes,
+      timeoutSeconds: GIT_TIMEOUT_SECONDS,
+    });
+    expect(git.runGit).not.toHaveBeenCalled();
+    expect(ownershipFilter).toHaveBeenCalledExactlyOnceWith({
       candidates: [
         { kind: 'tracked', mode: '100644', path: 'tracked', stage: 0 },
         { kind: 'tracked', mode: '100755', path: 'conflict', stage: 2 },
         { kind: 'untracked', path: 'untracked' },
       ],
-      maxMetadataBytes: 512 - trackedOutput.byteLength - untrackedOutput.byteLength,
+      maxMetadataBytes: 512 - trackedBytes - untrackedBytes,
       repositoryRoot: '/repository',
     });
-    expect(entryTypeNormalizer).toHaveBeenCalledOnce();
-    expect(entryTypeNormalizer).toHaveBeenCalledWith({
+    expect(entryTypeNormalizer).toHaveBeenCalledExactlyOnceWith({
       candidates: [
         { kind: 'tracked', mode: '100644', path: 'tracked', stage: 0 },
         { kind: 'tracked', mode: '100755', path: 'conflict', stage: 2 },
         { kind: 'untracked', path: 'untracked' },
       ],
-      maxMetadataBytes: 512 - trackedOutput.byteLength - untrackedOutput.byteLength - 7,
+      maxMetadataBytes: 512 - trackedBytes - untrackedBytes - 7,
       repositoryRoot: '/repository',
     });
-    expect(contentTransformationClassifier).toHaveBeenCalledOnce();
-    expect(contentTransformationClassifier).toHaveBeenCalledWith({
+    expect(contentTransformationClassifier).toHaveBeenCalledExactlyOnceWith({
       entries: [
         {
           entryType: 'file',
@@ -243,48 +237,79 @@ describe('createGitInventoryProbe', () => {
           requiresSymlinkOverlay: false,
         },
       ],
-      maxMetadataBytes: 512 - trackedOutput.byteLength - untrackedOutput.byteLength - 7,
+      maxMetadataBytes: 512 - trackedBytes - untrackedBytes - 7,
       repositoryRoot: '/repository',
     });
   });
 
   test('enforces the combined entry limit before stage collapse or deduplication', async () => {
-    const processExecutor = createProcessExecutor([
-      {
-        stdout: ENCODER.encode(
-          `100644 ${OBJECT_ID} 1\tconflict\u0000100644 ${OBJECT_ID} 2\tconflict\u0000`,
-        ),
-      },
-      { stdout: ENCODER.encode('untracked\u0000') },
-    ]);
-    const probe = createGitInventoryProbe(processExecutor);
+    const git = createGitReads({
+      tracked: [
+        { mode: '100644', path: 'conflict', stage: 1 },
+        { mode: '100644', path: 'conflict', stage: 2 },
+      ],
+      untracked: ['untracked'],
+    });
 
     await expect(
-      probe({ maxEntries: 2, maxMetadataBytes: 1024, repositoryRoot: '/repository' }),
+      createGitInventoryProbe(git)({
+        maxEntries: 2,
+        maxMetadataBytes: 1024,
+        repositoryRoot: '/repository',
+      }),
     ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
   });
 
-  test('uses top-level literal pathspecs for an exact selected inventory', async () => {
-    const processExecutor = createProcessExecutor([
-      { stdout: new Uint8Array() },
-      { stdout: new Uint8Array() },
-    ]);
-    const ownershipFilter = vi
-      .fn<IGitInventoryOwnershipFilter>()
-      .mockResolvedValue(
-        Object.freeze({ candidates: Object.freeze([]), gitMetadataBytes: 0, kind: 'filtered' }),
-      );
-    const entryTypeNormalizer = vi
-      .fn<IGitInventoryEntryTypeNormalizer>()
-      .mockResolvedValue(
-        Object.freeze({ entries: Object.freeze([]), gitMetadataBytes: 0, kind: 'normalized' }),
-      );
-    const contentTransformationClassifier = createContentTransformationClassifier();
+  test('refuses more tracked entries than the limit before listing untracked files', async () => {
+    const git = createGitReads({
+      tracked: [
+        { mode: '100644', path: 'first', stage: 0 },
+        { mode: '100644', path: 'second', stage: 0 },
+      ],
+    });
+
+    await expect(
+      createGitInventoryProbe(git)({
+        maxEntries: 1,
+        maxMetadataBytes: 1024,
+        repositoryRoot: '/repository',
+      }),
+    ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
+    expect(git.listUntrackedFiles).not.toHaveBeenCalled();
+  });
+
+  test('refuses a listing whose output leaves the metadata budget exhausted', async () => {
+    const tracked = [{ mode: '100644', path: 'tracked', stage: 0 }] as const;
+    const trackedBytes = measureTracked(['tracked']);
+
+    await expect(
+      createGitInventoryProbe(createGitReads({ tracked }))({
+        maxEntries: 1,
+        maxMetadataBytes: trackedBytes - 1,
+        repositoryRoot: '/repository',
+      }),
+    ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
+
+    const git = createGitReads({ tracked, untracked: ['untracked'] });
+
+    await expect(
+      createGitInventoryProbe(git)({
+        maxEntries: 2,
+        maxMetadataBytes: trackedBytes,
+        repositoryRoot: '/repository',
+      }),
+    ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
+    // Git needs a positive output limit, even with the budget spent
+    expect(git.listUntrackedFiles.mock.calls[0]?.[1]?.maxOutputBytes).toBe(1);
+  });
+
+  test('lists an exact selection by its literal paths from the repository root', async () => {
+    const git = createGitReads();
     const probe = createGitInventoryProbe(
-      processExecutor,
-      ownershipFilter,
-      entryTypeNormalizer,
-      contentTransformationClassifier,
+      git,
+      createPassThroughOwnershipFilter(),
+      createEmptyEntryTypeNormalizer(),
+      createContentTransformationClassifier(),
     );
 
     await probe({
@@ -294,40 +319,32 @@ describe('createGitInventoryProbe', () => {
       selectionPaths: [parseRepositoryPath('/moldea/moldea.yaml')],
     });
 
-    expect(vi.mocked(processExecutor).mock.calls[0]?.[0].arguments).toStrictEqual([
-      '-C',
-      '/repository',
-      ...GIT_TRACKED_INVENTORY_ARGUMENTS,
-      ':(top,literal)moldea/moldea.yaml',
-    ]);
-    expect(vi.mocked(processExecutor).mock.calls[1]?.[0].arguments).toStrictEqual([
-      '-C',
-      '/repository',
-      ...GIT_UNTRACKED_INVENTORY_ARGUMENTS,
-      ':(top,literal)moldea/moldea.yaml',
-    ]);
+    const options = {
+      maxOutputBytes: 1024,
+      paths: ['moldea/moldea.yaml'],
+      timeoutSeconds: GIT_TIMEOUT_SECONDS,
+    };
+    expect(git.readIndexEntries).toHaveBeenCalledWith('/repository', options);
+    expect(git.listUntrackedFiles).toHaveBeenCalledWith('/repository', options);
   });
 
   test('adds ignored instruction candidates only for an explicit selection', async () => {
-    const processExecutor = createProcessExecutor([
-      { stdout: new Uint8Array() },
-      { stdout: ENCODER.encode('CLAUDE.md\0') },
-      { stdout: ENCODER.encode('AGENTS.md\0CLAUDE.md\0') },
-    ]);
+    const git = createGitReads({
+      ignored: Object.freeze({
+        kind: 'completed',
+        value: Buffer.from('AGENTS.md\u0000CLAUDE.md\u0000'),
+      }),
+      untracked: ['CLAUDE.md'],
+    });
     const ownershipFilter = vi
       .fn<IGitInventoryOwnershipFilter>()
       .mockResolvedValue(
         Object.freeze({ candidates: Object.freeze([]), gitMetadataBytes: 0, kind: 'filtered' }),
       );
-    const entryTypeNormalizer = vi
-      .fn<IGitInventoryEntryTypeNormalizer>()
-      .mockResolvedValue(
-        Object.freeze({ entries: Object.freeze([]), gitMetadataBytes: 0, kind: 'normalized' }),
-      );
     const probe = createGitInventoryProbe(
-      processExecutor,
+      git,
       ownershipFilter,
-      entryTypeNormalizer,
+      createEmptyEntryTypeNormalizer(),
       createContentTransformationClassifier(),
     );
 
@@ -339,20 +356,13 @@ describe('createGitInventoryProbe', () => {
       selectionPaths: INSTRUCTION_PATHS,
     });
 
-    const pathspecs = [
-      ':(top,literal)AGENTS.md',
-      ':(top,literal)CLAUDE.md',
-      ':(top,literal).claude/CLAUDE.md',
-      ':(top,literal)CLAUDE.local.md',
-    ];
-    expect(
-      vi.mocked(processExecutor).mock.calls.map(([options]) => options.arguments),
-    ).toStrictEqual([
-      ['-C', '/repository', ...GIT_TRACKED_INVENTORY_ARGUMENTS, ...pathspecs],
-      ['-C', '/repository', ...GIT_UNTRACKED_INVENTORY_ARGUMENTS, ...pathspecs],
-      ['-C', '/repository', ...GIT_IGNORED_INVENTORY_ARGUMENTS, ...pathspecs],
-    ]);
-    expect(vi.mocked(processExecutor).mock.calls[2]?.[0].maxStdoutBytes).toBe(1024 - 10);
+    const paths = ['AGENTS.md', 'CLAUDE.md', '.claude/CLAUDE.md', 'CLAUDE.local.md'];
+    expect(git.readIndexEntries.mock.calls[0]?.[1]?.paths).toStrictEqual(paths);
+    expect(git.listUntrackedFiles.mock.calls[0]?.[1]?.paths).toStrictEqual(paths);
+    expect(git.runGit).toHaveBeenCalledExactlyOnceWith(
+      [...GIT_IGNORED_INVENTORY_ARGUMENTS, ...paths],
+      { cwd: '/repository', maxOutputBytes: 1024 - 10 },
+    );
     expect(ownershipFilter.mock.calls[0]?.[0].candidates).toStrictEqual([
       { kind: 'untracked', path: 'CLAUDE.md' },
       { kind: 'untracked', path: 'AGENTS.md' },
@@ -361,22 +371,11 @@ describe('createGitInventoryProbe', () => {
   });
 
   test('never lists ignored files without a selection', async () => {
-    const processExecutor = createProcessExecutor([
-      { stdout: new Uint8Array() },
-      { stdout: new Uint8Array() },
-    ]);
+    const git = createGitReads();
     const probe = createGitInventoryProbe(
-      processExecutor,
-      vi
-        .fn<IGitInventoryOwnershipFilter>()
-        .mockResolvedValue(
-          Object.freeze({ candidates: Object.freeze([]), gitMetadataBytes: 0, kind: 'filtered' }),
-        ),
-      vi
-        .fn<IGitInventoryEntryTypeNormalizer>()
-        .mockResolvedValue(
-          Object.freeze({ entries: Object.freeze([]), gitMetadataBytes: 0, kind: 'normalized' }),
-        ),
+      git,
+      createPassThroughOwnershipFilter(),
+      createEmptyEntryTypeNormalizer(),
       createContentTransformationClassifier(),
     );
 
@@ -387,80 +386,120 @@ describe('createGitInventoryProbe', () => {
       repositoryRoot: '/repository',
     });
 
-    expect(vi.mocked(processExecutor).mock.calls).toHaveLength(2);
+    expect(git.runGit).not.toHaveBeenCalled();
   });
 
   test.each([
-    ['not-found', 'GIT_NOT_FOUND'],
-    ['repository-not-found', 'GIT_REPOSITORY_NOT_FOUND'],
-    ['access-denied', 'GIT_ACCESS_DENIED'],
-    ['stderr-limit-exceeded', 'GIT_OUTPUT_INVALID'],
-    ['output-limit-exceeded', 'RESOURCE_LIMIT_EXCEEDED'],
-    ['stdout-limit-exceeded', 'RESOURCE_LIMIT_EXCEEDED'],
-    ['command-failed', 'GIT_COMMAND_FAILED'],
-  ] as const)('maps %s without exposing Git diagnostics', async (failureReason, errorCode) => {
-    const probe = createGitInventoryProbe(createProcessExecutor([{ failureReason }]));
+    [GIT_ERRORS.GIT_NOT_FOUND, 'GIT_NOT_FOUND'],
+    [GIT_ERRORS.GIT_REPOSITORY_NOT_FOUND, 'GIT_REPOSITORY_NOT_FOUND'],
+    [GIT_ERRORS.GIT_ACCESS_DENIED, 'GIT_ACCESS_DENIED'],
+    [GIT_ERRORS.GIT_OUTPUT_INVALID, 'GIT_OUTPUT_INVALID'],
+    [PROCESS_ERRORS.PROCESS_OUTPUT_TOO_LARGE, 'RESOURCE_LIMIT_EXCEEDED'],
+    [GIT_ERRORS.GIT_COMMAND_FAILED, 'GIT_COMMAND_FAILED'],
+  ] as const)('maps %s without exposing Git diagnostics', async (code, errorCode) => {
+    const failure = new Exception('private diagnostic', { code });
 
-    await expect(
-      probe({ maxEntries: 1, maxMetadataBytes: 1, repositoryRoot: '/private' }),
-    ).resolves.toStrictEqual({ errorCode, kind: 'failed' });
+    for (const git of [
+      createGitReads({ tracked: failure }),
+      createGitReads({ untracked: failure }),
+    ]) {
+      await expect(
+        createGitInventoryProbe(git)({
+          maxEntries: 1,
+          maxMetadataBytes: 64,
+          repositoryRoot: '/private',
+        }),
+      ).resolves.toStrictEqual({ errorCode, kind: 'failed' });
+    }
   });
 
-  test('rejects successful stderr and malformed output without partial candidates', async () => {
-    const stderrProbe = createGitInventoryProbe(
-      createProcessExecutor([{ stderr: ENCODER.encode('private warning') }]),
-    );
+  test('reports an aborted listing as an aborted operation', async () => {
+    const controller = new AbortController();
+    const git = createGitReads();
+
+    git.readIndexEntries.mockImplementation(() => {
+      const reason = new Error('stopped by the test');
+
+      controller.abort(reason);
+
+      return Promise.reject(reason);
+    });
 
     await expect(
-      stderrProbe({ maxEntries: 1, maxMetadataBytes: 32, repositoryRoot: '/private' }),
-    ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+      createGitInventoryProbe(git)({
+        maxEntries: 1,
+        maxMetadataBytes: 64,
+        repositoryRoot: '/repository',
+        signal: controller.signal,
+      }),
+    ).resolves.toStrictEqual({ errorCode: 'GIT_OPERATION_ABORTED', kind: 'failed' });
+  });
 
-    const malformedProbe = createGitInventoryProbe(
-      createProcessExecutor([{ stdout: ENCODER.encode('malformed\u0000') }]),
-    );
+  test('rejects an unsupported mode, an empty path, and malformed ignored output atomically', async () => {
+    const input = { maxEntries: 4, maxMetadataBytes: 1024, repositoryRoot: '/private' };
+    const ownershipFilter = vi.fn<IGitInventoryOwnershipFilter>();
 
-    await expect(
-      malformedProbe({ maxEntries: 1, maxMetadataBytes: 32, repositoryRoot: '/private' }),
-    ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+    for (const git of [
+      createGitReads({ tracked: [{ mode: '040000', path: 'directory', stage: 0 }] }),
+      createGitReads({ untracked: [''] }),
+    ]) {
+      await expect(createGitInventoryProbe(git, ownershipFilter)(input)).resolves.toStrictEqual({
+        errorCode: 'GIT_OUTPUT_INVALID',
+        kind: 'failed',
+      });
+    }
+
+    for (const ignored of [
+      Object.freeze({ kind: 'completed' as const, value: Buffer.from('AGENTS.md') }),
+      Object.freeze({ kind: 'failed' as const, reason: 'output-invalid' as const }),
+    ]) {
+      await expect(
+        createGitInventoryProbe(
+          createGitReads({ ignored }),
+          ownershipFilter,
+        )({
+          ...input,
+          includeIgnored: true,
+          selectionPaths: INSTRUCTION_PATHS,
+        }),
+      ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+    }
+
+    expect(ownershipFilter).not.toHaveBeenCalled();
   });
 
   test('rejects a non-portable canonical candidate before ownership filtering', async () => {
-    const processExecutor = createProcessExecutor([
-      { stdout: ENCODER.encode(`100644 ${OBJECT_ID} 0\tmoldea/control\npath\u0000`) },
-      { stdout: new Uint8Array() },
-    ]);
     const ownershipFilter = vi.fn<IGitInventoryOwnershipFilter>();
-    const probe = createGitInventoryProbe(processExecutor, ownershipFilter);
+    const probe = createGitInventoryProbe(
+      createGitReads({ tracked: [{ mode: '100644', path: 'moldea/control\npath', stage: 0 }] }),
+      ownershipFilter,
+    );
 
     await expect(
-      probe({ maxEntries: 1, maxMetadataBytes: 128, repositoryRoot: '/repository' }),
+      probe({ maxEntries: 1, maxMetadataBytes: 256, repositoryRoot: '/repository' }),
     ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
     expect(ownershipFilter).not.toHaveBeenCalled();
   });
 
   test('omits invalid external candidates before inspection while charging their raw bytes', async () => {
-    const trackedOutput = ENCODER.encode(
-      `100644 ${OBJECT_ID} 0\tcontrol\npath\u0000100644 ${OBJECT_ID} 0\tretained\u0000`,
-    );
-    const untrackedOutput = ENCODER.encode('windows\\path\u0000');
-    const processExecutor = createProcessExecutor([
-      { stdout: trackedOutput },
-      { stdout: untrackedOutput },
-    ]);
-    const ownershipFilter = vi.fn<IGitInventoryOwnershipFilter>((input) =>
-      Promise.resolve(
-        Object.freeze({ candidates: input.candidates, gitMetadataBytes: 0, kind: 'filtered' }),
-      ),
-    );
+    const git = createGitReads({
+      tracked: [
+        { mode: '100644', path: 'control\npath', stage: 0 },
+        { mode: '100644', path: 'retained', stage: 0 },
+      ],
+      untracked: ['windows\\path'],
+    });
+    const listedBytes =
+      measureTracked(['control\npath', 'retained']) + measureUntracked(['windows\\path']);
+    const ownershipFilter = createPassThroughOwnershipFilter();
     const entryTypeNormalizer = vi.fn<IGitInventoryEntryTypeNormalizer>(() =>
       Promise.resolve(Object.freeze({ entries: [], gitMetadataBytes: 0, kind: 'normalized' })),
     );
-    const classifier = createContentTransformationClassifier();
     const probe = createGitInventoryProbe(
-      processExecutor,
+      git,
       ownershipFilter,
       entryTypeNormalizer,
-      classifier,
+      createContentTransformationClassifier(),
     );
 
     await expect(
@@ -469,23 +508,25 @@ describe('createGitInventoryProbe', () => {
     const candidates = [{ kind: 'tracked', mode: '100644', path: 'retained', stage: 0 }];
     expect(ownershipFilter).toHaveBeenCalledExactlyOnceWith({
       candidates,
-      maxMetadataBytes: 512 - trackedOutput.byteLength - untrackedOutput.byteLength,
+      maxMetadataBytes: 512 - listedBytes,
       repositoryRoot: '/repository',
     });
     expect(entryTypeNormalizer).toHaveBeenCalledExactlyOnceWith({
       candidates,
-      maxMetadataBytes: 512 - trackedOutput.byteLength - untrackedOutput.byteLength,
+      maxMetadataBytes: 512 - listedBytes,
       repositoryRoot: '/repository',
     });
   });
 
   test('counts omitted candidates against the combined raw entry limit', async () => {
-    const processExecutor = createProcessExecutor([
-      { stdout: ENCODER.encode(`100644 ${OBJECT_ID} 0\tcontrol\npath\u0000`) },
-      { stdout: ENCODER.encode('windows\\path\u0000') },
-    ]);
     const ownershipFilter = vi.fn<IGitInventoryOwnershipFilter>();
-    const probe = createGitInventoryProbe(processExecutor, ownershipFilter);
+    const probe = createGitInventoryProbe(
+      createGitReads({
+        tracked: [{ mode: '100644', path: 'control\npath', stage: 0 }],
+        untracked: ['windows\\path'],
+      }),
+      ownershipFilter,
+    );
 
     await expect(
       probe({ maxEntries: 1, maxMetadataBytes: 512, repositoryRoot: '/repository' }),
@@ -493,15 +534,15 @@ describe('createGitInventoryProbe', () => {
     expect(ownershipFilter).not.toHaveBeenCalled();
   });
 
-  test('returns an atomic ownership failure after both raw streams complete', async () => {
-    const processExecutor = createProcessExecutor([
-      { stdout: ENCODER.encode(`100644 ${OBJECT_ID} 0\ttracked\u0000`) },
-      { stdout: ENCODER.encode('nested/untracked\u0000') },
-    ]);
+  test('returns an atomic ownership failure after both raw listings complete', async () => {
+    const git = createGitReads({
+      tracked: [{ mode: '100644', path: 'tracked', stage: 0 }],
+      untracked: ['nested/untracked'],
+    });
     const ownershipFilter = vi
       .fn<IGitInventoryOwnershipFilter>()
       .mockResolvedValue(Object.freeze({ errorCode: 'GIT_ACCESS_DENIED', kind: 'failed' }));
-    const probe = createGitInventoryProbe(processExecutor, ownershipFilter);
+    const probe = createGitInventoryProbe(git, ownershipFilter);
 
     await expect(
       probe({ maxEntries: 2, maxMetadataBytes: 1024, repositoryRoot: '/private' }),
@@ -510,10 +551,7 @@ describe('createGitInventoryProbe', () => {
   });
 
   test('returns an atomic entry-type failure without exposing partial entries', async () => {
-    const processExecutor = createProcessExecutor([
-      { stdout: ENCODER.encode(`120000 ${OBJECT_ID} 0\tlink\u0000`) },
-      { stdout: new Uint8Array() },
-    ]);
+    const git = createGitReads({ tracked: [{ mode: '120000', path: 'link', stage: 0 }] });
     const ownershipFilter = vi.fn<IGitInventoryOwnershipFilter>((input) =>
       Promise.resolve(
         Object.freeze({ candidates: input.candidates, gitMetadataBytes: 0, kind: 'filtered' }),
@@ -522,7 +560,7 @@ describe('createGitInventoryProbe', () => {
     const entryTypeNormalizer = vi
       .fn<IGitInventoryEntryTypeNormalizer>()
       .mockResolvedValue(Object.freeze({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' }));
-    const probe = createGitInventoryProbe(processExecutor, ownershipFilter, entryTypeNormalizer);
+    const probe = createGitInventoryProbe(git, ownershipFilter, entryTypeNormalizer);
 
     await expect(
       probe({ maxEntries: 1, maxMetadataBytes: 128, repositoryRoot: '/repository' }),
@@ -531,10 +569,7 @@ describe('createGitInventoryProbe', () => {
   });
 
   test('returns an atomic logical-path failure without exposing partial entries', async () => {
-    const processExecutor = createProcessExecutor([
-      { stdout: ENCODER.encode(`100644 ${OBJECT_ID} 0\tinvalid\u0000`) },
-      { stdout: new Uint8Array() },
-    ]);
+    const git = createGitReads({ tracked: [{ mode: '100644', path: 'invalid', stage: 0 }] });
     const ownershipFilter = vi.fn<IGitInventoryOwnershipFilter>((input) =>
       Promise.resolve(
         Object.freeze({ candidates: input.candidates, gitMetadataBytes: 0, kind: 'filtered' }),
@@ -559,7 +594,7 @@ describe('createGitInventoryProbe', () => {
       .fn<IGitInventoryLogicalPathNormalizer>()
       .mockReturnValue(Object.freeze({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' }));
     const probe = createGitInventoryProbe(
-      processExecutor,
+      git,
       ownershipFilter,
       entryTypeNormalizer,
       createContentTransformationClassifier(),
@@ -585,10 +620,7 @@ describe('createGitInventoryProbe', () => {
   });
 
   test('returns an atomic content-transformation failure before path normalization', async () => {
-    const processExecutor = createProcessExecutor([
-      { stdout: ENCODER.encode(`100644 ${OBJECT_ID} 0\tguarded\u0000`) },
-      { stdout: new Uint8Array() },
-    ]);
+    const git = createGitReads({ tracked: [{ mode: '100644', path: 'guarded', stage: 0 }] });
     const ownershipFilter = vi.fn<IGitInventoryOwnershipFilter>((input) =>
       Promise.resolve(
         Object.freeze({ candidates: input.candidates, gitMetadataBytes: 0, kind: 'filtered' }),
@@ -614,7 +646,7 @@ describe('createGitInventoryProbe', () => {
       .mockResolvedValue(Object.freeze({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' }));
     const logicalPathNormalizer = vi.fn<IGitInventoryLogicalPathNormalizer>();
     const probe = createGitInventoryProbe(
-      processExecutor,
+      git,
       ownershipFilter,
       entryTypeNormalizer,
       contentTransformationClassifier,

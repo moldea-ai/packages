@@ -1,8 +1,6 @@
 import path from 'node:path';
 import process from 'node:process';
 
-import { hasOnlyUnicodeScalarValues } from '../command-line/index.js';
-
 import { MAX_GIT_DISCOVERY_OUTPUT_BYTES } from './constants.js';
 
 const UTF8_BYTE_ORDER_MARK = [0xef, 0xbb, 0xbf] as const;
@@ -29,30 +27,11 @@ const decodeGitOutput = (output: Uint8Array): string | null => {
     return null;
   }
 
-  if (decodedOutput.includes('\0') || !hasOnlyUnicodeScalarValues(decodedOutput)) {
+  if (decodedOutput.includes('\0') || !decodedOutput.isWellFormed()) {
     return null;
   }
 
   return decodedOutput;
-};
-
-/**
- * Parses Git's canonical boolean output.
- * @param output The raw bounded Git stdout bytes.
- * @returns The parsed boolean, or null when the output is not canonical.
- */
-export const parseGitBooleanOutput = (output: Uint8Array): boolean | null => {
-  const decodedOutput = decodeGitOutput(output);
-
-  if (decodedOutput === 'true\n' || decodedOutput === 'true\r\n') {
-    return true;
-  }
-
-  if (decodedOutput === 'false\n' || decodedOutput === 'false\r\n') {
-    return false;
-  }
-
-  return null;
 };
 
 /**

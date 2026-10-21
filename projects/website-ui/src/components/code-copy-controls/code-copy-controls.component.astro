@@ -51,6 +51,9 @@ import ActionButton from '../action-button/action-button.component.astro';
 </template>
 
 <script>
+  import { hasErrorCode } from 'jg-exception';
+  import { ERRORS, copyText } from 'jg-clipboard';
+
   const OPT_OUT_SELECTOR = '[data-code-copy="false"]';
   const COPIED_FEEDBACK_DURATION_MS = 1400;
 
@@ -124,22 +127,20 @@ import ActionButton from '../action-button/action-button.component.astro';
       latestRequest = request;
       resetFeedback();
 
-      const writeText = navigator.clipboard?.writeText;
-
-      if (writeText === undefined) {
-        showFeedback('error', 'Copy is unavailable. Select the code, then copy it manually.');
-        return;
-      }
-
       try {
-        await writeText.call(navigator.clipboard, code.textContent ?? '');
+        await copyText(code.textContent ?? '');
 
         if (latestRequest === request && button.isConnected) {
           showFeedback('copied', 'Copied.');
         }
-      } catch {
+      } catch (error) {
         if (latestRequest === request && button.isConnected) {
-          showFeedback('error', 'Copy failed. Select the code, then copy it manually.');
+          showFeedback(
+            'error',
+            hasErrorCode(error, ERRORS.CLIPBOARD_UNSUPPORTED)
+              ? 'Copy is unavailable. Select the code, then copy it manually.'
+              : 'Copy failed. Select the code, then copy it manually.',
+          );
         }
       }
     });

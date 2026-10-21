@@ -4,12 +4,12 @@ import { mkdirSync, mkdtempSync, realpathSync, renameSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { createGitEnvironment } from 'jg-git-commands';
 import { describe, expect, test } from 'vitest';
 
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import { probeGitInventory, type IGitInventoryProbe } from '../git-inventory/index.js';
-import { createGitProcessEnvironment } from '../git-process/index.js';
 import { inspectGitWorkingTreeIdentity } from '../git-working-tree/index.js';
 
 import { createWorkingTreeSnapshotExecutor } from './executor.js';
@@ -41,10 +41,8 @@ describe('working-tree snapshot integration', () => {
     const replacementHostPath = path.join(temporaryDirectory, 'replacement.md');
     const initialContent = 'initial bytes';
     const replacementContent = 'accepted replacement bytes';
-    const environment = createGitProcessEnvironment({
-      ...process.env,
-      HOME: homeDirectory,
-      XDG_CONFIG_HOME: configDirectory,
+    const environment = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: homeDirectory, XDG_CONFIG_HOME: configDirectory },
     });
 
     try {
@@ -111,10 +109,8 @@ describe('working-tree snapshot integration', () => {
     const hooksDirectory = path.join(temporaryDirectory, 'hooks');
     const attributesPath = path.join(repositoryRoot, '.gitattributes');
     const selectedHostPath = path.join(repositoryRoot, 'moldea', 'project.md');
-    const environment = createGitProcessEnvironment({
-      ...process.env,
-      HOME: homeDirectory,
-      XDG_CONFIG_HOME: configDirectory,
+    const environment = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: homeDirectory, XDG_CONFIG_HOME: configDirectory },
     });
 
     try {
@@ -225,10 +221,8 @@ describe('working-tree snapshot integration', () => {
     const homeDirectory = path.join(temporaryDirectory, 'home');
     const configDirectory = path.join(temporaryDirectory, 'config');
     const hooksDirectory = path.join(temporaryDirectory, 'hooks');
-    const environment = createGitProcessEnvironment({
-      ...process.env,
-      HOME: homeDirectory,
-      XDG_CONFIG_HOME: configDirectory,
+    const environment = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: homeDirectory, XDG_CONFIG_HOME: configDirectory },
     });
 
     try {
@@ -304,10 +298,8 @@ describe('working-tree snapshot integration', () => {
     const configDirectory = path.join(temporaryDirectory, 'config');
     const hooksDirectory = path.join(temporaryDirectory, 'hooks');
     const selectedRelativePath = path.join('moldea', 'project.md');
-    const environment = createGitProcessEnvironment({
-      ...process.env,
-      HOME: homeDirectory,
-      XDG_CONFIG_HOME: configDirectory,
+    const environment = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: homeDirectory, XDG_CONFIG_HOME: configDirectory },
     });
 
     try {

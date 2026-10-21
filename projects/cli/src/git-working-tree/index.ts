@@ -13,11 +13,12 @@ export type {
   IGitWorkingTreeDiscovery,
   IGitWorkingTreeDiscoveryFailedResult,
   IGitWorkingTreeDiscoveryInput,
+  IGitWorkingTreeDiscoveryReads,
   IGitWorkingTreeDiscoveryResult,
 } from './types.js';
 
 // parsers
-export { parseGitAbsolutePathOutput, parseGitBooleanOutput, parseGitPathOutput } from './parser.js';
+export { parseGitAbsolutePathOutput, parseGitPathOutput } from './parser.js';
 
 // starting-directory inspection
 export {

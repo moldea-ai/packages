@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { Buffer } from 'node:buffer';
 
+import { expectToThrowCode } from 'jg-exception/testing';
 import { describe, expect, test } from 'vitest';
 
 import { CoreOperationException } from '../exceptions/index.js';
@@ -38,6 +39,16 @@ describe('bounded private inspection protocol', () => {
     message.result = 'x'.repeat(NODE_INSPECTION_MESSAGE_BYTES - overhead + 1);
     expect(() => encodeInspectionMessage(message)).toThrow(CoreOperationException);
     expect(() => encodeInspectionMessage(message)).toThrow('A Core resource limit was exceeded.');
+  });
+
+  test('refuses a record that JSON cannot hold as a failed inspection process', () => {
+    const result: Record<string, unknown> = {};
+    result['self'] = result;
+
+    expectToThrowCode(
+      () => encodeInspectionMessage({ attemptId, kind: 'reader-response', requestId: 0, result }),
+      'INSPECTION_PROCESS_FAILED',
+    );
   });
 
   test.each([

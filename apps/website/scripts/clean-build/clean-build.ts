@@ -1,6 +1,7 @@
 import { rmSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isMainModule } from 'jg-process';
 
 /**
  * Removes website-owned output before a build or cache restore so retired pages cannot survive.
@@ -14,6 +15,6 @@ export const cleanWebsiteBuild = (
   }
 };
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   cleanWebsiteBuild();
 }

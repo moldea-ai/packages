@@ -1,3 +1,5 @@
+import { deepFreeze } from 'jg-utilities';
+
 import {
   RepositorySourceException,
   parseRepositoryPath,
@@ -11,7 +13,6 @@ import type {
   ICanonicalContentPageResult,
 } from '../contracts/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import type { ICoreOptionsSnapshot } from '../options/index.js';
 
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
@@ -197,7 +198,7 @@ export const readCanonicalContentPage = async (
   }
 
   if (input.offset === entry.byteLength) {
-    return freezeRecursively({
+    return deepFreeze({
       byteEnd: input.offset,
       byteStart: input.offset,
       content: '',
@@ -228,7 +229,7 @@ export const readCanonicalContentPage = async (
   const byteEnd = input.offset + consumedBytes;
   const isComplete = byteEnd === entry.byteLength;
 
-  return freezeRecursively({
+  return deepFreeze({
     byteEnd,
     byteStart: input.offset,
     content,

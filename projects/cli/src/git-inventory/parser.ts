@@ -3,14 +3,8 @@ import type {
   IGitInventoryParser,
   IGitInventoryParserFailureReason,
   IGitInventoryParserResult,
-  IGitTrackedEntryMode,
-  IGitTrackedEntryStage,
-  IGitTrackedInventoryCandidate,
   IGitUntrackedInventoryCandidate,
 } from './types.js';
-
-const TRACKED_ENTRY_HEADER_PATTERN =
-  /^(100644|100755|120000|160000) (?:[0-9a-f]{40}|[0-9a-f]{64}) ([0-3])$/u;
 
 /** Decodes one complete Git path as strict UTF-8 while preserving an initial BOM scalar. */
 const decodeGitPath = (pathBytes: Uint8Array): string | null => {
@@ -23,30 +17,6 @@ const decodeGitPath = (pathBytes: Uint8Array): string | null => {
   } catch {
     return null;
   }
-};
-
-/** Confirms that one decoded path contains only complete Unicode scalar values. */
-const hasOnlyUnicodeScalarValues = (path: string): boolean => {
-  for (let index = 0; index < path.length; index += 1) {
-    const codeUnit = path.charCodeAt(index);
-
-    if (codeUnit >= 0xd800 && codeUnit <= 0xdbff) {
-      const trailingCodeUnit = path.charCodeAt(index + 1);
-
-      if (trailingCodeUnit < 0xdc00 || trailingCodeUnit > 0xdfff) {
-        return false;
-      }
-
-      index += 1;
-      continue;
-    }
-
-    if (codeUnit >= 0xdc00 && codeUnit <= 0xdfff) {
-      return false;
-    }
-  }
-
-  return true;
 };
 
 /** Concatenates one complete record assembled across arbitrary process chunks. */
@@ -62,42 +32,11 @@ const concatenateRecord = (fragments: readonly Uint8Array[], byteLength: number)
   return record;
 };
 
-/** Parses one tracked `ls-files --stage` record without normalizing its path. */
-const parseTrackedCandidate = (record: Uint8Array): IGitTrackedInventoryCandidate | null => {
-  const separatorIndex = record.indexOf(0x09);
-
-  if (separatorIndex <= 0 || separatorIndex === record.byteLength - 1) {
-    return null;
-  }
-
-  let header: string;
-
-  try {
-    header = new TextDecoder('utf-8', { fatal: true }).decode(record.subarray(0, separatorIndex));
-  } catch {
-    return null;
-  }
-
-  const headerMatch = TRACKED_ENTRY_HEADER_PATTERN.exec(header);
-  const path = decodeGitPath(record.subarray(separatorIndex + 1));
-
-  if (headerMatch === null || path === null || !hasOnlyUnicodeScalarValues(path)) {
-    return null;
-  }
-
-  return Object.freeze({
-    kind: 'tracked',
-    mode: headerMatch[1] as IGitTrackedEntryMode,
-    path,
-    stage: Number(headerMatch[2]) as IGitTrackedEntryStage,
-  });
-};
-
 /** Parses one untracked `ls-files --others` record without normalizing its path. */
 const parseUntrackedCandidate = (record: Uint8Array): IGitUntrackedInventoryCandidate | null => {
   const path = decodeGitPath(record);
 
-  if (path === null || !hasOnlyUnicodeScalarValues(path)) {
+  if (path === null || !path.isWellFormed()) {
     return null;
   }
 
@@ -185,12 +124,6 @@ const createGitInventoryParser = <TCandidate extends IGitInventoryCandidate>(
     },
   };
 };
-
-/** Creates a strict incremental parser for tracked Git inventory output. */
-export const createTrackedGitInventoryParser = (
-  maxEntries: number,
-): IGitInventoryParser<IGitTrackedInventoryCandidate> =>
-  createGitInventoryParser(maxEntries, parseTrackedCandidate);
 
 /** Creates a strict incremental parser for untracked Git inventory output. */
 export const createUntrackedGitInventoryParser = (

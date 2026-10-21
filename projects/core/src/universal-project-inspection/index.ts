@@ -1,3 +1,5 @@
+import { deepFreeze } from 'jg-utilities';
+
 import { parseRepositoryPath, type IRepositoryEntry } from '@moldea.ai/repository';
 
 import { inspectAgentAssets, type IInspectedAgentAssets } from '../agent-assets/index.js';
@@ -11,7 +13,6 @@ import {
 } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
 import type { IRepositoryFormatVersion } from '../format/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { validateManifestRelationships } from '../manifest-relationship-validation/index.js';
 import { inspectManifestDocument } from '../manifest/index.js';
 import { inspectCodingAgentIntegration } from '../integration-validation/index.js';
@@ -251,7 +252,7 @@ export const inspectUniversalProject = async (
         })
       : null;
 
-  return freezeRecursively({
+  return deepFreeze({
     diagnostics,
     coverage,
     formatVersion,

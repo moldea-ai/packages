@@ -1,15 +1,11 @@
-import { parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
+import { compareCodePoints, countUtf8Bytes, isObjectValid } from 'jg-utilities';
 
-import { compareExactStrings } from '../format-validation/index.js';
+import { parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICoreResourceLimits, ITextDocumentInput } from '../contracts/index.js';
 import { CoreOperationException } from '../exceptions/index.js';
 
 import type { IManifestScopeInput } from './types.js';
-
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> => {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 /** Throws the stable invalid-argument failure for malformed scope input. */
 const invalidArgument = (): never => {
@@ -35,18 +31,6 @@ const resourceLimitExceeded = (
   });
 };
 
-/** Measures scalar UTF-8 bytes without allocating an encoded copy. */
-export const measureUtf8ByteLength = (value: string): number => {
-  let byteLength = 0;
-
-  for (const scalar of value) {
-    const codePoint = scalar.codePointAt(0) ?? 0;
-    byteLength += codePoint <= 0x7f ? 1 : codePoint <= 0x7ff ? 2 : codePoint <= 0xffff ? 3 : 4;
-  }
-
-  return byteLength;
-};
-
 export interface INormalizedManifestScopeInput {
   readonly manifest: ITextDocumentInput;
   readonly paths: readonly IRepositoryPath[];
@@ -66,14 +50,14 @@ export const normalizeManifestScopeInput = (
   input: IManifestScopeInput,
   limits: ICoreResourceLimits,
 ): INormalizedManifestScopeInput => {
-  if (!isRecord(input)) {
+  if (!isObjectValid(input, true)) {
     return invalidArgument();
   }
 
   const manifest = input['manifest'];
   const pathCandidates = input['paths'];
 
-  if (!isRecord(manifest) || !Array.isArray(pathCandidates)) {
+  if (!isObjectValid(manifest, true) || !Array.isArray(pathCandidates)) {
     return invalidArgument();
   }
 
@@ -90,7 +74,7 @@ export const normalizeManifestScopeInput = (
     }
 
     const path = parseRepositoryPath(candidate);
-    totalBytes += measureUtf8ByteLength(path) + (index === 0 ? 0 : 1);
+    totalBytes += countUtf8Bytes(path) + (index === 0 ? 0 : 1);
 
     if (totalBytes > limits.maxTotalBytesRead) {
       return resourceLimitExceeded('maxTotalBytesRead', limits.maxTotalBytesRead, totalBytes);
@@ -101,6 +85,6 @@ export const normalizeManifestScopeInput = (
 
   return {
     manifest,
-    paths: [...uniquePaths].sort(compareExactStrings),
+    paths: [...uniquePaths].sort(compareCodePoints),
   };
 };

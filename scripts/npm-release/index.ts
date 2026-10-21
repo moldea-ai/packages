@@ -59,4 +59,4 @@ export {
 export { loadNpmRegistryVersions, parseNpmRegistryVersions } from './registry.ts';
 
 // Git
-export { hasGitProjectChanges, loadGitTagCommit } from './git.ts';
+export { hasProjectChanges, loadGitChangedPaths, loadGitTagCommit } from './git.ts';

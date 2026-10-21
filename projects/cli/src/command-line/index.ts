@@ -22,7 +22,6 @@ export { parseMoldeaCliArguments } from './parser.js';
 // validations
 export {
   areMoldeaCliResourceLimitsConsistent,
-  hasOnlyUnicodeScalarValues,
   isMoldeaCliCursorInputValid,
   isRepositoryDirectoryInputValid,
   parseMoldeaCliOutputByteLimit,

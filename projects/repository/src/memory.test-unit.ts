@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
-import { expectToRejectCode, expectToThrowCode } from 'web-utils-kit';
+import { expectToRejectCode, expectToThrowCode } from 'jg-exception/testing';
 
 import { RepositoryPathException, RepositorySourceException } from './exceptions.js';
 import { createRepositoryComparison } from './comparison.js';

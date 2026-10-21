@@ -1,3 +1,5 @@
+import { compareCodePoints, deepFreeze } from 'jg-utilities';
+
 import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICanonicalDiscoveryResult } from '../canonical-discovery/index.js';
@@ -7,9 +9,8 @@ import {
   type ICoreDiagnosticCollector,
 } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
-import { compareExactStrings, hasNonWhitespace } from '../format-validation/index.js';
+import { hasNonWhitespace } from '../format-validation/index.js';
 import type { IMoldeaManifestV1 } from '../format/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { readRepositoryTextAsset } from '../repository-text/index.js';
@@ -80,7 +81,7 @@ export const readProjectFile = async (
 
   const diagnostics = collector.finalize();
 
-  return freezeRecursively({
+  return deepFreeze({
     diagnostics,
     project,
     valid: diagnostics.length === 0,
@@ -122,7 +123,7 @@ export const readProjectAssets = async (
     (await readProjectFile(repository, discovery.inventory.project, options, signal));
   addDiagnostics(collector, inspectedProject.diagnostics);
 
-  for (const path of [...discovery.inventory.context].sort(compareExactStrings)) {
+  for (const path of [...discovery.inventory.context].sort(compareCodePoints)) {
     const result = await readRepositoryTextAsset(repository, path, options.limits, signal);
     addDiagnostics(collector, result.diagnostics);
 
@@ -143,7 +144,7 @@ export const readProjectAssets = async (
 
   const diagnostics = collector.finalize();
 
-  return freezeRecursively({
+  return deepFreeze({
     context,
     diagnostics,
     project: inspectedProject.project,

@@ -142,7 +142,7 @@ describe('published package artifacts', () => {
     ) as IRepositoryPackageManifest;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/repository', version: '3.0.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/repository', version: '4.0.0' });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/memory.js');
@@ -165,7 +165,10 @@ describe('published package artifacts', () => {
           filePath === 'package.json',
       ),
     ).toBe(true);
-    expect(manifest.dependencies).toStrictEqual({ 'error-message-utils': '1.2.11' });
+    expect(manifest.dependencies).toStrictEqual({
+      'jg-exception': '1.7.0',
+      'jg-utilities': '1.7.0',
+    });
     expect(manifest.exports).toStrictEqual({
       '.': {
         import: './dist/index.js',
@@ -180,14 +183,9 @@ describe('published package artifacts', () => {
         types: './dist/testing/index.d.ts',
       },
     });
-    expect(manifest.peerDependencies).toStrictEqual({
-      vitest: '>=1.0.0',
-      'web-utils-kit': '>=1.3.1',
-    });
-    expect(manifest.peerDependenciesMeta).toStrictEqual({
-      vitest: { optional: true },
-      'web-utils-kit': { optional: true },
-    });
+    // the conformance suite takes its runner from the caller, so the package has no peers
+    expect(manifest.peerDependencies).toBeUndefined();
+    expect(manifest.peerDependenciesMeta).toBeUndefined();
   });
 
   test('loads only the documented named runtime exports through package self-resolution', () => {
@@ -252,7 +250,9 @@ describe('published package artifacts', () => {
     expect(testingDeclaration).toContain('IRepositoryReaderConformanceFixture');
     expect(testingDeclaration).toContain('IRepositoryReaderConformanceReader');
     expect(testingDeclaration).toContain('IRepositoryReaderSnapshotMutationFixture');
+    expect(testingDeclaration).toContain('IRepositoryReaderConformanceRunner');
     expect(testingDeclaration).toContain('describeRepositoryReaderConformance');
+    expect(testingDeclaration).not.toMatch(/['"]vitest['"]/u);
     expect(allDeclarations).not.toMatch(/from ['"]@moldea\.ai\//u);
     expect(allDeclarations).not.toContain('packages/');
   });
@@ -275,7 +275,7 @@ describe('published package artifacts', () => {
     expect(javascript).not.toMatch(/from ['"]node:/u);
     expect(javascript).not.toMatch(/require\(['"](?:node:)?/u);
     expect(javascript).not.toContain('process.');
-    expect(testingJavascript).toMatch(/from ['"]vitest['"]/u);
-    expect(testingJavascript).toMatch(/from ['"]web-utils-kit['"]/u);
+    expect(testingJavascript).not.toMatch(/['"]vitest['"]/u);
+    expect(testingJavascript).toMatch(/from ['"]jg-exception\/testing['"]/u);
   });
 });

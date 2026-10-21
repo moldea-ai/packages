@@ -1,3 +1,5 @@
+import { isObjectValid } from 'jg-utilities';
+
 import { createRepositoryIdentity } from './identity.js';
 
 interface IRepositoryCursorEnvelope {
@@ -8,9 +10,6 @@ interface IRepositoryCursorEnvelope {
 
 const encoder = new TextEncoder();
 const ENVELOPE_KEYS = new Set(['checksum', 'payload', 'version']);
-
-const isRecord = (candidate: unknown): candidate is Readonly<Record<string, unknown>> =>
-  typeof candidate === 'object' && candidate !== null && !Array.isArray(candidate);
 
 /** Encodes one versioned repository cursor with a deterministic integrity checksum. */
 export const createRepositoryCursor = (payload: unknown): string => {
@@ -28,7 +27,7 @@ export const decodeRepositoryCursor = (cursor: string): unknown => {
   const envelope: unknown = JSON.parse(cursor);
 
   if (
-    !isRecord(envelope) ||
+    !isObjectValid(envelope, true) ||
     Reflect.ownKeys(envelope).some((key) => typeof key !== 'string' || !ENVELOPE_KEYS.has(key)) ||
     envelope['version'] !== 1 ||
     typeof envelope['payload'] !== 'string' ||

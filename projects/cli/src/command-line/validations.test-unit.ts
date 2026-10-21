@@ -3,7 +3,6 @@ import { describe, expect, test } from 'vitest';
 
 import {
   areMoldeaCliResourceLimitsConsistent,
-  hasOnlyUnicodeScalarValues,
   isRepositoryDirectoryInputValid,
   parsePositiveSafeInteger,
 } from './validations.js';
@@ -27,23 +26,15 @@ describe('command-line validations', () => {
   });
 
   test.each([
-    ['', true],
-    ['plain text', true],
-    ['emoji 🚀', true],
-    ['\ud800', false],
-    ['\udc00', false],
-    ['before\ud800after', false],
-  ])('hasOnlyUnicodeScalarValues(%s) -> %s', (input, expectedResult) => {
-    expect(hasOnlyUnicodeScalarValues(input)).toBe(expectedResult);
-  });
-
-  test.each([
     ['.', true],
     ['relative/path', true],
     ['/absolute/path', true],
     ['', false],
     ['before\0after', false],
     ['\ud800', false],
+    ['\udc00', false],
+    ['before\ud800after', false],
+    ['emoji 🚀', true],
   ])('isRepositoryDirectoryInputValid(%s) -> %s', (input, expectedResult) => {
     expect(isRepositoryDirectoryInputValid(input)).toBe(expectedResult);
   });

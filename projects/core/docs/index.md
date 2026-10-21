@@ -7,7 +7,7 @@ order: 0
 
 # Deterministic repository interpretation
 
-`@moldea.ai/core` version 8 is the source-neutral interpretation layer for the `moldea` repository format. It accepts caller-supplied text or an `IRepositoryReader`, validates universal repository structure, matches changed paths against declared relationships, prepares reusable bounded content-free inspection, and checks declared files and runtime export names without executing application code.
+`@moldea.ai/core` version 9 is the source-neutral interpretation layer for the `moldea` repository format. It accepts caller-supplied text or an `IRepositoryReader`, validates universal repository structure, matches changed paths against declared relationships, prepares reusable bounded content-free inspection, and checks declared files and runtime export names without executing application code.
 
 Core never discovers or reads a filesystem, Git provider, or network on its own. Repository acquisition belongs to reader packages and local composition belongs to the CLI.
 

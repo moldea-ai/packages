@@ -4,13 +4,9 @@ import { mkdirSync, mkdtempSync, realpathSync, renameSync, rmSync } from 'node:f
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { createGitEnvironment } from 'jg-git-commands';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import {
-  createGitProcessEnvironment,
-  executeGitProcess,
-  type IGitProcessExecutor,
-} from '../../git-process/index.js';
 import { haveSameHostPathIdentity } from '../../host-path-identity/index.js';
 
 import { areGitWorkingTreeIdentitiesEqual } from './comparator.js';
@@ -43,10 +39,8 @@ const createGitFixture = (): IIdentityGitFixture => {
 
   return {
     directory: temporaryDirectory,
-    environment: createGitProcessEnvironment({
-      ...process.env,
-      HOME: homeDirectory,
-      XDG_CONFIG_HOME: configDirectory,
+    environment: createGitEnvironment({
+      baseEnv: { ...process.env, HOME: homeDirectory, XDG_CONFIG_HOME: configDirectory },
     }),
     hooksDirectory,
   };
@@ -77,13 +71,8 @@ const executeFixtureGit = (
   );
 };
 
-/** Creates a real identity inspector with the fixture's isolated Git environment. */
-const createIdentityInspector = (fixture: IIdentityGitFixture) => {
-  const processExecutor: IGitProcessExecutor = (options) =>
-    executeGitProcess({ ...options, environment: fixture.environment });
-
-  return createGitWorkingTreeIdentityInspector(processExecutor);
-};
+/** Creates a real identity inspector through the production Git boundary. */
+const createIdentityInspector = () => createGitWorkingTreeIdentityInspector();
 
 /** Requires and returns one successful identity result. */
 const requireIdentity = async (
@@ -124,7 +113,7 @@ describe('Git working-tree identity integration', () => {
       linkedWorktree,
     ]);
 
-    const inspectIdentity = createIdentityInspector(fixture);
+    const inspectIdentity = createIdentityInspector();
     const mainIdentity = await requireIdentity(inspectIdentity, repositoryRoot);
     const linkedIdentity = await requireIdentity(inspectIdentity, linkedWorktree);
 
@@ -144,7 +133,7 @@ describe('Git working-tree identity integration', () => {
     mkdirSync(repositoryRoot);
     executeFixtureGit(fixture, repositoryRoot, ['init']);
 
-    const inspectIdentity = createIdentityInspector(fixture);
+    const inspectIdentity = createIdentityInspector();
     const pinnedIdentity = await requireIdentity(inspectIdentity, repositoryRoot);
 
     renameSync(repositoryRoot, replacedRepository);

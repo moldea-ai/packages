@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isMainModule } from 'jg-process';
 import { parseSearchDocuments } from '@moldea.ai/website-ui/search';
 import { RUNTIME_CATALOG } from '@moldea.ai/website-ui/runtime-catalog';
 import { DEFAULT_BASE_PATH, normalizeBasePath } from '@moldea.ai/website-ui/site';
@@ -451,6 +452,6 @@ export const verifyProductionBuild = (
     throw new Error('Search retains a retired runtime route.');
 };
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   verifyProductionBuild();
 }

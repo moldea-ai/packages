@@ -5,14 +5,15 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { promisify } from 'node:util';
-import { afterEach, describe, expect, test } from 'vitest';
-
 import {
-  createGitProcessEnvironment,
-  executeGitProcess,
-  type IGitProcessEnvironment,
-  type IGitProcessExecutor,
-} from '../git-process/index.js';
+  createGitEnvironment,
+  readConfigBoolean,
+  readGitVersion,
+  readTopLevel,
+} from 'jg-git-commands';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+
+import { createGitVersionPreflight } from '../git-version/index.js';
 
 import { createGitWorkingTreeDiscovery } from './discovery.js';
 import type { IGitWorkingTreeDiscovery, IGitWorkingTreeDiscoveryInput } from './types.js';
@@ -20,11 +21,12 @@ import type { IGitWorkingTreeDiscovery, IGitWorkingTreeDiscoveryInput } from './
 const execFileAsync = promisify(execFile);
 const temporaryDirectories: string[] = [];
 
-// isolated paths and environment shared by one real-Git fixture
+// isolated paths and environments shared by one real-Git fixture
 interface IGitFixture {
   readonly directory: string;
-  readonly environment: IGitProcessEnvironment;
+  readonly environment: NodeJS.ProcessEnv;
   readonly hooksDirectory: string;
+  readonly userConfigEnvironment: NodeJS.ProcessEnv;
 }
 
 /** Creates one isolated temporary directory tracked for teardown. */
@@ -49,14 +51,13 @@ const createGitFixture = async (): Promise<IGitFixture> => {
     ),
   );
 
+  const userConfigEnvironment = { HOME: homeDirectory, XDG_CONFIG_HOME: configDirectory };
+
   return Object.freeze({
     directory,
-    environment: createGitProcessEnvironment({
-      ...process.env,
-      HOME: homeDirectory,
-      XDG_CONFIG_HOME: configDirectory,
-    }),
+    environment: createGitEnvironment({ baseEnv: { ...process.env, ...userConfigEnvironment } }),
     hooksDirectory,
+    userConfigEnvironment,
   });
 };
 
@@ -89,10 +90,17 @@ const executeFixtureGit = async (
 
 /** Creates a discovery operation with isolated user-level Git configuration. */
 const createIsolatedDiscovery = (fixture: IGitFixture): IGitWorkingTreeDiscovery => {
-  const processExecutor: IGitProcessExecutor = (options) =>
-    executeGitProcess({ ...options, environment: fixture.environment });
+  const env = fixture.userConfigEnvironment;
 
-  return createGitWorkingTreeDiscovery(processExecutor);
+  return createGitWorkingTreeDiscovery(
+    {
+      readConfigBoolean: (cwd, key, defaultValue, options) =>
+        readConfigBoolean(cwd, key, defaultValue, { ...options, env }),
+      readTopLevel: (cwd, options) => readTopLevel(cwd, { ...options, env }),
+    },
+    undefined,
+    createGitVersionPreflight((cwd, options) => readGitVersion(cwd, { ...options, env })),
+  );
 };
 
 /**
@@ -119,6 +127,7 @@ const expectDiscoveredRepositoryRoot = async (
 };
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await Promise.all(
     temporaryDirectories
       .splice(0)
@@ -234,19 +243,14 @@ describe('Git working-tree discovery integration', () => {
     await executeFixtureGit(fixture, repositoryRoot, ['init']);
     await executeFixtureGit(fixture, redirectedRoot, ['init']);
 
-    const processExecutor: IGitProcessExecutor = (options) =>
-      executeGitProcess({
-        ...options,
-        environment: {
-          ...fixture.environment,
-          GIT_CONFIG_COUNT: '1',
-          GIT_CONFIG_KEY_0: 'core.bare',
-          GIT_CONFIG_VALUE_0: 'true',
-          GIT_DIR: path.join(redirectedRoot, '.git'),
-          GIT_WORK_TREE: redirectedRoot,
-        },
-      });
-    const discoverWorkingTree = createGitWorkingTreeDiscovery(processExecutor);
+    // Git inherits the CLI's environment, so the redirection is ambient
+    vi.stubEnv('GIT_CONFIG_COUNT', '1');
+    vi.stubEnv('GIT_CONFIG_KEY_0', 'core.bare');
+    vi.stubEnv('GIT_CONFIG_VALUE_0', 'true');
+    vi.stubEnv('GIT_DIR', path.join(redirectedRoot, '.git'));
+    vi.stubEnv('GIT_WORK_TREE', redirectedRoot);
+
+    const discoverWorkingTree = createIsolatedDiscovery(fixture);
 
     await expectDiscoveredRepositoryRoot(
       discoverWorkingTree,

@@ -15,11 +15,10 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { createGitEnvironment } from 'jg-git-commands';
 import { describe, expect, test } from 'vitest';
 
 import type { IMoldeaCliValidateResult } from '../presentation/index.js';
-
-import { createGitProcessEnvironment } from '../git-process/index.js';
 
 import {
   CLI_DISTRIBUTION_PATH,
@@ -268,7 +267,7 @@ describe('published CLI package and executable', () => {
     const manifest = readCliPackageManifest();
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '12.0.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '13.0.0' });
     expect(packedPaths).toContain('dist/moldea.js');
     expect(packedPaths).toContain('LICENSE');
     expect(packedPaths).toContain('README.md');
@@ -285,7 +284,7 @@ describe('published CLI package and executable', () => {
       ),
     ).toBe(true);
     expect(packedPaths.every((filePath) => !filePath.includes('.test-'))).toBe(true);
-    expectPackageManifest(manifest, 'workspace:^8.0.0', 'workspace:^3.0.0', 'workspace:^3.0.0');
+    expectPackageManifest(manifest, 'workspace:^9.0.0', 'workspace:^4.0.0', 'workspace:^4.0.0');
     const executable = readFileSync(CLI_DISTRIBUTION_PATH, 'utf8');
     const executableChunks = packedPaths
       .filter((filePath) => filePath.startsWith('dist/chunks/') && filePath.endsWith('.js'))
@@ -318,7 +317,7 @@ describe('published CLI package and executable', () => {
       ) as IMoldeaCliPackageManifest;
       const executable = readTarEntry(tarball, 'package/dist/moldea.js').toString('utf8');
 
-      expectPackageManifest(manifest, '^8.0.0', '^3.0.0', '^3.0.0');
+      expectPackageManifest(manifest, '^9.0.0', '^4.0.0', '^4.0.0');
       expect(executable.startsWith('#!/usr/bin/env node\n')).toBe(true);
       expect(executable).toContain('import("./chunks/');
     } finally {
@@ -335,10 +334,8 @@ describe('published CLI package and executable', () => {
     const repository = path.join(directory, 'repository');
     const gitHome = path.join(directory, 'home');
     const gitConfig = path.join(directory, 'config');
-    const environment = createGitProcessEnvironment({
-      ...process.env,
-      HOME: gitHome,
-      XDG_CONFIG_HOME: gitConfig,
+    const environment = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: gitHome, XDG_CONFIG_HOME: gitConfig },
     });
 
     try {
@@ -491,10 +488,8 @@ describe('published CLI package and executable', () => {
     const directory = mkdtempSync(path.join(tmpdir(), 'moldea-cli-instructions-'));
     const gitHome = path.join(directory, 'home');
     const gitConfig = path.join(directory, 'config');
-    const environment = createGitProcessEnvironment({
-      ...process.env,
-      HOME: gitHome,
-      XDG_CONFIG_HOME: gitConfig,
+    const environment = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: gitHome, XDG_CONFIG_HOME: gitConfig },
     });
     const asset =
       '<!-- moldea:start -->\nnode "<repo-root>/{{skill-path}}/scripts/relevance-gate.mjs" --repository "<repo-root>"\n<!-- moldea:end -->\n';
@@ -725,10 +720,8 @@ describe('published CLI package and executable', () => {
       const directory = mkdtempSync(path.join(tmpdir(), 'moldea-cli-paths-'));
       const gitHome = path.join(directory, 'home');
       const gitConfig = path.join(directory, 'config');
-      const environment = createGitProcessEnvironment({
-        ...process.env,
-        HOME: gitHome,
-        XDG_CONFIG_HOME: gitConfig,
+      const environment = createGitEnvironment({
+        baseEnv: { ...process.env, HOME: gitHome, XDG_CONFIG_HOME: gitConfig },
       });
 
       try {
@@ -838,10 +831,8 @@ describe('published CLI package and executable', () => {
     const gitHomeDirectory = path.join(testDirectory, 'home');
     const gitConfigDirectory = path.join(testDirectory, 'config');
     const gitHooksDirectory = path.join(testDirectory, 'hooks');
-    const gitEnvironment: NodeJS.ProcessEnv = createGitProcessEnvironment({
-      ...process.env,
-      HOME: gitHomeDirectory,
-      XDG_CONFIG_HOME: gitConfigDirectory,
+    const gitEnvironment: NodeJS.ProcessEnv = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: gitHomeDirectory, XDG_CONFIG_HOME: gitConfigDirectory },
     });
 
     for (const directory of [
@@ -927,7 +918,7 @@ describe('published CLI package and executable', () => {
           cwd: consumerDirectory,
           encoding: 'utf8',
         }),
-      ).toBe('12.0.0\n');
+      ).toBe('13.0.0\n');
 
       const warningRepositoryDirectory = path.join(testDirectory, 'warning-repository');
       mkdirSync(path.join(warningRepositoryDirectory, 'moldea'), { recursive: true });
@@ -1206,7 +1197,7 @@ describe('published CLI package and executable', () => {
       expect(humanComposition.status).toBe(0);
       expect(humanComposition.stderr).toBe('');
       expect(humanComposition.stdout).toContain(
-        'The installed CLI composition state is valid.\nCLI version: 12.0.0\n',
+        'The installed CLI composition state is valid.\nCLI version: 13.0.0\n',
       );
 
       const jsonComposition = spawnPackageManager(
@@ -1251,7 +1242,7 @@ describe('published CLI package and executable', () => {
       expect(jsonUsageFailure.status).toBe(2);
       expect(jsonUsageFailure.stderr).toBe('');
       expect(jsonUsageFailure.stdout).toBe(
-        '{"cliVersion":"12.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"13.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const nonRepositoryCommand = spawnPackageManager(
@@ -1299,7 +1290,7 @@ describe('published CLI package and executable', () => {
       expect(discoveredRepositoryCommand.stderr).toBe('');
       expect(discoveredRepositoryCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(discoveredRepositoryCommand.stdout)).toMatchObject({
-        cliVersion: '12.0.0',
+        cliVersion: '13.0.0',
         command: 'inspect',
         result: {
           counts: { diagnostics: 3, errors: 2, warnings: 1, acceptedWarnings: 0 },
@@ -1324,7 +1315,7 @@ describe('published CLI package and executable', () => {
       expect(invalidValidationCommand.stderr).toBe('');
       expect(invalidValidationCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(invalidValidationCommand.stdout)).toMatchObject({
-        cliVersion: '12.0.0',
+        cliVersion: '13.0.0',
         command: 'validate',
         result: {
           diagnosticCount: 3,
@@ -1467,7 +1458,7 @@ process.exit(0);
       expect(validJsonValidationCommand.status).toBe(0);
       expect(validJsonValidationCommand.stderr).toBe('');
       expect(JSON.parse(validJsonValidationCommand.stdout)).toMatchObject({
-        cliVersion: '12.0.0',
+        cliVersion: '13.0.0',
         command: 'validate',
         result: {
           diagnosticCount: 0,
@@ -1530,7 +1521,7 @@ acceptedWarnings: 0
       expect(validJsonInspectionCommand.status).toBe(0);
       expect(validJsonInspectionCommand.stderr).toBe('');
       expect(validInspectionEnvelope).toMatchObject({
-        cliVersion: '12.0.0',
+        cliVersion: '13.0.0',
         command: 'inspect',
         error: null,
         result: {
@@ -1580,7 +1571,7 @@ acceptedWarnings: 0
       expect(unrelatedScopeCommand.stderr).toBe('');
       expect(Buffer.byteLength(unrelatedScopeCommand.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
       expect(JSON.parse(unrelatedScopeCommand.stdout)).toMatchObject({
-        cliVersion: '12.0.0',
+        cliVersion: '13.0.0',
         command: 'scope',
         result: {
           counts: { declarations: 0, inputPaths: 1, matches: 0 },
@@ -1629,7 +1620,7 @@ acceptedWarnings: 0
         expect(invalidScope.status).toBe(3);
         expect(invalidScope.stderr).toBe('');
         expect(JSON.parse(invalidScope.stdout)).toStrictEqual({
-          cliVersion: '12.0.0',
+          cliVersion: '13.0.0',
           command: 'scope',
           schemaVersion: 7,
           status: 'error',
@@ -1687,7 +1678,7 @@ acceptedWarnings: 0
       expect(explicitContentCommand.status).toBe(0);
       expect(explicitContentCommand.stderr).toBe('');
       expect(JSON.parse(explicitContentCommand.stdout)).toMatchObject({
-        cliVersion: '12.0.0',
+        cliVersion: '13.0.0',
         command: 'content',
         result: {
           asset: { path: '/moldea/project.md' },
@@ -1991,7 +1982,7 @@ acceptedWarnings: 0
       expect(inventoryLimitCommand.status).toBe(3);
       expect(inventoryLimitCommand.stderr).toBe('');
       expect(inventoryLimitCommand.stdout).toBe(
-        '{"cliVersion":"12.0.0","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"13.0.0","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const environmentWithoutPath = Object.fromEntries(
@@ -2013,7 +2004,7 @@ acceptedWarnings: 0
       expect(missingGitResult.status).toBe(3);
       expect(missingGitResult.stderr).toBe('');
       expect(missingGitResult.stdout).toBe(
-        '{"cliVersion":"12.0.0","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":7,"status":"error"}\n',
+        '{"cliVersion":"13.0.0","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":7,"status":"error"}\n',
       );
 
       const compositionWithoutGit = spawnSync(
@@ -2047,7 +2038,7 @@ acceptedWarnings: 0
           `#!/usr/bin/env node
 const { spawnSync } = require('node:child_process');
 
-if (process.argv.includes('--version')) {
+if (process.argv.at(-1) === 'version') {
   process.stdout.write(process.env.MOLDEA_TEST_GIT_VERSION_OUTPUT);
   process.exit(0);
 }

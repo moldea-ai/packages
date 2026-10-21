@@ -1,13 +1,7 @@
-// persisted website theme choices
-export type IThemePreference = 'dark' | 'light' | 'system';
+import { resolveThemePreference, type IThemePreference } from 'jg-site';
 
-/**
- * Normalizes an unknown persisted preference to a supported theme choice.
- * @param value Persisted storage value.
- * @returns A supported explicit or system preference.
- */
-export const parseThemePreference = (value: unknown): IThemePreference =>
-  value === 'dark' || value === 'light' || value === 'system' ? value : 'system';
+// persisted website theme choices, and their parser
+export { parseThemePreference, type IThemePreference } from 'jg-site';
 
 /**
  * Resolves whether the effective theme should be dark.
@@ -16,4 +10,4 @@ export const parseThemePreference = (value: unknown): IThemePreference =>
  * @returns Whether the effective website theme is dark.
  */
 export const isDarkTheme = (preference: IThemePreference, doesSystemPreferDark: boolean): boolean =>
-  preference === 'dark' || (preference === 'system' && doesSystemPreferDark);
+  resolveThemePreference(preference, doesSystemPreferDark) === 'dark';

@@ -21,7 +21,6 @@ import {
   parseRepositoryPath,
   type IRepositoryPath,
 } from './repository-path.js';
-import { hasOnlyUnicodeScalarValues } from './unicode.js';
 
 // accepted file, directory, and symlink definitions for an in-memory snapshot; a symlink stores its text
 export type IMemoryRepositoryEntry =
@@ -143,7 +142,7 @@ const normalizeEntry = (candidate: unknown): IStoredRepositoryEntry => {
   if (entry['type'] === 'symlink') {
     const target = entry['target'];
 
-    if (typeof target !== 'string' || !hasOnlyUnicodeScalarValues(target)) {
+    if (typeof target !== 'string' || !target.isWellFormed()) {
       throw invalidSourceData(path);
     }
 
@@ -157,7 +156,7 @@ const normalizeEntry = (candidate: unknown): IStoredRepositoryEntry => {
   let content: Uint8Array;
 
   if (typeof entry['content'] === 'string') {
-    if (!hasOnlyUnicodeScalarValues(entry['content'])) {
+    if (!entry['content'].isWellFormed()) {
       throw invalidSourceData(path);
     }
 

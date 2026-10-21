@@ -84,3 +84,36 @@ export interface IRepositoryReaderSnapshotMutationFixture<TPath extends string> 
   readonly mutateSource: () => Promise<void> | void;
   readonly reader: IRepositoryReaderConformanceReader<TPath>;
 }
+
+// synchronous assertions the conformance suite makes, as Vitest's expect provides them
+export interface IRepositoryReaderConformanceMatchers {
+  toBe(expected: unknown): void;
+  toBeGreaterThan(expected: number): void;
+  toMatchObject(expected: object): void;
+  toStrictEqual(expected: unknown): void;
+}
+
+// assertions the conformance suite awaits on a promise's resolved value
+export interface IRepositoryReaderConformanceAsyncMatchers {
+  toBe(expected: unknown): PromiseLike<void>;
+  toBeNull(): PromiseLike<void>;
+  toMatchObject(expected: object): PromiseLike<void>;
+  toStrictEqual(expected: unknown): PromiseLike<void>;
+}
+
+// the assertion one expect call returns
+export interface IRepositoryReaderConformanceAssertion extends IRepositoryReaderConformanceMatchers {
+  readonly not: Pick<IRepositoryReaderConformanceMatchers, 'toBe'>;
+  readonly resolves: IRepositoryReaderConformanceAsyncMatchers;
+}
+
+/*
+ * The test functions the conformance suite registers its checks with, such as Vitest's describe,
+ * test, and expect. The caller passes them, so the package never imports a test runner, and this
+ * contract covers only the calls the suite makes.
+ */
+export interface IRepositoryReaderConformanceRunner {
+  readonly describe: (name: string, body: () => void) => unknown;
+  readonly test: (name: string, body: () => Promise<void>) => unknown;
+  readonly expect: (actual: unknown) => IRepositoryReaderConformanceAssertion;
+}

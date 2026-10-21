@@ -1,6 +1,6 @@
 // @vitest-environment node
 import path from 'node:path';
-import { expectToThrowCode } from 'web-utils-kit';
+import { expectToThrowCode } from 'jg-exception/testing';
 import { describe, expect, test } from 'vitest';
 
 import { RepositorySourceException, parseRepositoryPath } from '@moldea.ai/repository';

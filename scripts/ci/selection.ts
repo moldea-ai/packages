@@ -9,7 +9,6 @@ import type { ICiPlan, ICiSelectionSources } from './types.ts';
 // artifact consumers kept in step with the existing compatibility jobs
 export const CI_COMPATIBILITY_LANES = [
   'consumer-conformance',
-  'repository-testing-peer-compatibility',
   'cli-testing-peer-compatibility',
   'repository-fs-runtime-compatibility',
   'cli-runtime-compatibility',
@@ -39,8 +38,6 @@ const selectLanes = (workspaces: string[], full: boolean): string[] => {
     if (full) return true;
     if (lane === 'consumer-conformance' || lane.startsWith('cli-'))
       return selected.has('@moldea.ai/cli');
-    if (lane === 'repository-testing-peer-compatibility')
-      return selected.has('@moldea.ai/repository');
     return selected.has(`@moldea.ai/${lane.replace(/-runtime-compatibility$/u, '')}`);
   });
 };

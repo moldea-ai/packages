@@ -1,4 +1,4 @@
-import { Exception } from 'error-message-utils';
+import { Exception } from 'jg-exception';
 
 // stable configuration and operation failure codes
 export type ICoreConfigurationErrorCode = 'INVALID_RESOURCE_LIMIT';
@@ -112,19 +112,6 @@ export const isCoreConfigurationErrorCode = (
 export const isCoreOperationErrorCode = (input: unknown): input is ICoreOperationErrorCode =>
   typeof input === 'string' && Object.hasOwn(OPERATION_ERROR_MESSAGES, input);
 
-const attachCause = (exception: Error, cause: unknown): void => {
-  if (cause === undefined) {
-    return;
-  }
-
-  Object.defineProperty(exception, 'cause', {
-    configurable: true,
-    enumerable: false,
-    value: cause,
-    writable: false,
-  });
-};
-
 /** Represents invalid immutable Core configuration. */
 export class CoreConfigurationException extends Exception {
   public override readonly code: ICoreConfigurationErrorCode;
@@ -133,11 +120,13 @@ export class CoreConfigurationException extends Exception {
 
   /** Creates a configuration exception with safe operation metadata. */
   public constructor(options: ICoreConfigurationExceptionOptions) {
-    super(CONFIGURATION_ERROR_MESSAGES[options.code], options.code);
+    super(CONFIGURATION_ERROR_MESSAGES[options.code], {
+      code: options.code,
+      cause: options.cause,
+    });
     this.code = options.code;
     this.name = 'CoreConfigurationException';
     this.operation = options.operation;
-    attachCause(this, options.cause);
   }
 }
 
@@ -159,7 +148,10 @@ export class CoreOperationException extends Exception {
 
   /** Creates an operation exception with derived retry and safe scope metadata. */
   public constructor(options: ICoreOperationExceptionOptions) {
-    super(OPERATION_ERROR_MESSAGES[options.code], options.code);
+    super(OPERATION_ERROR_MESSAGES[options.code], {
+      code: options.code,
+      cause: options.cause,
+    });
     this.code = options.code;
     this.name = 'CoreOperationException';
     this.operation = options.operation;
@@ -168,6 +160,5 @@ export class CoreOperationException extends Exception {
     this.limitMaximum = options.limitMaximum ?? null;
     this.nextAction = options.nextAction ?? null;
     this.observedUsage = options.observedUsage ?? null;
-    attachCause(this, options.cause);
   }
 }

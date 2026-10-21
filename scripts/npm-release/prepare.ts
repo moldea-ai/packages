@@ -73,7 +73,7 @@ const candidate = createNpmReleaseCandidate({
   identity,
   previousVersion: previousVersionValue === '' ? null : previousVersionValue,
   publishedVersions,
-  tagCommit: loadGitTagCommit(identity.tag),
+  tagCommit: await loadGitTagCommit(identity.tag),
 });
 const checksums = parseNpmReleaseChecksumManifest(
   await readFile(path.join(artifactDirectory, NPM_RELEASE_CHECKSUM_FILE_NAME), 'utf8'),

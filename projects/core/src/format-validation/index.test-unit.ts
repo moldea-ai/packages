@@ -12,22 +12,12 @@ import {
   isReservedId,
   isSimpleGlob,
   isStableId,
-  isUnicodeScalarText,
   isVariableId,
   parseDecisionIdFromPath,
   trimRepositoryFormatWhitespace,
 } from './index.js';
 
 describe('Core manifest-format validation', () => {
-  test.each([
-    ['plain text', true],
-    ['astral 𐀀 text', true],
-    ['\ud800', false],
-    ['\udc00', false],
-  ])('isUnicodeScalarText(%s) -> %s', (candidate, expected) => {
-    expect(isUnicodeScalarText(candidate)).toBe(expected);
-  });
-
   test.each([
     ['agent', true],
     ['agent-2', true],

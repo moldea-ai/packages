@@ -1,9 +1,12 @@
 // @vitest-environment node
 import { Buffer } from 'node:buffer';
 import path from 'node:path';
+import { Exception } from 'jg-exception';
+import { ERRORS as PROCESS_ERRORS } from 'jg-process';
+import { ERRORS as GIT_ERRORS } from 'jg-git-commands';
 import { describe, expect, test, vi } from 'vitest';
 
-import type { IGitStreamingProcessExecutor } from '../../git-process/index.js';
+import { GIT_TIMEOUT_SECONDS } from '../../git-command/index.js';
 
 import { createGitInventoryBoundaryInspector } from './boundary-inspector.js';
 import { planGitInventoryOwnershipPath } from './path-planner.js';
@@ -12,6 +15,7 @@ import type {
   IGitInventoryOwnershipPathPlan,
   IGitInventoryOwnershipReadDirectory,
   IGitInventoryOwnershipStatistics,
+  IGitTopLevelReader,
 } from './types.js';
 
 const ENCODER = new TextEncoder();
@@ -74,29 +78,25 @@ const createUntrackedPlan = (candidatePath: string): IGitInventoryOwnershipPathP
   return result.plan;
 };
 
-/** Creates a bounded streamed Git fixture returning one repository root. */
-const createRootProcessExecutor = (
-  repositoryRoot: string,
-): ReturnType<typeof vi.fn<IGitStreamingProcessExecutor>> =>
-  vi.fn<IGitStreamingProcessExecutor>((options) => {
-    const stdout = ENCODER.encode(`${repositoryRoot}\n`);
+/** Measures the stdout of readTopLevel's two commands for one root. */
+const measureTopLevelOutput = (repositoryRoot: string): number =>
+  ENCODER.encode(`true\n${repositoryRoot}\n`).byteLength;
 
-    if (stdout.byteLength > options.maxStdoutBytes) {
-      return Promise.resolve(
-        Object.freeze({ kind: 'failed' as const, reason: 'stdout-limit-exceeded' as const }),
+/** Creates a bounded typed Git read returning one repository root. */
+const createRootReader = (
+  repositoryRoot: string | ((directory: string) => string),
+): ReturnType<typeof vi.fn<IGitTopLevelReader>> =>
+  vi.fn<IGitTopLevelReader>((directory, options) => {
+    const root = typeof repositoryRoot === 'string' ? repositoryRoot : repositoryRoot(directory);
+
+    // each of readTopLevel's commands may write up to the output limit
+    if (ENCODER.encode(`${root}\n`).byteLength > (options?.maxOutputBytes ?? Infinity)) {
+      return Promise.reject(
+        new Exception('Too much output.', { code: PROCESS_ERRORS.PROCESS_OUTPUT_TOO_LARGE }),
       );
     }
 
-    options.consumeStdout(stdout.subarray(0, 2));
-    options.consumeStdout(stdout.subarray(2));
-
-    return Promise.resolve(
-      Object.freeze({
-        kind: 'completed' as const,
-        stderr: new Uint8Array(),
-        stdoutBytes: stdout.byteLength,
-      }),
-    );
+    return Promise.resolve(root);
   });
 
 describe('createGitInventoryBoundaryInspector', () => {
@@ -115,9 +115,9 @@ describe('createGitInventoryBoundaryInspector', () => {
         [ordinaryDirectory]: createStatistics('directory', 4n),
       },
     );
-    const processExecutor = createRootProcessExecutor(nestedDirectory);
+    const readRoot = createRootReader(nestedDirectory);
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      processExecutor,
+      readRoot,
       inspectHostPath,
       readDirectory,
     );
@@ -132,20 +132,15 @@ describe('createGitInventoryBoundaryInspector', () => {
     });
 
     expect(result).toStrictEqual({
-      gitMetadataBytes: ENCODER.encode(`${nestedDirectory}\n`).byteLength,
+      gitMetadataBytes: measureTopLevelOutput(nestedDirectory),
       kind: 'inspected',
       ownership: ['nested-repository', 'nested-repository', 'selected-repository'],
     });
     expect(Object.isFrozen(result)).toBe(true);
-    expect(processExecutor).toHaveBeenCalledOnce();
-    const processOptions = processExecutor.mock.calls[0]?.[0];
-
-    expect(processOptions).toMatchObject({
-      arguments: ['-C', nestedDirectory, 'rev-parse', '--show-toplevel'],
-      maxStderrBytes: 4096,
-      maxStdoutBytes: 4096,
+    expect(readRoot).toHaveBeenCalledExactlyOnceWith(nestedDirectory, {
+      maxOutputBytes: 4096,
+      timeoutSeconds: GIT_TIMEOUT_SECONDS,
     });
-    expect(typeof processOptions?.consumeStdout).toBe('function');
     expect(readDirectory).toHaveBeenCalledTimes(3);
     expect(readDirectory).toHaveBeenCalledWith(REPOSITORY_ROOT);
     expect(readDirectory).toHaveBeenCalledWith(nestedDirectory);
@@ -169,7 +164,7 @@ describe('createGitInventoryBoundaryInspector', () => {
       },
     );
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      createRootProcessExecutor(nestedDirectoryAlias),
+      createRootReader(nestedDirectoryAlias),
       inspectHostPath,
       readDirectory,
     );
@@ -181,7 +176,7 @@ describe('createGitInventoryBoundaryInspector', () => {
         repositoryRoot: REPOSITORY_ROOT,
       }),
     ).resolves.toStrictEqual({
-      gitMetadataBytes: ENCODER.encode(`${nestedDirectoryAlias}\n`).byteLength,
+      gitMetadataBytes: measureTopLevelOutput(nestedDirectoryAlias),
       kind: 'inspected',
       ownership: ['nested-repository'],
     });
@@ -200,7 +195,7 @@ describe('createGitInventoryBoundaryInspector', () => {
       },
     );
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      vi.fn<IGitStreamingProcessExecutor>(),
+      vi.fn<IGitTopLevelReader>(),
       inspectHostPath,
       readDirectory,
     );
@@ -220,9 +215,9 @@ describe('createGitInventoryBoundaryInspector', () => {
       { [REPOSITORY_ROOT]: ['link'] },
       { [linkPath]: createStatistics('symlink', 2n) },
     );
-    const processExecutor = vi.fn<IGitStreamingProcessExecutor>();
+    const readRoot = vi.fn<IGitTopLevelReader>();
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      processExecutor,
+      readRoot,
       inspectHostPath,
       readDirectory,
     );
@@ -235,7 +230,7 @@ describe('createGitInventoryBoundaryInspector', () => {
       }),
     ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
     expect(readDirectory).not.toHaveBeenCalledWith(linkPath);
-    expect(processExecutor).not.toHaveBeenCalled();
+    expect(readRoot).not.toHaveBeenCalled();
   });
 
   test('rejects a host-resolved alias for a non-exact Git control marker', async () => {
@@ -251,9 +246,9 @@ describe('createGitInventoryBoundaryInspector', () => {
         [gitControlPath]: createStatistics('directory', 3n),
       },
     );
-    const processExecutor = vi.fn<IGitStreamingProcessExecutor>();
+    const readRoot = vi.fn<IGitTopLevelReader>();
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      processExecutor,
+      readRoot,
       inspectHostPath,
       readDirectory,
     );
@@ -265,7 +260,7 @@ describe('createGitInventoryBoundaryInspector', () => {
         repositoryRoot: REPOSITORY_ROOT,
       }),
     ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
-    expect(processExecutor).not.toHaveBeenCalled();
+    expect(readRoot).not.toHaveBeenCalled();
   });
 
   test('rejects an exact Git control marker that is itself a symlink', async () => {
@@ -280,9 +275,9 @@ describe('createGitInventoryBoundaryInspector', () => {
         [path.join(nestedDirectory, '.git')]: createStatistics('symlink', 3n),
       },
     );
-    const processExecutor = vi.fn<IGitStreamingProcessExecutor>();
+    const readRoot = vi.fn<IGitTopLevelReader>();
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      processExecutor,
+      readRoot,
       inspectHostPath,
       readDirectory,
     );
@@ -294,7 +289,7 @@ describe('createGitInventoryBoundaryInspector', () => {
         repositoryRoot: REPOSITORY_ROOT,
       }),
     ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
-    expect(processExecutor).not.toHaveBeenCalled();
+    expect(readRoot).not.toHaveBeenCalled();
   });
 
   test('rejects a directory identity change observed during traversal', async () => {
@@ -310,9 +305,9 @@ describe('createGitInventoryBoundaryInspector', () => {
         ),
       ),
     );
-    const processExecutor = vi.fn<IGitStreamingProcessExecutor>();
+    const readRoot = vi.fn<IGitTopLevelReader>();
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      processExecutor,
+      readRoot,
       inspectHostPath,
       readDirectory,
     );
@@ -325,10 +320,10 @@ describe('createGitInventoryBoundaryInspector', () => {
       }),
     ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
     expect(readDirectory).toHaveBeenCalledWith(nestedDirectory);
-    expect(processExecutor).not.toHaveBeenCalled();
+    expect(readRoot).not.toHaveBeenCalled();
   });
 
-  test('charges nested-root stdout to the remaining metadata budget', async () => {
+  test('charges nested-root output to the remaining metadata budget', async () => {
     const nestedDirectory = path.join(REPOSITORY_ROOT, 'nested');
     const { inspectHostPath, readDirectory } = createFilesystem(
       {
@@ -340,9 +335,9 @@ describe('createGitInventoryBoundaryInspector', () => {
         [path.join(nestedDirectory, '.git')]: createStatistics('directory', 3n),
       },
     );
-    const processExecutor = createRootProcessExecutor(nestedDirectory);
+    const readRoot = createRootReader(nestedDirectory);
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      processExecutor,
+      readRoot,
       inspectHostPath,
       readDirectory,
     );
@@ -354,7 +349,10 @@ describe('createGitInventoryBoundaryInspector', () => {
         repositoryRoot: REPOSITORY_ROOT,
       }),
     ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
-    expect(processExecutor).toHaveBeenCalledWith(expect.objectContaining({ maxStdoutBytes: 1 }));
+    expect(readRoot).toHaveBeenCalledWith(nestedDirectory, {
+      maxOutputBytes: 1,
+      timeoutSeconds: GIT_TIMEOUT_SECONDS,
+    });
   });
 
   test('shares the remaining metadata budget across independent nested boundaries', async () => {
@@ -373,31 +371,12 @@ describe('createGitInventoryBoundaryInspector', () => {
         [path.join(secondNestedDirectory, '.git')]: createStatistics('directory', 5n),
       },
     );
-    const firstOutput = ENCODER.encode(`${firstNestedDirectory}\n`);
-    const secondOutput = ENCODER.encode(`${secondNestedDirectory}\n`);
-    const maxMetadataBytes = firstOutput.byteLength + secondOutput.byteLength - 1;
-    const processExecutor = vi.fn<IGitStreamingProcessExecutor>((options) => {
-      const directory = options.arguments[1];
-      const stdout = directory === firstNestedDirectory ? firstOutput : secondOutput;
-
-      if (stdout.byteLength > options.maxStdoutBytes) {
-        return Promise.resolve(
-          Object.freeze({ kind: 'failed' as const, reason: 'stdout-limit-exceeded' as const }),
-        );
-      }
-
-      options.consumeStdout(stdout);
-
-      return Promise.resolve(
-        Object.freeze({
-          kind: 'completed' as const,
-          stderr: new Uint8Array(),
-          stdoutBytes: stdout.byteLength,
-        }),
-      );
-    });
+    const firstOutputBytes = measureTopLevelOutput(firstNestedDirectory);
+    const secondOutputBytes = measureTopLevelOutput(secondNestedDirectory);
+    const maxMetadataBytes = firstOutputBytes + secondOutputBytes - 1;
+    const readRoot = createRootReader((directory) => directory);
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      processExecutor,
+      readRoot,
       inspectHostPath,
       readDirectory,
     );
@@ -412,20 +391,19 @@ describe('createGitInventoryBoundaryInspector', () => {
         repositoryRoot: REPOSITORY_ROOT,
       }),
     ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
-    expect(processExecutor).toHaveBeenCalledTimes(2);
-    expect(processExecutor.mock.calls[0]?.[0].maxStdoutBytes).toBe(maxMetadataBytes);
-    expect(processExecutor.mock.calls[1]?.[0].maxStdoutBytes).toBe(secondOutput.byteLength - 1);
+    expect(readRoot).toHaveBeenCalledTimes(2);
+    expect(readRoot.mock.calls[0]?.[1]?.maxOutputBytes).toBe(maxMetadataBytes);
+    expect(readRoot.mock.calls[1]?.[1]?.maxOutputBytes).toBe(secondOutputBytes - 1);
   });
 
   test.each([
-    ['not-found', 'GIT_NOT_FOUND'],
-    ['repository-not-found', 'GIT_OUTPUT_INVALID'],
-    ['access-denied', 'GIT_ACCESS_DENIED'],
-    ['stderr-limit-exceeded', 'GIT_OUTPUT_INVALID'],
-    ['output-limit-exceeded', 'RESOURCE_LIMIT_EXCEEDED'],
-    ['stdout-limit-exceeded', 'RESOURCE_LIMIT_EXCEEDED'],
-    ['command-failed', 'GIT_COMMAND_FAILED'],
-  ] as const)('maps nested-root Git failure %s', async (failureReason, errorCode) => {
+    [GIT_ERRORS.GIT_NOT_FOUND, 'GIT_NOT_FOUND'],
+    [GIT_ERRORS.GIT_REPOSITORY_NOT_FOUND, 'GIT_OUTPUT_INVALID'],
+    [GIT_ERRORS.GIT_ACCESS_DENIED, 'GIT_ACCESS_DENIED'],
+    [GIT_ERRORS.GIT_OUTPUT_INVALID, 'GIT_OUTPUT_INVALID'],
+    [PROCESS_ERRORS.PROCESS_OUTPUT_TOO_LARGE, 'RESOURCE_LIMIT_EXCEEDED'],
+    [GIT_ERRORS.GIT_COMMAND_FAILED, 'GIT_COMMAND_FAILED'],
+  ] as const)('maps nested-root Git failure %s', async (code, errorCode) => {
     const nestedDirectory = path.join(REPOSITORY_ROOT, 'nested');
     const { inspectHostPath, readDirectory } = createFilesystem(
       {
@@ -437,11 +415,11 @@ describe('createGitInventoryBoundaryInspector', () => {
         [path.join(nestedDirectory, '.git')]: createStatistics('directory', 3n),
       },
     );
-    const processExecutor = vi
-      .fn<IGitStreamingProcessExecutor>()
-      .mockResolvedValue(Object.freeze({ kind: 'failed', reason: failureReason }));
+    const readRoot = vi
+      .fn<IGitTopLevelReader>()
+      .mockRejectedValue(new Exception('private diagnostic', { code }));
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      processExecutor,
+      readRoot,
       inspectHostPath,
       readDirectory,
     );
@@ -466,7 +444,7 @@ describe('createGitInventoryBoundaryInspector', () => {
       .fn<IGitInventoryOwnershipReadDirectory>()
       .mockRejectedValue(Object.assign(new Error('private host diagnostic'), { code }));
     const inspectBoundaries = createGitInventoryBoundaryInspector(
-      vi.fn<IGitStreamingProcessExecutor>(),
+      vi.fn<IGitTopLevelReader>(),
       inspectHostPath,
       readDirectory,
     );
@@ -480,7 +458,7 @@ describe('createGitInventoryBoundaryInspector', () => {
     expect(JSON.stringify(result)).not.toContain('private');
   });
 
-  test('rejects malformed, diagnostic, and contradictory nested-root output', async () => {
+  test('rejects a missing, relative, or unrelated nested root', async () => {
     const nestedDirectory = path.join(REPOSITORY_ROOT, 'nested');
     const { inspectHostPath, readDirectory } = createFilesystem(
       {
@@ -493,24 +471,13 @@ describe('createGitInventoryBoundaryInspector', () => {
       },
     );
 
-    for (const fixture of [
-      { stderr: new Uint8Array([1]), stdout: ENCODER.encode(`${nestedDirectory}\n`) },
-      { stderr: new Uint8Array(), stdout: ENCODER.encode('relative\n') },
-      { stderr: new Uint8Array(), stdout: ENCODER.encode(`${path.resolve('other')}\n`) },
-    ]) {
-      const processExecutor = vi.fn<IGitStreamingProcessExecutor>((options) => {
-        options.consumeStdout(fixture.stdout);
-
-        return Promise.resolve(
-          Object.freeze({
-            kind: 'completed' as const,
-            stderr: fixture.stderr,
-            stdoutBytes: fixture.stdout.byteLength,
-          }),
-        );
-      });
+    for (const [root, errorCode] of [
+      [null, 'GIT_COMMAND_FAILED'],
+      ['relative', 'GIT_OUTPUT_INVALID'],
+      [path.resolve('other'), 'GIT_OUTPUT_INVALID'],
+    ] as const) {
       const inspectBoundaries = createGitInventoryBoundaryInspector(
-        processExecutor,
+        vi.fn<IGitTopLevelReader>().mockResolvedValue(root),
         inspectHostPath,
         readDirectory,
       );
@@ -521,7 +488,7 @@ describe('createGitInventoryBoundaryInspector', () => {
           plans: [createUntrackedPlan('nested/file.txt')],
           repositoryRoot: REPOSITORY_ROOT,
         }),
-      ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+      ).resolves.toStrictEqual({ errorCode, kind: 'failed' });
     }
   });
 });

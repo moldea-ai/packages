@@ -6,7 +6,16 @@ const libraryConfig = createLibraryConfig({
   entry: {
     moldea: 'src/bin/index.ts',
   },
-  externalPackages: ['@moldea.ai/core', '@moldea.ai/repository', '@moldea.ai/repository-fs'],
+  externalPackages: [
+    '@moldea.ai/core',
+    '@moldea.ai/repository',
+    '@moldea.ai/repository-fs',
+    'jg-crypto',
+    'jg-exception',
+    'jg-git-commands',
+    'jg-process',
+    'jg-utilities',
+  ],
   platform: 'node',
   rootDirectory: import.meta.dirname,
 });

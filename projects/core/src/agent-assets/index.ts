@@ -1,3 +1,5 @@
+import { compareCodePoints, deepFreeze } from 'jg-utilities';
+
 import { parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 
 import {
@@ -11,9 +13,7 @@ import {
   type ICoreDiagnosticCollector,
 } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
-import { compareExactStrings } from '../format-validation/index.js';
 import type { IAgentManifestEntry, IMoldeaManifestV1 } from '../format/index.js';
-import { freezeRecursively } from '../immutable/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { readRepositoryTextAsset } from '../repository-text/index.js';
@@ -173,7 +173,7 @@ export const inspectAgentAssets = async (
     }
   }
 
-  for (const agentId of [...registeredIds].sort(compareExactStrings)) {
+  for (const agentId of [...registeredIds].sort(compareCodePoints)) {
     const declaration = registeredAgents[agentId];
 
     if (declaration === undefined) {
@@ -272,7 +272,7 @@ export const inspectAgentAssets = async (
 
   const diagnostics = collector.finalize();
 
-  return freezeRecursively({
+  return deepFreeze({
     agents,
     diagnostics,
     valid: diagnostics.length === 0,

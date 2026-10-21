@@ -4,7 +4,7 @@ export default createLibraryConfig({
   entry: {
     index: 'src/index.ts',
   },
-  externalPackages: ['@moldea.ai/repository'],
+  externalPackages: ['@moldea.ai/repository', 'jg-crypto', 'jg-utilities'],
   platform: 'node',
   rootDirectory: import.meta.dirname,
 });
