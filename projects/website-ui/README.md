@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@4.3.0
+pnpm add @moldea.ai/website-ui@4.4.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -283,6 +283,8 @@ The compiled `code-presentation` boundary exposes `ICodeOverflow`, `formatReposi
 
 `CodeDiff` compares complete `oldValue` and `newValue` strings at build time. It uses the same light/dark syntax themes as `CodeBlock`, subtle removed/added row backgrounds, a theme-aware foreground blend to retain syntax contrast on those tints, line numbers, explicit change markers, and accessible row labels. It shares `CodeBlock`'s Markdown/plain-text wrapping and code scrolling defaults; unlabelled comparisons preserve source lines. Below 24rem of container width, unified rows use one source-line gutter; wider unified rows show both original and replacement line numbers. No diff engine, highlighter, or component JavaScript is sent to the browser. Supply a descriptive, document-unique `ariaLabel` when rendering several comparisons.
 
+Eligible replacement blocks automatically emphasize changed words and punctuation with stronger backgrounds and underlined semantic insertions/deletions, retaining syntax hues and exact source text in both views. Emphasis requires at least half of the shorter side's non-whitespace tokens to remain. Blocks below that threshold, standalone added/removed lines, and whitespace-only changes retain row-level presentation. A changed phrase that crosses original line breaks keeps its emphasis across continuation lines. Underlines remain visible in forced-colors mode.
+
 ```astro
 ---
 import CodeDiff from '@moldea.ai/website-ui/code-diff';
@@ -307,6 +309,8 @@ By default, three unchanged lines remain beside each change. Distant unchanged l
 Recorded evidence can pass `patch={unifiedPatch}` instead of `oldValue`/`newValue`. The model preserves recorded file names and hunk ranges; rendered rows retain their line numbers and ordering without Git paths or hunk-coordinate headings. Consumers provide the file or example context around the component. Missing source outside the hunks is never reconstructed. A native “View recorded patch” disclosure retains the complete original patch, including newline, rename, mode, and binary metadata. Patches without parseable text hunks show their raw source directly. `contextLines` applies only to complete-file comparisons; recorded hunks retain all supplied context. Highlighting recorded excerpts cannot recover syntax context outside those excerpts.
 
 The compiled `code-diff-model` boundary exposes `buildCodeDiff`, `buildCodePatch`, and the normalized row contracts for build-time consumers. Highlighting reuses Shiki's singleton language/theme loader; files are highlighted once per version, preserving multiline syntax context. No separate source cache is retained.
+
+`ICodeDiffToken.isChanged?: boolean` marks emphasized syntax fragments with `true`; unmarked fragments omit the property. Refinement compares lexical words and punctuation without splitting grapheme clusters. It stays within each replacement block and recorded hunk, with a 16,384 UTF-16 code-unit block limit, a shared 65,536 code-unit comparison/patch budget, and a 256-token edit-search limit. Blocks that exceed these limits keep complete source rows without inner emphasis. Existing large-change line fallback also remains row-only.
 
 ### Optional detail dialogs
 

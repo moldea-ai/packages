@@ -1,5 +1,5 @@
 ---
-import type { ICodeDiffLine } from '@moldea.ai/website-ui/code-diff-model';
+import type { ICodeDiffLine, ICodeDiffToken } from '@moldea.ai/website-ui/code-diff-model';
 import type { ICodeOverflow } from '@moldea.ai/website-ui/code-presentation';
 
 interface Props {
@@ -11,6 +11,13 @@ interface Props {
 }
 const { line, side, overflow, hasLeadingInset = false, hasTrailingInset = false } = Astro.props;
 const kind = line?.kind ?? 'empty';
+const groups: { isChanged: boolean; tokens: ICodeDiffToken[] }[] = [];
+for (const token of line?.tokens ?? []) {
+  const isChanged = token.isChanged === true && (kind === 'added' || kind === 'removed');
+  const previous = groups.at(-1);
+  if (previous?.isChanged === isChanged) previous.tokens.push(token);
+  else groups.push({ isChanged, tokens: [token] });
+}
 ---
 
 <div
@@ -78,14 +85,32 @@ const kind = line?.kind ?? 'empty';
                 : '[overflow-wrap:anywhere] whitespace-pre-wrap',
             ]}
           >
-            {line.tokens.map((token) => (
-              <span
-                class="text-(--diff-light) dark:text-(--diff-dark)"
-                style={`--diff-light:color-mix(in srgb, ${token.lightColor ?? 'var(--foreground)'} 80%, var(--foreground));--diff-dark:color-mix(in srgb, ${token.darkColor ?? 'var(--foreground)'} 80%, var(--foreground))`}
-              >
-                {token.content}
-              </span>
-            ))}
+            {groups.map((group) => {
+              const syntax = group.tokens.map((token) => (
+                <span
+                  class="text-(--diff-light) dark:text-(--diff-dark)"
+                  style={`--diff-light:color-mix(in srgb, ${token.lightColor ?? 'var(--foreground)'} ${group.isChanged ? 60 : 80}%, var(--foreground));--diff-dark:color-mix(in srgb, ${token.darkColor ?? 'var(--foreground)'} ${group.isChanged ? 60 : 80}%, var(--foreground))`}
+                >
+                  {token.content}
+                </span>
+              ));
+              const Edit = kind === 'added' ? 'ins' : 'del';
+              return group.isChanged ? (
+                <Edit
+                  class:list={[
+                    'underline decoration-1 underline-offset-2 forced-colors:[text-decoration-color:CanvasText]',
+                    kind === 'added'
+                      ? 'bg-(--syntax-string)/16 decoration-(--syntax-string)'
+                      : 'bg-destructive/16 decoration-destructive',
+                  ]}
+                  data-moldea-diff-change={kind}
+                >
+                  {syntax}
+                </Edit>
+              ) : (
+                syntax
+              );
+            })}
           </code>
         </>
       )

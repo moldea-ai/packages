@@ -3,6 +3,8 @@ export interface ICodeDiffToken {
   content: string;
   lightColor: string | undefined;
   darkColor: string | undefined;
+  // omitted unless this fragment belongs to an emphasized word or punctuation change
+  isChanged?: boolean;
 }
 
 export interface ICodeDiffLine {

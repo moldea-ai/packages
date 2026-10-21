@@ -90,6 +90,7 @@ for (const width of [320, 768, 1440]) {
       });
       await expect(diff).toContainText('Explain eligibility. Never approve refunds.');
       await expect(diff).toContainText('Approve eligible refunds using the order details.');
+      await expect(diff.locator('[data-moldea-diff-change]')).toHaveCount(0);
       await expect(changedInstruction.locator('[data-code-block]')).toHaveCount(0);
       await diff.focus();
       await expect(diff).toBeFocused();

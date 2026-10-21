@@ -123,6 +123,110 @@ const expectInspectionActionAlignment = async (opener: Locator): Promise<void> =
     expect(Math.abs(center - layout.center)).toBeLessThanOrEqual(0.5);
 };
 
+interface IInlineExpectation {
+  before: string;
+  after: string;
+  removed: string[][];
+  added: string[][];
+}
+
+/**
+ * Verifies exact source and semantic ranges in the currently visible diff layout.
+ * @returns A promise that resolves after source, selection, and edit assertions.
+ */
+const expectInlineRendering = async (
+  region: Locator,
+  expected: IInlineExpectation,
+): Promise<void> => {
+  for (const kind of ['removed', 'added'] as const) {
+    const rows = await region.locator(`[data-diff-line="${kind}"]:visible`).evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const source = node.querySelector('code')!;
+        const selection = window.getSelection()!;
+        const range = document.createRange();
+        range.selectNodeContents(source);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        const selected = selection.toString();
+        selection.removeAllRanges();
+        return {
+          source: source.textContent,
+          selected,
+          label: node.querySelector('.sr-only')?.textContent?.trim(),
+          edits: Array.from(source.querySelectorAll('[data-moldea-diff-change]')).map((edit) => ({
+            source: edit.textContent,
+            tag: edit.tagName,
+            kind: edit.getAttribute('data-moldea-diff-change'),
+            decoration: getComputedStyle(edit).textDecorationLine,
+            thickness: getComputedStyle(edit).textDecorationThickness,
+            offset: getComputedStyle(edit).textUnderlineOffset,
+            focusable: edit.hasAttribute('tabindex'),
+          })),
+        };
+      }),
+    );
+    const sourceLines = (kind === 'removed' ? expected.before : expected.after).split('\n');
+    expect(rows.map((row) => row.source)).toStrictEqual(sourceLines);
+    expect(rows.map((row) => row.selected)).toStrictEqual(sourceLines);
+    expect(rows.map((row) => row.edits.map((edit) => edit.source))).toStrictEqual(expected[kind]);
+    for (const [index, row] of rows.entries()) {
+      expect(row.label).toBe(`${kind === 'added' ? 'Added' : 'Removed'} line ${index + 1}:`);
+      for (const edit of row.edits) {
+        expect(edit).toMatchObject({
+          tag: kind === 'added' ? 'INS' : 'DEL',
+          kind,
+          decoration: 'underline',
+          thickness: '1px',
+          offset: '2px',
+          focusable: false,
+        });
+      }
+    }
+  }
+};
+
+/**
+ * Measures syntax foregrounds against all composited row and edit background layers.
+ * @returns A promise that resolves to each syntax fragment's effective contrast ratio.
+ */
+const getInlineContrast = async (edits: Locator): Promise<{ text: string; contrast: number }[]> =>
+  edits.evaluateAll((nodes) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext('2d', { willReadFrequently: true })!;
+    const luminance = (colors: string[]): number => {
+      context.clearRect(0, 0, 1, 1);
+      for (const color of colors) {
+        context.fillStyle = color;
+        context.fillRect(0, 0, 1, 1);
+      }
+      const [red, green, blue] = Array.from(
+        context.getImageData(0, 0, 1, 1).data.slice(0, 3),
+        (channel) => {
+          const value = channel / 255;
+          return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+        },
+      );
+      return 0.2126 * red! + 0.7152 * green! + 0.0722 * blue!;
+    };
+    return nodes.flatMap((edit) =>
+      Array.from(edit.querySelectorAll('span')).map((syntax) => {
+        const layers: string[] = [];
+        for (let node: Element | null = syntax; node; node = node.parentElement) {
+          layers.unshift(getComputedStyle(node).backgroundColor);
+        }
+        const background = luminance(['white', ...layers]);
+        const foreground = luminance(['white', ...layers, getComputedStyle(syntax).color]);
+        return {
+          text: syntax.textContent ?? '',
+          contrast:
+            (Math.max(background, foreground) + 0.05) / (Math.min(background, foreground) + 0.05),
+        };
+      }),
+    );
+  });
+
 describe('published website UI package', () => {
   test('packs only the documented runtime, component, style, and package files', () => {
     const output = runPackageManager(
@@ -133,7 +237,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.3.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.4.0' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -199,6 +303,81 @@ describe('published website UI package', () => {
     const packDirectory = path.join(temporaryDirectory, 'pack');
     const fixtureDirectory = path.join(temporaryDirectory, 'fixture');
     const pagesDirectory = path.join(fixtureDirectory, 'src', 'pages');
+    const inlineCases = [
+      {
+        name: 'Call rename',
+        before: 'getUser();',
+        after: 'getAccount();',
+        removed: [['getUser']],
+        added: [['getAccount']],
+      },
+      {
+        name: 'Code rewrite',
+        before: 'const total = items.length; if (total > 0) return total;',
+        after: 'for (const entry of entries) { await save(entry, { force: true }); }',
+        removed: [[]],
+        added: [[]],
+      },
+      {
+        name: 'Prose rewrite',
+        before: 'Read the saved pickup policy before replying.',
+        after: 'Archive the weekly sales report after processing.',
+        removed: [[]],
+        added: [[]],
+      },
+      {
+        name: 'Mixed insertion',
+        before: 'const count = getCount();',
+        after: 'const count = readCount();\nstartWorker();',
+        removed: [['getCount']],
+        added: [['readCount'], []],
+      },
+      {
+        name: 'Mixed deletion',
+        before: 'const count = readCount();\nstartWorker();',
+        after: 'const count = getCount();',
+        removed: [['readCount'], []],
+        added: [['getCount']],
+      },
+      {
+        name: 'Wrapped insertion',
+        before: 'policy and quote it.',
+        after:
+          'policy, confirm the customer identity\nwith two separate checks recorded in the ticket,\nand quote it.',
+        removed: [[]],
+        added: [
+          [', confirm the customer identity'],
+          ['with two separate checks recorded in the ticket,'],
+          [],
+        ],
+      },
+      {
+        name: 'Wrapped deletion',
+        before:
+          'policy, confirm the customer identity\nwith two separate checks recorded in the ticket,\nand quote it.',
+        after: 'policy and quote it.',
+        removed: [
+          [', confirm the customer identity'],
+          ['with two separate checks recorded in the ticket,'],
+          [],
+        ],
+        added: [[]],
+      },
+      {
+        name: 'Syntax grouping',
+        before: 'const value = foo(10);',
+        after: 'const value = bar(14, true);',
+        removed: [['foo', '10']],
+        added: [['bar', '14, true']],
+      },
+      {
+        name: 'String and comment',
+        before: 'const label = "old"; // previous',
+        after: 'const label = "new"; // updated',
+        removed: [['old', 'previous']],
+        added: [['new', 'updated']],
+      },
+    ];
 
     mkdirSync(packDirectory, { recursive: true });
     mkdirSync(pagesDirectory, { recursive: true });
@@ -318,6 +497,8 @@ describe('published website UI package', () => {
         'const contextBefore = Array.from({ length: 16 }, (_, index) => `const slot${index} = "${"booking-time-".repeat(16)}";`).join("\\n") + "\\n";',
         'const contextAfter = contextBefore.replace("slot8", "availableSlot8");',
         'const diffProps = { oldValue: "const hours = getHours(10);\\n// Previous hours\\n", newValue: "const hours = getHours(14);\\n// Updated hours\\n", language: "typescript", ariaLabel: "Booking changes", view: "unified", variant: "plain" } satisfies ComponentProps<typeof CodeDiff>;',
+        `const inlineCases = ${JSON.stringify(inlineCases)};`,
+        'const recordedInlinePatch = (before: string, after: string) => ["--- a/policy.ts", "+++ b/policy.ts", `@@ -1,${before.split("\\n").length} +1,${after.split("\\n").length} @@`, ...before.split("\\n").map((line) => "-" + line), ...after.split("\\n").map((line) => "+" + line), ""].join("\\n");',
         'const nonCopyableCodeProps = { source: "incomplete result", language: "text", copyable: false, ariaLabel: "Incomplete result" } satisfies ComponentProps<typeof CodeBlock>;',
         'const longProse = "Offer available times and send same-day requests to staff. ".repeat(32);',
         'const longCode = JSON.stringify({ instructions: longProse });',
@@ -363,6 +544,7 @@ describe('published website UI package', () => {
         '    <CodeBlock {...codeProps} />',
         '    <CodeDiff {...diffProps} overflow="wrap" />',
         '    <CodeDiff {...diffProps} overflow="wrap" view="split" ariaLabel="Booking changes split" />',
+        '    {inlineCases.map((example) => (["unified", "split"] as const).map((view) => <><CodeDiff oldValue={example.before} newValue={example.after} language="typescript" ariaLabel={`${example.name} ${view}`} view={view} overflow="wrap" /><CodeDiff patch={recordedInlinePatch(example.before, example.after)} language="typescript" ariaLabel={`${example.name} recorded ${view}`} view={view} overflow="wrap" /></>))}',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes" view="split" overflow="wrap" />',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes scroll" overflow="scroll" />',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes split scroll" view="split" overflow="scroll" />',
@@ -527,6 +709,61 @@ describe('published website UI package', () => {
             await page.evaluate((selectedTheme) => {
               document.documentElement.className = selectedTheme;
             }, theme);
+            for (const example of inlineCases) {
+              for (const view of ['unified', 'split']) {
+                for (const recorded of [false, true]) {
+                  const name = `${example.name}${recorded ? ' recorded' : ''} ${view}`;
+                  await expectInlineRendering(
+                    page.getByRole('region', { name, exact: true }),
+                    example,
+                  );
+                }
+              }
+            }
+            const semanticExample = page.getByRole('region', {
+              name: 'Syntax grouping unified',
+              exact: true,
+            });
+            const semantics = await semanticExample.ariaSnapshot();
+            expect(semantics).toContain('insertion:');
+            expect(semantics).toContain('deletion:');
+            const contrasts = await getInlineContrast(
+              page.locator('[data-moldea-diff-change]:visible'),
+            );
+            expect(contrasts.length).toBeGreaterThan(0);
+            for (const result of contrasts)
+              expect(result.contrast, `${theme} ${width}px ${result.text}`).toBeGreaterThanOrEqual(
+                4.5,
+              );
+            await page.emulateMedia({ forcedColors: 'active' });
+            expect(await page.evaluate(() => matchMedia('(forced-colors: active)').matches)).toBe(
+              true,
+            );
+            for (const view of ['unified', 'split']) {
+              const region = page.getByRole('region', {
+                name: `Syntax grouping ${view}`,
+                exact: true,
+              });
+              await expectInlineRendering(region, inlineCases[7]!);
+              const styles = await region
+                .locator('[data-moldea-diff-change]:visible')
+                .evaluateAll((nodes) =>
+                  nodes.map((node) => ({
+                    adjustment: getComputedStyle(node).forcedColorAdjust,
+                    decoration: getComputedStyle(node).textDecorationColor,
+                    foreground: getComputedStyle(node).color,
+                  })),
+                );
+              for (const style of styles) {
+                expect(style.adjustment).toBe('auto');
+                expect(style.decoration).toBe(style.foreground);
+              }
+            }
+            for (const result of await getInlineContrast(
+              page.locator('[data-moldea-diff-change]:visible'),
+            ))
+              expect(result.contrast).toBeGreaterThanOrEqual(4.5);
+            await page.emulateMedia({ forcedColors: 'none' });
             const finding = page.getByRole('article', {
               name: 'Declared export missing: MOLDEA_REFERENCE_EXPORT_MISSING',
             });

@@ -2,6 +2,7 @@ import { diffLines } from 'diff';
 import type { ICodeDiffLine, ICodeDiffModel, ICodeDiffSection } from './types.js';
 import { buildSplitRows } from './transformers.js';
 import { highlightSource } from './highlight.js';
+import { applyIntralineHighlights } from './intraline.js';
 
 // cap Myers search work for unrelated files; coarse replacement remains complete and deterministic
 const MAX_EDIT_LENGTH = 1024;
@@ -103,6 +104,7 @@ export const buildCodeDiff = async (
   }
   const resolvedContext =
     contextLines === Infinity ? Infinity : Math.max(0, Math.floor(contextLines) || 0);
+  if (diff !== undefined) applyIntralineHighlights([lines]);
   return {
     addedCount,
     removedCount,

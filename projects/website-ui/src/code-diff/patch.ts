@@ -3,6 +3,7 @@ import { parsePatch, type StructuredPatchHunk } from 'diff';
 import type { ICodeDiffLine, ICodeDiffModel, ICodeDiffSection } from './types.js';
 import { buildSplitRows } from './transformers.js';
 import { highlightSource } from './highlight.js';
+import { applyIntralineHighlights } from './intraline.js';
 
 /** Preserves a recorded hunk's ordering, source line numbers, and newline annotations. */
 const buildHunkLines = async (
@@ -51,7 +52,8 @@ const buildHunkLines = async (
 };
 
 /**
- * Presents recorded unified hunks without reconstructing missing source or recalculating changes.
+ * Presents recorded unified hunks without reconstructing missing source or recalculating line changes.
+ * Word emphasis is derived only within each recorded replacement block.
  * Highlighting sees only the recorded context. Consumers must preserve the raw patch alongside
  * the rendered hunks, including metadata and binary changes that have no textual rows.
  * @param patch Recorded unified patch, optionally containing multiple files.
@@ -96,6 +98,7 @@ export const buildCodePatch = async (
       }
     }
   }
+  applyIntralineHighlights(sections.map((section) => section.lines));
   return sections.length === 0
     ? null
     : { addedCount, removedCount, isCoarseComparison: false, sections };
