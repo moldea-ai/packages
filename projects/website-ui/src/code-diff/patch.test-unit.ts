@@ -1,7 +1,157 @@
 // @vitest-environment node
 import { expect, test } from 'vitest';
 
-import { buildCodePatch } from './index.js';
+import { buildCodePatch, type ICodeDiffLine } from './index.js';
+
+const emphasisOf = (line: ICodeDiffLine): string[] => {
+  const ranges: string[] = [];
+  let continuesRange = false;
+  for (const token of line.tokens) {
+    if (token.isChanged) {
+      if (continuesRange) ranges[ranges.length - 1] += token.content;
+      else ranges.push(token.content);
+    }
+    continuesRange = token.isChanged === true;
+  }
+  return ranges;
+};
+
+const recordedChange = (before: string, after: string): string =>
+  [
+    '--- a/policy.txt',
+    '+++ b/policy.txt',
+    `@@ -8,${before.split('\n').length} +8,${after.split('\n').length} @@`,
+    ...before.split('\n').map((line) => `-${line}`),
+    ...after.split('\n').map((line) => `+${line}`),
+    '',
+  ].join('\n');
+
+test.each([
+  ['call rename', 'getUser();', 'getAccount();', [['getUser']], [['getAccount']]],
+  ['half retained', 'alpha + beta;', 'gamma + delta;', [['alpha', 'beta']], [['gamma', 'delta']]],
+  ['below half', 'alpha + beta;', 'gamma - delta;', [[]], [[]]],
+  ['no anchor', 'alpha', 'beta', [[]], [[]]],
+  ['whitespace only', 'policy 30 days', 'policy\t30  days', [[]], [[]]],
+  [
+    'code rewrite',
+    'const total = items.length; if (total > 0) return total;',
+    'for (const entry of entries) { await save(entry, { force: true }); }',
+    [[]],
+    [[]],
+  ],
+  [
+    'prose rewrite',
+    'Read the saved pickup policy before replying.',
+    'Archive the weekly sales report after processing.',
+    [[]],
+    [[]],
+  ],
+  [
+    'mixed addition',
+    'const count = getCount();',
+    'const count = readCount();\nstartWorker();',
+    [['getCount']],
+    [['readCount'], []],
+  ],
+  [
+    'mixed removal',
+    'const count = readCount();\nstartWorker();',
+    'const count = getCount();',
+    [['readCount'], []],
+    [['getCount']],
+  ],
+  [
+    'wrapped insertion',
+    'policy and quote it.',
+    'policy, confirm the customer identity\nwith two separate checks recorded in the ticket,\nand quote it.',
+    [[]],
+    [[', confirm the customer identity'], ['with two separate checks recorded in the ticket,'], []],
+  ],
+  [
+    'wrapped deletion',
+    'policy, confirm the customer identity\nwith two separate checks recorded in the ticket,\nand quote it.',
+    'policy and quote it.',
+    [[', confirm the customer identity'], ['with two separate checks recorded in the ticket,'], []],
+    [[]],
+  ],
+])(
+  'buildCodePatch(%s) -> exact emphasis without changing recorded rows',
+  async (_description, before, after, expectedBefore, expectedAfter) => {
+    const comparison = await buildCodePatch(recordedChange(before, after));
+    expect(comparison).not.toBeNull();
+    const lines = comparison!.sections.flatMap((section) => section.lines);
+    const removed = lines.filter((line) => line.kind === 'removed');
+    const added = lines.filter((line) => line.kind === 'added');
+    expect(removed.map(emphasisOf)).toStrictEqual(expectedBefore);
+    expect(added.map(emphasisOf)).toStrictEqual(expectedAfter);
+    expect(
+      removed.map((line) => line.tokens.map((token) => token.content).join('')).join('\n'),
+    ).toBe(before);
+    expect(added.map((line) => line.tokens.map((token) => token.content).join('')).join('\n')).toBe(
+      after,
+    );
+    expect(removed.map((line) => line.oldNumber)).toStrictEqual(
+      before.split('\n').map((_line, index) => 8 + index),
+    );
+    expect(added.map((line) => line.newNumber)).toStrictEqual(
+      after.split('\n').map((_line, index) => 8 + index),
+    );
+    expect([comparison!.removedCount, comparison!.addedCount]).toStrictEqual([
+      removed.length,
+      added.length,
+    ]);
+    expect(comparison!.sections[0]!.rows[0]!.before).toBe(removed[0]);
+    expect(comparison!.sections[0]!.rows[0]!.after).toBe(added[0]);
+  },
+);
+
+test.each([
+  '--- a/first.ts\n+++ b/first.ts\n@@ -1 +1,0 @@\n-getUser();\n@@ -8,0 +8 @@\n+getAccount();\n',
+  '--- a/first.ts\n+++ b/first.ts\n@@ -1 +1,0 @@\n-getUser();\n--- a/second.ts\n+++ b/second.ts\n@@ -8,0 +8 @@\n+getAccount();\n',
+])('never aligns changes across recorded hunk/file boundaries (%s)', async (patch) => {
+  const comparison = await buildCodePatch(patch);
+  expect(comparison!.sections).toHaveLength(2);
+  expect(comparison!.sections.flatMap((section) => section.lines).map(emphasisOf)).toStrictEqual([
+    [],
+    [],
+  ]);
+});
+
+test('shares the aggregate refinement budget across recorded hunks', async () => {
+  const after = 'policy new;';
+  const changes = Array.from({ length: 5 }, (_unused, index) => {
+    const before =
+      'policy old;' + ' '.repeat((index < 4 ? 16_384 : 32) - 'policy old;'.length - after.length);
+    return `@@ -${1 + index * 4} +${1 + index * 4} @@\n-${before}\n+${after}\n`;
+  });
+  const comparison = await buildCodePatch(
+    '--- a/policy.txt\n+++ b/policy.txt\n' + changes.join(''),
+  );
+  expect(comparison!.sections).toHaveLength(5);
+  expect(comparison!.sections.map((section) => emphasisOf(section.lines[1]!))).toStrictEqual([
+    ['new'],
+    ['new'],
+    ['new'],
+    ['new'],
+    [],
+  ]);
+  expect([comparison!.removedCount, comparison!.addedCount]).toStrictEqual([5, 5]);
+});
+
+test.each([
+  [16_384, true],
+  [16_385, false],
+])('preserves recorded source at block length %d (refined=%s)', async (length, refined) => {
+  const after = 'policy new;';
+  const before = 'policy old;' + ' '.repeat(length - 'policy old;'.length - after.length);
+  const comparison = await buildCodePatch(recordedChange(before, after));
+  expect(comparison!.sections[0]!.lines.map(emphasisOf)).toStrictEqual(
+    refined ? [['old'], ['new']] : [[], []],
+  );
+  expect(comparison!.sections[0]!.lines[0]!.tokens.map((token) => token.content).join('')).toBe(
+    before,
+  );
+});
 
 test('preserves recorded multi-file hunks, source positions, uneven edits, and newline markers', async () => {
   const comparison = await buildCodePatch(
