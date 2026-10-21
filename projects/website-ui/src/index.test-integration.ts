@@ -158,8 +158,7 @@ const expectInlineRendering = async (
             tag: edit.tagName,
             kind: edit.getAttribute('data-moldea-diff-change'),
             decoration: getComputedStyle(edit).textDecorationLine,
-            thickness: getComputedStyle(edit).textDecorationThickness,
-            offset: getComputedStyle(edit).textUnderlineOffset,
+            weight: getComputedStyle(edit).fontWeight,
             focusable: edit.hasAttribute('tabindex'),
           })),
         };
@@ -175,9 +174,8 @@ const expectInlineRendering = async (
         expect(edit).toMatchObject({
           tag: kind === 'added' ? 'INS' : 'DEL',
           kind,
-          decoration: 'underline',
-          thickness: '1px',
-          offset: '2px',
+          decoration: 'none',
+          weight: '600',
           focusable: false,
         });
       }
@@ -237,7 +235,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.4.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.4.1' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -777,13 +775,14 @@ describe('published website UI package', () => {
                 .evaluateAll((nodes) =>
                   nodes.map((node) => ({
                     adjustment: getComputedStyle(node).forcedColorAdjust,
-                    decoration: getComputedStyle(node).textDecorationColor,
-                    foreground: getComputedStyle(node).color,
+                    decoration: getComputedStyle(node).textDecorationLine,
+                    weight: getComputedStyle(node).fontWeight,
                   })),
                 );
               for (const style of styles) {
                 expect(style.adjustment).toBe('auto');
-                expect(style.decoration).toBe(style.foreground);
+                expect(style.decoration).toBe('none');
+                expect(style.weight).toBe('600');
               }
             }
             for (const result of await getInlineContrast(
