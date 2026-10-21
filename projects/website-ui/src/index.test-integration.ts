@@ -544,7 +544,7 @@ describe('published website UI package', () => {
         '    <CodeBlock {...codeProps} />',
         '    <CodeDiff {...diffProps} overflow="wrap" />',
         '    <CodeDiff {...diffProps} overflow="wrap" view="split" ariaLabel="Booking changes split" />',
-        '    {inlineCases.map((example) => (["unified", "split"] as const).map((view) => <><CodeDiff oldValue={example.before} newValue={example.after} language="typescript" ariaLabel={`${example.name} ${view}`} view={view} overflow="wrap" /><CodeDiff patch={recordedInlinePatch(example.before, example.after)} language="typescript" ariaLabel={`${example.name} recorded ${view}`} view={view} overflow="wrap" /></>))}',
+        '    <template data-inline-fixtures>{inlineCases.map((example) => (["unified", "split"] as const).map((view) => <><CodeDiff oldValue={example.before} newValue={example.after} language="typescript" ariaLabel={`${example.name} ${view}`} view={view} overflow="wrap" /><CodeDiff patch={recordedInlinePatch(example.before, example.after)} language="typescript" ariaLabel={`${example.name} recorded ${view}`} view={view} overflow="wrap" /></>))}</template>',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes" view="split" overflow="wrap" />',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes scroll" overflow="scroll" />',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes split scroll" view="split" overflow="scroll" />',
@@ -679,6 +679,9 @@ describe('published website UI package', () => {
       path.join(fixtureDirectory, 'dist', '_astro', stylesheetName),
       'utf8',
     );
+    const staticFixtureHtml = fixtureHtml
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gu, '')
+      .replaceAll('src="/_astro/', 'src="https://runtime-fixture.example/_astro/');
     const browser = await chromium.launch();
     try {
       for (const theme of ['light', 'dark']) {
@@ -700,14 +703,18 @@ describe('published website UI package', () => {
                 body: readFileSync(path.join(fixtureDirectory, 'dist', '_astro', assetName)),
               });
             });
-            await page.setContent(
-              fixtureHtml
-                .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gu, '')
-                .replaceAll('src="/_astro/', 'src="https://runtime-fixture.example/_astro/'),
-            );
+            await page.setContent(staticFixtureHtml);
             await page.addStyleTag({ content: stylesheet });
             await page.evaluate((selectedTheme) => {
               document.documentElement.className = selectedTheme;
+              document.title = 'Word diff examples';
+              const template =
+                document.querySelector<HTMLTemplateElement>('[data-inline-fixtures]')!;
+              const main = document.createElement('main');
+              const heading = document.createElement('h1');
+              heading.textContent = 'Word diff examples';
+              main.append(heading, template.content);
+              document.body.replaceChildren(main);
             }, theme);
             for (const example of inlineCases) {
               for (const view of ['unified', 'split']) {
@@ -717,6 +724,22 @@ describe('published website UI package', () => {
                     page.getByRole('region', { name, exact: true }),
                     example,
                   );
+                  const layout = await page
+                    .getByRole('region', { name, exact: true })
+                    .evaluate((node) => ({
+                      overflow: node.scrollWidth > node.clientWidth,
+                      whitespace: getComputedStyle(node.querySelector('code')!).whiteSpace,
+                      split: [...node.querySelectorAll('[data-diff-split]')].some(
+                        (row) => row.getClientRects().length > 0,
+                      ),
+                      lineHeights: [...node.querySelectorAll('[data-diff-line]')].map(
+                        (row) => getComputedStyle(row).lineHeight,
+                      ),
+                    }));
+                  expect(layout.overflow).toBe(false);
+                  expect(layout.whitespace).toBe('pre-wrap');
+                  expect(layout.split).toBe(view === 'split' && width >= 768);
+                  expect(layout.lineHeights.every((height) => height === '24px')).toBe(true);
                 }
               }
             }
@@ -727,6 +750,10 @@ describe('published website UI package', () => {
             const semantics = await semanticExample.ariaSnapshot();
             expect(semantics).toContain('insertion:');
             expect(semantics).toContain('deletion:');
+            await semanticExample.focus();
+            expect(
+              await semanticExample.evaluate((node) => getComputedStyle(node).boxShadow),
+            ).not.toBe('none');
             const contrasts = await getInlineContrast(
               page.locator('[data-moldea-diff-change]:visible'),
             );
@@ -759,6 +786,31 @@ describe('published website UI package', () => {
                 expect(style.decoration).toBe(style.foreground);
               }
             }
+            for (const result of await getInlineContrast(
+              page.locator('[data-moldea-diff-change]:visible'),
+            ))
+              expect(result.contrast).toBeGreaterThanOrEqual(4.5);
+            await page.emulateMedia({ forcedColors: 'none' });
+            expect(
+              await page.evaluate(
+                () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+              ),
+            ).toBe(true);
+            expect((await new AxeBuilder({ page }).analyze()).violations).toStrictEqual([]);
+
+            // keep the extra diff matrix out of unrelated component and interaction scans
+            await page.setContent(staticFixtureHtml);
+            await page.addStyleTag({ content: stylesheet });
+            await page.evaluate((selectedTheme) => {
+              document.documentElement.className = selectedTheme;
+            }, theme);
+            for (const result of await getInlineContrast(
+              page.locator('[data-moldea-diff-change]:visible'),
+            ))
+              expect(result.contrast, `${theme} ${width}px ${result.text}`).toBeGreaterThanOrEqual(
+                4.5,
+              );
+            await page.emulateMedia({ forcedColors: 'active' });
             for (const result of await getInlineContrast(
               page.locator('[data-moldea-diff-change]:visible'),
             ))
