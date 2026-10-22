@@ -36,6 +36,10 @@ test.each([
   ['punctuation', 'call(value);', 'call[value];', [['(', ')']], [['[', ']']]],
   ['half retained', 'alpha + beta;', 'gamma + delta;', [['alpha', 'beta']], [['gamma', 'delta']]],
   ['below half', 'alpha + beta;', 'gamma - delta;', [[]], [[]]],
+  ['half of expanded side', 'alpha beta', 'alpha beta gamma delta', [[]], [['gamma delta']]],
+  ['below half of expanded side', 'alpha beta', 'alpha beta gamma delta epsilon', [[]], [[]]],
+  ['half of contracted side', 'alpha beta gamma delta', 'alpha beta', [['gamma delta']], [[]]],
+  ['below half of contracted side', 'alpha beta gamma delta epsilon', 'alpha beta', [[]], [[]]],
   ['no anchor', 'alpha', 'beta', [[]], [[]]],
   [
     'code rewrite',
@@ -66,6 +70,13 @@ test.each([
     [['updated']],
   ],
   ['reflow', 'Read the policy and quote it.', 'Read the policy\nand quote it.', [[]], [[], []]],
+  [
+    'short multiline insertion',
+    'Read the policy and quote it.',
+    'Read the updated policy\nand quote it.',
+    [[]],
+    [['updated'], []],
+  ],
   ['combining marks', 'mark = "a\u0301";', 'mark = "e\u0301";', [['a\u0301']], [['e\u0301']]],
   ['emoji clusters', 'mark = "👩‍💻";', 'mark = "👨‍💻";', [['👩‍💻']], [['👨‍💻']]],
   ['literal HTML', 'html = "<b>old</b>";', 'html = "<b>new</b>";', [['old']], [['new']]],
@@ -101,7 +112,7 @@ test.each([
 );
 
 test.each([false, true])(
-  'preserves wrapped changed runs before line projection (reverse=%s)',
+  'keeps substantial wrapped expansions at row level (reverse=%s)',
   async (reverse) => {
     const original = 'policy and quote it.';
     const inserted =
@@ -113,11 +124,7 @@ test.each([false, true])(
     const lines = comparison.sections.flatMap((section) => section.lines);
     expect(
       lines.filter((line) => line.kind === (reverse ? 'removed' : 'added')).map(emphasisOf),
-    ).toStrictEqual([
-      [', confirm the customer identity'],
-      ['with two separate checks recorded in the ticket,'],
-      [],
-    ]);
+    ).toStrictEqual([[], [], []]);
     expect(
       lines.filter((line) => line.kind === (reverse ? 'added' : 'removed')).map(emphasisOf),
     ).toStrictEqual([[]]);
@@ -135,6 +142,36 @@ test.each([false, true])(
     ).toBe(reverse ? original : inserted);
   },
 );
+
+test.each([false, true])('keeps the booking rewrite at row level (reverse=%s)', async (reverse) => {
+  const original = ") => availableSlots.includes(slot) ? 'confirmed' : 'unavailable';";
+  const replacement = `  isSameDay: boolean,
+) => {
+  if (!availableSlots.includes(slot)) {
+    return 'unavailable';
+  }
+  return isSameDay
+    ? 'pending_staff_approval'
+    : 'confirmed';
+};`;
+  const before = reverse ? replacement : original;
+  const after = reverse ? original : replacement;
+  const comparison = await buildCodeDiff(before, after, 'typescript', Infinity);
+  const lines = comparison.sections.flatMap((section) => section.lines);
+  expect(lines.every((line) => emphasisOf(line).length === 0)).toBe(true);
+  expect(
+    lines
+      .filter((line) => line.kind !== 'added')
+      .map(sourceOf)
+      .join('\n'),
+  ).toBe(before);
+  expect(
+    lines
+      .filter((line) => line.kind !== 'removed')
+      .map(sourceOf)
+      .join('\n'),
+  ).toBe(after);
+});
 
 test.each([false, true])(
   'suppresses standalone whole-line changes inside mixed blocks (reverse=%s)',

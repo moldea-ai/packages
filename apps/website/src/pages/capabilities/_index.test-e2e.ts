@@ -15,6 +15,73 @@ const mixedFindings = getCapabilityInspectionView(mixedExample).findings;
 const sectionFor = (page: Page, id: string) => page.locator(`#${id}[data-capability-section]`);
 const triggerFor = (page: Page, id: string) =>
   page.locator(`#${id}`).getByRole('button', { name: /^Open example:/u });
+const sourceExamples = catalog.cases.filter(
+  ({ id }) =>
+    id.startsWith('policy-reference-') || id === 'cli-canonical-content' || id === 'agent-identity',
+);
+
+for (const width of [320, 1440]) {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    for (const example of sourceExamples) {
+      test(`preserves ${example.id} literal Markdown source at ${width}px in ${colorScheme}`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+        await page.goto(`${route}#${example.id}`);
+        const dialog = page.getByRole('dialog', { name: example.title, exact: true });
+        await expect(dialog).toBeVisible();
+        const diagnostic =
+          example.result.kind === 'validation' ? example.result.diagnostics[0] : undefined;
+        const chunk = example.result.kind === 'cli' ? example.result.facts.chunk : undefined;
+        const returned =
+          chunk && typeof chunk === 'object' && 'content' in chunk ? chunk.content : undefined;
+        const instruction = example.files.find(({ path }) => path === diagnostic?.path);
+        const expectedSource =
+          example.id === 'cli-canonical-content'
+            ? returned
+            : example.id === 'agent-identity'
+              ? instruction?.content.split('\n')[0]
+              : example.files.find(({ path }) => path === '/moldea/project.md')?.content;
+        if (typeof expectedSource !== 'string') throw new Error('The source fixture is missing.');
+        const name =
+          example.id === 'cli-canonical-content'
+            ? 'Returned document source'
+            : example.id === 'agent-identity'
+              ? 'Copied instruction source'
+              : 'Return policy source';
+        const source = dialog.getByRole('group', { name, exact: true });
+        const code = source.locator('code');
+        expect(await code.textContent()).toBe(expectedSource);
+        await expect(code).toHaveCSS('white-space', 'pre-wrap');
+        await expect(source.getByRole('heading')).toHaveCount(0);
+        await expect(source.getByRole('button', { name: /Copy/u })).toHaveCount(0);
+        const selected = await code.evaluate((element) => {
+          const selection = window.getSelection()!;
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          const text = selection.toString();
+          selection.removeAllRanges();
+          return text;
+        });
+        // browser selection omits an empty final line; textContent above preserves the source newline
+        expect(selected).toBe(expectedSource.replace(/\n$/u, ''));
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+          ),
+        ).toBe(true);
+        expect(
+          (await new AxeBuilder({ page }).include(`#example-${example.id}`).analyze()).violations,
+        ).toStrictEqual([]);
+        await page.keyboard.press('Escape');
+        await expect(triggerFor(page, example.id)).toBeFocused();
+      });
+    }
+  }
+}
 
 /** Reveals one finite section through its real public control. */
 const revealAll = async (page: Page, id: string): Promise<void> => {

@@ -30,8 +30,19 @@ test.each([
   ['call rename', 'getUser();', 'getAccount();', [['getUser']], [['getAccount']]],
   ['half retained', 'alpha + beta;', 'gamma + delta;', [['alpha', 'beta']], [['gamma', 'delta']]],
   ['below half', 'alpha + beta;', 'gamma - delta;', [[]], [[]]],
+  ['half of expanded side', 'alpha beta', 'alpha beta gamma delta', [[]], [['gamma delta']]],
+  ['below half of expanded side', 'alpha beta', 'alpha beta gamma delta epsilon', [[]], [[]]],
+  ['half of contracted side', 'alpha beta gamma delta', 'alpha beta', [['gamma delta']], [[]]],
+  ['below half of contracted side', 'alpha beta gamma delta epsilon', 'alpha beta', [[]], [[]]],
   ['no anchor', 'alpha', 'beta', [[]], [[]]],
   ['whitespace only', 'policy 30 days', 'policy\t30  days', [[]], [[]]],
+  [
+    'short multiline insertion',
+    'Read the policy and quote it.',
+    'Read the updated policy\nand quote it.',
+    [[]],
+    [['updated'], []],
+  ],
   [
     'code rewrite',
     'const total = items.length; if (total > 0) return total;',
@@ -65,13 +76,13 @@ test.each([
     'policy and quote it.',
     'policy, confirm the customer identity\nwith two separate checks recorded in the ticket,\nand quote it.',
     [[]],
-    [[', confirm the customer identity'], ['with two separate checks recorded in the ticket,'], []],
+    [[], [], []],
   ],
   [
     'wrapped deletion',
     'policy, confirm the customer identity\nwith two separate checks recorded in the ticket,\nand quote it.',
     'policy and quote it.',
-    [[', confirm the customer identity'], ['with two separate checks recorded in the ticket,'], []],
+    [[], [], []],
     [[]],
   ],
 ])(
@@ -102,6 +113,40 @@ test.each([
     ]);
     expect(comparison!.sections[0]!.rows[0]!.before).toBe(removed[0]);
     expect(comparison!.sections[0]!.rows[0]!.after).toBe(added[0]);
+  },
+);
+
+test.each([false, true])(
+  'keeps a recorded booking rewrite at row level (reverse=%s)',
+  async (reverse) => {
+    const original = ") => availableSlots.includes(slot) ? 'confirmed' : 'unavailable';";
+    const replacement = `  isSameDay: boolean,
+) => {
+  if (!availableSlots.includes(slot)) {
+    return 'unavailable';
+  }
+  return isSameDay
+    ? 'pending_staff_approval'
+    : 'confirmed';
+};`;
+    const before = reverse ? replacement : original;
+    const after = reverse ? original : replacement;
+    const comparison = await buildCodePatch(recordedChange(before, after), 'typescript');
+    expect(comparison).not.toBeNull();
+    const lines = comparison!.sections.flatMap((section) => section.lines);
+    expect(lines.every((line) => emphasisOf(line).length === 0)).toBe(true);
+    expect(
+      lines
+        .filter((line) => line.kind === 'removed')
+        .map((line) => line.tokens.map((token) => token.content).join(''))
+        .join('\n'),
+    ).toBe(before);
+    expect(
+      lines
+        .filter((line) => line.kind === 'added')
+        .map((line) => line.tokens.map((token) => token.content).join(''))
+        .join('\n'),
+    ).toBe(after);
   },
 );
 

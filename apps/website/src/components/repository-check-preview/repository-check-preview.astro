@@ -1,6 +1,6 @@
 ---
 import { FileCodeCorner, FileText } from '@lucide/astro';
-import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
+import CodeBlock from '@moldea.ai/website-ui/code-block';
 import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
 import CodeText from '@moldea.ai/website-ui/code-text';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
@@ -15,7 +15,6 @@ interface Props {
   example: IInstructionExample;
 }
 const { example } = Astro.props;
-const instructionHtml = await renderMarkdownFragment(example.instruction);
 ---
 
 <figure
@@ -43,12 +42,15 @@ const instructionHtml = await renderMarkdownFragment(example.instruction);
       class="size-5"
       aria-hidden="true"
     />
-    <div
-      class="prose-moldea p-4 text-sm leading-6 [&_p]:my-0 [&_p+p]:mt-2"
-      role="group"
-      aria-label="Instruction content"
-      set:html={instructionHtml}
-    />
+    <div class="p-4">
+      <CodeBlock
+        source={example.instruction}
+        language="markdown"
+        variant="plain"
+        copyable={false}
+        ariaLabel="Instruction content"
+      />
+    </div>
   </FilePreview>
   <div class="ml-5 flex items-center gap-3 py-2">
     <span

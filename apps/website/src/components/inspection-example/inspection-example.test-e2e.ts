@@ -120,7 +120,7 @@ test('keeps every frame readable without JavaScript', async ({ browser }) => {
     const preview = page.getByRole('figure', { name: 'Repository check preview' });
     await expect(preview).toBeVisible();
     await expect(preview.getByRole('group', { name: 'Instruction content' })).toContainText(
-      'Use get_delivery_status to answer delivery questions.',
+      'Use `get_delivery_status` to answer delivery questions.',
     );
     await expect(preview.getByRole('group', { name: 'Missing tool implementation' })).toContainText(
       'src/orders/tracking.ts',

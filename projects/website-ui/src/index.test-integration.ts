@@ -137,6 +137,7 @@ interface IInlineExpectation {
 const expectInlineRendering = async (
   region: Locator,
   expected: IInlineExpectation,
+  expectedWeight: '500' | '600' = '500',
 ): Promise<void> => {
   for (const kind of ['removed', 'added'] as const) {
     const rows = await region.locator(`[data-diff-line="${kind}"]:visible`).evaluateAll((nodes) =>
@@ -175,7 +176,7 @@ const expectInlineRendering = async (
           tag: kind === 'added' ? 'INS' : 'DEL',
           kind,
           decoration: 'none',
-          weight: '600',
+          weight: expectedWeight,
           focusable: false,
         });
       }
@@ -235,7 +236,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.5.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.5.1' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -343,22 +344,14 @@ describe('published website UI package', () => {
         after:
           'policy, confirm the customer identity\nwith two separate checks recorded in the ticket,\nand quote it.',
         removed: [[]],
-        added: [
-          [', confirm the customer identity'],
-          ['with two separate checks recorded in the ticket,'],
-          [],
-        ],
+        added: [[], [], []],
       },
       {
         name: 'Wrapped deletion',
         before:
           'policy, confirm the customer identity\nwith two separate checks recorded in the ticket,\nand quote it.',
         after: 'policy and quote it.',
-        removed: [
-          [', confirm the customer identity'],
-          ['with two separate checks recorded in the ticket,'],
-          [],
-        ],
+        removed: [[], [], []],
         added: [[]],
       },
       {
@@ -374,6 +367,35 @@ describe('published website UI package', () => {
         after: 'const label = "new"; // updated',
         removed: [['old', 'previous']],
         added: [['new', 'updated']],
+      },
+      {
+        name: 'Booking rewrite',
+        before: ") => availableSlots.includes(slot) ? 'confirmed' : 'unavailable';",
+        after:
+          "  isSameDay: boolean,\n) => {\n  if (!availableSlots.includes(slot)) {\n    return 'unavailable';\n  }\n  return isSameDay\n    ? 'pending_staff_approval'\n    : 'confirmed';\n};",
+        removed: [[]],
+        added: [[], [], [], [], [], [], [], [], []],
+      },
+      {
+        name: 'Refund boundary',
+        before: 'return completedDays <= 30;',
+        after: 'return completedDays <= 14;',
+        removed: [['30']],
+        added: [['14']],
+      },
+      {
+        name: 'Short multiline change',
+        before: 'Read the policy and quote it.',
+        after: 'Read the updated policy\nand quote it.',
+        removed: [[]],
+        added: [['updated'], []],
+      },
+      {
+        name: 'Markdown source',
+        before: '# Policy: **30 days**, `approval`, [staff](/staff), and <b>source</b>.',
+        after: '# Policy: **14 days**, `approval`, [staff](/staff), and <b>source</b>.',
+        removed: [['30']],
+        added: [['14']],
       },
     ];
 
@@ -542,7 +564,7 @@ describe('published website UI package', () => {
         '    <CodeBlock {...codeProps} />',
         '    <CodeDiff {...diffProps} overflow="wrap" />',
         '    <CodeDiff {...diffProps} overflow="wrap" view="split" ariaLabel="Booking changes split" />',
-        '    <template data-inline-fixtures>{inlineCases.map((example) => (["unified", "split"] as const).map((view) => <><CodeDiff oldValue={example.before} newValue={example.after} language="typescript" ariaLabel={`${example.name} ${view}`} view={view} overflow="wrap" /><CodeDiff patch={recordedInlinePatch(example.before, example.after)} language="typescript" ariaLabel={`${example.name} recorded ${view}`} view={view} overflow="wrap" /></>))}</template>',
+        '    <template data-inline-fixtures>{inlineCases.map((example) => (["unified", "split"] as const).map((view) => <><CodeDiff oldValue={example.before} newValue={example.after} language={example.name === "Markdown source" ? "markdown" : "typescript"} ariaLabel={`${example.name} ${view}`} view={view} overflow="wrap" /><CodeDiff patch={recordedInlinePatch(example.before, example.after)} language={example.name === "Markdown source" ? "markdown" : "typescript"} ariaLabel={`${example.name} recorded ${view}`} view={view} overflow="wrap" /></>))}</template>',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes" view="split" overflow="wrap" />',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes scroll" overflow="scroll" />',
         '    <CodeDiff oldValue={contextBefore} newValue={contextAfter} language="typescript" ariaLabel="Availability changes split scroll" view="split" overflow="scroll" />',
@@ -769,7 +791,7 @@ describe('published website UI package', () => {
                 name: `Syntax grouping ${view}`,
                 exact: true,
               });
-              await expectInlineRendering(region, inlineCases[7]!);
+              await expectInlineRendering(region, inlineCases[7]!, '600');
               const styles = await region
                 .locator('[data-moldea-diff-change]:visible')
                 .evaluateAll((nodes) =>
