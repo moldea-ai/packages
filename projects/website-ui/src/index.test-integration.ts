@@ -296,6 +296,7 @@ describe('published website UI package', () => {
     expect(packedPaths.some((filePath) => filePath.startsWith('docs/'))).toBe(false);
   });
 
+  // real tarball installation, Astro builds, and 12 diff cases exceed four minutes on macOS/Windows CI
   test('installs the real tarball and builds an Astro consumer using every public component', async () => {
     const packageManagerEntrypoint = getPackageManagerEntrypoint();
     const temporaryDirectory = createTemporaryDirectory();
@@ -1879,5 +1880,5 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('lucide-maximize-2');
     expect(fixtureHtml).toContain('Expanded source content');
     expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(3 + RUNTIME_CATALOG.length);
-  }, 240_000);
+  }, 360_000);
 });
