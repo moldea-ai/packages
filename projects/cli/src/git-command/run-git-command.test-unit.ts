@@ -50,12 +50,13 @@ describe('runGitCommand', () => {
     });
   });
 
-  test('refuses a command that succeeded after warning on stderr', async () => {
+  test('refuses a command that succeeded after warning on stderr, naming the subcommand', async () => {
     finishGit(0, 'partial\u0000', "warning: could not open directory 'locked/'\n");
 
-    await expect(runGitCommand(['ls-files'], OPTIONS)).resolves.toStrictEqual({
+    await expect(runGitCommand(['ls-files', '--others'], OPTIONS)).resolves.toStrictEqual({
       kind: 'failed',
       reason: 'output-invalid',
+      subcommand: 'ls-files',
     });
   });
 
@@ -65,6 +66,7 @@ describe('runGitCommand', () => {
     await expect(runGitCommand(['rev-parse'], OPTIONS)).resolves.toStrictEqual({
       kind: 'failed',
       reason: 'output-invalid',
+      subcommand: 'rev-parse',
     });
   });
 
@@ -81,6 +83,7 @@ describe('runGitCommand', () => {
     await expect(runGitCommand(['rev-parse'], OPTIONS)).resolves.toStrictEqual({
       kind: 'failed',
       reason,
+      subcommand: 'rev-parse',
     });
   });
 
@@ -112,6 +115,7 @@ describe('runGitCommand', () => {
     await expect(runGitCommand(['status'], OPTIONS)).resolves.toStrictEqual({
       kind: 'failed',
       reason,
+      subcommand: 'status',
     });
   });
 
@@ -128,6 +132,6 @@ describe('runGitCommand', () => {
 
     await expect(
       runGitCommand(['status'], { ...OPTIONS, signal: controller.signal }),
-    ).resolves.toStrictEqual({ kind: 'failed', reason: 'aborted' });
+    ).resolves.toStrictEqual({ kind: 'failed', reason: 'aborted', subcommand: 'status' });
   });
 });

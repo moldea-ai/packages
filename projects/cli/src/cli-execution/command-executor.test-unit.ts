@@ -390,4 +390,37 @@ describe('createMoldeaCliCommandExecutor', () => {
       status: 'error',
     });
   });
+
+  test.each([
+    [
+      Object.freeze({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed', subcommand: 'ls-files' }),
+      { subcommand: 'ls-files' },
+    ],
+    [Object.freeze({ errorCode: 'WORKING_TREE_UNSTABLE', kind: 'failed' }), {}],
+  ] as const)(
+    'reports a working-tree snapshot failure %o with only its Git subcommand as details',
+    async (failure, details) => {
+      const snapshot: IWorkingTreeSnapshotExecutor = <TResult>(): Promise<
+        IWorkingTreeSnapshotExecutionResult<TResult>
+      > => Promise.resolve(failure);
+      const executeCommand = createMoldeaCliCommandExecutor(
+        createDiscovery(),
+        snapshot,
+        vi.fn<IMoldeaCliCoreInspectionExecutor>(),
+        createCompositionResolver(),
+      );
+
+      const result = await executeCommand(createCommandInput('validate'));
+
+      const envelope = JSON.parse(result.stdout) as { error: { details: unknown } };
+
+      expect(result.exitCode).toBe(3);
+      expect(envelope).toMatchObject({
+        error: { code: failure.errorCode, path: null },
+        result: null,
+        status: 'error',
+      });
+      expect(envelope.error.details).toStrictEqual(details);
+    },
+  );
 });

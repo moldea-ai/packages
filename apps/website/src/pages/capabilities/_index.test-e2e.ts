@@ -399,7 +399,7 @@ for (const exampleId of ['cli-pattern-warning', 'cli-accepted-warning']) {
       ).toStrictEqual([]);
       await result.getByRole('tab', { name: 'Output', exact: true }).click();
       await expect(result.locator('[data-inspection-output]')).toContainText('warningCount');
-      const codeRegion = result.getByRole('region', {
+      const codeRegion = result.getByRole('group', {
         name: getCapabilityInspectionView(example).outputLabel,
       });
       await expect(codeRegion).toHaveAttribute('tabindex', '0');

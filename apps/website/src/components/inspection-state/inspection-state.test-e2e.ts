@@ -45,7 +45,7 @@ for (const width of [320, 1440]) {
           await expect(dialog.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
           await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
         } else await expect(dialog.getByRole('tab')).toHaveCount(0);
-        const code = dialog.getByRole('region', {
+        const code = dialog.getByRole('group', {
           name: 'JSON',
           exact: true,
         });

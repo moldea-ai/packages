@@ -84,7 +84,7 @@ test('contains long reference content at the 320px viewport', async ({ page }) =
   await page.setViewportSize({ height: 740, width: 320 });
   await page.goto(toPublicPath('/repository-format/'));
 
-  const propertyTableRegion = page.getByRole('region', { name: 'Scrollable table' }).first();
+  const propertyTableRegion = page.getByRole('group', { name: 'Scrollable table' }).first();
   const minimumTree = page.getByLabel('Minimum Repository Format tree');
   const mobileOutline = page.locator('details').filter({ hasText: 'On this page' });
 

@@ -19,7 +19,7 @@ Submodule roots and their descendants are excluded. Untracked content owned by a
 
 ## Symlinks and content transforms
 
-Native symlinks remain symlinks. When `core.symlinks=false`, tracked Git symlinks materialized as regular host files are overlaid as logical symlinks and never read as content. Their `readLinkText` returns the host file's bytes, which are exactly the link text Git stored.
+Native symlinks remain symlinks. A symlink or junction in the working tree also shadows every Git entry beneath it, whatever Git lists there, so the inventory keeps one link entry at its path and an unrelated link produces no diagnostic. When `core.symlinks=false`, tracked Git symlinks materialized as regular host files are overlaid as logical symlinks and never read as content. Their `readLinkText` returns the host file's bytes, which are exactly the link text Git stored.
 
 Core follows a linked instruction file with Repository's `resolveRepositoryLink` over the instruction and repository readers, so native and materialized links resolve the same way and nothing outside the repository is read. A link that doesn't lead to a file in the repository is reported as `MOLDEA_INTEGRATION_LINK_UNRESOLVED` with its reason as qualifier.
 

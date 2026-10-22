@@ -81,7 +81,7 @@ describe('website Markdown rendering', () => {
     );
 
     expect(html.match(/<pre\b/gu)).toHaveLength(1);
-    expect(html).toContain('tabindex="0" role="region" aria-label="Code block"');
+    expect(html).toContain('tabindex="0" role="group" aria-label="Code block"');
     expect(html).toContain('```\n# Not a heading\n&#x3C;script>');
     expect(html).toContain('[Not a link](https://example.com)');
     expect(html).not.toMatch(/<(?:h1|script|a)\b/u);
@@ -93,7 +93,7 @@ describe('website Markdown rendering', () => {
       const html = await renderCodeBlock('  example\n\n', language);
 
       expect(html).toContain('  example');
-      expect(html).toContain('role="region" aria-label="Code block"');
+      expect(html).toContain('role="group" aria-label="Code block"');
       expect(html).toContain(
         `data-code-overflow="${['markdown', 'md', 'text', 'txt', 'plaintext'].includes(language) ? 'wrap' : 'scroll'}"`,
       );
@@ -158,14 +158,14 @@ describe('website Markdown rendering', () => {
     expect(rendered.html).not.toContain('<script>');
   });
 
-  test('wraps tables in an accessible scrolling region', async () => {
+  test('wraps tables in an accessible scrolling group', async () => {
     const rendered = await renderMarkdownDocument(
       '| Name | Value |\n| --- | --- |\n| Core | Stable |',
       { hasDocumentTitle: false },
     );
 
     expect(rendered.html).toContain(
-      '<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable table">',
+      '<div class="table-scroll" tabindex="0" role="group" aria-label="Scrollable table">',
     );
   });
 
@@ -193,7 +193,7 @@ describe('website Markdown rendering', () => {
   });
 
   test.each(['ts', 'json', 'yaml', 'markdown', 'md', 'text', 'txt', 'plaintext', ''])(
-    'retains the explicit %s language and exposes keyboard-accessible code regions',
+    'retains the explicit %s language and exposes keyboard-accessible code groups',
     async (language) => {
       const source = `\`\`\`${language}\n  example\n\`\`\``;
       for (const html of [
@@ -202,7 +202,7 @@ describe('website Markdown rendering', () => {
       ]) {
         expect(html).toContain('tabindex="0"');
         expect(html.match(/tabindex="0"/gu)).toHaveLength(1);
-        expect(html).toContain('role="region" aria-label="Code block"');
+        expect(html).toContain('role="group" aria-label="Code block"');
         expect(html).toContain(
           `data-code-overflow="${['markdown', 'md', 'text', 'txt', 'plaintext'].includes(language) ? 'wrap' : 'scroll'}"`,
         );

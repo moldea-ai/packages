@@ -17,8 +17,9 @@ import type {
 /** Creates one immutable content-transformation classification failure. */
 const createClassificationFailure = (
   errorCode: IGitInventoryProbeErrorCode,
+  subcommand?: string,
 ): IGitContentTransformationClassificationFailedResult =>
-  Object.freeze({ errorCode, kind: 'failed' });
+  Object.freeze({ errorCode, kind: 'failed', ...(subcommand === undefined ? {} : { subcommand }) });
 
 /** Maps one bounded Git attribute failure to the existing safe inventory contract. */
 const mapGitFailure = (reason: IGitFailureReason): IGitInventoryProbeErrorCode => {
@@ -128,7 +129,7 @@ export const createGitContentTransformationClassifier = (
     });
 
     if (result.kind === 'failed') {
-      return createClassificationFailure(mapGitFailure(result.reason));
+      return createClassificationFailure(mapGitFailure(result.reason), result.subcommand);
     }
 
     if (result.value.byteLength > input.maxMetadataBytes) {

@@ -54,10 +54,11 @@ export interface IGitInventoryProbedResult {
   readonly kind: 'probed';
 }
 
-// safe terminal failure from one raw inventory probe
+// safe terminal failure from one raw inventory probe, naming the Git subcommand when Git failed
 export interface IGitInventoryProbeFailedResult {
   readonly errorCode: IGitInventoryProbeErrorCode;
   readonly kind: 'failed';
+  readonly subcommand?: string;
 }
 
 // all-or-nothing normalized inventory probe result

@@ -10,6 +10,7 @@ import {
 
 import {
   GIT_IGNORED_INVENTORY_ARGUMENTS,
+  GIT_INVENTORY_LISTING_SUBCOMMAND,
   GIT_TRACKED_ENTRY_MODES,
   GIT_TRACKED_RECORD_OVERHEAD_BYTES,
 } from './constants.js';
@@ -23,6 +24,7 @@ import {
   inspectGitInventoryEntry,
   type IGitInventoryEntryTypeNormalizer,
 } from './entry-type/index.js';
+import { shadowGitLinkAncestors, type IGitLinkAncestorShadower } from './link-ancestors/index.js';
 import {
   filterGitInventoryCandidateLogicalPaths,
   normalizeGitInventoryLogicalPaths,
@@ -106,10 +108,12 @@ const measureTrackedOutput = (entries: readonly IIndexEntry[]): number =>
 const measureUntrackedOutput = (paths: readonly string[]): number =>
   paths.reduce((bytes, path) => bytes + countUtf8Bytes(path) + 1, 0);
 
-/** Creates one immutable inventory-probe failure. */
+/** Creates one immutable inventory-probe failure, naming the Git subcommand when Git failed. */
 const createProbeFailure = (
   errorCode: IGitInventoryProbeErrorCode,
-): IGitInventoryProbeFailedResult => Object.freeze({ errorCode, kind: 'failed' });
+  subcommand?: string,
+): IGitInventoryProbeFailedResult =>
+  Object.freeze({ errorCode, kind: 'failed', ...(subcommand === undefined ? {} : { subcommand }) });
 
 /** Maps one completed parser result into immutable candidates or a safe failure. */
 const resolveParserResult = <TCandidate extends IGitInventoryCandidate>(
@@ -138,6 +142,7 @@ const isProbeFailure = (
  * @param entryTypeNormalizer The current filesystem and Git mode entry-type normalizer.
  * @param contentTransformationClassifier The bounded effective Git attribute classifier.
  * @param logicalPathNormalizer The portable repository logical-path normalizer.
+ * @param linkAncestorShadower The step that replaces candidates beneath a working-tree link.
  * @returns An all-or-nothing selected-repository entry probe.
  */
 export const createGitInventoryProbe =
@@ -152,6 +157,7 @@ export const createGitInventoryProbe =
     ),
     contentTransformationClassifier: IGitContentTransformationClassifier = createGitContentTransformationClassifier(),
     logicalPathNormalizer: IGitInventoryLogicalPathNormalizer = normalizeGitInventoryLogicalPaths,
+    linkAncestorShadower: IGitLinkAncestorShadower = shadowGitLinkAncestors,
   ): IGitInventoryProbe =>
   async (input): Promise<IGitInventoryProbeResult> => {
     if (input.signal?.aborted) {
@@ -179,10 +185,11 @@ export const createGitInventoryProbe =
     const trackedResult = await readGit(
       () => git.readIndexEntries(input.repositoryRoot, createReadOptions()),
       input.signal,
+      GIT_INVENTORY_LISTING_SUBCOMMAND,
     );
 
     if (trackedResult.kind === 'failed') {
-      return createProbeFailure(mapGitFailure(trackedResult.reason));
+      return createProbeFailure(mapGitFailure(trackedResult.reason), trackedResult.subcommand);
     }
 
     remainingMetadataBytes -= measureTrackedOutput(trackedResult.value);
@@ -200,10 +207,11 @@ export const createGitInventoryProbe =
     const untrackedResult = await readGit(
       () => git.listUntrackedFiles(input.repositoryRoot, createReadOptions()),
       input.signal,
+      GIT_INVENTORY_LISTING_SUBCOMMAND,
     );
 
     if (untrackedResult.kind === 'failed') {
-      return createProbeFailure(mapGitFailure(untrackedResult.reason));
+      return createProbeFailure(mapGitFailure(untrackedResult.reason), untrackedResult.subcommand);
     }
 
     remainingMetadataBytes -= measureUntrackedOutput(untrackedResult.value);
@@ -236,7 +244,7 @@ export const createGitInventoryProbe =
       );
 
       if (ignoredResult.kind === 'failed') {
-        return createProbeFailure(mapGitFailure(ignoredResult.reason));
+        return createProbeFailure(mapGitFailure(ignoredResult.reason), ignoredResult.subcommand);
       }
 
       remainingMetadataBytes -= ignoredResult.value.byteLength;
@@ -274,8 +282,19 @@ export const createGitInventoryProbe =
       return logicalPathFilterResult;
     }
 
-    const ownershipResult = await ownershipFilter({
+    // candidates beneath a working-tree link would otherwise fail ownership on a linked parent
+    const shadowResult = await linkAncestorShadower({
       candidates: logicalPathFilterResult.candidates,
+      repositoryRoot: input.repositoryRoot,
+      ...(input.signal === undefined ? {} : { signal: input.signal }),
+    });
+
+    if (shadowResult.kind === 'failed') {
+      return shadowResult;
+    }
+
+    const ownershipResult = await ownershipFilter({
+      candidates: shadowResult.candidates,
       maxMetadataBytes: remainingMetadataBytes,
       repositoryRoot: input.repositoryRoot,
       ...(input.signal === undefined ? {} : { signal: input.signal }),

@@ -313,6 +313,38 @@ describe('createWorkingTreeSnapshotExecutor', () => {
     expect(repositoryReaderFactory).not.toHaveBeenCalled();
   });
 
+  test.each([false, true])(
+    'keeps the Git subcommand of a failed inventory probe when instructions are %s',
+    async (includeInstructions) => {
+      const failure = Object.freeze({
+        errorCode: 'GIT_OUTPUT_INVALID' as const,
+        kind: 'failed' as const,
+        subcommand: 'ls-files',
+      });
+      // the instruction probe runs after a successful general probe
+      const inventoryProbe = includeInstructions
+        ? vi
+            .fn<IGitInventoryProbe>()
+            .mockResolvedValueOnce(createInventoryResult())
+            .mockResolvedValueOnce(failure)
+        : vi.fn<IGitInventoryProbe>().mockResolvedValue(failure);
+      const executeSnapshot = createWorkingTreeSnapshotExecutor(
+        createStableIdentityInspector(),
+        inventoryProbe,
+        vi.fn<IWorkingTreeRepositoryReaderFactory>(),
+      );
+
+      await expect(
+        executeSnapshot({
+          includeInstructions,
+          operation: () => Promise.resolve(),
+          repositoryRoot: REPOSITORY_ROOT,
+          resourceLimits: RESOURCE_LIMITS,
+        }),
+      ).resolves.toStrictEqual(failure);
+    },
+  );
+
   test.each([
     [createSourceException('ENTRY_NOT_FOUND', 'create-reader')],
     [createSourceException('ENTRY_NOT_DIRECTORY', 'create-reader', false)],

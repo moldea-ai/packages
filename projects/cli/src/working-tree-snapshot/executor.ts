@@ -30,10 +30,12 @@ import type {
   IWorkingTreeSnapshotInventoryComparator,
 } from './types.js';
 
-/** Creates one immutable terminal snapshot failure. */
+/** Creates one immutable terminal snapshot failure, keeping a failed Git inventory subcommand. */
 const createSnapshotFailure = (
   errorCode: IMoldeaCliOwnedErrorCode,
-): IWorkingTreeSnapshotFailedResult => Object.freeze({ errorCode, kind: 'failed' });
+  subcommand?: string,
+): IWorkingTreeSnapshotFailedResult =>
+  Object.freeze({ errorCode, kind: 'failed', ...(subcommand === undefined ? {} : { subcommand }) });
 
 /** Determines whether a source exception proves that the current reader is unusable. */
 const isSnapshotChanged = (error: unknown): boolean =>
@@ -104,7 +106,9 @@ export const createWorkingTreeSnapshotExecutor = (
         ...(input.signal === undefined ? {} : { signal: input.signal }),
       });
 
-      return result.kind === 'failed' ? createSnapshotFailure(result.errorCode) : result;
+      return result.kind === 'failed'
+        ? createSnapshotFailure(result.errorCode, result.subcommand)
+        : result;
     };
 
     // the instruction paths, including ignored files, form a separate pinned inventory
@@ -124,7 +128,9 @@ export const createWorkingTreeSnapshotExecutor = (
         ...(input.signal === undefined ? {} : { signal: input.signal }),
       });
 
-      return result.kind === 'failed' ? createSnapshotFailure(result.errorCode) : result;
+      return result.kind === 'failed'
+        ? createSnapshotFailure(result.errorCode, result.subcommand)
+        : result;
     };
 
     for (let attempt = 0; attempt < MAX_WORKING_TREE_SNAPSHOT_ATTEMPTS; attempt += 1) {

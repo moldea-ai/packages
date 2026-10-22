@@ -4,9 +4,9 @@ The `consumer-conformance` CI lane gives the skill manager and closed launcher t
 
 ## Recorded verification
 
-The selected closure contains CLI `13.0.0`, Core `9.0.0`, Repository `4.0.0`, and Repository FS `4.0.0`; CLI and Repository FS require Node.js `>=22.17.0`. Qualification started from `7d13da3ab4e749548f823544c27c153508ff9205` using Node `24.15.0` and pnpm `11.9.0`. Tarballs packed locally and by the skill `10.0.0` candidate workflow from that commit match byte for byte. Local checksum verification, Repository FS runtime checks, CLI runtime checks and the existing-Vitest `3.2.4` check passed on Linux with Node `24.15.0` under the reviewed registry snapshot, and a skill `10.0.0` candidate prepared locally from these tarballs installed the closure. The installed CLI regressions also verify that every Git read runs through jg-git-commands, with Git `2.32` as the minimum.
+The selected closure contains CLI `13.0.1`, Core `9.0.0`, Repository `4.0.0`, and Repository FS `4.0.0`; CLI and Repository FS require Node.js `>=22.17.0`. Qualification started from `9265734e1a5e0b75c6b6278f7e2f696b0a2bcc64` using Node `24.15.0` and pnpm `11.9.0`. Tarballs packed locally from that commit with the CI pack commands reproduce the previously reviewed Core, Repository, and Repository FS bytes exactly, and local checksum and consumer-selection verification passed. The pull request's pack job compares CI's own tarballs with this selection before any consumer lane runs. The installed CLI regressions also verify that every Git read runs through jg-git-commands, with Git `2.32` as the minimum.
 
-The local correctness run passed its unit, integration and installed-CLI suites, together with the lint, typecheck, build, documentation and website checks.
+The local correctness run passed its unit, integration and end-to-end suites, including the installed-CLI suite and the packages website browser suite, together with the lint, typecheck, build, documentation and website checks.
 
 Consumer tooling uses released Skill `10.0.0`, pinned to commit `950b89eb4c41564953fa1582fdd588992e152d37`. Fresh-client consumer conformance for these exact bytes runs in the trusted packages CI consumer lane; local Linux checks do not replace it.
 
