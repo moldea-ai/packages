@@ -12,6 +12,9 @@ export const GIT_IGNORED_INVENTORY_ARGUMENTS = [
   '--',
 ] as const;
 
+// the Git subcommand jg-git-commands' index and untracked listing reads run
+export const GIT_INVENTORY_LISTING_SUBCOMMAND = 'ls-files';
+
 // coding-agent instruction paths visible to Core's integration check even when Git ignores them
 export const INSTRUCTION_PATHS = Object.freeze(
   ['/AGENTS.md', '/CLAUDE.md', '/.claude/CLAUDE.md', '/CLAUDE.local.md'].map((path) =>

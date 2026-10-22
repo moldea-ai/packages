@@ -13,13 +13,17 @@ interface IGitFixture {
   readonly stdout?: Uint8Array;
 }
 
-/** Creates a Git command boundary for one deterministic fixture. */
+/** Creates a Git command boundary that, like the real runner, names its subcommand on failure. */
 const createGitRunner = (fixture: IGitFixture): IGitCommandRunner =>
-  vi.fn<IGitCommandRunner>(() =>
+  vi.fn<IGitCommandRunner>((args) =>
     Promise.resolve(
       fixture.failureReason === undefined
         ? Object.freeze({ kind: 'completed', value: Buffer.from(fixture.stdout ?? []) })
-        : Object.freeze({ kind: 'failed', reason: fixture.failureReason }),
+        : Object.freeze({
+            kind: 'failed',
+            reason: fixture.failureReason,
+            ...(args[0] === undefined ? {} : { subcommand: args[0] }),
+          }),
     ),
   );
 
@@ -166,24 +170,27 @@ describe('createGitContentTransformationClassifier', () => {
     ['output-invalid', 'GIT_OUTPUT_INVALID'],
     ['output-limit-exceeded', 'RESOURCE_LIMIT_EXCEEDED'],
     ['command-failed', 'GIT_COMMAND_FAILED'],
-  ] as const)('maps %s without exposing Git diagnostics', async (failureReason, errorCode) => {
-    const classify = createGitContentTransformationClassifier(createGitRunner({ failureReason }));
+  ] as const)(
+    'maps %s to its subcommand without exposing Git diagnostics',
+    async (failureReason, errorCode) => {
+      const classify = createGitContentTransformationClassifier(createGitRunner({ failureReason }));
 
-    await expect(
-      classify({
-        entries: [
-          {
-            entryType: 'file',
-            kind: 'untracked',
-            path: 'private.txt',
-            requiresSymlinkOverlay: false,
-          },
-        ],
-        maxMetadataBytes: 1,
-        repositoryRoot: '/private',
-      }),
-    ).resolves.toStrictEqual({ errorCode, kind: 'failed' });
-  });
+      await expect(
+        classify({
+          entries: [
+            {
+              entryType: 'file',
+              kind: 'untracked',
+              path: 'private.txt',
+              requiresSymlinkOverlay: false,
+            },
+          ],
+          maxMetadataBytes: 1,
+          repositoryRoot: '/private',
+        }),
+      ).resolves.toStrictEqual({ errorCode, kind: 'failed', subcommand: 'check-attr' });
+    },
+  );
 
   test('rejects parser failures and output beyond the remaining budget atomically', async () => {
     const entry = {

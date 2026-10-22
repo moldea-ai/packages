@@ -30,10 +30,11 @@ export interface IWorkingTreeSnapshotCompletedResult<TResult> {
   readonly result: TResult;
 }
 
-// safe terminal failure before a snapshot operation completed
+// safe terminal failure before a snapshot operation completed, naming a failed inventory subcommand
 export interface IWorkingTreeSnapshotFailedResult {
   readonly errorCode: IMoldeaCliOwnedErrorCode;
   readonly kind: 'failed';
+  readonly subcommand?: string;
 }
 
 // complete bounded snapshot-execution result

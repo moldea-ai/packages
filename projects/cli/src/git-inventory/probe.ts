@@ -10,6 +10,7 @@ import {
 
 import {
   GIT_IGNORED_INVENTORY_ARGUMENTS,
+  GIT_INVENTORY_LISTING_SUBCOMMAND,
   GIT_TRACKED_ENTRY_MODES,
   GIT_TRACKED_RECORD_OVERHEAD_BYTES,
 } from './constants.js';
@@ -107,10 +108,12 @@ const measureTrackedOutput = (entries: readonly IIndexEntry[]): number =>
 const measureUntrackedOutput = (paths: readonly string[]): number =>
   paths.reduce((bytes, path) => bytes + countUtf8Bytes(path) + 1, 0);
 
-/** Creates one immutable inventory-probe failure. */
+/** Creates one immutable inventory-probe failure, naming the Git subcommand when Git failed. */
 const createProbeFailure = (
   errorCode: IGitInventoryProbeErrorCode,
-): IGitInventoryProbeFailedResult => Object.freeze({ errorCode, kind: 'failed' });
+  subcommand?: string,
+): IGitInventoryProbeFailedResult =>
+  Object.freeze({ errorCode, kind: 'failed', ...(subcommand === undefined ? {} : { subcommand }) });
 
 /** Maps one completed parser result into immutable candidates or a safe failure. */
 const resolveParserResult = <TCandidate extends IGitInventoryCandidate>(
@@ -182,10 +185,11 @@ export const createGitInventoryProbe =
     const trackedResult = await readGit(
       () => git.readIndexEntries(input.repositoryRoot, createReadOptions()),
       input.signal,
+      GIT_INVENTORY_LISTING_SUBCOMMAND,
     );
 
     if (trackedResult.kind === 'failed') {
-      return createProbeFailure(mapGitFailure(trackedResult.reason));
+      return createProbeFailure(mapGitFailure(trackedResult.reason), trackedResult.subcommand);
     }
 
     remainingMetadataBytes -= measureTrackedOutput(trackedResult.value);
@@ -203,10 +207,11 @@ export const createGitInventoryProbe =
     const untrackedResult = await readGit(
       () => git.listUntrackedFiles(input.repositoryRoot, createReadOptions()),
       input.signal,
+      GIT_INVENTORY_LISTING_SUBCOMMAND,
     );
 
     if (untrackedResult.kind === 'failed') {
-      return createProbeFailure(mapGitFailure(untrackedResult.reason));
+      return createProbeFailure(mapGitFailure(untrackedResult.reason), untrackedResult.subcommand);
     }
 
     remainingMetadataBytes -= measureUntrackedOutput(untrackedResult.value);
@@ -239,7 +244,7 @@ export const createGitInventoryProbe =
       );
 
       if (ignoredResult.kind === 'failed') {
-        return createProbeFailure(mapGitFailure(ignoredResult.reason));
+        return createProbeFailure(mapGitFailure(ignoredResult.reason), ignoredResult.subcommand);
       }
 
       remainingMetadataBytes -= ignoredResult.value.byteLength;

@@ -403,21 +403,44 @@ describe('createGitInventoryProbe', () => {
     [GIT_ERRORS.GIT_OUTPUT_INVALID, 'GIT_OUTPUT_INVALID'],
     [PROCESS_ERRORS.PROCESS_OUTPUT_TOO_LARGE, 'RESOURCE_LIMIT_EXCEEDED'],
     [GIT_ERRORS.GIT_COMMAND_FAILED, 'GIT_COMMAND_FAILED'],
-  ] as const)('maps %s without exposing Git diagnostics', async (code, errorCode) => {
-    const failure = new Exception('private diagnostic', { code });
+  ] as const)(
+    'maps %s to its subcommand without exposing Git diagnostics',
+    async (code, errorCode) => {
+      const failure = new Exception('private diagnostic', { code });
 
-    for (const git of [
-      createGitReads({ tracked: failure }),
-      createGitReads({ untracked: failure }),
-    ]) {
-      await expect(
-        createGitInventoryProbe(git)({
-          maxEntries: 1,
-          maxMetadataBytes: 64,
-          repositoryRoot: '/private',
-        }),
-      ).resolves.toStrictEqual({ errorCode, kind: 'failed' });
-    }
+      for (const git of [
+        createGitReads({ tracked: failure }),
+        createGitReads({ untracked: failure }),
+      ]) {
+        await expect(
+          createGitInventoryProbe(git)({
+            maxEntries: 1,
+            maxMetadataBytes: 64,
+            repositoryRoot: '/private',
+          }),
+        ).resolves.toStrictEqual({ errorCode, kind: 'failed', subcommand: 'ls-files' });
+      }
+    },
+  );
+
+  test('names the subcommand of a failed ignored-instruction listing', async () => {
+    const git = createGitReads({
+      ignored: Object.freeze({ kind: 'failed', reason: 'output-invalid', subcommand: 'ls-files' }),
+    });
+
+    await expect(
+      createGitInventoryProbe(git)({
+        includeIgnored: true,
+        maxEntries: 4,
+        maxMetadataBytes: 1024,
+        repositoryRoot: '/repository',
+        selectionPaths: INSTRUCTION_PATHS,
+      }),
+    ).resolves.toStrictEqual({
+      errorCode: 'GIT_OUTPUT_INVALID',
+      kind: 'failed',
+      subcommand: 'ls-files',
+    });
   });
 
   test('reports an aborted listing as an aborted operation', async () => {
@@ -439,7 +462,11 @@ describe('createGitInventoryProbe', () => {
         repositoryRoot: '/repository',
         signal: controller.signal,
       }),
-    ).resolves.toStrictEqual({ errorCode: 'GIT_OPERATION_ABORTED', kind: 'failed' });
+    ).resolves.toStrictEqual({
+      errorCode: 'GIT_OPERATION_ABORTED',
+      kind: 'failed',
+      subcommand: 'ls-files',
+    });
   });
 
   test('rejects an unsupported mode, an empty path, and malformed ignored output atomically', async () => {

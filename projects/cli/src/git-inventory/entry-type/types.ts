@@ -100,10 +100,11 @@ export interface IGitSymlinkConfigurationResolvedResult {
   readonly kind: 'resolved';
 }
 
-// safe effective Git symlink configuration failure
+// safe effective Git symlink configuration failure, naming the Git subcommand when Git failed
 export interface IGitSymlinkConfigurationFailedResult {
   readonly errorCode: IGitInventoryProbeErrorCode;
   readonly kind: 'failed';
+  readonly subcommand?: string;
 }
 
 // result of resolving the selected repository's effective core.symlinks value
@@ -154,10 +155,11 @@ export interface IGitInventoryEntryTypeNormalizedResult {
   readonly kind: 'normalized';
 }
 
-// safe entry-type normalization failure
+// safe entry-type normalization failure, naming the Git subcommand when Git failed
 export interface IGitInventoryEntryTypeNormalizationFailedResult {
   readonly errorCode: IGitInventoryProbeErrorCode;
   readonly kind: 'failed';
+  readonly subcommand?: string;
 }
 
 // all-or-nothing current entry-type normalization result

@@ -36,16 +36,19 @@ describe('createGitSymlinkConfigurationResolver', () => {
     [GIT_ERRORS.GIT_OUTPUT_INVALID, 'GIT_OUTPUT_INVALID'],
     [PROCESS_ERRORS.PROCESS_OUTPUT_TOO_LARGE, 'RESOURCE_LIMIT_EXCEEDED'],
     [GIT_ERRORS.GIT_COMMAND_FAILED, 'GIT_COMMAND_FAILED'],
-  ] as const)('maps %s without exposing Git diagnostics', async (code, errorCode) => {
-    const readBoolean = vi
-      .fn<IGitConfigBooleanReader>()
-      .mockRejectedValue(new Exception('private diagnostic', { code }));
-    const resolveConfiguration = createGitSymlinkConfigurationResolver(readBoolean);
+  ] as const)(
+    'maps %s to its subcommand without exposing Git diagnostics',
+    async (code, errorCode) => {
+      const readBoolean = vi
+        .fn<IGitConfigBooleanReader>()
+        .mockRejectedValue(new Exception('private diagnostic', { code }));
+      const resolveConfiguration = createGitSymlinkConfigurationResolver(readBoolean);
 
-    await expect(
-      resolveConfiguration({ maxMetadataBytes: 8, repositoryRoot: '/private' }),
-    ).resolves.toStrictEqual({ errorCode, kind: 'failed' });
-  });
+      await expect(
+        resolveConfiguration({ maxMetadataBytes: 8, repositoryRoot: '/private' }),
+      ).resolves.toStrictEqual({ errorCode, kind: 'failed', subcommand: 'config' });
+    },
+  );
 
   test('refuses output larger than the remaining metadata budget', async () => {
     const readBoolean = vi.fn<IGitConfigBooleanReader>().mockResolvedValue(false);

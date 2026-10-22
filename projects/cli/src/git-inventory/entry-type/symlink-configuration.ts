@@ -10,10 +10,15 @@ import type {
   IGitSymlinkConfigurationResult,
 } from './types.js';
 
+// the Git subcommand the typed boolean read runs
+const GIT_CONFIG_SUBCOMMAND = 'config';
+
 /** Creates one immutable effective symlink configuration failure. */
 const createConfigurationFailure = (
   errorCode: IGitInventoryProbeErrorCode,
-): IGitSymlinkConfigurationFailedResult => Object.freeze({ errorCode, kind: 'failed' });
+  subcommand?: string,
+): IGitSymlinkConfigurationFailedResult =>
+  Object.freeze({ errorCode, kind: 'failed', ...(subcommand === undefined ? {} : { subcommand }) });
 
 /** Maps one bounded Git configuration failure to the existing safe CLI contract. */
 const mapGitFailure = (reason: IGitFailureReason): IGitInventoryProbeErrorCode => {
@@ -59,10 +64,11 @@ export const createGitSymlinkConfigurationResolver = (
           ...(input.signal === undefined ? {} : { signal: input.signal }),
         }),
       input.signal,
+      GIT_CONFIG_SUBCOMMAND,
     );
 
     if (result.kind === 'failed') {
-      return createConfigurationFailure(mapGitFailure(result.reason));
+      return createConfigurationFailure(mapGitFailure(result.reason), result.subcommand);
     }
 
     // Git writes `true\n` or `false\n`

@@ -59,9 +59,10 @@ const loadInstalledComposition: IMoldeaCliCompositionLoader = async (input) => {
 const createOperationalErrorResult = (
   code: Parameters<typeof createMoldeaCliOwnedError>[0],
   input: Parameters<IMoldeaCliCommandExecutor>[0],
+  details?: Parameters<typeof createMoldeaCliOwnedError>[1],
 ): IMoldeaCliExecutionResult =>
   createMoldeaCliErrorResult(
-    createMoldeaCliOwnedError(code),
+    createMoldeaCliOwnedError(code, details),
     input.invocation.command,
     input.packageMetadata.version,
     input.invocation.options.isJson,
@@ -232,7 +233,13 @@ export const createMoldeaCliCommandExecutor = (
       });
 
       if (snapshotResult.kind === 'failed') {
-        return createOperationalErrorResult(snapshotResult.errorCode, input);
+        return createOperationalErrorResult(
+          snapshotResult.errorCode,
+          input,
+          snapshotResult.subcommand === undefined
+            ? undefined
+            : { subcommand: snapshotResult.subcommand },
+        );
       }
 
       if (command === MOLDEA_CLI_COMMANDS.Validate) {

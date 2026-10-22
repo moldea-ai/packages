@@ -8,10 +8,10 @@ export type IGitFailureReason =
   | 'output-invalid'
   | 'command-failed';
 
-// one Git read's value, or why it failed
+// one Git read's value, or why it failed and, when known, the Git subcommand that failed
 export type IGitReadResult<TValue> =
   | { readonly kind: 'completed'; readonly value: TValue }
-  | { readonly kind: 'failed'; readonly reason: IGitFailureReason };
+  | { readonly kind: 'failed'; readonly reason: IGitFailureReason; readonly subcommand?: string };
 
 // the directory, combined output limit, stdin, and cancellation of one Git command
 export interface IGitCommandOptions {

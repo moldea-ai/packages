@@ -52,7 +52,7 @@ Pagination bounds output, not complete analysis. It does not reset read/entry bu
 
 ## Safe operational errors
 
-Known repository and Core exceptions retain their source, code, retryability, safe logical path when applicable, and non-confidential metadata. Git and CLI errors use a closed stable registry. Unexpected failures become `cli:INTERNAL_ERROR` without raw causes, stack traces, host paths, or process diagnostics.
+Known repository and Core exceptions retain their source, code, retryability, safe logical path when applicable, and non-confidential metadata. Git and CLI errors use a closed stable registry. When the working-tree inventory's `ls-files` listing, `config` read of `core.symlinks`, or `check-attr` attribute check fails, the error's `details.subcommand` names that subcommand; no other Git output is exposed, and every other error keeps empty `details`. Unexpected failures become `cli:INTERNAL_ERROR` without raw causes, stack traces, host paths, or process diagnostics.
 
 Schema 7 includes these stable CLI-owned contracts:
 

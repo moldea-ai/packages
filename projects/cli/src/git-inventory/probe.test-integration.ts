@@ -112,7 +112,11 @@ describe('real Git inventory probe', () => {
             maxMetadataBytes: 4096,
             repositoryRoot: repository.directory,
           }),
-        ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+        ).resolves.toStrictEqual({
+          errorCode: 'GIT_OUTPUT_INVALID',
+          kind: 'failed',
+          subcommand: 'ls-files',
+        });
       } finally {
         chmodSync(lockedDirectory, 0o755);
         repository.remove();
@@ -415,7 +419,11 @@ describe('real Git inventory probe', () => {
           maxMetadataBytes: 1,
           repositoryRoot: repository.directory,
         }),
-      ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
+      ).resolves.toStrictEqual({
+        errorCode: 'RESOURCE_LIMIT_EXCEEDED',
+        kind: 'failed',
+        subcommand: 'ls-files',
+      });
     } finally {
       repository.remove();
     }
@@ -747,7 +755,11 @@ describe('real Git inventory probe', () => {
             maxMetadataBytes: 4096,
             repositoryRoot: repository.directory,
           }),
-        ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
+        ).resolves.toStrictEqual({
+          errorCode: 'GIT_OUTPUT_INVALID',
+          kind: 'failed',
+          subcommand: 'ls-files',
+        });
       } finally {
         repository.remove();
       }
@@ -1130,7 +1142,11 @@ describe('real Git inventory probe', () => {
           maxMetadataBytes: exactMetadataBytes - 1,
           repositoryRoot: repository.directory,
         }),
-      ).resolves.toStrictEqual({ errorCode: 'RESOURCE_LIMIT_EXCEEDED', kind: 'failed' });
+      ).resolves.toStrictEqual({
+        errorCode: 'RESOURCE_LIMIT_EXCEEDED',
+        kind: 'failed',
+        subcommand: 'check-attr',
+      });
     } finally {
       repository.remove();
     }

@@ -84,10 +84,11 @@ export interface IGitContentTransformationClassifiedResult {
   readonly kind: 'classified';
 }
 
-// safe terminal failure from effective Git attribute classification
+// safe terminal failure from effective Git attribute classification, naming a failed Git subcommand
 export interface IGitContentTransformationClassificationFailedResult {
   readonly errorCode: IGitInventoryProbeErrorCode;
   readonly kind: 'failed';
+  readonly subcommand?: string;
 }
 
 // all-or-nothing effective Git content-transformation classification result

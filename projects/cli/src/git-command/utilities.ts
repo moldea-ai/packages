@@ -5,9 +5,17 @@ import { ERRORS as GIT_ERRORS, assertGitSucceeded } from 'jg-git-commands';
 import { MAX_GIT_DIAGNOSTIC_BYTES } from './constants.js';
 import type { IGitFailureReason, IGitReadResult } from './types.js';
 
-/** Creates one immutable Git failure. */
-export const createGitFailure = (reason: IGitFailureReason): IGitReadResult<never> =>
-  Object.freeze({ kind: 'failed', reason });
+/**
+ * Creates one immutable Git failure.
+ * @param reason Why the command failed.
+ * @param subcommand The fixed Git subcommand that failed, when the caller knows it.
+ * @returns The failed read result.
+ */
+export const createGitFailure = (
+  reason: IGitFailureReason,
+  subcommand?: string,
+): IGitReadResult<never> =>
+  Object.freeze({ kind: 'failed', reason, ...(subcommand === undefined ? {} : { subcommand }) });
 
 /**
  * Classifies one Git error by its code, without retaining its diagnostics.
@@ -45,16 +53,18 @@ export const classifyGitFailure = (error: unknown, signal?: AbortSignal): IGitFa
  * Runs one typed Git read and turns its rejection into a failure reason.
  * @param read The read, such as one of jg-git-commands' typed commands.
  * @param signal The read's cancellation signal.
+ * @param subcommand The fixed Git subcommand the read runs, named in its failure.
  * @returns A promise resolving to the read's value, or why it failed.
  */
 export const readGit = async <TValue>(
   read: () => Promise<TValue>,
   signal?: AbortSignal,
+  subcommand?: string,
 ): Promise<IGitReadResult<TValue>> => {
   try {
     return Object.freeze({ kind: 'completed', value: await read() });
   } catch (error) {
-    return createGitFailure(classifyGitFailure(error, signal));
+    return createGitFailure(classifyGitFailure(error, signal), subcommand);
   }
 };
 
