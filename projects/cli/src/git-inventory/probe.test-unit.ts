@@ -19,6 +19,7 @@ import {
 } from './constants.js';
 import type { IGitContentTransformationClassifier } from './content-transformation/index.js';
 import type { IGitInventoryEntryTypeNormalizer } from './entry-type/index.js';
+import type { IGitLinkAncestorShadower } from './link-ancestors/index.js';
 import type { IGitInventoryLogicalPathNormalizer } from './logical-path/index.js';
 import { createGitInventoryProbe } from './probe.js';
 import type { IGitInventoryOwnershipFilter } from './repository-ownership/index.js';
@@ -70,6 +71,12 @@ const createPassThroughOwnershipFilter = (
     Promise.resolve(
       Object.freeze({ candidates: input.candidates, gitMetadataBytes, kind: 'filtered' }),
     ),
+  );
+
+/** Creates a link-ancestor shadower that keeps every candidate without observing the filesystem. */
+const createPassThroughShadower = (): ReturnType<typeof vi.fn<IGitLinkAncestorShadower>> =>
+  vi.fn<IGitLinkAncestorShadower>((input) =>
+    Promise.resolve(Object.freeze({ candidates: input.candidates, kind: 'shadowed' })),
   );
 
 /** Creates an entry-type normalizer that resolves no entries. */
@@ -542,7 +549,14 @@ describe('createGitInventoryProbe', () => {
     const ownershipFilter = vi
       .fn<IGitInventoryOwnershipFilter>()
       .mockResolvedValue(Object.freeze({ errorCode: 'GIT_ACCESS_DENIED', kind: 'failed' }));
-    const probe = createGitInventoryProbe(git, ownershipFilter);
+    const probe = createGitInventoryProbe(
+      git,
+      ownershipFilter,
+      undefined,
+      undefined,
+      undefined,
+      createPassThroughShadower(),
+    );
 
     await expect(
       probe({ maxEntries: 2, maxMetadataBytes: 1024, repositoryRoot: '/private' }),
@@ -658,5 +672,80 @@ describe('createGitInventoryProbe', () => {
     ).resolves.toStrictEqual({ errorCode: 'GIT_OUTPUT_INVALID', kind: 'failed' });
     expect(contentTransformationClassifier).toHaveBeenCalledOnce();
     expect(logicalPathNormalizer).not.toHaveBeenCalled();
+  });
+
+  test('shadows working-tree links between logical-path filtering and ownership', async () => {
+    const git = createGitReads({
+      tracked: [
+        { mode: '100644', path: 'control\npath', stage: 0 },
+        { mode: '100644', path: 'linked/file.md', stage: 0 },
+      ],
+      untracked: ['retained.md'],
+    });
+    const listedBytes =
+      measureTracked(['control\npath', 'linked/file.md']) + measureUntracked(['retained.md']);
+    const shadowedCandidates = Object.freeze([
+      Object.freeze({ kind: 'untracked' as const, path: 'retained.md' }),
+      Object.freeze({ kind: 'untracked' as const, path: 'linked' }),
+    ]);
+    const linkAncestorShadower = vi
+      .fn<IGitLinkAncestorShadower>()
+      .mockResolvedValue(Object.freeze({ candidates: shadowedCandidates, kind: 'shadowed' }));
+    const ownershipFilter = createPassThroughOwnershipFilter();
+    const probe = createGitInventoryProbe(
+      git,
+      ownershipFilter,
+      createEmptyEntryTypeNormalizer(),
+      createContentTransformationClassifier(),
+      undefined,
+      linkAncestorShadower,
+    );
+
+    await expect(
+      probe({ maxEntries: 3, maxMetadataBytes: 512, repositoryRoot: '/repository' }),
+    ).resolves.toStrictEqual({ entries: [], kind: 'probed' });
+    expect(linkAncestorShadower).toHaveBeenCalledExactlyOnceWith({
+      candidates: [
+        { kind: 'tracked', mode: '100644', path: 'linked/file.md', stage: 0 },
+        { kind: 'untracked', path: 'retained.md' },
+      ],
+      repositoryRoot: '/repository',
+    });
+    expect(ownershipFilter).toHaveBeenCalledExactlyOnceWith({
+      candidates: shadowedCandidates,
+      maxMetadataBytes: 512 - listedBytes,
+      repositoryRoot: '/repository',
+    });
+  });
+
+  test('returns a link-shadowing failure before ownership filtering', async () => {
+    const controller = new AbortController();
+    const ownershipFilter = vi.fn<IGitInventoryOwnershipFilter>();
+    const linkAncestorShadower = vi
+      .fn<IGitLinkAncestorShadower>()
+      .mockResolvedValue(Object.freeze({ errorCode: 'GIT_ACCESS_DENIED', kind: 'failed' }));
+    const probe = createGitInventoryProbe(
+      createGitReads({ tracked: [{ mode: '100644', path: 'folder/file.md', stage: 0 }] }),
+      ownershipFilter,
+      undefined,
+      undefined,
+      undefined,
+      linkAncestorShadower,
+    );
+
+    await expect(
+      probe({
+        maxEntries: 1,
+        maxMetadataBytes: 256,
+        repositoryRoot: '/repository',
+        signal: controller.signal,
+      }),
+    ).resolves.toStrictEqual({ errorCode: 'GIT_ACCESS_DENIED', kind: 'failed' });
+    expect(linkAncestorShadower).toHaveBeenCalledExactlyOnceWith({
+      candidates: [{ kind: 'tracked', mode: '100644', path: 'folder/file.md', stage: 0 }],
+      repositoryRoot: '/repository',
+      signal: controller.signal,
+    });
+    expect(ownershipFilter).not.toHaveBeenCalled();
   });
 });

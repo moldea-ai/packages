@@ -23,6 +23,7 @@ import {
   inspectGitInventoryEntry,
   type IGitInventoryEntryTypeNormalizer,
 } from './entry-type/index.js';
+import { shadowGitLinkAncestors, type IGitLinkAncestorShadower } from './link-ancestors/index.js';
 import {
   filterGitInventoryCandidateLogicalPaths,
   normalizeGitInventoryLogicalPaths,
@@ -138,6 +139,7 @@ const isProbeFailure = (
  * @param entryTypeNormalizer The current filesystem and Git mode entry-type normalizer.
  * @param contentTransformationClassifier The bounded effective Git attribute classifier.
  * @param logicalPathNormalizer The portable repository logical-path normalizer.
+ * @param linkAncestorShadower The step that replaces candidates beneath a working-tree link.
  * @returns An all-or-nothing selected-repository entry probe.
  */
 export const createGitInventoryProbe =
@@ -152,6 +154,7 @@ export const createGitInventoryProbe =
     ),
     contentTransformationClassifier: IGitContentTransformationClassifier = createGitContentTransformationClassifier(),
     logicalPathNormalizer: IGitInventoryLogicalPathNormalizer = normalizeGitInventoryLogicalPaths,
+    linkAncestorShadower: IGitLinkAncestorShadower = shadowGitLinkAncestors,
   ): IGitInventoryProbe =>
   async (input): Promise<IGitInventoryProbeResult> => {
     if (input.signal?.aborted) {
@@ -274,8 +277,19 @@ export const createGitInventoryProbe =
       return logicalPathFilterResult;
     }
 
-    const ownershipResult = await ownershipFilter({
+    // candidates beneath a working-tree link would otherwise fail ownership on a linked parent
+    const shadowResult = await linkAncestorShadower({
       candidates: logicalPathFilterResult.candidates,
+      repositoryRoot: input.repositoryRoot,
+      ...(input.signal === undefined ? {} : { signal: input.signal }),
+    });
+
+    if (shadowResult.kind === 'failed') {
+      return shadowResult;
+    }
+
+    const ownershipResult = await ownershipFilter({
+      candidates: shadowResult.candidates,
       maxMetadataBytes: remainingMetadataBytes,
       repositoryRoot: input.repositoryRoot,
       ...(input.signal === undefined ? {} : { signal: input.signal }),

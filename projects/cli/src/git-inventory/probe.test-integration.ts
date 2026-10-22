@@ -1,8 +1,19 @@
 // @vitest-environment node
 import { execFileSync, spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  mkdirSync,
+  renameSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
+import { listUntrackedFiles, readIndexEntries } from 'jg-git-commands';
 import { describe, expect, test, vi } from 'vitest';
+
+import { runGitCommand } from '../git-command/index.js';
 
 import { INSTRUCTION_PATHS } from './constants.js';
 import { createGitInventoryProbe, probeGitInventory } from './probe.js';
@@ -11,13 +22,57 @@ import {
   createGitRepository,
   initializeGitRepository,
   runFixtureGit,
+  type IGitRepositoryFixture,
 } from './probe.test-fixtures.js';
+import type { IGitInventoryListingReads } from './types.js';
 
 const CONTENT_TRANSFORMATION = Object.freeze({
   filter: 'unspecified',
   ident: 'unspecified',
   isGuarded: false,
   workingTreeEncoding: 'unspecified',
+});
+
+/*
+ * Commits the same skill under `.agents/skills/demo` and `.claude/skills/demo`, then replaces the
+ * second with a link to the first: a junction on Windows, a relative symlink elsewhere. This is
+ * the layout the `skills` installer leaves when Git recorded the files the link exposed.
+ */
+const replaceCommittedSkillWithLink = (repository: IGitRepositoryFixture): void => {
+  const target = path.join(repository.directory, '.agents', 'skills', 'demo');
+  const linked = path.join(repository.directory, '.claude', 'skills', 'demo');
+
+  for (const directory of [target, linked]) {
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(path.join(directory, 'SKILL.md'), '# Demo\n', 'utf8');
+  }
+
+  runFixtureGit(repository, ['add', '--', '.agents', '.claude']);
+  commitFixtureGitIndex(repository);
+  rmSync(linked, { recursive: true });
+
+  if (process.platform === 'win32') {
+    symlinkSync(target, linked, 'junction');
+  } else {
+    symlinkSync('../../.agents/skills/demo', linked, 'dir');
+  }
+};
+
+const COMMITTED_SKILL_ENTRY = Object.freeze({
+  contentTransformation: CONTENT_TRANSFORMATION,
+  entryType: 'file',
+  indexEntries: [{ mode: '100644', stage: 0 }],
+  kind: 'tracked',
+  path: '/.agents/skills/demo/SKILL.md',
+  requiresSymlinkOverlay: false,
+});
+
+const LINK_ENTRY = Object.freeze({
+  contentTransformation: CONTENT_TRANSFORMATION,
+  entryType: 'symlink',
+  kind: 'untracked',
+  path: '/.claude/skills/demo',
+  requiresSymlinkOverlay: false,
 });
 
 describe('real Git inventory probe', () => {
@@ -387,6 +442,152 @@ describe('real Git inventory probe', () => {
       repository.remove();
     }
   });
+
+  test('keeps a working-tree link as one entry over the committed files beneath it', async () => {
+    const repository = createGitRepository();
+
+    try {
+      replaceCommittedSkillWithLink(repository);
+
+      await expect(
+        probeGitInventory({
+          maxEntries: 4,
+          maxMetadataBytes: 4096,
+          repositoryRoot: repository.directory,
+        }),
+      ).resolves.toStrictEqual({ entries: [COMMITTED_SKILL_ENTRY, LINK_ENTRY], kind: 'probed' });
+    } finally {
+      repository.remove();
+    }
+  });
+
+  // an ignored link leaves Git listing only the files beneath it, as Git for Windows does
+  test('adds the link entry when Git lists only the files beneath a working-tree link', async () => {
+    const repository = createGitRepository();
+
+    try {
+      replaceCommittedSkillWithLink(repository);
+      writeFileSync(
+        path.join(repository.directory, '.gitignore'),
+        '/.claude/skills/demo\n',
+        'utf8',
+      );
+
+      await expect(
+        probeGitInventory({
+          maxEntries: 4,
+          maxMetadataBytes: 4096,
+          repositoryRoot: repository.directory,
+        }),
+      ).resolves.toStrictEqual({
+        entries: [
+          COMMITTED_SKILL_ENTRY,
+          LINK_ENTRY,
+          {
+            contentTransformation: CONTENT_TRANSFORMATION,
+            entryType: 'file',
+            kind: 'untracked',
+            path: '/.gitignore',
+            requiresSymlinkOverlay: false,
+          },
+        ],
+        kind: 'probed',
+      });
+    } finally {
+      repository.remove();
+    }
+  });
+
+  // POSIX Git lists only the link, so the listing adds the files Git for Windows reads through it
+  test('drops untracked files a Git listing reports beneath a working-tree link', async () => {
+    const repository = createGitRepository();
+
+    try {
+      replaceCommittedSkillWithLink(repository);
+      writeFileSync(
+        path.join(repository.directory, '.agents', 'skills', 'demo', 'notes.md'),
+        'notes\n',
+        'utf8',
+      );
+      const git: IGitInventoryListingReads = {
+        listUntrackedFiles: async (...listingArguments) => [
+          ...(await listUntrackedFiles(...listingArguments)),
+          '.claude/skills/demo/notes.md',
+        ],
+        readIndexEntries,
+        runGit: runGitCommand,
+      };
+
+      await expect(
+        createGitInventoryProbe(git)({
+          maxEntries: 8,
+          maxMetadataBytes: 4096,
+          repositoryRoot: repository.directory,
+        }),
+      ).resolves.toStrictEqual({
+        entries: [
+          COMMITTED_SKILL_ENTRY,
+          {
+            contentTransformation: CONTENT_TRANSFORMATION,
+            entryType: 'file',
+            kind: 'untracked',
+            path: '/.agents/skills/demo/notes.md',
+            requiresSymlinkOverlay: false,
+          },
+          LINK_ENTRY,
+        ],
+        kind: 'probed',
+      });
+    } finally {
+      repository.remove();
+    }
+  });
+
+  test.skipIf(process.platform === 'win32')(
+    'keeps a committed directory symlink as one tracked link entry',
+    async () => {
+      const repository = createGitRepository();
+
+      try {
+        mkdirSync(path.join(repository.directory, 'target'));
+        mkdirSync(path.join(repository.directory, 'docs'));
+        writeFileSync(path.join(repository.directory, 'target', 'file.md'), 'file\n', 'utf8');
+        symlinkSync('../target', path.join(repository.directory, 'docs', 'linked'), 'dir');
+        runFixtureGit(repository, ['add', '--', 'docs', 'target']);
+        commitFixtureGitIndex(repository);
+
+        await expect(
+          probeGitInventory({
+            maxEntries: 2,
+            maxMetadataBytes: 4096,
+            repositoryRoot: repository.directory,
+          }),
+        ).resolves.toStrictEqual({
+          entries: [
+            {
+              contentTransformation: CONTENT_TRANSFORMATION,
+              entryType: 'symlink',
+              indexEntries: [{ mode: '120000', stage: 0 }],
+              kind: 'tracked',
+              path: '/docs/linked',
+              requiresSymlinkOverlay: false,
+            },
+            {
+              contentTransformation: CONTENT_TRANSFORMATION,
+              entryType: 'file',
+              indexEntries: [{ mode: '100644', stage: 0 }],
+              kind: 'tracked',
+              path: '/target/file.md',
+              requiresSymlinkOverlay: false,
+            },
+          ],
+          kind: 'probed',
+        });
+      } finally {
+        repository.remove();
+      }
+    },
+  );
 
   test('preserves an index symlink materialized as a host file when core.symlinks is false', async () => {
     const repository = createGitRepository();

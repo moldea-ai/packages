@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { execFileSync } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, rm, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
@@ -368,4 +368,38 @@ describe('link parity between hosted and local readers', () => {
       }
     },
   );
+});
+
+describe('working-tree links over committed files', () => {
+  test('validates in place when a link replaces a committed skill copy', async () => {
+    const repository = createGitRepository();
+
+    try {
+      await commitParityFixture(repository, [
+        ...PARITY_BASE_ENTRIES,
+        ['AGENTS.md', 'file', CURRENT_BLOCK],
+        ['.claude/skills/moldea/SKILL.md', 'file', '# Skill\n'],
+      ]);
+      const linked = path.join(repository.directory, '.claude', 'skills', 'moldea');
+      await rm(linked, { recursive: true });
+
+      // the skills installer leaves a junction on Windows and a symlink elsewhere
+      if (process.platform === 'win32') {
+        await symlink(
+          path.join(repository.directory, '.agents', 'skills', 'moldea'),
+          linked,
+          'junction',
+        );
+      } else {
+        await symlink('../../.agents/skills/moldea', linked, 'dir');
+      }
+
+      const result = await validateCheckout(repository.directory);
+
+      expect(result).toMatchObject({ errorCount: 0, valid: true, warningCount: 0 });
+      expect('diagnostics' in result ? result.diagnostics : []).toStrictEqual([]);
+    } finally {
+      repository.remove();
+    }
+  });
 });
