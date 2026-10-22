@@ -44,9 +44,11 @@ for (const width of [320, 768, 1024, 1440]) {
           await directory.evaluate((element) => element.scrollWidth > element.clientWidth),
         ).toBe(width === 320);
       }
-      await expect(preview.getByRole('group', { name: 'Instruction content' })).toContainText(
-        'Use get_delivery_status to answer delivery questions.',
-      );
+      const instructionSource = preview
+        .getByRole('group', { name: 'Instruction content' })
+        .locator('code');
+      await expect(instructionSource).toHaveText(loadWebsiteModel().instructionExample.instruction);
+      await expect(instructionSource).toHaveCSS('white-space', 'pre-wrap');
       await expect(preview).toContainText('Tool implementation linked in moldea.yaml');
       const manifestName = preview.locator('code').filter({ hasText: /^moldea\.yaml$/ });
       await expect(manifestName).toHaveCount(1);
@@ -59,7 +61,8 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(preview).not.toContainText('password');
       await expect(preview).not.toContainText('src/refund-policy.ts');
       await expect(preview.getByText('Example', { exact: true })).toHaveCount(0);
-      await expect(preview.locator('details, pre:visible')).toHaveCount(0);
+      await expect(preview.locator('details')).toHaveCount(0);
+      await expect(preview.locator('pre:visible')).toHaveCount(1);
       const trigger = preview.locator('[data-dialog-open="hero-check-result"]');
       await expect(trigger).toBeVisible();
       const triggerBounds = await trigger.boundingBox();

@@ -1,8 +1,8 @@
 ---
 import { ArrowDown, Copy, Unlink } from '@lucide/astro';
+import CodeBlock from '@moldea.ai/website-ui/code-block';
 import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
-import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
 
 import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
 import {
@@ -22,7 +22,6 @@ const mirror = example.id === 'mirror-stale' ? getMirrorIllustration(example) : 
 const identity = example.id === 'agent-identity' ? getIdentityIllustration(example) : undefined;
 if (!variable && !mirror && !identity)
   throw new Error('Agent illustration requires a selected variable, mirror, or identity example.');
-const identityHtml = identity ? await renderMarkdownFragment(identity.line) : '';
 ---
 
 {
@@ -135,10 +134,15 @@ const identityHtml = identity ? await renderMarkdownFragment(identity.line) : ''
         label="Copied instruction"
         tone="danger"
       >
-        <div
-          class="prose-moldea px-4 py-3 text-base [&_p]:my-1"
-          set:html={identityHtml}
-        />
+        <div class="px-4 py-3">
+          <CodeBlock
+            source={identity.line}
+            language="markdown"
+            variant="plain"
+            copyable={false}
+            ariaLabel="Copied instruction source"
+          />
+        </div>
       </FilePreview>
     </div>
   )

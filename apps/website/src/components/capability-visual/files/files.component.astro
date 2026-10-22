@@ -3,11 +3,11 @@ import { FileX, Folder, Unlink } from '@lucide/astro';
 import { parse } from 'yaml';
 import { z } from 'zod';
 
+import CodeBlock from '@moldea.ai/website-ui/code-block';
 import CodeText from '@moldea.ai/website-ui/code-text';
 import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
-import { renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';
 
 import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
 
@@ -49,9 +49,6 @@ if (!source || typeof targetPath !== 'string')
   throw new Error('File illustration requires its source and missing path.');
 if (isConnected && !example.files.some(({ path }) => path === targetPath))
   throw new Error('Connected illustration requires its declared target input.');
-const html = isReference
-  ? await renderMarkdownFragment(source.content.replace(/^# .+\n+/u, ''))
-  : '';
 const ToolManifest = z.object({
   agents: z.record(
     z.string(),
@@ -84,10 +81,15 @@ if ((isTool || isSkill) && !toolName)
   >
     {
       isReference && (
-        <div
-          class="prose-moldea px-4 py-4 text-sm leading-7 [&_p]:my-1 [&_strong]:rounded [&_strong]:bg-secondary [&_strong]:px-1.5 [&_strong]:py-1 [&_strong]:text-base"
-          set:html={html}
-        />
+        <div class="p-4">
+          <CodeBlock
+            source={source.content}
+            language="markdown"
+            variant="plain"
+            copyable={false}
+            ariaLabel="Return policy source"
+          />
+        </div>
       )
     }
     {

@@ -98,8 +98,8 @@ for (const token of line?.tokens ?? []) {
               return group.isChanged ? (
                 <Edit
                   class:list={[
-                    'font-semibold no-underline',
-                    kind === 'added' ? 'bg-(--syntax-string)/16' : 'bg-destructive/16',
+                    'font-medium no-underline forced-colors:font-semibold',
+                    kind === 'added' ? 'bg-(--syntax-string)/12' : 'bg-destructive/12',
                   ]}
                   data-moldea-diff-change={kind}
                 >

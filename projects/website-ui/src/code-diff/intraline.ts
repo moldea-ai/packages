@@ -143,8 +143,8 @@ const applyLineRanges = (line: ICodeDiffLine, ranges: IInlineRange[]): void => {
 const refineBlock = (removed: ICodeDiffLine[], added: ICodeDiffLine[]): void => {
   const before = buildSide(removed);
   const after = buildSide(added);
-  const shorterCount = Math.min(before.tokens.length, after.tokens.length);
-  if (shorterCount === 0) return;
+  if (before.tokens.length === 0 || after.tokens.length === 0) return;
+  const largerCount = Math.max(before.tokens.length, after.tokens.length);
   const changes = diffArrays(
     before.tokens.map((token) => token.content),
     after.tokens.map((token) => token.content),
@@ -155,7 +155,7 @@ const refineBlock = (removed: ICodeDiffLine[], added: ICodeDiffLine[]): void => 
     (count, change) => count + (change.added || change.removed ? 0 : change.count),
     0,
   );
-  if (retainedCount < shorterCount * MIN_INLINE_RETAINED_RATIO) return;
+  if (retainedCount < largerCount * MIN_INLINE_RETAINED_RATIO) return;
   const runs: IChangedRun[] = [];
   let beforeIndex = 0;
   let afterIndex = 0;
