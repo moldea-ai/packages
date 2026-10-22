@@ -34,7 +34,7 @@ test('distinguishes required repository files from optional project knowledge', 
   await expect(
     overview.getByRole('link', { name: 'Read the format specification' }),
   ).toHaveAttribute('href', toPublicPath('/repository-format/'));
-  const preview = overview.getByRole('region', {
+  const preview = overview.getByRole('group', {
     name: 'Validation response excerpt',
     exact: true,
   });

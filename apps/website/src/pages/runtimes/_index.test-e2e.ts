@@ -86,7 +86,7 @@ for (const width of [320, 768, 1440]) {
       ).toBeVisible();
       await expect(page.locator('main')).toContainText('Core does not check runtime wiring');
       await expect(
-        page.getByRole('region', {
+        page.getByRole('group', {
           name: 'Inspected input for OpenAI guidance is connected',
           exact: true,
         }),
@@ -97,7 +97,7 @@ for (const width of [320, 768, 1440]) {
       await expect(removedFile).toContainText('openai.md');
       await expect(removedFile).toContainText('Removed');
       await expect(
-        page.getByRole('region', { name: 'Runtime declaration in moldea.yaml' }),
+        page.getByRole('group', { name: 'Runtime declaration in moldea.yaml' }),
       ).toContainText('guidance: /moldea/runtimes/openai.md');
       await expect(
         page.locator('section[aria-labelledby="example-runtime-guidance-missing-title"]'),

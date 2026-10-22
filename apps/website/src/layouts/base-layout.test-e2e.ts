@@ -817,7 +817,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
     await page.goto(toPublicPath('/packages/'));
     const example = page.locator('#cli');
-    const command = example.getByRole('region', { name: /^Command for / });
+    const command = example.getByRole('group', { name: /^Command for / });
     const commandSource = await command.locator('code').innerText();
     const commandFrame = command.locator('..');
     const commandHeader = commandFrame.locator('[data-code-block-header]');
@@ -881,7 +881,7 @@ test('honors code-copy opt-outs without affecting neighboring blocks', async ({ 
   await page.goto(toPublicPath('/'));
 
   await page.goto(toPublicPath('/packages/'));
-  const optedOutExcerpt = page.getByRole('region', {
+  const optedOutExcerpt = page.getByRole('group', {
     name: '@moldea.ai/repository-fs usage excerpt',
     exact: true,
   });

@@ -20,7 +20,7 @@ for (const width of [320, 768, 1440]) {
           .click();
         const section = page.locator(`#${slug}`);
         await expect(section).toBeInViewport();
-        const code = section.getByRole('region', {
+        const code = section.getByRole('group', {
           name: `@moldea.ai/${slug} ${slug === 'repository-fs' ? 'usage excerpt' : 'example'}`,
           exact: true,
         });

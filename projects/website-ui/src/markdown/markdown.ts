@@ -72,11 +72,14 @@ const markExternalLinks = (html: string): string => {
   );
 };
 
-/** Wraps wide tables in one keyboard-focusable scrolling region. */
+/*
+ * Wraps wide tables in one keyboard-focusable, named scrolling group. A group, unlike a region
+ * landmark, may repeat its generic name when one page renders several tables.
+ */
 const wrapTables = (html: string): string => {
   return html.replaceAll(
     /<table>([\s\S]*?)<\/table>/g,
-    '<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable table"><table>$1</table></div>',
+    '<div class="table-scroll" tabindex="0" role="group" aria-label="Scrollable table"><table>$1</table></div>',
   );
 };
 
@@ -88,7 +91,7 @@ const escapeHtmlAttribute = (value: string): string =>
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
 
-/** Names code regions and makes their horizontal overflow keyboard-accessible. */
+/** Names code groups and makes their horizontal overflow keyboard-accessible. */
 const markCodeBlocks = (html: string, ariaLabel = 'Code block', overflow?: ICodeOverflow): string =>
   html.replaceAll(
     /<pre\b([^>]*)>([\s\S]*?)<\/pre>/gu,
@@ -96,7 +99,7 @@ const markCodeBlocks = (html: string, ariaLabel = 'Code block', overflow?: ICode
       const focusAttribute = /\btabindex=/u.test(attributes) ? '' : ' tabindex="0"';
       const language = body.match(/<code\b[^>]*\bclass="[^"]*\blanguage-([^\s"]+)/u)?.[1];
       const mode = resolveCodeOverflow(language, overflow);
-      return `<pre${attributes}${focusAttribute} role="region" aria-label="${escapeHtmlAttribute(ariaLabel)}" data-code-overflow="${escapeHtmlAttribute(mode)}">${body}</pre>`;
+      return `<pre${attributes}${focusAttribute} role="group" aria-label="${escapeHtmlAttribute(ariaLabel)}" data-code-overflow="${escapeHtmlAttribute(mode)}">${body}</pre>`;
     },
   );
 
@@ -260,9 +263,9 @@ export const renderMarkdownFragment = async (
  * Renders literal source without interpreting its contents as Markdown or HTML.
  * @param source Code or plain text to display verbatim.
  * @param language Syntax language; omitted languages remain unhighlighted and do not wrap.
- * @param ariaLabel Accessible name for the keyboard-scrollable code region.
+ * @param ariaLabel Accessible name for the keyboard-scrollable code group.
  * @param overflow Optional wrapping/scrolling override; otherwise the language selects the mode.
- * @returns Sanitized, highlighted HTML with a keyboard-accessible code region.
+ * @returns Sanitized, highlighted HTML with a keyboard-accessible code group.
  */
 export const renderCodeBlock = async (
   source: string,

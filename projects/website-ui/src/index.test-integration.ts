@@ -575,7 +575,7 @@ describe('published website UI package', () => {
         '    <ConnectionLabel>Linked file</ConnectionLabel>',
         '    <section><h2>Fixture checks</h2><Accordion id="check-one" group="fixture-accordion" title="First check" description="One concise outcome."><StatusBadge slot="status" label="Valid" tone="success" size="sm" /><p>First visual</p></Accordion><Accordion {...accordionProps}><FilePreview path="src/policy.ts" label="Policy"><p>Second visual</p></FilePreview></Accordion></section>',
         '    <Accordion id="closed-check" title="Closed check"><p>Optional detail</p></Accordion>',
-        '    <FilePreview {...fileProps}><span slot="icon">File</span><StatusBadge slot="status" label="Missing" size="sm" tone="danger" /><pre class="code-block" tabindex="0" role="region" aria-label="Return policy source"><code>export const returnWindowDays = 30;</code></pre></FilePreview>',
+        '    <FilePreview {...fileProps}><span slot="icon">File</span><StatusBadge slot="status" label="Missing" size="sm" tone="danger" /><pre class="code-block" tabindex="0" role="group" aria-label="Return policy source"><code>export const returnWindowDays = 30;</code></pre></FilePreview>',
         '    <section aria-label="Inline file markers" class="max-w-64"><FilePreview path="src/support/long-directory-name/order-lookup.ts" statusLayout="inline"><StatusBadge slot="status" label="M" size="sm" tone="warning" /></FilePreview><FilePreview path="moldea/agents/support/instruction.md" label="Instructions" statusLayout="inline"><StatusBadge slot="status" label="A" size="sm" tone="success" /></FilePreview></section>',
         '    <FileTree ariaLabel="Repository files" nodes={[{ kind: "file", name: "policy.md", path: "policy.md", removed: true }]} />',
         '    <Dialog id="composed-result" title="Reference not found" triggerLabel="Inspect composed result" isOverlayCloseEnabled><ResultSummary slot="heading" {...summaryProps}><span slot="icon">!</span><StatusBadge slot="status" label="Invalid" size="sm" tone="danger" /></ResultSummary><p>Composed result body</p></Dialog>',
@@ -1109,7 +1109,7 @@ describe('published website UI package', () => {
               ['Wrapped code block', 'wrap'],
               ['Scrolling Markdown block', 'scroll'],
             ] as const) {
-              const block = page.getByRole('region', { name, exact: true });
+              const block = page.getByRole('group', { name, exact: true });
               expect(await block.getAttribute('data-code-overflow')).toBe(mode);
               expect(await block.evaluate((node) => getComputedStyle(node).whiteSpace)).toBe(
                 mode === 'wrap' ? 'pre-wrap' : 'pre',
@@ -1228,7 +1228,7 @@ describe('published website UI package', () => {
             await raw.press('Enter');
             expect(
               await recorded
-                .getByRole('region', {
+                .getByRole('group', {
                   name: 'Recorded policy change: recorded source',
                   exact: true,
                 })
@@ -1237,7 +1237,7 @@ describe('published website UI package', () => {
             await raw.press('Enter');
             expect(
               await page
-                .getByRole('region', {
+                .getByRole('group', {
                   name: 'Recorded binary change: recorded source',
                   exact: true,
                 })
@@ -1328,7 +1328,7 @@ describe('published website UI package', () => {
               expect(layout.rightInset).toBeCloseTo(layout.paddingRight, 0);
               expect(layout.overflow).toBe(false);
             }
-            const flatCode = page.getByRole('region', {
+            const flatCode = page.getByRole('group', {
               name: 'Order status command',
               exact: true,
             });
@@ -1795,8 +1795,8 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('language-json');
     expect(fixtureHtml).toContain('language-sh');
     expect(fixtureHtml).toContain('language-text');
-    expect(fixtureHtml).toContain('role="region" aria-label="Code block"');
-    expect(fixtureHtml).toContain('role="region" aria-label="Order status command"');
+    expect(fixtureHtml).toContain('role="group" aria-label="Code block"');
+    expect(fixtureHtml).toContain('role="group" aria-label="Order status command"');
     expect(fixtureHtml).toContain('data-code-copy-controls-template');
     expect(fixtureHtml).toContain('data-code-copy="false"');
     expect(fixtureHtml).not.toMatch(/<code[^>]*>moldea<\/code>/u);

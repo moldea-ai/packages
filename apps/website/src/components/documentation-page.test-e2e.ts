@@ -17,7 +17,7 @@ test('renders documentation tables with one consistent scroll-frame perimeter', 
   await expect(table).toHaveCSS('margin-top', '0px');
   await expect(table).toHaveCSS('margin-bottom', '0px');
   await expect(table).toHaveCSS('border-style', 'hidden');
-  await expect(scrollFrame).toHaveAttribute('role', 'region');
+  await expect(scrollFrame).toHaveAttribute('role', 'group');
   await expect(scrollFrame).toHaveAttribute('aria-label', 'Scrollable table');
   await expect(scrollFrame).toHaveCSS('border-style', 'solid');
 });
