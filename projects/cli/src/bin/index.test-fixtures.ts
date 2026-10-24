@@ -140,17 +140,17 @@ export const expectPackageManifest = (
     name: '@moldea.ai/cli',
     preferUnplugged: true,
     type: 'module',
-    version: '13.0.1',
+    version: '13.0.2',
   });
   expect(manifest.dependencies).toStrictEqual({
     '@moldea.ai/core': coreRange,
     '@moldea.ai/repository': repositoryRange,
     '@moldea.ai/repository-fs': repositoryFilesystemRange,
     'jg-crypto': '0.3.0',
-    'jg-exception': '1.7.0',
-    'jg-git-commands': '0.3.1',
-    'jg-process': '1.6.0',
-    'jg-utilities': '1.7.0',
+    'jg-exception': '1.7.1',
+    'jg-git-commands': '0.4.0',
+    'jg-process': '1.6.2',
+    'jg-utilities': '1.7.2',
     semver: '7.8.5',
   });
   expect(manifest).not.toHaveProperty('main');

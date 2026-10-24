@@ -6,7 +6,7 @@
  * that downstream candidate workflows install from the registry: npm's --before has no scope
  * exemption, and pnpm rounds the release age up to whole minutes.
  */
-export const REGISTRY_SNAPSHOT = '2026-10-21T12:50:00.000Z';
+export const REGISTRY_SNAPSHOT = '2026-10-24T18:37:00.000Z';
 
 /**
  * Returns the package-manager environment that pins resolution to the registry snapshot. npm

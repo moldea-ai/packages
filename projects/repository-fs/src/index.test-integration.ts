@@ -56,7 +56,7 @@ const expectPublicPackageManifest = (
     sideEffects: false,
     type: 'module',
     types: './dist/index.d.ts',
-    version: '4.0.0',
+    version: '4.0.1',
   });
   expect(manifest.exports).toStrictEqual({
     '.': {
@@ -68,7 +68,7 @@ const expectPublicPackageManifest = (
   expect(manifest.dependencies).toStrictEqual({
     '@moldea.ai/repository': repositoryVersionRange,
     'jg-crypto': '0.3.0',
-    'jg-utilities': '1.7.0',
+    'jg-utilities': '1.7.2',
   });
 };
 
@@ -186,7 +186,7 @@ describe('published Repository FS package artifacts', () => {
     ) as IRepositoryFilesystemPackageManifest;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/repository-fs', version: '4.0.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/repository-fs', version: '4.0.1' });
     expect(packedPaths).toContain('dist/index.js');
     expect(packedPaths).toContain('dist/index.d.ts');
     expect(packedPaths).toContain('dist/contracts/index.d.ts');
