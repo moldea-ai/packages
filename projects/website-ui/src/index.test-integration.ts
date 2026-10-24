@@ -185,11 +185,19 @@ const expectInlineRendering = async (
 };
 
 /**
- * Measures syntax foregrounds against all composited row and edit background layers.
+ * Measures syntax foregrounds against all composited row and edit background layers, once the
+ * color transitions a theme or forced-colors change starts on existing elements have finished.
  * @returns A promise that resolves to each syntax fragment's effective contrast ratio.
  */
 const getInlineContrast = async (edits: Locator): Promise<{ text: string; contrast: number }[]> =>
-  edits.evaluateAll((nodes) => {
+  edits.evaluateAll(async (nodes) => {
+    // getAnimations flushes pending style changes, so it includes transitions the change just started
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation instanceof CSSTransition)
+        .map((transition) => transition.finished.catch(() => undefined)),
+    );
     const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = 1;
