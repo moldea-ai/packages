@@ -27,20 +27,20 @@ importers:
         specifier: 17.9.0
         version: 17.9.0
       jg-exception:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.1
+        version: 1.7.1
       jg-fetch:
-        specifier: 0.5.0
-        version: 0.5.0
+        specifier: 0.5.1
+        version: 0.5.1
       jg-git-commands:
-        specifier: 0.3.1
-        version: 0.3.1
+        specifier: 0.4.0
+        version: 0.4.0
       jg-process:
-        specifier: 1.6.0
-        version: 1.6.0
+        specifier: 1.6.2
+        version: 1.6.2
       jg-utilities:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.2
+        version: 1.7.2
       prettier:
         specifier: 3.9.6
         version: 3.9.6
@@ -121,11 +121,11 @@ importers:
         specifier: 10.8.1
         version: 10.8.1(jiti@2.7.0)
       jg-process:
-        specifier: 1.6.0
-        version: 1.6.0
+        specifier: 1.6.2
+        version: 1.6.2
       jg-utilities:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.2
+        version: 1.7.2
       parse5:
         specifier: 8.0.1
         version: 8.0.1
@@ -163,17 +163,17 @@ importers:
         specifier: 0.3.0
         version: 0.3.0
       jg-exception:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.1
+        version: 1.7.1
       jg-git-commands:
-        specifier: 0.3.1
-        version: 0.3.1
+        specifier: 0.4.0
+        version: 0.4.0
       jg-process:
-        specifier: 1.6.0
-        version: 1.6.0
+        specifier: 1.6.2
+        version: 1.6.2
       jg-utilities:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.2
+        version: 1.7.2
       semver:
         specifier: 7.8.5
         version: 7.8.5
@@ -200,11 +200,11 @@ importers:
         specifier: workspace:^4.0.0
         version: link:../repository
       jg-exception:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.1
+        version: 1.7.1
       jg-utilities:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.2
+        version: 1.7.2
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -225,11 +225,11 @@ importers:
   projects/repository:
     dependencies:
       jg-exception:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.1
+        version: 1.7.1
       jg-utilities:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.2
+        version: 1.7.2
     devDependencies:
       '@types/node':
         specifier: 22.20.1
@@ -253,15 +253,15 @@ importers:
         specifier: 0.3.0
         version: 0.3.0
       jg-utilities:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.2
+        version: 1.7.2
     devDependencies:
       '@types/node':
         specifier: 22.20.1
         version: 22.20.1
       jg-exception:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.1
+        version: 1.7.1
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -284,8 +284,8 @@ importers:
         specifier: 0.3.0
         version: 0.3.0
       jg-exception:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.1
+        version: 1.7.1
       jg-site:
         specifier: 0.1.0
         version: 0.1.0
@@ -1932,28 +1932,28 @@ packages:
     resolution: {integrity: sha512-S7Bq9kmAK43xZeNQ41iubJ2LYxxyW3yMEoh2ciFkmm0/LAD3i2OgKOV4YPUL4j8NVGdjFuyJ5L8Ew6ti3wwVIQ==}
     engines: {node: '>=22.17.0'}
 
-  jg-exception@1.7.0:
-    resolution: {integrity: sha512-EmhkDdWxunZdYt+xjqe1G9tPbaSkVqF6xu/TxxChz7yVI+vXiWk8K5D+0J+masNL4MJwJv1sTDPC2x3QYMbJxA==}
+  jg-exception@1.7.1:
+    resolution: {integrity: sha512-bi5yn3rtvFLlhjOiJJAREVE1mYXnENW3zoRcMOymNlgr09Z+Hy7ECgqGvIkqvINy+QDpki0u8XbmWSZpWpuwVQ==}
     engines: {node: '>=22.17.0'}
 
-  jg-fetch@0.5.0:
-    resolution: {integrity: sha512-F2f0WmwhrMTZj7QutWWchTQSmb9P3zwAGFVniHoV+8Xj6xB6pahW+IR0EuqwSuTtkqG9K6e7JKHUVUQd5d2usQ==}
+  jg-fetch@0.5.1:
+    resolution: {integrity: sha512-vmBVqAPzqsyIyVUgOxiTjm9vpXiA6NpUorb2CosG+XzwLAOI0nnuqs+MuImVNVC7x3E2havMV5QxHxGtaFUPhg==}
     engines: {node: '>=22.17.0'}
 
-  jg-git-commands@0.3.1:
-    resolution: {integrity: sha512-PghfyFzoTk6ri9r8HUKSQAsaOqc/B7G+Hvh1kOrchdyPZ1WvjCWFqqT5nkwL2+ghUSl5qOwDwqW+k7uLr+1KCg==}
+  jg-git-commands@0.4.0:
+    resolution: {integrity: sha512-O2OtTQ3SsAGUwj9OpjlNOZOVEyBmzg1+YTm0KdfJxZLgAiQFFHyblrAENEkgdwmH8Qp9KP9n30XNYoDBT1+L2Q==}
     engines: {node: '>=22.17.0'}
 
-  jg-process@1.6.0:
-    resolution: {integrity: sha512-5euPeUh1aYZjSzjULp9QCyYCjlv5QpEqToSk9x0HeK/FTIAkXiBzdm7cdd4/INf/mJse2gfv78mA+0VbUfyszg==}
+  jg-process@1.6.2:
+    resolution: {integrity: sha512-Sb0C7C8f/3PPk/u9Viky74lXDvvEx09z2+l9O97G447lo27LjlUEpewmqLx6NAuU+F+WdNXdn759aRpsjfzgnA==}
     engines: {node: '>=22.17.0'}
 
   jg-site@0.1.0:
     resolution: {integrity: sha512-wHL9HvqU+mzECiqKwVB0iiln5C/mP3EdIW43KfFFFf/Kk4zWSIEfXg6W0Iq6VjRFMfRFAOaFr4unSbf2/X/Nig==}
     engines: {node: '>=22.17.0'}
 
-  jg-utilities@1.7.0:
-    resolution: {integrity: sha512-Cdec4v/QW7TPaY68/McjGxLCvrwH7aKI9H0DsXoo3qi27R81DTbxVZpsg7/LVZ3Ah3Kai1OHiUgpju2rmF2VEA==}
+  jg-utilities@1.7.2:
+    resolution: {integrity: sha512-m6/RDkjBPufPbIAcIG6i9+17iorPhtnIeIPxiD+ISHq9nAc/D12AMcONWhu5yjl1Ppn9CEBm73tFy/2rffVNmQ==}
     engines: {node: '>=22.17.0'}
 
   jiti@2.7.0:
@@ -4601,39 +4601,39 @@ snapshots:
 
   jg-api-response@1.2.0:
     dependencies:
-      jg-exception: 1.7.0
+      jg-exception: 1.7.1
 
   jg-clipboard@0.3.0:
     dependencies:
-      jg-exception: 1.7.0
+      jg-exception: 1.7.1
 
   jg-crypto@0.3.0:
     dependencies:
-      jg-exception: 1.7.0
+      jg-exception: 1.7.1
 
-  jg-exception@1.7.0: {}
+  jg-exception@1.7.1: {}
 
-  jg-fetch@0.5.0:
+  jg-fetch@0.5.1:
     dependencies:
       jg-api-response: 1.2.0
-      jg-exception: 1.7.0
-      jg-utilities: 1.7.0
+      jg-exception: 1.7.1
+      jg-utilities: 1.7.2
 
-  jg-git-commands@0.3.1:
+  jg-git-commands@0.4.0:
     dependencies:
-      jg-exception: 1.7.0
-      jg-process: 1.6.0
+      jg-exception: 1.7.1
+      jg-process: 1.6.2
 
-  jg-process@1.6.0:
+  jg-process@1.6.2:
     dependencies:
-      jg-exception: 1.7.0
-      jg-utilities: 1.7.0
+      jg-exception: 1.7.1
+      jg-utilities: 1.7.2
 
   jg-site@0.1.0: {}
 
-  jg-utilities@1.7.0:
+  jg-utilities@1.7.2:
     dependencies:
-      jg-exception: 1.7.0
+      jg-exception: 1.7.1
       uuid: 14.0.3
 
   jiti@2.7.0: {}
