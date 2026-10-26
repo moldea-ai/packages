@@ -186,6 +186,9 @@ test('connects homepage, desktop navigation, and footer to the guide', async ({ 
   await expect(
     content.getByRole('link', { name: 'moldea Agent Skill (opens in a new tab)', exact: true }),
   ).toHaveAttribute('href', 'https://skill.moldea.ai/');
+  const skillSetup = content.getByRole('link', { name: 'Start with the Agent Skill', exact: true });
+  await expect(skillSetup).toHaveAttribute('href', 'https://skill.moldea.ai/get-started/');
+  await expect(skillSetup).toHaveAttribute('target', '_blank');
   const cloud = content.getByRole('link', { name: 'Explore moldea Cloud', exact: true });
   await expect(cloud).toHaveAttribute('href', 'https://moldea.ai');
   await expect(cloud).toHaveAttribute('target', '_blank');
