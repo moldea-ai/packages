@@ -244,7 +244,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.5.2' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.5.3' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -519,7 +519,7 @@ describe('published website UI package', () => {
         "const rendered = await renderMarkdownDocument('# Fixture\\n\\n## moldea Shared Markdown');",
         "const conversationDocument = await renderMarkdownDocument('> **You**\\n>\\n> Inspect `@moldea.ai/core`.\\n\\n> **Coding agent**\\n>\\n> The declared export exists.', { conversations: true });",
         "const tree = buildEvaluationReplayPathTree([{ path: 'src/index.ts', type: 'file' }]);",
-        "const replay = { trials: [{ confirmationIndex: 3, evaluatedAt: '2026-09-10T00:00:00.000Z', id: 'confirmation-3', kind: 'confirmation', steps: [{ kind: 'message', role: 'coding-agent', source: 'recorded', content: 'Added the greeting helper.\\n\\n' + String.fromCharCode(96).repeat(3) + 'js\\nexport const greet = (name) => name;\\n' + String.fromCharCode(96).repeat(3) }], title: 'Confirmation 3' }] } satisfies IEvaluationReplayModel;",
+        "const replay = { trials: [{ confirmationIndex: 3, evaluatedAt: '2026-09-10T00:00:00.000Z', id: 'confirmation-3', kind: 'confirmation', steps: [{ kind: 'message', role: 'coding-agent', source: 'recorded', content: '# Recorded report\\n\\n## Attributes\\n\\nAdded the greeting helper.\\n\\n' + String.fromCharCode(96).repeat(3) + 'js\\nexport const greet = (name) => name;\\n' + String.fromCharCode(96).repeat(3) + '\\n\\n' + String.fromCharCode(96).repeat(3) + 'gitattributes\\n* text=auto\\n' + String.fromCharCode(96).repeat(3) }], title: 'Confirmation 3' }] } satisfies IEvaluationReplayModel;",
         "const navigationItems = [{ href: '/', isActive: true, label: 'moldea Home' }, { href: '/repository-format/', isActive: false, label: 'Repository Format', compactLabel: 'Repo. Format' }] satisfies ComponentProps<typeof SiteHeader>['navigationItems'];",
         'const fileProps = { path: "src/returns/policy.ts", label: "Return policy", tone: "warning" } satisfies ComponentProps<typeof FilePreview>;',
         'const codeProps = { source: "echo order-status", language: "sh", variant: "plain", copyable: true, ariaLabel: "Order status command" } satisfies ComponentProps<typeof CodeBlock>;',
@@ -1390,7 +1390,19 @@ describe('published website UI package', () => {
               });
             for (const inset of bubbleFooterInsets) expect(Math.abs(inset)).toBeLessThan(0.5);
             const replayMarkdown = page.locator('.replay-markdown');
-            expect(await replayMarkdown.locator('pre code').count()).toBe(1);
+            expect(await replayMarkdown.locator('h1, h2, h3, h4').count()).toBe(0);
+            expect(
+              await replayMarkdown
+                .getByRole('heading', { name: 'Recorded report', level: 5 })
+                .count(),
+            ).toBe(1);
+            expect(
+              await replayMarkdown.getByRole('heading', { name: 'Attributes', level: 6 }).count(),
+            ).toBe(1);
+            expect(await replayMarkdown.locator('pre code').count()).toBe(2);
+            expect(await replayMarkdown.locator('pre code').nth(1).textContent()).toBe(
+              '* text=auto',
+            );
             expect(await replayMarkdown.locator('[data-code-copy-button]').count()).toBe(0);
             // an operation without findings shows its result code the way one finding shows its own
             const refusedOpener = page.getByRole('link', {
@@ -1826,6 +1838,7 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toContain('language-json');
     expect(fixtureHtml).toContain('language-sh');
     expect(fixtureHtml).toContain('language-text');
+    expect(fixtureHtml).toContain('* text=auto');
     expect(fixtureHtml).toContain('role="group" aria-label="Code block"');
     expect(fixtureHtml).toContain('role="group" aria-label="Order status command"');
     expect(fixtureHtml).toContain('data-code-copy-controls-template');
