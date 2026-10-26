@@ -4,6 +4,29 @@ import { describe, expect, test } from 'vitest';
 import { renderCodeBlock, renderMarkdownDocument, renderMarkdownFragment } from './index.js';
 
 describe('website Markdown rendering', () => {
+  test.each(['gitattributes', 'unknown-recorded-language'])(
+    'renders unsupported %s fences as safe plain text through every public renderer',
+    async (language) => {
+      const source = '* text=auto\n\n  *.ts text eol=lf\n<script>recorded()</script>';
+      const markdown = `\`\`\`${language}\n${source}\n\`\`\``;
+      const rendered = [
+        await renderMarkdownFragment(markdown),
+        (await renderMarkdownDocument(markdown)).html,
+        await renderCodeBlock(source, language),
+      ];
+
+      for (const html of rendered) {
+        expect(html).toContain('class="language-text"');
+        expect(html).toContain('tabindex="0" role="group" aria-label="Code block"');
+        const code = /<code\b[^>]*>([\s\S]*?)<\/code>/u.exec(html)?.[1];
+        expect(code?.replaceAll(/<\/?span\b[^>]*>/gu, '')).toBe(
+          '* text=auto\n\n  *.ts text eol=lf\n&#x3C;script>recorded()&#x3C;/script>',
+        );
+        expect(html).not.toContain('<script>');
+      }
+    },
+  );
+
   test('groups explicitly authored turns and preserves document-wide headings and technical content', async () => {
     const rendered = await renderMarkdownDocument(
       [

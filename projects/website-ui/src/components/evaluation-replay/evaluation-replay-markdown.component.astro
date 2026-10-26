@@ -11,10 +11,20 @@ const html = await renderMarkdownFragment(markdown, {
   basePath: import.meta.env.BASE_URL,
   localLinks: 'unwrap',
 });
+// recorded headings stay inside the trial's heading hierarchy without changing their text
+let minimumHeadingDepth = 6;
+for (const match of html.matchAll(/<h([1-6])(?=[\s>])/gu)) {
+  minimumHeadingDepth = Math.min(minimumHeadingDepth, Number(match[1]));
+}
+const nestedHtml = html.replaceAll(
+  /(<\/?)h([1-6])(?=[\s>])/gu,
+  (_match, prefix: string, depth: string) =>
+    `${prefix}h${Math.min(6, Number(depth) + 5 - minimumHeadingDepth)}`,
+);
 ---
 
 <div
   class="prose-moldea replay-markdown min-w-0"
   data-code-copy="false"
-  set:html={html}
+  set:html={nestedHtml}
 />

@@ -175,6 +175,7 @@ const createMarkdownProcessor = (shouldSlugHeadings: boolean, conversations = fa
     .use(rehypeShiki, {
       addLanguageClass: true,
       defaultColor: false,
+      fallbackLanguage: 'text',
       langs: [],
       lazy: true,
       themes: {
@@ -262,7 +263,7 @@ export const renderMarkdownFragment = async (
 /**
  * Renders literal source without interpreting its contents as Markdown or HTML.
  * @param source Code or plain text to display verbatim.
- * @param language Syntax language; omitted languages remain unhighlighted and do not wrap.
+ * @param language Syntax language; unsupported languages use plain text, while omitted languages remain unhighlighted and do not wrap.
  * @param ariaLabel Accessible name for the keyboard-scrollable code group.
  * @param overflow Optional wrapping/scrolling override; otherwise the language selects the mode.
  * @returns Sanitized, highlighted HTML with a keyboard-accessible code group.
