@@ -552,7 +552,10 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(content.locator('code').filter({ hasText: /^moldea Cloud$/u })).toHaveText(
         'moldea Cloud',
       );
-      const cloudAction = content.getByRole('link', { name: 'Explore moldea Cloud', exact: true });
+      const cloudAction = content.getByRole('link', {
+        name: 'Explore moldea Cloud (opens in a new tab)',
+        exact: true,
+      });
       await expect(cloudAction).toBeVisible();
       await expect(cloudAction.locator('code')).toHaveCount(0);
       await expect(content.getByRole('heading', { level: 1 }).locator('code')).toHaveCount(0);
@@ -626,7 +629,9 @@ test('connects the package architecture to the official Repository Format specif
   });
 
   await expect(footerLink).toHaveAttribute('href', toPublicPath('/repository-format/'));
-  const cloudLink = page.getByRole('contentinfo').getByRole('link', { name: 'Cloud', exact: true });
+  const cloudLink = page
+    .getByRole('contentinfo')
+    .getByRole('link', { name: 'Cloud (opens in a new tab)', exact: true });
   await expect(cloudLink).toHaveAttribute('href', 'https://moldea.ai');
   await expect(cloudLink).toHaveAttribute('target', '_blank');
   await expect(cloudLink).toHaveAttribute('rel', 'noopener noreferrer');

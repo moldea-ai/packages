@@ -16,12 +16,18 @@ const {
   rel,
   ...attributes
 } = Astro.props;
-const relationship =
-  target === '_blank'
-    ? [...new Set([...(rel?.split(/\s+/u) ?? []), 'noopener', 'noreferrer'])]
-        .filter(Boolean)
-        .join(' ')
-    : rel;
+const isNewTab = target === '_blank';
+const relationship = isNewTab
+  ? [...new Set([...(rel?.split(/\s+/u) ?? []), 'noopener', 'noreferrer'])]
+      .filter(Boolean)
+      .join(' ')
+  : rel;
+// an explicit accessible name replaces the link text, so the new-tab notice joins that name
+const ariaLabel = attributes['aria-label'];
+const accessibleName =
+  isNewTab && typeof ariaLabel === 'string' && !/opens in a new tab/iu.test(ariaLabel)
+    ? `${ariaLabel} (opens in a new tab)`
+    : ariaLabel;
 ---
 
 <a
@@ -32,12 +38,13 @@ const relationship =
     className,
   ]}
   {...attributes}
+  aria-label={accessibleName}
   {target}
   rel={relationship}
 >
   <slot />
   {
-    target === '_blank' && size !== 'icon' && (
+    isNewTab && size !== 'icon' && (
       <ExternalLink
         class="size-4 shrink-0"
         aria-hidden="true"
@@ -45,4 +52,5 @@ const relationship =
       />
     )
   }
+  {isNewTab && accessibleName === undefined && <span class="sr-only"> (opens in a new tab)</span>}
 </a>

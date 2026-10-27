@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@4.4.0
+pnpm add @moldea.ai/website-ui@4.6.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -64,7 +64,7 @@ Dark prose keeps its primary foreground opaque before the 70%/60% opacity feedba
 
 `BrandLogo` stays background-free in its resting, hover, and pressed states while retaining the global keyboard focus ring.
 
-`SiteHeaderShell` marks both source links as external destinations because they open in a new tab. The desktop source button uses `GitBranch`; the mobile text link retains the external-link indicator. Both keep an explicit accessible name. Icon-size `ActionLink` controls supply their own icon.
+`SiteHeaderShell` marks both source links as external destinations because they open in a new tab. The desktop source button uses `GitBranch`; the mobile text link retains the external-link indicator. Both keep an explicit accessible name that announces the new tab. Icon-size `ActionLink` controls supply their own icon.
 
 ## Utilities
 
@@ -152,7 +152,7 @@ Every component has a dedicated public subpath:
 
 `ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. Mount `CodeCopyControls` once in the body to add compact header copy actions to eligible code blocks on direct loads and client navigation. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
 
-`FileTree` presents static file and folder paths, with an optional removed marker. Evaluation replay uses it for path-only workspace changes. `ActionLink` adds the external-link indicator and `noopener noreferrer` whenever `target="_blank"` is supplied. Raw anchors and handlers opening a new tab need their own indicator.
+`FileTree` presents static file and folder paths, with an optional removed marker. Evaluation replay uses it for path-only workspace changes. `ActionLink` adds the external-link indicator, a visually hidden “(opens in a new tab)”, and `noopener noreferrer` whenever `target="_blank"` is supplied; an explicit `aria-label`, such as an icon-size action’s, gains the notice instead. Raw anchors and handlers opening a new tab need their own indicator and notice.
 
 `SiteHeader`, `SiteFooter`, and `DocumentationShell` own responsive structure while consumers retain navigation data, accessible labels, copy, branding, actions, and page content. `SiteFooter` keeps its standard section gap by default; pass `hasTopSpacing={false}` when the preceding page section already provides the intended separation. `TabbedPanels` keeps every panel readable without JavaScript and adds WAI-ARIA tab behavior, including Arrow Left, Arrow Right, Home, and End, after enhancement. `StatusBadge` exposes semantic tones and border treatments without defining domain status mappings.
 

@@ -244,7 +244,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.5.3' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.6.0' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -1846,6 +1846,12 @@ describe('published website UI package', () => {
     expect(fixtureHtml).not.toMatch(/<code[^>]*>moldea<\/code>/u);
     expect(fixtureHtml).toContain('data-conversation-message="assistant"');
     expect(fixtureHtml).toContain('rel="author noopener noreferrer"');
+    // new-tab actions announce the tab in their text, or in an explicit accessible name
+    expect(fixtureHtml).toMatch(
+      /External action[\s\S]*?data-external-link-icon[\s\S]*?<span class="sr-only"> \(opens in a new tab\)<\/span>\s*<\/a>/u,
+    );
+    expect(fixtureHtml).toContain('aria-label="Fixture source (opens in a new tab)"');
+    expect(fixtureHtml.match(/\(opens in a new tab\)/gu)?.length).toBeGreaterThanOrEqual(3);
     expect(fixtureHtml).toContain('Linked file');
     expect(fixtureHtml).toContain('Missing from <code class="inline-code">moldea.yaml</code>');
     expect(fixtureHtml).toContain('data-search-focus-on-load="true"');

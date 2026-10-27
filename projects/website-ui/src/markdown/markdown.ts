@@ -63,12 +63,12 @@ const prefixInternalLinks = (html: string, basePath: string): string => {
 const unwrapLocalLinks = (html: string): string =>
   html.replaceAll(/<a href="(?!(?:[a-z][a-z\d+.-]*:|\/\/))[^" ]*">([\s\S]*?)<\/a>/giu, '$1');
 
-/** Adds safe external-window behavior and a visible indicator to absolute web links. */
+/** Adds safe external-window behavior, a visible indicator and a new-tab notice to absolute web links. */
 const markExternalLinks = (html: string): string => {
   return html.replaceAll(
     /<a href="((?:https?:)?\/\/[^" ]+)"([^>]*)>([\s\S]*?)<\/a>/g,
     (_match, href: string, attributes: string, content: string) =>
-      `<a href="${href}"${attributes} target="_blank" rel="noopener noreferrer">${appendExternalLinkIcon(content)}</a>`,
+      `<a href="${href}"${attributes} target="_blank" rel="noopener noreferrer">${appendExternalLinkIcon(content)}<span class="sr-only"> (opens in a new tab)</span></a>`,
   );
 };
 
