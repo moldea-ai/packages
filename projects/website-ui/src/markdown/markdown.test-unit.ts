@@ -178,6 +178,9 @@ describe('website Markdown rendering', () => {
     );
     expect(rendered.html).toContain('data-external-link-icon');
     expect(rendered.html).toContain('<span class="whitespace-nowrap">External&#160;<svg');
+    expect(rendered.html).toMatch(
+      /<\/svg><\/span><span class="sr-only"> \(opens in a new tab\)<\/span><\/a>/u,
+    );
     expect(rendered.html).not.toContain('<script>');
   });
 

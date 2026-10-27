@@ -113,7 +113,10 @@ for (const width of [320, 768, 1440]) {
       else await page.keyboard.press('Escape');
       await expect(findingDialog).not.toBeVisible();
       await expect(findingOpener).toBeFocused();
-      for (const name of ['moldea Agent Skill (opens in a new tab)', 'Explore moldea Cloud']) {
+      for (const name of [
+        'moldea Agent Skill (opens in a new tab)',
+        'Explore moldea Cloud (opens in a new tab)',
+      ]) {
         const productLink = page.getByRole('main').getByRole('link', { name, exact: true });
         await expect(productLink).toBeVisible();
         await expect(productLink).toHaveAccessibleName(name);
@@ -186,10 +189,16 @@ test('connects homepage, desktop navigation, and footer to the guide', async ({ 
   await expect(
     content.getByRole('link', { name: 'moldea Agent Skill (opens in a new tab)', exact: true }),
   ).toHaveAttribute('href', 'https://skill.moldea.ai/');
-  const skillSetup = content.getByRole('link', { name: 'Start with the Agent Skill', exact: true });
+  const skillSetup = content.getByRole('link', {
+    name: 'Start with the Agent Skill (opens in a new tab)',
+    exact: true,
+  });
   await expect(skillSetup).toHaveAttribute('href', 'https://skill.moldea.ai/get-started/');
   await expect(skillSetup).toHaveAttribute('target', '_blank');
-  const cloud = content.getByRole('link', { name: 'Explore moldea Cloud', exact: true });
+  const cloud = content.getByRole('link', {
+    name: 'Explore moldea Cloud (opens in a new tab)',
+    exact: true,
+  });
   await expect(cloud).toHaveAttribute('href', 'https://moldea.ai');
   await expect(cloud).toHaveAttribute('target', '_blank');
   await expect(cloud).toHaveAttribute('rel', 'noopener noreferrer');
@@ -223,7 +232,9 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
   try {
     await page.goto(guidePath);
     await expect(
-      page.getByRole('main').getByRole('link', { name: 'Explore moldea Cloud', exact: true }),
+      page
+        .getByRole('main')
+        .getByRole('link', { name: 'Explore moldea Cloud (opens in a new tab)', exact: true }),
     ).toHaveAttribute('href', 'https://moldea.ai');
     await expect(
       page.getByRole('heading', { name: 'Check the connections as your code changes.' }),
