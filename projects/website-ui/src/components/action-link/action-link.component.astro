@@ -14,6 +14,7 @@ const {
   variant = 'primary',
   target,
   rel,
+  'aria-label': ariaLabel,
   ...attributes
 } = Astro.props;
 const isNewTab = target === '_blank';
@@ -23,7 +24,6 @@ const relationship = isNewTab
       .join(' ')
   : rel;
 // an explicit accessible name replaces the link text, so the new-tab notice joins that name
-const ariaLabel = attributes['aria-label'];
 const accessibleName =
   isNewTab && typeof ariaLabel === 'string' && !/opens in a new tab/iu.test(ariaLabel)
     ? `${ariaLabel} (opens in a new tab)`

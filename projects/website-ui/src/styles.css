@@ -414,7 +414,8 @@
   }
 
   .table-scroll {
-    @apply my-5 max-w-full overflow-x-auto rounded-xl border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    /* contain absolutely positioned descendants, such as hidden new-tab notices, in the scroll area */
+    @apply relative my-5 max-w-full overflow-x-auto rounded-xl border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
   .markdown-badge {
