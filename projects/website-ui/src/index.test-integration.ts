@@ -244,7 +244,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.6.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.6.1' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -534,6 +534,7 @@ describe('published website UI package', () => {
         'const fence = String.fromCharCode(96).repeat(3);',
         'let fenceIndex = 0;',
         'const fenceHtml = (await renderMarkdownFragment(["markdown", "text", "yaml", "json", ""].map((language) => [fence + language, longProse, fence].join("\\n")).join("\\n\\n"))).replaceAll(\'aria-label="Code block"\', () => `aria-label="Fenced source ${++fenceIndex}"`);',
+        'const tableHtml = await renderMarkdownFragment(["| Configuration | Diagnostics | Responsibilities | Reference |", "| --- | --- | --- | --- |", "| Characteristically | Incomprehensibilities | Counterrevolutionaries | [Core limits](https://example.com/core/#resource-limits) |"].join("\\n"));',
         'const mixedPatch = ["--- a/policy.md", "+++ b/policy.md", "@@ -1 +1 @@", "-" + longProse, "+" + longProse + "Ask for approval.", "--- a/service.ts", "+++ b/service.ts", "@@ -1 +1 @@", "-const before = " + longCode + ";", "+const after = " + longCode + ";", ""].join("\\n");',
         'const unchangedSource = "const approval = true;\\nconst confirmed = false;\\n";',
         'const connectionProps = { tone: "danger" } satisfies ComponentProps<typeof ConnectionLabel>;',
@@ -591,6 +592,7 @@ describe('published website UI package', () => {
         '      <CodeBlock source={longCode} language="json" overflow="wrap" ariaLabel="Wrapped code block" />',
         '      <CodeBlock source={longProse} language="markdown" overflow="scroll" ariaLabel="Scrolling Markdown block" />',
         '      <div class="prose-moldea" data-overflow-fences set:html={fenceHtml} />',
+        '      <div class="prose-moldea" data-overflow-table set:html={tableHtml} />',
         '      <CodeDiff oldValue={longProse} newValue={longProse + "Ask for approval."} language="markdown" ariaLabel="Markdown diff" />',
         '      <CodeDiff oldValue={longProse} newValue={longProse + "Ask for approval."} language="text" ariaLabel="Text diff" />',
         '      <CodeDiff oldValue={longCode} newValue={longCode.replace("instructions", "current")} language="json" ariaLabel="JSON diff" />',
@@ -913,7 +915,11 @@ describe('published website UI package', () => {
             );
             expect(
               await page
-                .getByRole('link', { name: 'Fixture source', exact: true, includeHidden: true })
+                .getByRole('link', {
+                  name: 'Fixture source (opens in a new tab)',
+                  exact: true,
+                  includeHidden: true,
+                })
                 .first()
                 .locator('svg.lucide-git-branch[data-external-link-icon]')
                 .count(),
@@ -1078,6 +1084,17 @@ describe('published website UI package', () => {
               });
               expect(await diff.locator('[data-diff-unified]:visible').count()).toBeGreaterThan(0);
               expect(await diff.locator('[data-diff-split]:visible').count()).toBe(0);
+            }
+            if (width === 320) {
+              // the table's link sits past the viewport, so the page check covers its hidden new-tab notice
+              expect(
+                await page
+                  .locator('[data-overflow-table] a')
+                  .evaluate(
+                    (node) =>
+                      node.getBoundingClientRect().right > document.documentElement.clientWidth,
+                  ),
+              ).toBe(true);
             }
             const pageDimensions = await page.evaluate(() => ({
               width: document.documentElement.clientWidth,
@@ -1850,7 +1867,12 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toMatch(
       /External action[\s\S]*?data-external-link-icon[\s\S]*?<span class="sr-only"> \(opens in a new tab\)<\/span>\s*<\/a>/u,
     );
-    expect(fixtureHtml).toContain('aria-label="Fixture source (opens in a new tab)"');
+    const sourceLabels = Array.from(
+      fixtureHtml.matchAll(/<a\b[^>]*href="https:\/\/example\.com\/source"[^>]*>/gu),
+      ([anchor]) => anchor.match(/aria-label="[^"]*"/gu) ?? [],
+    );
+    expect(sourceLabels).toContainEqual(['aria-label="Fixture source (opens in a new tab)"']);
+    expect(sourceLabels.every((labels) => labels.length <= 1)).toBe(true);
     expect(fixtureHtml.match(/\(opens in a new tab\)/gu)?.length).toBeGreaterThanOrEqual(3);
     expect(fixtureHtml).toContain('Linked file');
     expect(fixtureHtml).toContain('Missing from <code class="inline-code">moldea.yaml</code>');
@@ -1906,6 +1928,6 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toMatch(/<span\b[^>]*class="sr-only"[^>]*>Open complete source<\/span>/u);
     expect(fixtureHtml).toContain('lucide-maximize-2');
     expect(fixtureHtml).toContain('Expanded source content');
-    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(3 + RUNTIME_CATALOG.length);
+    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(4 + RUNTIME_CATALOG.length);
   }, 360_000);
 });

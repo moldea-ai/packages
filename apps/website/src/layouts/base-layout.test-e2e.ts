@@ -157,7 +157,7 @@ for (const width of [320, 375, 768, 1024, 1100, 1279, 1280, 1440]) {
           .getByRole('link', { name: 'Search documentation' })
           .boundingBox();
         const source = header.getByRole('link', {
-          name: 'moldea packages on GitHub',
+          name: 'moldea packages on GitHub (opens in a new tab)',
           exact: true,
         });
         await expect(source).toHaveAttribute('target', '_blank');
