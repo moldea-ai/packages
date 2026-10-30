@@ -32,7 +32,7 @@ Shared internal packages may support first-class projects but never depend on th
 
 The catalog records the five public packages. Core treats runtime IDs as guidance labels and checks declared files and supported syntax-only exports. It does not verify SDK compatibility, runtime wiring, or execution.
 
-`scripts/workspace-graph/` owns exact-commit manifest discovery and shared dependency facts. `scripts/npm-release/` retains release relevance and private-input propagation policy. `scripts/ci/` owns conservative affected selection, validated execution plans, task isolation, and the final job gate. CI follows all downstream consumers; npm release selection stops private-input propagation at public package boundaries. See [affected CI](local-development.md#affected-ci).
+`scripts/workspace-graph/` owns exact-commit manifest discovery and shared dependency facts. `scripts/npm-release/` retains release relevance and private-input propagation policy. `scripts/ci/` owns conservative affected selection independently of essential/full priority, validated execution plans and compact/full consumer matrices, task isolation, and the final job gate. CI follows all downstream consumers; npm release selection stops private-input propagation at public package boundaries. See [affected CI](local-development.md#affected-ci).
 
 ## Boundaries and sources of truth
 

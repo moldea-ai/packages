@@ -1,10 +1,12 @@
 // types
-export type { ICiPlan, ICiSelectionSources } from './types.ts';
+export type { ICiPlan, ICiRuntimeMatrices, ICiSelectionSources } from './types.ts';
 
 // selection and validation
 export {
   CI_COMPATIBILITY_LANES,
   createCiPlan,
+  createCiMatrices,
+  parseCiTestSuite,
   parseCiPlan,
   validateCiJobResults,
   validateCiWorkspaceSelection,

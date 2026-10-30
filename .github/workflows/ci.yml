@@ -4,6 +4,11 @@ on:
   pull_request:
   workflow_call:
     inputs:
+      test_suite:
+        description: Correctness priority, independent of affected workspaces. Releases force full.
+        required: false
+        type: string
+        default: essential
       release_project:
         description: Public project key used to isolate concurrent release verification.
         required: false
@@ -25,6 +30,12 @@ on:
         type: boolean
         default: false
   workflow_dispatch:
+    inputs:
+      test_suite:
+        description: Full checks every workspace without publishing.
+        type: choice
+        default: essential
+        options: [essential, full]
 
 permissions:
   contents: read
@@ -55,6 +66,9 @@ jobs:
       artifacts: ${{ steps.selection.outputs.artifacts }}
       cross_platform: ${{ steps.selection.outputs.cross_platform }}
       website: ${{ steps.selection.outputs.website }}
+      test_suite: ${{ steps.selection.outputs.test_suite }}
+      cli_runtime_matrix: ${{ steps.selection.outputs.cli_runtime_matrix }}
+      repository_fs_runtime_matrix: ${{ steps.selection.outputs.repository_fs_runtime_matrix }}
       consumer_conformance: ${{ steps.selection.outputs.consumer_conformance }}
       cli_testing_peer_compatibility: ${{ steps.selection.outputs.cli_testing_peer_compatibility }}
       repository_fs_runtime_compatibility: ${{ steps.selection.outputs.repository_fs_runtime_compatibility }}
@@ -78,6 +92,7 @@ jobs:
           CI_BASE_COMMIT: ${{ inputs.comparison_commit || github.event.pull_request.base.sha || github.event.before || '' }}
           CI_TESTED_COMMIT: ${{ github.sha }}
           CI_RELEASE_BUILD: ${{ inputs.release_build == true && 'true' || 'false' }}
+          CI_TEST_SUITE: ${{ inputs.test_suite || 'essential' }}
         run: node scripts/ci/plan.ts
 
       # the Skill consumer lanes receive the same snapshot; the canary passes none, so they resolve live
@@ -275,13 +290,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        node-version:
-          - 22.17.0
-          - 22.x
-          - 24.11.0
-          - 24.x
-          - 26.8.1
+      matrix: ${{ fromJSON(needs.plan.outputs.repository_fs_runtime_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -313,17 +322,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-        node-version:
-          - 22.17.0
-          - 22.x
-          - 24.11.0
-          - 24.x
-          - 26.8.1
+      matrix: ${{ fromJSON(needs.plan.outputs.cli_runtime_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -387,7 +386,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Website Browser
-        if: ${{ needs.plan.outputs.website == 'true' }}
+        if: ${{ needs.plan.outputs.website == 'true' && needs.plan.outputs.test_suite == 'full' }}
         run: pnpm --filter @moldea.ai/packages-website exec playwright install chromium
 
       - name: Test Selected Workspaces

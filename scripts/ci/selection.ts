@@ -4,7 +4,9 @@ import {
   type IWorkspacePackageState,
 } from '../workspace-graph/index.ts';
 
-import type { ICiPlan, ICiSelectionSources } from './types.ts';
+import type { ICiPlan, ICiRuntimeMatrices, ICiSelectionSources } from './types.ts';
+
+import type { ITestSuite } from '#test-suite/types';
 
 // artifact consumers kept in step with the existing compatibility jobs
 export const CI_COMPATIBILITY_LANES = [
@@ -21,6 +23,7 @@ const PLAN_FIELDS = [
   'testedCommit',
   'comparisonCommit',
   'mode',
+  'testSuite',
   'reasons',
   'workspaces',
   'rootIntegration',
@@ -32,9 +35,14 @@ const isRuntimePackage = (name: string): boolean =>
   name !== CI_WEBSITE_WORKSPACE && name !== '@moldea.ai/website-ui';
 
 /** Maps selected package identities to the existing packed-consumer jobs. */
-const selectLanes = (workspaces: string[], full: boolean): string[] => {
+const selectLanes = (workspaces: string[], full: boolean, testSuite: ITestSuite): string[] => {
   const selected = new Set(workspaces);
   return CI_COMPATIBILITY_LANES.filter((lane) => {
+    if (
+      testSuite === 'essential' &&
+      (lane === 'consumer-conformance' || lane === 'cli-testing-peer-compatibility')
+    )
+      return false;
     if (full) return true;
     if (lane === 'consumer-conformance' || lane.startsWith('cli-'))
       return selected.has('@moldea.ai/cli');
@@ -43,11 +51,44 @@ const selectLanes = (workspaces: string[], full: boolean): string[] => {
 };
 
 /**
+ * Validates workflow priority without changing affected-workspace scope.
+ * @returns The explicit suite, defaulting ordinary workflows to essential.
+ * @throws
+ * - The CI test-suite input is invalid.
+ */
+export const parseCiTestSuite = (suite: string | undefined): ITestSuite => {
+  if (suite === undefined || suite === 'essential') return 'essential';
+  if (suite === 'full') return 'full';
+  throw new TypeError('The CI test-suite input is invalid.');
+};
+
+/**
+ * Creates the closed packed-consumer matrices for a validated priority.
+ * @returns Compact essential or complete supported runtime/OS dimensions.
+ */
+export const createCiMatrices = (plan: ICiPlan): ICiRuntimeMatrices => {
+  const nodes =
+    plan.testSuite === 'essential' ? ['24.15.0'] : ['22.17.0', '22.x', '24.11.0', '24.x', '26.8.1'];
+  return {
+    cli: {
+      os:
+        plan.testSuite === 'essential'
+          ? ['ubuntu-latest']
+          : ['ubuntu-latest', 'macos-latest', 'windows-latest'],
+      'node-version': nodes,
+    },
+    repositoryFs: { 'node-version': nodes },
+  };
+};
+
+/**
  * Builds the current execution set from the union of old and new reverse dependency edges.
  * @throws
  * - The Git commit is invalid.
+ * - The CI test-suite input is invalid.
  */
 export const createCiPlan = (sources: ICiSelectionSources): ICiPlan => {
+  const testSuite = parseCiTestSuite(sources.testSuite);
   requireGitCommit(sources.testedCommit);
   if (sources.comparisonCommit !== null) requireGitCommit(sources.comparisonCommit);
   const changedPaths = sources.changedPaths.filter((path) => !isExcludedPath(path));
@@ -97,11 +138,12 @@ export const createCiPlan = (sources: ICiSelectionSources): ICiPlan => {
     }
   }
   const workspaces = [...selected].filter((name) => sources.current.has(name)).sort();
-  const lanes = selectLanes(workspaces, full);
+  const lanes = selectLanes(workspaces, full, testSuite);
   return {
     testedCommit: sources.testedCommit,
     comparisonCommit: sources.comparisonCommit,
     mode: full ? 'full' : 'affected',
+    testSuite,
     reasons: full ? [...reasons].sort() : ['Changed workspaces and all downstream consumers.'],
     workspaces,
     rootIntegration: full || workspaces.some(isRuntimePackage),
@@ -132,6 +174,7 @@ export const parseCiPlan = (source: string): ICiPlan => {
     typeof record['testedCommit'] !== 'string' ||
     !(record['comparisonCommit'] === null || typeof record['comparisonCommit'] === 'string') ||
     !(record['mode'] === 'full' || record['mode'] === 'affected') ||
+    !(record['testSuite'] === 'essential' || record['testSuite'] === 'full') ||
     !isStringList(record['reasons']) ||
     record['reasons'].length === 0 ||
     !isStringList(record['workspaces']) ||
@@ -149,7 +192,8 @@ export const parseCiPlan = (source: string): ICiPlan => {
   const workspaces = record['workspaces'];
   if (
     JSON.stringify(workspaces) !== JSON.stringify([...new Set(workspaces)].sort()) ||
-    JSON.stringify(record['lanes']) !== JSON.stringify(selectLanes(workspaces, full)) ||
+    JSON.stringify(record['lanes']) !==
+      JSON.stringify(selectLanes(workspaces, full, record['testSuite'])) ||
     record['artifacts'] !== record['lanes'].length > 0 ||
     record['rootIntegration'] !== (full || workspaces.some(isRuntimePackage)) ||
     (!full && record['comparisonCommit'] === null)
@@ -159,6 +203,7 @@ export const parseCiPlan = (source: string): ICiPlan => {
     testedCommit: record['testedCommit'],
     comparisonCommit: record['comparisonCommit'],
     mode: record['mode'],
+    testSuite: record['testSuite'],
     reasons: record['reasons'],
     workspaces,
     rootIntegration: record['rootIntegration'],

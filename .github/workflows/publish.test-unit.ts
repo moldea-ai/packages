@@ -75,6 +75,7 @@ describe('npm release workflow', () => {
     expect(ciWorkflow.on).toHaveProperty('workflow_dispatch');
     expect(ciWorkflow.on).not.toHaveProperty('push');
     expect(ciSource).toContain('release_build:');
+    expect(ciSource).toContain("CI_TEST_SUITE: ${{ inputs.test_suite || 'essential' }}");
     expect(ciSource).toContain('name: Check Changed Package Versions');
     expect(ciSource).toContain('pnpm release:check-changes');
     expect(ciSource).toContain('name: Trust Container Workspace for Git');

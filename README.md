@@ -15,7 +15,7 @@ pnpm build
 pnpm test
 ```
 
-See [local development](docs/local-development.md) for focused commands, build and test conventions, and consumer-runtime verification.
+See [local development](docs/local-development.md) for focused commands, build and test conventions, and consumer-runtime verification. Local and routine CI defaults use essential; `pnpm test:full` remains the complete explicit suite.
 
 ## Project blueprint
 

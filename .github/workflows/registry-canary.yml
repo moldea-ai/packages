@@ -1,12 +1,18 @@
 name: Registry Canary
 
 # pull requests and releases verify packed consumers against the reviewed registry snapshot;
-# this scheduled run repeats complete verification on the live registry and reports breakage
+# this scheduled run repeats essential packed verification on the live registry and reports breakage
 # from new upstream releases without blocking any release
 on:
   schedule:
     - cron: '23 6 * * *'
   workflow_dispatch:
+    inputs:
+      test_suite:
+        description: Full live qualification is required before snapshot promotion.
+        type: choice
+        default: essential
+        options: [essential, full]
 
 permissions: {}
 
@@ -17,7 +23,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/ci.yml
     with:
-      release_build: true
+      test_suite: ${{ inputs.test_suite || 'essential' }}
       live_registry: true
       release_project: registry-canary
 
@@ -36,9 +42,9 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           title='Registry canary: packed consumers fail on the live registry'
-          body="Complete verification against the live npm registry failed: $RUN_URL
+          body="Selected verification against the live npm registry failed: $RUN_URL
 
-          Pull requests and releases still resolve third-party dependencies from the reviewed snapshot in configs/registry-snapshot, so they are unaffected. Resolve the upstream breakage or adjust supported ranges before advancing the snapshot."
+          Pull requests and releases still resolve third-party dependencies from the reviewed snapshot in configs/registry-snapshot, so they are unaffected. Resolve the upstream breakage or adjust supported ranges before advancing the snapshot. Daily essential checks do not replace explicit full live qualification."
           issue="$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')"
           if [ -n "$issue" ]; then
             gh issue comment "$issue" --body "$body"

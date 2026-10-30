@@ -1,9 +1,10 @@
 /*
  * Packed-consumer checks resolve third-party dependencies only from versions published before
  * this reviewed instant, so a new upstream release cannot change a pull-request or release
- * verdict. Advance it deliberately after the scheduled Registry Canary passes on the live
- * registry, and keep it at least one minute after the publish time of every @moldea.ai release
- * that downstream candidate workflows install from the registry: npm's --before has no scope
+ * verdict. Advance it deliberately after explicit full Registry Canary qualification on the live
+ * registry (daily essential checks provide reduced assurance), and keep it at least one minute
+ * after the publish time of every @moldea.ai release that downstream candidate workflows install
+ * from the registry: npm's --before has no scope
  * exemption, and pnpm rounds the release age up to whole minutes.
  */
 export const REGISTRY_SNAPSHOT = '2026-10-24T18:37:00.000Z';

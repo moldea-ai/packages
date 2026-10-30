@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { expect, test } from 'vitest';
 
-import { CI_COMPATIBILITY_LANES } from '../../scripts/ci/index.ts';
+import { CI_COMPATIBILITY_LANES, createCiMatrices, createCiPlan } from '../../scripts/ci/index.ts';
 
 // workflow wiring complements real planner, runner, and final-gate behavior tests
 interface IJob {
@@ -14,10 +14,12 @@ interface IJob {
   needs?: string | string[];
   env?: Record<string, string>;
   outputs?: Record<string, string>;
+  strategy?: { matrix?: unknown };
   steps?: { name?: string; run?: string; if?: string; env?: Record<string, string> }[];
 }
 const source = readFileSync(new URL('./ci.yml', import.meta.url), 'utf8');
 const workflow = parse(source) as {
+  on: Record<string, { inputs?: Record<string, unknown> }>;
   env: Record<string, string>;
   jobs: Record<string, IJob>;
   permissions: Record<string, string>;
@@ -62,6 +64,7 @@ test('planner uses the tested merge checkout and explicit main comparison, with 
         "${{ inputs.comparison_commit || github.event.pull_request.base.sha || github.event.before || '' }}",
       CI_TESTED_COMMIT: '${{ github.sha }}',
       CI_RELEASE_BUILD: "${{ inputs.release_build == true && 'true' || 'false' }}",
+      CI_TEST_SUITE: "${{ inputs.test_suite || 'essential' }}",
     },
   });
   expect(workflow.jobs['plan']?.outputs?.['plan']).toBe('${{ steps.selection.outputs.plan }}');
@@ -130,4 +133,48 @@ test('stable required gate always evaluates every lane without gaining publicati
     run: 'node scripts/ci/run.ts gate',
     env: { MOLDEA_CI_PLAN: '${{ needs.plan.outputs.plan }}', GITHUB_NEEDS: '${{ toJSON(needs) }}' },
   });
+});
+
+test('routine suite inputs and closed matrices preserve native platform eligibility', () => {
+  const essential = createCiPlan({
+    testedCommit: 'a'.repeat(40),
+    comparisonCommit: null,
+    current: new Map(),
+    previous: new Map(),
+    changedPaths: [],
+    testSuite: 'essential',
+  });
+  expect(createCiMatrices(essential).cli['node-version']).toStrictEqual([
+    workflow.env['NODE_VERSION'],
+  ]);
+  expect(workflow.on['workflow_call']?.inputs?.['test_suite']).toMatchObject({
+    type: 'string',
+    default: 'essential',
+  });
+  expect(workflow.on['workflow_dispatch']?.inputs?.['test_suite']).toMatchObject({
+    type: 'choice',
+    default: 'essential',
+    options: ['essential', 'full'],
+  });
+  expect(workflow.jobs['cli-runtime-compatibility']?.strategy?.matrix).toBe(
+    '${{ fromJSON(needs.plan.outputs.cli_runtime_matrix) }}',
+  );
+  expect(workflow.jobs['repository-fs-runtime-compatibility']?.strategy?.matrix).toBe(
+    '${{ fromJSON(needs.plan.outputs.repository_fs_runtime_matrix) }}',
+  );
+  expect(workflow.jobs['test-cross-platform']?.strategy?.matrix).toStrictEqual({
+    os: ['macos-latest', 'windows-latest'],
+  });
+  expect(workflow.jobs['test-cross-platform']?.if).toBe(
+    "${{ needs.plan.outputs.cross_platform == 'true' }}",
+  );
+  expect(
+    workflow.jobs['test-cross-platform']?.steps?.find(
+      ({ name }) => name === 'Install Website Browser',
+    )?.if,
+  ).toBe("${{ needs.plan.outputs.website == 'true' && needs.plan.outputs.test_suite == 'full' }}");
+  for (const name of ['test_suite', 'cli_runtime_matrix', 'repository_fs_runtime_matrix'])
+    expect(workflow.jobs['plan']?.outputs?.[name]).toBe(
+      '' + '${{ steps.selection.outputs.' + name + ' }}',
+    );
 });

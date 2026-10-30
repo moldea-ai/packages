@@ -46,7 +46,13 @@ Configuration messages are `MOLDEA_TEST_SUITE must be essential or full when set
 
 ## CI and publication
 
-CI currently retains its complete granular commands and existing affected-workspace/platform selection; it does not yet select essential. See [affected CI](local-development.md#affected-ci). Complete local full includes packages-website browsers; shared CI excludes them. Publication runs them only for Website UI, in parallel with shared verification. No new local-full attestation, semantic evidence, or approval is required for publication.
+CI keeps affected-workspace scope (`mode`) independent of correctness priority (`testSuite`). Ordinary PR and non-release main verification use essential; `CI_RELEASE_BUILD=true` forces full priority and all workspaces. Manual `test_suite: full` also selects every workspace without publication. Invalid `CI_TEST_SUITE` values fail before planning. The runner overrides inherited `MOLDEA_TEST_SUITE` from its validated plan.
+
+Essential omits website test categories and evaluator/presentation preparation while retaining build, lint, types, formatting, root contracts, selected primary package tests, and applicable packed CLI/Repository FS consumers on Ubuntu/Node 24.15.0. Required macOS and Windows correctness lanes remain eligible whenever any workspace is selected; their priority follows the plan. Full priority retains the existing broad runtime/package-manager/Vitest compatibility qualifications and explicit granular stages. See [affected CI](local-development.md#affected-ci).
+
+Complete local full includes packages-website browsers; shared CI excludes them. Publication runs them only for Website UI, in parallel with shared verification. Pages retains source, quality, production-artifact validation, exact-source and advertised-version gates without frontend test permutations. No new local-full attestation, semantic evidence, or approval is required for publication.
+
+Daily Registry Canary uses essential packed consumers with fresh live registry resolution and failure reporting. This provides reduced compatibility assurance. Explicit full live canary qualification remains required before advancing the reviewed registry snapshot; daily essential success alone is insufficient.
 
 ## Measurement
 
