@@ -22,7 +22,8 @@ const runCommand = async (
 ): Promise<number> => {
   if (signal?.aborted) return 1;
   const cwd = resolve(import.meta.dirname, '../..');
-  const command = resolvePackageManagerCommand(args, { packageManager: 'pnpm', cwd, env });
+  // preserve Windows' native environment lookup; the copied environment is for the child
+  const command = resolvePackageManagerCommand(args, { packageManager: 'pnpm', cwd });
   const child = startProcess({ ...command, cwd, env, stdio: 'inherit' });
   const exited = new Promise<number>((resolveExit, reject) => {
     child.once('error', reject);

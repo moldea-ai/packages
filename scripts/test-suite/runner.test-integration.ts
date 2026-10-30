@@ -11,7 +11,7 @@ import { parseTestSuiteArguments, runTestSuite } from '#test-suite/index';
 
 const cli = fileURLToPath(new URL('./test-suite.cli.ts', import.meta.url));
 
-const createFixture = async () => {
+const createFixture = async (environment: NodeJS.ProcessEnv = process.env) => {
   const root = await mkdtemp(join(tmpdir(), 'moldea-suite-'));
   const entry = join(root, 'pnpm.cjs');
   const record = join(root, 'commands.jsonl');
@@ -29,13 +29,47 @@ const createFixture = async () => {
     entry,
     record,
     env: {
-      ...process.env,
+      // remove case variants before overriding the package-manager entry on Windows
+      ...Object.fromEntries(
+        Object.entries(environment).filter(([name]) => name.toLowerCase() !== 'npm_execpath'),
+      ),
       npm_execpath: entry,
       MOLDEA_SUITE_RECORD: record,
       MOLDEA_TEST_SUITE: 'invalid-parent',
     },
   };
 };
+
+test('package-manager discovery retains native environment lookup', async () => {
+  const fixture = await createFixture();
+  try {
+    vi.stubEnv('npm_execpath', fixture.entry);
+    vi.stubEnv('MOLDEA_SUITE_RECORD', fixture.record);
+    vi.resetModules();
+    vi.doMock('jg-process', async (importOriginal) => {
+      const actual = await importOriginal<typeof JgProcess>();
+      return {
+        ...actual,
+        resolvePackageManagerCommand: (
+          ...args: Parameters<typeof actual.resolvePackageManagerCommand>
+        ) => {
+          const usesNativeEnvironment = args[1]?.env === undefined || args[1].env === process.env;
+          expect(
+            usesNativeEnvironment,
+            'package-manager lookup must preserve native environment key semantics',
+          ).toBe(true);
+          return actual.resolvePackageManagerCommand(...args);
+        },
+      };
+    });
+    const boundary = await import('#test-suite');
+    expect(await boundary.runTestSuite(parseTestSuiteArguments(['essential', 'unit']))).toBe(0);
+  } finally {
+    vi.doUnmock('jg-process');
+    vi.resetModules();
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
 
 test('a cleanup failure rejects a successful child and stops later stages', async () => {
   const fixture = await createFixture();
@@ -71,8 +105,11 @@ test('a cleanup failure rejects a successful child and stops later stages', asyn
 test.each(['essential', 'full'])(
   'real root %s forces child mode and selects setup/categories',
   async (suite) => {
-    const fixture = await createFixture();
+    const fixture = await createFixture({ ...process.env, NPM_EXECPATH: 'inherited-entry' });
     try {
+      expect(
+        Object.keys(fixture.env).filter((name) => name.toLowerCase() === 'npm_execpath'),
+      ).toStrictEqual(['npm_execpath']);
       const result = await runProcess({
         command: process.execPath,
         args: [cli, suite],
