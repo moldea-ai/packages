@@ -1,9 +1,30 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest';
+import { fileURLToPath } from 'node:url';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createTestConfig } from './test.config.js';
 
+beforeEach(() => vi.stubEnv('MOLDEA_TEST_SUITE', undefined));
+
 describe('createTestConfig', () => {
+  it('scopes whole-file classification to its workspace owner', () => {
+    vi.stubEnv('MOLDEA_TEST_SUITE', 'essential');
+    const cwd = vi.spyOn(process, 'cwd');
+    cwd.mockReturnValue(fileURLToPath(new URL('../../projects/website-ui', import.meta.url)));
+    const website = createTestConfig({ suite: 'unit' });
+    expect(
+      website.test?.exclude?.some(
+        (pattern) => typeof pattern === 'string' && pattern.includes('code-diff'),
+      ),
+    ).toBe(true);
+    cwd.mockReturnValue(fileURLToPath(new URL('../../projects/core', import.meta.url)));
+    const core = createTestConfig({ suite: 'unit' });
+    expect(
+      core.test?.exclude?.some(
+        (pattern) => typeof pattern === 'string' && pattern.includes('code-diff'),
+      ),
+    ).toBe(false);
+  });
   it('creates a strict Node.js unit-test configuration by default', () => {
     const config = createTestConfig({ suite: 'unit' });
 
@@ -15,6 +36,7 @@ describe('createTestConfig', () => {
       include: ['src/**/*.test-unit.ts'],
       passWithNoTests: false,
       restoreMocks: true,
+      tags: [{ name: 'full', skip: false }],
       sequence: {
         shuffle: false,
       },

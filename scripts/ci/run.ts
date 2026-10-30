@@ -65,14 +65,17 @@ const runSelectedTask = (
 
 if (stage === 'gate') validateCiJobResults(plan, process.env['GITHUB_NEEDS'] ?? '');
 else {
+  process.env['MOLDEA_TEST_SUITE'] = plan.testSuite;
+  const isEssential = plan.testSuite === 'essential';
   if (stage === 'checks') {
-    runPnpm(['website:prepare']);
+    if (isEssential) runPnpm(['exec', 'turbo', 'run', 'build', '--filter=@moldea.ai/cli...']);
+    else runPnpm(['website:prepare']);
     runPnpm(['test:root:unit']);
     runPnpm(['format:check']);
     runPnpm(['lint:root']);
     runPnpm(['typecheck:root']);
   } else {
-    if (plan.rootIntegration) runPnpm(['website:prepare']);
+    if (plan.rootIntegration && !isEssential) runPnpm(['website:prepare']);
     runSelectedTask('build', true);
     if (plan.mode === 'full') runPnpm(['test:root:unit']);
   }
@@ -81,9 +84,13 @@ else {
     runSelectedTask('lint', false);
     runSelectedTask('typecheck', false);
   }
-  runSelectedTask('test:unit', false);
+  runSelectedTask('test:unit', false, isEssential ? [CI_WEBSITE_WORKSPACE] : []);
   if (plan.rootIntegration) runPnpm(['test:root:integration']);
-  runSelectedTask('test:integration', false);
+  runSelectedTask(
+    'test:integration',
+    false,
+    isEssential ? [CI_WEBSITE_WORKSPACE, '@moldea.ai/website-ui'] : [],
+  );
   // the website's browser suite runs locally before merging, never in CI
   runSelectedTask('test:e2e', false, [CI_WEBSITE_WORKSPACE]);
 }

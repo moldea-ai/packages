@@ -67,9 +67,6 @@ jobs:
       - name: Check documentation sources
         run: pnpm docs:check
 
-      - name: Test website generators
-        run: pnpm --filter @moldea.ai/packages-website test:unit
-
       - name: Typecheck website
         run: pnpm --filter @moldea.ai/packages-website typecheck
 
@@ -81,12 +78,6 @@ jobs:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
           SITE_URL: https://${{ steps.pages.outputs.host }}
         run: pnpm website:build
-
-      - name: Test static artifact integration
-        env:
-          BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          SITE_URL: https://${{ steps.pages.outputs.host }}
-        run: pnpm --filter @moldea.ai/packages-website test:integration
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4

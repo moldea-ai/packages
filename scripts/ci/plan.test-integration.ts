@@ -34,6 +34,7 @@ const run = (env: Record<string, string> = {}) =>
       CI_BASE_COMMIT: base,
       CI_TESTED_COMMIT: head,
       CI_RELEASE_BUILD: 'false',
+      CI_TEST_SUITE: 'essential',
       GITHUB_OUTPUT: join(directory, 'outputs.txt'),
       GITHUB_STEP_SUMMARY: join(directory, 'summary.md'),
       ...env,
@@ -71,6 +72,7 @@ test('planner binds actual checkout, validates outputs and reports website-only 
     testedCommit: head,
     comparisonCommit: base,
     mode: 'affected',
+    testSuite: 'essential',
     workspaces: ['@moldea.ai/packages-website'],
     rootIntegration: false,
     lanes: [],
@@ -79,6 +81,10 @@ test('planner binds actual checkout, validates outputs and reports website-only 
   const outputs = await readFile(join(directory, 'outputs.txt'), 'utf8');
   expect(outputs).toContain(`plan=${JSON.stringify(plan)}\n`);
   expect(outputs).toContain('cross_platform=true\n');
+  expect(outputs).toContain('test_suite=essential\n');
+  expect(outputs).toContain(
+    'cli_runtime_matrix={"os":["ubuntu-latest"],"node-version":["22.17.0","24.15.0"]}\n',
+  );
   expect(outputs).toContain('cli_runtime_compatibility=false\n');
   expect(await readFile(join(directory, 'summary.md'), 'utf8')).toContain(head);
 });
@@ -97,10 +103,11 @@ test.each(['', '0'.repeat(40), 'f'.repeat(40)])(
 );
 
 test('actual release candidates force full verification for otherwise website-only changes', () => {
-  const result = run({ CI_RELEASE_BUILD: 'true' });
+  const result = run({ CI_RELEASE_BUILD: 'true', CI_TEST_SUITE: 'essential' });
   expect(result.status).toBe(0);
   expect(parseCiPlan(result.stdout.trim())).toMatchObject({
     mode: 'full',
+    testSuite: 'full',
     comparisonCommit: base,
     artifacts: true,
   });
@@ -110,6 +117,8 @@ test.each([
   { CI_BASE_COMMIT: '--all' },
   { CI_TESTED_COMMIT: 'f'.repeat(40) },
   { CI_RELEASE_BUILD: 'yes' },
+  { CI_TEST_SUITE: 'unknown' },
+  { CI_RELEASE_BUILD: 'true', CI_TEST_SUITE: '' },
 ])('planner rejects malformed workflow inputs %o', (env) => {
   const result = run(env);
   expect(result.status).not.toBe(0);
@@ -138,4 +147,18 @@ test('planner traverses old removed edges after a dependency workspace is delete
   expect(parseCiPlan(result.stdout.trim()).workspaces).toStrictEqual([
     '@moldea.ai/packages-website',
   ]);
+});
+
+test('explicit full dispatch expands workspace scope without a release input', async () => {
+  const result = run({ CI_TEST_SUITE: 'full' });
+  expect(result.status, result.stderr).toBe(0);
+  expect(parseCiPlan(result.stdout.trim())).toMatchObject({
+    mode: 'full',
+    testSuite: 'full',
+    artifacts: true,
+  });
+  const outputs = await readFile(join(directory, 'outputs.txt'), 'utf8');
+  expect(outputs).toContain('test_suite=full\n');
+  expect(outputs).toContain('consumer_conformance=true\n');
+  expect(outputs).toContain('cross_platform=true\n');
 });

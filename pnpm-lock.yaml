@@ -35,6 +35,9 @@ importers:
       jg-git-commands:
         specifier: 0.4.0
         version: 0.4.0
+      jg-plans:
+        specifier: 0.4.0
+        version: 0.4.0
       jg-process:
         specifier: 1.6.2
         version: 1.6.2
@@ -1932,6 +1935,10 @@ packages:
     resolution: {integrity: sha512-S7Bq9kmAK43xZeNQ41iubJ2LYxxyW3yMEoh2ciFkmm0/LAD3i2OgKOV4YPUL4j8NVGdjFuyJ5L8Ew6ti3wwVIQ==}
     engines: {node: '>=22.17.0'}
 
+  jg-exception@1.7.0:
+    resolution: {integrity: sha512-EmhkDdWxunZdYt+xjqe1G9tPbaSkVqF6xu/TxxChz7yVI+vXiWk8K5D+0J+masNL4MJwJv1sTDPC2x3QYMbJxA==}
+    engines: {node: '>=22.17.0'}
+
   jg-exception@1.7.1:
     resolution: {integrity: sha512-bi5yn3rtvFLlhjOiJJAREVE1mYXnENW3zoRcMOymNlgr09Z+Hy7ECgqGvIkqvINy+QDpki0u8XbmWSZpWpuwVQ==}
     engines: {node: '>=22.17.0'}
@@ -1940,8 +1947,21 @@ packages:
     resolution: {integrity: sha512-vmBVqAPzqsyIyVUgOxiTjm9vpXiA6NpUorb2CosG+XzwLAOI0nnuqs+MuImVNVC7x3E2havMV5QxHxGtaFUPhg==}
     engines: {node: '>=22.17.0'}
 
+  jg-fs@1.7.0:
+    resolution: {integrity: sha512-LEttOq6o3dqpim3v20IPF3bx+gWH7BHGels1hLTugpIghbnjycw+IgMMmSigrmpUVkBxhiwpLLMXsQliVfKfdQ==}
+    engines: {node: '>=22.17.0'}
+
   jg-git-commands@0.4.0:
     resolution: {integrity: sha512-O2OtTQ3SsAGUwj9OpjlNOZOVEyBmzg1+YTm0KdfJxZLgAiQFFHyblrAENEkgdwmH8Qp9KP9n30XNYoDBT1+L2Q==}
+    engines: {node: '>=22.17.0'}
+
+  jg-plans@0.4.0:
+    resolution: {integrity: sha512-RLCIkWcWhgWWrIqOVnyCAF3vyB5P+Qp6zJ0BwAteR1exig9TEUXvPZlci+KhdU1hqIDSTKIK6nA30E3mnQOgIA==}
+    engines: {node: '>=24.15.0'}
+    hasBin: true
+
+  jg-process@1.6.1:
+    resolution: {integrity: sha512-F75AiEaJLTRcPNvH/LEC1neSA6wa316W6O++lJYWsObdghBl3p18q5ueDxFZ8C8HnY/kLTdgHpdaC18SF3/gQg==}
     engines: {node: '>=22.17.0'}
 
   jg-process@1.6.2:
@@ -1950,6 +1970,10 @@ packages:
 
   jg-site@0.1.0:
     resolution: {integrity: sha512-wHL9HvqU+mzECiqKwVB0iiln5C/mP3EdIW43KfFFFf/Kk4zWSIEfXg6W0Iq6VjRFMfRFAOaFr4unSbf2/X/Nig==}
+    engines: {node: '>=22.17.0'}
+
+  jg-utilities@1.7.0:
+    resolution: {integrity: sha512-Cdec4v/QW7TPaY68/McjGxLCvrwH7aKI9H0DsXoo3qi27R81DTbxVZpsg7/LVZ3Ah3Kai1OHiUgpju2rmF2VEA==}
     engines: {node: '>=22.17.0'}
 
   jg-utilities@1.7.2:
@@ -3076,6 +3100,11 @@ packages:
     engines: {node: '>= 14.6'}
     hasBin: true
 
+  yaml@2.9.1:
+    resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yargs-parser@22.0.0:
     resolution: {integrity: sha512-rwu/ClNdSMpkSrUb+d6BRsSkLUq1fmfsY6TOpYzTwvwkg1/NRG85KBy3kq++A8LKQwX6lsu+aWad+2khvuXrqw==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
@@ -3094,6 +3123,9 @@ packages:
 
   zod@4.3.6:
     resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -4611,6 +4643,8 @@ snapshots:
     dependencies:
       jg-exception: 1.7.1
 
+  jg-exception@1.7.0: {}
+
   jg-exception@1.7.1: {}
 
   jg-fetch@0.5.1:
@@ -4619,10 +4653,30 @@ snapshots:
       jg-exception: 1.7.1
       jg-utilities: 1.7.2
 
+  jg-fs@1.7.0:
+    dependencies:
+      jg-exception: 1.7.1
+      jg-utilities: 1.7.2
+
   jg-git-commands@0.4.0:
     dependencies:
       jg-exception: 1.7.1
       jg-process: 1.6.2
+
+  jg-plans@0.4.0:
+    dependencies:
+      jg-crypto: 0.3.0
+      jg-exception: 1.7.0
+      jg-fs: 1.7.0
+      jg-process: 1.6.1
+      jg-utilities: 1.7.0
+      yaml: 2.9.1
+      zod: 4.6.7
+
+  jg-process@1.6.1:
+    dependencies:
+      jg-exception: 1.7.1
+      jg-utilities: 1.7.2
 
   jg-process@1.6.2:
     dependencies:
@@ -4630,6 +4684,11 @@ snapshots:
       jg-utilities: 1.7.2
 
   jg-site@0.1.0: {}
+
+  jg-utilities@1.7.0:
+    dependencies:
+      jg-exception: 1.7.1
+      uuid: 14.0.3
 
   jg-utilities@1.7.2:
     dependencies:
@@ -5801,6 +5860,8 @@ snapshots:
 
   yaml@2.9.0: {}
 
+  yaml@2.9.1: {}
+
   yargs-parser@22.0.0: {}
 
   yargs@18.1.0:
@@ -5817,5 +5878,7 @@ snapshots:
   yocto-queue@1.2.2: {}
 
   zod@4.3.6: {}
+
+  zod@4.6.7: {}
 
   zwitch@2.0.4: {}

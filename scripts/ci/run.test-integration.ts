@@ -23,7 +23,11 @@ const write = async (path: string, source: string) => {
   await writeFile(join(directory, path), source);
   git('add', '--', path);
 };
-const planFor = (paths: string[], fullReason?: string) => {
+const planFor = (
+  paths: string[],
+  fullReason?: string,
+  testSuite: 'essential' | 'full' = 'full',
+) => {
   const root = pathToFileURL(`${directory}${sep}`);
   const testedCommit = getGitHead(root);
   const current = loadGitWorkspaceSnapshot(root, testedCommit);
@@ -33,10 +37,15 @@ const planFor = (paths: string[], fullReason?: string) => {
     current,
     previous: current,
     changedPaths: paths,
+    testSuite,
     ...(fullReason === undefined ? {} : { fullReason }),
   });
 };
-const run = (plan = planFor(['apps/website/example.ts']), stage = 'checks') =>
+const run = (
+  plan = planFor(['apps/website/example.ts']),
+  stage = 'checks',
+  extraEnv: Record<string, string> = {},
+) =>
   spawnSync(process.execPath, [entry, stage], {
     cwd: directory,
     encoding: 'utf8',
@@ -45,6 +54,8 @@ const run = (plan = planFor(['apps/website/example.ts']), stage = 'checks') =>
       npm_execpath: packageManager,
       MOLDEA_CI_PLAN: JSON.stringify(plan),
       TURBO_TELEMETRY_DISABLED: '1',
+      MOLDEA_TEST_SUITE: 'invalid-parent',
+      ...extraEnv,
     },
     maxBuffer: 4 * 1024 * 1024,
   });
@@ -79,7 +90,7 @@ beforeEach(async () => {
   await write('pnpm-workspace.yaml', 'packages:\n  - apps/*\n  - projects/*\n  - packages/*\n');
   await write(
     'pnpm-lock.yaml',
-    "lockfileVersion: '9.0'\nimporters:\n  .: {}\n  projects/website-ui: {}\n  packages/runtime: {}\n  apps/website:\n    dependencies:\n      '@moldea.ai/website-ui':\n        specifier: workspace:*\n        version: link:../../projects/website-ui\n",
+    "lockfileVersion: '9.0'\nimporters:\n  .: {}\n  projects/website-ui: {}\n  projects/cli: {}\n  packages/runtime: {}\n  apps/website:\n    dependencies:\n      '@moldea.ai/website-ui':\n        specifier: workspace:*\n        version: link:../../projects/website-ui\n",
   );
   await write(
     'turbo.json',
@@ -96,10 +107,11 @@ beforeEach(async () => {
   );
   await write(
     'root.mjs',
-    `import {appendFileSync,writeFileSync} from 'node:fs'; appendFileSync('execution.log',process.argv[2]+'\\n'); if(process.argv[2]==='website:prepare')writeFileSync('prepared','yes');`,
+    `import {appendFileSync,writeFileSync} from 'node:fs'; appendFileSync('execution.log',process.argv[2]+'\\n'); appendFileSync('selection.log',process.env.MOLDEA_TEST_SUITE+'\\n'); if(process.argv[2]==='website:prepare')writeFileSync('prepared','yes');`,
   );
   for (const [path, name, dependencies] of [
     ['projects/website-ui', '@moldea.ai/website-ui', {}],
+    ['projects/cli', '@moldea.ai/cli', {}],
     ['apps/website', '@moldea.ai/packages-website', { '@moldea.ai/website-ui': 'workspace:*' }],
   ] as const) {
     const taskScripts = Object.fromEntries(
@@ -214,4 +226,57 @@ test('cross-platform full verification builds prerequisites before root integrat
     log.indexOf('test:root:integration'),
   );
   expect(log.indexOf('website:prepare')).toBeLessThan(log.indexOf('test:root:unit'));
+});
+
+test.each(['checks', 'test'])(
+  'essential %s retains quality/platform work while omitting full-only setup and tasks',
+  async (stage) => {
+    const selected = planFor([], 'Global tooling changed.', 'essential');
+    const result = run(selected, stage);
+    expect(result.status, result.stdout + result.stderr).toBe(0);
+    const log = await readFile(join(directory, 'execution.log'), 'utf8');
+    expect(log).not.toContain('website:prepare');
+    expect(log).not.toContain('@moldea.ai/packages-website:test:');
+    expect(log).not.toContain('@moldea.ai/website-ui:test:integration');
+    expect(log).toContain('@moldea.ai/website-ui:test:unit');
+    expect(log).toContain('@moldea.ai/cli:test:e2e');
+    expect(log).toContain('test:root:integration');
+    if (stage === 'checks')
+      for (const task of ['lint', 'typecheck', 'build'])
+        expect(log).toContain('@moldea.ai/packages-website:' + task);
+    expect(
+      (await readFile(join(directory, 'selection.log'), 'utf8'))
+        .trim()
+        .split('\n')
+        .every((suite) => suite === 'essential'),
+    ).toBe(true);
+  },
+);
+
+test('real final gate fails closed on cancelled, skipped, failed and missing native platform results', () => {
+  const plan = planFor(['apps/website/page.astro'], undefined, 'essential');
+  const results = Object.fromEntries(
+    [
+      'plan',
+      'checks',
+      'pack',
+      'consumer-conformance',
+      'cli-testing-peer-compatibility',
+      'repository-fs-runtime-compatibility',
+      'cli-runtime-compatibility',
+      'test-cross-platform',
+    ].map((name) => [
+      name,
+      { result: ['plan', 'checks', 'test-cross-platform'].includes(name) ? 'success' : 'skipped' },
+    ]),
+  );
+  expect(run(plan, 'gate', { GITHUB_NEEDS: JSON.stringify(results) }).status).toBe(0);
+  for (const result of ['cancelled', 'skipped', 'failure'])
+    expect(
+      run(plan, 'gate', {
+        GITHUB_NEEDS: JSON.stringify({ ...results, 'test-cross-platform': { result } }),
+      }).status,
+    ).not.toBe(0);
+  delete results['test-cross-platform'];
+  expect(run(plan, 'gate', { GITHUB_NEEDS: JSON.stringify(results) }).status).not.toBe(0);
 });

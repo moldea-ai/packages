@@ -75,6 +75,8 @@ The default build inputs are `SITE_URL=https://packages.moldea.ai` and `BASE_PAT
 
 Check root build artifacts with `check:links` before running Playwright, because its server setup rebuilds the site. Cache verification must inspect fresh source markers in model and static artifacts immediately after root `website:build`, then confirm an unchanged warm hit. Run clean-command and source-mutation checks in an isolated checkout with its own installation. Alternate-origin verification must retain exact expected metadata URLs and test Turbo-mediated E2E environment forwarding, including `PLAYWRIGHT_BROWSERS_PATH`.
 
+The root [testing guide](../../docs/testing.md) places ordinary website categories in full selection. `pnpm test` omits this application before setup; `pnpm test:full` includes all its tests and browsers. Focused website commands remain complete, including meaningful accessibility/theme/mobile checks. Routine CI omits full-only website tests; source/types/lint/build/production-artifact and deployment gates remain. Full release CI keeps its existing granular scope, and the conditional parallel Website UI browser gate remains authoritative.
+
 ## Design and rendering
 
 Inspection results use the same visitor-facing labels as Platform: Blocking, Warning, Passed, Accepted and Not checked. Core severity keys, CLI statuses and complete Output payloads keep their native values. Read and operation results retain labels such as Returned, Completed and Refused. The homepage and capability catalog share the same validation-outcome mapping.

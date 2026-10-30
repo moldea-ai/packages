@@ -26,15 +26,45 @@
     },
     "@moldea.ai/packages-website#test:integration": {
       "dependsOn": ["build", "^test:integration"],
-      "env": ["SITE_URL", "BASE_PATH"]
+      "env": ["SITE_URL", "BASE_PATH", "MOLDEA_TEST_SUITE"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/scripts/test-suite/**",
+        "$TURBO_ROOT$/configs/vitest/**",
+        "!$TURBO_ROOT$/**/_archive/**",
+        "!$TURBO_ROOT$/**/_archives/**",
+        "!$TURBO_ROOT$/**/_backup/**",
+        "!$TURBO_ROOT$/**/_backups/**"
+      ]
     },
     "@moldea.ai/packages-website#test:e2e": {
       "dependsOn": ["build", "^build"],
-      "env": ["PLAYWRIGHT_BROWSERS_PATH", "SITE_URL", "BASE_PATH"]
+      "env": ["PLAYWRIGHT_BROWSERS_PATH", "SITE_URL", "BASE_PATH", "MOLDEA_TEST_SUITE"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/scripts/test-suite/**",
+        "$TURBO_ROOT$/configs/vitest/**",
+        "!$TURBO_ROOT$/**/_archive/**",
+        "!$TURBO_ROOT$/**/_archives/**",
+        "!$TURBO_ROOT$/**/_backup/**",
+        "!$TURBO_ROOT$/**/_backups/**"
+      ]
     },
     "@moldea.ai/website-ui#test:integration": {
       "dependsOn": ["build", "^test:integration"],
-      "env": ["PLAYWRIGHT_BROWSERS_PATH"]
+      "env": ["PLAYWRIGHT_BROWSERS_PATH", "MOLDEA_TEST_SUITE"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/scripts/test-suite/**",
+        "$TURBO_ROOT$/configs/vitest/**",
+        "!$TURBO_ROOT$/**/_archive/**",
+        "!$TURBO_ROOT$/**/_archives/**",
+        "!$TURBO_ROOT$/**/_backup/**",
+        "!$TURBO_ROOT$/**/_backups/**"
+      ]
     },
     "@moldea.ai/core#typecheck": {
       "dependsOn": ["build", "^typecheck"]
@@ -67,17 +97,60 @@
       "dependsOn": ["^build", "^lint"]
     },
     "test": {
-      "dependsOn": ["^test"]
+      "dependsOn": ["^test"],
+      "env": ["MOLDEA_TEST_SUITE"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/scripts/test-suite/**",
+        "$TURBO_ROOT$/configs/vitest/**",
+        "!$TURBO_ROOT$/**/_archive/**",
+        "!$TURBO_ROOT$/**/_archives/**",
+        "!$TURBO_ROOT$/**/_backup/**",
+        "!$TURBO_ROOT$/**/_backups/**"
+      ]
     },
     "test:e2e": {
       "dependsOn": ["build", "^build"],
-      "env": ["PLAYWRIGHT_BROWSERS_PATH"]
+      "env": ["PLAYWRIGHT_BROWSERS_PATH", "MOLDEA_TEST_SUITE"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/scripts/test-suite/**",
+        "$TURBO_ROOT$/configs/vitest/**",
+        "!$TURBO_ROOT$/**/_archive/**",
+        "!$TURBO_ROOT$/**/_archives/**",
+        "!$TURBO_ROOT$/**/_backup/**",
+        "!$TURBO_ROOT$/**/_backups/**"
+      ]
     },
     "test:integration": {
-      "dependsOn": ["build", "^test:integration"]
+      "dependsOn": ["build", "^test:integration"],
+      "env": ["MOLDEA_TEST_SUITE"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/scripts/test-suite/**",
+        "$TURBO_ROOT$/configs/vitest/**",
+        "!$TURBO_ROOT$/**/_archive/**",
+        "!$TURBO_ROOT$/**/_archives/**",
+        "!$TURBO_ROOT$/**/_backup/**",
+        "!$TURBO_ROOT$/**/_backups/**"
+      ]
     },
     "test:unit": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "env": ["MOLDEA_TEST_SUITE"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/scripts/test-suite/**",
+        "$TURBO_ROOT$/configs/vitest/**",
+        "!$TURBO_ROOT$/**/_archive/**",
+        "!$TURBO_ROOT$/**/_archives/**",
+        "!$TURBO_ROOT$/**/_backup/**",
+        "!$TURBO_ROOT$/**/_backups/**"
+      ]
     },
     "typecheck": {
       "dependsOn": ["^build", "^typecheck"]

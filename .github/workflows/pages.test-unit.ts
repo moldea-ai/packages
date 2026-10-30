@@ -59,3 +59,16 @@ test('queues a newer deployment instead of cancelling one in progress', () => {
     'cancel-in-progress': false,
   });
 });
+
+test('keeps source, quality, artifact validation and publication safety without frontend test permutations', () => {
+  const runs =
+    workflow.jobs['build']?.steps?.flatMap(({ run }) => (run === undefined ? [] : [run])) ?? [];
+  for (const required of [
+    'pnpm docs:check',
+    'pnpm --filter @moldea.ai/packages-website typecheck',
+    'pnpm --filter @moldea.ai/packages-website lint',
+    'pnpm website:build',
+  ])
+    expect(runs).toContain(required);
+  expect(runs.some((run) => /test:(unit|integration|e2e)/u.test(run))).toBe(false);
+});

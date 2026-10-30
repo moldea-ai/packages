@@ -2,7 +2,7 @@
 
 Public packages release automatically after their changes reach `main`. Pull requests invoke reusable `CI` directly; every `main` push invokes `Publish npm Packages` as its sole verification and release orchestrator, without a parallel branch-push CI run and including successful no-op releases. Manual `CI` dispatch remains available for branch checks. Selected projects must declare valid stable versions. Actual release and registry-recovery candidates force complete verification with dependency caching disabled, then publish exact checksummed tarballs in dependency order. No-release main pushes use the affected CI policy described in [local development](local-development.md#affected-ci).
 
-The trusted build compares its complete CLI closure with the reviewed downstream-consumer checksums in `consumers/SHA256SUMS`. A missing package, changed identity, or different tarball fails verification. Update that selection only after qualifying the changed artifacts and recording the consumer/source/profile evidence in the accompanying README. CI passes its own immutable public-package artifact, exact source commit and registry snapshot to the skill repository's pinned reusable release-candidate workflow. The existing manager matrix and generated launcher exercise those exact bytes without another pack step. These read-only consumer jobs run whenever CLI is selected and on every full release verification. Their failure blocks the final CI gate and the existing OIDC publisher.
+The trusted build compares its complete CLI closure with the reviewed downstream-consumer checksums in `consumers/SHA256SUMS`. A missing package, changed identity, or different tarball fails verification. Update that selection only after qualifying the changed artifacts and recording the consumer/source/profile evidence in the accompanying README. CI passes its own immutable public-package artifact, exact source commit and registry snapshot to the skill repository's pinned reusable release-candidate workflow. The existing manager matrix and generated launcher exercise those exact bytes without another pack step. These broad read-only consumer jobs run when CLI is selected under full priority and on every actual release verification. Essential uses compact packed runtime consumers; all lanes retain exact-artifact/source checks. Their failure blocks the final CI gate and the existing OIDC publisher.
 
 Because npm releases are permanent, a Website UI release also requires the packages website's browser suite to pass against the candidate; the job runs in parallel with release verification, in the same Playwright image, and pull requests skip the suite.
 
@@ -22,6 +22,8 @@ The reusable Linux job runs in the official Playwright image pinned to the `@pla
 
 Packages follow their focused semantic-versioning contracts independently. A coordinated release may place multiple package tags on one commit without creating lockstep versioning. Workflow-created tags are annotated but not cryptographically signed; the repository stores no long-lived tag-signing key.
 
+Daily Registry Canary checks essential live-registry consumers with reduced compatibility assurance. Request full live qualification explicitly before promoting the reviewed registry snapshot; daily success alone is insufficient.
+
 ## Repository setup
 
 Create a GitHub environment named `npm-release`, restrict deployment to `main`, and configure each existing npm package with this trusted publisher:
@@ -36,6 +38,8 @@ Create a GitHub environment named `npm-release`, restrict deployment to `main`, 
 Publication uses npm OIDC without an npm token. Although publication jobs run through reusable `publish-package.yml`, npm validates the calling `publish.yml` identity. Both workflow boundaries grant OIDC permission while tag-writing and package-publishing permissions remain separate. After trusted publication succeeds, restrict traditional token publication and revoke any temporary automation token.
 
 ## Preparing a release
+
+The [testing guide](testing.md) distinguishes local essential/full commands from existing CI release qualification. `pnpm test` now selects essential; `pnpm test:full` remains the complete explicit local suite. Actual releases force full priority within the existing granular CI boundary; non-release main verification uses essential. This adds no local-full attestation, semantic evidence or publication step and preserves the conditional parallel Website UI browser gate.
 
 1. Audit the complete diff against its base commit using the release-relevance rules below. When both commits are available, run:
 

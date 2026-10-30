@@ -15,7 +15,7 @@ pnpm build
 pnpm test
 ```
 
-See [local development](docs/local-development.md) for focused commands, build and test conventions, and consumer-runtime verification.
+See [local development](docs/local-development.md) for focused commands, build and test conventions, and consumer-runtime verification. Local and routine CI defaults use essential; `pnpm test:full` remains the complete explicit suite.
 
 ## Project blueprint
 
@@ -43,6 +43,7 @@ The reference is for repository development only. Builds, tests, CI, and package
 
 - [Repository Format version `1` specification](specifications/repository-format.md): the public format contract; `@moldea.ai/core` is its executable reference implementation.
 - [Local development](docs/local-development.md): commands, builds, tests, and packed-consumer checks.
+- [Testing](docs/testing.md): essential/full classification, focused completion checks, and full-run cadence.
 - [npm releases](docs/npm-releases.md): version selection, preparation, publication, and recovery.
 - [Packages website](apps/website/README.md): website source model, verification, and deployment.
 - `projects/<project>/README.md` and `projects/<project>/docs/**`: public package behavior and API documentation.

@@ -16,7 +16,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createGitEnvironment } from 'jg-git-commands';
-import { describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 import type { IMoldeaCliValidateResult } from '../presentation/index.js';
 
@@ -251,7 +251,191 @@ const executeInstalledSignalCase = async (
   return executionResult;
 };
 
+const full = (timeout?: number) => ({
+  tags: ['full'],
+  ...(timeout === undefined ? {} : { timeout }),
+});
+
+const createEssentialCliFixture = () => {
+  const packageManagerEntrypoint = process.env['npm_execpath'];
+  if (packageManagerEntrypoint === undefined)
+    throw new Error('The package-manager entrypoint is unavailable.');
+  const directory = mkdtempSync(path.join(tmpdir(), 'moldea-cli-essential-'));
+  const consumer = path.join(directory, 'consumer');
+  const home = path.join(directory, 'home');
+  const config = path.join(directory, 'config');
+  try {
+    for (const target of [consumer, home, config]) mkdirSync(target);
+    const dependencies = Object.fromEntries<string>(
+      (
+        [
+          ['@moldea.ai/repository', REPOSITORY_PROJECT_DIRECTORY],
+          ['@moldea.ai/repository-fs', REPOSITORY_FILESYSTEM_PROJECT_DIRECTORY],
+          ['@moldea.ai/core', CORE_PROJECT_DIRECTORY],
+          ['@moldea.ai/cli', CLI_PROJECT_DIRECTORY],
+        ] as const
+      ).map(([name, project]): [string, string] => [
+        name,
+        `file:./${packPackageTarball(packageManagerEntrypoint, project, consumer)}`,
+      ]),
+    );
+    writeFileSync(
+      path.join(consumer, 'package.json'),
+      JSON.stringify({
+        name: 'moldea-essential-consumer',
+        private: true,
+        type: 'module',
+        dependencies,
+      }),
+    );
+    runPackageManager(
+      packageManagerEntrypoint,
+      ['install', '--ignore-scripts', '--config.engine-strict=true'],
+      { cwd: consumer, encoding: 'utf8', env: { ...process.env, CI: 'true' } },
+    );
+    const environment = createGitEnvironment({
+      baseEnv: { ...process.env, HOME: home, XDG_CONFIG_HOME: config },
+    });
+    execFileSync('git', ['init', '--quiet'], { cwd: consumer, env: environment });
+    mkdirSync(path.join(consumer, 'moldea'));
+    mkdirSync(path.join(consumer, 'src'));
+    writeFileSync(path.join(consumer, '.gitignore'), 'node_modules/\n*.tgz\n');
+    writeFileSync(
+      path.join(consumer, 'moldea', 'moldea.yaml'),
+      JSON.stringify({
+        version: 1,
+        context: { '/moldea/project.md': { affectedBy: ['/src/**'] } },
+      }),
+    );
+    writeFileSync(path.join(consumer, 'moldea', 'project.md'), '# Compact project\n');
+    writeFileSync(path.join(consumer, 'src', 'agent.ts'), 'export const agent = 1;\n');
+    execFileSync('git', ['add', 'moldea', 'src', '.gitignore', 'package.json'], {
+      cwd: consumer,
+      env: environment,
+    });
+    const executable = path.join(
+      consumer,
+      'node_modules',
+      '@moldea.ai',
+      'cli',
+      'dist',
+      'moldea.js',
+    );
+    const invoke = (args: string[], cwd = consumer) =>
+      spawnSync(process.execPath, [executable, ...args], {
+        cwd,
+        env: environment,
+        encoding: 'utf8',
+      });
+    return { directory, consumer, environment, executable, invoke };
+  } catch (error) {
+    rmSync(directory, { recursive: true, force: true });
+    throw error;
+  }
+};
+
 describe('published CLI package and executable', () => {
+  describe('essential installed CLI contracts', () => {
+    let fixture: ReturnType<typeof createEssentialCliFixture>;
+
+    // cold packing and real dependency installation exceed the default hook budget
+    beforeAll(() => {
+      fixture = createEssentialCliFixture();
+    }, 120_000);
+    afterAll(() => {
+      if (fixture !== undefined) rmSync(fixture.directory, { recursive: true, force: true });
+    });
+
+    // real commands include cold compiler and Git subprocess startup on native CI hosts
+    test('runs the primary read-only journey through an installed packed CLI', () => {
+      const { consumer, environment, invoke } = fixture;
+      const before = captureGitState(consumer, environment);
+      expect(invoke(['--version']).stdout).toBe('13.0.2\n');
+      for (const args of [
+        ['composition'],
+        ['inspect'],
+        ['validate'],
+        ['scope', '--path', '/src/agent.ts'],
+        ['content', '--path', '/moldea/project.md'],
+      ]) {
+        const response = invoke([...args, '--json']);
+        expect(response.status, response.stderr || response.stdout).toBe(0);
+        expect(response.stderr).toBe('');
+        expect(JSON.parse(response.stdout)).toMatchObject({ schemaVersion: 7, command: args[0] });
+        if (args[0] === 'content') expect(response.stdout).toContain('# Compact project');
+        if (args[0] === 'scope') expect(response.stdout).toContain('/moldea/project.md');
+      }
+      expect(captureGitState(consumer, environment)).toStrictEqual(before);
+    }, 120_000);
+
+    test.each([
+      [['--json'], null, 2, 'INVALID_ARGUMENT'],
+      [['inspect', '--json'], 'inspect', 3, 'GIT_REPOSITORY_NOT_FOUND'],
+    ] as const)(
+      'returns one safe JSON error for %o outside a repository',
+      (args, command, exitCode, errorCode) => {
+        const result = fixture.invoke([...args], fixture.directory);
+        expect(result.status).toBe(exitCode);
+        expect(result.stderr).toBe('');
+        expect(result.stdout).not.toContain(fixture.directory);
+        expect(JSON.parse(result.stdout)).toMatchObject({
+          cliVersion: '13.0.2',
+          schemaVersion: 7,
+          command,
+          status: 'error',
+          error: { code: errorCode },
+          result: null,
+        });
+      },
+    );
+
+    // cover both existing five-second readiness waits and native process shutdown
+    test.skipIf(process.platform === 'win32').each([
+      ['validate', 'SIGINT', 130],
+      ['inspect', 'SIGTERM', 143],
+    ] as const)(
+      'stops installed %s on %s without partial output',
+      async (command, signal, code) => {
+        const tools = path.join(fixture.directory, `signal-${command}`);
+        mkdirSync(tools);
+        const started = path.join(tools, 'started');
+        const stopped = path.join(tools, 'stopped');
+        const gitPath = path.join(tools, 'git');
+        writeFileSync(
+          gitPath,
+          `#!/usr/bin/env node
+const { writeFileSync } = require('node:fs');
+process.on('SIGTERM', () => {
+  writeFileSync(process.env.MOLDEA_TEST_GIT_STOPPED, 'stopped');
+  process.exit(0);
+});
+writeFileSync(process.env.MOLDEA_TEST_GIT_STARTED, 'started');
+setInterval(() => undefined, 1000);
+`,
+          'utf8',
+        );
+        chmodSync(gitPath, 0o755);
+        const before = captureGitState(fixture.consumer, fixture.environment);
+        const result = await executeInstalledSignalCase(
+          fixture.executable,
+          command,
+          signal,
+          fixture.consumer,
+          {
+            ...fixture.environment,
+            MOLDEA_TEST_GIT_STARTED: started,
+            MOLDEA_TEST_GIT_STOPPED: stopped,
+            PATH: `${tools}${path.delimiter}${fixture.environment['PATH'] ?? ''}`,
+          },
+          started,
+          stopped,
+        );
+        expect(result).toStrictEqual({ code, stderr: '', stdout: '' });
+        expect(captureGitState(fixture.consumer, fixture.environment)).toStrictEqual(before);
+      },
+      15_000,
+    );
+  });
   test('packs only the executable package surface and exact metadata', () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
 
@@ -296,7 +480,7 @@ describe('published CLI package and executable', () => {
     expect(executableChunks).toContain('minimumGitVersion');
   });
 
-  test('rewrites compatible workspace dependencies in the real tarball', () => {
+  test('rewrites compatible workspace dependencies in the real tarball', full(), () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
 
     if (packageManagerEntrypoint === undefined) {
@@ -325,7 +509,7 @@ describe('published CLI package and executable', () => {
     }
   });
 
-  test('preserves authored relationship pointers across installed validation pages', () => {
+  test('preserves installed validation relationship pointers', full(120000), () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
     if (packageManagerEntrypoint === undefined) {
       throw new Error('The package-manager entrypoint is unavailable.');
@@ -478,9 +662,9 @@ describe('published CLI package and executable', () => {
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
-  }, 120_000);
+  });
 
-  test('checks linked and ignored coding-agent instruction files through the installed CLI', () => {
+  test('checks installed linked and ignored instruction files', full(180000), () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
     if (packageManagerEntrypoint === undefined) {
       throw new Error('The package-manager entrypoint is unavailable.');
@@ -708,10 +892,11 @@ describe('published CLI package and executable', () => {
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
-  }, 180_000);
+  });
 
   test.skipIf(process.platform === 'win32')(
     'omits invalid external filenames and rejects canonical filenames in installed commands',
+    full(120_000),
     () => {
       const packageManagerEntrypoint = process.env['npm_execpath'];
       if (packageManagerEntrypoint === undefined) {
@@ -816,10 +1001,9 @@ describe('published CLI package and executable', () => {
         rmSync(directory, { force: true, recursive: true });
       }
     },
-    120_000,
   );
 
-  test('installs and executes the real CLI and foundational package tarballs', async () => {
+  test('installs and executes CLI and foundational tarballs', full(180000), () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
 
     if (packageManagerEntrypoint === undefined) {
@@ -2081,49 +2265,6 @@ process.exit(result.status ?? 1);
           });
           expect(versionFailure.stdout).not.toContain(consumerDirectory);
         }
-
-        const fakeGitDirectory = path.join(testDirectory, 'fake-git');
-        const fakeGitPath = path.join(fakeGitDirectory, 'git');
-
-        mkdirSync(fakeGitDirectory);
-        writeFileSync(
-          fakeGitPath,
-          `#!/usr/bin/env node
-const { writeFileSync } = require('node:fs');
-process.on('SIGTERM', () => {
-  writeFileSync(process.env.MOLDEA_TEST_GIT_STOPPED, 'stopped');
-  process.exit(0);
-});
-writeFileSync(process.env.MOLDEA_TEST_GIT_STARTED, 'started');
-setInterval(() => undefined, 1000);
-`,
-          'utf8',
-        );
-        chmodSync(fakeGitPath, 0o755);
-
-        for (const [command, signal, exitCode] of [
-          ['validate', 'SIGINT', 130],
-          ['inspect', 'SIGTERM', 143],
-        ] as const) {
-          const startedPath = path.join(testDirectory, `${command}-git-started`);
-          const stoppedPath = path.join(testDirectory, `${command}-git-stopped`);
-          const signalResult = await executeInstalledSignalCase(
-            installedExecutablePath,
-            command,
-            signal,
-            consumerDirectory,
-            {
-              ...gitEnvironment,
-              MOLDEA_TEST_GIT_STARTED: startedPath,
-              MOLDEA_TEST_GIT_STOPPED: stoppedPath,
-              PATH: `${fakeGitDirectory}${path.delimiter}${gitEnvironment['PATH'] ?? ''}`,
-            },
-            startedPath,
-            stoppedPath,
-          );
-
-          expect(signalResult).toStrictEqual({ code: exitCode, stderr: '', stdout: '' });
-        }
       }
 
       const installedCoreManifestPath = path.join(
@@ -2169,5 +2310,5 @@ setInterval(() => undefined, 1000);
     } finally {
       rmSync(testDirectory, { force: true, recursive: true });
     }
-  }, 180_000);
+  });
 });

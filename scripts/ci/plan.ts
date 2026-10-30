@@ -11,7 +11,13 @@ import {
   type IWorkspacePackageState,
 } from '../workspace-graph/index.ts';
 
-import { CI_COMPATIBILITY_LANES, createCiPlan, parseCiPlan } from './selection.ts';
+import {
+  CI_COMPATIBILITY_LANES,
+  createCiPlan,
+  createCiMatrices,
+  parseCiPlan,
+  parseCiTestSuite,
+} from './selection.ts';
 
 const repositoryRoot = pathToFileURL(`${resolve(process.cwd())}${sep}`);
 const testedCommit = getGitHead(repositoryRoot);
@@ -21,6 +27,8 @@ if (expectedCommit !== undefined && expectedCommit !== testedCommit)
 const releaseBuild = process.env['CI_RELEASE_BUILD'] ?? 'false';
 if (releaseBuild !== 'true' && releaseBuild !== 'false')
   throw new TypeError('The CI release-build input is invalid.');
+const requestedSuite = parseCiTestSuite(process.env['CI_TEST_SUITE']);
+const testSuite = releaseBuild === 'true' ? 'full' : requestedSuite;
 const baseInput = process.env['CI_BASE_COMMIT'] ?? '';
 let comparisonCommit: string | null = null;
 let fullReason: string | undefined;
@@ -30,6 +38,7 @@ if (baseInput !== '' && !/^0{40}$/u.test(baseInput)) {
   else fullReason = 'The comparison commit is unavailable locally.';
 }
 if (releaseBuild === 'true') fullReason = 'Release candidates require complete verification.';
+else if (testSuite === 'full') fullReason = 'Explicit full verification selects every workspace.';
 const current = loadGitWorkspaceSnapshot(repositoryRoot, testedCommit);
 const previous =
   comparisonCommit === null
@@ -39,6 +48,7 @@ const plan = parseCiPlan(
   JSON.stringify(
     createCiPlan({
       testedCommit,
+      testSuite,
       comparisonCommit,
       current,
       previous,
@@ -55,6 +65,9 @@ const outputs = {
   artifacts: String(plan.artifacts),
   cross_platform: String(plan.workspaces.length > 0),
   website: String(plan.workspaces.includes('@moldea.ai/packages-website')),
+  test_suite: plan.testSuite,
+  cli_runtime_matrix: JSON.stringify(createCiMatrices(plan).cli),
+  repository_fs_runtime_matrix: JSON.stringify(createCiMatrices(plan).repositoryFs),
   ...Object.fromEntries(
     CI_COMPATIBILITY_LANES.map((lane) => [
       lane.replaceAll('-', '_'),
@@ -73,7 +86,7 @@ if (process.env['GITHUB_OUTPUT'] !== undefined) {
 if (process.env['GITHUB_STEP_SUMMARY'] !== undefined) {
   await appendFile(
     process.env['GITHUB_STEP_SUMMARY'],
-    `## CI selection\n\nMode: ${plan.mode}\n\nTested commit: ${testedCommit}\n\nComparison: ${comparisonCommit ?? 'unavailable'}\n\nWorkspaces: ${plan.workspaces.join(', ') || 'none'}\n\n${plan.reasons.join('\n')}\n`,
+    `## CI selection\n\nMode: ${plan.mode}\n\nTest suite: ${plan.testSuite}\n\nTested commit: ${testedCommit}\n\nComparison: ${comparisonCommit ?? 'unavailable'}\n\nWorkspaces: ${plan.workspaces.join(', ') || 'none'}\n\n${plan.reasons.join('\n')}\n`,
   );
 }
 process.stdout.write(`${JSON.stringify(plan)}\n`);

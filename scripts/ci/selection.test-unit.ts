@@ -6,6 +6,8 @@ import { getGitHead, type IWorkspacePackageState } from '../workspace-graph/inde
 import {
   CI_COMPATIBILITY_LANES,
   createCiPlan,
+  createCiMatrices,
+  parseCiTestSuite,
   parseCiPlan,
   validateCiJobResults,
   validateCiWorkspaceSelection,
@@ -37,13 +39,14 @@ const current = new Map<string, IWorkspacePackageState>(
     ];
   }),
 );
-const select = (changedPaths: string[]) =>
+const select = (changedPaths: string[], testSuite: 'essential' | 'full' = 'full') =>
   createCiPlan({
     testedCommit: commit,
     comparisonCommit: commit,
     current,
     previous: current,
     changedPaths,
+    testSuite,
   });
 
 test.each([
@@ -157,6 +160,7 @@ test('missing comparison and forced release plans select full verification', () 
     expect(
       createCiPlan({
         testedCommit: commit,
+        testSuite: 'full',
         current,
         previous: current,
         changedPaths: [],
@@ -174,6 +178,8 @@ test.each([
   { artifacts: true },
   { rootIntegration: true },
   { mode: 'unknown' },
+  { testSuite: 'unknown' },
+  { testSuite: null },
   { extra: true },
   { testedCommit: 'HEAD' },
   { comparisonCommit: null },
@@ -293,4 +299,53 @@ test.each([
   expect(() =>
     parseCiPlan(JSON.stringify({ ...select([]), workspaces: [name], rootIntegration: true })),
   ).toThrow('CI plan is invalid');
+});
+
+test('suite priority stays independent of affected/all-workspace scope and native OS eligibility', () => {
+  const essential = select(['package.json'], 'essential');
+  expect(essential).toMatchObject({
+    mode: 'full',
+    testSuite: 'essential',
+    rootIntegration: true,
+    artifacts: true,
+  });
+  expect(essential.lanes).toStrictEqual([
+    'repository-fs-runtime-compatibility',
+    'cli-runtime-compatibility',
+  ]);
+  const focused = select(['projects/cli/src/a.ts'], 'essential');
+  expect(focused.mode).toBe('affected');
+  expect(focused.workspaces).toContain('@moldea.ai/cli');
+  expect(focused.lanes).toStrictEqual(['cli-runtime-compatibility']);
+  expect(parseCiPlan(JSON.stringify(essential))).toStrictEqual(essential);
+  const full = select(['projects/cli/src/a.ts'], 'full');
+  expect(full.mode).toBe('affected');
+  expect(full.lanes).toContain('consumer-conformance');
+  expect(() =>
+    parseCiPlan(JSON.stringify({ ...essential, lanes: CI_COMPATIBILITY_LANES })),
+  ).toThrow('invalid');
+});
+
+test('packed matrices are closed and compact only for essential priority', () => {
+  expect(createCiMatrices(select(['package.json'], 'essential'))).toStrictEqual({
+    cli: { os: ['ubuntu-latest'], 'node-version': ['22.17.0', '24.15.0'] },
+    repositoryFs: { 'node-version': ['22.17.0', '24.15.0'] },
+  });
+  expect(createCiMatrices(select(['package.json'], 'full'))).toStrictEqual({
+    cli: {
+      os: ['ubuntu-latest', 'macos-latest', 'windows-latest'],
+      'node-version': ['22.17.0', '22.x', '24.11.0', '24.x', '26.8.1'],
+    },
+    repositoryFs: { 'node-version': ['22.17.0', '22.x', '24.11.0', '24.x', '26.8.1'] },
+  });
+});
+
+test.each([undefined, 'essential', 'full'])(
+  'parseCiTestSuite(%s) validates workflow priority',
+  (suite) => {
+    expect(parseCiTestSuite(suite)).toBe(suite ?? 'essential');
+  },
+);
+test.each(['', 'FULL', 'unknown'])('parseCiTestSuite(%s) rejects malformed priority', (suite) => {
+  expect(() => parseCiTestSuite(suite)).toThrow('The CI test-suite input is invalid.');
 });

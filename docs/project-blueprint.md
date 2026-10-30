@@ -32,7 +32,7 @@ Shared internal packages may support first-class projects but never depend on th
 
 The catalog records the five public packages. Core treats runtime IDs as guidance labels and checks declared files and supported syntax-only exports. It does not verify SDK compatibility, runtime wiring, or execution.
 
-`scripts/workspace-graph/` owns exact-commit manifest discovery and shared dependency facts. `scripts/npm-release/` retains release relevance and private-input propagation policy. `scripts/ci/` owns conservative affected selection, validated execution plans, task isolation, and the final job gate. CI follows all downstream consumers; npm release selection stops private-input propagation at public package boundaries. See [affected CI](local-development.md#affected-ci).
+`scripts/workspace-graph/` owns exact-commit manifest discovery and shared dependency facts. `scripts/npm-release/` retains release relevance and private-input propagation policy. `scripts/ci/` owns conservative affected selection independently of essential/full priority, validated execution plans and compact/full consumer matrices, task isolation, and the final job gate. CI follows all downstream consumers; npm release selection stops private-input propagation at public package boundaries. See [affected CI](local-development.md#affected-ci).
 
 ## Boundaries and sources of truth
 
@@ -49,6 +49,6 @@ The catalog records the five public packages. Core treats runtime IDs as guidanc
 
 Each implemented public project owns its documentation under `projects/<project>/docs/**`; its README is the GitHub and npm entry point. Website UI retains repository documentation but is absent from the visitor-facing packages website. Generated files must be changed through their canonical source and documented generator.
 
-For build and test conventions, see [local development](local-development.md). For packages website ownership and deployment, see its [application README](../apps/website/README.md). For version selection and publication, see [npm releases](npm-releases.md).
+For build and test conventions, see [local development](local-development.md). [Testing](testing.md) owns essential/full classification and cadence; `scripts/test-suite/` implements private local suite selection and execution. For packages website ownership and deployment, see its [application README](../apps/website/README.md). For version selection and publication, see [npm releases](npm-releases.md).
 
 When a package contract changes, reconsider every affected representation and synchronize only those that changed: implementation, exports, manifest, specification, README, package docs, examples, tests, generated presentations, website routes, and version assertions. Apply the [release relevance rules](npm-releases.md#preparing-a-release) to the complete diff, including affected public package versions and compatible-major workspace dependencies; run `pnpm release:check-changes <base-commit> <current-commit>` when both commits are available.
