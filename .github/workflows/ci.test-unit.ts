@@ -145,6 +145,7 @@ test('routine suite inputs and closed matrices preserve native platform eligibil
     testSuite: 'essential',
   });
   expect(createCiMatrices(essential).cli['node-version']).toStrictEqual([
+    '22.17.0',
     workflow.env['NODE_VERSION'],
   ]);
   expect(workflow.on['workflow_call']?.inputs?.['test_suite']).toMatchObject({

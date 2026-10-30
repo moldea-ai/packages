@@ -328,8 +328,8 @@ test('suite priority stays independent of affected/all-workspace scope and nativ
 
 test('packed matrices are closed and compact only for essential priority', () => {
   expect(createCiMatrices(select(['package.json'], 'essential'))).toStrictEqual({
-    cli: { os: ['ubuntu-latest'], 'node-version': ['24.15.0'] },
-    repositoryFs: { 'node-version': ['24.15.0'] },
+    cli: { os: ['ubuntu-latest'], 'node-version': ['22.17.0', '24.15.0'] },
+    repositoryFs: { 'node-version': ['22.17.0', '24.15.0'] },
   });
   expect(createCiMatrices(select(['package.json'], 'full'))).toStrictEqual({
     cli: {

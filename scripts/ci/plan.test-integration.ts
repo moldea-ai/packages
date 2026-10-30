@@ -83,7 +83,7 @@ test('planner binds actual checkout, validates outputs and reports website-only 
   expect(outputs).toContain('cross_platform=true\n');
   expect(outputs).toContain('test_suite=essential\n');
   expect(outputs).toContain(
-    'cli_runtime_matrix={"os":["ubuntu-latest"],"node-version":["24.15.0"]}\n',
+    'cli_runtime_matrix={"os":["ubuntu-latest"],"node-version":["22.17.0","24.15.0"]}\n',
   );
   expect(outputs).toContain('cli_runtime_compatibility=false\n');
   expect(await readFile(join(directory, 'summary.md'), 'utf8')).toContain(head);

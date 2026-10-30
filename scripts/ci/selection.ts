@@ -68,7 +68,9 @@ export const parseCiTestSuite = (suite: string | undefined): ITestSuite => {
  */
 export const createCiMatrices = (plan: ICiPlan): ICiRuntimeMatrices => {
   const nodes =
-    plan.testSuite === 'essential' ? ['24.15.0'] : ['22.17.0', '22.x', '24.11.0', '24.x', '26.8.1'];
+    plan.testSuite === 'essential'
+      ? ['22.17.0', '24.15.0']
+      : ['22.17.0', '22.x', '24.11.0', '24.x', '26.8.1'];
   return {
     cli: {
       os:

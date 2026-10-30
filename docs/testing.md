@@ -29,7 +29,7 @@ Use Vitest's native `{ tags: ['full'] }` options for secondary cases in mixed fi
 
 Use `FULL_ONLY_TEST_FILES` in `scripts/test-suite/constants.ts` for whole secondary files that should not be imported. It covers presentation-only Website UI modules and resource calibration. Root per-stage workspace filters omit all packages-website categories and Website UI's installed integration before their setup. Add no parallel test trees or priority registries. Do not enable `passWithNoTests` to accommodate empty categories.
 
-Primary Repository/Repository FS/Core/CLI families remain essential unless explicitly classified secondary. The compact packed CLI journey establishes installed commands and unchanged Git state; the larger installed regression corpus remains reachable in full and complete focused runs. Markdown/search retain distinct content-security cases in essential.
+Primary Repository/Repository FS/Core/CLI families remain essential unless explicitly classified secondary. Compact packed CLI coverage establishes installed commands, safe JSON errors, POSIX SIGINT/SIGTERM shutdown without partial output, and unchanged Git state. These cases share one installed read-only fixture; the larger installed regression corpus remains reachable in full and complete focused runs. Markdown/search retain distinct content-security cases in essential.
 
 ## Preparation, cache, and interruption
 
@@ -48,7 +48,7 @@ Configuration messages are `MOLDEA_TEST_SUITE must be essential or full when set
 
 CI keeps affected-workspace scope (`mode`) independent of correctness priority (`testSuite`). Ordinary PR and non-release main verification use essential; `CI_RELEASE_BUILD=true` forces full priority and all workspaces. Manual `test_suite: full` also selects every workspace without publication. Invalid `CI_TEST_SUITE` values fail before planning. The runner overrides inherited `MOLDEA_TEST_SUITE` from its validated plan.
 
-Essential omits website test categories and evaluator/presentation preparation while retaining build, lint, types, formatting, root contracts, selected primary package tests, and applicable packed CLI/Repository FS consumers on Ubuntu/Node 24.15.0. Required macOS and Windows correctness lanes remain eligible whenever any workspace is selected; their priority follows the plan. Full priority retains the existing broad runtime/package-manager/Vitest compatibility qualifications and explicit granular stages. See [affected CI](local-development.md#affected-ci).
+Essential omits website test categories and evaluator/presentation preparation while retaining build, lint, types, formatting, root contracts, selected primary package tests, and applicable packed CLI/Repository FS consumers on Ubuntu with Node 22.17.0 and 24.15.0. The minimum supported runtime is a primary compatibility guarantee. Required macOS and Windows correctness lanes remain eligible whenever any workspace is selected; their priority follows the plan. Full priority retains the existing broad runtime/package-manager/Vitest compatibility qualifications and explicit granular stages. See [affected CI](local-development.md#affected-ci).
 
 Complete local full includes packages-website browsers; shared CI excludes them. Publication runs them only for Website UI, in parallel with shared verification. Pages retains source, quality, production-artifact validation, exact-source and advertised-version gates without frontend test permutations. No new local-full attestation, semantic evidence, or approval is required for publication.
 
