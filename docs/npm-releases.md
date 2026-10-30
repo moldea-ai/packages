@@ -37,6 +37,8 @@ Publication uses npm OIDC without an npm token. Although publication jobs run th
 
 ## Preparing a release
 
+The [testing guide](testing.md) distinguishes local essential/full commands from existing CI release qualification. `pnpm test` now selects essential; `pnpm test:full` remains the complete explicit local suite. This split adds no local-full attestation or publication step and preserves the conditional parallel Website UI browser gate.
+
 1. Audit the complete diff against its base commit using the release-relevance rules below. When both commits are available, run:
 
    ```bash

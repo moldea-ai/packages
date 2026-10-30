@@ -12,7 +12,8 @@ Run commands from the repository root.
 | `pnpm lint`             | Lint root configuration and every workspace lint task.                             |
 | `pnpm typecheck`        | Type-check root configuration and every workspace typecheck task.                  |
 | `pnpm build`            | Build the complete workspace in dependency order.                                  |
-| `pnpm test`             | Run unit, integration, and end-to-end correctness suites in that order.            |
+| `pnpm test`             | Run essential unit, integration, and installed CLI coverage in order.              |
+| `pnpm test:full`        | Run every deterministic category, including website browsers.                      |
 | `pnpm test:root`        | Run root unit and integration tests.                                               |
 | `pnpm test:unit`        | Run root and workspace unit tests.                                                 |
 | `pnpm test:integration` | Run root and workspace integration tests serially.                                 |
@@ -50,6 +51,8 @@ Environment-neutral packages extend `configs/typescript/environment-neutral.json
 Turborepo derives execution order from declared workspace dependencies. Package dependencies must remain explicit and acyclic, and no task may depend on workspace enumeration order or undeclared cross-project state. A package whose typechecked tests import its own package name, such as Repository, Repository FS, Core and Website UI, reads its own `dist`, so its `typecheck` task in `turbo.json` also depends on its own `build`.
 
 ## Test conventions
+
+[Testing](testing.md) owns essential/full membership, focused completion checks, and the explicit 1–4 week full cadence. Unset granular commands still run complete categories. The new local defaults do not change current CI selection.
 
 Vitest runs without global test APIs. Tests are colocated with their owning source modules. Node.js and non-React TypeScript tests use `*.test-unit.ts`, `*.test-integration.ts`, and `*.test-e2e.ts` for the categories they own; other source extensions retain the same category markers and match their implementation extension. Each package exposes a granular script for every category it contains, and its `test` command runs unit, integration, then end-to-end correctness suites when present. Repository-level conformance fixtures represent contracts implemented by multiple packages.
 

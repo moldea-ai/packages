@@ -27,43 +27,55 @@ describe('website Markdown rendering', () => {
     },
   );
 
-  test('groups explicitly authored turns and preserves document-wide headings and technical content', async () => {
-    const rendered = await renderMarkdownDocument(
-      [
-        '# Guide',
-        '## Result',
-        '',
-        '> **You**',
-        '>',
-        '> Inspect `@moldea.ai/core`.',
-        '',
-        '> **Coding agent**',
-        '>',
-        '> ## Result',
-        '>',
-        '> ```yaml',
-        '> valid: true',
-        '> ```',
-        '',
-        '## Result',
-        '',
-        'Continue reading.',
-      ].join('\n'),
-      { conversations: true },
-    );
-    expect(rendered.headings.map(({ id }) => id)).toStrictEqual(['result', 'result-1', 'result-2']);
-    expect(rendered.blocks.map(({ kind }) => kind)).toStrictEqual(['html', 'conversation', 'html']);
-    const conversation = rendered.blocks[1];
-    expect(conversation?.kind).toBe('conversation');
-    if (conversation?.kind !== 'conversation') throw new Error('Expected conversation block');
-    expect(conversation.messages.map(({ role }) => role)).toStrictEqual(['user', 'assistant']);
-    expect(conversation.messages[0]?.html).toContain('<code>@moldea.<wbr>ai/<wbr>core</code>');
-    expect(conversation.messages[1]?.html).toContain('id="result-1"');
-    expect(conversation.messages[1]?.html).toContain('language-yaml');
-    expect(conversation.messages[1]?.html).toContain('shiki');
-    expect(conversation.messages[1]?.html).not.toContain('<strong>Coding agent</strong>');
-    expect(rendered.html).toContain('<strong>Coding agent</strong>');
-  });
+  test(
+    'groups explicitly authored turns and preserves document-wide headings and technical content',
+    { tags: ['full'] },
+    async () => {
+      const rendered = await renderMarkdownDocument(
+        [
+          '# Guide',
+          '## Result',
+          '',
+          '> **You**',
+          '>',
+          '> Inspect `@moldea.ai/core`.',
+          '',
+          '> **Coding agent**',
+          '>',
+          '> ## Result',
+          '>',
+          '> ```yaml',
+          '> valid: true',
+          '> ```',
+          '',
+          '## Result',
+          '',
+          'Continue reading.',
+        ].join('\n'),
+        { conversations: true },
+      );
+      expect(rendered.headings.map(({ id }) => id)).toStrictEqual([
+        'result',
+        'result-1',
+        'result-2',
+      ]);
+      expect(rendered.blocks.map(({ kind }) => kind)).toStrictEqual([
+        'html',
+        'conversation',
+        'html',
+      ]);
+      const conversation = rendered.blocks[1];
+      expect(conversation?.kind).toBe('conversation');
+      if (conversation?.kind !== 'conversation') throw new Error('Expected conversation block');
+      expect(conversation.messages.map(({ role }) => role)).toStrictEqual(['user', 'assistant']);
+      expect(conversation.messages[0]?.html).toContain('<code>@moldea.<wbr>ai/<wbr>core</code>');
+      expect(conversation.messages[1]?.html).toContain('id="result-1"');
+      expect(conversation.messages[1]?.html).toContain('language-yaml');
+      expect(conversation.messages[1]?.html).toContain('shiki');
+      expect(conversation.messages[1]?.html).not.toContain('<strong>Coding agent</strong>');
+      expect(rendered.html).toContain('<strong>Coding agent</strong>');
+    },
+  );
 
   test.each([
     '> **You**\n>\n> A question.',
@@ -72,16 +84,20 @@ describe('website Markdown rendering', () => {
     '> **You** asks\n>\n> A question.',
     '> **You**',
     '> **You**\n>\n> **Coding agent**\n>\n> Reply.',
-  ])('keeps ordinary, incomplete, or disabled structures as HTML: %s', async (source) => {
-    const disabled = await renderMarkdownDocument(source, { hasDocumentTitle: false });
-    expect(disabled.blocks.map(({ kind }) => kind)).toStrictEqual(['html']);
-    if (source === '> **You**\n>\n> A question.') return;
-    const enabled = await renderMarkdownDocument(source, {
-      hasDocumentTitle: false,
-      conversations: true,
-    });
-    expect(enabled.blocks.map(({ kind }) => kind)).toStrictEqual(['html']);
-  });
+  ])(
+    'keeps ordinary, incomplete, or disabled structures as HTML: %s',
+    { tags: ['full'] },
+    async (source) => {
+      const disabled = await renderMarkdownDocument(source, { hasDocumentTitle: false });
+      expect(disabled.blocks.map(({ kind }) => kind)).toStrictEqual(['html']);
+      if (source === '> **You**\n>\n> A question.') return;
+      const enabled = await renderMarkdownDocument(source, {
+        hasDocumentTitle: false,
+        conversations: true,
+      });
+      expect(enabled.blocks.map(({ kind }) => kind)).toStrictEqual(['html']);
+    },
+  );
 
   test('sanitizes conversation messages, retains nested quotes, and does not infer roles from raw HTML', async () => {
     const source =
@@ -112,6 +128,7 @@ describe('website Markdown rendering', () => {
 
   test.each(['json', 'sh', 'markdown', 'md', 'text', 'txt', 'plaintext', ''])(
     'renders literal %s source through the shared language and accessibility policy',
+    { tags: ['full'] },
     async (language) => {
       const html = await renderCodeBlock('  example\n\n', language);
 
@@ -128,6 +145,7 @@ describe('website Markdown rendering', () => {
 
   test.each(['wrap', 'scroll'] as const)(
     'applies the explicit %s override to literal code and Markdown fences',
+    { tags: ['full'] },
     async (overflow) => {
       const source = 'A long source line with its original indentation.\n';
       for (const language of ['markdown', 'text', 'yaml', 'json']) {
@@ -184,7 +202,7 @@ describe('website Markdown rendering', () => {
     expect(rendered.html).not.toContain('<script>');
   });
 
-  test('wraps tables in an accessible scrolling group', async () => {
+  test('wraps tables in an accessible scrolling group', { tags: ['full'] }, async () => {
     const rendered = await renderMarkdownDocument(
       '| Name | Value |\n| --- | --- |\n| Core | Stable |',
       { hasDocumentTitle: false },
@@ -195,31 +213,40 @@ describe('website Markdown rendering', () => {
     );
   });
 
-  test('keeps external-link indicators with the final path segment without blocking earlier wraps', async () => {
-    const html = await renderMarkdownFragment(
-      '[https://packages.moldea.ai/runtimes/](https://packages.moldea.ai/runtimes/)',
-    );
+  test(
+    'keeps external-link indicators with the final path segment without blocking earlier wraps',
+    { tags: ['full'] },
+    async () => {
+      const html = await renderMarkdownFragment(
+        '[https://packages.moldea.ai/runtimes/](https://packages.moldea.ai/runtimes/)',
+      );
 
-    expect(html).toContain(
-      'https://packages.moldea.ai/<span class="whitespace-nowrap">runtimes/&#160;<svg',
-    );
-  });
+      expect(html).toContain(
+        'https://packages.moldea.ai/<span class="whitespace-nowrap">runtimes/&#160;<svg',
+      );
+    },
+  );
 
-  test('loads fenced code languages lazily for syntax highlighting', async () => {
-    const rendered = await renderMarkdownDocument(
-      "```ts\nconst projectName: string = 'moldea';\n```",
-      { hasDocumentTitle: false },
-    );
+  test(
+    'loads fenced code languages lazily for syntax highlighting',
+    { tags: ['full'] },
+    async () => {
+      const rendered = await renderMarkdownDocument(
+        "```ts\nconst projectName: string = 'moldea';\n```",
+        { hasDocumentTitle: false },
+      );
 
-    expect(rendered.html).toContain(
-      '<pre class="shiki shiki-themes github-dark-default github-light-default"',
-    );
-    expect(rendered.html).toContain('class="line"');
-    expect(rendered.html).toContain('projectName');
-  });
+      expect(rendered.html).toContain(
+        '<pre class="shiki shiki-themes github-dark-default github-light-default"',
+      );
+      expect(rendered.html).toContain('class="line"');
+      expect(rendered.html).toContain('projectName');
+    },
+  );
 
   test.each(['ts', 'json', 'yaml', 'markdown', 'md', 'text', 'txt', 'plaintext', ''])(
     'retains the explicit %s language and exposes keyboard-accessible code groups',
+    { tags: ['full'] },
     async (language) => {
       const source = `\`\`\`${language}\n  example\n\`\`\``;
       for (const html of [
@@ -239,24 +266,28 @@ describe('website Markdown rendering', () => {
     },
   );
 
-  test('lets inline code wrap only after separators while code blocks keep exact source', async () => {
-    const html = await renderMarkdownFragment(
-      [
-        'Edit `/moldea/project.md` for `MOLDEA_REFERENCE_EXPORT_MISSING`.',
-        '',
-        '```text',
-        '/moldea/project.md',
-        '```',
-      ].join('\n'),
-    );
+  test(
+    'lets inline code wrap only after separators while code blocks keep exact source',
+    { tags: ['full'] },
+    async () => {
+      const html = await renderMarkdownFragment(
+        [
+          'Edit `/moldea/project.md` for `MOLDEA_REFERENCE_EXPORT_MISSING`.',
+          '',
+          '```text',
+          '/moldea/project.md',
+          '```',
+        ].join('\n'),
+      );
 
-    // a final extension stays attached to its name
-    expect(html).toContain('<code>/moldea/<wbr>project.md</code>');
-    expect(html).toContain('<code>MOLDEA_<wbr>REFERENCE_<wbr>EXPORT_<wbr>MISSING</code>');
-    expect(html.match(/<wbr>/gu)).toHaveLength(4);
-  });
+      // a final extension stays attached to its name
+      expect(html).toContain('<code>/moldea/<wbr>project.md</code>');
+      expect(html).toContain('<code>MOLDEA_<wbr>REFERENCE_<wbr>EXPORT_<wbr>MISSING</code>');
+      expect(html.match(/<wbr>/gu)).toHaveLength(4);
+    },
+  );
 
-  test('renders allowlisted strong labels as semantic badges', async () => {
+  test('renders allowlisted strong labels as semantic badges', { tags: ['full'] }, async () => {
     const rendered = await renderMarkdownDocument('# Page\n\nUse **Supported** maturity.', {
       strongLabelBadges: [{ id: 'supported', label: 'Supported', tone: 'success' }],
     });
@@ -265,26 +296,36 @@ describe('website Markdown rendering', () => {
     expect(rendered.html).toContain('>Supported</span>');
   });
 
-  test('rejects malformed or duplicate strong-label badge configuration', async () => {
-    await expect(
-      renderMarkdownDocument('**Supported**', {
-        strongLabelBadges: [
-          { id: 'supported', label: 'Supported', tone: 'success' },
-          { id: 'supported-again', label: 'Supported', tone: 'neutral' },
-        ],
-      }),
-    ).rejects.toThrow('Markdown strong-label badge configuration is invalid.');
-  });
+  test(
+    'rejects malformed or duplicate strong-label badge configuration',
+    { tags: ['full'] },
+    async () => {
+      await expect(
+        renderMarkdownDocument('**Supported**', {
+          strongLabelBadges: [
+            { id: 'supported', label: 'Supported', tone: 'success' },
+            { id: 'supported-again', label: 'Supported', tone: 'neutral' },
+          ],
+        }),
+      ).rejects.toThrow('Markdown strong-label badge configuration is invalid.');
+    },
+  );
 
-  test('unwraps local fragment links and preserves authored prose and code', async () => {
-    const html = await renderMarkdownFragment(
-      '[Local](./source.md) and moldea with `moldea` plus [Web](https://example.com).',
-      { localLinks: 'unwrap' },
-    );
+  test(
+    'unwraps local fragment links and preserves authored prose and code',
+    { tags: ['full'] },
+    async () => {
+      const html = await renderMarkdownFragment(
+        '[Local](./source.md) and moldea with `moldea` plus [Web](https://example.com).',
+        { localLinks: 'unwrap' },
+      );
 
-    expect(html).toContain('Local and moldea with <code>moldea</code>');
-    expect(html).toContain('href="https://example.com" target="_blank" rel="noopener noreferrer"');
-    expect(html.match(/data-external-link-icon/gu)).toHaveLength(1);
-    expect(html).not.toContain('href="./source.md"');
-  });
+      expect(html).toContain('Local and moldea with <code>moldea</code>');
+      expect(html).toContain(
+        'href="https://example.com" target="_blank" rel="noopener noreferrer"',
+      );
+      expect(html.match(/data-external-link-icon/gu)).toHaveLength(1);
+      expect(html).not.toContain('href="./source.md"');
+    },
+  );
 });

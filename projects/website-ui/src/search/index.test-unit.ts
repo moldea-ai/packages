@@ -37,35 +37,43 @@ describe('website search utilities', () => {
     );
   });
 
-  test('normalizes accents and ranks exact and title matches before body matches', () => {
-    const documents = [
-      createSearchDocument('Unrelated', { searchText: 'repository' }),
-      createSearchDocument('Repository snapshots'),
-      createSearchDocument('Repository'),
-      createSearchDocument('Guide', { description: 'Repository overview' }),
-    ];
+  test(
+    'normalizes accents and ranks exact and title matches before body matches',
+    { tags: ['full'] },
+    () => {
+      const documents = [
+        createSearchDocument('Unrelated', { searchText: 'repository' }),
+        createSearchDocument('Repository snapshots'),
+        createSearchDocument('Repository'),
+        createSearchDocument('Guide', { description: 'Repository overview' }),
+      ];
 
-    expect(searchDocuments('répository', documents).map(({ title }) => title)).toStrictEqual([
-      'Repository',
-      'Repository snapshots',
-      'Guide',
-      'Unrelated',
-    ]);
-  });
+      expect(searchDocuments('répository', documents).map(({ title }) => title)).toStrictEqual([
+        'Repository',
+        'Repository snapshots',
+        'Guide',
+        'Unrelated',
+      ]);
+    },
+  );
 
-  test('requires every distinct query token and returns an empty list for blank input', () => {
-    const documents = [
-      createSearchDocument('Repository snapshots'),
-      createSearchDocument('Repository only'),
-    ];
+  test(
+    'requires every distinct query token and returns an empty list for blank input',
+    { tags: ['full'] },
+    () => {
+      const documents = [
+        createSearchDocument('Repository snapshots'),
+        createSearchDocument('Repository only'),
+      ];
 
-    expect(
-      searchDocuments('repository snapshots', documents).map(({ title }) => title),
-    ).toStrictEqual(['Repository snapshots']);
-    expect(searchDocuments('   ', documents)).toStrictEqual([]);
-  });
+      expect(
+        searchDocuments('repository snapshots', documents).map(({ title }) => title),
+      ).toStrictEqual(['Repository snapshots']);
+      expect(searchDocuments('   ', documents)).toStrictEqual([]);
+    },
+  );
 
-  test('limits deterministic results to sixteen documents', () => {
+  test('limits deterministic results to sixteen documents', { tags: ['full'] }, () => {
     const documents = Array.from({ length: 20 }, (_, index) =>
       createSearchDocument(`Repository ${String(index).padStart(2, '0')}`),
     );

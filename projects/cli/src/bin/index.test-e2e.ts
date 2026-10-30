@@ -251,7 +251,105 @@ const executeInstalledSignalCase = async (
   return executionResult;
 };
 
+const full = (timeout?: number) => ({
+  tags: ['full'],
+  ...(timeout === undefined ? {} : { timeout }),
+});
+
 describe('published CLI package and executable', () => {
+  // cold packing and real dependency installation exceed the default unit-test budget
+  test('runs the primary read-only journey through an installed packed CLI', () => {
+    const packageManagerEntrypoint = process.env['npm_execpath'];
+    if (packageManagerEntrypoint === undefined)
+      throw new Error('The package-manager entrypoint is unavailable.');
+    const directory = mkdtempSync(path.join(tmpdir(), 'moldea-cli-essential-'));
+    const consumer = path.join(directory, 'consumer');
+    const home = path.join(directory, 'home');
+    const config = path.join(directory, 'config');
+    try {
+      for (const target of [consumer, home, config]) mkdirSync(target);
+      const dependencies = Object.fromEntries<string>(
+        (
+          [
+            ['@moldea.ai/repository', REPOSITORY_PROJECT_DIRECTORY],
+            ['@moldea.ai/repository-fs', REPOSITORY_FILESYSTEM_PROJECT_DIRECTORY],
+            ['@moldea.ai/core', CORE_PROJECT_DIRECTORY],
+            ['@moldea.ai/cli', CLI_PROJECT_DIRECTORY],
+          ] as const
+        ).map(([name, project]): [string, string] => [
+          name,
+          `file:./${packPackageTarball(packageManagerEntrypoint, project, consumer)}`,
+        ]),
+      );
+      writeFileSync(
+        path.join(consumer, 'package.json'),
+        JSON.stringify({
+          name: 'moldea-essential-consumer',
+          private: true,
+          type: 'module',
+          dependencies,
+        }),
+      );
+      runPackageManager(
+        packageManagerEntrypoint,
+        ['install', '--ignore-scripts', '--config.engine-strict=true'],
+        { cwd: consumer, encoding: 'utf8', env: { ...process.env, CI: 'true' } },
+      );
+      const environment = createGitEnvironment({
+        baseEnv: { ...process.env, HOME: home, XDG_CONFIG_HOME: config },
+      });
+      execFileSync('git', ['init', '--quiet'], { cwd: consumer, env: environment });
+      mkdirSync(path.join(consumer, 'moldea'));
+      mkdirSync(path.join(consumer, 'src'));
+      writeFileSync(path.join(consumer, '.gitignore'), 'node_modules/\n*.tgz\n');
+      writeFileSync(
+        path.join(consumer, 'moldea', 'moldea.yaml'),
+        JSON.stringify({
+          version: 1,
+          context: { '/moldea/project.md': { affectedBy: ['/src/**'] } },
+        }),
+      );
+      writeFileSync(path.join(consumer, 'moldea', 'project.md'), '# Compact project\n');
+      writeFileSync(path.join(consumer, 'src', 'agent.ts'), 'export const agent = 1;\n');
+      execFileSync('git', ['add', 'moldea', 'src', '.gitignore', 'package.json'], {
+        cwd: consumer,
+        env: environment,
+      });
+      const before = captureGitState(consumer, environment);
+      const executable = path.join(
+        consumer,
+        'node_modules',
+        '@moldea.ai',
+        'cli',
+        'dist',
+        'moldea.js',
+      );
+      const invoke = (args: string[]) =>
+        spawnSync(process.execPath, [executable, ...args], {
+          cwd: consumer,
+          env: environment,
+          encoding: 'utf8',
+        });
+      expect(invoke(['--version']).stdout).toBe('13.0.2\n');
+      for (const args of [
+        ['composition'],
+        ['inspect'],
+        ['validate'],
+        ['scope', '--path', '/src/agent.ts'],
+        ['content', '--path', '/moldea/project.md'],
+      ]) {
+        const response = invoke([...args, '--json']);
+        expect(response.status, response.stderr || response.stdout).toBe(0);
+        expect(response.stderr).toBe('');
+        expect(JSON.parse(response.stdout)).toMatchObject({ schemaVersion: 7, command: args[0] });
+        if (args[0] === 'content') expect(response.stdout).toContain('# Compact project');
+        if (args[0] === 'scope') expect(response.stdout).toContain('/moldea/project.md');
+      }
+      expect(captureGitState(consumer, environment)).toStrictEqual(before);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  }, 120_000);
   test('packs only the executable package surface and exact metadata', () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
 
@@ -296,7 +394,7 @@ describe('published CLI package and executable', () => {
     expect(executableChunks).toContain('minimumGitVersion');
   });
 
-  test('rewrites compatible workspace dependencies in the real tarball', () => {
+  test('rewrites compatible workspace dependencies in the real tarball', full(), () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
 
     if (packageManagerEntrypoint === undefined) {
@@ -325,7 +423,7 @@ describe('published CLI package and executable', () => {
     }
   });
 
-  test('preserves authored relationship pointers across installed validation pages', () => {
+  test('preserves installed validation relationship pointers', full(120000), () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
     if (packageManagerEntrypoint === undefined) {
       throw new Error('The package-manager entrypoint is unavailable.');
@@ -478,9 +576,9 @@ describe('published CLI package and executable', () => {
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
-  }, 120_000);
+  });
 
-  test('checks linked and ignored coding-agent instruction files through the installed CLI', () => {
+  test('checks installed linked and ignored instruction files', full(180000), () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
     if (packageManagerEntrypoint === undefined) {
       throw new Error('The package-manager entrypoint is unavailable.');
@@ -708,10 +806,11 @@ describe('published CLI package and executable', () => {
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
-  }, 180_000);
+  });
 
   test.skipIf(process.platform === 'win32')(
     'omits invalid external filenames and rejects canonical filenames in installed commands',
+    full(120_000),
     () => {
       const packageManagerEntrypoint = process.env['npm_execpath'];
       if (packageManagerEntrypoint === undefined) {
@@ -816,10 +915,9 @@ describe('published CLI package and executable', () => {
         rmSync(directory, { force: true, recursive: true });
       }
     },
-    120_000,
   );
 
-  test('installs and executes the real CLI and foundational package tarballs', async () => {
+  test('installs and executes CLI and foundational tarballs', full(180000), async () => {
     const packageManagerEntrypoint = process.env['npm_execpath'];
 
     if (packageManagerEntrypoint === undefined) {
@@ -2169,5 +2267,5 @@ setInterval(() => undefined, 1000);
     } finally {
       rmSync(testDirectory, { force: true, recursive: true });
     }
-  }, 180_000);
+  });
 });

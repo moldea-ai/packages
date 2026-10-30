@@ -13,3 +13,4 @@ minimumReleaseAgeExclude:
   - jg-process@1.6.2
   - jg-site@0.1.0
   - jg-utilities@1.7.2
+  - jg-plans@0.4.0
