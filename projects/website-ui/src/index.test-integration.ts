@@ -15,7 +15,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 
 import { AxeBuilder } from '@axe-core/playwright';
-import { chromium, type Locator } from '@playwright/test';
+import { chromium, type BrowserContext, type Locator } from '@playwright/test';
 import { extractMessage } from 'jg-exception';
 import { afterEach, describe, expect, test } from 'vitest';
 
@@ -234,6 +234,15 @@ const getInlineContrast = async (edits: Locator): Promise<{ text: string; contra
     );
   });
 
+const stubYouTube = async (context: BrowserContext): Promise<void> => {
+  await context.route('https://www.youtube-nocookie.com/**', async (route) => {
+    await route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><html lang="en"><head><title>Player fixture</title></head><body><button>Play fixture</button></body></html>',
+    });
+  });
+};
+
 describe('published website UI package', () => {
   test('packs only the documented runtime, component, style, and package files', () => {
     const output = runPackageManager(
@@ -244,7 +253,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.6.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.7.0' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -293,6 +302,8 @@ describe('published website UI package', () => {
     );
     expect(packedPaths).toContain('src/components/tabbed-panels/tabbed-panels.component.astro');
     expect(packedPaths).toContain('src/components/dialog/dialog.component.astro');
+    expect(packedPaths).toContain('src/components/youtube-video/youtube-video.component.astro');
+    expect(packedPaths).toContain('src/youtube-video/index.ts');
     expect(packedPaths).toContain('src/components/file-preview/file-preview.component.astro');
     expect(packedPaths).toContain('src/components/file-tree/file-tree.component.astro');
     expect(packedPaths).toContain('src/components/result-summary/result-summary.component.astro');
@@ -435,6 +446,7 @@ describe('published website UI package', () => {
             '@moldea.ai/website-ui': `file:${tarballPath}`,
             '@tailwindcss/vite': '4.3.3',
             astro: '7.2.8',
+            'jg-exception': '1.7.1',
             tailwindcss: '4.3.3',
             typescript: '6.0.3',
           },
@@ -511,6 +523,7 @@ describe('published website UI package', () => {
         "import TabbedPanels from '@moldea.ai/website-ui/tabbed-panels';",
         "import ThemeBootstrap from '@moldea.ai/website-ui/theme-bootstrap';",
         "import ThemeControl from '@moldea.ai/website-ui/theme-control';",
+        "import YouTubeVideo from '@moldea.ai/website-ui/youtube-video';",
         "import { buildEvaluationReplayPathTree, type IEvaluationReplayModel } from '@moldea.ai/website-ui/evaluation-replay-model';",
         "import { renderMarkdownDocument, renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';",
         "import { withBase } from '@moldea.ai/website-ui/site';",
@@ -541,6 +554,7 @@ describe('published website UI package', () => {
         'const accordionProps = { id: "check-two", group: "fixture-accordion", title: "Second check", isOpen: true } satisfies ComponentProps<typeof Accordion>;',
         'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
         'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", panelClass: "sm:h-[32rem]!", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
+        'const videoProps = { videoUrl: "https://www.youtube.com/watch?v=M7lc1UVf-VE&autoplay=1&t=30", title: \'Inline tutorial "<sample>"\', id: "inline-video", role: "group", "aria-label": "Inline tutorial" } satisfies ComponentProps<typeof YouTubeVideo>;',
         'const iconDialogProps = { id: "fixture-icon", title: "Complete source", triggerLabel: "Open complete source", triggerAriaLabel: "Open complete source in a larger view", triggerVariant: "ghost", triggerSize: "icon-xs", size: "large" } satisfies ComponentProps<typeof Dialog>;',
         'const passed = { title: "Validation complete", label: "Passed", tone: "success", findings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
         'const failed = { ...passed, title: "Validation failed", label: "Blocking", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "/moldea/moldea.yaml", pointer: "/context/~1moldea~1policy.md/bindings/0", evidence: [{ path: "/moldea/moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Referenced target", isMissing: true, issueLabel: "Missing target" }] }] } satisfies IInspectionResultView;',
@@ -629,6 +643,7 @@ describe('published website UI package', () => {
         '    <DocumentationShell breadcrumbs={[{ href: "/", label: "Home" }, { label: "moldea Docs" }]} currentRoute="/docs/" headings={rendered.headings} navigationGroups={[{ label: "moldea Guides", items: [{ href: "/docs/", label: "moldea Start" }] }]} previousPage={{ href: "/previous/", label: "Previous moldea guide" }} nextPage={{ href: "/next/", label: "Next moldea guide" }}><div class="prose-moldea" set:html={rendered.html} /></DocumentationShell>',
         '    <p>{tree[0]?.name}</p>',
         '    <section data-runtime-fixture><h2>Runtime labels</h2><RuntimeGrid /></section>',
+        '    <section aria-label="YouTube examples" class="mx-auto max-w-3xl px-3"><h2>YouTube examples</h2><YouTubeVideo {...videoProps} /><YouTubeVideo videoUrl="https://youtu.be/M7lc1UVf-VE" title="Autoplay tutorial" autoPlay /></section>',
         '    <ThemeControl storageKey="fixture-theme" />',
         '    <LocalSearch action="/search/" failureMessage="Search unavailable." initialPrompt="Enter a query." placeholder="e.g. repository snapshots" searchIndexUrl="/search-index.json" shouldFocusOnLoad />',
         '    <SiteFooter hasTopSpacing={false}><p slot="brand">Fixture footer</p><nav slot="primary-navigation" aria-label="Fixture documentation">Docs</nav><nav slot="secondary-navigation" aria-label="Fixture project">Project</nav></SiteFooter>',
@@ -713,6 +728,36 @@ describe('published website UI package', () => {
     const staticFixtureHtml = fixtureHtml
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gu, '')
       .replaceAll('src="/_astro/', 'src="https://runtime-fixture.example/_astro/');
+    const serveConsumer = async (context: BrowserContext): Promise<void> => {
+      await context.route('https://ui-consumer.example/**', async (route) => {
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname === '/' || pathname === '/runtimes/') {
+          await route.fulfill({
+            contentType: 'text/html',
+            body: pathname === '/' ? fixtureHtml : runtimeHtml,
+          });
+          return;
+        }
+        const asset = /^\/_astro\/([a-zA-Z0-9_.-]+)$/u.exec(pathname)?.[1];
+        if (asset === undefined) {
+          await route.abort();
+          return;
+        }
+        const contentType = asset.endsWith('.js')
+          ? 'text/javascript'
+          : asset.endsWith('.css')
+            ? 'text/css'
+            : asset.endsWith('.svg')
+              ? 'image/svg+xml'
+              : asset.endsWith('.png')
+                ? 'image/png'
+                : 'font/woff2';
+        await route.fulfill({
+          contentType,
+          body: readFileSync(path.join(fixtureDirectory, 'dist', '_astro', asset)),
+        });
+      });
+    };
     const browser = await chromium.launch();
     try {
       for (const theme of ['light', 'dark']) {
@@ -722,6 +767,7 @@ describe('published website UI package', () => {
             reducedMotion: 'reduce',
           });
           try {
+            await stubYouTube(context);
             const page = await context.newPage();
             await page.route('https://runtime-fixture.example/**', async (route) => {
               const assetName = new URL(route.request().url()).pathname.split('/').at(-1);
@@ -1306,37 +1352,11 @@ describe('published website UI package', () => {
             reducedMotion: 'reduce',
           });
           try {
+            await stubYouTube(context);
             const page = await context.newPage();
             const pageErrors: string[] = [];
             page.on('pageerror', (error) => pageErrors.push(error.message));
-            await page.route('https://ui-consumer.example/**', async (route) => {
-              const pathname = new URL(route.request().url()).pathname;
-              if (pathname === '/' || pathname === '/runtimes/') {
-                await route.fulfill({
-                  contentType: 'text/html',
-                  body: pathname === '/' ? fixtureHtml : runtimeHtml,
-                });
-                return;
-              }
-              const asset = /^\/_astro\/([a-zA-Z0-9_.-]+)$/u.exec(pathname)?.[1];
-              if (asset === undefined) {
-                await route.abort();
-                return;
-              }
-              const contentType = asset.endsWith('.js')
-                ? 'text/javascript'
-                : asset.endsWith('.css')
-                  ? 'text/css'
-                  : asset.endsWith('.svg')
-                    ? 'image/svg+xml'
-                    : asset.endsWith('.png')
-                      ? 'image/png'
-                      : 'font/woff2';
-              await route.fulfill({
-                contentType,
-                body: readFileSync(path.join(fixtureDirectory, 'dist', '_astro', asset)),
-              });
-            });
+            await serveConsumer(context);
             await page.goto('https://ui-consumer.example/');
             await page.waitForSelector(
               '[data-inspection-dialog-root][data-inspection-enhanced="true"]',
@@ -1345,6 +1365,62 @@ describe('published website UI package', () => {
             await page.evaluate((selectedTheme) => {
               document.documentElement.className = selectedTheme;
             }, theme);
+            const video = page.getByRole('group', { name: 'Inline tutorial', exact: true });
+            await video.scrollIntoViewIfNeeded();
+            const iframe = video.getByTitle('Inline tutorial "<sample>"', { exact: true });
+            expect(await iframe.getAttribute('src')).toBe(
+              'https://www.youtube-nocookie.com/embed/M7lc1UVf-VE',
+            );
+            expect(await iframe.getAttribute('allow')).toBe('encrypted-media; picture-in-picture');
+            expect(await iframe.getAttribute('allowfullscreen')).not.toBeNull();
+            expect(await iframe.getAttribute('loading')).toBe('lazy');
+            expect(await iframe.getAttribute('referrerpolicy')).toBe(
+              'strict-origin-when-cross-origin',
+            );
+            expect(
+              await page.getByTitle('Autoplay tutorial', { exact: true }).getAttribute('src'),
+            ).toBe('https://www.youtube-nocookie.com/embed/M7lc1UVf-VE?autoplay=1');
+            expect(
+              await page.getByTitle('Autoplay tutorial', { exact: true }).getAttribute('allow'),
+            ).toBe('autoplay; encrypted-media; picture-in-picture');
+            await iframe
+              .contentFrame()
+              .getByRole('button', { name: 'Play fixture' })
+              .waitFor({ state: 'visible' });
+            const playerSize = await iframe.boundingBox();
+            expect(playerSize?.height).toBeGreaterThanOrEqual(200);
+            expect(playerSize?.width).toBeGreaterThanOrEqual(200);
+            expect(
+              await page.evaluate(
+                () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+              ),
+            ).toBe(true);
+            const watchLink = video.getByRole('link', {
+              name: 'Watch on YouTube (opens in a new tab)',
+            });
+            expect(await watchLink.getAttribute('href')).toBe(
+              'https://www.youtube.com/watch?v=M7lc1UVf-VE',
+            );
+            await watchLink.focus();
+            await page.keyboard.press('Shift+Tab');
+            await page.keyboard.press('Tab');
+            expect(await watchLink.evaluate((node) => node === document.activeElement)).toBe(true);
+            expect(
+              await watchLink.evaluate((node) => {
+                const style = getComputedStyle(node);
+                return style.outlineStyle !== 'none' || style.boxShadow !== 'none';
+              }),
+            ).toBe(true);
+            const videoAccessibility = await new AxeBuilder({ page })
+              .include('#inline-video')
+              .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+              .analyze();
+            expect(videoAccessibility.violations).toStrictEqual([]);
+            const captureDirectory = process.env['WEBSITE_UI_CAPTURE_DIRECTORY'];
+            if (captureDirectory)
+              await video.screenshot({
+                path: path.join(captureDirectory, `inline-${theme}-${width}.png`),
+              });
             const inlineFiles = page.getByRole('region', { name: 'Inline file markers' });
             const layouts = await inlineFiles
               .locator('[data-file-preview-header]')
@@ -1849,6 +1925,36 @@ describe('published website UI package', () => {
           }
         }
       }
+      const noScriptContext = await browser.newContext({
+        javaScriptEnabled: false,
+        hasTouch: true,
+        viewport: { width: 320, height: 640 },
+      });
+      try {
+        await stubYouTube(noScriptContext);
+        await serveConsumer(noScriptContext);
+        await noScriptContext.route('https://www.youtube.com/watch?*', async (route) => {
+          await route.fulfill({
+            contentType: 'text/html',
+            body: '<!doctype html><title>YouTube watch fixture</title>',
+          });
+        });
+        const page = await noScriptContext.newPage();
+        await page.goto('https://ui-consumer.example/');
+        expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+        const watchLink = page
+          .getByRole('group', { name: 'Inline tutorial', exact: true })
+          .getByRole('link', { name: 'Watch on YouTube (opens in a new tab)' });
+        const touchBounds = await watchLink.boundingBox();
+        expect(touchBounds?.height).toBeGreaterThanOrEqual(24);
+        expect(touchBounds?.width).toBeGreaterThanOrEqual(24);
+        const opened = noScriptContext.waitForEvent('page');
+        await watchLink.click();
+        const watchPage = await opened;
+        await watchPage.waitForURL('https://www.youtube.com/watch?v=M7lc1UVf-VE');
+      } finally {
+        await noScriptContext.close();
+      }
     } finally {
       await browser.close();
     }
@@ -1928,6 +2034,30 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toMatch(/<span\b[^>]*class="sr-only"[^>]*>Open complete source<\/span>/u);
     expect(fixtureHtml).toContain('lucide-maximize-2');
     expect(fixtureHtml).toContain('Expanded source content');
-    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(4 + RUNTIME_CATALOG.length);
+    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(6 + RUNTIME_CATALOG.length);
+    expect(() => consumerRequire.resolve('@moldea.ai/website-ui/youtube-video-model')).toThrow(
+      'Package subpath',
+    );
+    writeFileSync(
+      path.join(pagesDirectory, 'invalid-video.astro'),
+      [
+        '---',
+        "import YouTubeVideo from '@moldea.ai/website-ui/youtube-video';",
+        '---',
+        '<YouTubeVideo videoUrl="https://example.com/watch?v=M7lc1UVf-VE" title="Invalid" />',
+      ].join('\n'),
+    );
+    writeFileSync(
+      path.join(fixtureDirectory, 'verify-invalid.mjs'),
+      [
+        "import { build } from 'astro';",
+        "import { expectToRejectCode } from 'jg-exception/testing';",
+        'await expectToRejectCode(build({ logLevel: "silent" }), "INVALID_YOUTUBE_VIDEO_URL", "The YouTube video URL is not supported.");',
+      ].join('\n'),
+    );
+    runPackageManager(process.execPath, ['verify-invalid.mjs'], {
+      cwd: fixtureDirectory,
+      encoding: 'utf8',
+    });
   }, 360_000);
 });

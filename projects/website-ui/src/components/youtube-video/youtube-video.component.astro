@@ -1,0 +1,52 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+import ActionLink from '../action-link/action-link.component.astro';
+import { resolveYouTubeVideo } from '../../youtube-video/index.js';
+
+/**
+ * Renders one privacy-enhanced YouTube player and a canonical watch fallback.
+ * @throws
+ * - INVALID_YOUTUBE_VIDEO_URL: The YouTube video URL is not supported.
+ */
+export interface Props extends Omit<HTMLAttributes<'div'>, 'class' | 'title'> {
+  videoUrl: string;
+  title: string;
+  autoPlay?: boolean;
+  class?: string;
+}
+
+const { videoUrl, title, autoPlay = false, class: className, ...attributes } = Astro.props;
+const video = resolveYouTubeVideo(videoUrl, title, autoPlay);
+---
+
+<div
+  {...attributes}
+  class:list={['min-w-0', className]}
+  data-website-ui-youtube-video
+>
+  <div
+    class="aspect-video min-h-50 w-full min-w-0 overflow-hidden rounded-lg border border-border bg-background shadow-surface focus-within:ring-2 focus-within:ring-foreground focus-within:ring-offset-2 focus-within:ring-offset-background"
+  >
+    <iframe
+      class="block h-full min-h-50 w-full border-0 outline-none"
+      src={video.embedUrl}
+      title={video.title}
+      allow={autoPlay === true
+        ? 'autoplay; encrypted-media; picture-in-picture'
+        : 'encrypted-media; picture-in-picture'}
+      allowfullscreen
+      loading="lazy"
+      referrerpolicy="strict-origin-when-cross-origin"
+    ></iframe>
+  </div>
+  <ActionLink
+    href={video.watchUrl}
+    target="_blank"
+    variant="link"
+    size="sm"
+    class="mt-2"
+  >
+    Watch on YouTube
+  </ActionLink>
+</div>

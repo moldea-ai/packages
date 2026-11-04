@@ -292,6 +292,9 @@ importers:
       jg-site:
         specifier: 0.1.0
         version: 0.1.0
+      jg-utilities:
+        specifier: ^1.7.2
+        version: 1.7.2
     devDependencies:
       '@axe-core/playwright':
         specifier: 4.13.0

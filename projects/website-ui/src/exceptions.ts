@@ -1,11 +1,13 @@
 import { Exception } from 'jg-exception';
 
 // stable configuration failure contracts exposed by the package
-export type IWebsiteUiConfigurationErrorCode = 'INVALID_BASE_PATH' | 'INVALID_SEARCH_INDEX';
+export type IWebsiteUiConfigurationErrorCode =
+  'INVALID_BASE_PATH' | 'INVALID_SEARCH_INDEX' | 'INVALID_YOUTUBE_VIDEO_URL';
 
 const CONFIGURATION_ERROR_MESSAGES = {
   INVALID_BASE_PATH: 'The website base path contains unsupported URL characters.',
   INVALID_SEARCH_INDEX: 'The documentation search index is invalid.',
+  INVALID_YOUTUBE_VIDEO_URL: 'The YouTube video URL is not supported.',
 } as const satisfies Readonly<Record<IWebsiteUiConfigurationErrorCode, string>>;
 
 /** Represents invalid configuration or generated input at a website UI boundary. */

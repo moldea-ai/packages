@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@4.6.1
+pnpm add @moldea.ai/website-ui@4.7.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -149,6 +149,7 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/tabbed-panels`
 - `@moldea.ai/website-ui/theme-bootstrap`
 - `@moldea.ai/website-ui/theme-control`
+- `@moldea.ai/website-ui/youtube-video`
 
 `ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. Mount `CodeCopyControls` once in the body to add compact header copy actions to eligible code blocks on direct loads and client navigation. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
 
@@ -159,6 +160,23 @@ Every component has a dedicated public subpath:
 Each `SiteHeader` navigation item accepts `href`, `isActive`, `label`, and optional `compactLabel`. The desktop navigation shows the compact label below `xl` (1280px) when supplied. Wider desktop navigation and the mobile menu show the full label. Accessible names always identify the full destination. The header's existing `md` or `lg` desktop breakpoint remains independent of label selection.
 
 The native mobile disclosure switches from a menu icon to a close icon when open, without JavaScript. Its accessible name switches from `mobileMenuLabel` (default `Open navigation`) to `mobileMenuCloseLabel` (default `Close navigation`).
+
+### YouTube videos
+
+```astro
+---
+import YouTubeVideo from '@moldea.ai/website-ui/youtube-video';
+---
+
+<YouTubeVideo
+  videoUrl="https://www.youtube.com/watch?v=M7lc1UVf-VE"
+  title="YouTube embed sample"
+/>
+```
+
+`YouTubeVideo` accepts required `videoUrl` and `title`, optional `autoPlay` (default `false`) and `class`, and native wrapper `div` attributes. Blank titles become `YouTube video`. The responsive iframe reserves space, keeps at least 200px of player height, supports native controls and fullscreen, and includes a canonical Watch on YouTube link that also works without JavaScript.
+
+The package uses its declared `jg-utilities` dependency to validate supported HTTPS single-video URLs and constructs embeds on `www.youtube-nocookie.com`. Authored playlists, timestamps, autoplay parameters, and fragments are discarded. Set `autoPlay={true}` to request playback when the iframe loads; browser policy can still prevent it. Loading an iframe contacts YouTube even with autoplay disabled. Unsupported URLs fail Astro rendering/building with `INVALID_YOUTUBE_VIDEO_URL: The YouTube video URL is not supported.` No provider metadata request or SDK is used, and a valid URL does not establish that a video permits embedding or remains available.
 
 ### Accordions
 
