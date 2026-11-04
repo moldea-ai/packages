@@ -142,9 +142,12 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
 </div>
 
 <script>
+  import { DIALOG_LIFECYCLE_EVENTS } from '../../dialog-lifecycle/index.js';
+
   const activeReturnTransitions = new Set<ViewTransition>();
   const returnAttribute = 'data-website-ui-dialog-return';
   const dialogOpeners = new WeakMap<HTMLDialogElement, (opener: HTMLElement) => void>();
+  const dialogDismissers = new WeakMap<HTMLDialogElement, () => void>();
   const enhancedExternalTriggers = new WeakSet<HTMLElement>();
 
   /** Binds external controls before client-router bubbling, without duplicating modal behavior. */
@@ -187,6 +190,13 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
       let closeRequest: symbol | undefined;
       let returnTransition: ViewTransition | undefined;
       let actualOpener: HTMLElement | undefined;
+      let hasOpenSession = false;
+      const notifyDismiss = (): void => {
+        if (!hasOpenSession) return;
+        hasOpenSession = false;
+        dialog.dispatchEvent(new Event(DIALOG_LIFECYCLE_EVENTS.dismiss, { bubbles: true }));
+      };
+      dialogDismissers.set(dialog, notifyDismiss);
       const clearReturnMarker = (): void => {
         if (document.documentElement.getAttribute(returnAttribute) === dialog.id)
           document.documentElement.removeAttribute(returnAttribute);
@@ -199,6 +209,7 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
         if (!dialog.open || closeRequest !== undefined) return;
         const request = Symbol();
         closeRequest = request;
+        notifyDismiss();
         if (window.matchMedia?.('(max-width: 639px)').matches) {
           if (
             window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
@@ -243,6 +254,8 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
       };
       const openDialog = (opener: HTMLElement): void => {
         if (dialog.open) return;
+        // a native close event may still be queued when a newer session opens
+        notifyDismiss();
         returnTransition?.skipTransition();
         returnTransition = undefined;
         clearReturnMarker();
@@ -250,7 +263,13 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
         delete dialog.dataset['closing'];
         actualOpener = opener;
         dialog.showModal();
+        if (!dialog.open) {
+          actualOpener = undefined;
+          return;
+        }
+        hasOpenSession = true;
         body.scrollTop = 0;
+        dialog.dispatchEvent(new Event(DIALOG_LIFECYCLE_EVENTS.open, { bubbles: true }));
       };
       dialogOpeners.set(dialog, openDialog);
       trigger.addEventListener('click', () => openDialog(trigger));
@@ -264,10 +283,15 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
       });
       dialog.addEventListener('close', () => {
         if (dialog.open) return;
+        notifyDismiss();
         closeRequest = undefined;
         delete dialog.dataset['closing'];
         if (actualOpener?.isConnected) actualOpener.focus({ preventScroll: true });
         actualOpener = undefined;
+      });
+      // native/programmatic closure bypasses requestClose; close remains the older-browser fallback
+      dialog.addEventListener('beforetoggle', (event) => {
+        if (event.newState === 'closed') notifyDismiss();
       });
       if (dialog.hasAttribute('data-overlay-close-enabled')) {
         let didPressOverlay = false;
@@ -316,6 +340,7 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
     for (const dialog of document.querySelectorAll<HTMLDialogElement>(
       '[data-website-ui-dialog]:modal',
     )) {
+      dialogDismissers.get(dialog)?.();
       dialog.close();
     }
   });

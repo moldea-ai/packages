@@ -150,6 +150,7 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/theme-bootstrap`
 - `@moldea.ai/website-ui/theme-control`
 - `@moldea.ai/website-ui/youtube-video`
+- `@moldea.ai/website-ui/youtube-video-dialog`
 
 `ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. Mount `CodeCopyControls` once in the body to add compact header copy actions to eligible code blocks on direct loads and client navigation. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
 
@@ -175,6 +176,25 @@ import YouTubeVideo from '@moldea.ai/website-ui/youtube-video';
 ```
 
 `YouTubeVideo` accepts required `videoUrl` and `title`, optional `autoPlay` (default `false`) and `class`, and native wrapper `div` attributes. Blank titles become `YouTube video`. The responsive iframe reserves space, keeps at least 200px of player height, supports native controls and fullscreen, and includes a canonical Watch on YouTube link that also works without JavaScript.
+
+```astro
+---
+import YouTubeVideoDialog from '@moldea.ai/website-ui/youtube-video-dialog';
+---
+
+<YouTubeVideoDialog
+  id="installation-video"
+  videoUrl="https://www.youtube.com/watch?v=M7lc1UVf-VE"
+  title="YouTube embed sample"
+  triggerLabel="Watch the video"
+  triggerVariant="primary"
+  triggerSize="lg"
+/>
+```
+
+`YouTubeVideoDialog` requires a document-unique `id`, `videoUrl`, `title`, and `triggerLabel`. Optional `description`, `triggerAriaLabel`, `triggerVariant`, `triggerSize`, `triggerClass`, `panelClass`, and `closeLabel` follow `Dialog`. It uses the large panel, enables backdrop dismissal by default (`isOverlayCloseEnabled={false}` disables it), and defaults `autoPlay` to `false`. Titles are normalized like the inline player. Without JavaScript or usable native dialog support, a canonical Watch on YouTube link remains visible.
+
+Closed video dialogs make no iframe request. Each opening mounts one fresh player, and dismissal removes it before exit animation or a return transition begins, including Escape, the close control, enabled backdrop dismissal, native closure, and Astro navigation. External `data-dialog-open` controls use the same controller and regain focus when closed. Each instance owns its playback session; no global playback store coordinates separate dialogs. A watch link remains inside the open player.
 
 The package uses its declared `jg-utilities` dependency to validate supported HTTPS single-video URLs and constructs embeds on `www.youtube-nocookie.com`. Authored playlists, timestamps, autoplay parameters, and fragments are discarded. Set `autoPlay={true}` to request playback when the iframe loads; browser policy can still prevent it. Loading an iframe contacts YouTube even with autoplay disabled. Unsupported URLs fail Astro rendering/building with `INVALID_YOUTUBE_VIDEO_URL: The YouTube video URL is not supported.` No provider metadata request or SDK is used, and a valid URL does not establish that a video permits embedding or remains available.
 
@@ -384,6 +404,8 @@ For example, add `size="large" triggerVariant="primary" triggerSize="lg"` to the
 ```
 
 External links or buttons can set `data-dialog-open="<dialog-id>"` and `aria-controls` to the same ID. Links should retain a real fallback fragment. The shared controller prevents ordinary navigation only when it can open the dialog, preserves modified link clicks, and returns focus to the actual opener. This supports a case dialog plus one result dialog without a second modal controller.
+
+Enhanced dialogs dispatch two non-cancelable, bubbling DOM events from their native `<dialog>` element. `website-ui:dialog-open` fires once after a successful `showModal()`, with the dialog open. `website-ui:dialog-dismiss` fires once per session when dismissal starts, before managed exit animation or a return transition; it also covers native closure and navigation. The element and its ID identify the instance; no payload is included. Repeated close requests and the final native `close` event do not duplicate dismissal notifications. Initial `fallbackOpen` housekeeping emits neither event. Native closure uses `beforetoggle` where supported and the native `close` event as a fallback.
 
 `TabbedPanels` supports the `website-ui:select-tab` DOM event on its public root ID, with `detail: { id: "<item-id>" }`. It reuses normal selection without moving focus; unknown IDs are ignored.
 

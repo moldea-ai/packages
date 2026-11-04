@@ -24,6 +24,7 @@
     "runtime-logos",
     "src/**/*.astro",
     "src/**/*.css",
+    "src/dialog-lifecycle/index.ts",
     "src/exceptions.ts",
     "src/search/index.ts",
     "src/site/index.ts",
@@ -134,6 +135,9 @@
     },
     "./youtube-video": {
       "import": "./src/components/youtube-video/youtube-video.component.astro"
+    },
+    "./youtube-video-dialog": {
+      "import": "./src/components/youtube-video-dialog/youtube-video-dialog.component.astro"
     },
     "./styles.css": {
       "style": "./src/styles.css",
