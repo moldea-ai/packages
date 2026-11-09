@@ -19,6 +19,8 @@ See [local development](docs/local-development.md) for focused commands, build a
 
 ## Project blueprint
 
+[Delivery](docs/delivery.md) defines the ordered stops, operators, verification and cleanup for a task.
+
 | Path                                 | Responsibility                                                          |
 | ------------------------------------ | ----------------------------------------------------------------------- |
 | [`projects/`](projects/)             | Public package projects and their own documentation                     |

@@ -36,8 +36,8 @@ importers:
         specifier: 0.4.0
         version: 0.4.0
       jg-plans:
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.6.1
+        version: 0.6.1
       jg-process:
         specifier: 1.6.2
         version: 1.6.2
@@ -1941,10 +1941,6 @@ packages:
     resolution: {integrity: sha512-S7Bq9kmAK43xZeNQ41iubJ2LYxxyW3yMEoh2ciFkmm0/LAD3i2OgKOV4YPUL4j8NVGdjFuyJ5L8Ew6ti3wwVIQ==}
     engines: {node: '>=22.17.0'}
 
-  jg-exception@1.7.0:
-    resolution: {integrity: sha512-EmhkDdWxunZdYt+xjqe1G9tPbaSkVqF6xu/TxxChz7yVI+vXiWk8K5D+0J+masNL4MJwJv1sTDPC2x3QYMbJxA==}
-    engines: {node: '>=22.17.0'}
-
   jg-exception@1.7.1:
     resolution: {integrity: sha512-bi5yn3rtvFLlhjOiJJAREVE1mYXnENW3zoRcMOymNlgr09Z+Hy7ECgqGvIkqvINy+QDpki0u8XbmWSZpWpuwVQ==}
     engines: {node: '>=22.17.0'}
@@ -1961,29 +1957,29 @@ packages:
     resolution: {integrity: sha512-O2OtTQ3SsAGUwj9OpjlNOZOVEyBmzg1+YTm0KdfJxZLgAiQFFHyblrAENEkgdwmH8Qp9KP9n30XNYoDBT1+L2Q==}
     engines: {node: '>=22.17.0'}
 
-  jg-plans@0.5.1:
-    resolution: {integrity: sha512-OPZT5dH9oCBZuxa4JGAS1Y9DDjcYDQwswvJYtbZBdyv3IfR21bQ5v1hrhwFJgAx9F2rG+pd6wUZqeM5UgLIV0w==}
+  jg-plans@0.6.1:
+    resolution: {integrity: sha512-jlliFrcUMaDDrOiZtRwzdvqDXwTdPgPSi3dupCCU6TrmSL0WG1qXL5YuanjDwTVZDI8kbzeHZIaL+ZOQZa4PMQ==}
     engines: {node: '>=24.15.0'}
     hasBin: true
 
-  jg-process@1.6.1:
-    resolution: {integrity: sha512-F75AiEaJLTRcPNvH/LEC1neSA6wa316W6O++lJYWsObdghBl3p18q5ueDxFZ8C8HnY/kLTdgHpdaC18SF3/gQg==}
-    engines: {node: '>=22.17.0'}
-
   jg-process@1.6.2:
     resolution: {integrity: sha512-Sb0C7C8f/3PPk/u9Viky74lXDvvEx09z2+l9O97G447lo27LjlUEpewmqLx6NAuU+F+WdNXdn759aRpsjfzgnA==}
+    engines: {node: '>=22.17.0'}
+
+  jg-process@1.7.0:
+    resolution: {integrity: sha512-U+hM01+3L6nf9EfTz7kp3Qo+5nrRZGXmbYOTE1Iw01Qz4mIFZxjG8+GAnIQnGnKK8bNLSDo38gQoj/vUeS0Q5Q==}
     engines: {node: '>=22.17.0'}
 
   jg-site@0.1.0:
     resolution: {integrity: sha512-wHL9HvqU+mzECiqKwVB0iiln5C/mP3EdIW43KfFFFf/Kk4zWSIEfXg6W0Iq6VjRFMfRFAOaFr4unSbf2/X/Nig==}
     engines: {node: '>=22.17.0'}
 
-  jg-utilities@1.7.0:
-    resolution: {integrity: sha512-Cdec4v/QW7TPaY68/McjGxLCvrwH7aKI9H0DsXoo3qi27R81DTbxVZpsg7/LVZ3Ah3Kai1OHiUgpju2rmF2VEA==}
-    engines: {node: '>=22.17.0'}
-
   jg-utilities@1.7.2:
     resolution: {integrity: sha512-m6/RDkjBPufPbIAcIG6i9+17iorPhtnIeIPxiD+ISHq9nAc/D12AMcONWhu5yjl1Ppn9CEBm73tFy/2rffVNmQ==}
+    engines: {node: '>=22.17.0'}
+
+  jg-utilities@1.8.0:
+    resolution: {integrity: sha512-808zXcTf7x4peGNHz/q2/25p41BtTI5RrpNm1syH9itQbYej9m88/PdO4VG+YW2pKBSOIfEAWAsAoRU5QL2AOw==}
     engines: {node: '>=22.17.0'}
 
   jiti@2.7.0:
@@ -4743,8 +4739,6 @@ snapshots:
     dependencies:
       jg-exception: 1.7.1
 
-  jg-exception@1.7.0: {}
-
   jg-exception@1.7.1: {}
 
   jg-fetch@0.5.1:
@@ -4763,34 +4757,34 @@ snapshots:
       jg-exception: 1.7.1
       jg-process: 1.6.2
 
-  jg-plans@0.5.1:
+  jg-plans@0.6.1:
     dependencies:
       jg-crypto: 0.3.0
-      jg-exception: 1.7.0
+      jg-exception: 1.7.1
       jg-fs: 1.7.0
-      jg-process: 1.6.1
-      jg-utilities: 1.7.0
+      jg-process: 1.7.0
+      jg-utilities: 1.8.0
       yaml: 2.9.1
       zod: 4.6.7
-
-  jg-process@1.6.1:
-    dependencies:
-      jg-exception: 1.7.1
-      jg-utilities: 1.7.2
 
   jg-process@1.6.2:
     dependencies:
       jg-exception: 1.7.1
       jg-utilities: 1.7.2
 
+  jg-process@1.7.0:
+    dependencies:
+      jg-exception: 1.7.1
+      jg-utilities: 1.8.0
+
   jg-site@0.1.0: {}
 
-  jg-utilities@1.7.0:
+  jg-utilities@1.7.2:
     dependencies:
       jg-exception: 1.7.1
       uuid: 14.0.3
 
-  jg-utilities@1.7.2:
+  jg-utilities@1.8.0:
     dependencies:
       jg-exception: 1.7.1
       uuid: 14.0.3
