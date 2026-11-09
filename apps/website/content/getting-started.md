@@ -15,6 +15,8 @@ Runtime agents and their instructions use the same foundation when your project 
 
 Start with the [`moldea Agent Skill`](https://skill.moldea.ai/). It guides repository adoption and ongoing workflows in your coding agent. Its website owns installation instructions, tutorials, and the adoption process.
 
+The guide offers optional video walkthroughs for installing and using the Skill, followed by keeping project context and code aligned.
+
 The packages documented here are the underlying tools. Installing a package alone does not adopt the repository or write its project knowledge for you.
 
 ## Collaborate in Cloud

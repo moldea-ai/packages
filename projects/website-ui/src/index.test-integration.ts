@@ -268,7 +268,10 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.7.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.7.1' });
+    expect(readFileSync(path.join(projectDirectory, 'README.md'), 'utf8')).toContain(
+      `pnpm add @moldea.ai/website-ui@${packResult.version}`,
+    );
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -321,6 +324,9 @@ describe('published website UI package', () => {
     expect(packedPaths).toContain('src/youtube-video/index.ts');
     expect(packedPaths).toContain(
       'src/components/youtube-video-dialog/youtube-video-dialog.component.astro',
+    );
+    expect(packedPaths).toContain(
+      'src/components/youtube-video-dialog/icon/youtube-icon.component.astro',
     );
     expect(packedPaths).toContain('src/dialog-lifecycle/index.ts');
     expect(packedPaths).toContain('src/components/file-preview/file-preview.component.astro');
@@ -1440,22 +1446,11 @@ describe('published website UI package', () => {
                 () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
               ),
             ).toBe(true);
-            const watchLink = video.getByRole('link', {
-              name: 'Watch on YouTube (opens in a new tab)',
-            });
-            expect(await watchLink.getAttribute('href')).toBe(
-              'https://www.youtube.com/watch?v=M7lc1UVf-VE',
-            );
-            await watchLink.focus();
-            await page.keyboard.press('Shift+Tab');
-            await page.keyboard.press('Tab');
-            expect(await watchLink.evaluate((node) => node === document.activeElement)).toBe(true);
             expect(
-              await watchLink.evaluate((node) => {
-                const style = getComputedStyle(node);
-                return style.outlineStyle !== 'none' || style.boxShadow !== 'none';
-              }),
-            ).toBe(true);
+              await video
+                .getByRole('link', { name: 'Watch on YouTube (opens in a new tab)' })
+                .count(),
+            ).toBe(0);
             const videoAccessibility = await new AxeBuilder({ page })
               .include('#inline-video')
               .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -2029,6 +2024,30 @@ describe('published website UI package', () => {
             exact: true,
           });
           await opener.waitFor({ state: 'visible' });
+          const youtubeIcon = opener.locator('svg');
+          expect(await youtubeIcon.count()).toBe(1);
+          expect(await youtubeIcon.getAttribute('aria-hidden')).toBe('true');
+          expect(await youtubeIcon.getAttribute('focusable')).toBe('false');
+          expect(await youtubeIcon.locator('path').getAttribute('fill')).toBe('currentColor');
+          expect(await youtubeIcon.locator('polygon').count()).toBe(0);
+          expect(
+            await opener.evaluate(
+              (node) =>
+                getComputedStyle(node.querySelector('svg path')!).fill ===
+                getComputedStyle(node).color,
+            ),
+          ).toBe(true);
+          expect(
+            await youtubeIcon.evaluate((node) =>
+              [node, ...node.querySelectorAll('*')].some(
+                (element) =>
+                  ['script', 'foreignObject', 'image', 'use'].includes(element.localName) ||
+                  [...element.attributes].some(
+                    (attribute) => /^on/iu.test(attribute.name) || /href$/iu.test(attribute.name),
+                  ),
+              ),
+            ),
+          ).toBe(false);
           const dialog = page.locator('#video-one');
           const observations = (): Promise<IDialogLifecycleObservation[]> =>
             page.evaluate(() => window.videoLifecycle);
@@ -2058,6 +2077,7 @@ describe('published website UI package', () => {
             await Promise.all(node.getAnimations().map((animation) => animation.finished));
           });
           expect(await dialog.locator('iframe').count()).toBe(1);
+          expect(await dialog.getByRole('link', { name: /Watch on YouTube/u }).count()).toBe(0);
           expect(await iframe.getAttribute('src')).toBe(
             'https://www.youtube-nocookie.com/embed/M7lc1UVf-VE',
           );

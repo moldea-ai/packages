@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@4.7.0
+pnpm add @moldea.ai/website-ui@4.7.1
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -175,7 +175,7 @@ import YouTubeVideo from '@moldea.ai/website-ui/youtube-video';
 />
 ```
 
-`YouTubeVideo` accepts required `videoUrl` and `title`, optional `autoPlay` (default `false`) and `class`, and native wrapper `div` attributes. Blank titles become `YouTube video`. The responsive iframe reserves space, keeps at least 200px of player height, supports native controls and fullscreen, and includes a canonical Watch on YouTube link that also works without JavaScript.
+`YouTubeVideo` accepts required `videoUrl` and `title`, optional `autoPlay` (default `false`) and `class`, and native wrapper `div` attributes. Blank titles become `YouTube video`. The responsive iframe reserves space, keeps at least 200px of player height, and supports native controls and fullscreen. A canonical Watch on YouTube fallback appears only without JavaScript; the active player provides its own YouTube navigation.
 
 ```astro
 ---
@@ -192,9 +192,11 @@ import YouTubeVideoDialog from '@moldea.ai/website-ui/youtube-video-dialog';
 />
 ```
 
-`YouTubeVideoDialog` requires a document-unique `id`, `videoUrl`, `title`, and `triggerLabel`. Optional `description`, `triggerAriaLabel`, `triggerVariant`, `triggerSize`, `triggerClass`, `panelClass`, and `closeLabel` follow `Dialog`. It uses the large panel, enables backdrop dismissal by default (`isOverlayCloseEnabled={false}` disables it), and defaults `autoPlay` to `false`. Titles are normalized like the inline player. Without JavaScript or usable native dialog support, a canonical Watch on YouTube link remains visible.
+`YouTubeVideoDialog` requires a document-unique `id`, `videoUrl`, `title`, and `triggerLabel`. Optional `description`, `triggerAriaLabel`, `triggerVariant`, `triggerSize`, `triggerClass`, `panelClass`, and `closeLabel` follow `Dialog`. Its trigger includes the YouTube icon beside text, or as the mark for an icon-size trigger. It uses the large panel, enables backdrop dismissal by default (`isOverlayCloseEnabled={false}` disables it), and defaults `autoPlay` to `false`. Titles are normalized like the inline player. Without JavaScript or usable native dialog support, a canonical Watch on YouTube link remains visible.
 
-Closed video dialogs make no iframe request. Each opening mounts one fresh player, and dismissal removes it before exit animation or a return transition begins, including Escape, the close control, enabled backdrop dismissal, native closure, and Astro navigation. External `data-dialog-open` controls use the same controller and regain focus when closed. Each instance owns its playback session; no global playback store coordinates separate dialogs. A watch link remains inside the open player.
+Closed video dialogs make no iframe request. Each opening mounts one fresh player, and dismissal removes it before exit animation or a return transition begins, including Escape, the close control, enabled backdrop dismissal, native closure, and Astro navigation. External `data-dialog-open` controls use the same controller and regain focus when closed. Each instance owns its playback session; no global playback store coordinates separate dialogs. Open dialogs do not add a watch link below the player.
+
+The trigger's monochrome YouTube icon reproduces the `video-youtube` mark from [YouTube Brand Resources](https://brand.youtube/), under its brand usage guidelines. It inherits the control's text color across light and dark surfaces. The mark belongs to YouTube.
 
 The package uses its declared `jg-utilities` dependency to validate supported HTTPS single-video URLs and constructs embeds on `www.youtube-nocookie.com`. Authored playlists, timestamps, autoplay parameters, and fragments are discarded. Set `autoPlay={true}` to request playback when the iframe loads; browser policy can still prevent it. Loading an iframe contacts YouTube even with autoplay disabled. Unsupported URLs fail Astro rendering/building with `INVALID_YOUTUBE_VIDEO_URL: The YouTube video URL is not supported.` No provider metadata request or SDK is used, and a valid URL does not establish that a video permits embedding or remains available.
 
