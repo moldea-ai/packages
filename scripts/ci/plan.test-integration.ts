@@ -34,6 +34,7 @@ const run = (env: Record<string, string> = {}) =>
       CI_BASE_COMMIT: base,
       CI_TESTED_COMMIT: head,
       CI_RELEASE_BUILD: 'false',
+      CI_RELEASE_PROJECT: '',
       CI_TEST_SUITE: 'essential',
       GITHUB_OUTPUT: join(directory, 'outputs.txt'),
       GITHUB_STEP_SUMMARY: join(directory, 'summary.md'),
@@ -111,6 +112,59 @@ test('actual release candidates force full verification for otherwise website-on
     comparisonCommit: base,
     artifacts: true,
   });
+});
+
+test.each(['', 'core', 'cli-website-ui', 'website-ui'])(
+  'release planner scopes only an isolated Website UI release (%s)',
+  async (project) => {
+    await write(
+      'projects/website-ui/package.json',
+      JSON.stringify({ name: '@moldea.ai/website-ui' }),
+    );
+    await write('projects/cli/package.json', JSON.stringify({ name: '@moldea.ai/cli' }));
+    await write(
+      'apps/website/package.json',
+      JSON.stringify({
+        name: '@moldea.ai/packages-website',
+        private: true,
+        dependencies: { '@moldea.ai/website-ui': 'workspace:*' },
+      }),
+    );
+    head = commit();
+    const result = run({
+      CI_RELEASE_BUILD: 'true',
+      CI_RELEASE_PROJECT: project,
+      CI_BASE_COMMIT: '',
+    });
+    expect(result.status, result.stderr).toBe(0);
+    const plan = parseCiPlan(result.stdout.trim());
+    expect(plan.testedCommit).toBe(head);
+    expect(plan.testSuite).toBe('full');
+    expect(plan.artifacts).toBe(true);
+    if (project === 'website-ui') {
+      expect(plan.mode).toBe('website-ui-release');
+      expect(plan.workspaces).toStrictEqual([
+        '@moldea.ai/packages-website',
+        '@moldea.ai/website-ui',
+      ]);
+      expect(plan.lanes).toStrictEqual([]);
+      expect(plan.rootIntegration).toBe(false);
+      const outputs = await readFile(join(directory, 'outputs.txt'), 'utf8');
+      expect(outputs).toContain('artifacts=true\n');
+      expect(outputs).toContain('cross_platform=true\n');
+      expect(outputs).toContain('consumer_conformance=false\n');
+    } else {
+      expect(plan.mode).toBe('full');
+      expect(plan.workspaces).toContain('@moldea.ai/cli');
+      expect(plan.lanes).toContain('consumer-conformance');
+    }
+  },
+);
+
+test('a release project input alone cannot reduce routine CI scope', () => {
+  const result = run({ CI_RELEASE_PROJECT: 'website-ui', CI_BASE_COMMIT: '' });
+  expect(result.status, result.stderr).toBe(0);
+  expect(parseCiPlan(result.stdout.trim())).toMatchObject({ mode: 'full', testSuite: 'essential' });
 });
 
 test.each([

@@ -6,7 +6,7 @@ import type { ITestSuite } from '#test-suite/types';
 export interface ICiPlan {
   testedCommit: string;
   comparisonCommit: string | null;
-  mode: 'full' | 'affected';
+  mode: 'full' | 'affected' | 'website-ui-release';
   testSuite: ITestSuite;
   reasons: string[];
   workspaces: string[];
@@ -24,6 +24,7 @@ export interface ICiSelectionSources {
   changedPaths: string[];
   fullReason?: string;
   testSuite?: ITestSuite;
+  websiteUiRelease?: boolean;
 }
 
 // closed matrix dimensions emitted by the source-bound planner

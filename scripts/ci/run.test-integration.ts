@@ -27,6 +27,7 @@ const planFor = (
   paths: string[],
   fullReason?: string,
   testSuite: 'essential' | 'full' = 'full',
+  websiteUiRelease = false,
 ) => {
   const root = pathToFileURL(`${directory}${sep}`);
   const testedCommit = getGitHead(root);
@@ -38,6 +39,7 @@ const planFor = (
     previous: current,
     changedPaths: paths,
     testSuite,
+    websiteUiRelease,
     ...(fullReason === undefined ? {} : { fullReason }),
   });
 };
@@ -97,9 +99,12 @@ beforeEach(async () => {
     JSON.stringify({
       tasks: {
         build: { dependsOn: ['^build'], outputs: ['build.out'] },
-        'test:unit': { dependsOn: ['^test:unit'] },
-        'test:integration': { dependsOn: ['build', '^test:integration'] },
-        'test:e2e': { dependsOn: ['build', '^build'] },
+        'test:unit': { dependsOn: ['^test:unit'], env: ['MOLDEA_TEST_SUITE'] },
+        'test:integration': {
+          dependsOn: ['build', '^test:integration'],
+          env: ['MOLDEA_TEST_SUITE'],
+        },
+        'test:e2e': { dependsOn: ['build', '^build'], env: ['MOLDEA_TEST_SUITE'] },
         lint: { dependsOn: ['^lint'] },
         typecheck: { dependsOn: ['^typecheck'] },
       },
@@ -203,6 +208,29 @@ test('full verification includes root integration and propagates a selected depe
     log.indexOf('@moldea.ai/website-ui:test:integration'),
   );
 });
+
+test.each(['checks', 'test'])(
+  'Website UI release %s runs complete consumer tests without unrelated runtime tasks',
+  async (stage) => {
+    await writeFile(
+      join(directory, 'projects/website-ui/task.mjs'),
+      `import {appendFileSync,writeFileSync} from 'node:fs'; const task=process.argv[2]; appendFileSync('../../execution.log','@moldea.ai/website-ui:'+task+'\\n'); if(task.startsWith('test:'))appendFileSync('../../selection.log',process.env.MOLDEA_TEST_SUITE+'\\n'); if(task==='build')writeFileSync('build.out','built');`,
+    );
+    const result = run(planFor([], undefined, 'essential', true), stage);
+    expect(result.status, result.stdout + result.stderr).toBe(0);
+    const log = await readFile(join(directory, 'execution.log'), 'utf8');
+    for (const name of ['@moldea.ai/website-ui', '@moldea.ai/packages-website']) {
+      for (const task of ['build', 'test:unit', 'test:integration'])
+        expect(log).toContain(`${name}:${task}`);
+    }
+    expect(log).not.toContain('@moldea.ai/cli:');
+    expect(log).not.toContain('test:root:integration');
+    expect(log).not.toContain('@moldea.ai/packages-website:test:e2e');
+    expect(
+      new Set((await readFile(join(directory, 'selection.log'), 'utf8')).trim().split('\n')),
+    ).toStrictEqual(new Set(['full']));
+  },
+);
 
 test('runner refuses a stale commit or unknown workspace before starting any task', async () => {
   const stale = { ...planFor([]), testedCommit: 'f'.repeat(40) };

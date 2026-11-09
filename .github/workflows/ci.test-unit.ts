@@ -64,6 +64,7 @@ test('planner uses the tested merge checkout and explicit main comparison, with 
         "${{ inputs.comparison_commit || github.event.pull_request.base.sha || github.event.before || '' }}",
       CI_TESTED_COMMIT: '${{ github.sha }}',
       CI_RELEASE_BUILD: "${{ inputs.release_build == true && 'true' || 'false' }}",
+      CI_RELEASE_PROJECT: "${{ inputs.release_project || '' }}",
       CI_TEST_SUITE: "${{ inputs.test_suite || 'essential' }}",
     },
   });

@@ -15,7 +15,7 @@ export const CI_COMPATIBILITY_LANES = [
   'repository-fs-runtime-compatibility',
   'cli-runtime-compatibility',
 ];
-// the packages website, whose browser suite runs locally instead of in CI
+// the packages website has a separate browser gate during publication
 export const CI_WEBSITE_WORKSPACE = '@moldea.ai/packages-website';
 // literal lowercase identifiers prevent Turbo filter expressions from entering a plan
 const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u;
@@ -84,17 +84,20 @@ export const createCiMatrices = (plan: ICiPlan): ICiRuntimeMatrices => {
 };
 
 /**
- * Builds the current execution set from the union of old and new reverse dependency edges.
+ * Builds affected or release scope from committed workspace graphs.
  * @throws
  * - The Git commit is invalid.
  * - The CI test-suite input is invalid.
+ * - The CI plan does not match the checked-out workspace inventory.
  */
 export const createCiPlan = (sources: ICiSelectionSources): ICiPlan => {
-  const testSuite = parseCiTestSuite(sources.testSuite);
+  const requestedSuite = parseCiTestSuite(sources.testSuite);
+  const isWebsiteUiRelease = sources.websiteUiRelease === true;
+  const testSuite = isWebsiteUiRelease ? 'full' : requestedSuite;
   requireGitCommit(sources.testedCommit);
   if (sources.comparisonCommit !== null) requireGitCommit(sources.comparisonCommit);
   const changedPaths = sources.changedPaths.filter((path) => !isExcludedPath(path));
-  const snapshots = [sources.previous, sources.current];
+  const snapshots = isWebsiteUiRelease ? [sources.current] : [sources.previous, sources.current];
   const owners = new Map<string, Set<string>>();
   const consumers = new Map<string, Set<string>>();
   for (const snapshot of snapshots) {
@@ -111,10 +114,16 @@ export const createCiPlan = (sources: ICiSelectionSources): ICiPlan => {
   }
   const selected = new Set<string>();
   const reasons = new Set<string>();
-  if (sources.fullReason !== undefined) reasons.add(sources.fullReason);
-  if (sources.comparisonCommit === null) reasons.add('No comparison commit is available.');
+  if (isWebsiteUiRelease) {
+    if (!sources.current.has('@moldea.ai/website-ui'))
+      throw new TypeError('The CI plan does not match the checked-out workspace inventory.');
+    selected.add('@moldea.ai/website-ui');
+  } else {
+    if (sources.fullReason !== undefined) reasons.add(sources.fullReason);
+    if (sources.comparisonCommit === null) reasons.add('No comparison commit is available.');
+  }
   let firstGlobalPath: string | undefined;
-  for (const path of changedPaths) {
+  for (const path of isWebsiteUiRelease ? [] : changedPaths) {
     if (path === 'specifications/repository-format.md') {
       selected.add(CI_WEBSITE_WORKSPACE);
       continue;
@@ -144,13 +153,17 @@ export const createCiPlan = (sources: ICiSelectionSources): ICiPlan => {
   return {
     testedCommit: sources.testedCommit,
     comparisonCommit: sources.comparisonCommit,
-    mode: full ? 'full' : 'affected',
+    mode: isWebsiteUiRelease ? 'website-ui-release' : full ? 'full' : 'affected',
     testSuite,
-    reasons: full ? [...reasons].sort() : ['Changed workspaces and all downstream consumers.'],
+    reasons: isWebsiteUiRelease
+      ? ['Website UI release and all current downstream consumers.']
+      : full
+        ? [...reasons].sort()
+        : ['Changed workspaces and all downstream consumers.'],
     workspaces,
     rootIntegration: full || workspaces.some(isRuntimePackage),
     lanes,
-    artifacts: lanes.length > 0,
+    artifacts: isWebsiteUiRelease || lanes.length > 0,
   };
 };
 
@@ -175,7 +188,11 @@ export const parseCiPlan = (source: string): ICiPlan => {
     PLAN_FIELDS.some((field) => !(field in record)) ||
     typeof record['testedCommit'] !== 'string' ||
     !(record['comparisonCommit'] === null || typeof record['comparisonCommit'] === 'string') ||
-    !(record['mode'] === 'full' || record['mode'] === 'affected') ||
+    !(
+      record['mode'] === 'full' ||
+      record['mode'] === 'affected' ||
+      record['mode'] === 'website-ui-release'
+    ) ||
     !(record['testSuite'] === 'essential' || record['testSuite'] === 'full') ||
     !isStringList(record['reasons']) ||
     record['reasons'].length === 0 ||
@@ -191,14 +208,17 @@ export const parseCiPlan = (source: string): ICiPlan => {
   requireGitCommit(record['testedCommit']);
   if (record['comparisonCommit'] !== null) requireGitCommit(record['comparisonCommit']);
   const full = record['mode'] === 'full';
+  const isWebsiteUiRelease = record['mode'] === 'website-ui-release';
   const workspaces = record['workspaces'];
   if (
     JSON.stringify(workspaces) !== JSON.stringify([...new Set(workspaces)].sort()) ||
     JSON.stringify(record['lanes']) !==
       JSON.stringify(selectLanes(workspaces, full, record['testSuite'])) ||
-    record['artifacts'] !== record['lanes'].length > 0 ||
+    record['artifacts'] !== (isWebsiteUiRelease || record['lanes'].length > 0) ||
     record['rootIntegration'] !== (full || workspaces.some(isRuntimePackage)) ||
-    (!full && record['comparisonCommit'] === null)
+    (isWebsiteUiRelease &&
+      (record['testSuite'] !== 'full' || !workspaces.includes('@moldea.ai/website-ui'))) ||
+    (record['mode'] === 'affected' && record['comparisonCommit'] === null)
   )
     throw new TypeError('The CI plan is invalid.');
   return {
@@ -226,7 +246,19 @@ export const validateCiWorkspaceSelection = (
   if (
     plan.workspaces.some((name) => !snapshot.has(name)) ||
     (plan.mode === 'full' &&
-      JSON.stringify(plan.workspaces) !== JSON.stringify([...snapshot.keys()].sort()))
+      JSON.stringify(plan.workspaces) !== JSON.stringify([...snapshot.keys()].sort())) ||
+    (plan.mode === 'website-ui-release' &&
+      JSON.stringify(plan.workspaces) !==
+        JSON.stringify(
+          createCiPlan({
+            testedCommit: plan.testedCommit,
+            comparisonCommit: plan.comparisonCommit,
+            current: snapshot,
+            previous: snapshot,
+            changedPaths: [],
+            websiteUiRelease: true,
+          }).workspaces,
+        ))
   ) {
     throw new TypeError('The CI plan does not match the checked-out workspace inventory.');
   }

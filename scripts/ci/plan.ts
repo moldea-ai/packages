@@ -52,6 +52,8 @@ const plan = parseCiPlan(
       comparisonCommit,
       current,
       previous,
+      websiteUiRelease:
+        releaseBuild === 'true' && process.env['CI_RELEASE_PROJECT'] === 'website-ui',
       changedPaths:
         comparisonCommit === null
           ? []

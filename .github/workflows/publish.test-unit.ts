@@ -69,7 +69,7 @@ const publishWorkflow = parse(publishSource) as IWorkflow;
 const publishPackageWorkflow = parse(publishPackageSource) as IWorkflow;
 
 describe('npm release workflow', () => {
-  test('reuses the complete CI boundary with release caching disabled', () => {
+  test('reuses source-bound CI qualification with release caching disabled', () => {
     expect(ciWorkflow.on).toHaveProperty('pull_request');
     expect(ciWorkflow.on).toHaveProperty('workflow_call');
     expect(ciWorkflow.on).toHaveProperty('workflow_dispatch');
@@ -108,6 +108,11 @@ describe('npm release workflow', () => {
         release_project: '${{ needs.plan.outputs.project_key }}',
       },
     });
+    expect(
+      publishWorkflow.jobs?.['plan']?.steps?.some(
+        ({ with: options }) => options?.['cache'] !== undefined,
+      ),
+    ).toBe(false);
   });
 
   test('gates publication on the same trusted tarballs and immutable skill consumer tooling', () => {
