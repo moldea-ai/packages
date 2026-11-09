@@ -15,7 +15,13 @@ interface IJob {
   env?: Record<string, string>;
   outputs?: Record<string, string>;
   strategy?: { matrix?: unknown };
-  steps?: { name?: string; run?: string; if?: string; env?: Record<string, string> }[];
+  steps?: {
+    name?: string;
+    run?: string;
+    if?: string;
+    env?: Record<string, string>;
+    with?: Record<string, string>;
+  }[];
 }
 const source = readFileSync(new URL('./ci.yml', import.meta.url), 'utf8');
 const workflow = parse(source) as {
@@ -165,7 +171,10 @@ test('routine suite inputs and closed matrices preserve native platform eligibil
     '${{ fromJSON(needs.plan.outputs.repository_fs_runtime_matrix) }}',
   );
   expect(workflow.jobs['test-cross-platform']?.strategy?.matrix).toStrictEqual({
-    os: ['macos-latest', 'windows-latest'],
+    include: [
+      { os: 'macos-latest', 'node-version': workflow.env['NODE_VERSION'] },
+      { os: 'windows-latest', 'node-version': '24.16.0' },
+    ],
   });
   expect(workflow.jobs['test-cross-platform']?.if).toBe(
     "${{ needs.plan.outputs.cross_platform == 'true' }}",
@@ -179,4 +188,17 @@ test('routine suite inputs and closed matrices preserve native platform eligibil
     expect(workflow.jobs['plan']?.outputs?.[name]).toBe(
       '' + '${{ steps.selection.outputs.' + name + ' }}',
     );
+});
+
+test('cached and release native checks use the platform runtime that avoids the Windows TCP crash', () => {
+  for (const name of [
+    'Setup Node.js with dependency caching',
+    'Setup Node.js for a release build',
+  ]) {
+    expect(
+      workflow.jobs['test-cross-platform']?.steps?.find((step) => step.name === name)?.with?.[
+        'node-version'
+      ],
+    ).toBe('${{ matrix.node-version }}');
+  }
 });
