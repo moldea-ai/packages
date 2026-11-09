@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { describe, expect, test, vi } from 'vitest';
+import { expectToRejectCode } from 'jg-exception/testing';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { RepositorySourceException } from '@moldea.ai/repository';
 import {
@@ -18,6 +19,7 @@ import { createCore } from '../core/index.js';
 
 import { createNodeProjectInspection } from './client.js';
 import { NODE_INSPECTION_TRANSPORT_BYTES } from './constants.js';
+import type { INodeProjectInspection, INodeProjectInspectionInput } from './types.js';
 
 const createRepository = () => {
   const reader = createIntegratedMemoryRepositoryReader([
@@ -614,6 +616,307 @@ describe('real isolated Node inspection', () => {
       code: 'INSPECTION_TIMEOUT',
       retryable: true,
       limit: null,
+    });
+  });
+});
+
+describe('inspection admission', () => {
+  const inspections = new Map<INodeProjectInspection, string | undefined>();
+  const pending = new Set<Promise<INodeProjectInspection>>();
+  const controllers = new Set<AbortController>();
+  const gates = new Set<ReturnType<typeof createGate>>();
+
+  const gate = () => {
+    const owned = createGate();
+    gates.add(owned);
+    return owned;
+  };
+
+  /** Retains every successful handle for teardown, including partial test setup. */
+  const inspect = (input: INodeProjectInspectionInput): Promise<INodeProjectInspection> => {
+    const operation = (async () => {
+      const inspection = await createNodeProjectInspection(input);
+      inspections.set(inspection, undefined);
+      return inspection;
+    })();
+    pending.add(operation);
+    void operation.catch(() => {});
+    return operation;
+  };
+
+  afterEach(async () => {
+    try {
+      for (const controller of controllers) controller.abort();
+      for (const owned of gates) owned.release();
+      await Promise.allSettled(pending);
+      const cleanup = await Promise.allSettled(
+        [...inspections].map(async ([inspection, failureCode]) => {
+          if (failureCode === undefined) await inspection.dispose();
+          else await expectToRejectCode(inspection.dispose(), failureCode);
+        }),
+      );
+      expect(cleanup).toStrictEqual(cleanup.map(() => ({ status: 'fulfilled', value: undefined })));
+    } finally {
+      inspections.clear();
+      pending.clear();
+      controllers.clear();
+      gates.clear();
+    }
+  });
+
+  /** Proves no reservation remains by refilling the complete two-slot capacity. */
+  const verifyEmptyAdmission = async (): Promise<void> => {
+    const first = await inspect({ repository: createRepository(), maxConcurrentInspections: 2 });
+    const second = await inspect({ repository: createRepository(), maxConcurrentInspections: 2 });
+    await expectToRejectCode(
+      inspect({ repository: createRepository(), maxConcurrentInspections: 2 }),
+      'INSPECTION_BUSY',
+      'Project inspection capacity is busy. Try again shortly.',
+    );
+    await Promise.all([first.dispose(), second.dispose()]);
+  };
+
+  test.each([
+    ['omitted', {}],
+    ['undefined', { maxConcurrentInspections: undefined }],
+    ['one', { maxConcurrentInspections: 1 }],
+  ])('preserves single admission with %s maximum', async (_label, options) => {
+    const input = { repository: createRepository(), ...options } as INodeProjectInspectionInput;
+    const first = await inspect(input);
+    await first.readPage({ maxItems: 1, view: 'all' });
+    await expectToRejectCode(
+      inspect(input),
+      'INSPECTION_BUSY',
+      'Project inspection capacity is busy. Try again shortly.',
+    );
+    await expectToRejectCode(
+      inspect({ ...input, maxConcurrentInspections: 0 }),
+      'INVALID_ARGUMENT',
+      'The Core operation received an invalid argument.',
+    );
+    await Promise.all([first.dispose(), first.dispose()]);
+    const next = await inspect(input);
+    await next.dispose();
+    await verifyEmptyAdmission();
+  });
+
+  test('admits two gated preparations, keeps their pages independent and releases each slot once', async () => {
+    const repository = createRepository();
+    const expected = await createCore().createProjectInspection({ repository });
+    const entries = [gate(), gate()];
+    const settlements = [gate(), gate()];
+    const operations = entries.map((entered, index) =>
+      inspect({
+        repository: {
+          ...repository,
+          getEntry: async (...args: Parameters<typeof repository.getEntry>) => {
+            entered.release();
+            await settlements[index]!.promise;
+            return repository.getEntry(...args);
+          },
+        },
+        maxConcurrentInspections: 2,
+      }),
+    );
+    await Promise.race([
+      Promise.all(entries.map((entered) => entered.promise)),
+      Promise.all(operations),
+    ]);
+    await expectToRejectCode(
+      inspect({ repository, maxConcurrentInspections: 2 }),
+      'INSPECTION_BUSY',
+    );
+    for (const settlement of settlements) settlement.release();
+    const [first, second] = await Promise.all(operations);
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    for (const inspection of [first!, second!]) {
+      expect(inspection.inspectionDigest).toBe(expected.inspectionDigest);
+      expect(inspection.counts).toStrictEqual(expected.counts);
+      for (const view of ['all', 'metadata', 'diagnostics', 'coverage'] as const) {
+        let cursor: string | undefined;
+        do {
+          const input = { maxItems: 1, view, ...(cursor === undefined ? {} : { cursor }) };
+          const page = await inspection.readPage(input);
+          expect(page).toStrictEqual(expected.readPage(input));
+          cursor = page.page.nextCursor ?? undefined;
+        } while (cursor !== undefined);
+      }
+    }
+    await Promise.all([first!.dispose(), first!.dispose()]);
+    const replacement = await inspect({ repository, maxConcurrentInspections: 2 });
+    await expectToRejectCode(
+      inspect({ repository, maxConcurrentInspections: 2 }),
+      'INSPECTION_BUSY',
+    );
+    await second!.readPage({ maxItems: 1, view: 'all' });
+    await Promise.all([second!.dispose(), replacement.dispose()]);
+    await verifyEmptyAdmission();
+  });
+
+  test('uses each incoming maximum without remembering an earlier caller value', async () => {
+    const repository = createRepository();
+    const first = await inspect({ repository, maxConcurrentInspections: 2 });
+    await expectToRejectCode(inspect({ repository }), 'INSPECTION_BUSY');
+    const second = await inspect({ repository, maxConcurrentInspections: 2 });
+    const third = await inspect({ repository, maxConcurrentInspections: 3 });
+    await expectToRejectCode(
+      inspect({ repository, maxConcurrentInspections: 2 }),
+      'INSPECTION_BUSY',
+    );
+    await Promise.all([first.dispose(), second.dispose(), third.dispose()]);
+    await verifyEmptyAdmission();
+  });
+
+  test.each([
+    ['reader failure', 'ACCESS_DENIED'],
+    ['abort', 'ABORTED'],
+    ['timeout', 'INSPECTION_TIMEOUT'],
+  ])('releases only its own pending slot after %s and reader settlement', async (mode, code) => {
+    const repository = createRepository();
+    const companion = await inspect({ repository, maxConcurrentInspections: 2 });
+    const entered = gate();
+    const settlement = gate();
+    const aborted = gate();
+    const controller = new AbortController();
+    controllers.add(controller);
+    const operation = inspect({
+      repository: {
+        ...repository,
+        getEntry: async (...args: Parameters<typeof repository.getEntry>) => {
+          args[1]?.signal?.addEventListener('abort', aborted.release, { once: true });
+          entered.release();
+          await settlement.promise;
+          if (mode === 'reader failure')
+            throw new RepositorySourceException({
+              code: 'ACCESS_DENIED',
+              operation: 'get-entry',
+              path: null,
+              retryable: false,
+            });
+          return repository.getEntry(...args);
+        },
+      },
+      maxConcurrentInspections: 2,
+      signal: controller.signal,
+      ...(mode === 'timeout' ? { deadline: Date.now() + 5_000 } : {}),
+    });
+    await Promise.race([entered.promise, operation]);
+    if (mode === 'abort') controller.abort();
+    if (mode !== 'reader failure') await aborted.promise;
+    await expectToRejectCode(
+      inspect({ repository, maxConcurrentInspections: 2 }),
+      'INSPECTION_BUSY',
+    );
+    settlement.release();
+    await expectToRejectCode(operation, code);
+    const replacement = await inspect({ repository, maxConcurrentInspections: 2 });
+    await expectToRejectCode(
+      inspect({ repository, maxConcurrentInspections: 2 }),
+      'INSPECTION_BUSY',
+    );
+    await companion.readPage({ view: 'all', maxItems: 1 });
+    await Promise.all([companion.dispose(), replacement.dispose()]);
+    await verifyEmptyAdmission();
+  });
+
+  test.each(['paging failure', 'prepared abort', 'dispose'] as const)(
+    'releases only its own prepared slot after %s',
+    async (mode) => {
+      const repository = createRepository();
+      const companion = await inspect({ repository, maxConcurrentInspections: 2 });
+      const controller = new AbortController();
+      controllers.add(controller);
+      const inspection = await inspect({
+        repository,
+        maxConcurrentInspections: 2,
+        signal: controller.signal,
+      });
+      if (mode === 'paging failure') {
+        inspections.set(inspection, 'INVALID_ARGUMENT');
+        await expectToRejectCode(
+          inspection.readPage({ maxItems: 1, view: 'all', cursor: 'invalid' }),
+          'INVALID_ARGUMENT',
+        );
+        await expectToRejectCode(inspection.dispose(), 'INVALID_ARGUMENT');
+      } else if (mode === 'prepared abort') {
+        inspections.set(inspection, 'ABORTED');
+        controller.abort();
+        await expectToRejectCode(inspection.dispose(), 'ABORTED');
+      } else await Promise.all([inspection.dispose(), inspection.dispose()]);
+      const replacement = await inspect({ repository, maxConcurrentInspections: 2 });
+      await expectToRejectCode(
+        inspect({ repository, maxConcurrentInspections: 2 }),
+        'INSPECTION_BUSY',
+      );
+      await companion.readPage({ view: 'all', maxItems: 1 });
+      await Promise.all([companion.dispose(), replacement.dispose()]);
+      await verifyEmptyAdmission();
+    },
+  );
+
+  test('accepts the largest positive safe integer without preallocating capacity', async () => {
+    const inspection = await inspect({
+      repository: createRepository(),
+      maxConcurrentInspections: Number.MAX_SAFE_INTEGER,
+    });
+    await inspection.dispose();
+    await verifyEmptyAdmission();
+  });
+
+  test('releases a synchronous fork failure without releasing a live companion slot', async () => {
+    await withTemporaryDirectory(async (directory) => {
+      const probePath = path.join(directory, 'fork-failure.mjs');
+      await writeFile(
+        probePath,
+        `
+        import childProcess from 'node:child_process';
+        import {syncBuiltinESMExports} from 'node:module';
+        import {expectToRejectCode} from ${JSON.stringify(import.meta.resolve('jg-exception/testing'))};
+        import {createNodeProjectInspection} from ${JSON.stringify(import.meta.resolve('@moldea.ai/core/node'))};
+        import {createMemoryRepositoryReader} from ${JSON.stringify(import.meta.resolve('@moldea.ai/repository/memory'))};
+        const repository = createMemoryRepositoryReader([]);
+        const realFork = childProcess.fork;
+        const handles = [];
+        const inspect = async () => {
+          const handle = await createNodeProjectInspection({repository, maxConcurrentInspections: 2});
+          handles.push(handle);
+          return handle;
+        };
+        try {
+          await inspect();
+          try {
+            childProcess.fork = () => { throw new Error('injected synchronous fork failure'); };
+            syncBuiltinESMExports();
+            await expectToRejectCode(inspect(), 'INSPECTION_PROCESS_FAILED');
+          } finally {
+            childProcess.fork = realFork;
+            syncBuiltinESMExports();
+          }
+          const replacement = await inspect();
+          await expectToRejectCode(inspect(), 'INSPECTION_BUSY');
+          await Promise.all([replacement.dispose(), replacement.dispose()]);
+          await inspect();
+          await expectToRejectCode(inspect(), 'INSPECTION_BUSY');
+          await Promise.all(handles.map(handle => handle.dispose()));
+          await inspect();
+          await inspect();
+          await expectToRejectCode(inspect(), 'INSPECTION_BUSY');
+          process.stdout.write('admission recovered');
+        } finally {
+          childProcess.fork = realFork;
+          syncBuiltinESMExports();
+          await Promise.all(handles.map(handle => handle.dispose()));
+        }
+      `,
+      );
+      const { stdout, stderr } = await promisify(execFile)(process.execPath, [probePath], {
+        encoding: 'utf8',
+        maxBuffer: 16_384,
+        timeout: 15_000,
+      });
+      expect(stdout).toBe('admission recovered');
+      expect(stderr).toBe('');
     });
   });
 });

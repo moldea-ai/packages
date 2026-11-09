@@ -1,0 +1,111 @@
+---
+import type { ComponentProps } from 'astro/types';
+
+import ActionLink from '../action-link/action-link.component.astro';
+import Dialog from '../dialog/dialog.component.astro';
+import YouTubeVideo from '../youtube-video/youtube-video.component.astro';
+import { resolveYouTubeVideo } from '../../youtube-video/index.js';
+
+/**
+ * Defers a YouTube player until its dialog opens and removes it when dismissal begins.
+ * @throws
+ * - INVALID_YOUTUBE_VIDEO_URL: The YouTube video URL is not supported.
+ */
+export interface Props extends Pick<
+  ComponentProps<typeof Dialog>,
+  | 'id'
+  | 'title'
+  | 'description'
+  | 'triggerLabel'
+  | 'triggerAriaLabel'
+  | 'triggerVariant'
+  | 'triggerSize'
+  | 'triggerClass'
+  | 'panelClass'
+  | 'closeLabel'
+  | 'isOverlayCloseEnabled'
+> {
+  videoUrl: string;
+  autoPlay?: boolean;
+}
+
+const {
+  videoUrl,
+  title,
+  autoPlay = false,
+  isOverlayCloseEnabled = true,
+  ...dialogProps
+} = Astro.props;
+const video = resolveYouTubeVideo(videoUrl, title, autoPlay);
+---
+
+<div data-website-ui-youtube-dialog>
+  <div data-youtube-dialog-fallback>
+    <ActionLink
+      href={video.watchUrl}
+      target="_blank"
+      aria-label={`${video.title}: Watch on YouTube`}
+      variant="link"
+      size="sm"
+    >
+      Watch on YouTube
+    </ActionLink>
+  </div>
+  <Dialog
+    {...dialogProps}
+    title={video.title}
+    size="large"
+    isOverlayCloseEnabled={isOverlayCloseEnabled}
+  >
+    <div data-youtube-dialog-player></div>
+    <template data-youtube-dialog-template>
+      <YouTubeVideo
+        videoUrl={video.watchUrl}
+        title={video.title}
+        autoPlay={autoPlay}
+      />
+    </template>
+  </Dialog>
+</div>
+
+<script>
+  import { DIALOG_LIFECYCLE_EVENTS } from '../../dialog-lifecycle/index.js';
+
+  /** Binds each deferred player once while the shared Dialog owns all modal behavior. */
+  const initializeYouTubeDialogs = (): void => {
+    for (const root of document.querySelectorAll<HTMLElement>('[data-website-ui-youtube-dialog]')) {
+      if (root.dataset['youtubeEnhanced'] === 'true') continue;
+      const dialog = root.querySelector<HTMLDialogElement>('dialog');
+      const template = root.querySelector<HTMLTemplateElement>('[data-youtube-dialog-template]');
+      const player = root.querySelector<HTMLElement>('[data-youtube-dialog-player]');
+      const fallback = root.querySelector<HTMLElement>('[data-youtube-dialog-fallback]');
+      if (
+        dialog === null ||
+        typeof dialog.showModal !== 'function' ||
+        template === null ||
+        player === null ||
+        fallback === null
+      )
+        continue;
+
+      const stopPlayback = (): void => {
+        // retain the reserved player area until the dialog's exit has completed
+        for (const iframe of player.querySelectorAll('iframe')) iframe.remove();
+      };
+      dialog.addEventListener(DIALOG_LIFECYCLE_EVENTS.open, (event) => {
+        if (event.target !== dialog || !dialog.open || player.querySelector('iframe') !== null)
+          return;
+        player.replaceChildren(template.content.cloneNode(true));
+      });
+      dialog.addEventListener(DIALOG_LIFECYCLE_EVENTS.dismiss, stopPlayback);
+      dialog.addEventListener('close', () => {
+        if (!dialog.open) player.replaceChildren();
+      });
+      root.dataset['youtubeEnhanced'] = 'true';
+      fallback.hidden = true;
+    }
+  };
+
+  initializeYouTubeDialogs();
+  document.addEventListener('astro:page-load', initializeYouTubeDialogs);
+</script>

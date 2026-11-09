@@ -36,8 +36,8 @@ importers:
         specifier: 0.4.0
         version: 0.4.0
       jg-plans:
-        specifier: 0.4.0
-        version: 0.4.0
+        specifier: 0.5.1
+        version: 0.5.1
       jg-process:
         specifier: 1.6.2
         version: 1.6.2
@@ -292,6 +292,9 @@ importers:
       jg-site:
         specifier: 0.1.0
         version: 0.1.0
+      jg-utilities:
+        specifier: ^1.7.2
+        version: 1.7.2
     devDependencies:
       '@axe-core/playwright':
         specifier: 4.13.0
@@ -1955,8 +1958,8 @@ packages:
     resolution: {integrity: sha512-O2OtTQ3SsAGUwj9OpjlNOZOVEyBmzg1+YTm0KdfJxZLgAiQFFHyblrAENEkgdwmH8Qp9KP9n30XNYoDBT1+L2Q==}
     engines: {node: '>=22.17.0'}
 
-  jg-plans@0.4.0:
-    resolution: {integrity: sha512-RLCIkWcWhgWWrIqOVnyCAF3vyB5P+Qp6zJ0BwAteR1exig9TEUXvPZlci+KhdU1hqIDSTKIK6nA30E3mnQOgIA==}
+  jg-plans@0.5.1:
+    resolution: {integrity: sha512-OPZT5dH9oCBZuxa4JGAS1Y9DDjcYDQwswvJYtbZBdyv3IfR21bQ5v1hrhwFJgAx9F2rG+pd6wUZqeM5UgLIV0w==}
     engines: {node: '>=24.15.0'}
     hasBin: true
 
@@ -4663,7 +4666,7 @@ snapshots:
       jg-exception: 1.7.1
       jg-process: 1.6.2
 
-  jg-plans@0.4.0:
+  jg-plans@0.5.1:
     dependencies:
       jg-crypto: 0.3.0
       jg-exception: 1.7.0

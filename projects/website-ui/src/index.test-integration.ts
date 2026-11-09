@@ -15,7 +15,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 
 import { AxeBuilder } from '@axe-core/playwright';
-import { chromium, type Locator } from '@playwright/test';
+import { chromium, type BrowserContext, type Locator } from '@playwright/test';
 import { extractMessage } from 'jg-exception';
 import { afterEach, describe, expect, test } from 'vitest';
 
@@ -28,6 +28,21 @@ interface IPackDryRunResult {
   readonly files: readonly { readonly path: string }[];
   readonly name: string;
   readonly version: string;
+}
+
+// browser observations retain lifecycle timing across Astro client navigation
+interface IDialogLifecycleObservation {
+  id: string;
+  type: string;
+  isOpen: boolean;
+  frames: number;
+  bubbles: boolean;
+  cancelable: boolean;
+}
+declare global {
+  interface Window {
+    videoLifecycle: IDialogLifecycleObservation[];
+  }
 }
 
 /** Executes native or JavaScript package-manager entrypoints without a platform shell. */
@@ -234,6 +249,15 @@ const getInlineContrast = async (edits: Locator): Promise<{ text: string; contra
     );
   });
 
+const stubYouTube = async (context: BrowserContext): Promise<void> => {
+  await context.route('https://www.youtube-nocookie.com/**', async (route) => {
+    await route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><html lang="en"><head><title>Player fixture</title></head><body><button>Play fixture</button></body></html>',
+    });
+  });
+};
+
 describe('published website UI package', () => {
   test('packs only the documented runtime, component, style, and package files', () => {
     const output = runPackageManager(
@@ -244,7 +268,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.6.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.7.0' });
     expect(packedPaths).toContain('src/components/inspection-list/inspection-list.component.astro');
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
@@ -293,6 +317,12 @@ describe('published website UI package', () => {
     );
     expect(packedPaths).toContain('src/components/tabbed-panels/tabbed-panels.component.astro');
     expect(packedPaths).toContain('src/components/dialog/dialog.component.astro');
+    expect(packedPaths).toContain('src/components/youtube-video/youtube-video.component.astro');
+    expect(packedPaths).toContain('src/youtube-video/index.ts');
+    expect(packedPaths).toContain(
+      'src/components/youtube-video-dialog/youtube-video-dialog.component.astro',
+    );
+    expect(packedPaths).toContain('src/dialog-lifecycle/index.ts');
     expect(packedPaths).toContain('src/components/file-preview/file-preview.component.astro');
     expect(packedPaths).toContain('src/components/file-tree/file-tree.component.astro');
     expect(packedPaths).toContain('src/components/result-summary/result-summary.component.astro');
@@ -435,6 +465,7 @@ describe('published website UI package', () => {
             '@moldea.ai/website-ui': `file:${tarballPath}`,
             '@tailwindcss/vite': '4.3.3',
             astro: '7.2.8',
+            'jg-exception': '1.7.1',
             tailwindcss: '4.3.3',
             typescript: '6.0.3',
           },
@@ -511,6 +542,7 @@ describe('published website UI package', () => {
         "import TabbedPanels from '@moldea.ai/website-ui/tabbed-panels';",
         "import ThemeBootstrap from '@moldea.ai/website-ui/theme-bootstrap';",
         "import ThemeControl from '@moldea.ai/website-ui/theme-control';",
+        "import YouTubeVideo from '@moldea.ai/website-ui/youtube-video';",
         "import { buildEvaluationReplayPathTree, type IEvaluationReplayModel } from '@moldea.ai/website-ui/evaluation-replay-model';",
         "import { renderMarkdownDocument, renderMarkdownFragment } from '@moldea.ai/website-ui/markdown';",
         "import { withBase } from '@moldea.ai/website-ui/site';",
@@ -541,6 +573,7 @@ describe('published website UI package', () => {
         'const accordionProps = { id: "check-two", group: "fixture-accordion", title: "Second check", isOpen: true } satisfies ComponentProps<typeof Accordion>;',
         'const summaryProps = { title: "Reference not found", description: "The declared file is absent.", tone: "danger", as: "h2", headingId: "composed-result-title", ariaLabel: "Fixture outcome" } satisfies ComponentProps<typeof ResultSummary>;',
         'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", panelClass: "sm:h-[32rem]!", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
+        'const videoProps = { videoUrl: "https://www.youtube.com/watch?v=M7lc1UVf-VE&autoplay=1&t=30", title: \'Inline tutorial "<sample>"\', id: "inline-video", role: "group", "aria-label": "Inline tutorial" } satisfies ComponentProps<typeof YouTubeVideo>;',
         'const iconDialogProps = { id: "fixture-icon", title: "Complete source", triggerLabel: "Open complete source", triggerAriaLabel: "Open complete source in a larger view", triggerVariant: "ghost", triggerSize: "icon-xs", size: "large" } satisfies ComponentProps<typeof Dialog>;',
         'const passed = { title: "Validation complete", label: "Passed", tone: "success", findings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
         'const failed = { ...passed, title: "Validation failed", label: "Blocking", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "/moldea/moldea.yaml", pointer: "/context/~1moldea~1policy.md/bindings/0", evidence: [{ path: "/moldea/moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Referenced target", isMissing: true, issueLabel: "Missing target" }] }] } satisfies IInspectionResultView;',
@@ -629,6 +662,7 @@ describe('published website UI package', () => {
         '    <DocumentationShell breadcrumbs={[{ href: "/", label: "Home" }, { label: "moldea Docs" }]} currentRoute="/docs/" headings={rendered.headings} navigationGroups={[{ label: "moldea Guides", items: [{ href: "/docs/", label: "moldea Start" }] }]} previousPage={{ href: "/previous/", label: "Previous moldea guide" }} nextPage={{ href: "/next/", label: "Next moldea guide" }}><div class="prose-moldea" set:html={rendered.html} /></DocumentationShell>',
         '    <p>{tree[0]?.name}</p>',
         '    <section data-runtime-fixture><h2>Runtime labels</h2><RuntimeGrid /></section>',
+        '    <section aria-label="YouTube examples" class="mx-auto max-w-3xl px-3"><h2>YouTube examples</h2><YouTubeVideo {...videoProps} /><YouTubeVideo videoUrl="https://youtu.be/M7lc1UVf-VE" title="Autoplay tutorial" autoPlay /></section>',
         '    <ThemeControl storageKey="fixture-theme" />',
         '    <LocalSearch action="/search/" failureMessage="Search unavailable." initialPrompt="Enter a query." placeholder="e.g. repository snapshots" searchIndexUrl="/search-index.json" shouldFocusOnLoad />',
         '    <SiteFooter hasTopSpacing={false}><p slot="brand">Fixture footer</p><nav slot="primary-navigation" aria-label="Fixture documentation">Docs</nav><nav slot="secondary-navigation" aria-label="Fixture project">Project</nav></SiteFooter>',
@@ -652,14 +686,35 @@ describe('published website UI package', () => {
       [
         '---',
         "import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';",
+        "import { ClientRouter } from 'astro:transitions';",
         "import { RUNTIME_CATALOG } from '@moldea.ai/website-ui/runtime-catalog';",
         "import microsoftLogo from '@moldea.ai/website-ui/runtime-logos/microsoft.png?url';",
         "import '../styles.css';",
         '---',
-        '<html lang="en"><head><title>Runtime labels</title></head><body>',
+        '<html lang="en"><head><title>Runtime labels</title><ClientRouter /></head><body>',
         '<main data-runtime-count={RUNTIME_CATALOG.length}><RuntimeGrid />',
         '<img src={microsoftLogo} width="32" height="32" alt="Microsoft logo" /></main>',
         '</body></html>',
+      ].join('\n'),
+    );
+    writeFileSync(
+      path.join(pagesDirectory, 'videos.astro'),
+      [
+        '---',
+        "import type { ComponentProps } from 'astro/types';",
+        "import { ClientRouter } from 'astro:transitions';",
+        "import Dialog from '@moldea.ai/website-ui/dialog';",
+        "import ActionButton from '@moldea.ai/website-ui/action-button';",
+        "import YouTubeVideoDialog from '@moldea.ai/website-ui/youtube-video-dialog';",
+        "import '../styles.css';",
+        'const videoProps = { id: "video-one", videoUrl: "https://youtu.be/M7lc1UVf-VE?autoplay=1&t=30", title: \'Installation "<sample>"\', description: "Install <sample> & initialize.", triggerLabel: "Watch installation", triggerAriaLabel: "Watch installation video", triggerVariant: "primary", triggerSize: "lg", triggerClass: "mt-2", panelClass: "sm:max-w-4xl", closeLabel: "Close video" } satisfies ComponentProps<typeof YouTubeVideoDialog>;',
+        '---',
+        '<html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" /><title>Video dialogs</title><ClientRouter /></head><body>',
+        '<main class="p-3"><h1>Video dialogs</h1><YouTubeVideoDialog {...videoProps} />',
+        '<ActionButton data-dialog-open="video-one" aria-controls="video-one">External installation opener</ActionButton>',
+        '<YouTubeVideoDialog id="video-two" videoUrl="https://youtu.be/dQw4w9WgXcQ" title="   " triggerLabel="Watch second video" autoPlay isOverlayCloseEnabled={false} />',
+        '<Dialog id="generic-session" title="Generic session" triggerLabel="Open generic dialog" fallbackOpen><p>Generic dialog content</p></Dialog>',
+        '<a href="/runtimes/">Runtime page</a></main></body></html>',
       ].join('\n'),
     );
     runPackageManager(packageManagerEntrypoint, ['exec', 'astro', 'check'], {
@@ -691,6 +746,10 @@ describe('published website UI package', () => {
       path.join(fixtureDirectory, 'dist', 'runtimes', 'index.html'),
       'utf8',
     );
+    const videoHtml = readFileSync(
+      path.join(fixtureDirectory, 'dist', 'videos', 'index.html'),
+      'utf8',
+    );
     expect(runtimeHtml).toContain('data-runtime-count="35"');
     expect(runtimeHtml).toContain('href="https://openai.com/"');
     expect(fixtureHtml).toContain('Consumer hero');
@@ -713,6 +772,37 @@ describe('published website UI package', () => {
     const staticFixtureHtml = fixtureHtml
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gu, '')
       .replaceAll('src="/_astro/', 'src="https://runtime-fixture.example/_astro/');
+    const serveConsumer = async (context: BrowserContext): Promise<void> => {
+      await context.route('https://ui-consumer.example/**', async (route) => {
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname === '/' || pathname === '/runtimes/' || pathname === '/videos/') {
+          await route.fulfill({
+            contentType: 'text/html',
+            body:
+              pathname === '/' ? fixtureHtml : pathname === '/videos/' ? videoHtml : runtimeHtml,
+          });
+          return;
+        }
+        const asset = /^\/_astro\/([a-zA-Z0-9_.-]+)$/u.exec(pathname)?.[1];
+        if (asset === undefined) {
+          await route.abort();
+          return;
+        }
+        const contentType = asset.endsWith('.js')
+          ? 'text/javascript'
+          : asset.endsWith('.css')
+            ? 'text/css'
+            : asset.endsWith('.svg')
+              ? 'image/svg+xml'
+              : asset.endsWith('.png')
+                ? 'image/png'
+                : 'font/woff2';
+        await route.fulfill({
+          contentType,
+          body: readFileSync(path.join(fixtureDirectory, 'dist', '_astro', asset)),
+        });
+      });
+    };
     const browser = await chromium.launch();
     try {
       for (const theme of ['light', 'dark']) {
@@ -722,6 +812,7 @@ describe('published website UI package', () => {
             reducedMotion: 'reduce',
           });
           try {
+            await stubYouTube(context);
             const page = await context.newPage();
             await page.route('https://runtime-fixture.example/**', async (route) => {
               const assetName = new URL(route.request().url()).pathname.split('/').at(-1);
@@ -1306,37 +1397,11 @@ describe('published website UI package', () => {
             reducedMotion: 'reduce',
           });
           try {
+            await stubYouTube(context);
             const page = await context.newPage();
             const pageErrors: string[] = [];
             page.on('pageerror', (error) => pageErrors.push(error.message));
-            await page.route('https://ui-consumer.example/**', async (route) => {
-              const pathname = new URL(route.request().url()).pathname;
-              if (pathname === '/' || pathname === '/runtimes/') {
-                await route.fulfill({
-                  contentType: 'text/html',
-                  body: pathname === '/' ? fixtureHtml : runtimeHtml,
-                });
-                return;
-              }
-              const asset = /^\/_astro\/([a-zA-Z0-9_.-]+)$/u.exec(pathname)?.[1];
-              if (asset === undefined) {
-                await route.abort();
-                return;
-              }
-              const contentType = asset.endsWith('.js')
-                ? 'text/javascript'
-                : asset.endsWith('.css')
-                  ? 'text/css'
-                  : asset.endsWith('.svg')
-                    ? 'image/svg+xml'
-                    : asset.endsWith('.png')
-                      ? 'image/png'
-                      : 'font/woff2';
-              await route.fulfill({
-                contentType,
-                body: readFileSync(path.join(fixtureDirectory, 'dist', '_astro', asset)),
-              });
-            });
+            await serveConsumer(context);
             await page.goto('https://ui-consumer.example/');
             await page.waitForSelector(
               '[data-inspection-dialog-root][data-inspection-enhanced="true"]',
@@ -1345,6 +1410,62 @@ describe('published website UI package', () => {
             await page.evaluate((selectedTheme) => {
               document.documentElement.className = selectedTheme;
             }, theme);
+            const video = page.getByRole('group', { name: 'Inline tutorial', exact: true });
+            await video.scrollIntoViewIfNeeded();
+            const iframe = video.getByTitle('Inline tutorial "<sample>"', { exact: true });
+            expect(await iframe.getAttribute('src')).toBe(
+              'https://www.youtube-nocookie.com/embed/M7lc1UVf-VE',
+            );
+            expect(await iframe.getAttribute('allow')).toBe('encrypted-media; picture-in-picture');
+            expect(await iframe.getAttribute('allowfullscreen')).not.toBeNull();
+            expect(await iframe.getAttribute('loading')).toBe('lazy');
+            expect(await iframe.getAttribute('referrerpolicy')).toBe(
+              'strict-origin-when-cross-origin',
+            );
+            expect(
+              await page.getByTitle('Autoplay tutorial', { exact: true }).getAttribute('src'),
+            ).toBe('https://www.youtube-nocookie.com/embed/M7lc1UVf-VE?autoplay=1');
+            expect(
+              await page.getByTitle('Autoplay tutorial', { exact: true }).getAttribute('allow'),
+            ).toBe('autoplay; encrypted-media; picture-in-picture');
+            await iframe
+              .contentFrame()
+              .getByRole('button', { name: 'Play fixture' })
+              .waitFor({ state: 'visible' });
+            const playerSize = await iframe.boundingBox();
+            expect(playerSize?.height).toBeGreaterThanOrEqual(200);
+            expect(playerSize?.width).toBeGreaterThanOrEqual(200);
+            expect(
+              await page.evaluate(
+                () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+              ),
+            ).toBe(true);
+            const watchLink = video.getByRole('link', {
+              name: 'Watch on YouTube (opens in a new tab)',
+            });
+            expect(await watchLink.getAttribute('href')).toBe(
+              'https://www.youtube.com/watch?v=M7lc1UVf-VE',
+            );
+            await watchLink.focus();
+            await page.keyboard.press('Shift+Tab');
+            await page.keyboard.press('Tab');
+            expect(await watchLink.evaluate((node) => node === document.activeElement)).toBe(true);
+            expect(
+              await watchLink.evaluate((node) => {
+                const style = getComputedStyle(node);
+                return style.outlineStyle !== 'none' || style.boxShadow !== 'none';
+              }),
+            ).toBe(true);
+            const videoAccessibility = await new AxeBuilder({ page })
+              .include('#inline-video')
+              .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+              .analyze();
+            expect(videoAccessibility.violations).toStrictEqual([]);
+            const captureDirectory = process.env['WEBSITE_UI_CAPTURE_DIRECTORY'];
+            if (captureDirectory)
+              await video.screenshot({
+                path: path.join(captureDirectory, `inline-${theme}-${width}.png`),
+              });
             const inlineFiles = page.getByRole('region', { name: 'Inline file markers' });
             const layouts = await inlineFiles
               .locator('[data-file-preview-header]')
@@ -1849,6 +1970,409 @@ describe('published website UI package', () => {
           }
         }
       }
+      // presentation and lifecycle permutations stay in the existing full-only consumer boundary
+      for (const [theme, width, reducedMotion] of [
+        ['light', 320, 'reduce'],
+        ['dark', 320, 'reduce'],
+        ['light', 768, 'reduce'],
+        ['dark', 768, 'reduce'],
+        ['light', 1440, 'reduce'],
+        ['dark', 1440, 'reduce'],
+        ['light', 1440, 'no-preference'],
+        ['dark', 320, 'no-preference'],
+      ] as const) {
+        const context = await browser.newContext({
+          colorScheme: theme,
+          reducedMotion,
+          hasTouch: width === 320,
+          viewport: { width, height: width === 320 ? 360 : 900 },
+        });
+        try {
+          const requests: string[] = [];
+          context.on('request', (request) => {
+            if (new URL(request.url()).origin === 'https://www.youtube-nocookie.com')
+              requests.push(request.url());
+          });
+          await stubYouTube(context);
+          await serveConsumer(context);
+          await context.addInitScript(() => {
+            const state = window;
+            state.videoLifecycle = [];
+            for (const type of ['website-ui:dialog-open', 'website-ui:dialog-dismiss']) {
+              document.addEventListener(type, (event) => {
+                const dialog = event.target;
+                if (!(dialog instanceof HTMLDialogElement)) return;
+                state.videoLifecycle.push({
+                  id: dialog.id,
+                  type,
+                  isOpen: dialog.open,
+                  frames: dialog.querySelectorAll('iframe').length,
+                  bubbles: event.bubbles,
+                  cancelable: event.cancelable,
+                });
+              });
+            }
+          });
+          const page = await context.newPage();
+          if (width === 320) {
+            const session = await context.newCDPSession(page);
+            await session.send('Emulation.setSafeAreaInsetsOverride', {
+              insets: { top: 24, left: 16, right: 16, bottom: 24 },
+            });
+          }
+          await page.goto('https://ui-consumer.example/videos/');
+          await page.evaluate((selectedTheme) => {
+            document.documentElement.className = selectedTheme;
+          }, theme);
+          const opener = page.getByRole('button', {
+            name: 'Watch installation video',
+            exact: true,
+          });
+          await opener.waitFor({ state: 'visible' });
+          const dialog = page.locator('#video-one');
+          const observations = (): Promise<IDialogLifecycleObservation[]> =>
+            page.evaluate(() => window.videoLifecycle);
+          expect(await observations()).toStrictEqual([]);
+          expect(requests).toStrictEqual([]);
+          expect(await page.locator('iframe').count()).toBe(0);
+          await page.evaluate(() => {
+            document.dispatchEvent(new Event('astro:page-load'));
+            document.dispatchEvent(new Event('astro:page-load'));
+          });
+          await opener.focus();
+          await page.keyboard.press('Enter');
+          expect(
+            await page
+              .getByRole('dialog', { name: 'Installation "<sample>"', exact: true })
+              .count(),
+          ).toBe(1);
+          expect(
+            await dialog.getByText('Install <sample> & initialize.', { exact: true }).count(),
+          ).toBe(1);
+          const iframe = dialog.getByTitle('Installation "<sample>"', { exact: true });
+          await iframe
+            .contentFrame()
+            .getByRole('button', { name: 'Play fixture' })
+            .waitFor({ state: 'visible' });
+          await dialog.evaluate(async (node) => {
+            await Promise.all(node.getAnimations().map((animation) => animation.finished));
+          });
+          expect(await dialog.locator('iframe').count()).toBe(1);
+          expect(await iframe.getAttribute('src')).toBe(
+            'https://www.youtube-nocookie.com/embed/M7lc1UVf-VE',
+          );
+          expect(await iframe.getAttribute('allow')).toBe('encrypted-media; picture-in-picture');
+          expect((await iframe.boundingBox())?.height).toBeGreaterThanOrEqual(200);
+          const close = dialog.getByRole('button', { name: 'Close video', exact: true });
+          expect(await close.evaluate((node) => node === document.activeElement)).toBe(true);
+          expect(
+            await close.evaluate(
+              (node) =>
+                getComputedStyle(node).boxShadow !== 'none' ||
+                getComputedStyle(node).outlineStyle !== 'none',
+            ),
+          ).toBe(true);
+          expect((await close.boundingBox())?.height).toBeGreaterThanOrEqual(24);
+          expect(
+            await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+          ).toBe(true);
+          if (width === 320) {
+            const safeArea = await dialog.evaluate((node) => {
+              const header = node.querySelector('header')!;
+              const body = node.querySelector(':scope > div')!;
+              return {
+                top: getComputedStyle(header).paddingTop,
+                left: getComputedStyle(header).paddingLeft,
+                bottom: getComputedStyle(body).paddingBottom,
+              };
+            });
+            expect(safeArea).toStrictEqual({ top: '24px', left: '16px', bottom: '24px' });
+            expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+          }
+          const accessibility = await new AxeBuilder({ page })
+            .include('#video-one')
+            .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+            .analyze();
+          expect(accessibility.violations).toStrictEqual([]);
+          const captureDirectory = process.env['WEBSITE_UI_CAPTURE_DIRECTORY'];
+          if (captureDirectory)
+            await dialog.screenshot({
+              path: path.join(captureDirectory, `dialog-${theme}-${width}-${reducedMotion}.png`),
+              animations: 'disabled',
+            });
+          await iframe.evaluate((node) => {
+            node.setAttribute('data-old-session', '');
+          });
+          const immediateClose = await dialog.evaluate((node) => {
+            const beforeHeight = (node as HTMLDialogElement).offsetHeight;
+            node.querySelector('form')!.requestSubmit();
+            node.querySelector('form')!.requestSubmit();
+            node.dispatchEvent(new Event('cancel', { cancelable: true }));
+            return {
+              frames: node.querySelectorAll('iframe').length,
+              isOpen: (node as HTMLDialogElement).open,
+              beforeHeight,
+              afterHeight: (node as HTMLDialogElement).offsetHeight,
+            };
+          });
+          expect(immediateClose.frames).toBe(0);
+          if (width >= 768 && reducedMotion === 'no-preference') {
+            expect(immediateClose.isOpen).toBe(true);
+            expect(immediateClose.afterHeight).toBe(immediateClose.beforeHeight);
+          }
+          await page.waitForFunction(
+            () => !(document.getElementById('video-one') as HTMLDialogElement).open,
+          );
+          expect(await opener.evaluate((node) => node === document.activeElement)).toBe(true);
+          expect(await observations()).toStrictEqual([
+            {
+              id: 'video-one',
+              type: 'website-ui:dialog-open',
+              isOpen: true,
+              frames: 1,
+              bubbles: true,
+              cancelable: false,
+            },
+            {
+              id: 'video-one',
+              type: 'website-ui:dialog-dismiss',
+              isOpen: true,
+              frames: 0,
+              bubbles: true,
+              cancelable: false,
+            },
+          ]);
+          await opener.click();
+          expect(await dialog.locator('iframe').count()).toBe(1);
+          expect(await dialog.locator('[data-old-session]').count()).toBe(0);
+          await page.keyboard.press('Escape');
+          await page.waitForFunction(
+            () => !(document.getElementById('video-one') as HTMLDialogElement).open,
+          );
+          expect(await dialog.locator('iframe').count()).toBe(0);
+          expect((await observations()).length).toBe(4);
+          const external = page.getByRole('button', {
+            name: 'External installation opener',
+            exact: true,
+          });
+          await external.click();
+          expect(await dialog.locator('iframe').count()).toBe(1);
+          expect(
+            await dialog.evaluate((node) => {
+              (node as HTMLDialogElement).close();
+              return node.querySelectorAll('iframe').length;
+            }),
+          ).toBe(0);
+          await page.waitForFunction(
+            () => document.activeElement?.textContent?.trim() === 'External installation opener',
+          );
+          expect(await external.evaluate((node) => node === document.activeElement)).toBe(true);
+          expect((await observations()).length).toBe(6);
+          if (width >= 768) {
+            await opener.click();
+            await page.mouse.click(1, 1);
+            await page.waitForFunction(
+              () => !(document.getElementById('video-one') as HTMLDialogElement).open,
+            );
+            expect(await dialog.locator('iframe').count()).toBe(0);
+          }
+          await page.getByRole('button', { name: 'Watch second video', exact: true }).click();
+          const second = page.getByRole('dialog', { name: 'YouTube video', exact: true });
+          expect(
+            await second.getByTitle('YouTube video', { exact: true }).getAttribute('src'),
+          ).toBe('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1');
+          expect(
+            await second.getByTitle('YouTube video', { exact: true }).getAttribute('allow'),
+          ).toBe('autoplay; encrypted-media; picture-in-picture');
+          expect(await dialog.locator('iframe').count()).toBe(0);
+          if (width >= 768) {
+            await page.mouse.click(1, 1);
+            expect(await second.evaluate((node) => (node as HTMLDialogElement).open)).toBe(true);
+          }
+          await page.keyboard.press('Escape');
+          await page.waitForFunction(
+            () => !(document.getElementById('video-two') as HTMLDialogElement).open,
+          );
+          if (width === 1440 && theme === 'light' && reducedMotion === 'no-preference') {
+            await opener.click();
+            expect(
+              await dialog.evaluate((node) => {
+                const previous = node.querySelector('iframe');
+                (node as HTMLDialogElement).close();
+                document
+                  .querySelector<HTMLButtonElement>(
+                    '[aria-controls="video-one"][data-dialog-trigger]',
+                  )!
+                  .click();
+                return previous !== node.querySelector('iframe');
+              }),
+            ).toBe(true);
+            await dialog
+              .getByTitle('Installation "<sample>"', { exact: true })
+              .contentFrame()
+              .getByRole('button', { name: 'Play fixture' })
+              .waitFor({ state: 'visible' });
+            expect(await dialog.locator('iframe').count()).toBe(1);
+            await page.evaluate(() => {
+              document
+                .querySelector<HTMLButtonElement>(
+                  '[data-dialog-trigger][aria-controls="video-two"]',
+                )!
+                .click();
+            });
+            expect(await page.locator('#video-one iframe').count()).toBe(1);
+            expect(await page.locator('#video-two iframe').count()).toBe(1);
+            await page.keyboard.press('Escape');
+            await page.waitForFunction(
+              () => !(document.getElementById('video-two') as HTMLDialogElement).open,
+            );
+            expect(await dialog.locator('iframe').count()).toBe(1);
+            await page.keyboard.press('Escape');
+            await page.waitForFunction(
+              () => !(document.getElementById('video-one') as HTMLDialogElement).open,
+            );
+          }
+          await opener.click();
+          await page.evaluate(() => {
+            document.querySelector<HTMLAnchorElement>('a[href="/runtimes/"]')!.click();
+          });
+          await page.waitForURL('https://ui-consumer.example/runtimes/');
+          expect((await observations()).at(-1)).toMatchObject({
+            id: 'video-one',
+            type: 'website-ui:dialog-dismiss',
+            frames: 0,
+          });
+          const requestsBeforeReturn = requests.length;
+          await page.goBack();
+          await opener.waitFor({ state: 'visible' });
+          expect(await page.locator('iframe').count()).toBe(0);
+          expect(requests.length).toBe(requestsBeforeReturn);
+          await opener.click();
+          expect(await dialog.locator('iframe').count()).toBe(1);
+          await page.keyboard.press('Escape');
+          await page.waitForFunction(
+            () => !(document.getElementById('video-one') as HTMLDialogElement).open,
+          );
+          if (width === 1440 && reducedMotion === 'no-preference') {
+            await page.locator('#generic-session').evaluate((node) => {
+              node.addEventListener('beforetoggle', (event) => event.preventDefault(), {
+                once: true,
+              });
+            });
+            await page.getByRole('button', { name: 'Open generic dialog', exact: true }).click();
+            expect(
+              await page
+                .locator('#generic-session')
+                .evaluate((node) => (node as HTMLDialogElement).open),
+            ).toBe(false);
+            expect(
+              (await observations()).filter((entry) => entry.id === 'generic-session'),
+            ).toStrictEqual([]);
+          }
+          await page.getByRole('button', { name: 'Open generic dialog', exact: true }).click();
+          await page
+            .getByRole('dialog', { name: 'Generic session', exact: true })
+            .getByRole('button', { name: 'Close dialog', exact: true })
+            .click();
+          await page.waitForFunction(
+            () => !(document.getElementById('generic-session') as HTMLDialogElement).open,
+          );
+          expect(
+            (await observations()).filter((entry) => entry.id === 'generic-session'),
+          ).toStrictEqual([
+            {
+              id: 'generic-session',
+              type: 'website-ui:dialog-open',
+              isOpen: true,
+              frames: 0,
+              bubbles: true,
+              cancelable: false,
+            },
+            {
+              id: 'generic-session',
+              type: 'website-ui:dialog-dismiss',
+              isOpen: true,
+              frames: 0,
+              bubbles: true,
+              cancelable: false,
+            },
+          ]);
+        } finally {
+          await context.close();
+        }
+      }
+      const noScriptContext = await browser.newContext({
+        javaScriptEnabled: false,
+        hasTouch: true,
+        viewport: { width: 320, height: 640 },
+      });
+      try {
+        await stubYouTube(noScriptContext);
+        await serveConsumer(noScriptContext);
+        await noScriptContext.route('https://www.youtube.com/watch?*', async (route) => {
+          await route.fulfill({
+            contentType: 'text/html',
+            body: '<!doctype html><title>YouTube watch fixture</title>',
+          });
+        });
+        const page = await noScriptContext.newPage();
+        await page.goto('https://ui-consumer.example/');
+        expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+        const watchLink = page
+          .getByRole('group', { name: 'Inline tutorial', exact: true })
+          .getByRole('link', { name: 'Watch on YouTube (opens in a new tab)' });
+        const touchBounds = await watchLink.boundingBox();
+        expect(touchBounds?.height).toBeGreaterThanOrEqual(24);
+        expect(touchBounds?.width).toBeGreaterThanOrEqual(24);
+        const opened = noScriptContext.waitForEvent('page');
+        await watchLink.click();
+        const watchPage = await opened;
+        await watchPage.waitForURL('https://www.youtube.com/watch?v=M7lc1UVf-VE');
+        await watchPage.close();
+        await page.goto('https://ui-consumer.example/videos/');
+        expect(await page.locator('iframe').count()).toBe(0);
+        expect(
+          await page.getByRole('button', { name: 'Watch installation video', exact: true }).count(),
+        ).toBe(0);
+        const fallback = page.getByRole('link', {
+          name: 'Installation "<sample>": Watch on YouTube (opens in a new tab)',
+          exact: true,
+        });
+        expect(await fallback.isVisible()).toBe(true);
+        const fallbackOpened = noScriptContext.waitForEvent('page');
+        await fallback.click();
+        const fallbackPage = await fallbackOpened;
+        await fallbackPage.waitForURL('https://www.youtube.com/watch?v=M7lc1UVf-VE');
+      } finally {
+        await noScriptContext.close();
+      }
+      const unsupportedContext = await browser.newContext({
+        viewport: { width: 320, height: 360 },
+        colorScheme: 'dark',
+      });
+      try {
+        await stubYouTube(unsupportedContext);
+        await serveConsumer(unsupportedContext);
+        await unsupportedContext.addInitScript(() => {
+          Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { value: undefined });
+        });
+        const page = await unsupportedContext.newPage();
+        await page.goto('https://ui-consumer.example/videos/');
+        expect(await page.locator('iframe').count()).toBe(0);
+        expect(
+          await page
+            .getByRole('link', {
+              name: 'Installation "<sample>": Watch on YouTube (opens in a new tab)',
+              exact: true,
+            })
+            .isVisible(),
+        ).toBe(true);
+        expect(
+          await page.getByRole('button', { name: 'Watch installation video', exact: true }).count(),
+        ).toBe(0);
+      } finally {
+        await unsupportedContext.close();
+      }
     } finally {
       await browser.close();
     }
@@ -1928,6 +2452,37 @@ describe('published website UI package', () => {
     expect(fixtureHtml).toMatch(/<span\b[^>]*class="sr-only"[^>]*>Open complete source<\/span>/u);
     expect(fixtureHtml).toContain('lucide-maximize-2');
     expect(fixtureHtml).toContain('Expanded source content');
-    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(4 + RUNTIME_CATALOG.length);
+    expect(fixtureHtml.match(/data-external-link-icon/gu)).toHaveLength(6 + RUNTIME_CATALOG.length);
+    expect(() => consumerRequire.resolve('@moldea.ai/website-ui/youtube-video-model')).toThrow(
+      'Package subpath',
+    );
+    expect(() => consumerRequire.resolve('@moldea.ai/website-ui/dialog-lifecycle')).toThrow(
+      'Package subpath',
+    );
+    for (const component of ['youtube-video', 'youtube-video-dialog']) {
+      writeFileSync(
+        path.join(pagesDirectory, 'invalid-video.astro'),
+        [
+          '---',
+          `import Video from '@moldea.ai/website-ui/${component}';`,
+          '---',
+          component === 'youtube-video'
+            ? '<Video videoUrl="https://example.com/watch?v=M7lc1UVf-VE" title="Invalid" />'
+            : '<Video id="invalid-video" triggerLabel="Invalid" videoUrl="https://example.com/watch?v=M7lc1UVf-VE" title="Invalid" />',
+        ].join('\n'),
+      );
+      writeFileSync(
+        path.join(fixtureDirectory, 'verify-invalid.mjs'),
+        [
+          "import { build } from 'astro';",
+          "import { expectToRejectCode } from 'jg-exception/testing';",
+          'await expectToRejectCode(build({ logLevel: "silent" }), "INVALID_YOUTUBE_VIDEO_URL", "The YouTube video URL is not supported.");',
+        ].join('\n'),
+      );
+      runPackageManager(process.execPath, ['verify-invalid.mjs'], {
+        cwd: fixtureDirectory,
+        encoding: 'utf8',
+      });
+    }
   }, 360_000);
 });

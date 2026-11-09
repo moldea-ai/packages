@@ -151,6 +151,7 @@ import { createNodeProjectInspection } from '@moldea.ai/core/node';
 const inspection = await createNodeProjectInspection({
   repository,
   signal,
+  maxConcurrentInspections: 2,
 });
 try {
   const page = await inspection.readPage({ view: 'all', maxItems: 128 });
@@ -160,7 +161,13 @@ try {
 }
 ```
 
-One installed Core owner admits one inspection at a time and rejects overlap with `INSPECTION_BUSY`. The fixed 120-second lifetime includes startup, reads, preparation, paging, and disposal. A caller may supply an earlier absolute Unix-millisecond `deadline` or cancellation signal. Cancellation reaches each real reader call. Cleanup awaits subprocess closure and actual reader settlement before releasing admission; reader implementations remain responsible for settling their work after cancellation. Disposal is idempotent and surfaces a terminal failure rather than allowing a late success.
+One installed Core owner shares an active-inspection counter across calls in the process. `maxConcurrentInspections` defaults to `1` when omitted or `undefined`; any other value must be a positive safe integer or the call rejects with `INVALID_ARGUMENT`. A call rejects with `INSPECTION_BUSY` when the active count is at least that call's maximum. Admission is immediate and does not queue work.
+
+Every caller in a process is expected to pass the same maximum. The admitted call's value is the effective limit for that admission; it does not set a process-wide configuration for later calls. For example, while one inspection is active, a call omitting the option is busy, while a call supplying `2` may use the second slot. Separate installed Core owners retain separate counters.
+
+Each admitted inspection owns one child process and an analysis worker with its own fixed 512 MiB old-generation and 24 MiB young-generation heap grants. Two inspections therefore permit two child processes and two independently budgeted workers. The 48 MiB transport reservation also applies to each inspection. Size concurrency for their aggregate memory, CPU, and parent reader/provider load; these controls do not bound total process RSS.
+
+The fixed 120-second lifetime includes startup, reads, preparation, paging, and disposal. A caller may supply an earlier absolute Unix-millisecond `deadline` or cancellation signal. Cancellation reaches each real reader call. A successful preparation or page read retains its admission slot. Cleanup awaits subprocess closure and actual reader settlement before releasing that inspection's slot; reader implementations remain responsible for settling their work after cancellation. Disposal is idempotent and surfaces a terminal failure rather than allowing a late success.
 
 Logical retained-byte accounting reserves 48 MiB for simultaneous transport copies, including UTF-16 storage, before granting Core its remaining budget. File and total-read budgets remain unchanged. This ledger and the worker heap limit are separate from total process RSS. Verified worker heap exhaustion reports the actual V8 maximum with unknown usage; a timeout or unexplained process exit does not establish capacity exhaustion. Fixed bridge limits have no limit-raising next action. No parser file-size cutoff or heap-tuning option is exposed.
 

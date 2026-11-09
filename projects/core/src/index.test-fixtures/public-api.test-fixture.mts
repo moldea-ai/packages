@@ -1,4 +1,8 @@
 import { matchManifestScope } from '@moldea.ai/core/scope';
+import {
+  createNodeProjectInspection,
+  type INodeProjectInspectionInput,
+} from '@moldea.ai/core/node';
 import { parseRepositoryPath, type IRepositoryReader } from '@moldea.ai/repository';
 // @ts-expect-error The Core package has no default root export.
 import coreDefault from '@moldea.ai/core';
@@ -166,6 +170,11 @@ declare const removedHandoffSurface: IRemovedHandoffSurface;
 declare const wrongRootFormatSurface: IWrongRootFormatSurface;
 declare const repository: IRepositoryReader;
 
+const nodeInput: INodeProjectInspectionInput = { repository, maxConcurrentInspections: 2 };
+const nodeInspection = createNodeProjectInspection(nodeInput);
+// @ts-expect-error The Node inspection admission maximum must be a number.
+const invalidNodeInput: INodeProjectInspectionInput = { repository, maxConcurrentInspections: '2' };
+
 const path = parseRepositoryPath('/moldea/project.md');
 const options: ICoreOptions = { limits: { maxFileBytes: 1024 } };
 const core: ICore = createCore(options);
@@ -245,6 +254,8 @@ if (SUPPORTED_REPOSITORY_FORMAT_VERSIONS[0] !== 1) {
 }
 
 void [
+  nodeInspection,
+  invalidNodeInput,
   rootSurface,
   formatSurface,
   capabilityKind,
