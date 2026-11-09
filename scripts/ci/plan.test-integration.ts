@@ -103,12 +103,12 @@ test.each(['', '0'.repeat(40), 'f'.repeat(40)])(
   },
 );
 
-test('actual release candidates force full verification for otherwise website-only changes', () => {
+test('release candidates retain essential priority and release artifact scope', () => {
   const result = run({ CI_RELEASE_BUILD: 'true', CI_TEST_SUITE: 'essential' });
   expect(result.status).toBe(0);
   expect(parseCiPlan(result.stdout.trim())).toMatchObject({
     mode: 'full',
-    testSuite: 'full',
+    testSuite: 'essential',
     comparisonCommit: base,
     artifacts: true,
   });
@@ -139,7 +139,7 @@ test.each(['', 'core', 'cli-website-ui', 'website-ui'])(
     expect(result.status, result.stderr).toBe(0);
     const plan = parseCiPlan(result.stdout.trim());
     expect(plan.testedCommit).toBe(head);
-    expect(plan.testSuite).toBe('full');
+    expect(plan.testSuite).toBe('essential');
     expect(plan.artifacts).toBe(true);
     if (project === 'website-ui') {
       expect(plan.mode).toBe('website-ui-release');
@@ -156,7 +156,10 @@ test.each(['', 'core', 'cli-website-ui', 'website-ui'])(
     } else {
       expect(plan.mode).toBe('full');
       expect(plan.workspaces).toContain('@moldea.ai/cli');
-      expect(plan.lanes).toContain('consumer-conformance');
+      expect(plan.lanes).toStrictEqual([
+        'repository-fs-runtime-compatibility',
+        'cli-runtime-compatibility',
+      ]);
     }
   },
 );
@@ -166,6 +169,24 @@ test('a release project input alone cannot reduce routine CI scope', () => {
   expect(result.status, result.stderr).toBe(0);
   expect(parseCiPlan(result.stdout.trim())).toMatchObject({ mode: 'full', testSuite: 'essential' });
 });
+
+test.each(['core', 'website-ui'])(
+  'full release qualification is honored only when explicitly requested (%s)',
+  async (project) => {
+    await write(
+      'projects/website-ui/package.json',
+      JSON.stringify({ name: '@moldea.ai/website-ui' }),
+    );
+    head = commit();
+    const result = run({
+      CI_RELEASE_BUILD: 'true',
+      CI_RELEASE_PROJECT: project,
+      CI_TEST_SUITE: 'full',
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(parseCiPlan(result.stdout.trim())).toMatchObject({ testSuite: 'full', artifacts: true });
+  },
+);
 
 test.each([
   { CI_BASE_COMMIT: '--all' },
