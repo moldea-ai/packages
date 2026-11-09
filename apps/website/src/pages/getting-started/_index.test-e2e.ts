@@ -169,9 +169,26 @@ for (const width of [320, 768, 1440]) {
         await page.keyboard.press('Enter');
         const dialog = page.getByRole('dialog', { name: title, exact: true });
         await expect(dialog).toBeVisible();
+        await expect(dialog.locator('iframe')).toHaveCount(0);
+        await expect(dialog.locator('img')).toBeVisible();
+        await expect(dialog.locator('img')).toHaveAttribute('alt', '');
+        await expect
+          .poll(() =>
+            dialog.locator('img').evaluate((node) => {
+              const image = node as HTMLImageElement;
+              return image.complete && image.naturalWidth > 0;
+            }),
+          )
+          .toBe(true);
+        const play = dialog.getByRole('button', { name: `Play ${title}`, exact: true });
+        const restingShadow = await play.evaluate((node) => getComputedStyle(node).boxShadow);
+        await page.keyboard.press('Tab');
+        await expect(play).toBeFocused();
+        await expect(play).not.toHaveCSS('box-shadow', restingShadow);
+        await page.keyboard.press('Enter');
         await expect(dialog.locator('iframe')).toHaveAttribute(
           'src',
-          `https://www.youtube-nocookie.com/embed/${videoId}`,
+          `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`,
         );
         await expect(dialog.getByRole('link', { name: /Watch on YouTube/u })).toHaveCount(0);
         expect(
@@ -191,6 +208,128 @@ for (const width of [320, 768, 1440]) {
         width,
       );
       expect(pageErrors).toStrictEqual([]);
+    });
+  }
+}
+
+for (const width of [320, 1440]) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`keeps entry free of YouTube until Play at ${width}px in ${theme}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: 'no-preference' });
+      const requests: string[] = [];
+      await page.route('https://www.youtube-nocookie.com/**', async (route) => {
+        requests.push(route.request().url());
+        await route.fulfill({
+          contentType: 'text/html',
+          body: '<!doctype html><title>Video</title>',
+        });
+      });
+      await page.goto(guidePath);
+      const trigger = page.getByRole('button', {
+        name: 'Watch installation walkthrough',
+        exact: true,
+      });
+      const opening = await trigger.evaluate((node) => {
+        (node as HTMLButtonElement).click();
+        const dialog = document.getElementById(node.getAttribute('aria-controls')!)!;
+        const body = dialog.querySelector<HTMLElement>(':scope > div')!;
+        const animations = dialog.getAnimations();
+        for (const animation of animations) animation.pause();
+        return {
+          animations: animations.length,
+          frames: dialog.querySelectorAll('iframe').length,
+          height: dialog.offsetHeight,
+          bodyWidth: body.clientWidth,
+          bodyScrollWidth: body.scrollWidth,
+          playerHeight: dialog.querySelector<HTMLElement>('[data-youtube-dialog-player]')!
+            .offsetHeight,
+        };
+      });
+      expect(opening.animations).toBeGreaterThan(0);
+      expect(opening.frames).toBe(0);
+      expect(opening.playerHeight).toBeGreaterThanOrEqual(200);
+      expect(opening.bodyScrollWidth).toBeLessThanOrEqual(opening.bodyWidth);
+      expect(requests).toStrictEqual([]);
+      const dialog = page.getByRole('dialog', {
+        name: 'moldea | Install and use the skill',
+        exact: true,
+      });
+      await dialog.evaluate((node) => {
+        for (const animation of node.getAnimations()) animation.finish();
+      });
+      await expect(dialog.locator('iframe')).toHaveCount(0);
+      expect(requests).toStrictEqual([]);
+      await expect(dialog.locator('img')).toBeVisible();
+      await dialog
+        .getByRole('button', { name: 'Play moldea | Install and use the skill', exact: true })
+        .click();
+      await expect(dialog.locator('iframe')).toBeVisible();
+      expect(await dialog.evaluate((node) => (node as HTMLElement).offsetHeight)).toBe(
+        opening.height,
+      );
+      await page.keyboard.press('Escape');
+      await expect(dialog).not.toBeVisible();
+      await expect(trigger).toBeFocused();
+    });
+
+    test(`isolates pending video entries across reopening at ${width}px in ${theme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: 'no-preference' });
+      const requests: string[] = [];
+      await page.route('https://www.youtube-nocookie.com/**', async (route) => {
+        requests.push(route.request().url());
+        await route.fulfill({
+          contentType: 'text/html',
+          body: '<!doctype html><title>Video</title>',
+        });
+      });
+      await page.goto(guidePath);
+      const trigger = page.getByRole('button', {
+        name: 'Watch installation walkthrough',
+        exact: true,
+      });
+      await trigger.evaluate(async (node) => {
+        const opener = node as HTMLButtonElement;
+        opener.click();
+        const dialog = document.getElementById(
+          node.getAttribute('aria-controls')!,
+        ) as HTMLDialogElement;
+        const play = dialog.querySelector<HTMLButtonElement>('[data-youtube-dialog-play]')!;
+        play.click();
+        play.click();
+        const previousEntry = dialog.getAnimations();
+        const previousCompletion = Promise.allSettled(
+          previousEntry.map((animation) => animation.finished),
+        );
+        for (const animation of previousEntry) animation.pause();
+        dialog.close();
+        // flush native closure so the reopened dialog gets a distinct entry animation
+        dialog.getAnimations();
+        opener.click();
+        for (const animation of dialog.getAnimations()) animation.pause();
+        await previousCompletion;
+      });
+      const dialog = page.getByRole('dialog', {
+        name: 'moldea | Install and use the skill',
+        exact: true,
+      });
+      await expect(dialog.locator('iframe')).toHaveCount(0);
+      expect(requests).toStrictEqual([]);
+      await page.keyboard.press('Escape');
+      await expect(dialog).not.toBeVisible();
+      expect(requests).toStrictEqual([]);
+      await trigger.evaluate((node) => (node as HTMLButtonElement).click());
+      await dialog
+        .getByRole('button', { name: 'Play moldea | Install and use the skill', exact: true })
+        .click();
+      await expect(dialog.locator('iframe')).toBeVisible();
+      await expect.poll(() => requests.length).toBe(1);
+      await page.keyboard.press('Escape');
+      await expect(dialog).not.toBeVisible();
+      await expect(trigger).toBeFocused();
     });
   }
 }

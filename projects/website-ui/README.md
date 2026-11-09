@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@4.7.1
+pnpm add @moldea.ai/website-ui@4.8.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -194,7 +194,9 @@ import YouTubeVideoDialog from '@moldea.ai/website-ui/youtube-video-dialog';
 
 `YouTubeVideoDialog` requires a document-unique `id`, `videoUrl`, `title`, and `triggerLabel`. Optional `description`, `triggerAriaLabel`, `triggerVariant`, `triggerSize`, `triggerClass`, `panelClass`, and `closeLabel` follow `Dialog`. Its trigger includes the YouTube icon beside text, or as the mark for an icon-size trigger. It uses the large panel, enables backdrop dismissal by default (`isOverlayCloseEnabled={false}` disables it), and defaults `autoPlay` to `false`. Titles are normalized like the inline player. Without JavaScript or usable native dialog support, a canonical Watch on YouTube link remains visible.
 
-Closed video dialogs make no iframe request. Each opening mounts one fresh player, and dismissal removes it before exit animation or a return transition begins, including Escape, the close control, enabled backdrop dismissal, native closure, and Astro navigation. External `data-dialog-open` controls use the same controller and regain focus when closed. Each instance owns its playback session; no global playback store coordinates separate dialogs. Open dialogs do not add a watch link below the player.
+Closed video dialogs make no iframe request. The player area reserves its dimensions before opening. Each opening mounts one fresh player after the shared Dialog's entry animation finishes, keeping YouTube startup out of that motion. With reduced motion, the player mounts immediately. Dismissal cancels pending startup and removes any player before exit animation or a return transition begins, including Escape, the close control, enabled backdrop dismissal, native closure, and Astro navigation. External `data-dialog-open` controls use the same controller and regain focus when closed. Each instance owns its playback session; no global playback store coordinates separate dialogs. Open dialogs do not add a watch link below the player.
+
+The optional `poster` slot replaces the initial player with a click-to-play cover. Supply a non-interactive image with `alt=""`, explicit dimensions, and `class="h-full w-full object-contain"`; the consuming website owns its image assets and optimization. The shared component adds an accessible Play control. With the default `autoPlay={false}`, opening the dialog makes no YouTube request, even after entry completes. Clicking Play waits for any remaining entry motion and mounts the iframe with autoplay requested. Focus stays in the dialog so Escape can dismiss it; visitors can Tab into YouTube's controls. Browser policy can still require playback confirmation in YouTube. Explicit `autoPlay={true}` starts the player after entry without waiting for Play. Dismissal restores the cover and cancels pending startup; reopening starts a fresh session. Without a poster, the automatic loading behavior above remains unchanged.
 
 The trigger's monochrome YouTube icon reproduces the `video-youtube` mark from [YouTube Brand Resources](https://brand.youtube/), under its brand usage guidelines. It inherits the control's text color across light and dark surfaces. The mark belongs to YouTube.
 

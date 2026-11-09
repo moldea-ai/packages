@@ -9,7 +9,7 @@ import { resolveYouTubeVideo } from '../../youtube-video/index.js';
 import YouTubeIcon from './icon/youtube-icon.component.astro';
 
 /**
- * Defers a YouTube player until its dialog opens and removes it when dismissal begins.
+ * Defers player startup behind entry motion or an optional click-to-play poster.
  * @throws
  * - INVALID_YOUTUBE_VIDEO_URL: The YouTube video URL is not supported.
  */
@@ -39,9 +39,13 @@ const {
   ...dialogProps
 } = Astro.props;
 const video = resolveYouTubeVideo(videoUrl, title, autoPlay);
+const hasPoster = Astro.slots.has('poster');
 ---
 
-<div data-website-ui-youtube-dialog>
+<div
+  data-website-ui-youtube-dialog
+  data-youtube-dialog-autoplay={autoPlay ? '' : undefined}
+>
   <div data-youtube-dialog-fallback>
     <ActionLink
       href={video.watchUrl}
@@ -65,12 +69,35 @@ const video = resolveYouTubeVideo(videoUrl, title, autoPlay);
       class="inline-flex items-center gap-2"
       ><YouTubeIcon />{dialogProps.triggerLabel}</span
     >
-    <div data-youtube-dialog-player></div>
+    <div class="relative aspect-video min-h-50 w-full min-w-0">
+      {
+        hasPoster && (
+          <button
+            type="button"
+            aria-label={`Play ${video.title}`}
+            class="group absolute inset-0 z-10 block h-full w-full min-w-0 cursor-pointer overflow-hidden rounded-lg border border-border bg-background p-0 shadow-surface outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background active:brightness-90 [hidden]:hidden"
+            data-youtube-dialog-play
+          >
+            <slot name="poster" />
+            <span class="pointer-events-none absolute right-3 bottom-3 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-surface group-hover:bg-primary/90">
+              <YouTubeIcon />
+              <span data-youtube-dialog-play-label>Play video</span>
+            </span>
+          </button>
+        )
+      }
+      <div
+        class="h-full"
+        aria-busy="false"
+        data-youtube-dialog-player
+      >
+      </div>
+    </div>
     <template data-youtube-dialog-template>
       <YouTubeVideo
         videoUrl={video.watchUrl}
         title={video.title}
-        autoPlay={autoPlay}
+        autoPlay={autoPlay || hasPoster}
       />
     </template>
   </Dialog>
@@ -87,6 +114,8 @@ const video = resolveYouTubeVideo(videoUrl, title, autoPlay);
       const template = root.querySelector<HTMLTemplateElement>('[data-youtube-dialog-template]');
       const player = root.querySelector<HTMLElement>('[data-youtube-dialog-player]');
       const fallback = root.querySelector<HTMLElement>('[data-youtube-dialog-fallback]');
+      const playTrigger = root.querySelector<HTMLButtonElement>('[data-youtube-dialog-play]');
+      const playLabel = playTrigger?.querySelector<HTMLElement>('[data-youtube-dialog-play-label]');
       if (
         dialog === null ||
         typeof dialog.showModal !== 'function' ||
@@ -96,14 +125,50 @@ const video = resolveYouTubeVideo(videoUrl, title, autoPlay);
       )
         continue;
 
+      let openSession: symbol | undefined;
+      const resetPoster = (): void => {
+        if (playTrigger === null) return;
+        playTrigger.hidden = false;
+        playTrigger.removeAttribute('aria-disabled');
+        if (playLabel) playLabel.textContent = 'Play video';
+      };
       const stopPlayback = (): void => {
+        openSession = undefined;
+        player.setAttribute('aria-busy', 'false');
+        resetPoster();
         // retain the reserved player area until the dialog's exit has completed
         for (const iframe of player.querySelectorAll('iframe')) iframe.remove();
+      };
+      /**
+       * Keeps player startup out of entry motion and discards superseded openings.
+       * @returns A promise that resolves after entry completes or its session is invalidated.
+       */
+      const startPlayback = async (shouldFocusDialog = false): Promise<void> => {
+        const session = Symbol();
+        openSession = session;
+        player.setAttribute('aria-busy', 'true');
+        playTrigger?.setAttribute('aria-disabled', 'true');
+        if (playLabel) playLabel.textContent = 'Loading video';
+        const animations = dialog.getAnimations();
+        if (animations.length > 0)
+          await Promise.allSettled(animations.map((animation) => animation.finished));
+        if (openSession !== session || !dialog.open || !dialog.isConnected) return;
+        player.replaceChildren(template.content.cloneNode(true));
+        player.setAttribute('aria-busy', 'false');
+        if (playTrigger !== null) playTrigger.hidden = true;
+        // keep Escape in the parent document until the visitor enters YouTube's controls
+        if (shouldFocusDialog) dialog.focus({ preventScroll: true });
       };
       dialog.addEventListener(DIALOG_LIFECYCLE_EVENTS.open, (event) => {
         if (event.target !== dialog || !dialog.open || player.querySelector('iframe') !== null)
           return;
-        player.replaceChildren(template.content.cloneNode(true));
+        resetPoster();
+        if (playTrigger === null || root.hasAttribute('data-youtube-dialog-autoplay'))
+          void startPlayback();
+      });
+      playTrigger?.addEventListener('click', () => {
+        if (!dialog.open || playTrigger.getAttribute('aria-disabled') === 'true') return;
+        void startPlayback(true);
       });
       dialog.addEventListener(DIALOG_LIFECYCLE_EVENTS.dismiss, stopPlayback);
       dialog.addEventListener('close', () => {
