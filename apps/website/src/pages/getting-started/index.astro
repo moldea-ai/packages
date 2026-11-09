@@ -1,5 +1,4 @@
 ---
-import { Image } from 'astro:assets';
 import { ArrowDown, ArrowRight, ExternalLink, GitBranch, GitPullRequest } from '@lucide/astro';
 import ActionLink from '@moldea.ai/website-ui/action-link';
 import Breadcrumbs from '@moldea.ai/website-ui/breadcrumbs';
@@ -13,11 +12,11 @@ import InspectionList from '@moldea.ai/website-ui/inspection-list';
 import type { IInspectionResultView } from '@moldea.ai/website-ui/inspection-presentation';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import { withBase } from '@moldea.ai/website-ui/site';
-import YouTubeVideoDialog from '@moldea.ai/website-ui/youtube-video-dialog';
 
 import contextAlignmentCover from '../../assets/video-covers/context-alignment.jpg';
 import skillInstallationCover from '../../assets/video-covers/skill-installation.jpg';
 import { CapabilityCard } from '../../components/capability-card/index.ts';
+import { VideoPreview } from '../../components/video-preview/index.ts';
 import BaseLayout from '../../layouts/base-layout.astro';
 import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 
@@ -89,26 +88,43 @@ const assuranceIllustration = {
 >
   <section class="page-shell pt-8 pb-section-gap">
     <Breadcrumbs items={breadcrumbs} />
-    <header class="max-w-4xl pt-12 pb-12 sm:pt-16">
-      <p class="eyebrow mb-4">The <code class="inline-code normal-case">moldea</code> ecosystem</p>
-      <h1 class="page-title">{guide.title}</h1>
-      <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">{guide.description}</p>
-      <nav
-        class="mt-8 flex flex-wrap gap-2"
-        aria-label="Explore the ecosystem"
-      >
-        {
-          sections.map(({ id, label }) => (
-            <ActionLink
-              href={`#${id}`}
-              variant="outline"
-              size="sm"
-            >
-              {label}
-            </ActionLink>
-          ))
-        }
-      </nav>
+    <header class="grid items-center gap-8 pt-12 pb-12 sm:pt-16 lg:grid-cols-2 lg:gap-16">
+      <div>
+        <p class="eyebrow mb-4">
+          The <code class="inline-code normal-case">moldea</code> ecosystem
+        </p>
+        <h1 class="page-title">{guide.title}</h1>
+        <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">{guide.description}</p>
+        <nav
+          class="mt-8 flex flex-wrap gap-2"
+          aria-label="Explore the ecosystem"
+        >
+          {
+            sections.map(({ id, label }) => (
+              <ActionLink
+                href={`#${id}`}
+                variant="outline"
+                size="sm"
+              >
+                {label}
+              </ActionLink>
+            ))
+          }
+        </nav>
+      </div>
+      <figure class="grid min-w-0 gap-3">
+        <figcaption class="text-sm font-medium text-muted-foreground">
+          Watch installation and first use
+        </figcaption>
+        <VideoPreview
+          id="skill-installation-video"
+          videoUrl="https://www.youtube.com/watch?v=dwl_RFm95Tg"
+          title="moldea | Install and use the skill"
+          triggerLabel="Watch installation walkthrough"
+          cover={skillInstallationCover}
+          loading="eager"
+        />
+      </figure>
     </header>
 
     <div
@@ -153,47 +169,6 @@ const assuranceIllustration = {
               target="_blank"
               >Start with the Agent Skill</ActionLink
             >
-            <YouTubeVideoDialog
-              id="skill-installation-video"
-              videoUrl="https://www.youtube.com/watch?v=dwl_RFm95Tg"
-              title="moldea | Install and use the skill"
-              triggerLabel="Watch installation walkthrough"
-              triggerSize="md"
-            >
-              <Image
-                slot="poster"
-                src={skillInstallationCover}
-                alt=""
-                width={1024}
-                widths={[320, 640, 1024, 2048]}
-                sizes="(min-width: 66rem) 974px, (min-width: 40rem) calc(100vw - 5rem), calc(100vw - 2rem)"
-                loading="lazy"
-                decoding="async"
-                class="h-full w-full object-contain"
-              />
-            </YouTubeVideoDialog>
-          </div>
-          <div class="mt-3">
-            <YouTubeVideoDialog
-              id="context-alignment-video"
-              videoUrl="https://www.youtube.com/watch?v=PyZiQXWS1ZE"
-              title="moldea | Keeping project context and code aligned"
-              triggerLabel="Watch context-alignment workflow"
-              triggerVariant="link"
-              triggerSize="sm"
-            >
-              <Image
-                slot="poster"
-                src={contextAlignmentCover}
-                alt=""
-                width={1024}
-                widths={[320, 640, 1024, 2048]}
-                sizes="(min-width: 66rem) 974px, (min-width: 40rem) calc(100vw - 5rem), calc(100vw - 2rem)"
-                loading="lazy"
-                decoding="async"
-                class="h-full w-full object-contain"
-              />
-            </YouTubeVideoDialog>
           </div>
         </div>
         <figure
@@ -237,6 +212,33 @@ const assuranceIllustration = {
             </ConversationMessage>
           </Conversation>
         </figure>
+      </section>
+
+      <section
+        id="context-video"
+        class="grid scroll-mt-24 items-center gap-8 border-t pt-10 lg:grid-cols-2 lg:gap-16"
+        aria-labelledby="context-video-title"
+      >
+        <div>
+          <p class="eyebrow mb-4">Watch the walkthrough</p>
+          <h2
+            id="context-video-title"
+            class="section-title"
+          >
+            See project context stay aligned with code.
+          </h2>
+          <p class="mt-5 leading-8 text-muted-foreground">
+            Follow the Skill through a code change and the updates to the project knowledge behind
+            it.
+          </p>
+        </div>
+        <VideoPreview
+          id="context-alignment-video"
+          videoUrl="https://www.youtube.com/watch?v=PyZiQXWS1ZE"
+          title="moldea | Keeping project context and code aligned"
+          triggerLabel="Watch context-alignment workflow"
+          cover={contextAlignmentCover}
+        />
       </section>
 
       <section

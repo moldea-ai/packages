@@ -148,11 +148,7 @@ for (const width of [320, 768, 1440]) {
         });
       });
       await page.goto(guidePath);
-      const skill = page.getByRole('region', {
-        name: 'Give your coding agent the project context.',
-        exact: true,
-      });
-      await expect(skill.locator('iframe')).toHaveCount(0);
+      await expect(page.locator('iframe[src*="youtube"]')).toHaveCount(0);
       for (const [triggerLabel, title, videoId] of [
         ['Watch installation walkthrough', 'moldea | Install and use the skill', 'dwl_RFm95Tg'],
         [
@@ -161,7 +157,7 @@ for (const width of [320, 768, 1440]) {
           'PyZiQXWS1ZE',
         ],
       ] as const) {
-        const trigger = skill.getByRole('button', { name: triggerLabel, exact: true });
+        const trigger = page.getByRole('button', { name: triggerLabel, exact: true });
         await expect(trigger.locator('svg')).toBeVisible();
         await trigger.focus();
         await expect(trigger).toBeFocused();
