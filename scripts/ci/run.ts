@@ -91,6 +91,6 @@ else {
     false,
     isEssential ? [CI_WEBSITE_WORKSPACE, '@moldea.ai/website-ui'] : [],
   );
-  // the website's browser suite runs locally before merging, never in CI
+  // the website's browser suite has a separate publication gate
   runSelectedTask('test:e2e', false, [CI_WEBSITE_WORKSPACE]);
 }

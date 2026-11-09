@@ -10,7 +10,7 @@ on:
         type: string
         default: essential
       release_project:
-        description: Public project key used to isolate concurrent release verification.
+        description: Release selection key; Website UI alone uses its full consumer scope.
         required: false
         type: string
         default: ''
@@ -61,6 +61,7 @@ jobs:
   plan:
     name: Select CI Workspaces
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       plan: ${{ steps.selection.outputs.plan }}
       artifacts: ${{ steps.selection.outputs.artifacts }}
@@ -92,6 +93,7 @@ jobs:
           CI_BASE_COMMIT: ${{ inputs.comparison_commit || github.event.pull_request.base.sha || github.event.before || '' }}
           CI_TESTED_COMMIT: ${{ github.sha }}
           CI_RELEASE_BUILD: ${{ inputs.release_build == true && 'true' || 'false' }}
+          CI_RELEASE_PROJECT: ${{ inputs.release_project || '' }}
           CI_TEST_SUITE: ${{ inputs.test_suite || 'essential' }}
         run: node scripts/ci/plan.ts
 
@@ -109,6 +111,7 @@ jobs:
     name: Check Selected Workspaces
     needs: plan
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-noble
       options: --ipc=host --init
@@ -354,6 +357,7 @@ jobs:
     env:
       MOLDEA_CI_PLAN: ${{ needs.plan.outputs.plan }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -405,6 +409,7 @@ jobs:
       - cli-runtime-compatibility
       - test-cross-platform
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v6

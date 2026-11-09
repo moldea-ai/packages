@@ -174,6 +174,94 @@ test('missing comparison and forced release plans select full verification', () 
   }
 });
 
+test.each([commit, null])(
+  'Website UI release qualification is source-bound without runtime consumers (%s)',
+  (comparisonCommit) => {
+    const plan = createCiPlan({
+      testedCommit: commit,
+      comparisonCommit,
+      current,
+      previous: current,
+      changedPaths: ['.github/workflows/ci.yml'],
+      testSuite: 'essential',
+      websiteUiRelease: true,
+    });
+    expect(plan).toMatchObject({
+      testedCommit: commit,
+      comparisonCommit,
+      mode: 'website-ui-release',
+      testSuite: 'full',
+      workspaces: ['@moldea.ai/packages-website', '@moldea.ai/website-ui'],
+      rootIntegration: false,
+      lanes: [],
+      artifacts: true,
+    });
+    expect(parseCiPlan(JSON.stringify(plan))).toStrictEqual(plan);
+    validateCiWorkspaceSelection(plan, current);
+    expect(() => parseCiPlan(JSON.stringify({ ...plan, artifacts: false }))).toThrow('invalid');
+    expect(() => parseCiPlan(JSON.stringify({ ...plan, testSuite: 'essential' }))).toThrow(
+      'invalid',
+    );
+    expect(() =>
+      validateCiWorkspaceSelection({ ...plan, workspaces: ['@moldea.ai/website-ui'] }, current),
+    ).toThrow('workspace inventory');
+  },
+);
+
+test('Website UI qualification includes new downstream consumers and refuses a missing package', () => {
+  const next = new Map(current);
+  next.set('@moldea.ai/cli', {
+    ...current.get('@moldea.ai/cli')!,
+    workspaceDependencies: ['@moldea.ai/website-ui'],
+  });
+  const sources = {
+    testedCommit: commit,
+    comparisonCommit: null,
+    current: next,
+    previous: current,
+    changedPaths: [],
+    websiteUiRelease: true,
+  };
+  const plan = createCiPlan(sources);
+  expect(plan.workspaces).toStrictEqual([
+    '@moldea.ai/cli',
+    '@moldea.ai/packages-website',
+    '@moldea.ai/website-ui',
+  ]);
+  expect(plan.lanes).toContain('consumer-conformance');
+  expect(plan.rootIntegration).toBe(true);
+  validateCiWorkspaceSelection(plan, next);
+  next.delete('@moldea.ai/website-ui');
+  expect(() => createCiPlan(sources)).toThrow('workspace inventory');
+});
+
+test('Website UI release gate still requires artifacts and native platforms', () => {
+  const plan = createCiPlan({
+    testedCommit: commit,
+    comparisonCommit: null,
+    current,
+    previous: current,
+    changedPaths: [],
+    websiteUiRelease: true,
+  });
+  const results = Object.fromEntries(
+    ['plan', 'checks', 'pack', ...CI_COMPATIBILITY_LANES, 'test-cross-platform'].map((name) => [
+      name,
+      {
+        result: ['plan', 'checks', 'pack', 'test-cross-platform'].includes(name)
+          ? 'success'
+          : 'skipped',
+      },
+    ]),
+  );
+  expect(() => validateCiJobResults(plan, JSON.stringify(results))).not.toThrow();
+  for (const job of ['pack', 'test-cross-platform']) {
+    expect(() =>
+      validateCiJobResults(plan, JSON.stringify({ ...results, [job]: { result: 'skipped' } })),
+    ).toThrow(job);
+  }
+});
+
 test.each([
   { artifacts: true },
   { rootIntegration: true },
