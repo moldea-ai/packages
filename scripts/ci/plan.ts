@@ -27,8 +27,7 @@ if (expectedCommit !== undefined && expectedCommit !== testedCommit)
 const releaseBuild = process.env['CI_RELEASE_BUILD'] ?? 'false';
 if (releaseBuild !== 'true' && releaseBuild !== 'false')
   throw new TypeError('The CI release-build input is invalid.');
-const requestedSuite = parseCiTestSuite(process.env['CI_TEST_SUITE']);
-const testSuite = releaseBuild === 'true' ? 'full' : requestedSuite;
+const testSuite = parseCiTestSuite(process.env['CI_TEST_SUITE']);
 const baseInput = process.env['CI_BASE_COMMIT'] ?? '';
 let comparisonCommit: string | null = null;
 let fullReason: string | undefined;
@@ -37,7 +36,7 @@ if (baseInput !== '' && !/^0{40}$/u.test(baseInput)) {
   if (hasGitCommit(repositoryRoot, baseInput)) comparisonCommit = baseInput;
   else fullReason = 'The comparison commit is unavailable locally.';
 }
-if (releaseBuild === 'true') fullReason = 'Release candidates require complete verification.';
+if (releaseBuild === 'true') fullReason = 'Release candidates require all-workspace scope.';
 else if (testSuite === 'full') fullReason = 'Explicit full verification selects every workspace.';
 const current = loadGitWorkspaceSnapshot(repositoryRoot, testedCommit);
 const previous =

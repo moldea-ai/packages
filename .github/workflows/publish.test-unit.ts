@@ -103,6 +103,7 @@ describe('npm release workflow', () => {
       permissions: { contents: 'read' },
       uses: './.github/workflows/ci.yml',
       with: {
+        test_suite: 'essential',
         release_build: "${{ needs.plan.outputs.has_releases == 'true' }}",
         comparison_commit: "${{ github.event.before || '' }}",
         release_project: '${{ needs.plan.outputs.project_key }}',
@@ -206,7 +207,8 @@ describe('npm release workflow', () => {
       '${{ needs.plan.outputs.cli_previous_version }}',
     );
     expect(publishWorkflow.jobs?.['release_website_ui']).toMatchObject({
-      needs: ['plan', 'verify', 'website_browser'],
+      needs: ['plan', 'verify'],
+      if: "${{ needs.plan.outputs.website_ui == 'true' && needs.verify.result == 'success' }}",
       permissions: { contents: 'write', 'id-token': 'write' },
       uses: './.github/workflows/publish-package.yml',
       with: {
@@ -223,21 +225,12 @@ describe('npm release workflow', () => {
     );
   });
 
-  test('gates a Website UI release on its consumer site browser suite without caching', () => {
-    const browser = publishWorkflow.jobs?.['website_browser'];
-    expect(browser).toMatchObject({
-      needs: 'plan',
-      if: "${{ needs.plan.outputs.website_ui == 'true' }}",
-      permissions: { contents: 'read' },
-      container: ciWorkflow.jobs?.['checks']?.container,
-      env: { PLAYWRIGHT_BROWSERS_PATH: '/ms-playwright' },
-    });
-    expect(browser?.steps?.at(-1)?.run).toBe('pnpm --filter @moldea.ai/packages-website test:e2e');
-    expect(browser?.steps?.some(({ with: options }) => options?.['cache'] !== undefined)).toBe(
-      false,
-    );
-    expect(publishWorkflow.jobs?.['release_website_ui']?.if).toContain(
-      "needs.website_browser.result == 'success'",
+  test('publication uses essential qualification without a browser gate', () => {
+    expect(publishWorkflow.jobs?.['verify']?.with?.['test_suite']).toBe('essential');
+    expect(publishWorkflow.jobs).not.toHaveProperty('website_browser');
+    expect(publishSource).not.toContain('test:e2e');
+    expect(rootPackageManifest.scripts?.['test:full']).toBe(
+      'node scripts/test-suite/test-suite.cli.ts full',
     );
   });
 

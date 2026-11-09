@@ -12,6 +12,8 @@ import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';
 import { withBase } from '@moldea.ai/website-ui/site';
 
 import RuntimeGrid from '@moldea.ai/website-ui/runtime-grid';
+import contextAlignmentCover from '../assets/video-covers/context-alignment.jpg';
+import { VideoPreview } from '../components/video-preview/index.ts';
 import { InspectionExample } from '../components/inspection-example/index.ts';
 import PackageCard from '../components/package-card.astro';
 import { RepositoryCheckPreview } from '../components/repository-check-preview/index.ts';
@@ -115,6 +117,36 @@ const basePath = import.meta.env.BASE_URL;
   </section>
 
   <InspectionExample states={model.inspectionExample} />
+
+  <section
+    id="workflow-video"
+    class="scroll-mt-24 border-y py-12 sm:py-16"
+    aria-labelledby="workflow-video-title"
+  >
+    <div class="page-shell grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
+      <div>
+        <p class="eyebrow mb-4">
+          Watch <code class="inline-code normal-case">moldea</code> in practice
+        </p>
+        <h2
+          id="workflow-video-title"
+          class="section-title"
+        >
+          See a project change, end to end.
+        </h2>
+        <p class="mt-5 leading-8 text-muted-foreground">
+          Follow a code change and the updates that keep project context aligned with it.
+        </p>
+      </div>
+      <VideoPreview
+        id="home-context-alignment-video"
+        videoUrl="https://www.youtube.com/watch?v=PyZiQXWS1ZE"
+        title="moldea | Keeping project context and code aligned"
+        triggerLabel="Watch the workflow"
+        cover={contextAlignmentCover}
+      />
+    </div>
+  </section>
   <RepositoryFormatOverview
     repositoryFormatRoute={model.repositoryFormatSpecification.route}
     result={model.inspectionExample[1].result}

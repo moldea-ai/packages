@@ -15,7 +15,7 @@ export const CI_COMPATIBILITY_LANES = [
   'repository-fs-runtime-compatibility',
   'cli-runtime-compatibility',
 ];
-// the packages website has a separate browser gate during publication
+// the packages website's presentation coverage belongs to the full suite
 export const CI_WEBSITE_WORKSPACE = '@moldea.ai/packages-website';
 // literal lowercase identifiers prevent Turbo filter expressions from entering a plan
 const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u;
@@ -91,9 +91,8 @@ export const createCiMatrices = (plan: ICiPlan): ICiRuntimeMatrices => {
  * - The CI plan does not match the checked-out workspace inventory.
  */
 export const createCiPlan = (sources: ICiSelectionSources): ICiPlan => {
-  const requestedSuite = parseCiTestSuite(sources.testSuite);
+  const testSuite = parseCiTestSuite(sources.testSuite);
   const isWebsiteUiRelease = sources.websiteUiRelease === true;
-  const testSuite = isWebsiteUiRelease ? 'full' : requestedSuite;
   requireGitCommit(sources.testedCommit);
   if (sources.comparisonCommit !== null) requireGitCommit(sources.comparisonCommit);
   const changedPaths = sources.changedPaths.filter((path) => !isExcludedPath(path));
@@ -216,8 +215,7 @@ export const parseCiPlan = (source: string): ICiPlan => {
       JSON.stringify(selectLanes(workspaces, full, record['testSuite'])) ||
     record['artifacts'] !== (isWebsiteUiRelease || record['lanes'].length > 0) ||
     record['rootIntegration'] !== (full || workspaces.some(isRuntimePackage)) ||
-    (isWebsiteUiRelease &&
-      (record['testSuite'] !== 'full' || !workspaces.includes('@moldea.ai/website-ui'))) ||
+    (isWebsiteUiRelease && !workspaces.includes('@moldea.ai/website-ui')) ||
     (record['mode'] === 'affected' && record['comparisonCommit'] === null)
   )
     throw new TypeError('The CI plan is invalid.');

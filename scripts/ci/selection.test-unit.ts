@@ -152,10 +152,10 @@ test('union edges carry removed dependencies and renamed/deleted owners to curre
   expect(() => validateCiWorkspaceSelection(plan, new Map())).toThrow('workspace inventory');
 });
 
-test('missing comparison and forced release plans select full verification', () => {
+test('missing comparison and release-wide scope select every workspace', () => {
   for (const options of [
     { comparisonCommit: null },
-    { comparisonCommit: commit, fullReason: 'Release candidates require complete verification.' },
+    { comparisonCommit: commit, fullReason: 'Release candidates require all-workspace scope.' },
   ]) {
     expect(
       createCiPlan({
@@ -190,7 +190,7 @@ test.each([commit, null])(
       testedCommit: commit,
       comparisonCommit,
       mode: 'website-ui-release',
-      testSuite: 'full',
+      testSuite: 'essential',
       workspaces: ['@moldea.ai/packages-website', '@moldea.ai/website-ui'],
       rootIntegration: false,
       lanes: [],
@@ -199,9 +199,7 @@ test.each([commit, null])(
     expect(parseCiPlan(JSON.stringify(plan))).toStrictEqual(plan);
     validateCiWorkspaceSelection(plan, current);
     expect(() => parseCiPlan(JSON.stringify({ ...plan, artifacts: false }))).toThrow('invalid');
-    expect(() => parseCiPlan(JSON.stringify({ ...plan, testSuite: 'essential' }))).toThrow(
-      'invalid',
-    );
+    expect(parseCiPlan(JSON.stringify({ ...plan, testSuite: 'full' })).testSuite).toBe('full');
     expect(() =>
       validateCiWorkspaceSelection({ ...plan, workspaces: ['@moldea.ai/website-ui'] }, current),
     ).toThrow('workspace inventory');
@@ -228,7 +226,8 @@ test('Website UI qualification includes new downstream consumers and refuses a m
     '@moldea.ai/packages-website',
     '@moldea.ai/website-ui',
   ]);
-  expect(plan.lanes).toContain('consumer-conformance');
+  expect(plan.testSuite).toBe('essential');
+  expect(plan.lanes).toStrictEqual(['cli-runtime-compatibility']);
   expect(plan.rootIntegration).toBe(true);
   validateCiWorkspaceSelection(plan, next);
   next.delete('@moldea.ai/website-ui');
