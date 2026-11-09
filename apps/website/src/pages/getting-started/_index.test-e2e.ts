@@ -131,6 +131,67 @@ for (const width of [320, 768, 1440]) {
         ),
       ).toStrictEqual([]);
     });
+
+    // ordinary website interaction and presentation remain full-only at the root suite boundary
+    test(`offers optional video walkthroughs at ${width}px in ${theme}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
+      const pageErrors: string[] = [];
+      page.on('pageerror', (error) => pageErrors.push(error.message));
+      page.on('console', (message) => {
+        if (message.type() === 'error') pageErrors.push(message.text());
+      });
+      await page.route('https://www.youtube-nocookie.com/**', async (route) => {
+        await route.fulfill({
+          contentType: 'text/html',
+          body: '<!doctype html><html lang="en"><title>Video</title><body></body></html>',
+        });
+      });
+      await page.goto(guidePath);
+      const skill = page.getByRole('region', {
+        name: 'Give your coding agent the project context.',
+        exact: true,
+      });
+      await expect(skill.locator('iframe')).toHaveCount(0);
+      for (const [triggerLabel, title, videoId] of [
+        ['Watch installation walkthrough', 'moldea | Install and use the skill', 'dwl_RFm95Tg'],
+        [
+          'Watch context-alignment workflow',
+          'moldea | Keeping project context and code aligned',
+          'PyZiQXWS1ZE',
+        ],
+      ] as const) {
+        const trigger = skill.getByRole('button', { name: triggerLabel, exact: true });
+        await expect(trigger.locator('svg')).toBeVisible();
+        await trigger.focus();
+        await expect(trigger).toBeFocused();
+        await expect(trigger).not.toHaveCSS('box-shadow', 'none');
+        await page.keyboard.press('Enter');
+        const dialog = page.getByRole('dialog', { name: title, exact: true });
+        await expect(dialog).toBeVisible();
+        await expect(dialog.locator('iframe')).toHaveAttribute(
+          'src',
+          `https://www.youtube-nocookie.com/embed/${videoId}`,
+        );
+        await expect(dialog.getByRole('link', { name: /Watch on YouTube/u })).toHaveCount(0);
+        expect(
+          (
+            await new AxeBuilder({ page })
+              .include(`#${await dialog.getAttribute('id')}`)
+              .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+              .analyze()
+          ).violations,
+        ).toStrictEqual([]);
+        await page.keyboard.press('Escape');
+        await expect(dialog).not.toBeVisible();
+        await expect(dialog.locator('iframe')).toHaveCount(0);
+        await expect(trigger).toBeFocused();
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+      expect(pageErrors).toStrictEqual([]);
+    });
   }
 }
 
@@ -245,6 +306,19 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
     ).toBeVisible();
     await expect(assurance).toContainText('exceeding the authority set by the project rule');
     await expect(assurance.locator('[data-inspection-output]')).toHaveCount(0);
+    for (const [title, videoId] of [
+      ['moldea | Install and use the skill', 'dwl_RFm95Tg'],
+      ['moldea | Keeping project context and code aligned', 'PyZiQXWS1ZE'],
+    ] as const) {
+      const videoLink = page.getByRole('link', {
+        name: `${title}: Watch on YouTube (opens in a new tab)`,
+        exact: true,
+      });
+      await expect(videoLink).toBeVisible();
+      await expect(videoLink).toHaveAttribute('href', `https://www.youtube.com/watch?v=${videoId}`);
+      await expect(videoLink).toHaveAttribute('target', '_blank');
+    }
+    await expect(page.locator('iframe')).toHaveCount(0);
     await page
       .locator('#adoption-guide')
       .getByRole('link', { name: 'CLI overview and installation guide', exact: true })

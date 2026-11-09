@@ -6,6 +6,8 @@ import Dialog from '../dialog/dialog.component.astro';
 import YouTubeVideo from '../youtube-video/youtube-video.component.astro';
 import { resolveYouTubeVideo } from '../../youtube-video/index.js';
 
+import YouTubeIcon from './icon/youtube-icon.component.astro';
+
 /**
  * Defers a YouTube player until its dialog opens and removes it when dismissal begins.
  * @throws
@@ -57,6 +59,12 @@ const video = resolveYouTubeVideo(videoUrl, title, autoPlay);
     size="large"
     isOverlayCloseEnabled={isOverlayCloseEnabled}
   >
+    <YouTubeIcon slot="trigger-icon" />
+    <span
+      slot="trigger"
+      class="inline-flex items-center gap-2"
+      ><YouTubeIcon />{dialogProps.triggerLabel}</span
+    >
     <div data-youtube-dialog-player></div>
     <template data-youtube-dialog-template>
       <YouTubeVideo
