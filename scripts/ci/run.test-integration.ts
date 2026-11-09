@@ -210,13 +210,13 @@ test('full verification includes root integration and propagates a selected depe
 });
 
 test.each(['checks', 'test'])(
-  'Website UI release %s runs complete consumer tests without unrelated runtime tasks',
+  'explicit full Website UI release %s runs complete consumer tests without unrelated runtime tasks',
   async (stage) => {
     await writeFile(
       join(directory, 'projects/website-ui/task.mjs'),
       `import {appendFileSync,writeFileSync} from 'node:fs'; const task=process.argv[2]; appendFileSync('../../execution.log','@moldea.ai/website-ui:'+task+'\\n'); if(task.startsWith('test:'))appendFileSync('../../selection.log',process.env.MOLDEA_TEST_SUITE+'\\n'); if(task==='build')writeFileSync('build.out','built');`,
     );
-    const result = run(planFor([], undefined, 'essential', true), stage);
+    const result = run(planFor([], undefined, 'full', true), stage);
     expect(result.status, result.stdout + result.stderr).toBe(0);
     const log = await readFile(join(directory, 'execution.log'), 'utf8');
     for (const name of ['@moldea.ai/website-ui', '@moldea.ai/packages-website']) {
@@ -229,6 +229,30 @@ test.each(['checks', 'test'])(
     expect(
       new Set((await readFile(join(directory, 'selection.log'), 'utf8')).trim().split('\n')),
     ).toStrictEqual(new Set(['full']));
+  },
+);
+
+test.each(['checks', 'test'])(
+  'essential Website UI release %s omits presentation tests while retaining package checks',
+  async (stage) => {
+    const plan = planFor([], undefined, 'essential', true);
+    expect(plan.testSuite).toBe('essential');
+    const result = run(plan, stage);
+    expect(result.status, result.stdout + result.stderr).toBe(0);
+    const log = await readFile(join(directory, 'execution.log'), 'utf8');
+    for (const name of ['@moldea.ai/website-ui', '@moldea.ai/packages-website']) {
+      expect(log).toContain(`${name}:build`);
+      if (stage === 'checks') {
+        expect(log).toContain(`${name}:lint`);
+        expect(log).toContain(`${name}:typecheck`);
+      }
+    }
+    expect(log).toContain('@moldea.ai/website-ui:test:unit');
+    expect(log).not.toContain('@moldea.ai/website-ui:test:integration');
+    expect(log).not.toContain('@moldea.ai/packages-website:test:');
+    expect(log).not.toContain('@moldea.ai/cli:test:');
+    expect(log).not.toContain('test:root:integration');
+    expect(log).not.toContain('website:prepare');
   },
 );
 
