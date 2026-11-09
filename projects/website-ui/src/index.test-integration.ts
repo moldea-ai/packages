@@ -268,7 +268,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.7.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.8.0' });
     expect(readFileSync(path.join(projectDirectory, 'README.md'), 'utf8')).toContain(
       `pnpm add @moldea.ai/website-ui@${packResult.version}`,
     );
@@ -719,6 +719,8 @@ describe('published website UI package', () => {
         '<main class="p-3"><h1>Video dialogs</h1><YouTubeVideoDialog {...videoProps} />',
         '<ActionButton data-dialog-open="video-one" aria-controls="video-one">External installation opener</ActionButton>',
         '<YouTubeVideoDialog id="video-two" videoUrl="https://youtu.be/dQw4w9WgXcQ" title="   " triggerLabel="Watch second video" autoPlay isOverlayCloseEnabled={false} />',
+        '<YouTubeVideoDialog id="video-poster" videoUrl="https://youtu.be/M7lc1UVf-VE" title="Poster tutorial" triggerLabel="Open poster video"><img slot="poster" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" width="1600" height="900" alt="" class="h-full w-full object-contain" /></YouTubeVideoDialog>',
+        '<YouTubeVideoDialog id="video-poster-auto" videoUrl="https://youtu.be/M7lc1UVf-VE" title="Autoplay poster tutorial" triggerLabel="Open autoplay poster video" autoPlay><img slot="poster" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" width="1600" height="900" alt="" class="h-full w-full object-contain" /></YouTubeVideoDialog>',
         '<Dialog id="generic-session" title="Generic session" triggerLabel="Open generic dialog" fallbackOpen><p>Generic dialog content</p></Dialog>',
         '<a href="/runtimes/">Runtime page</a></main></body></html>',
       ].join('\n'),
@@ -2149,7 +2151,7 @@ describe('published website UI package', () => {
               id: 'video-one',
               type: 'website-ui:dialog-open',
               isOpen: true,
-              frames: 1,
+              frames: reducedMotion === 'reduce' ? 1 : 0,
               bubbles: true,
               cancelable: false,
             },
@@ -2163,7 +2165,7 @@ describe('published website UI package', () => {
             },
           ]);
           await opener.click();
-          expect(await dialog.locator('iframe').count()).toBe(1);
+          await expect.poll(() => dialog.locator('iframe').count()).toBe(1);
           expect(await dialog.locator('[data-old-session]').count()).toBe(0);
           await page.keyboard.press('Escape');
           await page.waitForFunction(
@@ -2176,7 +2178,7 @@ describe('published website UI package', () => {
             exact: true,
           });
           await external.click();
-          expect(await dialog.locator('iframe').count()).toBe(1);
+          await expect.poll(() => dialog.locator('iframe').count()).toBe(1);
           expect(
             await dialog.evaluate((node) => {
               (node as HTMLDialogElement).close();
@@ -2215,6 +2217,7 @@ describe('published website UI package', () => {
           );
           if (width === 1440 && theme === 'light' && reducedMotion === 'no-preference') {
             await opener.click();
+            await expect.poll(() => dialog.locator('iframe').count()).toBe(1);
             expect(
               await dialog.evaluate((node) => {
                 const previous = node.querySelector('iframe');
@@ -2224,9 +2227,13 @@ describe('published website UI package', () => {
                     '[aria-controls="video-one"][data-dialog-trigger]',
                   )!
                   .click();
-                return previous !== node.querySelector('iframe');
+                return {
+                  hadPrevious: previous !== null,
+                  isPreviousConnected: previous?.isConnected,
+                  frames: node.querySelectorAll('iframe').length,
+                };
               }),
-            ).toBe(true);
+            ).toStrictEqual({ hadPrevious: true, isPreviousConnected: false, frames: 0 });
             await dialog
               .getByTitle('Installation "<sample>"', { exact: true })
               .contentFrame()
@@ -2241,7 +2248,7 @@ describe('published website UI package', () => {
                 .click();
             });
             expect(await page.locator('#video-one iframe').count()).toBe(1);
-            expect(await page.locator('#video-two iframe').count()).toBe(1);
+            await expect.poll(() => page.locator('#video-two iframe').count()).toBe(1);
             await page.keyboard.press('Escape');
             await page.waitForFunction(
               () => !(document.getElementById('video-two') as HTMLDialogElement).open,
@@ -2268,7 +2275,7 @@ describe('published website UI package', () => {
           expect(await page.locator('iframe').count()).toBe(0);
           expect(requests.length).toBe(requestsBeforeReturn);
           await opener.click();
-          expect(await dialog.locator('iframe').count()).toBe(1);
+          await expect.poll(() => dialog.locator('iframe').count()).toBe(1);
           await page.keyboard.press('Escape');
           await page.waitForFunction(
             () => !(document.getElementById('video-one') as HTMLDialogElement).open,
@@ -2317,6 +2324,92 @@ describe('published website UI package', () => {
               cancelable: false,
             },
           ]);
+          const posterOpener = page.getByRole('button', {
+            name: 'Open poster video',
+            exact: true,
+          });
+          const requestsBeforePoster = requests.length;
+          await posterOpener.click();
+          const posterDialog = page.getByRole('dialog', { name: 'Poster tutorial', exact: true });
+          await posterDialog.evaluate(async (node) => {
+            await Promise.all(node.getAnimations().map((animation) => animation.finished));
+          });
+          expect(await posterDialog.locator('iframe').count()).toBe(0);
+          expect(requests.length).toBe(requestsBeforePoster);
+          expect(await posterDialog.locator('img').isVisible()).toBe(true);
+          expect(await posterDialog.locator('img').getAttribute('alt')).toBe('');
+          const posterAccessibility = await new AxeBuilder({ page })
+            .include('#video-poster')
+            .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+            .analyze();
+          expect(posterAccessibility.violations).toStrictEqual([]);
+          const play = posterDialog.getByRole('button', {
+            name: 'Play Poster tutorial',
+            exact: true,
+          });
+          const restingShadow = await play.evaluate((node) => getComputedStyle(node).boxShadow);
+          await page.keyboard.press('Tab');
+          expect(await play.evaluate((node) => node === document.activeElement)).toBe(true);
+          expect(await play.evaluate((node) => getComputedStyle(node).boxShadow)).not.toBe(
+            restingShadow,
+          );
+          await page.keyboard.press('Enter');
+          const posterFrame = posterDialog.getByTitle('Poster tutorial', { exact: true });
+          await posterFrame
+            .contentFrame()
+            .getByRole('button', { name: 'Play fixture', exact: true })
+            .waitFor({ state: 'visible' });
+          expect(await posterFrame.getAttribute('src')).toBe(
+            'https://www.youtube-nocookie.com/embed/M7lc1UVf-VE?autoplay=1',
+          );
+          expect(await posterDialog.evaluate((node) => node === document.activeElement)).toBe(true);
+          expect(await play.count()).toBe(0);
+          await page.keyboard.press('Escape');
+          await page.waitForFunction(
+            () => !(document.getElementById('video-poster') as HTMLDialogElement).open,
+          );
+          expect(await posterDialog.locator('iframe').count()).toBe(0);
+          expect(await posterOpener.evaluate((node) => node === document.activeElement)).toBe(true);
+          const requestsBeforePosterReopen = requests.length;
+          await posterOpener.click();
+          await play.waitFor({ state: 'visible' });
+          expect(await posterDialog.locator('iframe').count()).toBe(0);
+          expect(requests.length).toBe(requestsBeforePosterReopen);
+          await page.keyboard.press('Escape');
+          await page.waitForFunction(
+            () => !(document.getElementById('video-poster') as HTMLDialogElement).open,
+          );
+          await page
+            .getByRole('button', { name: 'Open autoplay poster video', exact: true })
+            .click();
+          const autoplayPoster = page.getByRole('dialog', {
+            name: 'Autoplay poster tutorial',
+            exact: true,
+          });
+          const autoplayFrame = autoplayPoster.getByTitle('Autoplay poster tutorial', {
+            exact: true,
+          });
+          await autoplayFrame
+            .contentFrame()
+            .getByRole('button', { name: 'Play fixture', exact: true })
+            .waitFor({ state: 'visible' });
+          expect(await autoplayFrame.getAttribute('src')).toBe(
+            'https://www.youtube-nocookie.com/embed/M7lc1UVf-VE?autoplay=1',
+          );
+          expect(
+            await autoplayPoster
+              .getByRole('button', { name: 'Close dialog', exact: true })
+              .evaluate((node) => node === document.activeElement),
+          ).toBe(true);
+          expect(
+            await autoplayPoster
+              .getByRole('button', { name: 'Play Autoplay poster tutorial', exact: true })
+              .count(),
+          ).toBe(0);
+          await page.keyboard.press('Escape');
+          await page.waitForFunction(
+            () => !(document.getElementById('video-poster-auto') as HTMLDialogElement).open,
+          );
         } finally {
           await context.close();
         }

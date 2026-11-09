@@ -41,6 +41,7 @@
     "jg-process": "1.6.2",
     "jg-utilities": "1.7.2",
     "parse5": "8.0.1",
+    "sharp": "0.35.4",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
     "vite": "8.2.1",
