@@ -93,4 +93,6 @@ Core owns these stable exception contracts:
 
 Busy and timeout failures are retryable; process failures are not. Timeout does not establish an input or heap limit. Verified worker heap exhaustion uses `RESOURCE_LIMIT_EXCEEDED` with the existing message `A Core resource limit was exceeded.`, `limit: maxAnalysisHeapBytes`, the startup-reported V8 heap maximum, unknown `observedUsage: null`, and `nextAction: review-inspection-capacity`. It carries no inferred source path. Logical resource refusals retain their measured or projected usage and `reduce-input-or-increase-limit` action.
 
+Node inspection admission reports `INSPECTION_BUSY` when the shared active count has reached the current call's `maxConcurrentInspections` (default `1`). A supplied maximum that is not a positive safe integer reports `INVALID_ARGUMENT`, including explicit `null` from JavaScript callers. See [Node inspection concurrency](/packages/core/repository-inspection/#isolated-node-inspection).
+
 Fixed `maxInspectionMessageBytes` and `maxReaderRequests` transport refusals carry observed usage and `nextAction: null`; these limits cannot be raised by a caller.

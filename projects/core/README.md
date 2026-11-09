@@ -19,6 +19,14 @@ pnpm add @moldea.ai/core@9 @moldea.ai/repository@4
 - `@moldea.ai/core/scope` exposes the standalone manifest-only relationship matcher without source analysis or TypeScript.
 - `@moldea.ai/core/node` exposes supervised Node inspection with asynchronous paging and disposal. It runs fixed Core code and never imports project application code. Its frozen `NODE_INSPECTION_PROFILE` reports the fixed heap, lifetime, bridge and transport settings for authenticated consumer state; it does not configure them. Each inspection handle separately reports the runtime's actual V8 heap limit.
 
+### Node inspection concurrency
+
+`createNodeProjectInspection({ repository, maxConcurrentInspections: 2 })` allows up to two active inspections in the calling process. The optional maximum defaults to `1` and must be a positive safe integer; invalid values reject with `INVALID_ARGUMENT`. A call rejects with `INSPECTION_BUSY` when the shared active count has reached that call's maximum.
+
+Every caller in a process is expected to pass the same value. Each admitted call's value is its effective admission limit, and it does not configure later calls. Prepared handles retain their slots until disposal; failure and cancellation release slots only after the child closes and real reader work settles. Always await `dispose()` in `finally` before publishing success.
+
+One inspection owns one child process and one analysis worker with its own fixed 512 MiB old-generation and 24 MiB young-generation heap grants, plus a 48 MiB logical transport reservation. These are separate controls, not a total-memory guarantee; the handle reports the actual V8 heap maximum. Size concurrency against aggregate process memory, CPU, and reader/provider load. The default remains one inspection at a time.
+
 ## Text and document parsing
 
 ```typescript

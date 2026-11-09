@@ -12,6 +12,8 @@ export interface INodeProjectInspectionInput {
   repository: IRepositoryReader;
   instructions?: IRepositoryReader;
   limits?: Partial<ICoreResourceLimits>;
+  // defaults to 1; each call checks the shared process count, so callers should use the same value
+  maxConcurrentInspections?: number;
   signal?: AbortSignal;
   deadline?: number;
 }

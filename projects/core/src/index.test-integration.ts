@@ -190,7 +190,7 @@ describe('published Core package artifacts', () => {
     ) as { readonly dependencies?: Readonly<Record<string, string>> };
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '9.0.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '9.1.0' });
     for (const entryName of [
       'index',
       'format',
@@ -418,14 +418,22 @@ describe('published Core package artifacts', () => {
           '--input-type=module',
           '--eval',
           [
+            "import assert from 'node:assert/strict';",
             "import { createCore } from '@moldea.ai/core';",
             "import { parseRepositoryPath } from '@moldea.ai/repository';",
             "import { createMemoryRepositoryReader } from '@moldea.ai/repository/memory';",
             "import { createNodeProjectInspection } from '@moldea.ai/core/node';",
-            'const isolated = await createNodeProjectInspection({ repository: createMemoryRepositoryReader([]) });',
+            'const handles = []; let isolatedResult;',
+            'const inspect = async input => { const handle = await createNodeProjectInspection(input); handles.push(handle); return handle; };',
+            'try {',
+            'const isolated = await inspect({ repository: createMemoryRepositoryReader([]) });',
             "const page = await isolated.readPage({ maxItems: 1, view: 'diagnostics' });",
-            'const isolatedResult = { hasHeap: isolated.maxAnalysisHeapBytes > 0, hasDiagnostics: page.page.records.length > 0 };',
+            'isolatedResult = { hasHeap: isolated.maxAnalysisHeapBytes > 0, hasDiagnostics: page.page.records.length > 0 };',
             'await isolated.dispose(); await isolated.dispose();',
+            'for (let index = 0; index < 2; index++) await inspect({ repository: createMemoryRepositoryReader([]), maxConcurrentInspections: 2 });',
+            "await assert.rejects(inspect({ repository: createMemoryRepositoryReader([]), maxConcurrentInspections: 2 }), { message: 'Project inspection capacity is busy. Try again shortly.' });",
+            "for (const handle of handles.slice(1)) assert.deepStrictEqual(await handle.readPage({ maxItems: 1, view: 'diagnostics' }), page);",
+            '} finally { await Promise.all(handles.map(handle => handle.dispose())); }',
             'const core = createCore();',
             "const manifest = await core.parseManifest({ content: 'version: 1\\n', path: parseRepositoryPath('/moldea/moldea.yaml') });",
             "const scope = await core.matchManifestScope({ manifest: { content: 'version: 1\\n', path: parseRepositoryPath('/moldea/moldea.yaml') }, paths: ['/src/index.ts'] });",

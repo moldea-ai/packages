@@ -31,7 +31,7 @@ import type {
 } from './types.js';
 import type { IProjectInspectionPageResult } from '../contracts/index.js';
 
-let isInspectionActive = false;
+let activeInspectionCount = 0;
 
 /** Stores one completion without an unhandled rejection before its owner begins awaiting it. */
 const createCompletion = <T>(): PromiseWithResolvers<T> => {
@@ -157,8 +157,15 @@ export const createNodeProjectInspection = async (
       code: 'INVALID_ARGUMENT',
       operation: 'create-project-inspection',
     });
+  const configuredMaximum = input.maxConcurrentInspections;
+  const maxConcurrentInspections = configuredMaximum === undefined ? 1 : configuredMaximum;
+  if (!Number.isSafeInteger(maxConcurrentInspections) || maxConcurrentInspections < 1)
+    throw new CoreOperationException({
+      code: 'INVALID_ARGUMENT',
+      operation: 'create-project-inspection',
+    });
   if (signal?.aborted === true) throw aborted(signal.reason);
-  if (isInspectionActive)
+  if (activeInspectionCount >= maxConcurrentInspections)
     throw new CoreOperationException({
       code: 'INSPECTION_BUSY',
       operation: 'create-project-inspection',
@@ -178,7 +185,7 @@ export const createNodeProjectInspection = async (
       code: 'INSPECTION_TIMEOUT',
       operation: 'create-project-inspection',
     });
-  isInspectionActive = true;
+  activeInspectionCount++;
   const controller = new AbortController();
   const attemptId = randomBytes(16).toString('hex');
   const prepared = createCompletion<INodeInspectionMetadata>();
@@ -203,7 +210,7 @@ export const createNodeProjectInspection = async (
         stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
       });
     } catch (cause) {
-      isInspectionActive = false;
+      activeInspectionCount--;
       throw createInspectionProcessFailure(cause);
     }
   })();
@@ -239,7 +246,7 @@ export const createNodeProjectInspection = async (
       child.removeAllListeners('message');
       child.removeAllListeners('error');
       child.stderr?.removeAllListeners('data');
-      isInspectionActive = false;
+      activeInspectionCount--;
     })();
     return cleanupPromise;
   };
