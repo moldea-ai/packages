@@ -40,6 +40,82 @@ const textFile = (path: string, content: string): IMemoryRepositoryEntry => ({
 });
 
 describe('coding-agent integration through Core', () => {
+  test('preserves CR-only line ending normalization for the installed asset', async () => {
+    const entries = INTEGRATION_TEST_ENTRIES.map((entry) =>
+      entry.path === `${skillPath}/assets/managed-agents-block.md`
+        ? { ...entry, content: INTEGRATION_TEST_TEMPLATE.replaceAll('\n', '\r') }
+        : entry,
+    );
+    const result = await createCore().validateProject({ repository: createRepository(entries) });
+    expect(result.diagnostics).toStrictEqual([]);
+  });
+
+  test.each([
+    ['no final newline', block.slice(0, -1)],
+    ['mixed line endings', block.replace('\n', '\r\n')],
+    [
+      'boundary blank lines',
+      block
+        .replace('<!-- moldea:start -->\n', '<!-- moldea:start -->\n\n\n')
+        .replace('<!-- moldea:end -->', '\n\n<!-- moldea:end -->'),
+    ],
+    [
+      'marker padding',
+      block
+        .replace('<!-- moldea:start -->', '<!-- moldea:start --> \t')
+        .replace('<!-- moldea:end -->', '<!-- moldea:end -->\t '),
+    ],
+    [
+      'long boundary blank lines',
+      block
+        .replace('<!-- moldea:start -->\n', '<!-- moldea:start -->' + '\n'.repeat(8192))
+        .replace('<!-- moldea:end -->', '\n'.repeat(8192) + '<!-- moldea:end -->'),
+    ],
+    [
+      'combined formatting',
+      block
+        .replaceAll('\n', '\r\n')
+        .replace('<!-- moldea:start -->\r\n', '<!-- moldea:start --> \t\r\n\n')
+        .replace('\r\n<!-- moldea:end -->\r\n', '\n\r\n<!-- moldea:end -->\t'),
+    ],
+  ])('accepts cosmetic managed-block differences: %s', async (_description, content) => {
+    const entries = INTEGRATION_TEST_ENTRIES.map((entry) =>
+      entry.path === agentsPath
+        ? { ...entry, content: '\uFEFF# Host instructions\n\n' + content }
+        : entry,
+    );
+    const result = await createCore().validateProject({ repository: createRepository(entries) });
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toStrictEqual([]);
+  });
+
+  test.each([
+    block.replace('--repository', '--changed'),
+    block.replace(' --repository', '  --repository'),
+    block.replace(' --repository', '\n--repository'),
+    block.replace(' --repository', '\n'.repeat(8192) + '--repository'),
+  ])('retains drift detection for instruction changes: %s', async (content) => {
+    const entries = INTEGRATION_TEST_ENTRIES.map((entry) =>
+      entry.path === agentsPath ? { ...entry, content } : entry,
+    );
+    const result = await createCore().validateProject({ repository: createRepository(entries) });
+    expect(result.diagnostics).toMatchObject([{ code: 'MOLDEA_INTEGRATION_BLOCK_STALE' }]);
+  });
+
+  test('rejects duplicate markers with different padding', async () => {
+    const content = block.replace(
+      '<!-- moldea:end -->',
+      '<!-- moldea:start --> \t\n<!-- moldea:end -->',
+    );
+    const entries = INTEGRATION_TEST_ENTRIES.map((entry) =>
+      entry.path === agentsPath ? { ...entry, content } : entry,
+    );
+    const result = await createCore().validateProject({ repository: createRepository(entries) });
+    expect(result.diagnostics).toMatchObject([
+      { code: 'MOLDEA_INTEGRATION_BLOCK_MISSING', details: { reason: 'block-invalid' } },
+    ]);
+  });
+
   test('reports a symlinked AGENTS.md that leaves the repository with its reason', async () => {
     const result = await createCore().validateProject({
       repository: createRepository([link(agentsPath, '../shared/AGENTS.md')]),

@@ -8,7 +8,7 @@ const MARKERS = { start: '<!-- moldea:start -->', end: '<!-- moldea:end -->' };
 
 /**
  * Finds the managed block's region with the skill writer's region semantics: one start and one end
- * marker, each on its own line, the start first.
+ * marker, each on its own line with optional trailing spaces or tabs, the start first.
  * @param text The instruction document.
  * @returns The region, or why the document has none.
  */
@@ -16,11 +16,40 @@ export const parseManagedIntegrationRegion = (
   text: string,
 ): IMarkedRegion | 'block-missing' | 'block-invalid' => {
   try {
-    return findMarkedRegion(text, MARKERS) ?? 'block-missing';
+    const region = findMarkedRegion(
+      text.replace(/(<!-- moldea:(?:start|end) -->)[ \t]+(?=\r?$)/gmu, '$1'),
+      MARKERS,
+    );
+    if (region === null) return 'block-missing';
+    // validation used normalized marker lines; expose offsets into the original document
+    const start = text.indexOf(MARKERS.start);
+    const closingLineBreak = text.indexOf('\n', text.indexOf(MARKERS.end));
+    return {
+      start,
+      end: closingLineBreak === -1 ? text.length : closingLineBreak + 1,
+      lineEnding: region.lineEnding,
+    };
   } catch (error) {
     if (hasErrorCode(error, ERRORS.INVALID_MARKED_REGION)) return 'block-invalid';
     throw error;
   }
+};
+
+/** Removes only managed-envelope formatting differences, preserving all instruction content. */
+export const normalizeManagedIntegrationBlock = (text: string): string => {
+  const normalized = text
+    .replaceAll('\r\n', '\n')
+    .replace(/(<!-- moldea:(?:start|end) -->)[ \t]+(?=\n|$)/gu, '$1');
+  if (
+    !normalized.startsWith(`${MARKERS.start}\n`) ||
+    !(normalized.endsWith(MARKERS.end) || normalized.endsWith(`${MARKERS.end}\n`))
+  )
+    return normalized;
+  let start = MARKERS.start.length;
+  let end = normalized.lastIndexOf(MARKERS.end);
+  while (start < end && normalized[start] === '\n') start++;
+  while (end > start && normalized[end - 1] === '\n') end--;
+  return `${MARKERS.start}\n${normalized.slice(start, end)}\n${MARKERS.end}`;
 };
 
 /**

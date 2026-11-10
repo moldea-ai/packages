@@ -4,7 +4,11 @@ import { parseRepositoryPath, resolveRepositoryLink } from '@moldea.ai/repositor
 
 import type { IRetainedSource } from '../retained-memory/index.js';
 
-import { parseIntegrationBlock, parseManagedIntegrationRegion } from './parser.js';
+import {
+  normalizeManagedIntegrationBlock,
+  parseIntegrationBlock,
+  parseManagedIntegrationRegion,
+} from './parser.js';
 import type {
   IAgentsInstructionTarget,
   IIntegrationInspectionContext,
@@ -109,11 +113,13 @@ const checkAgentsDocument = async (
       const renderedReservation = (asset.text.length + occurrences * skillPath.length) * 8;
       ledger.reserve(renderedReservation);
       try {
-        const expected = asset.text
-          .replaceAll('{{skill-path}}', skillPath)
-          .replace(/\r\n?/g, '\n')
-          .replaceAll('\n', region.lineEnding);
-        if (document.text.slice(region.start, region.end) !== expected)
+        const expected = normalizeManagedIntegrationBlock(
+          asset.text.replaceAll('{{skill-path}}', skillPath).replace(/\r\n?/gu, '\n'),
+        );
+        if (
+          normalizeManagedIntegrationBlock(document.text.slice(region.start, region.end)) !==
+          expected
+        )
           return report('MOLDEA_INTEGRATION_BLOCK_STALE', { referencedPath: `/${skillPath}` });
       } finally {
         ledger.release(renderedReservation);

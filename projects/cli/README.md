@@ -39,6 +39,8 @@ The executable derives composition from its installed manifest, resolved foundat
 
 The executable performs no network requests, telemetry, repository writes, configured Git content transformations, temporary-index operations or object-writing Git commands. Repository commands use read-only Git and no-follow filesystem observations within at most three complete snapshot attempts. Help, version and usage failures skip the installation preflight. The preflight compares installed package metadata; `composition` does not create an inspection worker.
 
+Managed-block comparison tolerates LF/CRLF differences, an optional final line break, empty lines immediately inside the markers, and spaces or tabs after marker comments. It preserves exact instruction text and internal whitespace; duplicate, reversed, missing, or otherwise malformed markers still produce diagnostics.
+
 ## Runtime support
 
 The consumer runtime range is:
