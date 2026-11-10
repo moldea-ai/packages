@@ -7,7 +7,7 @@ This repository develops the open-source `moldea` packages, private shared imple
 Development requires Node.js `24.15.0` or newer within Node.js 24 and pnpm `11.9.0`.
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm format:check
 pnpm lint
 pnpm typecheck
