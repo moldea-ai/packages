@@ -90,11 +90,15 @@ Every diagnostic has `severity`, `group`, and stable `source: 'core'`. The group
 
 Managed-block comparison tolerates LF/CRLF differences, an optional final line break, empty lines immediately inside the markers, and spaces or tabs after marker comments. It preserves exact instruction text and internal whitespace; duplicate, reversed, missing, or otherwise malformed markers still produce diagnostics.
 
+Core 9.2 supplies normalized scalar-based source ranges for pointer-addressed manifest and decision YAML diagnostics, including cross-file findings and unmatched acceptances. Missing members point to their nearest existing ancestor; existing explicit ranges stay unchanged. See [diagnostic locations](docs/diagnostics.md) for member spans and unavailable-source behavior.
+
 ## Resource and trust boundaries
 
 Core uses independent limits for distinct entries, total bytes read, per-file bytes, manifest bytes, logical retained bytes, diagnostics, and coverage records. The default logical retained-memory ceiling is 512 MiB. Before reading a supported source for export analysis, Core checks `maxFileBytes`, confirms read-buffer headroom, and reserves `65536 + sourceBytes * (8 + 512)` bytes for text and syntax nodes. An oversized source or reservation miss records `resource-limit` without a source read; a subsequent failed read, cancellation, or operation budget failure rejects the whole operation. Each distinct source is parsed at most once per operation. Source buffers and syntax reservations are released after analysis; only export names remain in the inventory cache. Core executes no repository code, follows instruction links only inside the snapshot, receives no host path or source credential, and returns logical paths only.
 
 Logical `RESOURCE_LIMIT_EXCEEDED` exceptions identify the exceeded limit, its configured maximum, the observed or projected usage, and `reduce-input-or-increase-limit`. Verified isolated-worker heap exhaustion uses `review-inspection-capacity` with unknown observed usage. Fixed transport limits have no next action. Core refuses an operation before allocating retained state beyond the applicable ceiling.
+
+Private manifest and decision YAML trees and their pointer-lookup storage also reserve logical retained memory until final locations are resolved. These reservations are released on success or failure; they do not remain in prepared inspection handles.
 
 ## Development
 

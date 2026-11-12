@@ -14,6 +14,7 @@ import type {
 } from '../diagnostics/index.js';
 import { CoreOperationException, type ICoreOperation } from '../exceptions/index.js';
 import { createNullPrototypeRecord } from '../immutable/index.js';
+import { locateYamlPointer, type IYamlNode } from '../yaml/index.js';
 
 const CORE_DIAGNOSTIC_MESSAGES: Record<ICoreDiagnosticCode, string> = {
   MOLDEA_AGENT_DESCRIPTION_INVALID: 'The agent description is invalid.',
@@ -455,6 +456,24 @@ export const normalizeDiagnostics = (
   }
 
   return deepFreeze([...diagnostics.values()].sort(compareDiagnostics));
+};
+
+/** Adds available YAML locations while preserving existing ranges and warning acceptance fields. */
+export const locateDiagnosticRanges = (
+  diagnostics: readonly ICoreDiagnostic[],
+  roots: ReadonlyMap<IRepositoryPath, IYamlNode>,
+): readonly ICoreDiagnostic[] => {
+  return normalizeDiagnostics(
+    diagnostics.map((diagnostic) => {
+      if (diagnostic.range !== null || diagnostic.path === null || diagnostic.pointer === null) {
+        return diagnostic;
+      }
+      const root = roots.get(diagnostic.path);
+      if (root === undefined) return diagnostic;
+      const range = locateYamlPointer(root, diagnostic.pointer);
+      return range === null ? diagnostic : { ...diagnostic, range };
+    }),
+  );
 };
 
 /** Counts the complete normalized diagnostic result by severity once. */

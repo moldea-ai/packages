@@ -1,6 +1,10 @@
 import { deepFreeze } from 'jg-utilities';
 
-import { parseRepositoryPath, type IRepositoryEntry } from '@moldea.ai/repository';
+import {
+  parseRepositoryPath,
+  type IRepositoryEntry,
+  type IRepositoryPath,
+} from '@moldea.ai/repository';
 
 import { inspectAgentAssets, type IInspectedAgentAssets } from '../agent-assets/index.js';
 import { discoverCanonicalAssets } from '../canonical-discovery/index.js';
@@ -9,6 +13,7 @@ import type { IIndexedManifest, IMoldeaProjectIndex } from '../contracts/index.j
 import { readDecisionGraph } from '../decision-graph/index.js';
 import {
   createCoreDiagnosticCollector,
+  locateDiagnosticRanges,
   type ICoreDiagnosticCollector,
 } from '../diagnostic-utilities/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
@@ -25,6 +30,8 @@ import { createProjectIndex } from '../project-index/index.js';
 import type { IRepositoryInspectionSession } from '../repository-inspection-session/index.js';
 import { validateRepositoryReferences } from '../repository-reference-validation/index.js';
 import { readRuntimeGuidance } from '../runtime-guidance/index.js';
+import { getRetainedMemory } from '../retained-memory/index.js';
+import { measureYamlRetainedBytes, type IYamlNode } from '../yaml/index.js';
 
 const MOLDEA_ROOT = parseRepositoryPath('/moldea');
 const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
@@ -81,181 +88,208 @@ export const inspectUniversalProject = async (
   const coverage: IBindingCoverage[] = [];
   const collector = createCoreDiagnosticCollector(options.limits, 'validate-project');
   const operationOptions = signal === undefined ? undefined : { signal };
-  const moldeaRoot = await session.reader.getEntry(MOLDEA_ROOT, operationOptions);
-  let manifestEntry: IRepositoryEntry | null = null;
-  let projectEntry: IRepositoryEntry | null = null;
+  const yamlRoots = new Map<IRepositoryPath, IYamlNode>();
+  const memory = getRetainedMemory(session.reader);
+  let retainedYamlBytes = 0;
+  /** Reserves each parsed tree until final cross-file and acceptance locations are resolved. */
+  const retainYamlRoot = (path: IRepositoryPath, root: IYamlNode): void => {
+    const bytes = measureYamlRetainedBytes(root);
+    memory.reserve(bytes);
+    retainedYamlBytes += bytes;
+    yamlRoots.set(path, root);
+  };
 
-  let indexedManifest: IIndexedManifest | null = null;
-  let formatVersion: IRepositoryFormatVersion | null = null;
+  try {
+    const moldeaRoot = await session.reader.getEntry(MOLDEA_ROOT, operationOptions);
+    let manifestEntry: IRepositoryEntry | null = null;
+    let projectEntry: IRepositoryEntry | null = null;
 
-  if (moldeaRoot?.type === 'directory') {
-    manifestEntry = await session.reader.getEntry(MANIFEST_PATH, operationOptions);
+    let indexedManifest: IIndexedManifest | null = null;
+    let formatVersion: IRepositoryFormatVersion | null = null;
 
-    if (manifestEntry?.type === 'file') {
-      const content = await session.reader.readCompleteFile(MANIFEST_PATH, operationOptions);
-      const parsedManifest = await inspectManifestDocument(
-        { content, path: MANIFEST_PATH },
-        options,
-        'validate-project',
-      );
-      formatVersion = parsedManifest.formatVersion;
-      addDiagnostics(collector, parsedManifest.diagnostics);
+    if (moldeaRoot?.type === 'directory') {
+      manifestEntry = await session.reader.getEntry(MANIFEST_PATH, operationOptions);
 
-      if (parsedManifest.asset !== null && parsedManifest.manifest !== null) {
-        indexedManifest = {
-          asset: parsedManifest.asset,
-          value: parsedManifest.manifest,
-        };
+      if (manifestEntry?.type === 'file') {
+        const content = await session.reader.readCompleteFile(MANIFEST_PATH, operationOptions);
+        const parsedManifest = await inspectManifestDocument(
+          { content, path: MANIFEST_PATH },
+          options,
+          'validate-project',
+        );
+        if (parsedManifest.yamlRoot !== null)
+          retainYamlRoot(MANIFEST_PATH, parsedManifest.yamlRoot);
+        formatVersion = parsedManifest.formatVersion;
+        addDiagnostics(collector, parsedManifest.diagnostics);
+
+        if (parsedManifest.asset !== null && parsedManifest.manifest !== null) {
+          indexedManifest = {
+            asset: parsedManifest.asset,
+            value: parsedManifest.manifest,
+          };
+        }
       }
+
+      projectEntry = await session.reader.getEntry(PROJECT_PATH, operationOptions);
     }
 
-    projectEntry = await session.reader.getEntry(PROJECT_PATH, operationOptions);
-  }
-
-  const projectFile = await readProjectFile(
-    session.reader,
-    projectEntry?.type === 'file' ? PROJECT_PATH : null,
-    options,
-    signal,
-  );
-  addDiagnostics(collector, projectFile.diagnostics);
-
-  const discovery = await discoverCanonicalAssets(session.reader, options.limits, signal, {
-    manifest: manifestEntry,
-    moldeaRoot,
-    project: projectEntry,
-  });
-  addDiagnostics(collector, discovery.diagnostics);
-  session.throwIfAborted();
-
-  const projectAssets = await readProjectAssets(
-    session.reader,
-    indexedManifest?.value ?? null,
-    discovery,
-    options,
-    signal,
-    projectFile,
-  );
-  addDiagnostics(collector, projectAssets.diagnostics);
-
-  const runtimeGuidance = await readRuntimeGuidance(
-    session.reader,
-    discovery.inventory.manifest ?? MANIFEST_PATH,
-    indexedManifest?.value ?? null,
-    discovery,
-    options,
-    signal,
-  );
-  addDiagnostics(collector, runtimeGuidance.diagnostics);
-
-  const decisionGraph = await readDecisionGraph(
-    session.reader,
-    discovery.inventory.decisions,
-    options,
-    signal,
-  );
-  addDiagnostics(collector, decisionGraph.diagnostics);
-
-  let agents: readonly IInspectedAgentAssets[] = [];
-  let agentMirrors: readonly IAgentMirrorInspection[] = [];
-
-  if (indexedManifest !== null) {
-    const manifestPath = indexedManifest.asset.path;
-    const agentAssets = await inspectAgentAssets(
+    const projectFile = await readProjectFile(
       session.reader,
-      indexedManifest.value,
+      projectEntry?.type === 'file' ? PROJECT_PATH : null,
+      options,
+      signal,
+    );
+    addDiagnostics(collector, projectFile.diagnostics);
+
+    const discovery = await discoverCanonicalAssets(session.reader, options.limits, signal, {
+      manifest: manifestEntry,
+      moldeaRoot,
+      project: projectEntry,
+    });
+    addDiagnostics(collector, discovery.diagnostics);
+    session.throwIfAborted();
+
+    const projectAssets = await readProjectAssets(
+      session.reader,
+      indexedManifest?.value ?? null,
+      discovery,
+      options,
+      signal,
+      projectFile,
+    );
+    addDiagnostics(collector, projectAssets.diagnostics);
+
+    const runtimeGuidance = await readRuntimeGuidance(
+      session.reader,
+      discovery.inventory.manifest ?? MANIFEST_PATH,
+      indexedManifest?.value ?? null,
       discovery,
       options,
       signal,
     );
-    agents = agentAssets.agents;
-    addDiagnostics(collector, agentAssets.diagnostics);
+    addDiagnostics(collector, runtimeGuidance.diagnostics);
 
-    addDiagnostics(
-      collector,
-      validateManifestRelationships(
-        manifestPath,
-        indexedManifest.value,
-        discovery,
-        decisionGraph.decisions,
-        options.limits,
-      ),
-    );
-
-    addDiagnostics(
-      collector,
-      await validateRepositoryReferences(
-        session.reader,
-        manifestPath,
-        indexedManifest.value,
-        discovery,
-        options.limits,
-        signal,
-        coverage,
-      ),
-    );
-
-    const mirrorInspection = await inspectMirrors(
+    const decisionGraph = await readDecisionGraph(
       session.reader,
-      manifestPath,
-      agents,
+      discovery.inventory.decisions,
       options,
       signal,
+      retainYamlRoot,
     );
-    agentMirrors = mirrorInspection.agentMirrors;
-    addDiagnostics(collector, mirrorInspection.diagnostics);
+    addDiagnostics(collector, decisionGraph.diagnostics);
+
+    let agents: readonly IInspectedAgentAssets[] = [];
+    let agentMirrors: readonly IAgentMirrorInspection[] = [];
+
+    if (indexedManifest !== null) {
+      const manifestPath = indexedManifest.asset.path;
+      const agentAssets = await inspectAgentAssets(
+        session.reader,
+        indexedManifest.value,
+        discovery,
+        options,
+        signal,
+      );
+      agents = agentAssets.agents;
+      addDiagnostics(collector, agentAssets.diagnostics);
+
+      addDiagnostics(
+        collector,
+        validateManifestRelationships(
+          manifestPath,
+          indexedManifest.value,
+          discovery,
+          decisionGraph.decisions,
+          options.limits,
+        ),
+      );
+
+      addDiagnostics(
+        collector,
+        await validateRepositoryReferences(
+          session.reader,
+          manifestPath,
+          indexedManifest.value,
+          discovery,
+          options.limits,
+          signal,
+          coverage,
+        ),
+      );
+
+      const mirrorInspection = await inspectMirrors(
+        session.reader,
+        manifestPath,
+        agents,
+        options,
+        signal,
+      );
+      agentMirrors = mirrorInspection.agentMirrors;
+      addDiagnostics(collector, mirrorInspection.diagnostics);
+    }
+
+    session.throwIfAborted();
+    addDiagnostics(
+      collector,
+      await inspectCodingAgentIntegration(
+        session.reader,
+        session.instructions,
+        options.limits,
+        signal,
+      ),
+    );
+    const patterns =
+      indexedManifest === null
+        ? { completed: false, diagnostics: [] }
+        : await inspectImpactPatterns(
+            session.reader,
+            indexedManifest.value,
+            options.limits,
+            signal,
+          );
+    session.throwIfAborted();
+    addDiagnostics(collector, patterns.diagnostics);
+    const diagnostics = locateDiagnosticRanges(
+      applyWarningAcceptances(
+        collector.finalize(),
+        indexedManifest?.value.acceptedWarnings ?? [],
+        new Set([
+          ...([
+            'MOLDEA_INTEGRATION_BLOCK_MISSING',
+            'MOLDEA_INTEGRATION_SKILL_MISSING',
+            'MOLDEA_INTEGRATION_BLOCK_STALE',
+            'MOLDEA_INTEGRATION_LINK_UNRESOLVED',
+            'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING',
+          ] as const),
+          ...(patterns.completed ? ['MOLDEA_IMPACT_PATTERN_UNMATCHED' as const] : []),
+        ]),
+        options.limits,
+      ),
+      yamlRoots,
+    );
+    const project =
+      !diagnostics.some((diagnostic) => diagnostic.severity === 'error') &&
+      indexedManifest !== null &&
+      projectAssets.project !== null
+        ? createProjectIndex({
+            agentMirrors,
+            agents,
+            context: projectAssets.context,
+            decisions: decisionGraph.decisions,
+            manifest: indexedManifest,
+            project: projectAssets.project,
+            runtimes: runtimeGuidance.runtimes,
+          })
+        : null;
+
+    return deepFreeze({
+      diagnostics,
+      coverage,
+      formatVersion,
+      project,
+    });
+  } finally {
+    yamlRoots.clear();
+    memory.release(retainedYamlBytes);
   }
-
-  session.throwIfAborted();
-  addDiagnostics(
-    collector,
-    await inspectCodingAgentIntegration(
-      session.reader,
-      session.instructions,
-      options.limits,
-      signal,
-    ),
-  );
-  const patterns =
-    indexedManifest === null
-      ? { completed: false, diagnostics: [] }
-      : await inspectImpactPatterns(session.reader, indexedManifest.value, options.limits, signal);
-  session.throwIfAborted();
-  addDiagnostics(collector, patterns.diagnostics);
-  const diagnostics = applyWarningAcceptances(
-    collector.finalize(),
-    indexedManifest?.value.acceptedWarnings ?? [],
-    new Set([
-      ...([
-        'MOLDEA_INTEGRATION_BLOCK_MISSING',
-        'MOLDEA_INTEGRATION_SKILL_MISSING',
-        'MOLDEA_INTEGRATION_BLOCK_STALE',
-        'MOLDEA_INTEGRATION_LINK_UNRESOLVED',
-        'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING',
-      ] as const),
-      ...(patterns.completed ? ['MOLDEA_IMPACT_PATTERN_UNMATCHED' as const] : []),
-    ]),
-    options.limits,
-  );
-  const project =
-    !diagnostics.some((diagnostic) => diagnostic.severity === 'error') &&
-    indexedManifest !== null &&
-    projectAssets.project !== null
-      ? createProjectIndex({
-          agentMirrors,
-          agents,
-          context: projectAssets.context,
-          decisions: decisionGraph.decisions,
-          manifest: indexedManifest,
-          project: projectAssets.project,
-          runtimes: runtimeGuidance.runtimes,
-        })
-      : null;
-
-  return deepFreeze({
-    diagnostics,
-    coverage,
-    formatVersion,
-    project,
-  });
 };

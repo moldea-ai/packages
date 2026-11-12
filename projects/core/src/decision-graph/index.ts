@@ -2,7 +2,7 @@ import { compareCodePoints, deepFreeze } from 'jg-utilities';
 
 import { RepositorySourceException, type IRepositoryPath } from '@moldea.ai/repository';
 
-import { parseDecisionDocument } from '../decision/index.js';
+import { inspectDecisionDocument } from '../decision/index.js';
 import {
   validateDecisionGraph,
   type IDecisionGraphCandidate,
@@ -13,6 +13,7 @@ import { parseDecisionIdFromPath } from '../format-validation/index.js';
 import type { IParsedDecision } from '../format/index.js';
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
+import type { IYamlNode } from '../yaml/index.js';
 
 // internal repository-level decision result retained for later project indexing
 export interface IDecisionGraphResult {
@@ -42,6 +43,7 @@ const sortDecisions = (decisions: readonly IParsedDecision[]): IParsedDecision[]
  * @param paths The decision candidates retained by canonical discovery.
  * @param options The immutable Core limit snapshot.
  * @param signal Optional cancellation forwarded to every repository read.
+ * @param retainYamlRoot Optional inspection owner that admits private roots to its memory ledger.
  * @returns A deeply immutable internal decision set and its deterministic diagnostics.
  * @throws
  * - ENTRY_NOT_FOUND: The requested repository entry was not found.
@@ -60,6 +62,7 @@ export const readDecisionGraph = async (
   paths: readonly IRepositoryPath[],
   options: ICoreOptionsSnapshot,
   signal?: AbortSignal,
+  retainYamlRoot?: (path: IRepositoryPath, root: IYamlNode) => void,
 ): Promise<IDecisionGraphResult> => {
   options = createCoreOperationOptionsSnapshot(options);
   const diagnostics = createCoreDiagnosticCollector(options.limits, 'validate-project');
@@ -74,11 +77,12 @@ export const readDecisionGraph = async (
       return invalidSourceData(path);
     }
 
-    const parsed = await parseDecisionDocument(
+    const parsed = await inspectDecisionDocument(
       { content: content.slice(), path },
       options,
       'validate-project',
     );
+    if (parsed.yamlRoot !== null) retainYamlRoot?.(path, parsed.yamlRoot);
 
     for (const diagnostic of parsed.diagnostics) {
       diagnostics.merge(diagnostic);

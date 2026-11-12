@@ -194,7 +194,18 @@
         "message": "The decision status is invalid.",
         "path": "/moldea/decisions/1786131723456-use-postgresql.md",
         "pointer": "/status",
-        "range": null,
+        "range": {
+          "start": {
+            "line": 2,
+            "column": 1,
+            "offset": 4
+          },
+          "end": {
+            "line": 3,
+            "column": 1,
+            "offset": 42
+          }
+        },
         "severity": "error",
         "source": "core",
         "group": "references"

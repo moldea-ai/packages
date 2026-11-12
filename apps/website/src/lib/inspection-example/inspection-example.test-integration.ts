@@ -38,7 +38,10 @@ test('generates reproducible pass, fail, pass responses from real Core checks', 
       source: 'core',
       group: 'references',
       entity: { contextPath: '/moldea/project.md' },
-      range: null,
+      range: {
+        end: { column: 1, line: 7, offset: 121 },
+        start: { column: 9, line: 5, offset: 64 },
+      },
     },
   ]);
   expect(states).toStrictEqual(await createInspectionExample());

@@ -39,7 +39,18 @@
         "message": "The manifest version is missing.",
         "path": "/moldea/moldea.yaml",
         "pointer": "/version",
-        "range": null,
+        "range": {
+          "start": {
+            "line": 1,
+            "column": 1,
+            "offset": 0
+          },
+          "end": {
+            "line": 2,
+            "column": 1,
+            "offset": 11
+          }
+        },
         "severity": "error",
         "source": "core",
         "group": "manifest"
@@ -574,7 +585,18 @@
         "message": "The registered skill implementation is missing.",
         "path": "/moldea/moldea.yaml",
         "pointer": "/agents/agent/skills/process/implementation",
-        "range": null,
+        "range": {
+          "start": {
+            "line": 6,
+            "column": 7,
+            "offset": 74
+          },
+          "end": {
+            "line": 9,
+            "column": 1,
+            "offset": 156
+          }
+        },
         "severity": "error",
         "source": "core",
         "group": "agents"
@@ -811,7 +833,18 @@
         "message": "The capability description is missing.",
         "path": "/moldea/moldea.yaml",
         "pointer": "/agents/agent/tools/lookup/description",
-        "range": null,
+        "range": {
+          "start": {
+            "line": 6,
+            "column": 7,
+            "offset": 73
+          },
+          "end": {
+            "line": 10,
+            "column": 1,
+            "offset": 157
+          }
+        },
         "severity": "error",
         "source": "core",
         "group": "agents"

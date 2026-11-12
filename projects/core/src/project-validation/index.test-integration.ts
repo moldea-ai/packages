@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 import {
   createIntegratedMemoryRepositoryReader,
+  LOCATION_TEST_ENTRIES,
   type IMemoryRepositoryEntry,
 } from '../repository.test-fixtures.js';
 
@@ -88,6 +89,27 @@ const toJsonValue = (candidate: unknown): unknown =>
   JSON.parse(JSON.stringify(candidate)) as unknown;
 
 describe('public Core project validation', () => {
+  test('locates cross-file findings and warnings created after acceptance matching', async () => {
+    const result = await createCore().validateProject({
+      repository: createIntegratedMemoryRepositoryReader(LOCATION_TEST_ENTRIES),
+    });
+    const missingExport = result.diagnostics.find(
+      ({ code }) => code === 'MOLDEA_REFERENCE_EXPORT_MISSING',
+    );
+    expect(missingExport).toMatchObject({
+      path: '/moldea/moldea.yaml',
+      pointer: '/context/~1moldea~1project.md/bindings/0',
+      range: { start: { line: 5, column: 9 } },
+      details: { referencedPath: '/src/loader.ts', symbol: 'missing' },
+    });
+    expect(
+      result.diagnostics.find(({ code }) => code === 'MOLDEA_ACCEPTANCE_UNMATCHED'),
+    ).toMatchObject({
+      pointer: '/acceptedWarnings/0',
+      range: { start: { line: 8, column: 5 } },
+    });
+  });
+
   test.each(fixture.cases)('returns the exact public result for $name', async (case_) => {
     const result = await createCore().validateProject({
       repository: createIntegratedMemoryRepositoryReader(createEntries(case_)),

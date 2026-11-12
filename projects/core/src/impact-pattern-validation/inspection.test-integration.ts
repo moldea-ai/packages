@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { expectToRejectCode } from 'jg-exception/testing';
 import { describe, expect, test } from 'vitest';
 
 import { parseRepositoryPath, RepositorySourceException } from '@moldea.ai/repository';
@@ -273,11 +274,21 @@ describe('bounded impact warnings and manifest acceptance through Core', () => {
     expect(result.diagnostics).toStrictEqual([]);
   });
 
+  test('refuses required YAML retention before starting optional pattern work', async () => {
+    await expectToRejectCode(
+      createCore({ limits: { maxRetainedBytes: 8192 } }).validateProject({
+        repository: createRepository(['/src/missing*'], [acceptance('/src/missing*')]),
+      }),
+      'RESOURCE_LIMIT_EXCEEDED',
+      'A Core resource limit was exceeded.',
+    );
+  });
+
   test('completes validation when retained memory is exhausted during pattern inspection', async () => {
     const source = createRepository(
       ['/src/missing*'],
       [acceptance('/src/missing*')],
-      Array.from({ length: 64 }, (_, index) => ({
+      Array.from({ length: 256 }, (_, index) => ({
         path: `/src/existing-${index}.ts`,
         type: 'file' as const,
         content: '',
@@ -294,7 +305,8 @@ describe('bounded impact warnings and manifest acceptance through Core', () => {
         return source.getEntry(path, options);
       },
     };
-    const result = await createCore({ limits: { maxRetainedBytes: 8192 } }).validateProject({
+    // admit required YAML trees, then exhaust the remaining budget on optional discovered paths
+    const result = await createCore({ limits: { maxRetainedBytes: 32768 } }).validateProject({
       repository,
     });
     expect(result.valid).toBe(true);

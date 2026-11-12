@@ -39,6 +39,71 @@ export interface IStrictYamlParseResult {
   readonly value: IYamlNode | null;
 }
 
+// lazy mapping lookups share the parsed tree's lifetime without retaining it globally
+const mappingEntries = new WeakMap<IYamlMappingNode, ReadonlyMap<string, IYamlMappingEntry>>();
+// logical allowance for each node, coordinates and mapping-lookup metadata
+const YAML_NODE_RETAINED_BYTES = 512;
+
+/** Resolves a pointer to its authored member span or nearest existing ancestor. */
+export const locateYamlPointer = (root: IYamlNode, pointer: string): ISourceRange | null => {
+  if (pointer === '') return root.range;
+  if (!pointer.startsWith('/')) return null;
+  const segments = pointer.slice(1).split('/');
+  if (segments.some((segment) => /~(?:[^01]|$)/u.test(segment))) return null;
+  let node = root;
+  let range = root.range;
+
+  for (const encodedSegment of segments) {
+    const segment = encodedSegment.replaceAll('~1', '/').replaceAll('~0', '~');
+    if (node.kind === 'mapping') {
+      let entries = mappingEntries.get(node);
+      if (entries === undefined) {
+        const indexed = new Map<string, IYamlMappingEntry>();
+        for (const entry of node.entries) {
+          if (entry.key.kind === 'scalar' && typeof entry.key.value === 'string') {
+            indexed.set(entry.key.value, entry);
+          }
+        }
+        entries = indexed;
+        mappingEntries.set(node, entries);
+      }
+      const entry = entries.get(segment);
+      if (entry === undefined) break;
+      range = { start: entry.key.range.start, end: entry.value.range.end };
+      node = entry.value;
+      continue;
+    }
+    if (node.kind !== 'sequence' || !/^(?:0|[1-9][0-9]*)$/u.test(segment)) break;
+    const index = Number(segment);
+    if (!Number.isSafeInteger(index) || index >= node.items.length) break;
+    const item = node.items[index];
+    if (item === undefined) break;
+    node = item;
+    range = item.range;
+  }
+
+  return range;
+};
+
+/** Measures logical retained tree/index coverage using the existing conservative object allowance. */
+export const measureYamlRetainedBytes = (root: IYamlNode): number => {
+  const pending = [root];
+  let bytes = 0;
+  while (pending.length > 0) {
+    const node = pending.pop()!;
+    bytes += YAML_NODE_RETAINED_BYTES;
+    if (node.kind === 'mapping') {
+      for (const entry of node.entries) pending.push(entry.key, entry.value);
+    } else if (node.kind === 'sequence') {
+      for (const item of node.items) pending.push(item);
+    } else {
+      bytes += node.source.length * 2;
+      if (typeof node.value === 'string') bytes += node.value.length * 2;
+    }
+  }
+  return bytes;
+};
+
 const CORE_TAGS = new Set([
   'tag:yaml.org,2002:bool',
   'tag:yaml.org,2002:float',

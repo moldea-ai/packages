@@ -12,6 +12,10 @@ Every diagnostic has required `severity: 'error' | 'warning'`, `group`, stable `
 
 ## Diagnostic catalog
 
+Core 9.2 locates pointer-addressed diagnostics in retained manifest and decision-frontmatter YAML, including cross-file findings and unmatched warning acceptances. A mapping member spans its key through its value; a sequence pointer spans its item. Missing members select the nearest existing ancestor, and an empty pointer selects the document root. Existing explicit ranges remain unchanged. Coordinates refer to BOM/line-ending-normalized text and count Unicode scalars, not UTF-16 units. Unavailable or untrustworthy YAML cannot supply a range.
+
+Repository inspection retains these private parsed trees only until final diagnostic locations are resolved. Tree and lookup storage participates in the inspection's retained-memory limit and is released on success or failure. Location enrichment does not change severity, warning identity or acceptance rules.
+
 The public `ICoreDiagnosticCode` union is the machine-readable catalog. The headings below correspond to the `discovery`, `manifest`, `references`, `agents`, `mirrors`, and `integration` groups.
 
 ### [Discovery and text](#discovery-and-text)

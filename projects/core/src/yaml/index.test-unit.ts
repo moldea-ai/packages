@@ -7,7 +7,7 @@ import { DEFAULT_CORE_RESOURCE_LIMITS } from '../constants/index.js';
 import { createCoreDiagnosticCollector } from '../diagnostic-utilities/index.js';
 import { createSourceLocator } from '../source-location/index.js';
 
-import { parseStrictYaml } from './index.js';
+import { locateYamlPointer, measureYamlRetainedBytes, parseStrictYaml } from './index.js';
 
 const manifestPath = parseRepositoryPath('/moldea/moldea.yaml');
 
@@ -19,6 +19,44 @@ const parse = (content: string) => {
 };
 
 describe('Core strict YAML parsing', () => {
+  test.each([
+    ['', 1, 1, 0, 4, 1, 29],
+    ['/a~1b', 1, 1, 0, 4, 1, 29],
+    ['/a~1b/~0key', 2, 3, 9, 4, 1, 29],
+    ['/a~1b/~0key/0', 3, 7, 23, 3, 12, 28],
+    ['/a~1b/~0key/0/missing', 3, 7, 23, 3, 12, 28],
+    ['/a~1b/~0key/8', 2, 3, 9, 4, 1, 29],
+    ['/a~1b/~0key/01', 2, 3, 9, 4, 1, 29],
+    ['/missing/child', 1, 1, 0, 4, 1, 29],
+  ])(
+    'locateYamlPointer(%s) -> authored member or ancestor',
+    (pointer, line, column, offset, endLine, endColumn, endOffset) => {
+      const root = parse('"a/b":\n  "~key":\n    - value\n').parsed.value;
+      if (root === null) throw new TypeError('The pointer fixture must parse.');
+      expect(locateYamlPointer(root, pointer)).toStrictEqual({
+        start: { line, column, offset },
+        end: { line: endLine, column: endColumn, offset: endOffset },
+      });
+    },
+  );
+
+  test.each(['a/b', '/a~2b', '/a~'])('locateYamlPointer(%s) -> invalid pointer', (pointer) => {
+    const root = parse('a: value\n').parsed.value;
+    if (root === null) throw new TypeError('The pointer fixture must parse.');
+    expect(locateYamlPointer(root, pointer)).toBeNull();
+  });
+
+  test('accounts for wide retained YAML without argument-spread limits', () => {
+    const root = parse(Array.from({ length: 8192 }, () => '- x\n').join('')).parsed.value;
+    if (root === null) throw new TypeError('The wide fixture must parse.');
+    expect(measureYamlRetainedBytes(root)).toBe(512 + 8192 * 516);
+    expect(locateYamlPointer(root, '/8191')?.start).toStrictEqual({
+      line: 8192,
+      column: 3,
+      offset: 32766,
+    });
+  });
+
   test('uses YAML 1.2 Core Schema scalar semantics without exposing parser nodes', () => {
     const result = parse('legacy: yes\ndate: 2026-08-10\nenabled: true\ncount: 1\n');
 

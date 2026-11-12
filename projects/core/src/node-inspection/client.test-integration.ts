@@ -13,6 +13,7 @@ import {
   createMemoryRepositoryReader,
   createIntegratedMemoryRepositoryReader,
   INTEGRATION_TEST_ENTRIES,
+  LOCATION_TEST_ENTRIES,
 } from '../repository.test-fixtures.js';
 
 import { createCore } from '../core/index.js';
@@ -56,6 +57,28 @@ const createGate = () => {
 };
 
 describe('real isolated Node inspection', () => {
+  test('transports final cross-file and acceptance diagnostic locations', async () => {
+    const inspection = await createNodeProjectInspection({
+      repository: createIntegratedMemoryRepositoryReader(LOCATION_TEST_ENTRIES),
+    });
+    try {
+      const page = await inspection.readPage({ view: 'diagnostics', maxItems: 8 });
+      const diagnostics = page.page.records.flatMap(({ item }) =>
+        item.kind === 'diagnostic' ? [item.diagnostic] : [],
+      );
+      expect(
+        diagnostics.find(({ code }) => code === 'MOLDEA_REFERENCE_EXPORT_MISSING'),
+      ).toMatchObject({
+        range: { start: { line: 5, column: 9 } },
+      });
+      expect(diagnostics.find(({ code }) => code === 'MOLDEA_ACCEPTANCE_UNMATCHED')).toMatchObject({
+        range: { start: { line: 8, column: 5 } },
+      });
+    } finally {
+      await inspection.dispose();
+    }
+  });
+
   test('releases readers and buffers while eight disposed handles remain reachable', async () => {
     await withTemporaryDirectory(async (directory) => {
       const probePath = path.join(directory, 'retention.mjs');

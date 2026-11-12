@@ -60,7 +60,10 @@ export const createInspectionExample = async (
               pointer: '/context/~1moldea~1project.md/bindings/0',
               details: { referencedPath: '/src/refund-policy.ts' },
               entity: { contextPath: '/moldea/project.md' },
-              range: null,
+              range: {
+                end: { column: 1, line: 7, offset: 121 },
+                start: { column: 9, line: 5, offset: 64 },
+              },
               severity: 'error',
               group: 'references',
               source: 'core',

@@ -14,7 +14,7 @@ describe('createMoldeaCliCompositionResult', () => {
       supportedNodeRange: '>=22.17.0',
     });
     expect(result.packages).toStrictEqual([
-      { name: '@moldea.ai/core', version: '9.1.1' },
+      { name: '@moldea.ai/core', version: '9.2.0' },
       { name: '@moldea.ai/repository', version: '4.0.0' },
       { name: '@moldea.ai/repository-fs', version: '4.0.0' },
     ]);

@@ -8,17 +8,21 @@ import type {
   IManifestParseResult,
   ITextDocumentInput,
 } from '../contracts/index.js';
-import { createCoreDiagnosticCollector } from '../diagnostic-utilities/index.js';
+import {
+  createCoreDiagnosticCollector,
+  locateDiagnosticRanges,
+} from '../diagnostic-utilities/index.js';
 import type { ICoreOperation } from '../exceptions/index.js';
 import { isCanonicalManifestPath } from '../format-validation/index.js';
 import { detectSupportedManifestVersion, validateManifest } from '../manifest-validation/index.js';
 import { createSourceLocator } from '../source-location/index.js';
 import { calculateNormalizedTextDigest, normalizeTextDocument } from '../text/index.js';
-import { parseStrictYaml } from '../yaml/index.js';
+import { parseStrictYaml, type IYamlNode } from '../yaml/index.js';
 
 // richer manifest parse state retained only by repository inspection
 export interface IManifestDocumentInspectionResult extends IManifestParseResult {
   readonly formatVersion: 1 | null;
+  readonly yamlRoot: IYamlNode | null;
 }
 
 /**
@@ -60,6 +64,7 @@ export const inspectManifestDocument = async (
       formatVersion: null,
       manifest: null,
       valid: false,
+      yamlRoot: null,
     });
   }
 
@@ -70,14 +75,19 @@ export const inspectManifestDocument = async (
     parsed.valid && parsed.value !== null
       ? validateManifest(parsed.value, path, diagnostics, options.limits, operation)
       : null;
+  const locatedDiagnostics = locateDiagnosticRanges(
+    diagnostics.finalize(),
+    new Map(parsed.value === null ? [] : [[path, parsed.value]]),
+  );
 
   if (manifest === null || diagnostics.size > 0) {
     return deepFreeze({
       asset: null,
-      diagnostics: diagnostics.finalize(),
+      diagnostics: locatedDiagnostics,
       formatVersion,
       manifest: null,
       valid: false,
+      yamlRoot: parsed.value,
     });
   }
 
@@ -92,10 +102,11 @@ export const inspectManifestDocument = async (
 
   return deepFreeze({
     asset,
-    diagnostics: diagnostics.finalize(),
+    diagnostics: locatedDiagnostics,
     formatVersion,
     manifest,
     valid: true,
+    yamlRoot: parsed.value,
   });
 };
 

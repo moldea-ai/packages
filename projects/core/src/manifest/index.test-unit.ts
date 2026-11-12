@@ -36,6 +36,34 @@ const toJsonValue = (candidate: unknown): unknown =>
   JSON.parse(JSON.stringify(candidate)) as unknown;
 
 describe('Core manifest parsing', () => {
+  test('locates a missing required member at the nearest existing YAML ancestor', async () => {
+    const result = await createCore().parseManifest({
+      content: '# project manifest\nagents: {}\n',
+      path: manifestPath,
+    });
+    const diagnostic = result.diagnostics.find(
+      ({ code }) => code === 'MOLDEA_MANIFEST_VERSION_MISSING',
+    );
+
+    expect(diagnostic?.range).toStrictEqual({
+      start: { line: 2, column: 1, offset: 19 },
+      end: { line: 3, column: 1, offset: 30 },
+    });
+  });
+
+  test('locates missing members in normalized BOM/CRLF text using scalar offsets', async () => {
+    const result = await createCore().parseManifest({
+      content: '\uFEFF# 😀\r\nagents: {}\r\n',
+      path: manifestPath,
+    });
+    expect(
+      result.diagnostics.find(({ code }) => code === 'MOLDEA_MANIFEST_VERSION_MISSING')?.range,
+    ).toStrictEqual({
+      start: { line: 2, column: 1, offset: 4 },
+      end: { line: 3, column: 1, offset: 15 },
+    });
+  });
+
   test('parses the minimal manifest into a frozen normalized asset', async () => {
     const content = readFixture('valid-minimal.yaml');
     const normalizedContent = content.replace(/\r\n?/gu, '\n');

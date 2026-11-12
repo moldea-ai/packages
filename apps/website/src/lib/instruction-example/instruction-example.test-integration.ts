@@ -21,7 +21,10 @@ test('derives the hero from the real instruction, manifest, and Core diagnostic'
       pointer: '/agents/support/tools/get-delivery-status/implementation',
       entity: { agentId: 'support', capabilityKind: 'tool', capabilityId: 'get-delivery-status' },
       details: { reason: 'missing', referencedPath: '/src/orders/tracking.ts' },
-      range: null,
+      range: {
+        start: { column: 9, line: 10, offset: 212 },
+        end: { column: 1, line: 12, offset: 268 },
+      },
       severity: 'error',
       source: 'core',
     },

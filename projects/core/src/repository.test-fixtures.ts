@@ -25,6 +25,30 @@ import {
 
 export interface ICoreTestRepositoryReader extends IRepositoryReader, IRepositoryInspectionReader {}
 
+// one cross-file finding and a later unmatched acceptance exercise final YAML location enrichment
+export const LOCATION_TEST_ENTRIES = [
+  {
+    path: '/moldea/moldea.yaml',
+    type: 'file',
+    content: [
+      'version: 1',
+      'context:',
+      '  /moldea/project.md:',
+      '    bindings:',
+      '      - path: /src/loader.ts',
+      '        symbol: missing',
+      'acceptedWarnings:',
+      '  - code: MOLDEA_IMPACT_PATTERN_UNMATCHED',
+      '    subject: /moldea/project.md',
+      '    qualifier: /future/**',
+      '    reason: Reserved for future work.',
+      '',
+    ].join('\n'),
+  },
+  { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
+  { path: '/src/loader.ts', type: 'file', content: 'export const actual = 1;\n' },
+] satisfies readonly IMemoryRepositoryEntry[];
+
 /** Creates a complete Core test reader while replacing selected observable operations. */
 export const overrideCoreTestRepositoryReader = (
   source: ICoreTestRepositoryReader,
