@@ -87,7 +87,7 @@ describe('loadMoldeaCliPackageMetadata', () => {
         semver: '7.8.5',
       },
       installedPackageVersions: {
-        '@moldea.ai/core': '9.2.0',
+        '@moldea.ai/core': '9.2.1',
         '@moldea.ai/repository': '4.0.1',
         '@moldea.ai/repository-fs': '4.0.1',
       },

@@ -98,7 +98,7 @@ Core uses independent limits for distinct entries, total bytes read, per-file by
 
 Logical `RESOURCE_LIMIT_EXCEEDED` exceptions identify the exceeded limit, its configured maximum, the observed or projected usage, and `reduce-input-or-increase-limit`. Verified isolated-worker heap exhaustion uses `review-inspection-capacity` with unknown observed usage. Fixed transport limits have no next action. Core refuses an operation before allocating retained state beyond the applicable ceiling.
 
-Private manifest and decision YAML trees and their pointer-lookup storage also reserve logical retained memory until final locations are resolved. These reservations are released on success or failure; they do not remain in prepared inspection handles.
+Valid manifest and decision YAML trees and their pointer-lookup storage also reserve logical retained memory until final locations are resolved. Invalid documents keep their parser-located diagnostics without an additional tree reservation. These reservations are released on success or failure; they do not remain in prepared inspection handles.
 
 ## Development
 

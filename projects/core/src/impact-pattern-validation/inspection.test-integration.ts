@@ -38,6 +38,56 @@ const createRepository = (
   ]);
 
 describe('bounded impact warnings and manifest acceptance through Core', () => {
+  test.each([false, true])(
+    'locates an unmatched impact pattern while preserving accepted=%s and its reason',
+    async (isAccepted) => {
+      const manifest = [
+        'version: 1',
+        'context:',
+        '  /moldea/project.md:',
+        '    affectedBy:',
+        '      - /future/**',
+        ...(isAccepted
+          ? [
+              'acceptedWarnings:',
+              '  - code: MOLDEA_IMPACT_PATTERN_UNMATCHED',
+              '    subject: /moldea/project.md',
+              '    qualifier: /future/**',
+              `    reason: ${reason}`,
+            ]
+          : []),
+        '',
+      ].join('\n');
+      const result = await createCore().validateProject({
+        repository: createIntegratedMemoryRepositoryReader([
+          { path: '/moldea/moldea.yaml', type: 'file', content: manifest },
+          { path: subject, type: 'file', content: '# Project\n' },
+        ]),
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.diagnostics).toHaveLength(1);
+      expect(result.diagnostics[0]).toMatchObject({
+        code,
+        severity: 'warning',
+        subject,
+        qualifier: '/future/**',
+        ...(isAccepted ? { accepted: true, reason } : {}),
+        pointer: '/context/~1moldea~1project.md/affectedBy/0',
+        range: {
+          start: { line: 5, column: 9 },
+          end: { line: 5, column: 19 },
+        },
+      });
+      if (!isAccepted) {
+        expect(result.diagnostics[0]).not.toHaveProperty('accepted');
+        expect(result.diagnostics[0]).not.toHaveProperty('reason');
+      }
+      expect(result.warningCount).toBe(isAccepted ? 0 : 1);
+      expect(result.acceptedWarningCount).toBe(isAccepted ? 1 : 0);
+    },
+  );
+
   test('reports an unmatched pattern with its canonical owner and stable identity', async () => {
     const result = await createCore().validateProject({
       repository: createRepository(['/future/**']),

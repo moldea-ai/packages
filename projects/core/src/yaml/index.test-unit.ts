@@ -19,6 +19,15 @@ const parse = (content: string) => {
 };
 
 describe('Core strict YAML parsing', () => {
+  test('decodes RFC 6901 escapes once in the required order', () => {
+    const root = parse('"/": slash\n"~1": tilde\n').parsed.value;
+    if (root === null) throw new TypeError('The pointer fixture must parse.');
+    expect(locateYamlPointer(root, '/~01')).toStrictEqual({
+      start: { line: 2, column: 1, offset: 11 },
+      end: { line: 2, column: 12, offset: 22 },
+    });
+  });
+
   test.each([
     ['', 1, 1, 0, 4, 1, 29],
     ['/a~1b', 1, 1, 0, 4, 1, 29],

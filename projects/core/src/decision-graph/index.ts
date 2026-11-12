@@ -82,7 +82,8 @@ export const readDecisionGraph = async (
       options,
       'validate-project',
     );
-    if (parsed.yamlRoot !== null) retainYamlRoot?.(path, parsed.yamlRoot);
+    if (parsed.decision !== null && parsed.yamlRoot !== null)
+      retainYamlRoot?.(path, parsed.yamlRoot);
 
     for (const diagnostic of parsed.diagnostics) {
       diagnostics.merge(diagnostic);

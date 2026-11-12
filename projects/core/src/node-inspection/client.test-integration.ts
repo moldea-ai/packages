@@ -57,6 +57,134 @@ const createGate = () => {
 };
 
 describe('real isolated Node inspection', () => {
+  test.each([
+    ['manifest', 'MOLDEA_MANIFEST_ROOT_INVALID', '/moldea/moldea.yaml', 1, 0, 1025, 4096],
+    [
+      'decision',
+      'MOLDEA_DECISION_FRONTMATTER_INVALID',
+      '/moldea/decisions/1767225600000-invalid.md',
+      2,
+      4,
+      1026,
+      4100,
+    ],
+  ] as const)(
+    'preserves invalid %s diagnostics without retaining its YAML tree',
+    async (kind, code, diagnosticPath, line, offset, endLine, endOffset) => {
+      const invalidYaml = '- x\n'.repeat(1024);
+      const repository = createIntegratedMemoryRepositoryReader([
+        {
+          path: '/moldea/moldea.yaml',
+          type: 'file',
+          content: kind === 'manifest' ? invalidYaml : 'version: 1\n',
+        },
+        { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
+        ...(kind === 'decision'
+          ? [
+              {
+                path: diagnosticPath,
+                type: 'file' as const,
+                content: `---\n${invalidYaml}---\nDecision.\n`,
+              },
+            ]
+          : []),
+      ]);
+      // required document reads fit; retaining 1024 unused YAML scalar nodes does not
+      const maxRetainedBytes = 262_144;
+      const expectedRange = {
+        start: { line, column: 1, offset },
+        end: { line: endLine, column: 1, offset: endOffset },
+      };
+      const result = await createCore({ limits: { maxRetainedBytes } }).validateProject({
+        repository,
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errorCount).toBe(1);
+      expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([code]);
+      expect(result.diagnostics[0]).toMatchObject({
+        path: diagnosticPath,
+        range: expectedRange,
+      });
+
+      const inspection = await createNodeProjectInspection({
+        repository,
+        limits: { maxRetainedBytes: NODE_INSPECTION_TRANSPORT_BYTES + maxRetainedBytes },
+      });
+      try {
+        const page = await inspection.readPage({ view: 'diagnostics', maxItems: 8 });
+        expect(page.page.records).toHaveLength(1);
+        expect(page.page.records[0]?.item).toMatchObject({
+          kind: 'diagnostic',
+          diagnostic: { code, path: diagnosticPath, range: expectedRange },
+        });
+        expect(inspection.counts.errors).toBe(1);
+      } finally {
+        await inspection.dispose();
+      }
+    },
+  );
+
+  test.each([
+    ['LF', '\n', ''],
+    ['CRLF', '\r\n', ''],
+    ['BOM and CRLF', '\r\n', '\ufeff'],
+  ])('locates final decision references and cycles with %s', async (_name, newline, bom) => {
+    const decisions = [
+      ['1767225600000', '1767225600001', '000'],
+      ['1767225600001', '1767225600000', '001'],
+      ['1767225600002', '1767225600003', '002'],
+    ] as const;
+    const repository = createIntegratedMemoryRepositoryReader([
+      { path: '/moldea/moldea.yaml', type: 'file', content: 'version: 1\n' },
+      { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
+      ...decisions.map(([id, target, millisecond]) => ({
+        path: `/moldea/decisions/${id}-choice.md`,
+        type: 'file' as const,
+        content:
+          bom +
+          [
+            '---',
+            'status: accepted',
+            `createdAt: "2026-01-01T00:00:00.${millisecond}Z"`,
+            'supersedes:',
+            `  - "${target}"`,
+            '---',
+            'Decision.',
+            '',
+          ].join(newline),
+      })),
+    ]);
+    const result = await createCore().validateProject({ repository });
+    const inspection = await createNodeProjectInspection({ repository });
+    try {
+      const page = await inspection.readPage({ view: 'diagnostics', maxItems: 8 });
+      const transported = page.page.records.flatMap(({ item }) =>
+        item.kind === 'diagnostic' ? [item.diagnostic] : [],
+      );
+      expect(result.valid).toBe(false);
+      expect(result.errorCount).toBe(5);
+      // prepared pages have their own stable record ordering
+      expect(transported).toHaveLength(result.diagnostics.length);
+      expect(transported).toEqual(expect.arrayContaining([...result.diagnostics]));
+      for (const diagnostic of result.diagnostics) {
+        expect(diagnostic.range).toStrictEqual({
+          start: { line: 4, column: 1, offset: 59 },
+          end: { line: 6, column: 1, offset: 91 },
+        });
+        expect(diagnostic.pointer).toBe('/supersedes');
+      }
+      expect(result.diagnostics.map(({ code }) => code).sort()).toStrictEqual([
+        'MOLDEA_DECISION_REFERENCE_MISSING',
+        'MOLDEA_DECISION_SUPERSESSION_CYCLE',
+        'MOLDEA_DECISION_SUPERSESSION_CYCLE',
+        'MOLDEA_DECISION_SUPERSESSION_STATUS_INVALID',
+        'MOLDEA_DECISION_SUPERSESSION_STATUS_INVALID',
+      ]);
+    } finally {
+      await inspection.dispose();
+    }
+  });
+
   test('transports final cross-file and acceptance diagnostic locations', async () => {
     const inspection = await createNodeProjectInspection({
       repository: createIntegratedMemoryRepositoryReader(LOCATION_TEST_ENTRIES),

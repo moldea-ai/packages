@@ -117,7 +117,7 @@ export const inspectUniversalProject = async (
           options,
           'validate-project',
         );
-        if (parsedManifest.yamlRoot !== null)
+        if (parsedManifest.manifest !== null && parsedManifest.yamlRoot !== null)
           retainYamlRoot(MANIFEST_PATH, parsedManifest.yamlRoot);
         formatVersion = parsedManifest.formatVersion;
         addDiagnostics(collector, parsedManifest.diagnostics);
