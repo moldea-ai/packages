@@ -1,249 +1,122 @@
 ---
-import { ArrowLeft, ChevronRight } from '@lucide/astro';
-import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
-import {
-  DIAGNOSTIC_GROUP_PRESENTATIONS,
-  FINDING_CATEGORY_PRESENTATIONS,
-  INSPECTION_SEVERITY_PRESENTATIONS,
-  type IInspectionFindingView,
-} from '@moldea.ai/website-ui/inspection-presentation';
-
+import { ChevronDown, CircleCheck, Lightbulb } from '@lucide/astro';
+import type { IInspectionFindingView } from '@moldea.ai/website-ui/inspection-presentation';
 import CodeBlock from '../../code-block/code-block.component.astro';
-import CodeDiff from '../../code-diff/code-diff.component.astro';
-import CodeText from '../../code-text/code-text.component.astro';
-import FilePreview from '../../file-preview/file-preview.component.astro';
 import IconTile from '../../icon-tile/icon-tile.component.astro';
-import ActionLink from '../../action-link/action-link.component.astro';
-import StatusBadge from '../../status-badge/status-badge.component.astro';
-
-import InspectionOverview from '../overview/inspection-overview.component.astro';
+import InspectionLead from '../../inspection-finding/lead/inspection-lead.component.astro';
+import InspectionMetadata from '../../inspection-finding/metadata/inspection-metadata.component.astro';
+import InspectionSource from '../source/inspection-source.component.astro';
 
 interface Props {
-  id: string;
-  resultTitle: string;
-  findings: IInspectionFindingView[];
+  finding: IInspectionFindingView;
 }
-const { id, resultTitle, findings } = Astro.props;
-/*
- * Decodes JSON Pointer tokens for display; the exact pointer remains in the tooltip and output.
- * Segments render inline like Code and Location, so chip padding never changes the row's spacing.
- */
-const toPointerSegments = (pointer: string): string[] =>
-  pointer
-    .split('/')
-    .slice(1)
-    .map((segment) => segment.replaceAll('~1', '/').replaceAll('~0', '~'));
+const { finding } = Astro.props;
+const affected = [finding.target, finding.related].filter((item) => item !== undefined);
 ---
 
-<div class="min-w-0">
+<div
+  class="grid min-w-0 gap-6"
+  data-inspection-explanation
+>
+  <InspectionLead {finding} />
   {
-    findings.length > 1 && (
-      <>
-        <InspectionOverview
-          id={id}
-          findings={findings}
-        />
-        <div
-          class="mb-4"
-          data-inspection-back
-          hidden
-        >
-          <ActionLink
-            href={`#${id}-findings`}
-            variant="ghost"
-            size="sm"
-            class="justify-start gap-2 text-foreground"
-          >
-            <ArrowLeft
-              class="size-4"
-              aria-hidden="true"
-            />
-            Back to findings
-          </ActionLink>
-        </div>
-      </>
+    affected.length > 0 && (
+      <section
+        aria-label="Affected declaration"
+        class="grid min-w-0 gap-3"
+      >
+        <>
+          <InspectionMetadata
+            items={affected}
+            stacked
+          />
+        </>
+      </section>
     )
   }
+  {finding.declaration && <InspectionSource evidence={finding.declaration} />}
+  {finding.evidence.map((evidence) => <InspectionSource {evidence} />)}
   {
-    findings.map((finding) => {
-      const severity = INSPECTION_SEVERITY_PRESENTATIONS[finding.severity];
-      const SeverityIcon = severity.icon;
-      const group =
-        finding.category === undefined
-          ? DIAGNOSTIC_GROUP_PRESENTATIONS[finding.group]
-          : FINDING_CATEGORY_PRESENTATIONS[finding.category];
-      const GroupIcon = group.icon;
-      return (
+    finding.kind === 'structural' &&
+      (finding.severity === 'warning' && finding.accepted ? (
         <section
-          id={`${id}-finding-${finding.id}`}
-          data-inspection-detail={finding.id}
-          aria-label={finding.title}
-          tabindex="-1"
-          class="grid min-w-0 gap-4 outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:gap-5"
+          class="flex min-w-0 items-start gap-3 rounded-xl border border-success/25 bg-success/5 p-4 dark:border-success/30 dark:bg-success/10"
+          aria-label="Accepted in moldea.yaml"
         >
-          <div
-            class:list={[
-              'min-w-0 overflow-hidden rounded-xl border bg-card',
-              finding.accepted
-                ? 'border-info/40'
-                : finding.severity === 'error'
-                  ? 'border-destructive/40'
-                  : 'border-warning/50',
-            ]}
-            data-inspection-finding-card
-          >
-            <div
-              class:list={[
-                'flex items-start gap-3 border-b p-3 sm:p-5',
-                finding.accepted
-                  ? 'bg-info/5'
-                  : finding.severity === 'error'
-                    ? 'bg-destructive/5'
-                    : 'bg-warning/10',
-              ]}
-              data-inspection-finding-header
+          <>
+            <IconTile
+              tone="success"
+              size="sm"
             >
-              <IconTile
-                tone={
-                  finding.accepted ? 'info' : finding.severity === 'error' ? 'danger' : 'warning'
-                }
-              >
-                <GroupIcon />
-              </IconTile>
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <p class="text-xs font-medium text-muted-foreground">{group.label}</p>
-                  <span
-                    class:list={[
-                      'inline-flex shrink-0 items-center gap-1 text-xs font-semibold',
-                      finding.accepted
-                        ? 'text-foreground'
-                        : finding.severity === 'error'
-                          ? 'text-foreground'
-                          : 'text-warning-foreground dark:text-warning',
-                    ]}
-                  >
-                    <SeverityIcon
-                      class:list={[
-                        'size-3.5',
-                        finding.accepted
-                          ? 'text-info'
-                          : finding.severity === 'error' && 'text-destructive',
-                      ]}
-                      aria-hidden="true"
-                    />
-                    {finding.accepted ? 'Accepted' : severity.label}
-                  </span>
-                </div>
-                {finding.title !== resultTitle && (
-                  <h3 class="mt-1 text-sm leading-6 font-semibold">{finding.title}</h3>
-                )}
-              </div>
+              <CircleCheck />
+            </IconTile>
+            <div class="min-w-0 text-sm leading-6">
+              <h3 class="font-semibold">
+                Accepted in <code class="inline-code font-normal">moldea.yaml</code>
+              </h3>
+              {finding.reason && <p class="mt-1 wrap-anywhere">{finding.reason}</p>}
+              <p class="mt-2 text-xs leading-5 text-muted-foreground">
+                To unaccept this warning, remove its{' '}
+                <code class="inline-code font-normal">acceptedWarnings</code> entry.
+              </p>
             </div>
-            <div class="grid min-w-0 gap-4 p-3 sm:p-5">
-              {finding.message !== finding.title && (
-                <p class="text-sm leading-6">{finding.message}</p>
-              )}
-              {finding.reason && (
-                <p class="border-l-2 border-info/40 pl-3 text-sm leading-6">{finding.reason}</p>
-              )}
-              <dl class="grid min-w-0 gap-2 text-xs leading-5">
-                <div class="grid min-w-0 gap-1 sm:grid-cols-[4rem_minmax(0,1fr)]">
-                  <dt class="text-muted-foreground">Code</dt>
-                  <dd class="min-w-0">
-                    <CodeText
-                      class="inline-code font-normal"
-                      value={finding.code}
-                    />
-                  </dd>
-                </div>
-                {finding.path && (
-                  <div class="grid min-w-0 gap-1 sm:grid-cols-[4rem_minmax(0,1fr)]">
-                    <dt class="text-muted-foreground">Location</dt>
-                    <dd class="min-w-0">
-                      <CodeText
-                        class="inline-code font-normal"
-                        value={formatRepositoryPath(finding.path)}
-                      />
-                    </dd>
-                  </div>
-                )}
-                {finding.path && finding.pointer && (
-                  <div class="grid min-w-0 gap-1 sm:grid-cols-[4rem_minmax(0,1fr)]">
-                    <dt class="text-muted-foreground">Field</dt>
-                    <dd class="min-w-0">
-                      <span
-                        title={finding.pointer}
-                        data-inspection-field
-                      >
-                        {toPointerSegments(finding.pointer).map((segment, index) => (
-                          <>
-                            {index > 0 && (
-                              <ChevronRight
-                                class="mx-1 inline size-3 align-middle text-muted-foreground"
-                                aria-hidden="true"
-                              />
-                            )}
-                            <CodeText
-                              class="inline-code font-normal"
-                              value={segment}
-                            />
-                          </>
-                        ))}
-                      </span>
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-          </div>
-          {finding.evidence.map((evidence) => {
-            const isAffected = evidence.issueLabel !== undefined;
-            const label = evidence.isExcerpt
-              ? `${evidence.label ?? 'Source'} excerpt`
-              : (evidence.label ??
-                (evidence.path === finding.path ? 'Declared in' : 'Referenced file'));
-            return (
-              <FilePreview
-                path={evidence.path}
-                tone={isAffected ? (finding.accepted ? 'info' : severity.tone) : 'neutral'}
-                label={label}
-              >
-                {evidence.issueLabel !== undefined && (
-                  <StatusBadge
-                    slot="status"
-                    label={finding.accepted ? 'Accepted' : evidence.issueLabel}
-                    tone={finding.accepted ? 'info' : severity.tone}
-                    size="sm"
-                  />
-                )}
-                {evidence.content !== undefined && evidence.beforeContent !== undefined ? (
-                  <CodeDiff
-                    oldValue={evidence.beforeContent}
-                    newValue={evidence.content}
-                    language={evidence.language}
-                    variant="plain"
-                    contextLines={Infinity}
-                    ariaLabel={`${formatRepositoryPath(evidence.path)}: Before and after`}
-                  />
-                ) : (
-                  evidence.content !== undefined && (
-                    <div class="p-3">
-                      <CodeBlock
-                        source={evidence.content}
-                        language={evidence.language}
-                        variant="plain"
-                        copyable={false}
-                        ariaLabel={formatRepositoryPath(evidence.path)}
-                      />
-                    </div>
-                  )
-                )}
-              </FilePreview>
-            );
-          })}
+          </>
         </section>
-      );
-    })
+      ) : (
+        <section
+          class="flex min-w-0 items-start gap-3 rounded-xl border border-success/25 bg-success/5 p-4 dark:border-success/30 dark:bg-success/10"
+          aria-label="How to fix"
+        >
+          <>
+            <IconTile
+              tone="success"
+              size="sm"
+            >
+              <Lightbulb />
+            </IconTile>
+            <div class="min-w-0 text-sm leading-6">
+              <>
+                <h3 class="font-semibold">How to fix</h3>
+                <p class="mt-1">
+                  <a
+                    class="inline-block text-link pointer-coarse:min-h-11"
+                    href={finding.guidanceHref}
+                  >
+                    See the Core diagnostics guidance for this finding.
+                  </a>
+                </p>
+              </>
+            </div>
+          </>
+        </section>
+      ))
+  }
+  {
+    finding.kind === 'structural' && finding.acceptance && !finding.accepted && (
+      <details class="group min-w-0 border-t pt-4">
+        <>
+          <summary class="flex w-fit max-w-full cursor-pointer list-none items-center gap-1.5 rounded-sm py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11 pointer-coarse:min-w-11 [&::-webkit-details-marker]:hidden">
+            <ChevronDown
+              class="size-3.5 shrink-0 group-open:rotate-180"
+              aria-hidden="true"
+            />
+            <span>
+              Accept this warning in <code class="inline-code font-normal">moldea.yaml</code>
+            </span>
+          </summary>
+          <p class="mt-2 text-xs leading-5 text-muted-foreground">
+            Fix the cause, or add this entry to{' '}
+            <code class="inline-code font-normal">acceptedWarnings</code> with a reason.
+          </p>
+          <div class="mt-3">
+            <CodeBlock
+              source={finding.acceptance}
+              language="yaml"
+              ariaLabel="Warning acceptance"
+            />
+          </div>
+        </>
+      </details>
+    )
   }
 </div>

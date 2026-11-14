@@ -14,7 +14,7 @@ test.describe('inspection touch controls', () => {
   test.use({ hasTouch: true });
   for (const width of [320, 375, 1440]) {
     for (const colorScheme of ['light', 'dark'] as const) {
-      test(`sizes the shared close control at ${width}px in ${colorScheme}`, async ({ page }) => {
+      test(`sizes inspection touch controls at ${width}px in ${colorScheme}`, async ({ page }) => {
         await page.setViewportSize({ width, height: 900 });
         await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
         await page.goto(homepage);
@@ -25,7 +25,7 @@ test.describe('inspection touch controls', () => {
             colorScheme === 'dark',
           );
         expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
-        const opener = page.getByRole('link', { name: /View result:/u }).first();
+        const opener = page.getByRole('link', { name: /View finding:/u }).first();
         await opener.click();
         const dialog = page.getByRole('dialog');
         const close = dialog.getByRole('button', { name: 'Close dialog', exact: true });
@@ -34,8 +34,33 @@ test.describe('inspection touch controls', () => {
         expect(bounds.width).toBeGreaterThanOrEqual(44);
         expect(bounds.height).toBeGreaterThanOrEqual(44);
         expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+        const evaluationOpener = dialog.getByRole('button', {
+          name: 'Evaluation details',
+          exact: true,
+        });
+        const guidance = dialog.getByRole('link', {
+          name: 'See the Core diagnostics guidance for this finding.',
+          exact: true,
+        });
+        for (const action of [opener, evaluationOpener, guidance]) {
+          const actionBounds = (await action.boundingBox())!;
+          expect(actionBounds.width).toBeGreaterThanOrEqual(44);
+          expect(actionBounds.height).toBeGreaterThanOrEqual(44);
+        }
+        await evaluationOpener.click();
+        const evaluation = page.getByRole('dialog', { name: 'Evaluation details', exact: true });
+        const copy = evaluation.getByRole('button', { name: 'Copy code', exact: true });
+        const copyBounds = (await copy.boundingBox())!;
+        expect(copyBounds.width).toBeGreaterThanOrEqual(44);
+        expect(copyBounds.height).toBeGreaterThanOrEqual(44);
+        await page.keyboard.press('Escape');
+        await expect(evaluationOpener).toBeFocused();
         await page.keyboard.press('Escape');
         await expect(opener).toBeFocused();
+        const complete = page.getByRole('link', { name: 'Complete result', exact: true }).first();
+        const completeBounds = (await complete.boundingBox())!;
+        expect(completeBounds.width).toBeGreaterThanOrEqual(44);
+        expect(completeBounds.height).toBeGreaterThanOrEqual(44);
       });
     }
   }
@@ -59,7 +84,7 @@ test('locks background scrolling without changing the document width', async ({ 
   await page.locator('[data-dialog-open="hero-check-result"]').click();
   await expect(
     page.getByRole('dialog', {
-      name: '1 broken reference',
+      name: 'Complete result',
       exact: true,
     }),
   ).toBeVisible();
@@ -195,7 +220,7 @@ for (const theme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
     await page.goto(homepage);
     const opener = page.locator('[data-dialog-open="hero-check-result"]');
-    const dialog = page.getByRole('dialog', { name: '1 broken reference', exact: true });
+    const dialog = page.getByRole('dialog', { name: 'Complete result', exact: true });
     const body = dialog.locator(':scope > div');
     const openResult = async () => {
       await opener.click();
@@ -203,12 +228,11 @@ for (const theme of ['light', 'dark'] as const) {
       await dialog.evaluate(async (element) => {
         await Promise.allSettled(element.getAnimations().map((animation) => animation.finished));
       });
-      await expect(dialog.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
+      await expect(dialog.getByRole('tab')).toHaveCount(0);
       expect(await body.evaluate((element) => element.scrollTop)).toBe(0);
     };
     await openResult();
     await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1);
-    await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
     expect(await body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
       true,
     );
@@ -225,7 +249,6 @@ for (const theme of ['light', 'dark'] as const) {
     await dialog.getByRole('button', { name: 'Close dialog' }).click();
     await expect(dialog).not.toBeVisible();
     await openResult();
-    await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
     await body.evaluate((element) => {
       element.scrollTop = 400;
     });
@@ -235,7 +258,6 @@ for (const theme of ['light', 'dark'] as const) {
     await openResult();
 
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
     await body.evaluate((element) => {
       element.scrollTop = 400;
     });
@@ -245,3 +267,106 @@ for (const theme of ['light', 'dark'] as const) {
     await openResult();
   });
 }
+
+test('finding evaluation lifecycle restores focus through case, finding and evaluation transitions', async ({
+  page,
+  context,
+}) => {
+  // This journey loads the complete static catalogue, navigates to its guide, then loads it again.
+  test.setTimeout(60_000);
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'no-preference' });
+  await page.goto(
+    withBase('/capabilities/#cli-invalid-project', process.env.BASE_PATH ?? DEFAULT_BASE_PATH),
+  );
+  const example = page.getByRole('dialog', {
+    name: 'A renamed export breaks a declared connection',
+    exact: true,
+  });
+  await expect(example).toBeVisible();
+  const opener = example.getByRole('link', { name: /^View finding:/u });
+  await opener.click();
+  const finding = page.getByRole('dialog', { name: 'Structural finding', exact: true });
+  await expect(finding).toBeVisible();
+  const evaluationOpener = finding.getByRole('button', { name: 'Evaluation details', exact: true });
+  await evaluationOpener.click();
+  const evaluation = page.getByRole('dialog', { name: 'Evaluation details', exact: true });
+  await expect(evaluation).toBeVisible();
+  await expect(page.locator('dialog:modal')).toHaveCount(3);
+  await expect(page.locator('html')).toHaveCSS('overflow', 'hidden');
+  await expect(evaluation.getByRole('button', { name: 'Close dialog', exact: true })).toBeFocused();
+  const code = evaluation.getByRole('group', { name: 'Finding output', exact: true });
+  await expect(code).toHaveCSS('white-space', 'pre');
+  const source = (await code.locator('code').textContent())!;
+  const record: unknown = JSON.parse(source);
+  expect(record).toMatchObject({ kind: 'diagnostic', code: 'MOLDEA_REFERENCE_EXPORT_MISSING' });
+  await evaluation.getByRole('button', { name: 'Copy code', exact: true }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(source);
+  await page.keyboard.press('Escape');
+  await expect(evaluation).toBeHidden();
+  await expect(evaluationOpener).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(finding).toBeHidden();
+  await expect(opener).toBeFocused();
+  await expect(page.locator('html')).toHaveCSS('overflow', 'hidden');
+  const complete = example.getByRole('link', { name: 'Complete result', exact: true });
+  await complete.click();
+  const result = page.getByRole('dialog', { name: 'Complete result', exact: true });
+  const envelope: unknown = JSON.parse(
+    (await result.getByRole('group', { name: 'JSON', exact: true }).textContent())!,
+  );
+  expect(envelope).toMatchObject({
+    result: {
+      page: {
+        records: expect.arrayContaining([
+          record,
+          expect.objectContaining({ kind: 'coverage', fileCheck: 'passed', exportCheck: 'failed' }),
+        ]),
+      },
+    },
+  });
+  expect(envelope).not.toHaveProperty('exitStatus');
+  await expect(result.getByText('Exit 1', { exact: true })).toBeVisible();
+  await expect(result.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(result).toBeHidden();
+  await expect(complete).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(example).toBeHidden();
+  await expect(
+    page.getByRole('button', {
+      name: 'Open example: A renamed export breaks a declared connection',
+      exact: true,
+    }),
+  ).toBeFocused();
+  await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
+  await page
+    .getByRole('button', {
+      name: 'Open example: A renamed export breaks a declared connection',
+      exact: true,
+    })
+    .click();
+  await opener.click();
+  const guidance = finding.getByRole('link', {
+    name: 'See the Core diagnostics guidance for this finding.',
+    exact: true,
+  });
+  const guidancePath = withBase(
+    '/packages/core/diagnostics/#references-context-and-decisions',
+    process.env.BASE_PATH ?? DEFAULT_BASE_PATH,
+  );
+  await expect(guidance).toHaveAttribute('href', guidancePath);
+  await guidance.click();
+  await expect(page).toHaveURL(new RegExp(`${guidancePath}$`));
+  await expect(
+    page.getByRole('heading', { name: 'References, context, and decisions', exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
+  await page.goBack();
+  await expect(example).toBeVisible();
+  await expect(finding).toBeHidden();
+  await page.keyboard.press('Escape');
+  await expect(example).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

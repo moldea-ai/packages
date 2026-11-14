@@ -43,33 +43,35 @@ for (const width of [320, 768, 1440]) {
         await pullRequestTitle.evaluate((node) => parseFloat(getComputedStyle(node).lineHeight)),
       );
       const findingOpener = assurance.getByRole('link', {
-        name: 'Blocking CONTEXT_CONTRADICTED: View result: Refund approval boundary',
+        name: 'View finding: The changed instruction allows support to approve refunds, exceeding the authority set by the project rule.',
         exact: true,
       });
-      await expect(findingOpener.locator('svg.lucide-scroll-text')).toBeVisible();
-      expect((await findingOpener.boundingBox())!.width).toBe(
-        (await findingOpener.locator('..').boundingBox())!.width,
-      );
-      expect((await findingOpener.boundingBox())!.height).toBe(40);
-      await findingOpener.hover();
-      await findingOpener.evaluate(async (node) => {
-        await Promise.all(node.getAnimations().map((animation) => animation.finished));
-      });
+      const card = assurance.getByRole('article', { name: 'Behavior finding', exact: true });
+      await expect(card.locator('svg.lucide-scroll-text')).toBeVisible();
+      await expect(card.getByRole('link')).toHaveCount(1);
+      await expect(card.getByRole('button')).toHaveCount(0);
+      expect(
+        Math.abs((await findingOpener.boundingBox())!.width - (await card.boundingBox())!.width),
+      ).toBeLessThanOrEqual(2);
+      expect((await findingOpener.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       expect(
         (
           await new AxeBuilder({ page })
-            .include('#pr-assurance [data-inspection-outcome]')
+            .include('#pr-assurance [data-inspection-finding]')
             .analyze()
         ).violations,
       ).toStrictEqual([]);
       await findingOpener.focus();
       await page.keyboard.press('Enter');
       const findingDialog = page.getByRole('dialog', {
-        name: 'PR Assurance review',
+        name: 'Behavior finding',
         exact: true,
       });
       await expect(
-        findingDialog.getByRole('heading', { name: 'Refund approval boundary', exact: true }),
+        findingDialog.getByRole('heading', {
+          name: 'The changed instruction allows support to approve refunds, exceeding the authority set by the project rule.',
+          exact: true,
+        }),
       ).toHaveCount(1);
       await expect(findingDialog.getByText('Project context', { exact: true })).toBeVisible();
       await expect(findingDialog).toContainText('exceeding the authority set by the project rule');
@@ -81,9 +83,12 @@ for (const width of [320, 768, 1440]) {
         .locator('[data-file-preview]')
         .filter({ hasText: 'moldea/agents/support/instruction.md' });
       await expect(rule).toHaveAttribute('data-file-preview-tone', 'neutral');
-      await expect(rule).toContainText('Project rule excerpt');
-      await expect(changedInstruction).toHaveAttribute('data-file-preview-tone', 'danger');
-      await expect(changedInstruction).toContainText('Violates project rule');
+      await expect(rule).toContainText('Project rule');
+      await expect(rule.locator('..')).toContainText('Cut short');
+      await expect(changedInstruction).toHaveAttribute('data-file-preview-tone', 'neutral');
+      await expect(
+        findingDialog.getByRole('region', { name: 'Affected declaration', exact: true }),
+      ).toContainText('Changed instruction');
       const diff = changedInstruction.getByRole('region', {
         name: 'moldea/agents/support/instruction.md: Before and after',
         exact: true,
@@ -95,19 +100,25 @@ for (const width of [320, 768, 1440]) {
       await diff.focus();
       await expect(diff).toBeFocused();
       await expect(diff).not.toHaveCSS('box-shadow', 'none');
-      expect(
-        await changedInstruction.evaluate((node) => getComputedStyle(node).borderColor),
-      ).not.toBe(await rule.evaluate((node) => getComputedStyle(node).borderColor));
       await expect(findingDialog.getByRole('tab')).toHaveCount(0);
       await expect(findingDialog.locator('[data-inspection-output]')).toHaveCount(0);
+      await expect(
+        findingDialog.getByRole('button', { name: 'Evaluation details', exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        assurance.getByRole('link', { name: 'Complete result', exact: true }),
+      ).toHaveCount(0);
       await findingDialog.evaluate(async (node) => {
         await Promise.all(
           node.getAnimations({ subtree: true }).map((animation) => animation.finished),
         );
       });
       expect(
-        (await new AxeBuilder({ page }).include('#assurance-illustration-result').analyze())
-          .violations,
+        (
+          await new AxeBuilder({ page })
+            .include('#assurance-illustration-refund-authority')
+            .analyze()
+        ).violations,
       ).toStrictEqual([]);
       if (width >= 768) await page.mouse.click(1, 1);
       else await page.keyboard.press('Escape');
@@ -338,21 +349,26 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
   await expect(packages.locator('figcaption svg')).toHaveCount(0);
   await expect(packages.locator('[data-inspection-outcome]').first()).toContainText('Blocking');
   await expect(packages.locator('svg.lucide-link-2').first()).toBeVisible();
-  await packages.locator('[data-dialog-open]').first().click();
+  await packages.getByRole('link', { name: /^View finding:/u }).click();
   const result = page.getByRole('dialog');
   await expect(result).toContainText('MOLDEA_REFERENCE_EXPORT_MISSING');
   await expect(result).toContainText('canReturn');
-  const affected = result.locator('[data-file-preview-tone="danger"]');
+  const affected = result.getByRole('region', { name: 'Affected declaration', exact: true });
   await expect(affected).toHaveCount(1);
-  await expect(affected).toContainText('Missing export');
-  await expect(affected).toContainText('canReturn');
+  await expect(affected).toContainText('Context binding');
+  await expect(affected).toContainText('checkEligibility');
+  await expect(result.getByRole('region', { name: 'Referenced file', exact: true })).toContainText(
+    'canReturn',
+  );
   await expect(affected).not.toContainText('version: 1');
   await expect(
     result.locator('[data-file-preview-tone="neutral"]').filter({ hasText: 'version: 1' }),
   ).toContainText('Declared in');
-  await result.getByRole('tab', { name: 'Output', exact: true }).click();
-  await expect(result).toContainText('coverageCounts');
-  await expect(result).toContainText('exportsFailed');
+  await page.keyboard.press('Escape');
+  await packages.getByRole('link', { name: 'Complete result', exact: true }).click();
+  const complete = page.getByRole('dialog', { name: 'Complete result', exact: true });
+  await expect(complete).toContainText('coverageCounts');
+  await expect(complete).toContainText('exportsFailed');
   await page.keyboard.press('Escape');
 
   const assurance = page.getByRole('figure', { name: 'PR Assurance review' });
@@ -437,7 +453,7 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
     ).toBeVisible();
     const assurance = page.getByRole('figure', { name: 'PR Assurance review' });
     await expect(
-      assurance.getByRole('heading', { name: 'Refund approval boundary', exact: true }),
+      assurance.getByRole('heading', { name: /exceeding the authority set by the project rule/u }),
     ).toBeVisible();
     await expect(assurance).toContainText('exceeding the authority set by the project rule');
     await expect(assurance.locator('[data-inspection-output]')).toHaveCount(0);

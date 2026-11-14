@@ -18,7 +18,7 @@ interface Props {
 }
 const { id, result, summary, files = [] } = Astro.props;
 const { title } = getInspectionSummaryCopy(result, summary);
-const view = getProjectInspectionView(result, title, files);
+const view = getProjectInspectionView(result, title, files, import.meta.env.BASE_URL);
 ---
 
 <InspectionList

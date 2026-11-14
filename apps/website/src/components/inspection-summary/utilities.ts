@@ -2,26 +2,22 @@ import type { IProjectValidationResult } from '@moldea.ai/core';
 
 import type { IInspectionSummaryKind } from './types.ts';
 
-/** Supplies identical outcome copy to the visible summary and its dialog's accessible name. */
+/** Supplies the executed snapshot's visible summary title. */
 export const getInspectionSummaryCopy = (
   result: IProjectValidationResult,
   summary: IInspectionSummaryKind,
-): { title: string; description: string } =>
+): { title: string } =>
   ({
     connected: {
       title: 'Path found',
-      description: 'The project note points to an existing file.',
     },
     broken: {
       title: `${result.diagnostics.length} broken reference`,
-      description: 'The project note points to a missing file.',
     },
     repaired: {
       title: 'Check passes',
-      description: 'The updated reference points to the moved file.',
     },
     'missing-tool-implementation': {
       title: `${result.diagnostics.length} broken reference`,
-      description: 'The delivery-status tool points to a missing file.',
     },
   })[summary];

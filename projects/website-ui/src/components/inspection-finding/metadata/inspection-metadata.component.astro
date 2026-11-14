@@ -1,0 +1,52 @@
+---
+import {
+  INSPECTION_METADATA_ICONS,
+  type IInspectionMetadataItem,
+} from '@moldea.ai/website-ui/inspection-presentation';
+import CodeText from '../../code-text/code-text.component.astro';
+
+interface Props {
+  items: IInspectionMetadataItem[];
+  stacked?: boolean;
+  class?: string;
+}
+const { items, stacked = false, class: className } = Astro.props;
+---
+
+<dl
+  class:list={[
+    'min-w-0',
+    stacked ? 'grid gap-4 text-sm' : 'flex flex-wrap items-center gap-2 text-xs',
+    className,
+  ]}
+>
+  {
+    items.map((item) => {
+      const Icon = INSPECTION_METADATA_ICONS[item.icon];
+      return (
+        <div class="max-w-full min-w-0">
+          <>
+            <dt class={stacked ? 'mb-1 text-xs leading-5 text-muted-foreground' : 'sr-only'}>
+              {item.label}
+            </dt>
+            <dd class="max-w-full min-w-0">
+              <span class="inline-flex min-h-6 max-w-full min-w-0 items-center justify-start gap-1.5 rounded-md bg-code px-1.5 py-0.5 whitespace-normal text-code-foreground">
+                <>
+                  <Icon
+                    class="size-3 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <CodeText
+                    value={item.value}
+                    title=""
+                    class:list={['min-w-0 font-mono font-normal', 'text-xs']}
+                  />
+                </>
+              </span>
+            </dd>
+          </>
+        </div>
+      );
+    })
+  }
+</dl>

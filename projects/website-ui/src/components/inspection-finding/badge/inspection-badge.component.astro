@@ -1,0 +1,27 @@
+---
+import type {
+  IInspectionPresentation,
+  IInspectionTone,
+} from '@moldea.ai/website-ui/inspection-presentation';
+import StatusBadge from '../../status-badge/status-badge.component.astro';
+
+interface Props {
+  presentation: IInspectionPresentation & { tone: IInspectionTone };
+}
+const { presentation } = Astro.props;
+const Icon = presentation.icon;
+---
+
+<span
+  class="inline-flex [&_[data-status-badge=danger]]:border-transparent [&_[data-status-badge=danger]]:text-[color:color-mix(in_oklab,var(--destructive)_70%,var(--foreground))] [&_[data-status-badge=danger]]:dark:bg-destructive/20 dark:[&_[data-status-badge=danger]]:text-[color:color-mix(in_oklab,var(--destructive)_60%,var(--foreground))] [&_[data-status-badge=neutral]]:bg-background [&_[data-status-badge=neutral]]:text-foreground dark:[&_[data-status-badge=neutral]]:bg-border/30 [&_[data-status-badge=success]]:border-success/30 dark:[&_[data-status-badge=success]]:bg-success/15 [&_[data-status-badge=warning]]:border-warning/40 [&_[data-status-badge=warning]]:bg-warning/10 [&_[data-status-badge=warning]]:text-[color:color-mix(in_oklab,var(--warning)_45%,var(--foreground))] dark:[&_[data-status-badge=warning]]:bg-warning/15 dark:[&_[data-status-badge=warning]]:text-warning [&_[data-status-badge]]:px-2"
+>
+  <StatusBadge
+    label={presentation.label}
+    tone={presentation.tone}
+    size="sm"
+    ><Icon
+      slot="icon"
+      aria-hidden="true"
+    /></StatusBadge
+  >
+</span>

@@ -71,9 +71,11 @@ test('orders the homepage from purpose and a real check to tools and boundaries'
   page,
 }) => {
   await page.goto(toPublicPath('/'));
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   const titles = await page.getByRole('main').getByRole('heading', { level: 2 }).allTextContents();
   expect(titles.map((title) => title.replaceAll(/\s+/gu, ' ').trim())).toStrictEqual([
     'A file moves.The connection breaks.',
+    'See a project change, end to end.',
     'The structure behind every evaluation.',
     'Start with the task.',
     'Guidance for your runtime.',

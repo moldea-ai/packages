@@ -1,0 +1,68 @@
+---
+import { Ban, FileX } from '@lucide/astro';
+import type { IInspectionEvidence } from '@moldea.ai/website-ui/inspection-presentation';
+import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
+import CodeBlock from '../../code-block/code-block.component.astro';
+import CodeDiff from '../../code-diff/code-diff.component.astro';
+import FilePreview from '../../file-preview/file-preview.component.astro';
+
+interface Props {
+  evidence: IInspectionEvidence;
+}
+const { evidence } = Astro.props;
+const Icon = evidence.isMissing ? FileX : Ban;
+---
+
+<section
+  aria-label={evidence.label}
+  class="grid min-w-0 gap-2"
+>
+  <FilePreview
+    path={evidence.path}
+    label={evidence.label}
+  >
+    {
+      evidence.content === undefined ? (
+        <p class="flex items-start gap-2 p-4 text-sm leading-6 text-muted-foreground">
+          <Icon
+            class="mt-1 size-4 shrink-0"
+            aria-hidden="true"
+          />
+          {evidence.isMissing ? 'The referenced file is missing.' : 'This source isn’t available.'}
+        </p>
+      ) : evidence.beforeContent !== undefined ? (
+        <CodeDiff
+          oldValue={evidence.beforeContent}
+          newValue={evidence.content}
+          language={evidence.language}
+          variant="plain"
+          contextLines={Infinity}
+          ariaLabel={`${formatRepositoryPath(evidence.path)}: Before and after`}
+        />
+      ) : (
+        <div
+          class:list={[
+            evidence.startingLineNumber === undefined
+              ? 'p-4'
+              : '[&_.code-line-number]:w-7 [&_.code-line-number]:border-r [&_.code-line-number]:border-border [&_.code-line-number]:bg-secondary/30 [&_.code-line-number]:pr-2 [&_.code-source-line]:pl-10 [&_[data-code-block]_pre]:pb-0 [&_[data-code-block]_pre]:text-sm [&_[data-code-block]_pre]:leading-normal',
+          ]}
+        >
+          <CodeBlock
+            source={evidence.content}
+            language={evidence.language}
+            variant="plain"
+            copyable={false}
+            startingLineNumber={evidence.startingLineNumber}
+            highlightedLines={evidence.highlightedLines}
+            ariaLabel={`${evidence.label}: ${formatRepositoryPath(evidence.path)}`}
+          />
+        </div>
+      )
+    }
+  </FilePreview>
+  {
+    (evidence.notice || evidence.isExcerpt) && (
+      <p class="text-xs leading-5 text-muted-foreground">{evidence.notice ?? 'Cut short'}</p>
+    )
+  }
+</section>

@@ -1,5 +1,5 @@
 ---
-import { ArrowDownRight, FileCodeCorner, FileText } from '@lucide/astro';
+import { ArrowDownRight, FileCode2, ScrollText } from '@lucide/astro';
 import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
 import CodeText from '@moldea.ai/website-ui/code-text';
 
@@ -18,7 +18,7 @@ const { state } = Astro.props;
   aria-label={state.result.valid ? 'Resolved file reference' : 'Broken file reference'}
 >
   <div class="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-3">
-    <FileText
+    <ScrollText
       class="size-5 shrink-0 text-muted-foreground"
       aria-hidden="true"
     />
@@ -56,7 +56,7 @@ const { state } = Astro.props;
     role="group"
     aria-label="Referenced location"
   >
-    <FileCodeCorner
+    <FileCode2
       class="size-5 shrink-0 text-muted-foreground"
       aria-hidden="true"
     />

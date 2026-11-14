@@ -63,16 +63,17 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(preview.getByText('Example', { exact: true })).toHaveCount(0);
       await expect(preview.locator('details')).toHaveCount(0);
       await expect(preview.locator('pre:visible')).toHaveCount(1);
-      const trigger = preview.locator('[data-dialog-open="hero-check-result"]');
+      const trigger = preview.getByRole('link', { name: 'Complete result', exact: true });
       await expect(trigger).toBeVisible();
-      const triggerBounds = await trigger.boundingBox();
-      expect(triggerBounds!.height).toBeGreaterThanOrEqual(36);
-      await expect(trigger).toContainText('Blocking');
-      await expect(trigger.locator('svg.lucide-bot')).toHaveCount(1);
-      expect(triggerBounds!.width).toBeCloseTo(
-        (await trigger.locator('..').boundingBox())!.width,
-        0,
-      );
+      const findingCard = preview.getByRole('article', { name: 'Structural finding', exact: true });
+      const findingTrigger = findingCard.getByRole('link', { name: /^View finding:/u });
+      await expect(findingCard).toContainText('Blocking');
+      await expect(findingCard.locator('svg.lucide-bot')).toHaveCount(1);
+      const triggerBounds = (await findingTrigger.boundingBox())!;
+      expect(triggerBounds.height).toBeGreaterThanOrEqual(44);
+      const cardBox = (await findingCard.boundingBox())!;
+      expect(triggerBounds.x).toBeCloseTo(cardBox.x + 1, 0);
+      expect(triggerBounds.width).toBeCloseTo(cardBox.width - 2, 0);
       const badges = hero.getByRole('list', { name: 'Package foundations' });
       await expect(badges.getByRole('listitem')).toHaveCount(3);
       const heading = hero.getByRole('heading', { level: 1 });
@@ -96,7 +97,10 @@ for (const width of [320, 768, 1024, 1440]) {
           0,
         );
         expect(previewBounds!.x).toBeGreaterThan(headingBounds!.x + headingBounds!.width);
+        await preview.scrollIntoViewIfNeeded();
         await expect(preview).toBeInViewport({ ratio: 1 });
+        await trigger.scrollIntoViewIfNeeded();
+        await expect(trigger).toBeInViewport({ ratio: 1 });
         for (const titleId of ['inspection-title', 'repository-contents-title', 'runtimes-title']) {
           const headerBottoms = await page.locator(`#${titleId}`).evaluate((element) => {
             const header = element.closest('header');
@@ -138,13 +142,12 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(trigger).not.toHaveCSS('box-shadow', 'none');
       await page.keyboard.press('Enter');
       const dialog = page.getByRole('dialog', {
-        name: '1 broken reference',
+        name: 'Complete result',
         exact: true,
       });
       await expect(dialog).toBeVisible();
       await expect(dialog).toHaveAccessibleDescription('');
       await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeFocused();
-      await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
       expect(
         JSON.parse(await dialog.locator('[data-inspection-output] pre').innerText()),
       ).toStrictEqual(loadWebsiteModel().instructionExample.result);

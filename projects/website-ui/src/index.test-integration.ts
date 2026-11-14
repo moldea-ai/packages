@@ -100,44 +100,6 @@ afterEach(() => {
   }
 });
 
-/**
- * Checks rendered text baselines and icon centers at the current viewport.
- * Zero-height inline markers expose text baselines without changing line height.
- * @returns A promise that resolves after the alignment assertions.
- */
-const expectInspectionActionAlignment = async (opener: Locator): Promise<void> => {
-  const layout = await opener.evaluate(async (node) => {
-    await document.fonts.ready;
-    const textGroup = node.querySelector(':scope > span');
-    if (textGroup === null) throw new Error('Missing inspection action text.');
-    const measureBaseline = (text: Element): number => {
-      const marker = document.createElement('span');
-      marker.style.cssText =
-        'display:inline-block;width:0;height:0;vertical-align:baseline;line-height:0;font-size:0';
-      text.append(marker);
-      try {
-        return marker.getBoundingClientRect().top;
-      } finally {
-        marker.remove();
-      }
-    };
-    const bounds = node.getBoundingClientRect();
-    return {
-      baselines: [...textGroup.children].map(measureBaseline),
-      center: bounds.top + bounds.height / 2,
-      iconCenters: [...node.querySelectorAll(':scope > svg')].map((icon) => {
-        const iconBounds = icon.getBoundingClientRect();
-        return iconBounds.top + iconBounds.height / 2;
-      }),
-    };
-  });
-  expect(layout.baselines.length).toBeGreaterThan(0);
-  expect(Math.max(...layout.baselines) - Math.min(...layout.baselines)).toBeLessThanOrEqual(0.5);
-  expect(layout.iconCenters).toHaveLength(2);
-  for (const center of layout.iconCenters)
-    expect(Math.abs(center - layout.center)).toBeLessThanOrEqual(0.5);
-};
-
 interface IInlineExpectation {
   before: string;
   after: string;
@@ -277,6 +239,12 @@ describe('published website UI package', () => {
       'src/components/inspection-dialog/inspection-dialog.component.astro',
     );
     expect(packedPaths).toContain(
+      'src/components/inspection-list/output/inspection-output.component.astro',
+    );
+    expect(packedPaths).not.toContain(
+      'src/components/inspection-dialog/overview/inspection-overview.component.astro',
+    );
+    expect(packedPaths).not.toContain(
       'src/components/inspection-dialog/output/inspection-output.component.astro',
     );
     expect(packedPaths).toContain('src/components/accordion/accordion.component.astro');
@@ -529,8 +497,7 @@ describe('published website UI package', () => {
         "import InspectionFinding from '@moldea.ai/website-ui/inspection-finding';",
         "import InspectionList from '@moldea.ai/website-ui/inspection-list';",
         "import InspectionDialog from '@moldea.ai/website-ui/inspection-dialog';",
-        "import type { IInspectionResultView } from '@moldea.ai/website-ui/inspection-presentation';",
-        "import { DIAGNOSTIC_GROUP_PRESENTATIONS } from '@moldea.ai/website-ui/inspection-presentation';",
+        "import type { IInspectionFindingView, IInspectionResultView } from '@moldea.ai/website-ui/inspection-presentation';",
         "import FilePreview from '@moldea.ai/website-ui/file-preview';",
         "import FileTree from '@moldea.ai/website-ui/file-tree';",
         "import HeroBackdrop from '@moldea.ai/website-ui/hero-backdrop';",
@@ -581,13 +548,19 @@ describe('published website UI package', () => {
         'const dialogProps = { id: "fixture-wide", title: "Detailed evidence", triggerLabel: "Inspect evidence", triggerVariant: "primary", triggerSize: "lg", size: "large", panelClass: "sm:h-[32rem]!", description: "Recorded evidence details." } satisfies ComponentProps<typeof Dialog>;',
         'const videoProps = { videoUrl: "https://www.youtube.com/watch?v=M7lc1UVf-VE&autoplay=1&t=30", title: \'Inline tutorial "<sample>"\', id: "inline-video", role: "group", "aria-label": "Inline tutorial" } satisfies ComponentProps<typeof YouTubeVideo>;',
         'const iconDialogProps = { id: "fixture-icon", title: "Complete source", triggerLabel: "Open complete source", triggerAriaLabel: "Open complete source in a larger view", triggerVariant: "ghost", triggerSize: "icon-xs", size: "large" } satisfies ComponentProps<typeof Dialog>;',
-        'const passed = { title: "Validation complete", label: "Passed", tone: "success", findings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: { checked: ["references"], unchecked: [] } }), redactions: [] } satisfies IInspectionResultView;',
-        'const failed = { ...passed, title: "Validation failed", label: "Blocking", tone: "danger", outputLabel: "JSON", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ version: 1, command: "validate", status: "invalid", result: { valid: false, coverage: { checked: ["references"], unchecked: ["agents"] } }, diagnostics: [{ code: "MOLDEA_REFERENCE_NOT_FOUND" }], error: null }), findings: [{ id: "missing", title: "Reference not found", code: "MOLDEA_REFERENCE_NOT_FOUND", severity: "error", group: "references", message: "The declared policy file is absent.", path: "/moldea/moldea.yaml", pointer: "/context/~1moldea~1policy.md/bindings/0", evidence: [{ path: "/moldea/moldea.yaml", language: "yaml", content: "references:\\n  - path: src/policy.ts" }, { path: "src/policy.ts", language: "typescript", label: "Referenced target", isMissing: true, issueLabel: "Missing target" }] }] } satisfies IInspectionResultView;',
-        'const multiple = { ...failed, title: "Inspection complete", findings: [{ id: "accepted", title: "Unmatched relationship", code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", accepted: true, reason: "Generated files arrive during the release build.", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", evidence: [] }, ...failed.findings, { ...failed.findings[0], id: "warning", title: "Integration needs attention", severity: "warning", group: "integration" }] } satisfies IInspectionResultView;',
-        'const illustrated = { title: "Illustrative policy review", label: "Blocking", tone: "danger", findings: [{ id: "authority", title: "Approval authority", code: "CONTEXT_CONTRADICTED", severity: "error", category: "context", message: "Only managers can approve refunds.", evidence: [{ path: "project.md", language: "markdown", content: "Only managers can approve refunds.", isExcerpt: true }, { path: "instruction.md", language: "markdown", beforeContent: "Explain the refund policy.", content: "Approve refunds for customers.", isExcerpt: true, issueLabel: "Violates project rule" }] }], redactions: [], limitation: "Illustrative finding." } satisfies IInspectionResultView;',
-        'const many = { ...illustrated, title: "Policy findings", findings: Array.from({ length: 32 }, (_, index) => ({ ...illustrated.findings[0], id: `policy-${index}`, title: `Policy finding ${index + 1}`, evidence: [] })) } satisfies IInspectionResultView;',
+        'const nativeRecord = { kind: "diagnostic", key: "native-missing", code: "MOLDEA_REFERENCE_MISSING", severity: "error", group: "references", message: "The declared policy file is absent.", path: "/moldea/moldea.yaml", pointer: "/context/~1moldea~1policy.md/bindings/0", range: { start: { line: 2, column: 3 }, end: { line: 2, column: 29 } }, details: { referencedPath: "src/policy.ts" }, retained: { original: true } };',
+        'const missing = { id: "missing", kind: "structural", code: nativeRecord.code, severity: "error", group: "references", message: nativeRecord.message, path: nativeRecord.path, record: nativeRecord, field: ["context", "/moldea/policy.md", "bindings", "0"], target: { label: "Referenced file", value: "src/policy.ts", icon: "file" }, facts: [], guidanceHref: withBase("/packages/core/diagnostics/#references-context-and-decisions", "/preview/"), declaration: { path: nativeRecord.path, label: "Declared in", language: "yaml", content: "references:\\n  - path: src/policy.ts", startingLineNumber: 1, highlightedLines: [2] }, evidence: [{ path: "src/policy.ts", language: "typescript", label: "Referenced file", isMissing: true }] } satisfies IInspectionFindingView;',
+        'const passed = { title: "Validation complete", label: "Passed", tone: "success", findings: [], bindings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: [] }), redactions: [] } satisfies IInspectionResultView;',
+        'const failed = { ...passed, title: "Validation failed", label: "Blocking", tone: "danger", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ schemaVersion: 7, command: "validate", status: "invalid", result: { valid: false, page: { cursor: null, records: [nativeRecord] } }, error: null }), findings: [missing] } satisfies IInspectionResultView;',
+        'const acceptedRecord = { code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", subject: "/planned/**", qualifier: null, acceptable: true, accepted: true, reason: "Generated files arrive during the release build." };',
+        'const acceptedFinding = { id: "accepted", kind: "structural", code: acceptedRecord.code, severity: "warning", group: "references", message: acceptedRecord.message, path: acceptedRecord.path, accepted: true, reason: acceptedRecord.reason, record: acceptedRecord, field: [], facts: [], evidence: [], guidanceHref: withBase("/packages/core/diagnostics/#references-context-and-decisions", "/preview/") } satisfies IInspectionFindingView;',
+        'const warningRecord = { code: "MOLDEA_INTEGRATION_LINK_UNRESOLVED", severity: "warning", group: "integration", message: "An instruction link does not resolve.", path: "/AGENTS.md", pointer: "/integration", subject: "/AGENTS.md", qualifier: "./missing.md", acceptable: true };',
+        'const warningFinding = { id: "warning", kind: "structural", code: warningRecord.code, severity: "warning", group: "integration", message: warningRecord.message, path: warningRecord.path, record: warningRecord, field: ["integration"], facts: [{ label: "Reason", value: "External link (external-link)", icon: "reason" }], guidanceHref: "/packages/core/diagnostics/#coding-agent-integration", evidence: [], acceptance: \'acceptedWarnings:\\n  - code: "MOLDEA_INTEGRATION_LINK_UNRESOLVED"\\n    subject: "/AGENTS.md"\\n    qualifier: "./missing.md"\\n    reason:\\n    # Required: explain why this warning is accepted.\' } satisfies IInspectionFindingView;',
+        'const multiple = { ...failed, title: "Inspection complete", findings: [acceptedFinding, missing, warningFinding], output: JSON.stringify({ diagnostics: [acceptedRecord, nativeRecord, warningRecord] }) } satisfies IInspectionResultView;',
+        'const illustrated = { title: "Illustrative policy review", label: "Blocking", tone: "danger", bindings: [], findings: [{ id: "authority", kind: "illustrative", code: "CONTEXT_CONTRADICTED", severity: "error", category: "context", message: "Only managers can approve refunds.", evidence: [{ path: "project.md", label: "Project rule", language: "markdown", content: "Only managers can approve refunds.", isExcerpt: true }, { path: "instruction.md", label: "Changed instruction", language: "markdown", beforeContent: "Explain the refund policy.", content: "Approve refunds for customers.", isExcerpt: true }] }], redactions: [], limitation: "Illustrative finding." } satisfies IInspectionResultView;',
+        'const many = { ...illustrated, title: "Policy findings", findings: Array.from({ length: 32 }, (_, index) => ({ ...illustrated.findings[0], id: `policy-${index}`, message: `Policy finding ${index + 1}`, evidence: [] })) } satisfies IInspectionResultView;',
         'const refused = { ...passed, title: "Operation refused", label: "Refused", tone: "warning", code: "INVALID_PAGE_REQUEST" } satisfies IInspectionResultView;',
-        'const statusResults = [{ ...passed, title: "Reader result", label: "Result", tone: "neutral" }, { ...failed, title: "Review warning", label: "Warning", tone: "warning", findings: [{ ...failed.findings[0], severity: "warning" }] }, { ...failed, title: "Accepted warning", label: "Accepted", tone: "info", findings: [{ ...failed.findings[0], severity: "warning", accepted: true }] }] satisfies IInspectionResultView[];',
+        'const bindingResult = { ...passed, title: "Binding outcomes", label: "Result", tone: "neutral", bindings: [{ relationship: "instruction-loader", path: "src/loader.ts", symbol: "loadPolicy", owner: { label: "Agent", value: "support", icon: "agent" }, outcome: "passed" }, { relationship: "context-binding", path: "src/policy.ts", symbol: "policy", outcome: "failed" }, { relationship: "decision-binding", path: "policy.md", outcome: "not-checked", reason: "No export was declared for this binding." }] } satisfies IInspectionResultView;',
         '---',
         '<html lang="en" data-theme="system">',
         '  <head>',
@@ -658,11 +631,10 @@ describe('published website UI package', () => {
         '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
         '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
         '    <Dialog {...iconDialogProps}><p>Expanded source content</p></Dialog>',
-        '    <main data-inspection-fixture class="mx-auto max-w-3xl px-3"><h2>Inspection examples</h2><InspectionList id="passed" result={passed} /><InspectionList id="single" result={failed} /><InspectionList id="illustrated" result={illustrated} /><InspectionList id="many" result={many} /><InspectionList id="refused" result={refused} />{statusResults.map((result) => <InspectionList id={`hover-${result.tone}`} result={result} />)}<Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><a href="#standalone" data-dialog-open="standalone">Open standalone output</a><InspectionDialog id="standalone" result={passed} /><a href="/runtimes/">Navigate to runtimes</a></main>',
+        '    <main data-inspection-fixture class="mx-auto max-w-3xl space-y-6 px-3"><h2>Inspection examples</h2><section aria-label="Passed result"><InspectionList id="passed" result={passed} /></section><section aria-label="Single finding result"><InspectionList id="single" result={failed} /></section><section aria-label="Authored illustration"><InspectionList id="illustrated" result={illustrated} /></section><section aria-label="Many findings"><InspectionList id="many" result={many} /></section><section aria-label="Refused result"><InspectionList id="refused" result={refused} /></section><section aria-label="Binding outcomes"><InspectionList id="bindings" result={bindingResult} /></section><Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><section aria-label="Standalone finding"><InspectionFinding finding={missing} dialogId="standalone-finding" /><InspectionDialog id="standalone-finding" finding={missing} /></section><a href="/runtimes/">Navigate to runtimes</a></main>',
+        '    <section aria-label="Standalone accepted finding"><InspectionFinding finding={acceptedFinding} dialogId="standalone-accepted" /><InspectionDialog id="standalone-accepted" finding={acceptedFinding} /></section>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
-        '    <InspectionFinding title="Declared export missing" code="MOLDEA_REFERENCE_EXPORT_MISSING" severity="error" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} />',
-        '    <InspectionFinding title="Impact pattern documented early" code="MOLDEA_IMPACT_PATTERN_UNMATCHED" severity="warning" presentation={DIAGNOSTIC_GROUP_PRESENTATIONS.references} accepted />',
         '    <CodeDiff patch={"--- a/policy.ts\\n+++ b/policy.ts\\n@@ -1000 +1000 @@\\n-export const days = 30;\\n+export const days = 60;\\n"} ariaLabel="Four-digit lines" overflow="wrap" />',
         '    <TabbedPanels ariaLabel="Fixture views" id="fixture-tabs" items={[{ id: "first", label: "First", slotName: "first" }, { id: "second", label: "Second", slotName: "second" }]}><p slot="first">First panel</p><p slot="second">Second panel</p></TabbedPanels>',
         '    <EvaluationReplay id="fixture-replay" replay={replay} />',
@@ -784,11 +756,20 @@ describe('published website UI package', () => {
     const serveConsumer = async (context: BrowserContext): Promise<void> => {
       await context.route('https://ui-consumer.example/**', async (route) => {
         const pathname = new URL(route.request().url()).pathname;
-        if (pathname === '/' || pathname === '/runtimes/' || pathname === '/videos/') {
+        if (
+          pathname === '/' ||
+          pathname === '/preview/' ||
+          pathname === '/runtimes/' ||
+          pathname === '/videos/'
+        ) {
           await route.fulfill({
             contentType: 'text/html',
             body:
-              pathname === '/' ? fixtureHtml : pathname === '/videos/' ? videoHtml : runtimeHtml,
+              pathname === '/' || pathname === '/preview/'
+                ? fixtureHtml
+                : pathname === '/videos/'
+                  ? videoHtml
+                  : runtimeHtml,
           });
           return;
         }
@@ -1044,9 +1025,12 @@ describe('published website UI package', () => {
             ))
               expect(result.contrast).toBeGreaterThanOrEqual(4.5);
             await page.emulateMedia({ forcedColors: 'none' });
-            const finding = page.getByRole('article', {
-              name: 'Declared export missing: MOLDEA_REFERENCE_EXPORT_MISSING',
-            });
+            expect(
+              await page.getByRole('button', { name: 'Evaluation details', exact: true }).count(),
+            ).toBe(0);
+            const finding = page
+              .getByRole('region', { name: 'Standalone finding', exact: true })
+              .getByRole('article', { name: 'Structural finding', exact: true });
             expect(await finding.locator('svg.lucide-link-2').count()).toBe(1);
             expect(await finding.locator('svg.lucide-circle-alert').count()).toBe(1);
             const badgeStyle = await finding
@@ -1055,13 +1039,12 @@ describe('published website UI package', () => {
                 transform: getComputedStyle(node).textTransform,
                 weight: getComputedStyle(node).fontWeight,
               }));
-            expect(badgeStyle).toStrictEqual({ transform: 'none', weight: '600' });
-            // axe skips icons, so the info tile's icon is held to 3:1 against its composited tint
+            expect(badgeStyle).toStrictEqual({ transform: 'none', weight: '500' });
+            // axe skips icons, so the accepted tile's icon is held to 3:1 against its composited tint
             const acceptedTileContrast = await page
-              .getByRole('article', {
-                name: 'Impact pattern documented early: MOLDEA_IMPACT_PATTERN_UNMATCHED',
-              })
-              .locator('[data-icon-tile="info"]')
+              .getByRole('region', { name: 'Standalone accepted finding', exact: true })
+              .getByRole('article', { name: 'Structural finding', exact: true })
+              .locator('[data-icon-tile="success"]')
               .evaluate((tile) => {
                 const canvas = document.createElement('canvas');
                 canvas.width = 1;
@@ -1104,10 +1087,10 @@ describe('published website UI package', () => {
               ).violations,
             ).toStrictEqual([]);
             // finding codes wrap only after separators, never mid-word
-            const separatedCode = finding.locator('code');
-            expect(await separatedCode.textContent()).toBe('MOLDEA_REFERENCE_EXPORT_MISSING');
+            const separatedCode = finding.getByText('MOLDEA_REFERENCE_MISSING', { exact: true });
+            expect(await separatedCode.textContent()).toBe('MOLDEA_REFERENCE_MISSING');
             expect(await separatedCode.evaluate((node) => node.innerHTML)).toBe(
-              'MOLDEA_<wbr>REFERENCE_<wbr>EXPORT_<wbr>MISSING',
+              'MOLDEA_<wbr>REFERENCE_<wbr>MISSING',
             );
             expect(
               await page
@@ -1178,8 +1161,8 @@ describe('published website UI package', () => {
             ).toBe(true);
             expect(
               await page
-                .locator('#single-result')
-                .getByText('Missing target', { exact: true })
+                .locator('#single-missing')
+                .getByText('The referenced file is missing.', { exact: true })
                 .isVisible(),
             ).toBe(true);
             const runtimeGrid = page.getByRole('list', { name: 'Runtime guidance', exact: true });
@@ -1508,10 +1491,9 @@ describe('published website UI package', () => {
             page.on('pageerror', (error) => pageErrors.push(error.message));
             await serveConsumer(context);
             await page.goto('https://ui-consumer.example/');
-            await page.waitForSelector(
-              '[data-inspection-dialog-root][data-inspection-enhanced="true"]',
-              { state: 'attached' },
-            );
+            await page.waitForSelector('[data-dialog-root][data-enhanced="true"]', {
+              state: 'attached',
+            });
             await page.evaluate((selectedTheme) => {
               document.documentElement.className = selectedTheme;
             }, theme);
@@ -1636,405 +1618,330 @@ describe('published website UI package', () => {
               '* text=auto',
             );
             expect(await replayMarkdown.locator('[data-code-copy-button]').count()).toBe(0);
-            // an operation without findings shows its result code the way one finding shows its own
-            const refusedOpener = page.getByRole('link', {
-              name: 'Refused INVALID_PAGE_REQUEST: View result: Operation refused',
+            const single = page.getByRole('region', { name: 'Single finding result', exact: true });
+            const card = single.getByRole('article', { name: 'Structural finding', exact: true });
+            const impactBorder = await card.evaluate((node) => {
+              const expected = document.createElement('span');
+              expected.style.borderColor =
+                'color-mix(in oklab, var(--destructive) 30%, transparent)';
+              node.append(expected);
+              const colors = {
+                actual: getComputedStyle(node).borderTopColor,
+                expected: getComputedStyle(expected).borderTopColor,
+              };
+              expected.remove();
+              return colors;
+            });
+            expect(impactBorder.actual).toBe(impactBorder.expected);
+            expect(await card.getByRole('link').count()).toBe(1);
+            expect(await card.locator('[title]:not([title=""])').count()).toBe(0);
+            const cardOpener = card.getByRole('link', {
+              name: 'View finding: The declared policy file is absent.',
               exact: true,
             });
-            expect(await refusedOpener.locator('code').innerText()).toBe('INVALID_PAGE_REQUEST');
-            expect(await page.locator('[data-dialog-open="passed-result"] code').count()).toBe(0);
-            for (const id of [
-              'passed',
-              'single',
-              'refused',
-              'hover-neutral',
-              'hover-warning',
-              'hover-info',
-            ]) {
-              const opener = page.locator(`[data-dialog-open="${id}-result"]`);
-              await expectInspectionActionAlignment(opener);
-              await page.mouse.move(0, 0);
-              const restingColor = await opener.evaluate(
-                (node) => getComputedStyle(node).backgroundColor,
-              );
-              const restingBorder = await opener.evaluate(
-                (node) => getComputedStyle(node).borderColor,
-              );
-              await opener.hover();
-              expect(
-                await opener.evaluate((node) => getComputedStyle(node).backgroundColor),
-              ).not.toBe(restingColor);
-              expect(await opener.evaluate((node) => getComputedStyle(node).borderColor)).not.toBe(
-                restingBorder,
-              );
-              expect(
-                await opener.evaluate((node) =>
-                  Number.parseFloat(getComputedStyle(node).transitionDuration),
-                ),
-              ).toBeLessThanOrEqual(0.00001);
-              expect((await opener.boundingBox())!.height).toBe(40);
-            }
-            const illustrationOpener = page.locator('[data-dialog-open="illustrated-result"]');
-            await expectInspectionActionAlignment(illustrationOpener);
-            expect(await illustrationOpener.locator('svg.lucide-scroll-text').count()).toBe(1);
-            await illustrationOpener.focus();
-            await illustrationOpener.press('Enter');
-            const illustrationDialog = page.getByRole('dialog', {
-              name: 'Illustrative policy review',
-              exact: true,
-            });
-            expect(
-              await illustrationDialog.getByText('Project context', { exact: true }).isVisible(),
-            ).toBe(true);
-            expect(
-              await illustrationDialog
-                .getByRole('heading', { name: 'Approval authority', exact: true })
-                .count(),
-            ).toBe(1);
-            expect(await illustrationDialog.getByRole('tab').count()).toBe(0);
-            expect(await illustrationDialog.locator('[data-inspection-output]').count()).toBe(0);
-            const instructionDiff = illustrationDialog.getByRole('region', {
-              name: 'instruction.md: Before and after',
-              exact: true,
-            });
-            expect(await instructionDiff.innerText()).toContain('Explain the refund policy.');
-            expect(await instructionDiff.innerText()).toContain('Approve refunds for customers.');
-            expect(await illustrationDialog.locator('[data-file-preview]').count()).toBe(2);
-            expect(
-              await illustrationDialog.locator('[data-file-preview-tone="danger"]').count(),
-            ).toBe(1);
-            await instructionDiff.focus();
-            expect(await instructionDiff.evaluate((node) => node === document.activeElement)).toBe(
-              true,
-            );
-            expect(
-              await instructionDiff.evaluate((node) => getComputedStyle(node).boxShadow),
-            ).not.toBe('none');
-            expect(
-              await illustrationDialog
-                .getByText('Illustrative finding.', { exact: true })
-                .isVisible(),
-            ).toBe(true);
-            expect(
-              (await new AxeBuilder({ page }).include('#illustrated-result').analyze()).violations,
-            ).toStrictEqual([]);
-            await page.keyboard.press('Escape');
-            await expect
-              .poll(() => illustrationOpener.evaluate((node) => node === document.activeElement))
-              .toBe(true);
-            const passedOpener = page.getByRole('link', {
-              name: 'Passed: View result: Validation complete',
-              exact: true,
-            });
-            await passedOpener.click();
-            const passedDialog = page.getByRole('dialog', {
-              name: 'Validation complete',
-              exact: true,
-            });
-            expect(await passedDialog.isVisible()).toBe(true);
-            expect(await passedDialog.getByRole('tab').count()).toBe(0);
-            expect(
-              JSON.parse(
-                await passedDialog.locator('[data-inspection-output] pre code').innerText(),
-              ),
-            ).toStrictEqual({
-              valid: true,
-              diagnostics: [],
-              coverage: { checked: ['references'], unchecked: [] },
-            });
-            expect(await passedDialog.evaluate((dialog) => dialog.getAnimations().length)).toBe(0);
-            /*
-             * the browser restores focus on close, but the dialog's own close handler refocuses the
-             * opener in a later task; a listener added now runs after that handler, so moving focus
-             * only after it fires keeps the late refocus from stealing it back
-             */
-            const passedClose = await passedDialog.evaluateHandle((dialog) => ({
-              done: new Promise<void>((resolve) => {
-                dialog.addEventListener('close', () => resolve(), { once: true });
-              }),
-            }));
-            await page.keyboard.press('Escape');
-            await passedClose.evaluate(({ done }) => done);
-            await expect
-              .poll(() => passedOpener.evaluate((node) => node === document.activeElement))
-              .toBe(true);
-            const singleOpener = page.locator('[data-dialog-open="single-result"]');
-            await page.keyboard.press('Tab');
-            await singleOpener.focus();
-            expect(
-              await singleOpener.evaluate((node) => getComputedStyle(node).boxShadow),
-            ).not.toBe('none');
-            await singleOpener.press('Enter');
+            await cardOpener.focus();
+            await cardOpener.press('Enter');
             const singleDialog = page.getByRole('dialog', {
-              name: 'Validation failed',
+              name: 'Structural finding',
               exact: true,
             });
+            expect(await singleDialog.isVisible()).toBe(true);
+            expect(await singleDialog.getByRole('tab').count()).toBe(0);
             expect(
               await singleDialog
-                .getByRole('heading', { name: 'Reference not found', exact: true })
-                .count(),
-            ).toBe(1);
-            expect(
-              await singleDialog.getByRole('tab', { name: 'Finding', selected: true }).count(),
-            ).toBe(1);
-            expect(await singleDialog.locator('[data-file-preview]').count()).toBe(2);
-            expect(await singleDialog.locator('[data-file-preview-tone="danger"]').count()).toBe(1);
-            expect(await singleDialog.getByText('Missing target', { exact: true }).count()).toBe(1);
-            // beside the path the status shares the role's line; otherwise it wraps below the path
-            expect(
-              await singleDialog
-                .locator('[data-file-preview-tone="danger"] [data-file-preview-header]')
-                .evaluate((header) => {
-                  const status = header
-                    .querySelector('[data-file-preview-status]')!
-                    .getBoundingClientRect();
-                  const role = header
-                    .querySelector('[data-file-preview-role]')!
-                    .getBoundingClientRect();
-                  const path = header.querySelector('code[title]')!.getBoundingClientRect();
-                  return status.top < path.bottom
-                    ? Math.abs(status.top - role.top) <= 1
-                    : status.top >= path.bottom;
-                }),
-            ).toBe(true);
-            // repository paths display without their leading slash; the pointer is decoded into a Field row
-            const findingDetails = singleDialog.locator('[data-inspection-finding-card] dl');
-            expect(
-              await findingDetails
-                .locator('div', { has: page.locator('dt', { hasText: /^Location$/u }) })
-                .locator('dd')
-                .innerText(),
-            ).toBe('moldea/moldea.yaml');
-            const field = findingDetails.locator('[data-inspection-field]');
-            expect(await field.getAttribute('title')).toBe(
-              '/context/~1moldea~1policy.md/bindings/0',
-            );
-            expect(await field.locator('code').allInnerTexts()).toStrictEqual([
-              'context',
-              '/moldea/policy.md',
-              'bindings',
-              '0',
-            ]);
-            // single-word and wrapping chips share one height, so every details row keeps its spacing
-            const chipFragmentHeights = await findingDetails
-              .locator('dd code')
-              .evaluateAll((codes) =>
-                codes.flatMap((code) => [...code.getClientRects()].map(({ height }) => height)),
-              );
-            for (const height of chipFragmentHeights)
-              expect(Math.abs(height - chipFragmentHeights[0]!)).toBeLessThan(0.5);
-            expect(
-              await singleDialog
-                .locator('[data-file-preview]')
-                .first()
-                .locator('code[title]')
-                .getAttribute('title'),
-            ).toBe('moldea/moldea.yaml');
-            expect(
-              await singleDialog
-                .locator('[data-inspection-finding-card] [data-file-preview]')
-                .count(),
-            ).toBe(0);
-            expect(
-              await singleDialog
-                .locator('[data-inspection-finding-card]')
-                .getByText('References', { exact: true })
-                .isVisible(),
-            ).toBe(true);
-            const rowBounds = await singleOpener.boundingBox();
-            const listBounds = await singleOpener.locator('..').boundingBox();
-            expect(rowBounds?.width).toBe(listBounds?.width);
-            const findingCode = singleOpener.locator('code');
-            expect(await findingCode.innerText()).toBe('MOLDEA_REFERENCE_NOT_FOUND');
-            expect(await findingCode.evaluate((node) => getComputedStyle(node).fontWeight)).toBe(
-              '400',
-            );
-            expect(await findingCode.evaluate((node) => getComputedStyle(node).whiteSpace)).toBe(
-              'nowrap',
-            );
-            expect(await findingCode.evaluate((node) => getComputedStyle(node).textOverflow)).toBe(
-              'ellipsis',
-            );
-            expect(rowBounds!.height).toBe(40);
-            expect((await passedOpener.boundingBox())!.height).toBe(40);
-            const findingHeader = singleDialog.locator('[data-inspection-finding-header]');
-            expect(await findingHeader.getByText('References', { exact: true }).isVisible()).toBe(
-              true,
-            );
-            expect(
-              await findingHeader
-                .getByRole('heading', { name: 'Reference not found', exact: true })
-                .isVisible(),
-            ).toBe(true);
-            expect(
-              await singleDialog.locator('[data-file-preview]').last().locator('pre').count(),
-            ).toBe(0);
-            await singleDialog.getByRole('tab', { name: 'Finding', exact: true }).focus();
-            await page.keyboard.press('ArrowRight');
-            expect(
-              await singleDialog.getByRole('tab', { name: 'Output', selected: true }).count(),
-            ).toBe(1);
-            const outputHeader = singleDialog.locator(
-              '[data-inspection-output] [data-code-block-header]',
-            );
-            expect(
-              await outputHeader.getByText('moldea validate --json', { exact: true }).isVisible(),
-            ).toBe(true);
-            expect(await outputHeader.getByText('Exit 1', { exact: true }).isVisible()).toBe(true);
-            // recorded output is evidence, not something a reader pastes elsewhere
-            expect(
-              await outputHeader.getByRole('button', { name: 'Copy code', exact: true }).count(),
-            ).toBe(0);
-            expect(
-              await singleDialog.getByText('Complete recorded response', { exact: true }).count(),
-            ).toBe(0);
-            expect(
-              JSON.parse(
-                await singleDialog.locator('[data-inspection-output] pre code').innerText(),
-              ),
-            ).toStrictEqual({
-              version: 1,
-              command: 'validate',
-              status: 'invalid',
-              result: {
-                valid: false,
-                coverage: { checked: ['references'], unchecked: ['agents'] },
-              },
-              diagnostics: [{ code: 'MOLDEA_REFERENCE_NOT_FOUND' }],
-              error: null,
-            });
-            expect(
-              (await new AxeBuilder({ page }).include('#single-result').analyze()).violations,
-            ).toStrictEqual([]);
-            await page.keyboard.press('Escape');
-            await expect
-              .poll(() => singleOpener.evaluate((node) => node === document.activeElement))
-              .toBe(true);
-            const outerOpener = page.getByRole('button', { name: 'Open case', exact: true });
-            await outerOpener.click();
-            const multipleOpener = page.locator('[data-dialog-open="multiple-result"]');
-            await expectInspectionActionAlignment(multipleOpener);
-            expect(await multipleOpener.innerText()).toContain('3 findings');
-            expect(await multipleOpener.innerText()).toContain(
-              '1 blocking · 1 warning · 1 accepted',
-            );
-            await multipleOpener.click();
-            expect(await page.locator('dialog:modal').count()).toBe(2);
-            const acceptedDialog = page.getByRole('dialog', {
-              name: 'Inspection complete',
-              exact: true,
-            });
-            expect(
-              await acceptedDialog.getByRole('tab', { name: 'Findings', selected: true }).count(),
-            ).toBe(1);
-            const overview = acceptedDialog.getByRole('list', { name: 'Inspection findings' });
-            expect(await overview.isVisible()).toBe(true);
-            const rows = overview.getByRole('link');
-            expect(await rows.count()).toBe(3);
-            expect(await rows.nth(0).getAttribute('data-inspection-show')).toBe('missing');
-            const missingRowPath = rows.nth(0).locator('code[id$="-path-missing"]');
-            expect(await missingRowPath.innerText()).toBe('moldea/moldea.yaml');
-            expect(await missingRowPath.getAttribute('title')).toBe('moldea/moldea.yaml');
-            expect(await rows.nth(1).getAttribute('data-inspection-show')).toBe('warning');
-            expect(await rows.nth(2).getAttribute('data-inspection-show')).toBe('accepted');
-            expect(await acceptedDialog.locator('[data-inspection-detail]:visible').count()).toBe(
-              0,
-            );
-            const acceptedOpener = rows.nth(2);
-            await acceptedOpener.focus();
-            await acceptedOpener.press('Enter');
-            expect(await page.locator('dialog:modal').count()).toBe(2);
-            expect(await overview.isVisible()).toBe(false);
-            expect(
-              await acceptedDialog
-                .locator('[data-inspection-detail="accepted"]')
+                .getByRole('button', { name: 'Close dialog', exact: true })
                 .evaluate((node) => node === document.activeElement),
             ).toBe(true);
             expect(
-              await acceptedDialog
-                .locator('[data-inspection-detail="accepted"]')
-                .getByText('Accepted', { exact: true })
-                .isVisible(),
-            ).toBe(true);
-            expect(
-              await acceptedDialog
-                .getByText('Generated files arrive during the release build.', { exact: true })
-                .isVisible(),
-            ).toBe(true);
-            await acceptedDialog.getByRole('tab', { name: 'Output', exact: true }).click();
-            expect(await acceptedDialog.locator('[data-inspection-output]').isVisible()).toBe(true);
-            await acceptedDialog.getByRole('tab', { name: 'Findings', exact: true }).click();
-            expect(
-              await acceptedDialog.locator('[data-inspection-detail="accepted"]').isVisible(),
-            ).toBe(true);
-            await acceptedDialog
-              .getByRole('link', { name: 'Back to findings', exact: true })
-              .click();
-            expect(await acceptedOpener.evaluate((node) => node === document.activeElement)).toBe(
-              true,
-            );
-            expect(await overview.isVisible()).toBe(true);
-            await rows.nth(1).click();
-            expect(
-              await acceptedDialog.locator('[data-inspection-detail="warning"]').isVisible(),
-            ).toBe(true);
-            expect(
-              await acceptedDialog
-                .locator('[data-inspection-detail="warning"] [data-file-preview-tone="warning"]')
+              await singleDialog
+                .getByRole('heading', { name: 'The declared policy file is absent.', exact: true })
                 .count(),
             ).toBe(1);
             expect(
-              (await new AxeBuilder({ page }).include('#multiple-result').analyze()).violations,
+              await singleDialog
+                .getByRole('region', { name: 'Affected declaration', exact: true })
+                .innerText(),
+            ).toContain('src/policy.ts');
+            const declaration = singleDialog.getByRole('group', {
+              name: 'Declared in: moldea/moldea.yaml',
+              exact: true,
+            });
+            expect(
+              await declaration
+                .locator('[data-line-number]')
+                .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-line-number'))),
+            ).toStrictEqual(['1', '2']);
+            expect(await declaration.locator('[data-highlighted-line]').count()).toBe(1);
+            expect(
+              await declaration.evaluate((node) => ({
+                font: getComputedStyle(node).fontSize,
+                lineHeight: getComputedStyle(node).lineHeight,
+              })),
+            ).toStrictEqual({ font: '14px', lineHeight: '21px' });
+            expect(
+              await singleDialog.getByRole('button', { name: 'Copy code', exact: true }).count(),
+            ).toBe(0);
+            const guidance = singleDialog.getByRole('region', { name: 'How to fix', exact: true });
+            expect(
+              await guidance.getByRole('heading', { name: 'How to fix', exact: true }).count(),
+            ).toBe(1);
+            expect(
+              await guidance
+                .getByText('See the Core diagnostics guidance for this finding.', { exact: true })
+                .count(),
+            ).toBe(1);
+            expect(
+              await singleDialog
+                .getByRole('link', {
+                  name: 'See the Core diagnostics guidance for this finding.',
+                  exact: true,
+                })
+                .getAttribute('href'),
+            ).toBe('/preview/packages/core/diagnostics/#references-context-and-decisions');
+            const evaluationOpener = singleDialog.getByRole('button', {
+              name: 'Evaluation details',
+              exact: true,
+            });
+            await evaluationOpener.click();
+            const evaluation = page.getByRole('dialog', {
+              name: 'Evaluation details',
+              exact: true,
+            });
+            expect(await evaluation.isVisible()).toBe(true);
+            expect(await page.locator('dialog:modal').count()).toBe(2);
+            expect(await evaluation.getByText('Method', { exact: true }).count()).toBe(1);
+            expect(await evaluation.getByText('Original severity', { exact: true }).count()).toBe(
+              1,
+            );
+            expect(await evaluation.getByText('Revision', { exact: true }).count()).toBe(0);
+            expect(await evaluation.locator('[data-inspection-field]').innerText()).toContain(
+              '/moldea/policy.md',
+            );
+            expect(
+              await evaluation.locator('pre').evaluate((node) => ({
+                font: getComputedStyle(node).fontSize,
+                lineHeight: getComputedStyle(node).lineHeight,
+              })),
+            ).toStrictEqual({ font: '14px', lineHeight: '21px' });
+            const stored: unknown = JSON.parse(
+              (await evaluation
+                .getByRole('group', { name: 'Finding output', exact: true })
+                .textContent())!,
+            );
+            expect(stored).toStrictEqual({
+              kind: 'diagnostic',
+              key: 'native-missing',
+              code: 'MOLDEA_REFERENCE_MISSING',
+              severity: 'error',
+              group: 'references',
+              message: 'The declared policy file is absent.',
+              path: '/moldea/moldea.yaml',
+              pointer: '/context/~1moldea~1policy.md/bindings/0',
+              range: { start: { line: 2, column: 3 }, end: { line: 2, column: 29 } },
+              details: { referencedPath: 'src/policy.ts' },
+              retained: { original: true },
+            });
+            expect(
+              await evaluation.getByRole('button', { name: 'Copy code', exact: true }).count(),
+            ).toBe(1);
+            expect(
+              (await new AxeBuilder({ page }).include('#single-missing-evaluation').analyze())
+                .violations,
             ).toStrictEqual([]);
-            expect(
-              await page.evaluate(
-                () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-              ),
-            ).toBe(true);
             await page.keyboard.press('Escape');
-            await expect.poll(() => page.locator('dialog:modal').count()).toBe(1);
             await expect
-              .poll(() => multipleOpener.evaluate((node) => node === document.activeElement))
+              .poll(() => evaluationOpener.evaluate((node) => node === document.activeElement))
               .toBe(true);
-            await multipleOpener.click();
-            expect(await overview.isVisible()).toBe(true);
+            if (captureDirectory)
+              await singleDialog.screenshot({
+                path: path.join(captureDirectory, `finding-${theme}-${width}.png`),
+              });
+            await page.keyboard.press('Escape');
+            await expect
+              .poll(() => cardOpener.evaluate((node) => node === document.activeElement))
+              .toBe(true);
+            const complete = single.getByRole('link', { name: 'Complete result', exact: true });
+            await complete.click();
+            const completeDialog = page.getByRole('dialog', {
+              name: 'Complete result',
+              exact: true,
+            });
+            const full: unknown = JSON.parse(
+              (await completeDialog
+                .getByRole('group', { name: 'JSON', exact: true })
+                .textContent())!,
+            );
+            expect(full).toMatchObject({
+              schemaVersion: 7,
+              command: 'validate',
+              status: 'invalid',
+              result: { page: { records: [stored] } },
+              error: null,
+            });
+            expect(full).not.toHaveProperty('exitStatus');
             expect(
-              await acceptedDialog.getByRole('tab', { name: 'Findings', selected: true }).count(),
+              await completeDialog.getByText('moldea validate --json', { exact: true }).count(),
+            ).toBe(1);
+            expect(await completeDialog.getByText('Exit 1', { exact: true }).count()).toBe(1);
+            expect(
+              await completeDialog.getByRole('button', { name: 'Copy code', exact: true }).count(),
+            ).toBe(0);
+            await page.keyboard.press('Escape');
+            await expect
+              .poll(() => complete.evaluate((node) => node === document.activeElement))
+              .toBe(true);
+            const refused = page.getByRole('region', { name: 'Refused result', exact: true });
+            expect(await refused.getByText('INVALID_PAGE_REQUEST', { exact: true }).count()).toBe(
+              1,
+            );
+            expect(await refused.getByRole('article').count()).toBe(0);
+            expect(
+              await refused.getByRole('link', { name: 'Complete result', exact: true }).count(),
+            ).toBe(1);
+            const passed = page.getByRole('region', { name: 'Passed result', exact: true });
+            await passed.getByRole('link', { name: 'Complete result', exact: true }).click();
+            expect(
+              JSON.parse(
+                (await page
+                  .getByRole('dialog', { name: 'Complete result', exact: true })
+                  .getByRole('group', { name: 'JSON', exact: true })
+                  .textContent())!,
+              ),
+            ).toStrictEqual({ valid: true, diagnostics: [], coverage: [] });
+            await page.keyboard.press('Escape');
+            const illustration = page.getByRole('region', {
+              name: 'Authored illustration',
+              exact: true,
+            });
+            expect(
+              await illustration
+                .getByRole('link', { name: 'Complete result', exact: true })
+                .count(),
+            ).toBe(0);
+            await illustration
+              .getByRole('link', {
+                name: 'View finding: Only managers can approve refunds.',
+                exact: true,
+              })
+              .click();
+            const behavior = page.getByRole('dialog', { name: 'Behavior finding', exact: true });
+            expect(
+              await behavior
+                .getByRole('button', { name: 'Evaluation details', exact: true })
+                .count(),
+            ).toBe(0);
+            expect(
+              await behavior
+                .getByText('Only managers can approve refunds.', { exact: true })
+                .count(),
+            ).toBeGreaterThan(0);
+            expect(
+              await behavior
+                .getByRole('region', { name: 'instruction.md: Before and after', exact: true })
+                .count(),
+            ).toBe(1);
+            expect(
+              await behavior.getByRole('button', { name: 'Copy code', exact: true }).count(),
+            ).toBe(0);
+            await page.keyboard.press('Escape');
+            const outerOpener = page.getByRole('button', { name: 'Open case', exact: true });
+            await outerOpener.click();
+            const outer = page.getByRole('dialog', { name: 'Case details', exact: true });
+            expect(
+              await outer
+                .getByText('3 findings · 1 blocking · 1 warning · 1 accepted', { exact: true })
+                .count(),
+            ).toBe(1);
+            const acceptedDisclosure = outer.getByText('Accepted warnings (1 loaded)', {
+              exact: true,
+            });
+            await acceptedDisclosure.click();
+            const acceptedCard = outer
+              .getByRole('article', { name: 'Structural finding', exact: true })
+              .filter({ hasText: 'Generated files arrive during the release build.' });
+            expect(await acceptedCard.locator('[data-status-badge="success"]').count()).toBe(1);
+            await acceptedCard.getByRole('link').click();
+            const acceptedDialog = page.getByRole('dialog', {
+              name: 'Structural finding',
+              exact: true,
+            });
+            expect(
+              await acceptedDialog
+                .getByRole('region', { name: 'Accepted in moldea.yaml', exact: true })
+                .count(),
+            ).toBe(1);
+            expect(
+              await acceptedDialog.getByRole('region', { name: 'How to fix', exact: true }).count(),
+            ).toBe(0);
+            const nestedEvaluation = acceptedDialog.getByRole('button', {
+              name: 'Evaluation details',
+              exact: true,
+            });
+            await nestedEvaluation.click();
+            expect(await page.locator('dialog:modal').count()).toBe(3);
+            await page.keyboard.press('Escape');
+            await expect
+              .poll(() => nestedEvaluation.evaluate((node) => node === document.activeElement))
+              .toBe(true);
+            await page.keyboard.press('Escape');
+            const warningCard = outer.getByRole('link', {
+              name: 'View finding: An instruction link does not resolve.',
+              exact: true,
+            });
+            await warningCard.click();
+            const warningDialog = page.getByRole('dialog', {
+              name: 'Structural finding',
+              exact: true,
+            });
+            await warningDialog
+              .getByText('Accept this warning in moldea.yaml', { exact: true })
+              .click();
+            expect(
+              await warningDialog
+                .getByRole('group', { name: 'Warning acceptance', exact: true })
+                .innerText(),
+            ).toContain('reason:');
+            expect(
+              await warningDialog.getByRole('button', { name: 'Copy code', exact: true }).count(),
             ).toBe(1);
             await page.keyboard.press('Escape');
-            await expect.poll(() => page.locator('dialog:modal').count()).toBe(1);
             await page.keyboard.press('Escape');
             await expect
               .poll(() => outerOpener.evaluate((node) => node === document.activeElement))
               .toBe(true);
-            await page.locator('[data-dialog-open="many-result"]').click();
-            const manyDialog = page.getByRole('dialog', { name: 'Policy findings', exact: true });
-            expect(await manyDialog.getByRole('tab').count()).toBe(0);
-            const lastRow = manyDialog.getByRole('link', {
-              name: 'View finding: Policy finding 32 CONTEXT_CONTRADICTED',
-              exact: true,
-            });
-            await lastRow.focus();
-            await lastRow.press('Enter');
+            const last = page
+              .getByRole('region', { name: 'Many findings', exact: true })
+              .getByRole('link', { name: 'View finding: Policy finding 32', exact: true });
+            await last.focus();
+            await last.press('Enter');
             expect(
-              await manyDialog.locator('[data-inspection-detail="policy-31"]').isVisible(),
-            ).toBe(true);
-            expect(await manyDialog.locator('[data-inspection-output]').count()).toBe(0);
-            await manyDialog.getByRole('link', { name: 'Back to findings', exact: true }).click();
-            expect(await lastRow.evaluate((node) => node === document.activeElement)).toBe(true);
-            const lastBounds = (await lastRow.boundingBox())!;
-            expect(lastBounds.y).toBeGreaterThanOrEqual(0);
-            expect(lastBounds.y + lastBounds.height).toBeLessThanOrEqual(900);
+              await page
+                .getByRole('dialog', { name: 'Behavior finding', exact: true })
+                .getByRole('heading', { name: 'Policy finding 32', exact: true })
+                .count(),
+            ).toBe(1);
             await page.keyboard.press('Escape');
-            const standaloneOpener = page.getByRole('link', {
-              name: 'Open standalone output',
-              exact: true,
-            });
-            await standaloneOpener.click();
+            await expect
+              .poll(() => last.evaluate((node) => node === document.activeElement))
+              .toBe(true);
+            const bindings = page
+              .getByRole('region', { name: 'Binding outcomes', exact: true })
+              .getByRole('article', { name: 'Binding check', exact: true });
+            expect(await bindings.count()).toBe(3);
+            expect(await bindings.nth(0).innerText()).toContain('Export found');
+            expect(await bindings.nth(1).innerText()).toContain('Export missing');
+            expect(await bindings.nth(2).innerText()).toContain('Not checked');
+            expect(
+              await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+            ).toBe(true);
+            const standalone = page
+              .getByRole('region', { name: 'Standalone finding', exact: true })
+              .getByRole('link');
+            await standalone.click();
             if (width >= 768) await page.mouse.click(1, 1);
             else await page.keyboard.press('Escape');
             await expect
-              .poll(() => standaloneOpener.evaluate((node) => node === document.activeElement))
+              .poll(() => standalone.evaluate((node) => node === document.activeElement))
               .toBe(true);
             await page.getByRole('button', { name: 'Inspect evidence', exact: true }).click();
             expect(
@@ -2047,14 +1954,19 @@ describe('published website UI package', () => {
             await page.waitForURL('https://ui-consumer.example/runtimes/');
             expect(await page.locator('dialog:modal').count()).toBe(0);
             await page.goBack();
-            await page.waitForSelector(
-              '[data-inspection-dialog-root][data-inspection-enhanced="true"]',
-              { state: 'attached' },
-            );
-            await page.locator('[data-dialog-open="single-result"]').click();
+            await page.waitForSelector('[data-dialog-root][data-enhanced="true"]', {
+              state: 'attached',
+            });
+            await page
+              .getByRole('region', { name: 'Single finding result', exact: true })
+              .getByRole('link', {
+                name: 'View finding: The declared policy file is absent.',
+                exact: true,
+              })
+              .click();
             expect(
               await page
-                .getByRole('dialog', { name: 'Validation failed', exact: true })
+                .getByRole('dialog', { name: 'Structural finding', exact: true })
                 .isVisible(),
             ).toBe(true);
             await page.keyboard.press('Escape');
@@ -2063,6 +1975,45 @@ describe('published website UI package', () => {
             await context.close();
           }
         }
+      }
+      const prefixedContext = await browser.newContext({ reducedMotion: 'reduce' });
+      try {
+        await serveConsumer(prefixedContext);
+        const page = await prefixedContext.newPage();
+        await page.goto('https://ui-consumer.example/preview/');
+        const result = page.getByRole('region', { name: 'Single finding result', exact: true });
+        const card = result.getByRole('link', {
+          name: 'View finding: The declared policy file is absent.',
+          exact: true,
+        });
+        expect(new URL((await card.getAttribute('href'))!, page.url()).href).toBe(
+          'https://ui-consumer.example/preview/#single-missing',
+        );
+        await card.click();
+        const finding = page.getByRole('dialog', { name: 'Structural finding', exact: true });
+        expect(
+          await finding
+            .getByRole('link', {
+              name: 'See the Core diagnostics guidance for this finding.',
+              exact: true,
+            })
+            .getAttribute('href'),
+        ).toBe('/preview/packages/core/diagnostics/#references-context-and-decisions');
+        await page.keyboard.press('Escape');
+        const complete = result.getByRole('link', { name: 'Complete result', exact: true });
+        expect(new URL((await complete.getAttribute('href'))!, page.url()).href).toBe(
+          'https://ui-consumer.example/preview/#single-result',
+        );
+        await complete.click();
+        expect(
+          await page.getByRole('dialog', { name: 'Complete result', exact: true }).isVisible(),
+        ).toBe(true);
+        await page.keyboard.press('Escape');
+        await expect
+          .poll(() => complete.evaluate((node) => node === document.activeElement))
+          .toBe(true);
+      } finally {
+        await prefixedContext.close();
       }
       // presentation and lifecycle permutations stay in the existing full-only consumer boundary
       for (const [theme, width, reducedMotion] of [

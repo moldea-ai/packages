@@ -88,16 +88,15 @@ describe('production discovery guards', () => {
       'new-tab link without an external-link icon',
     );
   });
-  test.each([
-    'MOLDEA_REFERENCE_MISSING',
-    'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
-    'id="hero-check-result"',
-  ])('rejects a homepage that loses %s', (marker) => {
-    replaceArtifactText('index.html', marker, 'REMOVED_EXAMPLE');
-    expect(() => verifyProductionBuild(directory)).toThrow(
-      'homepage omits the real Core diagnostic',
-    );
-  });
+  test.each(['MOLDEA_REFERENCE_MISSING', 'MOLDEA_TOOL_IMPLEMENTATION_MISSING'])(
+    'rejects a homepage that loses %s',
+    (marker) => {
+      replaceArtifactText('index.html', marker, 'REMOVED_EXAMPLE');
+      expect(() => verifyProductionBuild(directory)).toThrow(
+        'homepage omits the real Core diagnostic',
+      );
+    },
+  );
 
   test.each([
     ['http-equiv="refresh"', 'http-equiv="invalid"'],
@@ -126,6 +125,12 @@ describe('production discovery guards', () => {
     } finally {
       rmSync(path);
     }
+  });
+  test('rejects a homepage that loses its Complete result dialog', () => {
+    replaceArtifactText('index.html', 'id="hero-check-result"', 'id="removed-result"');
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'missing local anchor #hero-check-result',
+    );
   });
   test('rejects test-file leakage in the static artifact', () => {
     const path = join(directory, '_index.test-e2e.js');
@@ -159,7 +164,7 @@ describe('production discovery guards', () => {
     [
       'id="mirror-stale-result"',
       'data-removed="mirror-stale-result"',
-      'omits result dialog mirror-stale',
+      'missing local anchor #mirror-stale-result',
     ],
     [
       'data-capability-outcome="binding-export-passed"',
@@ -190,6 +195,21 @@ describe('production discovery guards', () => {
     );
     expect(() => verifyProductionBuild(directory)).toThrow('contains an unknown example');
   });
+  test('rejects missing per-finding output while Complete result remains intact', () => {
+    replaceArtifactText('capabilities/index.html', 'data-inspection-record', 'data-removed-record');
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'finding record does not match execution',
+    );
+  });
+  test('rejects changed per-finding JSON independently of Complete result', () => {
+    const html = readFileSync(join(directory, 'capabilities/index.html'), 'utf8');
+    const prefix = /data-inspection-record[\s\S]*?<code class="language-json">/u.exec(html)?.[0];
+    if (prefix === undefined) throw new Error('Missing finding output fixture.');
+    replaceArtifactText('capabilities/index.html', prefix, `${prefix}stale`);
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'finding record does not match execution',
+    );
+  });
   test.each([
     ['data-capability-visual="files"', 'data-capability-visual="runtime"', 'wrong visual family'],
     ['data-capability-label="Blocking"', 'data-capability-label="Passed"', 'unsupported outcome'],
@@ -198,7 +218,7 @@ describe('production discovery guards', () => {
       'data-inspection-outcome="Passed"',
       'unsupported outcome',
     ],
-    ['MOLDEA_REFERENCE_MISSING', 'MOLDEA_REFERENCE_UNKNOWN', 'unsupported outcome'],
+    ['MOLDEA_REFERENCE_MISSING', 'MOLDEA_REFERENCE_UNKNOWN', 'result does not match execution'],
   ])('rejects an unsupported capability claim %s', (marker, replacement, message) => {
     replaceArtifactText('capabilities/index.html', marker, replacement);
     expect(() => verifyProductionBuild(directory)).toThrow(message);
@@ -209,11 +229,11 @@ describe('production discovery guards', () => {
       'Capabilities machine discovery is missing',
     );
   });
-  test('rejects a mixed-result overview that loses a finding link', () => {
+  test('rejects a mixed-result card that loses a finding link', () => {
     replaceArtifactText(
       'capabilities/index.html',
-      'href="#inspection-mixed-diagnostics-result-finding-finding-3"',
-      'href="#inspection-mixed-diagnostics-result-finding-finding-2"',
+      'href="#inspection-mixed-diagnostics-finding-3"',
+      'href="#inspection-mixed-diagnostics-finding-2"',
     );
     expect(() => verifyProductionBuild(directory)).toThrow(
       'unsupported outcome for inspection-mixed-diagnostics',

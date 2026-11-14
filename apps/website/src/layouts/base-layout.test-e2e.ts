@@ -863,12 +863,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await expect(commandFrame.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(
       0,
     );
-    await example.locator('[data-inspection-outcome]').click();
+    await example.getByRole('link', { name: 'Complete result', exact: true }).click();
     const result = page.getByRole('dialog');
-    await expect(result.locator('[data-inspection-finding-card] [data-file-preview]')).toHaveCount(
-      0,
-    );
-    await result.getByRole('tab', { name: 'Output', exact: true }).click();
+    await expect(
+      result.getByRole('article', { name: 'Structural finding', exact: true }),
+    ).toHaveCount(0);
     const output = result.locator('[data-inspection-output]');
     const outputHeader = output.locator('[data-code-block-header]');
     await expect(outputHeader.getByText(commandSource, { exact: true })).toBeVisible();
@@ -906,8 +905,9 @@ test('keeps information result icons legible in both themes', async ({ page }) =
         surface: getComputedStyle(document.documentElement).getPropertyValue('--background'),
       }));
     expect(calculateContrastRatio(colors.icon, colors.surface)).toBeGreaterThanOrEqual(3);
-    await result.focus();
-    await expect(result).not.toHaveCSS('box-shadow', 'none');
+    const complete = result.getByRole('link', { name: 'Complete result', exact: true });
+    await complete.focus();
+    await expect(complete).not.toHaveCSS('box-shadow', 'none');
   }
 });
 

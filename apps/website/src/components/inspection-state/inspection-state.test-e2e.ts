@@ -24,11 +24,7 @@ for (const width of [320, 1440]) {
         const trigger = page.locator(`#inspection-${state.id} [data-dialog-open]`).first();
         await trigger.focus();
         await page.keyboard.press('Enter');
-        const resultTitle = {
-          connected: 'Path found',
-          broken: '1 broken reference',
-          repaired: 'Check passes',
-        }[state.id];
+        const resultTitle = 'Complete result';
         const dialog = page.getByRole('dialog', { name: resultTitle, exact: true });
         await expect(dialog).toBeVisible();
         await expect(dialog).toHaveAccessibleDescription('');
@@ -41,10 +37,7 @@ for (const width of [320, 1440]) {
         await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1);
         const close = dialog.getByRole('button', { name: 'Close dialog', exact: true });
         await expect(close).toBeFocused();
-        if (!state.result.valid) {
-          await expect(dialog.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
-          await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
-        } else await expect(dialog.getByRole('tab')).toHaveCount(0);
+        await expect(dialog.getByRole('tab')).toHaveCount(0);
         const code = dialog.getByRole('group', {
           name: 'JSON',
           exact: true,
@@ -186,7 +179,7 @@ for (const width of [320, 1440]) {
       const trigger = page.locator('[data-dialog-open="hero-check-result"]');
       await trigger.click();
       const dialog = page.getByRole('dialog', {
-        name: '1 broken reference',
+        name: 'Complete result',
         exact: true,
       });
       await dialog.evaluate((element) => {
@@ -271,7 +264,7 @@ test('finishes an interrupted exit when reduced motion changes and can reopen', 
   const trigger = page.locator('[data-dialog-open="hero-check-result"]');
   await trigger.click();
   const dialog = page.getByRole('dialog', {
-    name: '1 broken reference',
+    name: 'Complete result',
     exact: true,
   });
   await dialog.evaluate((element) => {
@@ -295,7 +288,7 @@ test('an obsolete exit cannot close a reopened dialog', async ({ page }) => {
   const trigger = page.locator('[data-dialog-open="hero-check-result"]');
   await trigger.click();
   const dialog = page.getByRole('dialog', {
-    name: '1 broken reference',
+    name: 'Complete result',
     exact: true,
   });
   await dialog.evaluate(async (element) => {

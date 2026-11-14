@@ -18,13 +18,18 @@ const readText = (
 ): string => {
   if (skipDialogs && 'tagName' in node && node.tagName === 'dialog') return '';
   if ('value' in node) return node.value;
+  if ('tagName' in node && node.tagName === 'code')
+    return node.childNodes.map((child) => readText(child, '', skipDialogs)).join('');
   return 'childNodes' in node
     ? node.childNodes.map((child) => readText(child, separator, skipDialogs)).join(separator)
     : '';
 };
 
-/** Collects only recorded output, excluding JSON source evidence in Finding views. */
-const readRecordedOutputs = (dialog: DefaultTreeAdapterMap['node']): string[] => {
+/** Collects the selected output surface, excluding source evidence and the other output owner. */
+const readRecordedOutputs = (
+  dialog: DefaultTreeAdapterMap['node'],
+  marker = 'data-inspection-output',
+): string[] => {
   const outputs: string[] = [];
   const pending: { node: DefaultTreeAdapterMap['node']; isOutput: boolean }[] = [
     { node: dialog, isOutput: false },
@@ -34,8 +39,7 @@ const readRecordedOutputs = (dialog: DefaultTreeAdapterMap['node']): string[] =>
     if (!current) continue;
     const { node } = current;
     const isOutput =
-      current.isOutput ||
-      ('attrs' in node && node.attrs.some(({ name }) => name === 'data-inspection-output'));
+      current.isOutput || ('attrs' in node && node.attrs.some(({ name }) => name === marker));
     if (
       isOutput &&
       'tagName' in node &&
@@ -72,6 +76,7 @@ export const verifyCapabilityArtifacts = (
   const references = new Set<string>();
   const recordedOutputs = new Map<string, string[]>();
   const findingTexts = new Map<string, string>();
+  const findingRecords = new Map<string, string[]>();
   const showcase = getCapabilityShowcase(catalog);
   const pending: DefaultTreeAdapterMap['node'][] = [parse(html)];
   while (pending.length > 0) {
@@ -79,8 +84,11 @@ export const verifyCapabilityArtifacts = (
     if (!node) continue;
     if ('tagName' in node) {
       const attributes = Object.fromEntries(node.attrs.map(({ name, value }) => [name, value]));
-      if (node.tagName === 'dialog' && attributes.id?.endsWith('-result')) {
-        recordedOutputs.set(attributes.id, readRecordedOutputs(node));
+      if (node.tagName === 'dialog' && attributes.id) {
+        if (attributes.id.endsWith('-result'))
+          recordedOutputs.set(attributes.id, readRecordedOutputs(node));
+        if (attributes.id.endsWith('-evaluation'))
+          findingRecords.set(attributes.id, readRecordedOutputs(node, 'data-inspection-record'));
         findingTexts.set(attributes.id, readText(node));
       }
       if (
@@ -130,7 +138,11 @@ export const verifyCapabilityArtifacts = (
         }
       }
       if (node.tagName === 'a' && attributes.href) references.add(attributes.href);
-      if (node.tagName === 'details' && !Object.hasOwn(attributes, 'open')) {
+      if (
+        node.tagName === 'details' &&
+        !Object.hasOwn(attributes, 'open') &&
+        !Object.hasOwn(attributes, 'data-inspection-accepted')
+      ) {
         pending.push(
           ...node.childNodes.filter((child) => 'tagName' in child && child.tagName === 'summary'),
         );
@@ -175,10 +187,10 @@ export const verifyCapabilityArtifacts = (
             ))) ||
         view.findings.some(
           (finding) =>
-            !references.has(`#${example.id}-result-finding-${finding.id}`) ||
-            !visibleIds.has(`${example.id}-result-finding-${finding.id}`) ||
+            !references.has(`#${example.id}-${finding.id}`) ||
+            !visibleIds.has(`${example.id}-${finding.id}`) ||
             (!isDirectResult && view.findings.length === 1 && !summary?.includes(finding.code)) ||
-            !findingTexts.get(`${example.id}-result`)?.includes(finding.code),
+            !findingTexts.get(`${example.id}-${finding.id}`)?.includes(finding.code),
         )
       )
         throw new Error(`Capabilities artifact has an unsupported outcome for ${example.id}.`);
@@ -199,6 +211,23 @@ export const verifyCapabilityArtifacts = (
         throw new Error(`Capabilities artifact result does not match execution ${example.id}.`, {
           cause: error,
         });
+      }
+      for (const finding of view.findings) {
+        if (finding.kind !== 'structural') continue;
+        const records = findingRecords.get(`${example.id}-${finding.id}-evaluation`);
+        try {
+          if (records?.length !== 1) throw new Error('Expected one finding output.');
+          assertRecordedOutput([finding.record], {
+            kind: 'response',
+            redactions: [],
+            responses: [z.json().parse(JSON.parse(records[0]))],
+          });
+        } catch (error) {
+          throw new Error(
+            `Capabilities artifact finding record does not match execution ${example.id}/${finding.id}.`,
+            { cause: error },
+          );
+        }
       }
     }
     const referencePath = new URL(`..${group.reference.route}`, pageUrl).pathname;

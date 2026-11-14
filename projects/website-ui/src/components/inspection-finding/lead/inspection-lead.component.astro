@@ -1,0 +1,40 @@
+---
+import {
+  getInspectionImpact,
+  getInspectionPresentation,
+  type IInspectionFindingView,
+} from '@moldea.ai/website-ui/inspection-presentation';
+import IconTile from '../../icon-tile/icon-tile.component.astro';
+import InspectionBadge from '../badge/inspection-badge.component.astro';
+import InspectionMetadata from '../metadata/inspection-metadata.component.astro';
+
+interface Props {
+  finding: IInspectionFindingView;
+}
+const { finding } = Astro.props;
+const subject = getInspectionPresentation(finding);
+const impact = getInspectionImpact(finding);
+const Icon = subject.icon;
+---
+
+<div
+  class="flex min-w-0 items-start gap-4"
+  data-inspection-lead
+>
+  <IconTile
+    size="lg"
+    tone={impact.tone}
+    ><Icon /></IconTile
+  >
+  <div class="min-w-0 flex-1">
+    <div class="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+      <span class="text-xs font-medium text-muted-foreground">{subject.label}</span><InspectionBadge
+        presentation={impact}
+      />
+    </div>
+    <h3 class="mt-1 text-lg leading-7 font-semibold wrap-anywhere">{finding.message}</h3>
+    <div class="mt-2">
+      <InspectionMetadata items={[{ label: 'Code', value: finding.code, icon: 'code' }]} />
+    </div>
+  </div>
+</div>

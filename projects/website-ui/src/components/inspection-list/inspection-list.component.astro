@@ -1,107 +1,215 @@
 ---
-import { ArrowUpRight, CheckCircle2, CircleAlert, Info, TriangleAlert } from '@lucide/astro';
 import {
-  DIAGNOSTIC_GROUP_PRESENTATIONS,
-  FINDING_CATEGORY_PRESENTATIONS,
+  ArrowUpRight,
+  ChevronDown,
+  CircleAlert,
+  CircleCheck,
+  CircleMinus,
+  CircleX,
+  Info,
+  TriangleAlert,
+} from '@lucide/astro';
+import {
+  groupInspectionFindings,
   type IInspectionResultView,
 } from '@moldea.ai/website-ui/inspection-presentation';
-
 import ActionLink from '../action-link/action-link.component.astro';
+import CodeText from '../code-text/code-text.component.astro';
+import Dialog from '../dialog/dialog.component.astro';
+import InspectionFinding from '../inspection-finding/inspection-finding.component.astro';
 import InspectionDialog from '../inspection-dialog/inspection-dialog.component.astro';
+import StatusBadge from '../status-badge/status-badge.component.astro';
+import InspectionBinding from './binding/inspection-binding.component.astro';
+import InspectionOutput from './output/inspection-output.component.astro';
 
-// every outcome uses the same compact action; detailed evidence belongs in its dialog
 export interface Props {
   id: string;
   result: IInspectionResultView;
 }
 const { id, result } = Astro.props;
-const dialogId = `${id}-result`;
-const icons = {
-  danger: CircleAlert,
-  info: Info,
-  neutral: Info,
-  success: CheckCircle2,
-  warning: TriangleAlert,
-};
-const single = result.findings.length === 1 ? result.findings[0] : undefined;
-// one finding shows its own code; an operation without findings shows its result code
-const code = single?.code ?? (result.findings.length === 0 ? result.code : undefined);
-const label = result.findings.length > 1 ? `${result.findings.length} findings` : result.label;
-const Icon = single
-  ? (single.category === undefined
-      ? DIAGNOSTIC_GROUP_PRESENTATIONS[single.group]
-      : FINDING_CATEGORY_PRESENTATIONS[single.category]
-    ).icon
-  : icons[result.tone];
-const toneClasses = {
-  danger:
-    'border-destructive/40 bg-destructive/10 not-disabled:not-aria-disabled:hover:border-destructive/60 not-disabled:not-aria-disabled:hover:bg-destructive/20 [&_svg:first-child]:text-destructive',
-  info: 'border-info/40 bg-info/10 not-disabled:not-aria-disabled:hover:border-info/60 not-disabled:not-aria-disabled:hover:bg-info/20 [&_svg:first-child]:text-info',
-  neutral:
-    'border-border bg-muted not-disabled:not-aria-disabled:hover:border-foreground/30 not-disabled:not-aria-disabled:hover:bg-foreground/10',
-  success:
-    'border-success/40 bg-success/10 not-disabled:not-aria-disabled:hover:border-success/60 not-disabled:not-aria-disabled:hover:bg-success/20 [&_svg:first-child]:text-success',
-  warning:
-    'border-warning/50 bg-warning/10 not-disabled:not-aria-disabled:hover:border-warning/70 not-disabled:not-aria-disabled:hover:bg-warning/20 [&_svg:first-child]:text-warning-foreground dark:[&_svg:first-child]:text-warning',
-};
-const errors = result.findings.filter(({ severity }) => severity === 'error').length;
+const { groups, accepted } = groupInspectionFindings(result.findings);
+const blocking = result.findings.filter((finding) => finding.severity === 'error').length;
 const warnings = result.findings.filter(
-  ({ severity, accepted }) => severity === 'warning' && !accepted,
+  (finding) => finding.severity === 'warning' && !finding.accepted,
 ).length;
-const accepted = result.findings.filter((finding) => finding.accepted).length;
 const counts = [
-  errors && `${errors} blocking`,
-  warnings && `${warnings} warning${warnings === 1 ? '' : 's'}`,
-  accepted && `${accepted} accepted`,
+  result.findings.length > 1 && `${result.findings.length} findings`,
+  blocking > 0 && `${blocking} blocking`,
+  warnings > 0 && `${warnings} warning${warnings === 1 ? '' : 's'}`,
+  accepted.length > 0 && `${accepted.length} accepted`,
 ]
   .filter(Boolean)
   .join(' · ');
+const outputId = `${id}-result`;
+const resultIcons = {
+  danger: CircleAlert,
+  info: Info,
+  neutral: Info,
+  success: CircleCheck,
+  warning: TriangleAlert,
+};
+const ResultIcon = ['Blocked', 'Not checked', 'Refused'].includes(result.label)
+  ? CircleMinus
+  : result.label === 'Failed'
+    ? CircleX
+    : resultIcons[result.tone];
 ---
 
 <div
-  class="grid min-w-0 gap-2"
+  class="grid min-w-0 gap-6"
   data-inspection-list
 >
-  <ActionLink
-    href={single ? `#${dialogId}-finding-${single.id}` : `#${dialogId}`}
-    data-dialog-open={dialogId}
-    data-inspection-select={single?.id ?? ''}
-    aria-controls={dialogId}
-    aria-haspopup="dialog"
-    aria-label={`${label}${code ? ` ${code}` : result.findings.length > 1 ? `: ${counts}` : ''}: View result: ${single?.title ?? result.title}`}
-    variant="outline"
-    size="sm"
-    class={`min-h-10 w-full min-w-0 justify-start gap-3 text-foreground transition-colors motion-reduce:transition-none ${toneClasses[result.tone]}`}
+  <div
+    class="flex min-w-0 flex-wrap items-center justify-between gap-3"
     data-inspection-outcome={result.label}
   >
-    <Icon
-      class="size-5 shrink-0"
-      aria-hidden="true"
-    />
-    <span class="flex min-w-0 flex-1 items-baseline gap-2 text-start">
-      <span class="shrink-0">{label}</span>{
-        result.findings.length > 1 && (
-          <span class="min-w-0 truncate text-xs font-normal">{counts}</span>
-        )
-      }
-      {
-        code && (
-          <code
-            class="min-w-0 truncate font-mono text-[11px] font-normal text-muted-foreground"
-            title={code}
-          >
-            {code}
-          </code>
-        )
-      }
-    </span>
-    <ArrowUpRight
-      class="size-3.5 shrink-0 text-muted-foreground"
-      aria-hidden="true"
-    />
-  </ActionLink>
-  <InspectionDialog
-    id={dialogId}
-    result={result}
-  />
+    <div class="min-w-0">
+      <div class="flex min-w-0 flex-wrap items-center gap-2">
+        <StatusBadge
+          label={result.label}
+          tone={result.tone}
+          size="sm"
+          ><ResultIcon
+            slot="icon"
+            aria-hidden="true"
+          /></StatusBadge
+        ><span class="text-sm font-semibold wrap-anywhere">{result.title}</span>{
+          result.code && (
+            <CodeText
+              value={result.code}
+              title=""
+              class="text-xs"
+            />
+          )
+        }
+      </div>{counts && <p class="mt-1 text-xs leading-5 text-muted-foreground">{counts}</p>}
+    </div>
+    {
+      result.output !== undefined && (
+        <ActionLink
+          href={`#${outputId}`}
+          data-dialog-open={outputId}
+          aria-controls={outputId}
+          aria-haspopup="dialog"
+          variant="outline"
+          size="sm"
+          class="shrink-0 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+        >
+          Complete result
+          <ArrowUpRight
+            class="size-3.5"
+            aria-hidden="true"
+          />
+        </ActionLink>
+      )
+    }
+  </div>
+  {
+    groups.map((group) => (
+      <div
+        role="group"
+        aria-label={group.label}
+        class="min-w-0"
+      >
+        <>
+          <p class="mb-3 text-sm font-semibold">{group.label}</p>
+          <ol class="grid min-w-0 gap-3">
+            {group.findings.map((finding) => {
+              const dialogId = `${id}-${finding.id}`;
+              return (
+                <li class="min-w-0">
+                  <InspectionFinding
+                    {finding}
+                    {dialogId}
+                  />
+                  <InspectionDialog
+                    id={dialogId}
+                    {finding}
+                  />
+                </li>
+              );
+            })}
+          </ol>
+        </>
+      </div>
+    ))
+  }
+  {
+    accepted.length > 0 && (
+      <details
+        class="group min-w-0 border-t pt-4"
+        data-inspection-accepted
+      >
+        <>
+          <summary class="flex w-fit max-w-full cursor-pointer list-none items-start gap-2 rounded-sm py-2 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11 pointer-coarse:min-w-11 [&::-webkit-details-marker]:hidden">
+            <ChevronDown
+              class="mt-1 size-4 shrink-0 group-open:rotate-180"
+              aria-hidden="true"
+            />
+            Accepted warnings ({accepted.length} loaded)
+          </summary>
+          <p class="mb-3 text-xs leading-5 text-muted-foreground">
+            Accepted in moldea.yaml. Their reasons remain visible here; acceptance does not add
+            coverage.
+          </p>
+          <ol class="grid min-w-0 gap-3">
+            {accepted.map((finding) => {
+              const dialogId = `${id}-${finding.id}`;
+              return (
+                <li class="min-w-0">
+                  <InspectionFinding
+                    {finding}
+                    {dialogId}
+                  />
+                  <InspectionDialog
+                    id={dialogId}
+                    {finding}
+                  />
+                </li>
+              );
+            })}
+          </ol>
+        </>
+      </details>
+    )
+  }
+  {
+    result.bindings.length > 0 && (
+      <div
+        role="group"
+        aria-label="Binding checks"
+        class="min-w-0"
+      >
+        <>
+          <p class="mb-3 text-sm font-semibold">Binding checks</p>
+          <ol class="grid min-w-0 gap-3">
+            {result.bindings.map((binding) => (
+              <li class="min-w-0">
+                <InspectionBinding {binding} />
+              </li>
+            ))}
+          </ol>
+        </>
+      </div>
+    )
+  }
+  {
+    result.output !== undefined && (
+      <Dialog
+        id={outputId}
+        title="Complete result"
+        triggerLabel="Complete result"
+        triggerClass="hidden"
+        fallbackOpen
+        isOverlayCloseEnabled
+      >
+        <InspectionOutput {result} />
+      </Dialog>
+    )
+  }
+  {
+    result.output === undefined && result.limitation && (
+      <p class="text-xs leading-6 text-muted-foreground">{result.limitation}</p>
+    )
+  }
 </div>

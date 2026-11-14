@@ -1,0 +1,59 @@
+---
+import {
+  INSPECTION_BINDING_PRESENTATIONS,
+  getInspectionRelationship,
+  type IInspectionBindingView,
+  type IInspectionMetadataItem,
+} from '@moldea.ai/website-ui/inspection-presentation';
+import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
+import CodeText from '../../code-text/code-text.component.astro';
+import IconTile from '../../icon-tile/icon-tile.component.astro';
+import InspectionBadge from '../../inspection-finding/badge/inspection-badge.component.astro';
+import InspectionMetadata from '../../inspection-finding/metadata/inspection-metadata.component.astro';
+
+interface Props {
+  binding: IInspectionBindingView;
+}
+const { binding } = Astro.props;
+const relationship = getInspectionRelationship(binding.relationship);
+const Icon = relationship.icon;
+const outcome = INSPECTION_BINDING_PRESENTATIONS[binding.outcome];
+const items: IInspectionMetadataItem[] = [
+  ...(binding.symbol ? [{ label: 'Export', value: binding.symbol, icon: 'export' as const }] : []),
+  ...(binding.owner ? [binding.owner] : []),
+];
+---
+
+<article
+  class:list={['min-w-0 rounded-lg border p-4 sm:p-5', outcome.card]}
+  aria-label="Binding check"
+  data-inspection-binding
+>
+  <div class="flex min-w-0 items-start gap-3">
+    <IconTile tone={outcome.tone}><Icon /></IconTile>
+    <div class="min-w-0 flex-1">
+      <div class="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <span class="text-xs text-muted-foreground">{relationship.label}</span>
+        <InspectionBadge presentation={outcome} />
+      </div>
+      <p class="mt-1.5 min-w-0 text-sm leading-snug font-semibold wrap-anywhere">
+        <CodeText
+          value={formatRepositoryPath(binding.path)}
+          title=""
+        />
+      </p>
+    </div>
+  </div>
+  {
+    items.length > 0 && (
+      <div class="mt-3">
+        <InspectionMetadata {items} />
+      </div>
+    )
+  }
+  {
+    binding.reason && (
+      <p class="mt-3 text-xs leading-5 wrap-anywhere text-muted-foreground">{binding.reason}</p>
+    )
+  }
+</article>

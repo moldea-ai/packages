@@ -1,0 +1,128 @@
+---
+import {
+  Braces,
+  ChevronRight,
+  CircleAlert,
+  GitCommitVertical,
+  ShieldCheck,
+  TriangleAlert,
+} from '@lucide/astro';
+import type { IInspectionFindingView } from '@moldea.ai/website-ui/inspection-presentation';
+import CodeBlock from '../../code-block/code-block.component.astro';
+import CodeText from '../../code-text/code-text.component.astro';
+import IconTile from '../../icon-tile/icon-tile.component.astro';
+import InspectionMetadata from '../../inspection-finding/metadata/inspection-metadata.component.astro';
+
+interface Props {
+  finding: Extract<IInspectionFindingView, { kind: 'structural' }>;
+}
+const { finding } = Astro.props;
+const SeverityIcon = finding.severity === 'error' ? CircleAlert : TriangleAlert;
+---
+
+<div class="grid min-w-0 gap-6">
+  <div class:list={['grid min-w-0 gap-3', finding.revision ? 'sm:grid-cols-3' : 'sm:grid-cols-2']}>
+    <div class="flex min-w-0 items-start gap-3 rounded-xl border p-3">
+      <IconTile size="sm"><ShieldCheck /></IconTile><div class="min-w-0">
+        <p class="text-xs text-muted-foreground">Method</p><p class="mt-1 text-sm font-medium">
+          Validation
+        </p>
+      </div>
+    </div>
+    <div class="flex min-w-0 items-start gap-3 rounded-xl border p-3">
+      <IconTile
+        size="sm"
+        tone={finding.severity === 'error' ? 'danger' : 'warning'}
+        ><SeverityIcon /></IconTile
+      ><div class="min-w-0">
+        <p class="text-xs text-muted-foreground">Original severity</p><p
+          class="mt-1 text-sm font-medium"
+        >
+          {finding.severity === 'error' ? 'Error' : 'Warning'}
+        </p>
+      </div>
+    </div>
+    {
+      finding.revision && (
+        <div class="flex min-w-0 items-start gap-3 rounded-xl border p-3">
+          <>
+            <IconTile size="sm">
+              <GitCommitVertical />
+            </IconTile>
+            <div class="min-w-0">
+              <>
+                <p class="text-xs text-muted-foreground">Revision</p>
+                <p class="mt-1 text-sm font-medium wrap-anywhere">{finding.revision}</p>
+              </>
+            </div>
+          </>
+        </div>
+      )
+    }
+  </div>
+  {
+    finding.field.length > 0 && (
+      <section
+        class="grid min-w-0 gap-2"
+        aria-label="Field path"
+      >
+        <>
+          <h3 class="flex items-center gap-1.5 text-xs leading-5 text-muted-foreground">
+            <Braces
+              class="size-3.5"
+              aria-hidden="true"
+            />
+            Field
+          </h3>
+          <div
+            class="flex min-w-0 flex-wrap items-center gap-1.5 rounded-lg border bg-secondary/30 px-3 py-2.5 text-sm dark:bg-secondary/20"
+            data-inspection-field
+          >
+            {finding.field.map((segment, index) => (
+              <>
+                {index > 0 && (
+                  <ChevronRight
+                    class="size-3 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                )}
+                <CodeText
+                  value={segment === '' ? 'Empty key' : segment}
+                  title=""
+                  class="inline-code min-w-0 font-normal"
+                />
+              </>
+            ))}
+          </div>
+        </>
+      </section>
+    )
+  }
+  {
+    finding.facts.length > 0 && (
+      <InspectionMetadata
+        items={finding.facts}
+        stacked
+        class="sm:grid-cols-2"
+      />
+    )
+  }
+  <section
+    class="grid min-w-0 gap-2 [&_[data-code-block-header]]:min-h-14 [&_[data-code-block-header]]:px-3 [&_[data-code-block]_pre]:text-sm [&_[data-code-block]_pre]:leading-normal"
+    aria-label="Output"
+    data-inspection-record
+  >
+    <h3 class="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Braces
+        class="size-3.5"
+        aria-hidden="true"
+      />Output
+    </h3><CodeBlock
+      source={JSON.stringify(finding.record, null, 2)}
+      language="json"
+      overflow="scroll"
+      ariaLabel="Finding output"
+      headerLabel="JSON"
+    />
+  </section>
+</div>

@@ -1,6 +1,6 @@
 import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
 
-// shared inspection subjects and severity use the same ids in Astro and React
+// shared subjects retain the platform's identifiers without depending on Core
 export type IInspectionSeverity = 'error' | 'warning';
 export type IDiagnosticGroup =
   'discovery' | 'manifest' | 'references' | 'agents' | 'mirrors' | 'integration';
@@ -16,52 +16,135 @@ export type IFindingCategory =
   | 'context'
   | 'connection'
   | 'unclassified';
+export type IInspectionTone = 'danger' | 'info' | 'neutral' | 'success' | 'warning';
 export interface IInspectionPresentation {
   label: string;
   icon: AstroComponentFactory;
 }
+export type IInspectionJsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | IInspectionJsonValue[]
+  | { [key: string]: IInspectionJsonValue };
 
-// websites supply captured evidence; missing targets have no invented source content
+// metadata names semantic roles; components resolve their platform-owned icons
+export type IInspectionMetadataIcon =
+  | 'code'
+  | 'file'
+  | 'scope'
+  | 'runtime'
+  | 'mirror'
+  | 'integration'
+  | 'decision'
+  | 'capability'
+  | 'agent'
+  | 'context'
+  | 'declaration'
+  | 'export'
+  | 'variable'
+  | 'relationship'
+  | 'reason'
+  | 'type'
+  | 'entryType'
+  | 'owner'
+  | 'qualifier'
+  | 'count'
+  | 'cycle'
+  | 'status'
+  | 'missingFile'
+  | 'tag'
+  | 'runtime-agent'
+  | 'instruction-loader'
+  | 'agent-input-schema'
+  | 'agent-output-schema'
+  | 'tool-implementation'
+  | 'tool-input-schema'
+  | 'tool-output-schema'
+  | 'skill-implementation'
+  | 'context-binding'
+  | 'decision-binding'
+  | 'variable-provider';
+export interface IInspectionMetadataItem {
+  label: string;
+  value: string;
+  icon: IInspectionMetadataIcon;
+}
+
+// only captured source receives coordinates; representations and missing sources remain explicit
 export interface IInspectionEvidence {
   path: string;
-  label?: string;
+  label: string;
   language: string;
   content?: string;
-  // an explicitly supplied revision of this same file; requires current content
   beforeContent?: string;
   isExcerpt?: boolean;
   isMissing?: boolean;
-  // identifies the affected evidence explicitly, independently of the diagnostic's reported path
-  issueLabel?: string;
+  startingLineNumber?: number;
+  highlightedLines?: number[];
+  notice?: string;
 }
 
-export type IInspectionFindingView = {
+interface IInspectionFindingBase {
   id: string;
-  title: string;
   code: string;
   severity: IInspectionSeverity;
   message: string;
   path?: string;
-  pointer?: string;
-  accepted?: boolean;
-  reason?: string;
+  target?: IInspectionMetadataItem;
+  related?: IInspectionMetadataItem;
+  declaration?: IInspectionEvidence;
   evidence: IInspectionEvidence[];
-} & ({ group: IDiagnosticGroup; category?: never } | { category: IFindingCategory; group?: never });
+}
 
-// reusable result presentation contains no Core or CLI domain dependency
+// recorded structural findings and authored behavior illustrations never impersonate each other
+export type IInspectionFindingView = IInspectionFindingBase &
+  (
+    | {
+        kind: 'structural';
+        category?: never;
+        group: IDiagnosticGroup;
+        record: IInspectionJsonValue;
+        field: string[];
+        facts: IInspectionMetadataItem[];
+        guidanceHref: string;
+        accepted?: boolean;
+        reason?: string;
+        acceptance?: string;
+        revision?: string;
+      }
+    | {
+        kind: 'illustrative';
+        category: IFindingCategory;
+        group?: never;
+        record?: never;
+        guidanceHref?: never;
+        accepted?: never;
+        reason?: never;
+      }
+  );
+
+// only retained binding checks are supplied, independently of findings and coverage counts
+export interface IInspectionBindingView {
+  relationship: string;
+  path: string;
+  symbol?: string;
+  owner?: IInspectionMetadataItem;
+  outcome: 'passed' | 'failed' | 'not-checked';
+  reason?: string;
+}
+
+// complete native output stays separate from the records belonging to individual findings
 export type IInspectionResultView = {
   title: string;
   label: string;
-  tone: 'danger' | 'info' | 'neutral' | 'success' | 'warning';
+  tone: IInspectionTone;
   findings: IInspectionFindingView[];
-  // the native code of an operation that ended without findings, such as a refusal
+  bindings: IInspectionBindingView[];
   code?: string;
   redactions: string[];
   command?: string;
   exitStatus?: number;
   limitation?: string;
-} & (
-  | { output: string; outputLabel: string }
-  // illustrative findings omit output rather than inventing a captured response
-  | { output?: never; outputLabel?: never }
-);
+} & ({ output: string; outputLabel: string } | { output?: never; outputLabel?: never });

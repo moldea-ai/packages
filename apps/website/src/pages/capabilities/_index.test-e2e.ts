@@ -89,68 +89,91 @@ const revealAll = async (page: Page, id: string): Promise<void> => {
   while (await button.isVisible()) await button.click();
 };
 
-for (const width of [320, 768, 1440]) {
+for (const width of [320, 375, 768, 1440]) {
   for (const colorScheme of ['light', 'dark'] as const) {
-    test(`browses mixed findings without extra dialogs at ${width}px in ${colorScheme}`, async ({
+    test(`browses mixed finding cards and native outputs at ${width}px in ${colorScheme}`, async ({
       page,
     }) => {
       test.setTimeout(60_000);
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
-      const id = 'inspection-mixed-diagnostics';
-      await page.goto(`${route}#${id}`);
-      const opener = triggerFor(page, id);
-      const dialog = page.locator(`#${id}-result`);
+      await page.goto(`${route}#${mixedExample.id}`);
+      const opener = triggerFor(page, mixedExample.id);
+      const dialog = page.locator(`#${mixedExample.id}-findings`);
       await expect(dialog).toBeVisible();
-      await expect(page.locator(`#example-${id}`)).toHaveCount(0);
+      await expect(page.locator(`#example-${mixedExample.id}`)).toHaveCount(0);
       await expect(page.locator('dialog:modal')).toHaveCount(1);
-      await expect(dialog.getByRole('tab', { name: 'Findings', selected: true })).toBeVisible();
-      const list = dialog.getByRole('list', { name: 'Inspection findings' });
-      const rows = list.getByRole('link');
-      await expect(rows).toHaveCount(3);
-      await expect(rows.nth(0)).toContainText('MOLDEA_REFERENCE_EXPORT_MISSING');
-      await expect(rows.nth(1)).toContainText('MOLDEA_IMPACT_PATTERN_UNMATCHED');
-      await expect(rows.nth(2)).toContainText('MOLDEA_INTEGRATION_BLOCK_MISSING');
-      for (const row of await rows.all()) {
-        await page.keyboard.press('Tab');
-        await row.focus();
-        await expect(row).not.toHaveCSS('box-shadow', 'none');
-        await row.press('Enter');
-        await expect(page.locator('dialog:modal')).toHaveCount(1);
-        await expect(list).toBeHidden();
-        const detail = dialog.locator('[data-inspection-detail]:visible');
-        await expect(detail).toHaveCount(1);
-        await expect(detail).toBeFocused();
-        await expect(detail.getByRole('heading')).toHaveCount(1);
-        await dialog.getByRole('tab', { name: 'Output', exact: true }).click();
-        expect(
-          JSON.parse(await dialog.locator('[data-inspection-output] pre').innerText()),
-        ).toStrictEqual(mixedExample.output.responses);
-        await dialog.getByRole('tab', { name: 'Findings', exact: true }).click();
+      await expect(dialog.getByRole('tab')).toHaveCount(0);
+      if (mixedFindings.some((finding) => finding.accepted))
+        await dialog.getByText(/^Accepted warnings \(/u).click();
+      await expect(
+        dialog.getByRole('article', { name: 'Structural finding', exact: true }),
+      ).toHaveCount(mixedFindings.length);
+      for (const finding of mixedFindings) {
+        const card = dialog.getByRole('link', {
+          name: `View finding: ${finding.message}`,
+          exact: true,
+        });
+        await card.focus();
+        await expect(card).not.toHaveCSS('box-shadow', 'none');
+        await card.press('Enter');
+        const detail = page.getByRole('dialog', { name: 'Structural finding', exact: true });
         await expect(detail).toBeVisible();
-        expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
-        await dialog.getByRole('link', { name: 'Back to findings', exact: true }).click();
-        await expect(row).toBeFocused();
+        await expect(page.locator('dialog:modal')).toHaveCount(2);
+        await expect(
+          detail.getByRole('heading', { name: finding.message, exact: true }),
+        ).toBeVisible();
+        const evaluationOpener = detail.getByRole('button', {
+          name: 'Evaluation details',
+          exact: true,
+        });
+        await evaluationOpener.click();
+        const evaluation = page.getByRole('dialog', { name: 'Evaluation details', exact: true });
+        await expect(page.locator('dialog:modal')).toHaveCount(3);
+        if (finding.kind !== 'structural') throw new Error('Expected a native structural finding.');
+        expect(
+          JSON.parse(
+            (await evaluation
+              .getByRole('group', { name: 'Finding output', exact: true })
+              .textContent())!,
+          ),
+        ).toStrictEqual(finding.record);
+        expect(await evaluation.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(
+          true,
+        );
+        await page.keyboard.press('Escape');
+        await expect(evaluationOpener).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(card).toBeFocused();
       }
-      await rows.nth(0).click();
+      const complete = dialog.getByRole('link', { name: 'Complete result', exact: true });
+      await complete.click();
+      const output = page.getByRole('dialog', { name: 'Complete result', exact: true });
+      expect(
+        JSON.parse(await output.locator('[data-inspection-output] pre').innerText()),
+      ).toStrictEqual(mixedExample.output.responses);
+      await page.keyboard.press('Escape');
+      await expect(complete).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(opener).toBeFocused();
       await opener.press('Enter');
-      await expect(list).toBeVisible();
-      await expect(dialog.locator('[data-inspection-detail]:visible')).toHaveCount(0);
+      await expect(dialog).toBeVisible();
+      await expect(
+        dialog.getByRole('article', { name: 'Structural finding', exact: true }),
+      ).toHaveCount(mixedFindings.length);
       await page.keyboard.press('Escape');
       await expect(page.locator('dialog:modal')).toHaveCount(0);
     });
 
-    test(`findings overview accessibility at ${width}px in ${colorScheme}`, async ({ page }) => {
+    test(`finding cards accessibility at ${width}px in ${colorScheme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
       await page.goto(`${route}#${mixedExample.id}`);
-      await expect(
-        page.locator(`#${mixedExample.id}-result [data-inspection-overview]`),
-      ).toBeVisible();
+      const dialog = page.locator(`#${mixedExample.id}-findings`);
+      await expect(dialog).toBeVisible();
       expect(
-        (await new AxeBuilder({ page }).include(`#${mixedExample.id}-result`).analyze()).violations,
+        (await new AxeBuilder({ page }).include(`#${mixedExample.id}-findings`).analyze())
+          .violations,
       ).toStrictEqual([]);
     });
 
@@ -161,18 +184,17 @@ for (const width of [320, 768, 1440]) {
         await page.setViewportSize({ width, height: 900 });
         await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
         await page.goto(`${route}#${mixedExample.id}`);
-        const dialog = page.locator(`#${mixedExample.id}-result`);
-        await dialog
-          .getByRole('link', {
-            name: `View finding: ${finding.title} ${finding.code}`,
-            exact: true,
-          })
+        const parent = page.locator(`#${mixedExample.id}-findings`);
+        if (finding.accepted) await parent.getByText(/^Accepted warnings \(/u).click();
+        await parent
+          .getByRole('link', { name: `View finding: ${finding.message}`, exact: true })
           .click();
+        const dialog = page.getByRole('dialog', { name: 'Structural finding', exact: true });
         await expect(
-          dialog.getByRole('heading', { name: finding.title, exact: true }),
+          dialog.getByRole('heading', { name: finding.message, exact: true }),
         ).toBeVisible();
         expect(
-          (await new AxeBuilder({ page }).include(`#${mixedExample.id}-result`).analyze())
+          (await new AxeBuilder({ page }).include(`#${mixedExample.id}-${finding.id}`).analyze())
             .violations,
         ).toStrictEqual([]);
       });
@@ -191,7 +213,13 @@ for (const width of [320, 768, 1440]) {
         "Catch what's broken.See what's connected.",
       );
       await expect(page.locator('[data-capability-example]')).toHaveCount(catalog.cases.length);
-      await expect(page.locator('main dialog')).toHaveCount(catalog.cases.length * 2 - 1);
+      await expect(page.locator('main dialog')).toHaveCount(
+        catalog.cases.length * 2 +
+          catalog.cases.reduce(
+            (count, example) => count + getCapabilityInspectionView(example).findings.length * 2,
+            0,
+          ),
+      );
       await expect(page.locator('main dialog:modal')).toHaveCount(0);
       await expect(page.locator('[data-capability-visual]:visible')).toHaveCount(0);
       await expect(page.locator('main')).not.toContainText('Also covers:');
@@ -213,6 +241,8 @@ for (const width of [320, 768, 1440]) {
     });
     for (const { group, examples } of showcase) {
       test(`opens the ${group.id} examples at ${width}px in ${colorScheme}`, async ({ page }) => {
+        // Axe evaluates the complete static catalogue, including every inline finding record.
+        test.setTimeout(60_000);
         await page.setViewportSize({ width, height: 900 });
         await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
         await page.goto(route);
@@ -373,48 +403,46 @@ for (const { group, examples } of showcase) {
       await page.goto(route);
       await revealAll(page, group.id);
       await triggerFor(page, example.id).click();
-      if (example.id === 'inspection-mixed-diagnostics') {
-        const result = page.locator(`#${example.id}-result`);
-        await expect(result.getByRole('list', { name: 'Inspection findings' })).toBeVisible();
-        await result.getByRole('tab', { name: 'Output', exact: true }).click();
-        expect(
-          JSON.parse(await result.locator('[data-inspection-output] pre').innerText()),
-        ).toStrictEqual(example.output.responses);
-        await page.keyboard.press('Escape');
-        await expect(triggerFor(page, example.id)).toBeFocused();
-        return;
-      }
-      const dialog = page.locator(`#example-${example.id}`);
+      const isDirect = example.id === 'inspection-mixed-diagnostics';
+      const dialog = page.locator(isDirect ? `#${example.id}-findings` : `#example-${example.id}`);
       await expect(
         dialog.getByRole('heading', { level: 2, name: example.title, exact: true }),
       ).toHaveText(example.title);
-      await expect(dialog.locator('[data-capability-visual]')).toHaveAttribute(
-        'data-capability-visual',
-        getCapabilityVisualFamily(example),
-      );
-      await expect(dialog.locator('[data-capability-summary]')).not.toBeEmpty();
-      const view = getCapabilityInspectionView(example);
-      const resultOpener = dialog.locator('[data-dialog-open]').first();
-      // a refusal shows its native code beside the outcome, as a single finding shows its own
-      if (view.code) await expect(resultOpener.locator('code')).toHaveText(view.code);
+      if (!isDirect) {
+        await expect(dialog.locator('[data-capability-visual]')).toHaveAttribute(
+          'data-capability-visual',
+          getCapabilityVisualFamily(example),
+        );
+        await expect(dialog.locator('[data-capability-summary]')).not.toBeEmpty();
+      }
+      const view = getCapabilityInspectionView(example, basePath);
+      if (view.code)
+        await expect(
+          dialog.locator('[data-inspection-outcome]').getByText(view.code, { exact: true }),
+        ).toBeVisible();
+      const resultOpener = dialog.getByRole('link', { name: 'Complete result', exact: true });
       await resultOpener.click();
-      const result = page.locator(`#${example.id}-result`);
+      const result = page.getByRole('dialog', { name: 'Complete result', exact: true });
       await expect(result).toBeVisible();
-      if (view.findings.length > 0)
-        await result.getByRole('tab', { name: 'Output', exact: true }).click();
       expect(
         JSON.parse(await result.locator('[data-inspection-output] pre').innerText()),
-      ).toStrictEqual(JSON.parse(view.output));
+      ).toStrictEqual(
+        example.output.responses.length === 1
+          ? example.output.responses[0]
+          : example.output.responses,
+      );
       await page.keyboard.press('Escape');
       await expect(resultOpener).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(dialog).toBeHidden();
+      await expect(triggerFor(page, example.id)).toBeFocused();
     });
   }
 }
 
 test('keeps source representations and catalog accessibility', async ({ page }) => {
-  test.setTimeout(60_000);
+  // Axe audits every revealed example and its build-time source, finding and output markup.
+  test.setTimeout(120_000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(route);
   for (const { group } of showcase) await revealAll(page, group.id);
@@ -451,24 +479,33 @@ for (const exampleId of ['cli-pattern-warning', 'cli-accepted-warning']) {
       const trigger = triggerFor(page, example.id);
       await trigger.click();
       const illustration = page.locator(`#example-${example.id}`);
-      const resultTrigger = illustration.locator('[data-dialog-open]').first();
-      await resultTrigger.click();
-      const result = page.locator(`#${example.id}-result`);
-      await expect(page.locator('dialog:modal')).toHaveCount(2);
-      await expect(result.getByRole('tab', { name: 'Finding', selected: true })).toBeVisible();
-      const header = result.locator('[data-inspection-finding-header]');
-      const card = result.locator('[data-inspection-finding-card]');
-      expect(await header.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe(
-        await card.evaluate((node) => getComputedStyle(node).backgroundColor),
-      );
-      expect(
-        (await new AxeBuilder({ page }).include(`#${example.id}-result`).analyze()).violations,
-      ).toStrictEqual([]);
-      await result.getByRole('tab', { name: 'Output', exact: true }).click();
-      await expect(result.locator('[data-inspection-output]')).toContainText('warningCount');
-      const codeRegion = result.getByRole('group', {
-        name: getCapabilityInspectionView(example).outputLabel,
+      const view = getCapabilityInspectionView(example, basePath);
+      const finding = view.findings[0];
+      if (finding.accepted) await illustration.getByText(/^Accepted warnings \(/u).click();
+      const findingTrigger = illustration.getByRole('link', {
+        name: `View finding: ${finding.message}`,
+        exact: true,
       });
+      await findingTrigger.click();
+      const findingDialog = page.getByRole('dialog', { name: 'Structural finding', exact: true });
+      await expect(page.locator('dialog:modal')).toHaveCount(2);
+      await expect(
+        findingDialog.locator('[data-inspection-lead] [data-status-badge]'),
+      ).toHaveAttribute('data-status-badge', finding.accepted ? 'success' : 'warning');
+      expect(
+        (await new AxeBuilder({ page }).include(`#${example.id}-${finding.id}`).analyze())
+          .violations,
+      ).toStrictEqual([]);
+      await page.keyboard.press('Escape');
+      await expect(findingTrigger).toBeFocused();
+      const resultTrigger = illustration.getByRole('link', {
+        name: 'Complete result',
+        exact: true,
+      });
+      await resultTrigger.click();
+      const result = page.getByRole('dialog', { name: 'Complete result', exact: true });
+      await expect(result.locator('[data-inspection-output]')).toContainText('warningCount');
+      const codeRegion = result.getByRole('group', { name: view.outputLabel, exact: true });
       await expect(codeRegion).toHaveAttribute('tabindex', '0');
       await expect(codeRegion.locator('code')).toHaveClass('language-json');
       expect(await codeRegion.locator('code span').count()).toBeGreaterThan(0);
@@ -510,7 +547,11 @@ test('keeps one complete illustration catalog readable without JavaScript', asyn
       catalog.cases.length - 1,
     );
     await expect(page.locator('dialog[data-dialog-fallback-open][open]')).toHaveCount(
-      catalog.cases.length * 2 - 1,
+      catalog.cases.length * 2 +
+        catalog.cases.reduce(
+          (count, example) => count + getCapabilityInspectionView(example).findings.length * 2,
+          0,
+        ),
     );
     await expect(page.getByRole('button', { name: /^Open example:/u })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(

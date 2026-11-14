@@ -50,13 +50,18 @@ const assuranceIllustration = {
   findings: [
     {
       id: 'refund-authority',
-      title: 'Refund approval boundary',
+      kind: 'illustrative',
       code: 'CONTEXT_CONTRADICTED',
       severity: 'error',
       category: 'context',
       message:
         'The changed instruction allows support to approve refunds, exceeding the authority set by the project rule.',
       path: '/moldea/agents/support/instruction.md',
+      target: {
+        label: 'Changed instruction',
+        value: 'moldea/agents/support/instruction.md',
+        icon: 'declaration',
+      },
       evidence: [
         {
           path: '/moldea/project.md',
@@ -68,7 +73,6 @@ const assuranceIllustration = {
         {
           path: '/moldea/agents/support/instruction.md',
           label: 'Changed instruction',
-          issueLabel: 'Violates project rule',
           language: 'markdown',
           content: afterInstruction,
           beforeContent: beforeInstruction,
@@ -77,6 +81,7 @@ const assuranceIllustration = {
       ],
     },
   ],
+  bindings: [],
   redactions: [],
 } satisfies IInspectionResultView;
 ---

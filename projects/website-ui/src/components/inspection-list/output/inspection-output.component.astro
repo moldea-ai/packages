@@ -1,4 +1,5 @@
 ---
+import { EyeOff } from '@lucide/astro';
 import type { IInspectionResultView } from '@moldea.ai/website-ui/inspection-presentation';
 
 import CodeBlock from '../../code-block/code-block.component.astro';
@@ -17,7 +18,13 @@ const { result } = Astro.props;
     >
       {result.redactions.length > 0 && (
         <div class="text-xs leading-5 text-muted-foreground">
-          <p class="font-semibold">Redacted fields</p>
+          <p class="flex items-center gap-1.5 font-semibold">
+            <EyeOff
+              class="size-3.5"
+              aria-hidden="true"
+            />
+            Redacted fields
+          </p>
           <ul class="mt-1 list-disc pl-4">
             {result.redactions.map((redaction) => (
               <li>{redaction}</li>

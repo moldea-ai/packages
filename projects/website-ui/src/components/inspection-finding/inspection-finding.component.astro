@@ -1,71 +1,85 @@
 ---
+import { ArrowUpRight } from '@lucide/astro';
+import { formatRepositoryPath } from '@moldea.ai/website-ui/code-presentation';
 import {
-  INSPECTION_SEVERITY_PRESENTATIONS,
-  type IInspectionPresentation,
-  type IInspectionSeverity,
+  getInspectionImpact,
+  getInspectionPresentation,
+  type IInspectionFindingView,
+  type IInspectionMetadataItem,
 } from '@moldea.ai/website-ui/inspection-presentation';
-
-import CodeText from '../code-text/code-text.component.astro';
 import IconTile from '../icon-tile/icon-tile.component.astro';
+import InspectionBadge from './badge/inspection-badge.component.astro';
+import InspectionMetadata from './metadata/inspection-metadata.component.astro';
 
-// one finding keeps its subject, exact code, and severity visible together
-interface Props {
-  title: string;
-  code: string;
-  severity: IInspectionSeverity;
-  presentation: IInspectionPresentation;
-  path?: string;
-  accepted?: boolean;
+// the whole card is one named trigger; metadata remains plain, tooltip-free code
+export interface Props {
+  finding: IInspectionFindingView;
+  dialogId: string;
 }
-const { title, code, severity, presentation, path, accepted = false } = Astro.props;
-const SubjectIcon = presentation.icon;
-const status = INSPECTION_SEVERITY_PRESENTATIONS[severity];
-const SeverityIcon = status.icon;
+const { finding, dialogId } = Astro.props;
+const subject = getInspectionPresentation(finding),
+  impact = getInspectionImpact(finding);
+const Icon = subject.icon;
+const metadata: IInspectionMetadataItem[] = [
+  { label: 'Code', value: finding.code, icon: 'code' },
+  ...(finding.path && finding.target?.value !== formatRepositoryPath(finding.path)
+    ? [{ label: 'Declared in', value: formatRepositoryPath(finding.path), icon: 'file' as const }]
+    : []),
+];
 ---
 
 <article
-  class="flex min-w-0 items-start gap-3"
-  aria-label={`${title}: ${code}`}
+  class:list={['relative min-w-0 overflow-hidden rounded-lg border p-4 sm:p-5', impact.card]}
+  aria-label={finding.kind === 'structural' ? 'Structural finding' : 'Behavior finding'}
   data-inspection-finding
-  data-finding-code={code}
-  data-finding-severity={severity}
+  data-finding-code={finding.code}
+  data-finding-severity={finding.severity}
 >
-  <IconTile tone={accepted ? 'info' : severity === 'error' ? 'danger' : 'warning'}
-    ><SubjectIcon /></IconTile
+  <a
+    href={`#${dialogId}`}
+    data-dialog-open={dialogId}
+    aria-controls={dialogId}
+    aria-haspopup="dialog"
+    aria-label={`View finding: ${finding.message}`}
+    class:list={[
+      'absolute inset-0 z-10 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-inset pointer-coarse:min-h-11 pointer-coarse:min-w-11',
+      impact.trigger,
+    ]}
+    ><span class="sr-only">View finding: {finding.message}</span></a
   >
-  <div class="min-w-0 flex-1">
-    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
-      <span class="font-medium text-muted-foreground">{presentation.label}</span>
-      <span
-        class:list={[
-          'inline-flex items-center gap-1 font-semibold',
-          accepted
-            ? 'text-info'
-            : severity === 'error'
-              ? 'text-destructive'
-              : 'text-warning-foreground dark:text-warning',
-        ]}
-      >
-        <SeverityIcon
-          class="size-3"
-          aria-hidden="true"
-        />
-        {accepted ? 'Accepted' : status.label}
-      </span>
+  <ArrowUpRight
+    class="pointer-events-none absolute top-4 right-4 size-4 text-muted-foreground sm:top-5 sm:right-5"
+    aria-hidden="true"
+  />
+  <div class="pointer-events-none relative min-w-0 pr-7">
+    <div class="flex min-w-0 items-start gap-3">
+      <IconTile tone={impact.tone}><Icon /></IconTile>
+      <div class="min-w-0 flex-1">
+        <div class="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <span class="text-xs text-muted-foreground">{subject.label}</span><InspectionBadge
+            presentation={impact}
+          />
+        </div>
+        <p class="mt-1.5 text-sm leading-snug font-semibold wrap-anywhere">{finding.message}</p>
+      </div>
     </div>
-    <p class="mt-1 text-sm leading-5 font-semibold">{title}</p>
-    <CodeText
-      class="mt-1 block text-xs leading-5 text-muted-foreground"
-      value={code}
-    />
     {
-      path && (
-        <CodeText
-          class="mt-1 block text-xs leading-5 text-muted-foreground"
-          value={path}
-        />
+      (finding.target || finding.related) && (
+        <div class="mt-3">
+          <InspectionMetadata
+            items={[finding.target, finding.related].filter((item) => item !== undefined)}
+          />
+        </div>
+      )
+    }
+    <div class="mt-2"><InspectionMetadata items={metadata} /></div>
+    {
+      finding.severity === 'warning' && finding.accepted && finding.reason && (
+        <p class="mt-3 text-xs leading-5 wrap-anywhere text-muted-foreground">
+          <span class="font-medium text-foreground">Accepted in moldea.yaml</span> ·{' '}
+          {finding.reason}
+        </p>
       )
     }
   </div>
-  <slot name="action" />
 </article>

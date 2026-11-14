@@ -4,6 +4,7 @@
 
 @source './components/**/*.{astro,ts}';
 @source './markdown/**/*.ts';
+@source '../dist/inspection-presentation.js';
 
 /* Keep returning content together, but restore the site header outside its scaling snapshot. */
 @media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
