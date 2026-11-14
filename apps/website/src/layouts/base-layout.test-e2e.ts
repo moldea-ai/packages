@@ -824,7 +824,7 @@ ${'long-line-'.repeat(32)}
   );
 
   await page.goto(toPublicPath('/capabilities/'));
-  // example commands and recorded output are evidence, so none of them is copyable
+  // commands and source evidence opt out; native finding records remain copyable
   const exampleCommands = page.locator(
     '[data-capability-visual="command"] pre[aria-label^="Command for "]',
   );
@@ -837,14 +837,14 @@ ${'long-line-'.repeat(32)}
       '#cli-invalid-project pre[aria-label="Manifest binding for the eligibility check"]',
     ),
   ).not.toHaveAttribute('data-code-copy-enhanced');
-  expect(await page.locator('[data-inspection-output] pre').count()).toBeGreaterThan(0);
-  await expect(
-    page.locator('[data-inspection-output] pre[data-code-copy-enhanced="true"]'),
-  ).toHaveCount(0);
+  expect(await page.locator('[data-inspection-record] pre').count()).toBeGreaterThan(0);
+  expect(
+    await page.locator('[data-inspection-record] pre[data-code-copy-enhanced="true"]').count(),
+  ).toBe(await page.locator('[data-inspection-record] pre').count());
 });
 
 for (const colorScheme of ['light', 'dark'] as const) {
-  test(`shows the example command and recorded JSON output without copy controls in ${colorScheme}`, async ({
+  test(`keeps the example command non-copyable and its finding record copyable in ${colorScheme}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 900 });
@@ -852,7 +852,6 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await page.goto(toPublicPath('/packages/'));
     const example = page.locator('#cli');
     const command = example.getByRole('group', { name: /^Command for / });
-    const commandSource = await command.locator('code').innerText();
     const commandFrame = command.locator('..');
     const commandHeader = commandFrame.locator('[data-code-block-header]');
     await expect(commandHeader).toContainText('Command');
@@ -863,20 +862,21 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await expect(commandFrame.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(
       0,
     );
-    await example.getByRole('link', { name: 'Complete result', exact: true }).click();
-    const result = page.getByRole('dialog');
-    await expect(
-      result.getByRole('article', { name: 'Structural finding', exact: true }),
-    ).toHaveCount(0);
-    const output = result.locator('[data-inspection-output]');
+    await example.getByRole('link', { name: /^View finding:/u }).click();
+    await page
+      .getByRole('dialog', { name: 'Structural finding', exact: true })
+      .getByRole('button', { name: 'Evaluation details', exact: true })
+      .click();
+    const result = page.getByRole('dialog', { name: 'Evaluation details', exact: true });
+    const output = result.locator('[data-inspection-record]');
     const outputHeader = output.locator('[data-code-block-header]');
-    await expect(outputHeader.getByText(commandSource, { exact: true })).toBeVisible();
-    await expect(outputHeader).toContainText('Exit 1');
-    await expect(output).not.toContainText('Complete recorded response');
-    await expect(output.locator('[data-code-copy-header]')).toHaveCount(0);
+    await expect(outputHeader).toContainText('JSON');
     const json = await output.locator('pre code').innerText();
-    expect(JSON.parse(json)).toHaveProperty('schemaVersion', 7);
-    await expect(output.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(0);
+    expect(JSON.parse(json)).toMatchObject({
+      kind: 'diagnostic',
+      code: 'MOLDEA_REFERENCE_EXPORT_MISSING',
+    });
+    await expect(output.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(1);
     for (const header of [commandHeader, outputHeader]) {
       expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
         true,
@@ -905,9 +905,6 @@ test('keeps information result icons legible in both themes', async ({ page }) =
         surface: getComputedStyle(document.documentElement).getPropertyValue('--background'),
       }));
     expect(calculateContrastRatio(colors.icon, colors.surface)).toBeGreaterThanOrEqual(3);
-    const complete = result.getByRole('link', { name: 'Complete result', exact: true });
-    await complete.focus();
-    await expect(complete).not.toHaveCSS('box-shadow', 'none');
   }
 });
 

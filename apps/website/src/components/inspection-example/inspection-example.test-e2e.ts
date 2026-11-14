@@ -5,13 +5,30 @@ import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const homepage = withBase('/', basePath);
 
-test('shows the complete real check without tabs or disclosures', async ({ page }) => {
+test('matches platform previews without a full-response action or expanded binding cards', async ({
+  page,
+}) => {
+  await page.goto(homepage);
+  await expect(page.getByRole('link', { name: 'Complete result', exact: true })).toHaveCount(0);
+  const example = page.getByRole('region', { name: 'A file moves. The connection breaks.' });
+  const connected = example.getByRole('article', { name: '1. Connected', exact: true });
+  const disclosure = connected.getByText('View binding checks', { exact: true });
+  await expect(disclosure).toBeVisible();
+  await expect(connected.getByRole('group', { name: 'Binding checks', exact: true })).toBeHidden();
+  await disclosure.click();
+  await expect(connected.getByRole('group', { name: 'Binding checks', exact: true })).toBeVisible();
+  await expect(connected).toContainText('Export found');
+  await disclosure.click();
+  await expect(connected.getByRole('group', { name: 'Binding checks', exact: true })).toBeHidden();
+});
+
+test('shows the real check with findings and collapsed binding details', async ({ page }) => {
   await page.goto(homepage);
   const example = page.getByRole('region', { name: 'A file moves. The connection breaks.' });
   await expect(example.locator('article[id^="inspection-"]')).toHaveCount(3);
   await expect(example.getByRole('tab')).toHaveCount(0);
-  await expect(example.locator('details, pre:visible')).toHaveCount(0);
-  await expect(example.getByRole('link', { name: 'Complete result', exact: true })).toHaveCount(3);
+  await expect(example.locator('pre:visible')).toHaveCount(0);
+  await expect(example.locator('details[open]')).toHaveCount(0);
   await expect(example.getByRole('article', { name: '1. Connected' })).toContainText('Passed');
   const broken = example.getByRole('article', { name: '2. File moved' });
   await expect(broken).toContainText('Blocking');
@@ -60,7 +77,10 @@ for (const width of [320, 360, 768, 1024, 1440]) {
       for (const frame of await frames.all()) await expect(frame).toBeVisible();
       for (const frame of await frames.all()) {
         const header = frame.locator(':scope > header');
-        const trigger = frame.getByRole('link', { name: 'Complete result', exact: true });
+        const finding = frame.getByRole('link', { name: /^View finding:/u });
+        const trigger = (await finding.count())
+          ? finding
+          : frame.getByText('View binding checks', { exact: true });
         const titleBounds = await header.getByRole('heading', { level: 3 }).boundingBox();
         const triggerBounds = await trigger.boundingBox();
         expect(triggerBounds!.height).toBeGreaterThanOrEqual(32);
@@ -115,8 +135,15 @@ test('keeps every frame readable without JavaScript', async ({ browser }) => {
     await expect(example.locator('[data-inspection-finding]')).toContainText(
       'MOLDEA_REFERENCE_MISSING',
     );
-    await expect(example.locator('details, [role="tab"]')).toHaveCount(0);
-    await expect(example.getByRole('group', { name: 'JSON', exact: true })).toHaveCount(3);
+    await expect(example.getByRole('tab')).toHaveCount(0);
+    await expect(example.getByRole('group', { name: 'Finding output', exact: true })).toHaveCount(
+      1,
+    );
+    const bindings = example.getByRole('article', { name: '1. Connected', exact: true });
+    await bindings.getByText('View binding checks', { exact: true }).click();
+    await expect(
+      bindings.getByRole('group', { name: 'Binding checks', exact: true }),
+    ).toBeVisible();
     await expect(example.getByRole('button', { name: 'Close dialog', exact: true })).toHaveCount(0);
     const preview = page.getByRole('figure', { name: 'Repository check preview' });
     await expect(preview).toBeVisible();
@@ -128,9 +155,6 @@ test('keeps every frame readable without JavaScript', async ({ browser }) => {
     );
     await expect(preview.locator('[data-inspection-finding]')).toContainText(
       'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
-    );
-    await expect(preview.getByRole('link', { name: 'Complete result', exact: true })).toHaveCount(
-      1,
     );
     await expect(preview.getByRole('button', { name: 'Close dialog', exact: true })).toHaveCount(0);
   } finally {

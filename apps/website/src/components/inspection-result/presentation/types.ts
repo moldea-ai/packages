@@ -1,7 +1,4 @@
-import type {
-  IInspectionJsonValue,
-  IInspectionResultView,
-} from '@moldea.ai/website-ui/inspection-presentation';
+import type { IInspectionJsonValue } from '@moldea.ai/website-ui/inspection-presentation';
 import { z } from 'zod';
 
 // display validation remains closed to the six groups emitted by this build's Core
@@ -59,7 +56,3 @@ export interface INativeFinding {
   record: IInspectionJsonValue;
   display: IFinding;
 }
-export type IRecordedInspectionView = IInspectionResultView & {
-  output: string;
-  outputLabel: string;
-};

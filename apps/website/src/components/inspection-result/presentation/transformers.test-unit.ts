@@ -57,17 +57,14 @@ const example: ICapabilityCase = {
   ]),
 };
 
-test('retains the complete native response and keeps CLI process context outside it', () => {
+test('retains the native diagnostic record without projecting its CLI envelope into the view', () => {
   const view = getCapabilityInspectionView(example);
-  expect(JSON.parse(view.output)).toStrictEqual(example.output.responses[0]);
-  expect(JSON.parse(view.output)).not.toHaveProperty('exitStatus');
   expect(view).toMatchObject({
-    command: 'moldea validate --json',
-    exitStatus: 1,
     label: 'Blocking',
     tone: 'danger',
   });
   expect(view.findings).toHaveLength(1);
+  expect(view.findings[0]?.record).toStrictEqual({ kind: 'diagnostic', ...diagnostic });
   expect(view.findings[0]).toMatchObject({
     code: diagnostic.code,
     message: diagnostic.message,
@@ -131,7 +128,7 @@ test('keeps paginated errors, accepted warnings and their reasons in source orde
     { code: diagnostic.code, severity: 'error', accepted: undefined, reason: undefined },
     { code: warning.code, severity: 'warning', accepted: true, reason: warning.reason },
   ]);
-  expect(JSON.parse(view.output)).toStrictEqual(responses);
+  expect(view.findings.map(({ record }) => record)).toStrictEqual([diagnostic, warning]);
 });
 
 test('keeps an operational refusal neutral about whether the project passed inspection', () => {
@@ -146,7 +143,6 @@ test('keeps an operational refusal neutral about whether the project passed insp
     tone: 'warning',
     findings: [],
     code: 'RESOURCE_LIMIT_EXCEEDED',
-    outputLabel: 'Execution facts',
   });
 });
 
@@ -465,7 +461,7 @@ test('retains additive native Core fields separately from its validated display 
     output: createRecordedOutput([response]),
   });
   expect(view.findings[0]).toMatchObject({ kind: 'structural', record: native });
-  expect(JSON.parse(view.output)).toStrictEqual(response);
+  expect(view.findings[0]?.record).toStrictEqual(native);
   expect(projected).not.toHaveProperty('retainedFact');
 });
 

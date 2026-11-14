@@ -25,11 +25,8 @@ const readText = (
     : '';
 };
 
-/** Collects the selected output surface, excluding source evidence and the other output owner. */
-const readRecordedOutputs = (
-  dialog: DefaultTreeAdapterMap['node'],
-  marker = 'data-inspection-output',
-): string[] => {
+/** Collects a finding's native evaluation record, excluding source evidence. */
+const readFindingOutputs = (dialog: DefaultTreeAdapterMap['node']): string[] => {
   const outputs: string[] = [];
   const pending: { node: DefaultTreeAdapterMap['node']; isOutput: boolean }[] = [
     { node: dialog, isOutput: false },
@@ -39,7 +36,8 @@ const readRecordedOutputs = (
     if (!current) continue;
     const { node } = current;
     const isOutput =
-      current.isOutput || ('attrs' in node && node.attrs.some(({ name }) => name === marker));
+      current.isOutput ||
+      ('attrs' in node && node.attrs.some(({ name }) => name === 'data-inspection-record'));
     if (
       isOutput &&
       'tagName' in node &&
@@ -74,7 +72,6 @@ export const verifyCapabilityArtifacts = (
   const resultLabels = new Map<string, string>();
   const visuals = new Map<string, string>();
   const references = new Set<string>();
-  const recordedOutputs = new Map<string, string[]>();
   const findingTexts = new Map<string, string>();
   const findingRecords = new Map<string, string[]>();
   const showcase = getCapabilityShowcase(catalog);
@@ -85,10 +82,8 @@ export const verifyCapabilityArtifacts = (
     if ('tagName' in node) {
       const attributes = Object.fromEntries(node.attrs.map(({ name, value }) => [name, value]));
       if (node.tagName === 'dialog' && attributes.id) {
-        if (attributes.id.endsWith('-result'))
-          recordedOutputs.set(attributes.id, readRecordedOutputs(node));
         if (attributes.id.endsWith('-evaluation'))
-          findingRecords.set(attributes.id, readRecordedOutputs(node, 'data-inspection-record'));
+          findingRecords.set(attributes.id, readFindingOutputs(node));
         findingTexts.set(attributes.id, readText(node));
       }
       if (
@@ -165,8 +160,6 @@ export const verifyCapabilityArtifacts = (
         throw new Error(`Capabilities artifact omits illustration dialog ${example.id}.`);
       if (!isDirectResult && visuals.get(example.id) !== getCapabilityVisualFamily(example))
         throw new Error(`Capabilities artifact has the wrong visual family for ${example.id}.`);
-      if (!html.includes(`id="${example.id}-result"`))
-        throw new Error(`Capabilities artifact omits result dialog ${example.id}.`);
       const outcome = getCapabilityOutcome(example);
       const view = getCapabilityInspectionView(example);
       const summary = summaries.get(example.id);
@@ -198,24 +191,6 @@ export const verifyCapabilityArtifacts = (
         )
       )
         throw new Error(`Capabilities artifact has an unsupported outcome for ${example.id}.`);
-      const outputs = recordedOutputs.get(`${example.id}-result`);
-      if (outputs?.length !== 1)
-        throw new Error(`Capabilities artifact omits standard JSON presentation ${example.id}.`);
-      try {
-        const published = z.json().parse(JSON.parse(outputs[0]));
-        assertRecordedOutput(example.output.responses, {
-          ...example.output,
-          redactions: [],
-          responses:
-            example.output.responses.length === 1
-              ? [published]
-              : z.array(z.json()).parse(published),
-        });
-      } catch (error) {
-        throw new Error(`Capabilities artifact result does not match execution ${example.id}.`, {
-          cause: error,
-        });
-      }
       for (const finding of view.findings) {
         if (finding.kind !== 'structural') continue;
         const records = findingRecords.get(`${example.id}-${finding.id}-evaluation`);

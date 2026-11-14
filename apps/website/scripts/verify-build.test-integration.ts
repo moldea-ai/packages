@@ -126,10 +126,10 @@ describe('production discovery guards', () => {
       rmSync(path);
     }
   });
-  test('rejects a homepage that loses its Complete result dialog', () => {
-    replaceArtifactText('index.html', 'id="hero-check-result"', 'id="removed-result"');
+  test('rejects a homepage that loses its finding dialog', () => {
+    replaceArtifactText('index.html', 'id="hero-check-finding-1"', 'id="removed-finding"');
     expect(() => verifyProductionBuild(directory)).toThrow(
-      'missing local anchor #hero-check-result',
+      'missing local anchor #hero-check-finding-1',
     );
   });
   test('rejects test-file leakage in the static artifact', () => {
@@ -162,9 +162,9 @@ describe('production discovery guards', () => {
       'omits illustration dialog mirror-stale',
     ],
     [
-      'id="mirror-stale-result"',
-      'data-removed="mirror-stale-result"',
-      'missing local anchor #mirror-stale-result',
+      'id="mirror-stale-finding-1"',
+      'data-removed="mirror-stale-finding-1"',
+      'missing local anchor #mirror-stale-finding-1',
     ],
     [
       'data-capability-outcome="binding-export-passed"',
@@ -175,18 +175,6 @@ describe('production discovery guards', () => {
     replaceArtifactText('capabilities/index.html', marker, replacement);
     expect(() => verifyProductionBuild(directory)).toThrow(error);
   });
-  test('rejects capability results without standard JSON presentation', () => {
-    replaceArtifactText('capabilities/index.html', 'language-json', 'language-text');
-    expect(() => verifyProductionBuild(directory)).toThrow('omits standard JSON presentation');
-  });
-  test('rejects rendered capability JSON that differs from the complete executed output', () => {
-    replaceArtifactText(
-      'capabilities/index.html',
-      '<code class="language-json">',
-      '<code class="language-json">stale',
-    );
-    expect(() => verifyProductionBuild(directory)).toThrow('result does not match execution');
-  });
   test('rejects an unknown example leaking into the complete catalog', () => {
     replaceArtifactText(
       'capabilities/index.html',
@@ -195,13 +183,13 @@ describe('production discovery guards', () => {
     );
     expect(() => verifyProductionBuild(directory)).toThrow('contains an unknown example');
   });
-  test('rejects missing per-finding output while Complete result remains intact', () => {
+  test('rejects missing per-finding output', () => {
     replaceArtifactText('capabilities/index.html', 'data-inspection-record', 'data-removed-record');
     expect(() => verifyProductionBuild(directory)).toThrow(
       'finding record does not match execution',
     );
   });
-  test('rejects changed per-finding JSON independently of Complete result', () => {
+  test('rejects changed per-finding JSON', () => {
     const html = readFileSync(join(directory, 'capabilities/index.html'), 'utf8');
     const prefix = /data-inspection-record[\s\S]*?<code class="language-json">/u.exec(html)?.[0];
     if (prefix === undefined) throw new Error('Missing finding output fixture.');
@@ -218,7 +206,11 @@ describe('production discovery guards', () => {
       'data-inspection-outcome="Passed"',
       'unsupported outcome',
     ],
-    ['MOLDEA_REFERENCE_MISSING', 'MOLDEA_REFERENCE_UNKNOWN', 'result does not match execution'],
+    [
+      'MOLDEA_REFERENCE_MISSING',
+      'MOLDEA_REFERENCE_UNKNOWN',
+      'finding record does not match execution',
+    ],
   ])('rejects an unsupported capability claim %s', (marker, replacement, message) => {
     replaceArtifactText('capabilities/index.html', marker, replacement);
     expect(() => verifyProductionBuild(directory)).toThrow(message);

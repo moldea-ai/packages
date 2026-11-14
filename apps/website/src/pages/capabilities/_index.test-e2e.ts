@@ -146,14 +146,6 @@ for (const width of [320, 375, 768, 1440]) {
         await page.keyboard.press('Escape');
         await expect(card).toBeFocused();
       }
-      const complete = dialog.getByRole('link', { name: 'Complete result', exact: true });
-      await complete.click();
-      const output = page.getByRole('dialog', { name: 'Complete result', exact: true });
-      expect(
-        JSON.parse(await output.locator('[data-inspection-output] pre').innerText()),
-      ).toStrictEqual(mixedExample.output.responses);
-      await page.keyboard.press('Escape');
-      await expect(complete).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(opener).toBeFocused();
       await opener.press('Enter');
@@ -214,7 +206,7 @@ for (const width of [320, 768, 1440]) {
       );
       await expect(page.locator('[data-capability-example]')).toHaveCount(catalog.cases.length);
       await expect(page.locator('main dialog')).toHaveCount(
-        catalog.cases.length * 2 +
+        catalog.cases.length +
           catalog.cases.reduce(
             (count, example) => count + getCapabilityInspectionView(example).findings.length * 2,
             0,
@@ -399,7 +391,7 @@ for (const fragment of ['', '%ZZ', 'unknown-example']) {
 for (const { group, examples } of showcase) {
   for (const example of examples) {
     test(`opens ${example.id} with its recorded result`, async ({ page }) => {
-      // Load the complete catalogue, reveal its batch, then read output and restore two dialogs.
+      // Load the complete catalogue, reveal its batch, and read each native finding record.
       test.setTimeout(60_000);
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(route);
@@ -422,19 +414,36 @@ for (const { group, examples } of showcase) {
         await expect(
           dialog.locator('[data-inspection-outcome]').getByText(view.code, { exact: true }),
         ).toBeVisible();
-      const resultOpener = dialog.getByRole('link', { name: 'Complete result', exact: true });
-      await resultOpener.click();
-      const result = page.getByRole('dialog', { name: 'Complete result', exact: true });
-      await expect(result).toBeVisible();
-      expect(
-        JSON.parse(await result.locator('[data-inspection-output] pre').innerText()),
-      ).toStrictEqual(
-        example.output.responses.length === 1
-          ? example.output.responses[0]
-          : example.output.responses,
-      );
-      await page.keyboard.press('Escape');
-      await expect(resultOpener).toBeFocused();
+      for (const finding of view.findings) {
+        if (finding.accepted) await dialog.getByText(/^Accepted warnings \(/u).click();
+        const findingOpener = dialog
+          .getByRole('link', { name: `View finding: ${finding.message}`, exact: true })
+          .and(page.locator(`[aria-controls="${example.id}-${finding.id}"]`));
+        await findingOpener.click();
+        const detail = page.getByRole('dialog', { name: 'Structural finding', exact: true });
+        const evaluationOpener = detail.getByRole('button', {
+          name: 'Evaluation details',
+          exact: true,
+        });
+        await evaluationOpener.click();
+        const evaluation = page.getByRole('dialog', { name: 'Evaluation details', exact: true });
+        expect(
+          JSON.parse(await evaluation.locator('[data-inspection-record] pre').innerText()),
+        ).toStrictEqual(finding.record);
+        await page.keyboard.press('Escape');
+        await expect(evaluationOpener).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(findingOpener).toBeFocused();
+      }
+      if (view.bindings.length > 0) {
+        const bindingCards = dialog.getByRole('group', { name: 'Binding checks', exact: true });
+        await expect(bindingCards).toBeHidden();
+        await dialog.getByText('View binding checks', { exact: true }).click();
+        await expect(
+          bindingCards.getByRole('article', { name: 'Binding check', exact: true }),
+        ).toHaveCount(view.bindings.length);
+        await expect(bindingCards).toBeVisible();
+      }
       await page.keyboard.press('Escape');
       await expect(dialog).toBeHidden();
       await expect(triggerFor(page, example.id)).toBeFocused();
@@ -468,7 +477,7 @@ test('keeps source representations and catalog accessibility', async ({ page }) 
 
 for (const exampleId of ['cli-pattern-warning', 'cli-accepted-warning']) {
   for (const colorScheme of ['light', 'dark'] as const) {
-    test(`opens illustration and result dialogs with separate focus restoration for ${exampleId} in ${colorScheme}`, async ({
+    test(`opens illustration, finding and evaluation dialogs with separate focus restoration for ${exampleId} in ${colorScheme}`, async ({
       page,
     }) => {
       // both dialog states receive an Axe audit within this complete nested-dialog journey
@@ -498,16 +507,16 @@ for (const exampleId of ['cli-pattern-warning', 'cli-accepted-warning']) {
         (await new AxeBuilder({ page }).include(`#${example.id}-${finding.id}`).analyze())
           .violations,
       ).toStrictEqual([]);
-      await page.keyboard.press('Escape');
-      await expect(findingTrigger).toBeFocused();
-      const resultTrigger = illustration.getByRole('link', {
-        name: 'Complete result',
+      const resultTrigger = findingDialog.getByRole('button', {
+        name: 'Evaluation details',
         exact: true,
       });
       await resultTrigger.click();
-      const result = page.getByRole('dialog', { name: 'Complete result', exact: true });
-      await expect(result.locator('[data-inspection-output]')).toContainText('warningCount');
-      const codeRegion = result.getByRole('group', { name: view.outputLabel, exact: true });
+      const result = page.getByRole('dialog', { name: 'Evaluation details', exact: true });
+      const codeRegion = result.getByRole('group', { name: 'Finding output', exact: true });
+      expect(JSON.parse(await codeRegion.locator('code').innerText())).toStrictEqual(
+        finding.record,
+      );
       await expect(codeRegion).toHaveAttribute('tabindex', '0');
       await expect(codeRegion.locator('code')).toHaveClass('language-json');
       expect(await codeRegion.locator('code span').count()).toBeGreaterThan(0);
@@ -520,12 +529,19 @@ for (const exampleId of ['cli-pattern-warning', 'cli-accepted-warning']) {
         true,
       );
       expect(
-        (await new AxeBuilder({ page }).include(`#${example.id}-result`).analyze()).violations,
+        (
+          await new AxeBuilder({ page })
+            .include(`#${example.id}-${finding.id}-evaluation`)
+            .analyze()
+        ).violations,
       ).toStrictEqual([]);
       await page.keyboard.press('Escape');
       await expect(result).toBeHidden();
-      await expect(illustration).toBeVisible();
+      await expect(findingDialog).toBeVisible();
       await expect(resultTrigger).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(findingDialog).toBeHidden();
+      await expect(findingTrigger).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(illustration).toBeHidden();
       await expect(trigger).toBeFocused();
@@ -549,7 +565,7 @@ test('keeps one complete illustration catalog readable without JavaScript', asyn
       catalog.cases.length - 1,
     );
     await expect(page.locator('dialog[data-dialog-fallback-open][open]')).toHaveCount(
-      catalog.cases.length * 2 +
+      catalog.cases.length +
         catalog.cases.reduce(
           (count, example) => count + getCapabilityInspectionView(example).findings.length * 2,
           0,

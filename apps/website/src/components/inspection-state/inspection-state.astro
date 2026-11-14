@@ -12,7 +12,7 @@ const { state } = Astro.props;
 
 <article
   id={`inspection-${state.id}`}
-  class="example-card flex flex-col max-sm:border-t max-sm:py-5"
+  class="grid min-w-0 grid-rows-[auto_auto_1fr] border-t py-5 first:border-t-0 sm:p-6 lg:row-span-3 lg:grid-rows-subgrid lg:border-t-0 lg:border-l lg:first:border-l-0"
   aria-labelledby={`inspection-${state.id}-title`}
 >
   <header class="example-card-header">

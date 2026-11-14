@@ -3,6 +3,7 @@ import type {
   IInspectionBindingView,
   IInspectionEvidence,
   IInspectionFindingView,
+  IInspectionResultView,
 } from '@moldea.ai/website-ui/inspection-presentation';
 import { withBase } from '@moldea.ai/website-ui/site';
 
@@ -15,7 +16,7 @@ import {
   type IRecordedOutput,
 } from '../../../lib/capabilities/index.ts';
 import { DIAGNOSTIC_GROUP_FRAGMENTS } from './constants.ts';
-import type { IExportEvidence, INativeFinding, IRecordedInspectionView } from './types.ts';
+import type { IExportEvidence, INativeFinding } from './types.ts';
 import {
   asRecord,
   bindingView,
@@ -146,21 +147,6 @@ const findingView = (
   };
 };
 
-/** Formats complete native output without adding process metadata to the payload. */
-const outputView = (
-  output: IRecordedOutput,
-): Pick<IRecordedInspectionView, 'output' | 'outputLabel' | 'redactions'> => ({
-  output: JSON.stringify(
-    output.responses.length === 1 ? output.responses[0] : output.responses,
-    null,
-    2,
-  ),
-  outputLabel: output.kind === 'execution-facts' ? 'Execution facts' : 'JSON',
-  redactions: output.redactions.map(
-    ({ responseIndex, pointer, reason }) => `Response ${responseIndex + 1}: ${pointer} (${reason})`,
-  ),
-});
-
 /** Adapts recorded capability results; Astro callers supply their configured public base path.
  * @throws
  * - INVALID_BASE_PATH: The website base path contains unsupported URL characters.
@@ -170,7 +156,7 @@ const outputView = (
 export const getCapabilityInspectionView = (
   example: ICapabilityCase,
   basePath = '/',
-): IRecordedInspectionView => {
+): IInspectionResultView => {
   const outcome = getCapabilityOutcome(example),
     result = example.result,
     findings = readFindings(example);
@@ -192,9 +178,7 @@ export const getCapabilityInspectionView = (
     ),
     bindings,
     ...(typeof code === 'string' ? { code } : {}),
-    ...outputView(example.output),
-    ...(result.kind === 'cli' ? { command: result.command, exitStatus: result.exitStatus } : {}),
-    limitation: example.limitation,
+    ...(findings.length === 0 ? { limitation: example.limitation } : {}),
   };
 };
 
@@ -209,7 +193,7 @@ export const getProjectInspectionView = (
   title: string,
   files: ICapabilityFile[] = [],
   basePath = '/',
-): IRecordedInspectionView => {
+): IInspectionResultView => {
   const { label, tone } = getValidationOutcome(result),
     output = createRecordedOutput([result]);
   return {
@@ -220,7 +204,5 @@ export const getProjectInspectionView = (
       findingView(finding, index, files, false, basePath),
     ),
     bindings: readBindings(output, false),
-    ...outputView(output),
-    limitation: 'This checks structure and declared references, not application behavior.',
   };
 };

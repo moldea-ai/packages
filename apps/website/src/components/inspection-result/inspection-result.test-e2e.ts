@@ -57,10 +57,10 @@ test.describe('inspection touch controls', () => {
         await expect(evaluationOpener).toBeFocused();
         await page.keyboard.press('Escape');
         await expect(opener).toBeFocused();
-        const complete = page.getByRole('link', { name: 'Complete result', exact: true }).first();
-        const completeBounds = (await complete.boundingBox())!;
-        expect(completeBounds.width).toBeGreaterThanOrEqual(44);
-        expect(completeBounds.height).toBeGreaterThanOrEqual(44);
+        const bindings = page.getByText('View binding checks', { exact: true }).first();
+        const bindingBounds = (await bindings.boundingBox())!;
+        expect(bindingBounds.width).toBeGreaterThanOrEqual(44);
+        expect(bindingBounds.height).toBeGreaterThanOrEqual(44);
       });
     }
   }
@@ -81,10 +81,10 @@ test('locks background scrolling without changing the document width', async ({ 
     }));
   const before = await measure();
   expect(before.gutter).toBe('stable');
-  await page.locator('[data-dialog-open="hero-check-result"]').click();
+  await page.locator('[data-dialog-open="hero-check-finding-1"]').click();
   await expect(
     page.getByRole('dialog', {
-      name: 'Complete result',
+      name: 'Structural finding',
       exact: true,
     }),
   ).toBeVisible();
@@ -213,14 +213,14 @@ test('supports public dialog customization without overriding modal behavior', a
 });
 
 for (const theme of ['light', 'dark'] as const) {
-  test(`keeps a long result scrollable beneath its outcome heading in ${theme}`, async ({
+  test(`keeps a finding scrollable beneath its heading and resets scroll in ${theme}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 540 });
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
     await page.goto(homepage);
-    const opener = page.locator('[data-dialog-open="hero-check-result"]');
-    const dialog = page.getByRole('dialog', { name: 'Complete result', exact: true });
+    const opener = page.locator('[data-dialog-open="hero-check-finding-1"]');
+    const dialog = page.getByRole('dialog', { name: 'Structural finding', exact: true });
     const body = dialog.locator(':scope > div');
     const openResult = async () => {
       await opener.click();
@@ -236,11 +236,14 @@ for (const theme of ['light', 'dark'] as const) {
     expect(await body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
       true,
     );
+    const scrollDistance = await body.evaluate((element) =>
+      Math.min(400, element.scrollHeight - element.clientHeight),
+    );
     const pageScroll = await page.evaluate(() => window.scrollY);
     // target the dialog body's padding rather than a nested source scroll region
     await body.hover({ position: { x: 8, y: 8 } });
     await page.mouse.wheel(0, 400);
-    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBe(400);
+    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBe(scrollDistance);
     expect(await page.evaluate(() => window.scrollY)).toBe(pageScroll);
     await expect(dialog.getByRole('heading', { level: 2 })).toBeInViewport({ ratio: 1 });
     await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeInViewport({ ratio: 1 });
@@ -249,19 +252,19 @@ for (const theme of ['light', 'dark'] as const) {
     await dialog.getByRole('button', { name: 'Close dialog' }).click();
     await expect(dialog).not.toBeVisible();
     await openResult();
-    await body.evaluate((element) => {
-      element.scrollTop = 400;
-    });
-    expect(await body.evaluate((element) => element.scrollTop)).toBe(400);
+    await body.evaluate((element, distance) => {
+      element.scrollTop = distance;
+    }, scrollDistance);
+    expect(await body.evaluate((element) => element.scrollTop)).toBe(scrollDistance);
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
     await openResult();
 
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await body.evaluate((element) => {
-      element.scrollTop = 400;
-    });
-    expect(await body.evaluate((element) => element.scrollTop)).toBe(400);
+    await body.evaluate((element, distance) => {
+      element.scrollTop = distance;
+    }, scrollDistance);
+    expect(await body.evaluate((element) => element.scrollTop)).toBe(scrollDistance);
     await dialog.getByRole('button', { name: 'Close dialog' }).click();
     await expect(dialog).not.toBeVisible();
     await openResult();
@@ -310,28 +313,13 @@ test('finding evaluation lifecycle restores focus through case, finding and eval
   await expect(finding).toBeHidden();
   await expect(opener).toBeFocused();
   await expect(page.locator('html')).toHaveCSS('overflow', 'hidden');
-  const complete = example.getByRole('link', { name: 'Complete result', exact: true });
-  await complete.click();
-  const result = page.getByRole('dialog', { name: 'Complete result', exact: true });
-  const envelope: unknown = JSON.parse(
-    (await result.getByRole('group', { name: 'JSON', exact: true }).textContent())!,
+  const bindingDisclosure = example.getByText('View binding checks', { exact: true });
+  await expect(example.getByRole('group', { name: 'Binding checks', exact: true })).toBeHidden();
+  await bindingDisclosure.click();
+  await expect(example.getByRole('group', { name: 'Binding checks', exact: true })).toBeVisible();
+  await expect(example.getByRole('article', { name: 'Binding check', exact: true })).toContainText(
+    'Export missing',
   );
-  expect(envelope).toMatchObject({
-    result: {
-      page: {
-        records: expect.arrayContaining([
-          record,
-          expect.objectContaining({ kind: 'coverage', fileCheck: 'passed', exportCheck: 'failed' }),
-        ]),
-      },
-    },
-  });
-  expect(envelope).not.toHaveProperty('exitStatus');
-  await expect(result.getByText('Exit 1', { exact: true })).toBeVisible();
-  await expect(result.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await expect(result).toBeHidden();
-  await expect(complete).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(example).toBeHidden();
   await expect(

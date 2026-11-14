@@ -30,19 +30,20 @@ for (const width of [375, 1024, 1440]) {
       const steps = page
         .getByRole('region', { name: 'A file moves. The connection breaks.', exact: true })
         .locator('article[id^="inspection-"]');
-      const gaps = await steps.evaluateAll((frames) =>
-        frames.map((frame) => {
-          const diagram = frame.querySelector(
-            '[aria-label="Resolved file reference"], [aria-label="Broken file reference"]',
-          )!;
-          const footer = frame.querySelector('.example-card-footer')!;
-          return {
-            expected: parseFloat(getComputedStyle(footer).marginTop),
-            actual: footer.getBoundingClientRect().top - diagram.getBoundingClientRect().bottom,
-          };
-        }),
-      );
-      for (const gap of gaps) expect(gap.actual).toBeCloseTo(gap.expected, 0);
+      if (width >= 1024) {
+        const rows = await steps.evaluateAll((frames) =>
+          frames.map((frame) => ({
+            top: frame.getBoundingClientRect().top,
+            bottom: frame.getBoundingClientRect().bottom,
+            result: frame.querySelector('.example-card-footer')!.getBoundingClientRect().top,
+          })),
+        );
+        for (const row of rows) {
+          expect(row.top).toBeCloseTo(rows[0].top, 0);
+          expect(row.bottom).toBeCloseTo(rows[0].bottom, 0);
+          expect(row.result).toBeCloseTo(rows[0].result, 0);
+        }
+      }
     });
   }
 }
@@ -105,10 +106,9 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(preview.getByText('Example', { exact: true })).toHaveCount(0);
       await expect(preview.locator('details')).toHaveCount(0);
       await expect(preview.locator('pre:visible')).toHaveCount(1);
-      const trigger = preview.getByRole('link', { name: 'Complete result', exact: true });
-      await expect(trigger).toBeVisible();
       const findingCard = preview.getByRole('article', { name: 'Structural finding', exact: true });
       const findingTrigger = findingCard.getByRole('link', { name: /^View finding:/u });
+      const trigger = findingTrigger;
       await expect(findingCard).toContainText('Blocking');
       await expect(findingCard.locator('svg.lucide-bot')).toHaveCount(1);
       const triggerBounds = (await findingTrigger.boundingBox())!;
@@ -182,24 +182,32 @@ for (const width of [320, 768, 1024, 1440]) {
       await expect(trigger).not.toHaveCSS('box-shadow', 'none');
       await page.keyboard.press('Enter');
       const dialog = page.getByRole('dialog', {
-        name: 'Complete result',
+        name: 'Structural finding',
         exact: true,
       });
       await expect(dialog).toBeVisible();
       await expect(dialog).toHaveAccessibleDescription('');
       await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeFocused();
-      expect(
-        JSON.parse(await dialog.locator('[data-inspection-output] pre').innerText()),
-      ).toStrictEqual(loadWebsiteModel().instructionExample.result);
-      await expect(dialog).toContainText('/src/orders/tracking.ts');
+      await expect(dialog).toContainText('src/orders/tracking.ts');
       await expect(dialog).not.toContainText('/src/refund-policy.ts');
+      const evaluationOpener = dialog.getByRole('button', {
+        name: 'Evaluation details',
+        exact: true,
+      });
+      await evaluationOpener.click();
+      const evaluation = page.getByRole('dialog', { name: 'Evaluation details', exact: true });
+      expect(
+        JSON.parse(await evaluation.locator('[data-inspection-record] pre').innerText()),
+      ).toStrictEqual(loadWebsiteModel().instructionExample.result.diagnostics[0]);
+      await page.keyboard.press('Escape');
+      await expect(evaluationOpener).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(dialog).toHaveCount(0);
       await expect(trigger).toBeFocused();
 
-      const cardTrigger = page.locator('[data-dialog-open="inspection-broken-result"]');
+      const cardTrigger = page.locator('[data-dialog-open="inspection-broken-finding-1"]');
       await cardTrigger.click();
-      const cardDialog = page.locator('#inspection-broken-result');
+      const cardDialog = page.locator('#inspection-broken-finding-1');
       await expect(cardDialog).toBeVisible();
       expect(await cardDialog.getAttribute('id')).not.toBe(
         await trigger.getAttribute('aria-controls'),

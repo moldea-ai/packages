@@ -238,7 +238,7 @@ describe('published website UI package', () => {
     expect(packedPaths).toContain(
       'src/components/inspection-dialog/inspection-dialog.component.astro',
     );
-    expect(packedPaths).toContain(
+    expect(packedPaths).not.toContain(
       'src/components/inspection-list/output/inspection-output.component.astro',
     );
     expect(packedPaths).not.toContain(
@@ -550,14 +550,14 @@ describe('published website UI package', () => {
         'const iconDialogProps = { id: "fixture-icon", title: "Complete source", triggerLabel: "Open complete source", triggerAriaLabel: "Open complete source in a larger view", triggerVariant: "ghost", triggerSize: "icon-xs", size: "large" } satisfies ComponentProps<typeof Dialog>;',
         'const nativeRecord = { kind: "diagnostic", key: "native-missing", code: "MOLDEA_REFERENCE_MISSING", severity: "error", group: "references", message: "The declared policy file is absent.", path: "/moldea/moldea.yaml", pointer: "/context/~1moldea~1policy.md/bindings/0", range: { start: { line: 2, column: 3 }, end: { line: 2, column: 29 } }, details: { referencedPath: "src/policy.ts" }, retained: { original: true } };',
         'const missing = { id: "missing", kind: "structural", code: nativeRecord.code, severity: "error", group: "references", message: nativeRecord.message, path: nativeRecord.path, record: nativeRecord, field: ["context", "/moldea/policy.md", "bindings", "0"], target: { label: "Referenced file", value: "src/policy.ts", icon: "file" }, facts: [], guidanceHref: withBase("/packages/core/diagnostics/#references-context-and-decisions", "/preview/"), declaration: { path: nativeRecord.path, label: "Declared in", language: "yaml", content: "references:\\n  - path: src/policy.ts", startingLineNumber: 1, highlightedLines: [2] }, evidence: [{ path: "src/policy.ts", language: "typescript", label: "Referenced file", isMissing: true }] } satisfies IInspectionFindingView;',
-        'const passed = { title: "Validation complete", label: "Passed", tone: "success", findings: [], bindings: [], outputLabel: "JSON", output: JSON.stringify({ valid: true, diagnostics: [], coverage: [] }), redactions: [] } satisfies IInspectionResultView;',
-        'const failed = { ...passed, title: "Validation failed", label: "Blocking", tone: "danger", command: "moldea validate --json", exitStatus: 1, output: JSON.stringify({ schemaVersion: 7, command: "validate", status: "invalid", result: { valid: false, page: { cursor: null, records: [nativeRecord] } }, error: null }), findings: [missing] } satisfies IInspectionResultView;',
+        'const passed = { title: "Validation complete", label: "Passed", tone: "success", findings: [], bindings: [] } satisfies IInspectionResultView;',
+        'const failed = { ...passed, title: "Validation failed", label: "Blocking", tone: "danger", findings: [missing] } satisfies IInspectionResultView;',
         'const acceptedRecord = { code: "MOLDEA_IMPACT_PATTERN_UNMATCHED", severity: "warning", group: "references", message: "No current file matches the declared pattern.", path: "src/" + "long-directory/".repeat(8) + "policy.ts", subject: "/planned/**", qualifier: null, acceptable: true, accepted: true, reason: "Generated files arrive during the release build." };',
         'const acceptedFinding = { id: "accepted", kind: "structural", code: acceptedRecord.code, severity: "warning", group: "references", message: acceptedRecord.message, path: acceptedRecord.path, accepted: true, reason: acceptedRecord.reason, record: acceptedRecord, field: [], facts: [], evidence: [], guidanceHref: withBase("/packages/core/diagnostics/#references-context-and-decisions", "/preview/") } satisfies IInspectionFindingView;',
         'const warningRecord = { code: "MOLDEA_INTEGRATION_LINK_UNRESOLVED", severity: "warning", group: "integration", message: "An instruction link does not resolve.", path: "/AGENTS.md", pointer: "/integration", subject: "/AGENTS.md", qualifier: "./missing.md", acceptable: true };',
         'const warningFinding = { id: "warning", kind: "structural", code: warningRecord.code, severity: "warning", group: "integration", message: warningRecord.message, path: warningRecord.path, record: warningRecord, field: ["integration"], facts: [{ label: "Reason", value: "External link (external-link)", icon: "reason" }], guidanceHref: "/packages/core/diagnostics/#coding-agent-integration", evidence: [], acceptance: \'acceptedWarnings:\\n  - code: "MOLDEA_INTEGRATION_LINK_UNRESOLVED"\\n    subject: "/AGENTS.md"\\n    qualifier: "./missing.md"\\n    reason:\\n    # Required: explain why this warning is accepted.\' } satisfies IInspectionFindingView;',
-        'const multiple = { ...failed, title: "Inspection complete", findings: [acceptedFinding, missing, warningFinding], output: JSON.stringify({ diagnostics: [acceptedRecord, nativeRecord, warningRecord] }) } satisfies IInspectionResultView;',
-        'const illustrated = { title: "Illustrative policy review", label: "Blocking", tone: "danger", bindings: [], findings: [{ id: "authority", kind: "illustrative", code: "CONTEXT_CONTRADICTED", severity: "error", category: "context", message: "Only managers can approve refunds.", evidence: [{ path: "project.md", label: "Project rule", language: "markdown", content: "Only managers can approve refunds.", isExcerpt: true }, { path: "instruction.md", label: "Changed instruction", language: "markdown", beforeContent: "Explain the refund policy.", content: "Approve refunds for customers.", isExcerpt: true }] }], redactions: [], limitation: "Illustrative finding." } satisfies IInspectionResultView;',
+        'const multiple = { ...failed, title: "Inspection complete", findings: [acceptedFinding, missing, warningFinding] } satisfies IInspectionResultView;',
+        'const illustrated = { title: "Illustrative policy review", label: "Blocking", tone: "danger", bindings: [], findings: [{ id: "authority", kind: "illustrative", code: "CONTEXT_CONTRADICTED", severity: "error", category: "context", message: "Only managers can approve refunds.", evidence: [{ path: "project.md", label: "Project rule", language: "markdown", content: "Only managers can approve refunds.", isExcerpt: true }, { path: "instruction.md", label: "Changed instruction", language: "markdown", beforeContent: "Explain the refund policy.", content: "Approve refunds for customers.", isExcerpt: true }] }], limitation: "Illustrative finding." } satisfies IInspectionResultView;',
         'const many = { ...illustrated, title: "Policy findings", findings: Array.from({ length: 32 }, (_, index) => ({ ...illustrated.findings[0], id: `policy-${index}`, message: `Policy finding ${index + 1}`, evidence: [] })) } satisfies IInspectionResultView;',
         'const refused = { ...passed, title: "Operation refused", label: "Refused", tone: "warning", code: "INVALID_PAGE_REQUEST" } satisfies IInspectionResultView;',
         'const bindingResult = { ...passed, title: "Binding outcomes", label: "Result", tone: "neutral", bindings: [{ relationship: "instruction-loader", path: "src/loader.ts", symbol: "loadPolicy", owner: { label: "Agent", value: "support", icon: "agent" }, outcome: "passed" }, { relationship: "context-binding", path: "src/policy.ts", symbol: "policy", outcome: "failed" }, { relationship: "decision-binding", path: "policy.md", outcome: "not-checked", reason: "No export was declared for this binding." }] } satisfies IInspectionResultView;',
@@ -1152,13 +1152,14 @@ describe('published website UI package', () => {
             expect(await gutterWidth('Booking changes')).toBeLessThan(
               await gutterWidth('Four-digit lines'),
             );
-            expect(await page.locator('#single-result').isVisible()).toBe(true);
+            expect(await page.locator('#single-missing-evaluation').isVisible()).toBe(true);
             expect(
-              await page
-                .locator('#single-result')
-                .getByText('moldea validate --json', { exact: true })
-                .isVisible(),
-            ).toBe(true);
+              JSON.parse(
+                await page
+                  .locator('#single-missing-evaluation [data-inspection-record] code')
+                  .innerText(),
+              ),
+            ).toMatchObject({ code: 'MOLDEA_REFERENCE_MISSING', retained: { original: true } });
             expect(
               await page
                 .locator('#single-missing')
@@ -1768,64 +1769,18 @@ describe('published website UI package', () => {
             await expect
               .poll(() => cardOpener.evaluate((node) => node === document.activeElement))
               .toBe(true);
-            const complete = single.getByRole('link', { name: 'Complete result', exact: true });
-            await complete.click();
-            const completeDialog = page.getByRole('dialog', {
-              name: 'Complete result',
-              exact: true,
-            });
-            const full: unknown = JSON.parse(
-              (await completeDialog
-                .getByRole('group', { name: 'JSON', exact: true })
-                .textContent())!,
-            );
-            expect(full).toMatchObject({
-              schemaVersion: 7,
-              command: 'validate',
-              status: 'invalid',
-              result: { page: { records: [stored] } },
-              error: null,
-            });
-            expect(full).not.toHaveProperty('exitStatus');
-            expect(
-              await completeDialog.getByText('moldea validate --json', { exact: true }).count(),
-            ).toBe(1);
-            expect(await completeDialog.getByText('Exit 1', { exact: true }).count()).toBe(1);
-            expect(
-              await completeDialog.getByRole('button', { name: 'Copy code', exact: true }).count(),
-            ).toBe(0);
-            await page.keyboard.press('Escape');
-            await expect
-              .poll(() => complete.evaluate((node) => node === document.activeElement))
-              .toBe(true);
             const refused = page.getByRole('region', { name: 'Refused result', exact: true });
             expect(await refused.getByText('INVALID_PAGE_REQUEST', { exact: true }).count()).toBe(
               1,
             );
             expect(await refused.getByRole('article').count()).toBe(0);
-            expect(
-              await refused.getByRole('link', { name: 'Complete result', exact: true }).count(),
-            ).toBe(1);
             const passed = page.getByRole('region', { name: 'Passed result', exact: true });
-            await passed.getByRole('link', { name: 'Complete result', exact: true }).click();
-            expect(
-              JSON.parse(
-                (await page
-                  .getByRole('dialog', { name: 'Complete result', exact: true })
-                  .getByRole('group', { name: 'JSON', exact: true })
-                  .textContent())!,
-              ),
-            ).toStrictEqual({ valid: true, diagnostics: [], coverage: [] });
-            await page.keyboard.press('Escape');
+            expect(await passed.getByText('Passed', { exact: true }).count()).toBe(1);
+            expect(await passed.getByRole('dialog').count()).toBe(0);
             const illustration = page.getByRole('region', {
               name: 'Authored illustration',
               exact: true,
             });
-            expect(
-              await illustration
-                .getByRole('link', { name: 'Complete result', exact: true })
-                .count(),
-            ).toBe(0);
             await illustration
               .getByRole('link', {
                 name: 'View finding: Only managers can approve refunds.',
@@ -1932,9 +1887,24 @@ describe('published website UI package', () => {
             await expect
               .poll(() => last.evaluate((node) => node === document.activeElement))
               .toBe(true);
-            const bindings = page
-              .getByRole('region', { name: 'Binding outcomes', exact: true })
-              .getByRole('article', { name: 'Binding check', exact: true });
+            const bindingRegion = page.getByRole('region', {
+              name: 'Binding outcomes',
+              exact: true,
+            });
+            const bindingDisclosure = bindingRegion.getByText('View binding checks', {
+              exact: true,
+            });
+            const bindingGroup = bindingRegion.getByRole('group', {
+              name: 'Binding checks',
+              exact: true,
+            });
+            expect(await bindingGroup.isVisible()).toBe(false);
+            await bindingDisclosure.click();
+            expect(await bindingGroup.isVisible()).toBe(true);
+            const bindings = bindingGroup.getByRole('article', {
+              name: 'Binding check',
+              exact: true,
+            });
             expect(await bindings.count()).toBe(3);
             expect(await bindings.nth(0).innerText()).toContain('Export found');
             expect(await bindings.nth(1).innerText()).toContain('Export missing');
@@ -2008,17 +1978,8 @@ describe('published website UI package', () => {
             .getAttribute('href'),
         ).toBe('/preview/packages/core/diagnostics/#references-context-and-decisions');
         await page.keyboard.press('Escape');
-        const complete = result.getByRole('link', { name: 'Complete result', exact: true });
-        expect(new URL((await complete.getAttribute('href'))!, page.url()).href).toBe(
-          'https://ui-consumer.example/preview/#single-result',
-        );
-        await complete.click();
-        expect(
-          await page.getByRole('dialog', { name: 'Complete result', exact: true }).isVisible(),
-        ).toBe(true);
-        await page.keyboard.press('Escape');
         await expect
-          .poll(() => complete.evaluate((node) => node === document.activeElement))
+          .poll(() => card.evaluate((node) => node === document.activeElement))
           .toBe(true);
       } finally {
         await prefixedContext.close();

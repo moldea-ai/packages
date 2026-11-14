@@ -1,6 +1,5 @@
 ---
 import {
-  ArrowUpRight,
   ChevronDown,
   CircleAlert,
   CircleCheck,
@@ -13,14 +12,11 @@ import {
   groupInspectionFindings,
   type IInspectionResultView,
 } from '@moldea.ai/website-ui/inspection-presentation';
-import ActionLink from '../action-link/action-link.component.astro';
 import CodeText from '../code-text/code-text.component.astro';
-import Dialog from '../dialog/dialog.component.astro';
 import InspectionFinding from '../inspection-finding/inspection-finding.component.astro';
 import InspectionDialog from '../inspection-dialog/inspection-dialog.component.astro';
 import StatusBadge from '../status-badge/status-badge.component.astro';
 import InspectionBinding from './binding/inspection-binding.component.astro';
-import InspectionOutput from './output/inspection-output.component.astro';
 
 export interface Props {
   id: string;
@@ -40,7 +36,6 @@ const counts = [
 ]
   .filter(Boolean)
   .join(' · ');
-const outputId = `${id}-result`;
 const hasSummary = result.findings.length !== 1;
 const resultIcons = {
   danger: CircleAlert,
@@ -57,60 +52,34 @@ const ResultIcon = ['Blocked', 'Not checked', 'Refused'].includes(result.label)
 ---
 
 <div
-  class:list={['grid min-w-0 [&>[data-dialog-root]]:contents', hasSummary ? 'gap-6' : 'gap-3']}
+  class="grid min-w-0 gap-3"
   data-inspection-list
   data-inspection-outcome={result.label}
 >
   {
-    (hasSummary || result.output !== undefined) && (
-      <div
-        class:list={[
-          'flex min-w-0 flex-wrap items-center gap-3',
-          hasSummary ? 'justify-between' : 'justify-end',
-        ]}
-      >
-        {hasSummary && (
-          <div class="min-w-0">
-            <div class="flex min-w-0 flex-wrap items-center gap-2">
-              <StatusBadge
-                label={result.label}
-                tone={result.tone}
-                size="sm"
-              >
-                <ResultIcon
-                  slot="icon"
-                  aria-hidden="true"
-                />
-              </StatusBadge>
-              <span class="text-sm font-semibold wrap-anywhere">{result.title}</span>
-              {result.code && (
-                <CodeText
-                  value={result.code}
-                  title=""
-                  class="text-xs"
-                />
-              )}
-            </div>
-            {counts && <p class="mt-1 text-xs leading-5 text-muted-foreground">{counts}</p>}
-          </div>
-        )}
-        {result.output !== undefined && (
-          <ActionLink
-            href={`#${outputId}`}
-            data-dialog-open={outputId}
-            aria-controls={outputId}
-            aria-haspopup="dialog"
-            variant="outline"
+    hasSummary && (
+      <div class="min-w-0">
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
+          <StatusBadge
+            label={result.label}
+            tone={result.tone}
             size="sm"
-            class="shrink-0 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
           >
-            Complete result
-            <ArrowUpRight
-              class="size-3.5"
+            <ResultIcon
+              slot="icon"
               aria-hidden="true"
             />
-          </ActionLink>
-        )}
+          </StatusBadge>
+          <span class="text-sm font-semibold wrap-anywhere">{result.title}</span>
+          {result.code && (
+            <CodeText
+              value={result.code}
+              title=""
+              class="text-xs"
+            />
+          )}
+        </div>
+        {counts && <p class="mt-1 text-xs leading-5 text-muted-foreground">{counts}</p>}
       </div>
     )
   }
@@ -185,13 +154,15 @@ const ResultIcon = ['Blocked', 'Not checked', 'Refused'].includes(result.label)
   }
   {
     result.bindings.length > 0 && (
-      <div
-        role="group"
-        aria-label="Binding checks"
-        class="min-w-0"
-      >
-        <>
-          <p class="mb-3 text-sm font-semibold">Binding checks</p>
+      <details class="group min-w-0">
+        <summary class="min-h-11 w-fit max-w-full cursor-pointer content-center rounded-sm py-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-w-11">
+          View binding checks
+        </summary>
+        <div
+          role="group"
+          aria-label="Binding checks"
+          class="min-w-0"
+        >
           <ol class="grid min-w-0 gap-3">
             {result.bindings.map((binding) => (
               <li class="min-w-0">
@@ -199,27 +170,9 @@ const ResultIcon = ['Blocked', 'Not checked', 'Refused'].includes(result.label)
               </li>
             ))}
           </ol>
-        </>
-      </div>
+        </div>
+      </details>
     )
   }
-  {
-    result.output !== undefined && (
-      <Dialog
-        id={outputId}
-        title="Complete result"
-        triggerLabel="Complete result"
-        triggerClass="hidden"
-        fallbackOpen
-        isOverlayCloseEnabled
-      >
-        <InspectionOutput {result} />
-      </Dialog>
-    )
-  }
-  {
-    result.output === undefined && result.limitation && (
-      <p class="text-xs leading-6 text-muted-foreground">{result.limitation}</p>
-    )
-  }
+  {result.limitation && <p class="text-xs leading-6 text-muted-foreground">{result.limitation}</p>}
 </div>

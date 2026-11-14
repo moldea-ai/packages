@@ -14,59 +14,76 @@ const hasSafeModalFocus = (element: HTMLElement): boolean =>
 
 for (const width of [320, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
-    test(`shows each real Core result in an accessible dialog at ${width}px in ${theme}`, async ({
+    test(`shows real Core findings and collapsed coverage at ${width}px in ${theme}`, async ({
       page,
     }) => {
       await page.setViewportSize({ width, height: 740 });
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await page.goto(homepage);
       for (const state of loadWebsiteModel().inspectionExample) {
-        const trigger = page.locator(`#inspection-${state.id} [data-dialog-open]`).first();
+        const frame = page.getByRole('article', { name: state.label, exact: true });
+        if (state.result.valid) {
+          await expect(frame.getByRole('link', { name: /^View finding:/u })).toHaveCount(0);
+          await expect(frame).toContainText('Passed');
+          const disclosure = frame.getByText('View binding checks', { exact: true });
+          await expect(
+            frame.getByRole('group', { name: 'Binding checks', exact: true }),
+          ).toBeHidden();
+          await disclosure.click();
+          await expect(
+            frame.getByRole('group', { name: 'Binding checks', exact: true }),
+          ).toBeVisible();
+          await disclosure.click();
+          continue;
+        }
+        const trigger = frame.getByRole('link', { name: /^View finding:/u });
         await trigger.focus();
         await page.keyboard.press('Enter');
-        const resultTitle = 'Complete result';
-        const dialog = page.getByRole('dialog', { name: resultTitle, exact: true });
+        const dialog = page.getByRole('dialog', { name: 'Structural finding', exact: true });
         await expect(dialog).toBeVisible();
         await expect(dialog).toHaveAccessibleDescription('');
-        await expect(dialog.locator('header')).not.toContainText(state.label);
         expect(await dialog.evaluate((element) => element.matches(':modal'))).toBe(true);
         await expect(page.locator('html')).toHaveCSS('overflow', 'hidden');
         await expect(dialog).toHaveCSS('animation-name', 'none');
-        await expect(dialog).toContainText(state.declaredPath);
-        await expect(dialog.getByRole('heading', { name: resultTitle, exact: true })).toBeVisible();
+        await expect(dialog).toContainText(state.declaredPath.replace(/^\//u, ''));
         await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1);
         const close = dialog.getByRole('button', { name: 'Close dialog', exact: true });
         await expect(close).toBeFocused();
         await expect(dialog.getByRole('tab')).toHaveCount(0);
-        const code = dialog.getByRole('group', {
-          name: 'JSON',
-          exact: true,
-        });
-        expect(JSON.parse(await code.locator('code').innerText())).toStrictEqual(state.result);
-        await expect(code).toHaveCSS('white-space', 'pre');
-        await close.focus();
-        await expect(close).toBeFocused();
-        await expect(close).toBeInViewport({ ratio: 1 });
-        const closeBounds = await close.boundingBox();
-        expect(closeBounds!.width).toBe(width < 640 ? 36 : 28);
-        expect(closeBounds!.height).toBe(width < 640 ? 36 : 28);
+        const closeBounds = (await close.boundingBox())!;
+        expect(closeBounds.width).toBe(width < 640 ? 36 : 28);
+        expect(closeBounds.height).toBe(width < 640 ? 36 : 28);
         for (let index = 0; index < 4; index += 1) {
           await page.keyboard.press('Tab');
           expect(await dialog.evaluate(hasSafeModalFocus)).toBe(true);
         }
         await page.keyboard.press('Shift+Tab');
         expect(await dialog.evaluate(hasSafeModalFocus)).toBe(true);
-
-        const bounds = await dialog.boundingBox();
-        expect(bounds!.x).toBeGreaterThanOrEqual(0);
-        expect(bounds!.y).toBeGreaterThanOrEqual(0);
-        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
-        expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(740);
-        const body = dialog.locator(':scope > div');
-        expect(await body.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
-          true,
+        const bounds = (await dialog.boundingBox())!;
+        expect(bounds.x).toBeGreaterThanOrEqual(0);
+        expect(bounds.y).toBeGreaterThanOrEqual(0);
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+        expect(bounds.y + bounds.height).toBeLessThanOrEqual(740);
+        expect(
+          await dialog
+            .locator(':scope > div')
+            .evaluate((element) => element.scrollWidth <= element.clientWidth),
+        ).toBe(true);
+        expect(
+          (await new AxeBuilder({ page }).include('dialog[open]').analyze()).violations,
+        ).toStrictEqual([]);
+        const evaluationOpener = dialog.getByRole('button', {
+          name: 'Evaluation details',
+          exact: true,
+        });
+        await evaluationOpener.click();
+        const evaluation = page.getByRole('dialog', { name: 'Evaluation details', exact: true });
+        const code = evaluation.getByRole('group', { name: 'Finding output', exact: true });
+        expect(JSON.parse(await code.locator('code').innerText())).toStrictEqual(
+          state.result.diagnostics[0],
         );
-        if (width === 320 && !state.result.valid) {
+        await expect(code).toHaveCSS('white-space', 'pre');
+        if (width === 320) {
           expect(await code.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(
             true,
           );
@@ -76,15 +93,9 @@ for (const width of [320, 1440]) {
           await expect
             .poll(() => code.evaluate((element) => element.scrollLeft))
             .toBeGreaterThan(0);
-          await expect(close).toBeInViewport({ ratio: 1 });
         }
-
-        const accessibility = await new AxeBuilder({ page }).include('dialog[open]').analyze();
-        expect(
-          accessibility.violations.filter(
-            ({ impact }) => impact === 'serious' || impact === 'critical',
-          ),
-        ).toStrictEqual([]);
+        await page.keyboard.press('Escape');
+        await expect(evaluationOpener).toBeFocused();
         await close.focus();
         await page.keyboard.press('Escape');
         await expect(dialog).toBeHidden();
@@ -100,7 +111,7 @@ for (const width of [320, 1440]) {
   }
 }
 
-test('keeps result dialogs usable after client navigation and browser history', async ({
+test('keeps finding dialogs usable after client navigation and browser history', async ({
   page,
 }) => {
   await page.goto(withBase('/runtimes/', basePath));
@@ -108,14 +119,17 @@ test('keeps result dialogs usable after client navigation and browser history', 
     .locator('header')
     .getByRole('link', { name: 'moldea packages home', exact: true })
     .click();
-  const trigger = page.locator('[data-dialog-open="inspection-broken-result"]');
+  const trigger = page.locator('[data-dialog-open="inspection-broken-finding-1"]');
   await trigger.click();
-  const dialog = page.locator('#inspection-broken-result');
+  const dialog = page.locator('#inspection-broken-finding-1');
   await expect(dialog).toBeVisible();
-  await dialog.evaluate((element) => {
-    element.querySelector<HTMLButtonElement>('button')!.click();
-    for (const animation of element.getAnimations()) animation.pause();
-  });
+  await dialog
+    .getByRole('button', { name: 'Close dialog', exact: true })
+    .evaluate((button: HTMLButtonElement) => {
+      const element = button.closest('dialog')!;
+      button.click();
+      for (const animation of element.getAnimations()) animation.pause();
+    });
   await page.goBack();
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
     'Guidance for the runtime you use.',
@@ -136,7 +150,7 @@ for (const theme of ['light', 'dark'] as const) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'no-preference' });
     await page.goto(homepage);
-    for (const id of ['hero-check-result', 'inspection-broken-result']) {
+    for (const id of ['hero-check-finding-1', 'inspection-broken-finding-1']) {
       const trigger = page.locator(`[data-dialog-open="${id}"]`);
       await trigger.click();
       const dialog = page.locator(`#${id}`);
@@ -176,10 +190,10 @@ for (const width of [320, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'no-preference' });
       await page.goto(homepage);
-      const trigger = page.locator('[data-dialog-open="hero-check-result"]');
+      const trigger = page.locator('[data-dialog-open="hero-check-finding-1"]');
       await trigger.click();
       const dialog = page.getByRole('dialog', {
-        name: 'Complete result',
+        name: 'Structural finding',
         exact: true,
       });
       await dialog.evaluate((element) => {
@@ -228,13 +242,16 @@ for (const width of [320, 1440]) {
         return;
       }
 
-      await dialog.evaluate((element) => {
-        element.querySelector<HTMLButtonElement>('button')!.click();
-        for (const animation of element.getAnimations()) {
-          animation.pause();
-          animation.currentTime = 100;
-        }
-      });
+      await dialog
+        .getByRole('button', { name: 'Close dialog', exact: true })
+        .evaluate((button: HTMLButtonElement) => {
+          const element = button.closest('dialog')!;
+          button.click();
+          for (const animation of element.getAnimations()) {
+            animation.pause();
+            animation.currentTime = 100;
+          }
+        });
       await expect(dialog).toHaveCSS('animation-duration', '0.2s');
       const exitingOpacity = Number(
         await dialog.evaluate((element) => getComputedStyle(element).opacity),
@@ -261,16 +278,19 @@ test('finishes an interrupted exit when reduced motion changes and can reopen', 
 }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto(homepage);
-  const trigger = page.locator('[data-dialog-open="hero-check-result"]');
+  const trigger = page.locator('[data-dialog-open="hero-check-finding-1"]');
   await trigger.click();
   const dialog = page.getByRole('dialog', {
-    name: 'Complete result',
+    name: 'Structural finding',
     exact: true,
   });
-  await dialog.evaluate((element) => {
-    element.querySelector<HTMLButtonElement>('button')!.click();
-    for (const animation of element.getAnimations()) animation.pause();
-  });
+  await dialog
+    .getByRole('button', { name: 'Close dialog', exact: true })
+    .evaluate((button: HTMLButtonElement) => {
+      const element = button.closest('dialog')!;
+      button.click();
+      for (const animation of element.getAnimations()) animation.pause();
+    });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
@@ -285,20 +305,25 @@ test('finishes an interrupted exit when reduced motion changes and can reopen', 
 test('an obsolete exit cannot close a reopened dialog', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto(homepage);
-  const trigger = page.locator('[data-dialog-open="hero-check-result"]');
+  const trigger = page.locator('[data-dialog-open="hero-check-finding-1"]');
   await trigger.click();
   const dialog = page.getByRole('dialog', {
-    name: 'Complete result',
+    name: 'Structural finding',
     exact: true,
   });
-  await dialog.evaluate(async (element) => {
-    if (!(element instanceof HTMLDialogElement)) throw new Error('Expected a native dialog.');
-    element.querySelector<HTMLButtonElement>('button')!.click();
-    const exitAnimations = element.getAnimations();
-    element.close();
-    document.querySelector<HTMLAnchorElement>('[data-dialog-open="hero-check-result"]')!.click();
-    await Promise.allSettled(exitAnimations.map((animation) => animation.finished));
-  });
+  await dialog
+    .getByRole('button', { name: 'Close dialog', exact: true })
+    .evaluate(async (button: HTMLButtonElement) => {
+      const element = button.closest('dialog');
+      if (!(element instanceof HTMLDialogElement)) throw new Error('Expected a native dialog.');
+      button.click();
+      const exitAnimations = element.getAnimations();
+      element.close();
+      document
+        .querySelector<HTMLAnchorElement>('[data-dialog-open="hero-check-finding-1"]')!
+        .click();
+      await Promise.allSettled(exitAnimations.map((animation) => animation.finished));
+    });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Close dialog' }).click();
   await expect(dialog).toBeHidden();

@@ -135,16 +135,13 @@ export interface IInspectionBindingView {
   reason?: string;
 }
 
-// complete native output stays separate from the records belonging to individual findings
-export type IInspectionResultView = {
+// result summaries and coverage stay separate from each finding's native evaluation record
+export interface IInspectionResultView {
   title: string;
   label: string;
   tone: IInspectionTone;
   findings: IInspectionFindingView[];
   bindings: IInspectionBindingView[];
   code?: string;
-  redactions: string[];
-  command?: string;
-  exitStatus?: number;
   limitation?: string;
-} & ({ output: string; outputLabel: string } | { output?: never; outputLabel?: never });
+}

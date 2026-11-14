@@ -107,12 +107,8 @@ for (const width of [320, 768, 1440]) {
       await expect(diff).toBeFocused();
       await expect(diff).not.toHaveCSS('box-shadow', 'none');
       await expect(findingDialog.getByRole('tab')).toHaveCount(0);
-      await expect(findingDialog.locator('[data-inspection-output]')).toHaveCount(0);
       await expect(
         findingDialog.getByRole('button', { name: 'Evaluation details', exact: true }),
-      ).toHaveCount(0);
-      await expect(
-        assurance.getByRole('link', { name: 'Complete result', exact: true }),
       ).toHaveCount(0);
       await findingDialog.evaluate(async (node) => {
         await Promise.all(
@@ -371,11 +367,10 @@ test('shows the renamed export and labels the project-intent diff', async ({ pag
     result.locator('[data-file-preview-tone="neutral"]').filter({ hasText: 'version: 1' }),
   ).toContainText('Declared in');
   await page.keyboard.press('Escape');
-  await packages.getByRole('link', { name: 'Complete result', exact: true }).click();
-  const complete = page.getByRole('dialog', { name: 'Complete result', exact: true });
-  await expect(complete).toContainText('coverageCounts');
-  await expect(complete).toContainText('exportsFailed');
-  await page.keyboard.press('Escape');
+  await packages.getByText('View binding checks', { exact: true }).click();
+  const binding = packages.getByRole('group', { name: 'Binding checks', exact: true });
+  await expect(binding).toContainText('Export missing');
+  await expect(binding).toContainText('checkEligibility');
 
   const assurance = page.getByRole('figure', { name: 'PR Assurance review' });
   await expect(
@@ -462,7 +457,6 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
       assurance.getByRole('heading', { name: /exceeding the authority set by the project rule/u }),
     ).toBeVisible();
     await expect(assurance).toContainText('exceeding the authority set by the project rule');
-    await expect(assurance.locator('[data-inspection-output]')).toHaveCount(0);
     for (const [title, videoId] of [
       ['moldea | Install and use the skill', 'dwl_RFm95Tg'],
       ['moldea | Keeping project context and code aligned', 'PyZiQXWS1ZE'],

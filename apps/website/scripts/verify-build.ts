@@ -358,7 +358,7 @@ export const verifyProductionBuild = (
   if (
     !homepageHtml.includes('MOLDEA_REFERENCE_MISSING') ||
     !homepageHtml.includes('MOLDEA_TOOL_IMPLEMENTATION_MISSING') ||
-    !homepageHtml.includes('id="hero-check-result"') ||
+    !homepageHtml.includes('id="hero-check-finding-1"') ||
     !homepageHtml.includes('Structure, not semantics.')
   ) {
     throw new Error(
