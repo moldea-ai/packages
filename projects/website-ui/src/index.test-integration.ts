@@ -268,7 +268,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '4.8.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '5.0.0' });
     expect(readFileSync(path.join(projectDirectory, 'README.md'), 'utf8')).toContain(
       `pnpm add @moldea.ai/website-ui@${packResult.version}`,
     );
@@ -611,6 +611,7 @@ describe('published website UI package', () => {
         '    <section class="relative overflow-hidden"><HeroBackdrop /><h1 class="relative">Consumer hero</h1></section>',
         '    <CodeBlock source={JSON.stringify({ valid: false })} language="json" />',
         '    <CodeBlock {...codeProps} />',
+        '    <CodeBlock source={"name: example\\n\\n  literal: <tag>\\n"} language="yaml" startingLineNumber={8} highlightedLines={[8, 10]} ariaLabel="Numbered excerpt" />',
         '    <CodeDiff {...diffProps} overflow="wrap" />',
         '    <CodeDiff {...diffProps} overflow="wrap" view="split" ariaLabel="Booking changes split" />',
         '    <template data-inline-fixtures>{inlineCases.map((example) => (["unified", "split"] as const).map((view) => <><CodeDiff oldValue={example.before} newValue={example.after} language={example.name === "Markdown source" ? "markdown" : "typescript"} ariaLabel={`${example.name} ${view}`} view={view} overflow="wrap" /><CodeDiff patch={recordedInlinePatch(example.before, example.after)} language={example.name === "Markdown source" ? "markdown" : "typescript"} ariaLabel={`${example.name} recorded ${view}`} view={view} overflow="wrap" /></>))}</template>',
@@ -813,6 +814,102 @@ describe('published website UI package', () => {
     };
     const browser = await chromium.launch();
     try {
+      for (const theme of ['light', 'dark'] as const) {
+        for (const width of [320, 375, 1440]) {
+          const context = await browser.newContext({
+            colorScheme: theme,
+            hasTouch: true,
+            reducedMotion: 'reduce',
+            viewport: { width, height: 900 },
+            permissions: ['clipboard-read', 'clipboard-write'],
+          });
+          try {
+            await stubYouTube(context);
+            await serveConsumer(context);
+            const page = await context.newPage();
+            await page.goto('https://ui-consumer.example/');
+            await page.evaluate((selectedTheme) => {
+              document.documentElement.className = selectedTheme;
+            }, theme);
+            expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+            const excerpt = page.getByRole('group', { name: 'Numbered excerpt', exact: true });
+            expect(await excerpt.locator('code').textContent()).toBe(
+              'name: example\n\n  literal: <tag>\n',
+            );
+            expect(
+              await excerpt
+                .locator('[data-line-number]')
+                .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-line-number'))),
+            ).toStrictEqual(['8', '9', '10', '11']);
+            expect(await excerpt.locator('[data-highlighted-line]').count()).toBe(2);
+            const rows = await excerpt.locator('.code-source-line').evaluateAll((nodes) =>
+              nodes.map((node) => ({
+                top: node.getBoundingClientRect().top,
+                height: node.getBoundingClientRect().height,
+              })),
+            );
+            for (const [index, row] of rows.entries()) {
+              expect(row.height).toBe(24);
+              if (index > 0) expect(row.top - rows[index - 1]!.top).toBe(24);
+            }
+            const copy = excerpt
+              .locator('..')
+              .getByRole('button', { name: 'Copy code', exact: true });
+            await copy.click();
+            expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+              'name: example\n\n  literal: <tag>\n',
+            );
+            for (const button of await page
+              .getByRole('button', { name: 'Copy code', exact: true })
+              .filter({ visible: true })
+              .all()) {
+              const bounds = (await button.boundingBox())!;
+              expect(bounds.width).toBeGreaterThanOrEqual(44);
+              expect(bounds.height).toBeGreaterThanOrEqual(44);
+            }
+            const captureDirectory = process.env['WEBSITE_UI_CAPTURE_DIRECTORY'];
+            if (captureDirectory)
+              await excerpt
+                .locator('..')
+                .screenshot({ path: path.join(captureDirectory, `excerpt-${theme}-${width}.png`) });
+            for (const [trigger, dialogId] of [
+              ['Inspect evidence', 'fixture-wide'],
+              ['Watch installation video', 'video-one'],
+            ] as const) {
+              if (dialogId === 'video-one') {
+                await page.goto('https://ui-consumer.example/videos/');
+                await page.evaluate((selectedTheme) => {
+                  document.documentElement.className = selectedTheme;
+                }, theme);
+              }
+              const opener = page.getByRole('button', { name: trigger, exact: true });
+              await opener.click();
+              const dialog = page.locator(`#${dialogId}`);
+              await dialog.waitFor({ state: 'visible' });
+              const close = dialog.getByRole('button', {
+                name: dialogId === 'video-one' ? 'Close video' : 'Close dialog',
+                exact: true,
+              });
+              const bounds = (await close.boundingBox())!;
+              expect(bounds.width).toBeGreaterThanOrEqual(44);
+              expect(bounds.height).toBeGreaterThanOrEqual(44);
+              expect(await close.evaluate((node) => node === document.activeElement)).toBe(true);
+              expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(
+                true,
+              );
+              await page.keyboard.press('Escape');
+              await expect
+                .poll(() => opener.evaluate((node) => node === document.activeElement))
+                .toBe(true);
+            }
+            expect(
+              await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+            ).toBe(true);
+          } finally {
+            await context.close();
+          }
+        }
+      }
       for (const theme of ['light', 'dark']) {
         for (const width of [320, 768, 1440]) {
           const context = await browser.newContext({

@@ -1,5 +1,11 @@
 import type { ICodeOverflow } from '../code-presentation/index.js';
 
+// original source coordinates for a numbered, optionally highlighted code excerpt
+export interface ICodeBlockLineOptions {
+  startingLineNumber?: number;
+  highlightedLines?: number[];
+}
+
 // rendered documentation heading available to navigation surfaces
 export interface IRenderedMarkdownHeading {
   readonly depth: 2 | 3;

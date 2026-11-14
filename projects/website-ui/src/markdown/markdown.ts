@@ -17,6 +17,7 @@ import { resolveCodeOverflow, type ICodeOverflow } from '../code-presentation/in
 import { splitCodeSegments } from '../code-presentation/utilities.js';
 
 import type {
+  ICodeBlockLineOptions,
   IMarkdownBadgeTone,
   IMarkdownRenderOptions,
   IMarkdownDocumentRenderOptions,
@@ -25,6 +26,7 @@ import type {
   IRenderedMarkdownDocument,
 } from './types.js';
 import { markConversations, createDocumentBlocks } from './conversations.js';
+import { addCodeLines } from './code-lines.js';
 const BADGE_TONE_CLASSES = {
   danger: 'border-destructive/40 bg-destructive/10 text-foreground',
   info: 'border-info/40 bg-info/10 text-foreground',
@@ -266,6 +268,7 @@ export const renderMarkdownFragment = async (
  * @param language Syntax language; unsupported languages use plain text, while omitted languages remain unhighlighted and do not wrap.
  * @param ariaLabel Accessible name for the keyboard-scrollable code group.
  * @param overflow Optional wrapping/scrolling override; otherwise the language selects the mode.
+ * @param lineOptions Original starting line and highlighted line numbers; omitted blocks retain their default rendering.
  * @returns Sanitized, highlighted HTML with a keyboard-accessible code group.
  */
 export const renderCodeBlock = async (
@@ -273,12 +276,18 @@ export const renderCodeBlock = async (
   language = '',
   ariaLabel = 'Code block',
   overflow?: ICodeOverflow,
+  lineOptions?: ICodeBlockLineOptions,
 ): Promise<string> => {
   const processor = createMarkdownProcessor(false);
+  if (lineOptions !== undefined) processor.use(addCodeLines, lineOptions);
   const rendered = await processor.run({
     type: 'root',
-    children: [{ type: 'code', lang: language || null, value: source }],
+    children: [{ type: 'code', lang: language || (lineOptions ? 'text' : null), value: source }],
   });
 
-  return markCodeBlocks(processor.stringify(rendered), ariaLabel, overflow);
+  return markCodeBlocks(
+    processor.stringify(rendered),
+    ariaLabel,
+    overflow ?? (language ? undefined : 'scroll'),
+  );
 };

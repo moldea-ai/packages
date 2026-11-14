@@ -1,9 +1,9 @@
 ---
-import { renderCodeBlock } from '@moldea.ai/website-ui/markdown';
+import { renderCodeBlock, type ICodeBlockLineOptions } from '@moldea.ai/website-ui/markdown';
 import type { ICodeOverflow } from '@moldea.ai/website-ui/code-presentation';
 
 // highlighted source, with a panel by default or a flat surface for composition inside another panel
-export interface Props {
+export interface Props extends ICodeBlockLineOptions {
   ariaLabel?: string;
   copyable?: boolean;
   headerLabel?: string;
@@ -19,9 +19,19 @@ const {
   source,
   language,
   overflow,
+  startingLineNumber,
+  highlightedLines,
   variant = 'panel',
 } = Astro.props;
-const html = await renderCodeBlock(source, language, ariaLabel, overflow);
+const html = await renderCodeBlock(
+  source,
+  language,
+  ariaLabel,
+  overflow,
+  startingLineNumber !== undefined || highlightedLines !== undefined
+    ? { startingLineNumber, highlightedLines }
+    : undefined,
+);
 ---
 
 <div

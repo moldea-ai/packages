@@ -10,6 +10,37 @@ import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 
 const homepage = withBase('/', process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 
+test.describe('inspection touch controls', () => {
+  test.use({ hasTouch: true });
+  for (const width of [320, 375, 1440]) {
+    for (const colorScheme of ['light', 'dark'] as const) {
+      test(`sizes the shared close control at ${width}px in ${colorScheme}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+        await page.goto(homepage);
+        await page
+          .locator('html')
+          .evaluate(
+            (node, isDark) => node.classList.toggle('dark', isDark),
+            colorScheme === 'dark',
+          );
+        expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+        const opener = page.getByRole('link', { name: /View result:/u }).first();
+        await opener.click();
+        const dialog = page.getByRole('dialog');
+        const close = dialog.getByRole('button', { name: 'Close dialog', exact: true });
+        await expect(close).toBeFocused();
+        const bounds = (await close.boundingBox())!;
+        expect(bounds.width).toBeGreaterThanOrEqual(44);
+        expect(bounds.height).toBeGreaterThanOrEqual(44);
+        expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+        await page.keyboard.press('Escape');
+        await expect(opener).toBeFocused();
+      });
+    }
+  }
+});
+
 test('locks background scrolling without changing the document width', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 740 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -117,7 +148,11 @@ test('supports public dialog customization without overriding modal behavior', a
             width < 640 ? width : Math.min(width - 32, maxWidth),
           );
           await expect(dialog).toHaveCSS('animation-name', 'none');
-          await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeFocused();
+          const close = dialog.getByRole('button', { name: 'Close dialog' });
+          await expect(close).toBeFocused();
+          const closeBounds = (await close.boundingBox())!;
+          expect(closeBounds.width).toBe(width < 640 ? 36 : 28);
+          expect(closeBounds.height).toBe(width < 640 ? 36 : 28);
           await expect(dialog).toHaveAccessibleDescription(
             title === 'Detailed evidence' ? 'Recorded check evidence.' : '',
           );

@@ -10,6 +10,35 @@ const basePath = normalizeBasePath(process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 const toPublicPath = (route: string): string => withBase(route, basePath);
 const normalizeClipboardLineEndings = (text: string): string => text.replaceAll('\r\n', '\n');
 
+test.describe('shared touch controls', () => {
+  test.use({ hasTouch: true });
+
+  for (const width of [320, 375, 1440]) {
+    for (const colorScheme of ['light', 'dark'] as const) {
+      test(`sizes generated copy controls at ${width}px in ${colorScheme}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+        await page.goto(toPublicPath('/repository-format/'));
+        await page
+          .locator('html')
+          .evaluate(
+            (node, isDark) => node.classList.toggle('dark', isDark),
+            colorScheme === 'dark',
+          );
+        expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+        const copy = page.getByRole('button', { name: 'Copy code', exact: true }).first();
+        await expect(copy).toBeVisible();
+        const bounds = (await copy.boundingBox())!;
+        expect(bounds.width).toBeGreaterThanOrEqual(44);
+        expect(bounds.height).toBeGreaterThanOrEqual(44);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+          true,
+        );
+      });
+    }
+  }
+});
+
 const HEADING_ROLE_WIDTHS = [320, 639, 640, 1023, 1024, 1279, 1280, 1440] as const;
 const HEADING_ROLE_VALUES = {
   display: { letterSpacing: -0.045, lineHeight: 1.1 },

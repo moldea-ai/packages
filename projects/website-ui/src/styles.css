@@ -392,6 +392,23 @@
     color: var(--shiki-dark);
   }
 
+  .code-source-line {
+    @apply relative inline-block min-h-lh min-w-full pl-12 align-top;
+  }
+
+  .code-line-number {
+    @apply pointer-events-none absolute inset-y-0 left-0 w-8 text-right select-none;
+  }
+
+  .code-line-number::before {
+    @apply text-muted-foreground;
+    content: attr(data-line-number);
+  }
+
+  .code-source-line[data-highlighted-line] {
+    @apply bg-primary/10;
+  }
+
   .prose-moldea blockquote {
     @apply rounded-r-lg border-s-4 bg-accent px-5 py-1 text-accent-foreground;
   }

@@ -4,6 +4,27 @@ import { describe, expect, test } from 'vitest';
 import { renderCodeBlock, renderMarkdownDocument, renderMarkdownFragment } from './index.js';
 
 describe('website Markdown rendering', () => {
+  test.each(['yaml', 'unknown-recorded-language', ''])(
+    'renders numbered %s excerpts after highlighting and preserves literal source',
+    async (language) => {
+      const source = 'name: example\n\n<script>literal</script>\n';
+      const html = await renderCodeBlock(source, language, 'Declaration', 'scroll', {
+        startingLineNumber: 8,
+        highlightedLines: [7, 8, 10, 99],
+      });
+      expect(html).toContain('data-code-lines');
+      expect(
+        [...html.matchAll(/data-line-number="(\d+)"/gu)].map((match) => match[1]),
+      ).toStrictEqual(['8', '9', '10', '11']);
+      expect(html.match(/data-highlighted-line/gu)).toHaveLength(2);
+      expect(html).not.toContain('<script>');
+      const code = /<code\b[^>]*>([\s\S]*?)<\/code>/u.exec(html)?.[1];
+      expect(code?.replaceAll(/<\/?span\b[^>]*>/gu, '')).toBe(
+        'name: example\n\n&#x3C;script>literal&#x3C;/script>\n',
+      );
+      expect(await renderCodeBlock(source, language)).not.toContain('data-code-lines');
+    },
+  );
   test.each(['gitattributes', 'unknown-recorded-language'])(
     'renders unsupported %s fences as safe plain text through every public renderer',
     async (language) => {

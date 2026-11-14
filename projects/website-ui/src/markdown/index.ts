@@ -1,5 +1,6 @@
 // rendered contracts
 export type {
+  ICodeBlockLineOptions,
   IConversationRole,
   IMarkdownBadgeTone,
   IMarkdownStrongLabelBadge,
