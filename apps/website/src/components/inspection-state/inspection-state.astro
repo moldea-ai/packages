@@ -23,9 +23,7 @@ const { state } = Astro.props;
       {state.label}
     </h3>
   </header>
-  <div class="flex-1">
-    <InspectionDiagram {state} />
-  </div>
+  <InspectionDiagram {state} />
   <div class="example-card-footer">
     <InspectionResult
       id={`inspection-${state.id}`}

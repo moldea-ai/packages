@@ -183,7 +183,11 @@ export const verifyCapabilityArtifacts = (
           (summary === undefined ||
             resultLabels.get(example.id) !== outcome.label ||
             !summary.includes(
-              view.findings.length > 1 ? `${view.findings.length} findings` : outcome.label,
+              view.findings.length === 1
+                ? view.findings[0].message
+                : view.findings.length > 1
+                  ? `${view.findings.length} findings`
+                  : outcome.label,
             ))) ||
         view.findings.some(
           (finding) =>

@@ -6,12 +6,54 @@ import { loadWebsiteModel } from '../../lib/generation/generation.ts';
 
 const homepage = withBase('/', process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 
+for (const width of [375, 1024, 1440]) {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`keeps inspection cards compact at ${width}px in ${colorScheme}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+      await page.goto(homepage);
+      const preview = page.getByRole('figure', { name: 'Repository check preview', exact: true });
+      const spacing = await preview.evaluate((frame) => {
+        const finding = frame.querySelector('[data-inspection-finding]')!;
+        const style = getComputedStyle(frame);
+        return {
+          expected: parseFloat(style.paddingBottom),
+          actual:
+            frame.getBoundingClientRect().bottom -
+            parseFloat(style.borderBottomWidth) -
+            finding.getBoundingClientRect().bottom,
+        };
+      });
+      expect(spacing.actual).toBeCloseTo(spacing.expected, 0);
+      await expect(preview.getByText('Agents errors', { exact: true })).toHaveCount(0);
+      await expect(preview.getByText('1 blocking', { exact: true })).toHaveCount(0);
+      const steps = page
+        .getByRole('region', { name: 'A file moves. The connection breaks.', exact: true })
+        .locator('article[id^="inspection-"]');
+      const gaps = await steps.evaluateAll((frames) =>
+        frames.map((frame) => {
+          const diagram = frame.querySelector(
+            '[aria-label="Resolved file reference"], [aria-label="Broken file reference"]',
+          )!;
+          const footer = frame.querySelector('.example-card-footer')!;
+          return {
+            expected: parseFloat(getComputedStyle(footer).marginTop),
+            actual: footer.getBoundingClientRect().top - diagram.getBoundingClientRect().bottom,
+          };
+        }),
+      );
+      for (const gap of gaps) expect(gap.actual).toBeCloseTo(gap.expected, 0);
+    });
+  }
+}
+
 for (const width of [320, 768, 1024, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
     test(`introduces the real repository check at ${width}px in ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme });
       await page.goto(homepage);
+      await page.evaluate(() => document.fonts.ready);
       const hero = page.getByRole('region', { name: 'Introduction', exact: true });
       const preview = hero.getByRole('figure', { name: 'Repository check preview' });
       await expect(preview).toContainText('Agent instruction');
@@ -84,6 +126,7 @@ for (const width of [320, 768, 1024, 1440]) {
       const copyBounds = await heading.locator('..').boundingBox();
       const previewBounds = await preview.boundingBox();
       const heroBounds = await hero.boundingBox();
+      if (width === 1440) expect(heroBounds!.y + heroBounds!.height).toBeLessThanOrEqual(900);
       const heroInset = width >= 1024 ? 80 : width >= 640 ? 72 : 56;
       expect(Math.min(copyBounds!.y, previewBounds!.y) - heroBounds!.y).toBeCloseTo(heroInset, 0);
       expect(badgeBounds!.y + badgeBounds!.height).toBeLessThan(headingBounds!.y);
@@ -92,10 +135,7 @@ for (const width of [320, 768, 1024, 1440]) {
       expect(badgeBounds!.x).toBe(headingBounds!.x);
       expect(badgeBounds!.width).toBeLessThanOrEqual(headingBounds!.width);
       if (width >= 1024) {
-        expect(copyBounds!.y + copyBounds!.height / 2).toBeCloseTo(
-          previewBounds!.y + previewBounds!.height / 2,
-          0,
-        );
+        expect(copyBounds!.y).toBeCloseTo(previewBounds!.y, 0);
         expect(previewBounds!.x).toBeGreaterThan(headingBounds!.x + headingBounds!.width);
         await preview.scrollIntoViewIfNeeded();
         await expect(preview).toBeInViewport({ ratio: 1 });

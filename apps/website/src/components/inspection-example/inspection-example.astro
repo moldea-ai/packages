@@ -30,7 +30,7 @@ const { states } = Astro.props;
       moves.
     </p>
   </header>
-  <div class="grid gap-0 sm:gap-4 lg:grid-cols-3">
+  <div class="grid items-start gap-0 sm:gap-4 lg:grid-cols-3">
     {states.map((state) => <InspectionState {state} />)}
   </div>
   <p class="mt-5 max-w-4xl text-sm leading-6 text-muted-foreground">

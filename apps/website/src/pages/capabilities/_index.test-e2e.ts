@@ -399,6 +399,8 @@ for (const fragment of ['', '%ZZ', 'unknown-example']) {
 for (const { group, examples } of showcase) {
   for (const example of examples) {
     test(`opens ${example.id} with its recorded result`, async ({ page }) => {
+      // Load the complete catalogue, reveal its batch, then read output and restore two dialogs.
+      test.setTimeout(60_000);
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(route);
       await revealAll(page, group.id);

@@ -1620,6 +1620,14 @@ describe('published website UI package', () => {
             expect(await replayMarkdown.locator('[data-code-copy-button]').count()).toBe(0);
             const single = page.getByRole('region', { name: 'Single finding result', exact: true });
             const card = single.getByRole('article', { name: 'Structural finding', exact: true });
+            expect(await single.getByText('Validation failed', { exact: true }).count()).toBe(0);
+            expect(await single.getByText('References errors', { exact: true }).count()).toBe(0);
+            const trailingGap = await card.evaluate(
+              (node) =>
+                node.closest('[data-inspection-list]')!.getBoundingClientRect().bottom -
+                node.getBoundingClientRect().bottom,
+            );
+            expect(trailingGap).toBeCloseTo(0, 0);
             const impactBorder = await card.evaluate((node) => {
               const expected = document.createElement('span');
               expected.style.borderColor =

@@ -49,7 +49,7 @@ for (const width of [320, 768, 1440]) {
           // a local CLI run is not a pull request, so its title has no leading icon
           await expect(section.locator('.example-card-header svg')).toHaveCount(0);
         }
-        if (slug === 'cli' && width >= 1024) {
+        if (width >= 1024) {
           const columns = await section
             .locator(':scope > div > div')
             .evaluateAll((elements) =>

@@ -17,6 +17,12 @@ for (const width of [320, 768, 1440]) {
       await expect(page.locator('[data-ecosystem-section]')).toHaveCount(4);
       for (const section of await page.locator('[data-ecosystem-section]').all()) {
         await expect(section.locator('figure')).toBeVisible();
+        if (width >= 1024) {
+          const tops = await section.evaluate((node) =>
+            Array.from(node.children, (column) => column.getBoundingClientRect().top),
+          );
+          expect(tops[0]).toBeCloseTo(tops[1], 0);
+        }
       }
       await expect(page.locator('#adoption-guide')).toBeVisible();
       const assurance = page.getByRole('figure', { name: 'PR Assurance review' });
