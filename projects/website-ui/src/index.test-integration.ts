@@ -631,7 +631,7 @@ describe('published website UI package', () => {
         '    <Dialog id="fixture-details" title="Fixture details" triggerLabel="View details"><p>Details without a badge</p></Dialog>',
         '    <Dialog {...dialogProps}><p>Wide evidence content</p></Dialog>',
         '    <Dialog {...iconDialogProps}><p>Expanded source content</p></Dialog>',
-        '    <main data-inspection-fixture class="mx-auto max-w-3xl space-y-6 px-3"><h2>Inspection examples</h2><section aria-label="Passed result"><InspectionList id="passed" result={passed} /></section><section aria-label="Single finding result"><InspectionList id="single" result={failed} /></section><section aria-label="Authored illustration"><InspectionList id="illustrated" result={illustrated} /></section><section aria-label="Many findings"><InspectionList id="many" result={many} /></section><section aria-label="Refused result"><InspectionList id="refused" result={refused} /></section><section aria-label="Binding outcomes"><InspectionList id="bindings" result={bindingResult} /></section><Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><section aria-label="Standalone finding"><InspectionFinding finding={missing} dialogId="standalone-finding" /><InspectionDialog id="standalone-finding" finding={missing} /></section><a href="/runtimes/">Navigate to runtimes</a></main>',
+        '    <main data-inspection-fixture class="mx-auto max-w-3xl space-y-6 px-3"><h2>Inspection examples</h2><section aria-label="Passed result"><InspectionList id="passed" result={passed} /></section><section aria-label="Single finding result"><InspectionList id="single" result={failed} /></section><section aria-label="Authored illustration"><InspectionList id="illustrated" result={illustrated} /></section><section aria-label="Many findings"><InspectionList id="many" result={many} /></section><section aria-label="Refused result"><InspectionList id="refused" result={refused} /></section><section aria-label="Binding outcomes"><InspectionList id="bindings" result={bindingResult} /></section><section aria-label="Visible binding outcomes"><InspectionList id="visible-bindings" result={bindingResult} isBindingDisclosureOpen /></section><Dialog id="outer-case" title="Case details" triggerLabel="Open case"><InspectionList id="multiple" result={multiple} /></Dialog><section aria-label="Standalone finding"><InspectionFinding finding={missing} dialogId="standalone-finding" /><InspectionDialog id="standalone-finding" finding={missing} /></section><a href="/runtimes/">Navigate to runtimes</a></main>',
         '    <section aria-label="Standalone accepted finding"><InspectionFinding finding={acceptedFinding} dialogId="standalone-accepted" /><InspectionDialog id="standalone-accepted" finding={acceptedFinding} /></section>',
         '    <ActionLink href={withBase("/docs/")}>Docs</ActionLink>',
         '    <StatusBadge label="Available" tone="success" />',
@@ -753,7 +753,10 @@ describe('published website UI package', () => {
     const staticFixtureHtml = fixtureHtml
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gu, '')
       .replaceAll('src="/_astro/', 'src="https://runtime-fixture.example/_astro/');
-    const serveConsumer = async (context: BrowserContext): Promise<void> => {
+    const serveConsumer = async (
+      context: BrowserContext,
+      scriptsReady?: Promise<void>,
+    ): Promise<void> => {
       await context.route('https://ui-consumer.example/**', async (route) => {
         const pathname = new URL(route.request().url()).pathname;
         if (
@@ -778,6 +781,7 @@ describe('published website UI package', () => {
           await route.abort();
           return;
         }
+        if (asset.endsWith('.js')) await scriptsReady;
         const contentType = asset.endsWith('.js')
           ? 'text/javascript'
           : asset.endsWith('.css')
@@ -795,6 +799,47 @@ describe('published website UI package', () => {
     };
     const browser = await chromium.launch();
     try {
+      for (const width of [320, 768, 1440]) {
+        const pendingContext = await browser.newContext({
+          reducedMotion: 'reduce',
+          viewport: { width, height: 740 },
+        });
+        let releaseScripts!: () => void;
+        const scriptsReady = new Promise<void>((resolve) => {
+          releaseScripts = resolve;
+        });
+        try {
+          await stubYouTube(pendingContext);
+          await serveConsumer(pendingContext, scriptsReady);
+          const page = await pendingContext.newPage();
+          await page.goto('https://ui-consumer.example/', { waitUntil: 'commit' });
+          await expect
+            .poll(() =>
+              page.locator('#single-missing').evaluate((node) => getComputedStyle(node).position),
+            )
+            .toBe('static');
+          expect(await page.locator('[data-dialog-root][data-enhanced="true"]').count()).toBe(0);
+          expect(await page.locator('[data-dialog-fallback-open]:visible').count()).toBe(0);
+          const tabs = page.locator('#fixture-tabs');
+          expect(await tabs.locator('[data-tabbed-panel]:visible').count()).toBe(1);
+          expect(await tabs.getByText('First panel', { exact: true }).isVisible()).toBe(true);
+          const runtime = page.locator('[data-runtime-catalog]');
+          expect(await runtime.locator('li:visible').count()).toBe(
+            width < 768 ? 3 : width < 1280 ? 6 : 9,
+          );
+          await page.evaluate(() => document.fonts.ready);
+          const before = await runtime.evaluate((node) => node.getBoundingClientRect().height);
+          releaseScripts();
+          await page.waitForLoadState('load');
+          expect(await page.locator('[data-dialog-fallback-open]').count()).toBe(0);
+          const after = await runtime.evaluate((node) => node.getBoundingClientRect().height);
+          expect(after).toBeCloseTo(before, 0);
+          expect(await tabs.getByRole('tabpanel').count()).toBe(1);
+        } finally {
+          releaseScripts();
+          await pendingContext.close();
+        }
+      }
       for (const theme of ['light', 'dark'] as const) {
         for (const width of [320, 375, 1440]) {
           const context = await browser.newContext({
@@ -813,6 +858,16 @@ describe('published website UI package', () => {
               document.documentElement.className = selectedTheme;
             }, theme);
             expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+            for (const control of [
+              page.getByRole('tab', { name: 'First', exact: true }),
+              page.getByRole('tab', { name: 'Second', exact: true }),
+              page.getByRole('button', { name: 'Load more runtimes', exact: true }),
+            ]) {
+              const bounds = (await control.boundingBox())!;
+              expect(bounds.width).toBeGreaterThanOrEqual(44);
+              expect(bounds.height).toBeGreaterThanOrEqual(44);
+            }
+
             const excerpt = page.getByRole('group', { name: 'Numbered excerpt', exact: true });
             expect(await excerpt.locator('code').textContent()).toBe(
               'name: example\n\n  literal: <tag>\n',
@@ -1887,6 +1942,20 @@ describe('published website UI package', () => {
             await expect
               .poll(() => last.evaluate((node) => node === document.activeElement))
               .toBe(true);
+            const visibleBindings = page.getByRole('region', {
+              name: 'Visible binding outcomes',
+              exact: true,
+            });
+            expect(
+              await visibleBindings
+                .getByRole('group', { name: 'Binding checks', exact: true })
+                .isVisible(),
+            ).toBe(true);
+            expect(
+              await visibleBindings
+                .getByRole('article', { name: 'Binding check', exact: true })
+                .count(),
+            ).toBe(3);
             const bindingRegion = page.getByRole('region', {
               name: 'Binding outcomes',
               exact: true,
@@ -2447,6 +2516,11 @@ describe('published website UI package', () => {
         });
         const page = await noScriptContext.newPage();
         await page.goto('https://ui-consumer.example/');
+        expect(await page.locator('#single-missing').isVisible()).toBe(true);
+        expect(await page.locator('#single-missing-evaluation').isVisible()).toBe(true);
+        expect(await page.locator('[data-runtime-grid] > li:visible').count()).toBe(35);
+        expect(await page.locator('#fixture-tabs [data-tabbed-panel]:visible').count()).toBe(2);
+
         expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
         const watchLink = page
           .getByRole('group', { name: 'Inline tutorial', exact: true })
@@ -2500,6 +2574,12 @@ describe('published website UI package', () => {
         expect(
           await page.getByRole('button', { name: 'Watch installation video', exact: true }).count(),
         ).toBe(0);
+        await page.goto('https://ui-consumer.example/');
+        expect(await page.locator('#single-missing').isVisible()).toBe(true);
+        expect(await page.locator('#single-missing-evaluation').isVisible()).toBe(true);
+        expect(
+          await page.locator('#single-missing').getAttribute('data-dialog-fallback-open'),
+        ).not.toBeNull();
       } finally {
         await unsupportedContext.close();
       }

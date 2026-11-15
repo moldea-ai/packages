@@ -5,30 +5,32 @@ import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 const basePath = process.env.BASE_PATH ?? DEFAULT_BASE_PATH;
 const homepage = withBase('/', basePath);
 
-test('matches platform previews without a full-response action or expanded binding cards', async ({
-  page,
-}) => {
+test('balances the file sequence with binding checks visible on first render', async ({ page }) => {
   await page.goto(homepage);
   await expect(page.getByRole('link', { name: 'Complete result', exact: true })).toHaveCount(0);
   const example = page.getByRole('region', { name: 'A file moves. The connection breaks.' });
-  const connected = example.getByRole('article', { name: '1. Connected', exact: true });
-  const disclosure = connected.getByText('View binding checks', { exact: true });
-  await expect(disclosure).toBeVisible();
-  await expect(connected.getByRole('group', { name: 'Binding checks', exact: true })).toBeHidden();
-  await disclosure.click();
-  await expect(connected.getByRole('group', { name: 'Binding checks', exact: true })).toBeVisible();
-  await expect(connected).toContainText('Export found');
-  await disclosure.click();
-  await expect(connected.getByRole('group', { name: 'Binding checks', exact: true })).toBeHidden();
+  for (const name of ['1. Connected', '3. Reference updated']) {
+    const frame = example.getByRole('article', { name, exact: true });
+    const disclosure = frame.getByText('View binding checks', { exact: true });
+    const bindings = frame.getByRole('group', { name: 'Binding checks', exact: true });
+    await expect(bindings).toBeVisible();
+    await expect(bindings).toContainText('Export found');
+    await disclosure.click();
+    await expect(bindings).toBeHidden();
+    await disclosure.click();
+    await expect(bindings).toBeVisible();
+  }
 });
 
-test('shows the real check with findings and collapsed binding details', async ({ page }) => {
+test('shows the real check with findings and initially visible binding details', async ({
+  page,
+}) => {
   await page.goto(homepage);
   const example = page.getByRole('region', { name: 'A file moves. The connection breaks.' });
   await expect(example.locator('article[id^="inspection-"]')).toHaveCount(3);
   await expect(example.getByRole('tab')).toHaveCount(0);
   await expect(example.locator('pre:visible')).toHaveCount(0);
-  await expect(example.locator('details[open]')).toHaveCount(0);
+  await expect(example.locator('details[open]')).toHaveCount(2);
   await expect(example.getByRole('article', { name: '1. Connected' })).toContainText('Passed');
   const broken = example.getByRole('article', { name: '2. File moved' });
   await expect(broken).toContainText('Blocking');
@@ -140,6 +142,11 @@ test('keeps every frame readable without JavaScript', async ({ browser }) => {
       1,
     );
     const bindings = example.getByRole('article', { name: '1. Connected', exact: true });
+    await expect(
+      bindings.getByRole('group', { name: 'Binding checks', exact: true }),
+    ).toBeVisible();
+    await bindings.getByText('View binding checks', { exact: true }).click();
+    await expect(bindings.getByRole('group', { name: 'Binding checks', exact: true })).toBeHidden();
     await bindings.getByText('View binding checks', { exact: true }).click();
     await expect(
       bindings.getByRole('group', { name: 'Binding checks', exact: true }),

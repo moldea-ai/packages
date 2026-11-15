@@ -10,6 +10,48 @@ import { DEFAULT_BASE_PATH, withBase } from '@moldea.ai/website-ui/site';
 
 const homepage = withBase('/', process.env.BASE_PATH ?? DEFAULT_BASE_PATH);
 
+for (const width of [320, 375, 1440]) {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`keeps finding fallbacks hidden while scripts load at ${width}px in ${colorScheme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+      for (const path of ['/', '/packages/', '/getting-started/', '/runtimes/', '/capabilities/']) {
+        let releaseScripts!: () => void;
+        const scriptsReady = new Promise<void>((resolve) => {
+          releaseScripts = resolve;
+        });
+        await page.route('**/*', async (route) => {
+          if (route.request().resourceType() === 'script') await scriptsReady;
+          await route.continue();
+        });
+        try {
+          await page.goto(withBase(path, process.env.BASE_PATH ?? DEFAULT_BASE_PATH), {
+            waitUntil: 'commit',
+          });
+          await expect(page.locator('dialog[data-dialog-fallback-open]').first()).toHaveCSS(
+            'position',
+            'static',
+          );
+          expect(await page.evaluate(() => matchMedia('(scripting: enabled)').matches)).toBe(true);
+          await expect(page.locator('[data-dialog-root][data-enhanced="true"]')).toHaveCount(0);
+          await expect(page.locator('[data-dialog-fallback-open]:visible')).toHaveCount(0);
+          for (const grid of await page.locator('[data-runtime-grid]').all()) {
+            await expect(grid.locator(':scope > li:visible')).toHaveCount(width >= 1280 ? 9 : 3);
+          }
+        } finally {
+          releaseScripts();
+          await page.waitForLoadState('load');
+          await page.unrouteAll({ behavior: 'wait' });
+        }
+        await expect(page.locator('[data-dialog-fallback-open]')).toHaveCount(0);
+        await expect(page.locator('[data-website-ui-dialog]:visible')).toHaveCount(0);
+      }
+    });
+  }
+}
+
 test.describe('inspection touch controls', () => {
   test.use({ hasTouch: true });
   for (const width of [320, 375, 1440]) {

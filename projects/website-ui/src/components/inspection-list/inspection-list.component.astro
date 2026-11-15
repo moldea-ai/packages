@@ -21,8 +21,9 @@ import InspectionBinding from './binding/inspection-binding.component.astro';
 export interface Props {
   id: string;
   result: IInspectionResultView;
+  isBindingDisclosureOpen?: boolean;
 }
-const { id, result } = Astro.props;
+const { id, result, isBindingDisclosureOpen = false } = Astro.props;
 const { groups, accepted } = groupInspectionFindings(result.findings);
 const blocking = result.findings.filter((finding) => finding.severity === 'error').length;
 const warnings = result.findings.filter(
@@ -154,7 +155,10 @@ const ResultIcon = ['Blocked', 'Not checked', 'Refused'].includes(result.label)
   }
   {
     result.bindings.length > 0 && (
-      <details class="group min-w-0">
+      <details
+        class="group min-w-0"
+        open={isBindingDisclosureOpen}
+      >
         <summary class="min-h-11 w-fit max-w-full cursor-pointer content-center rounded-sm py-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-w-11">
           View binding checks
         </summary>

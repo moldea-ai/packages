@@ -97,6 +97,7 @@ const runtimes: IRuntimeCatalogEntry[] = [...RUNTIME_CATALOG];
       variant="outline"
       aria-label="Load more runtimes"
       aria-controls={listId}
+      class="pointer-coarse:min-h-11"
       hidden
       data-runtime-load
     >
@@ -171,3 +172,48 @@ const runtimes: IRuntimeCatalogEntry[] = [...RUNTIME_CATALOG];
   initializeRuntimeCatalogs();
   document.addEventListener('astro:page-load', initializeRuntimeCatalogs);
 </script>
+
+<style>
+  /* Match the initial three rows before the controller owns visibility. */
+  @media (scripting: enabled) {
+    :global(html:has(script))
+      [data-runtime-catalog]:not([data-initialized])
+      [data-runtime-grid]
+      > li:nth-child(n + 4) {
+      display: none;
+    }
+
+    :global(html:has(script))
+      [data-runtime-catalog]:not([data-initialized])
+      > :has([data-runtime-load]) {
+      display: flex;
+      min-height: calc(var(--spacing) * 10);
+    }
+
+    @media (pointer: coarse) {
+      :global(html:has(script))
+        [data-runtime-catalog]:not([data-initialized])
+        > :has([data-runtime-load]) {
+        min-height: calc(var(--spacing) * 11);
+      }
+    }
+
+    @media (min-width: 48rem) {
+      :global(html:has(script))
+        [data-runtime-catalog]:not([data-initialized])
+        [data-runtime-grid]
+        > li:nth-child(-n + 6) {
+        display: list-item;
+      }
+    }
+
+    @media (min-width: 80rem) {
+      :global(html:has(script))
+        [data-runtime-catalog]:not([data-initialized])
+        [data-runtime-grid]
+        > li:nth-child(-n + 9) {
+        display: list-item;
+      }
+    }
+  }
+</style>

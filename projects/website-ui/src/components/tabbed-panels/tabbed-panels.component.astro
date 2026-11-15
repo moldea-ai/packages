@@ -38,7 +38,7 @@ if (
   data-tabbed-panels-root
 >
   <nav
-    class="inline-flex h-8 w-fit max-w-full items-center justify-start overflow-x-auto overflow-y-hidden rounded-lg bg-secondary p-1 text-secondary-foreground"
+    class="inline-flex h-8 w-fit max-w-full items-center justify-start overflow-x-auto overflow-y-hidden rounded-lg bg-secondary p-1 text-secondary-foreground pointer-coarse:h-auto"
     aria-label={ariaLabel}
     data-tabbed-panels-controls
   >
@@ -48,7 +48,7 @@ if (
 
         return (
           <a
-            class="inline-flex h-6 shrink-0 items-center justify-center rounded-md border border-transparent px-2.5 text-sm font-medium whitespace-nowrap transition-colors outline-none select-none hover:[text-shadow:0_0_0_currentColor,0.02em_0_0_currentColor,-0.02em_0_0_currentColor] focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background data-active:bg-background data-active:text-foreground data-active:shadow-inset data-active:[text-shadow:0_0_0_currentColor,0.02em_0_0_currentColor,-0.02em_0_0_currentColor] dark:data-active:border-border dark:data-active:bg-border/30"
+            class="inline-flex h-6 shrink-0 items-center justify-center rounded-md border border-transparent px-2.5 text-sm font-medium whitespace-nowrap transition-colors outline-none select-none hover:[text-shadow:0_0_0_currentColor,0.02em_0_0_currentColor,-0.02em_0_0_currentColor] focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background data-active:bg-background data-active:text-foreground data-active:shadow-inset data-active:[text-shadow:0_0_0_currentColor,0.02em_0_0_currentColor,-0.02em_0_0_currentColor] dark:data-active:border-border dark:data-active:bg-border/30 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
             href={`#${panelId}`}
             data-active={index === 0 ? true : undefined}
             data-tabbed-panel-control
@@ -163,3 +163,15 @@ if (
   initializeTabbedPanels();
   document.addEventListener('astro:page-load', initializeTabbedPanels);
 </script>
+
+<style>
+  /* Preserve native fragment links and the full no-JavaScript document. */
+  @media (scripting: enabled) {
+    :global(html:has(script))
+      [data-tabbed-panels-root]:not([data-enhanced])
+      > [data-tabbed-panel]
+      ~ [data-tabbed-panel]:not(:target) {
+      display: none;
+    }
+  }
+</style>

@@ -183,7 +183,11 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
       if (root.dataset['enhanced'] === 'true') continue;
       const trigger = root.querySelector<HTMLButtonElement>(':scope > [data-dialog-trigger]');
       const dialog = root.querySelector<HTMLDialogElement>(':scope > dialog');
-      if (trigger === null || dialog === null || typeof dialog.showModal !== 'function') continue;
+      if (trigger === null || dialog === null) continue;
+      if (typeof dialog.showModal !== 'function') {
+        root.dataset['enhanced'] = 'false';
+        continue;
+      }
       const body = dialog.querySelector<HTMLElement>(':scope > div');
       if (body === null) continue;
 
@@ -358,6 +362,15 @@ const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
   }
   dialog[data-dialog-fallback-open] [data-dialog-close-form] {
     display: none;
+  }
+
+  /* Keep the no-JavaScript document flow out of the first paint while scripts load. */
+  @media (scripting: enabled) {
+    :global(html:has(script))
+      [data-dialog-root]:not([data-enhanced='false'])
+      > dialog[data-dialog-fallback-open]:not(:target) {
+      display: none;
+    }
   }
 
   /* Native modality makes the page inert; also prevent background scrolling. */

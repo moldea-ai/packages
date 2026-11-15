@@ -14,7 +14,7 @@ const hasSafeModalFocus = (element: HTMLElement): boolean =>
 
 for (const width of [320, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
-    test(`shows real Core findings and collapsed coverage at ${width}px in ${theme}`, async ({
+    test(`shows real Core findings and visible coverage at ${width}px in ${theme}`, async ({
       page,
     }) => {
       await page.setViewportSize({ width, height: 740 });
@@ -28,11 +28,11 @@ for (const width of [320, 1440]) {
           const disclosure = frame.getByText('View binding checks', { exact: true });
           await expect(
             frame.getByRole('group', { name: 'Binding checks', exact: true }),
-          ).toBeHidden();
+          ).toBeVisible();
           await disclosure.click();
           await expect(
             frame.getByRole('group', { name: 'Binding checks', exact: true }),
-          ).toBeVisible();
+          ).toBeHidden();
           await disclosure.click();
           continue;
         }
