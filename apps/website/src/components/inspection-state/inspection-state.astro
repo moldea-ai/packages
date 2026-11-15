@@ -34,3 +34,35 @@ const { state } = Astro.props;
     />
   </div>
 </article>
+
+<style>
+  /* inline finding details need natural spacing when scripting is unavailable. */
+  @media (scripting: enabled) and (min-width: 64rem) {
+    :global(html:has(script))
+      .example-card-footer:has(
+        > :global([data-inspection-list] > :is(details[open], [role='group']))
+      ) {
+      display: grid;
+    }
+
+    :global(html:has(script))
+      .example-card-footer
+      > :global([data-inspection-list]:has(> details[open])) {
+      align-content: space-between;
+    }
+
+    :global(html:has(script)) .example-card-footer :global([data-inspection-list] > [role='group']),
+    :global(html:has(script))
+      .example-card-footer
+      :global([data-inspection-list] > [role='group'] > ol) {
+      display: grid;
+    }
+
+    :global(html:has(script))
+      .example-card-footer
+      :global([data-inspection-list] > [role='group'] > ol > li) {
+      display: grid;
+      grid-template-rows: 1fr auto;
+    }
+  }
+</style>

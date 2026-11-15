@@ -12,6 +12,7 @@ for (const width of [375, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
       await page.goto(homepage);
+      await page.evaluate(() => document.fonts.ready);
       const preview = page.getByRole('figure', { name: 'Repository check preview', exact: true });
       const spacing = await preview.evaluate((frame) => {
         const finding = frame.querySelector('[data-inspection-finding]')!;
@@ -36,12 +37,20 @@ for (const width of [375, 1024, 1440]) {
             top: frame.getBoundingClientRect().top,
             bottom: frame.getBoundingClientRect().bottom,
             result: frame.querySelector('.example-card-footer')!.getBoundingClientRect().top,
+            resultHeight: frame.querySelector('[data-inspection-list]')!.getBoundingClientRect()
+              .height,
+            cardBottom: (
+              frame.querySelector('[data-inspection-binding]') ??
+              frame.querySelector('[data-inspection-finding]')!
+            ).getBoundingClientRect().bottom,
           })),
         );
         for (const row of rows) {
           expect(row.top).toBeCloseTo(rows[0].top, 0);
           expect(row.bottom).toBeCloseTo(rows[0].bottom, 0);
           expect(row.result).toBeCloseTo(rows[0].result, 0);
+          expect(row.resultHeight).toBeCloseTo(rows[1].resultHeight, 0);
+          expect(row.cardBottom).toBeCloseTo(rows[1].cardBottom, 0);
         }
       }
     });
@@ -135,7 +144,14 @@ for (const width of [320, 768, 1024, 1440]) {
       expect(badgeBounds!.x).toBe(headingBounds!.x);
       expect(badgeBounds!.width).toBeLessThanOrEqual(headingBounds!.width);
       if (width >= 1024) {
-        expect(copyBounds!.y).toBeCloseTo(previewBounds!.y, 0);
+        const centers = await hero.evaluate((section) => {
+          const copy = section.querySelector('h1')!.parentElement!.getBoundingClientRect();
+          const preview = section
+            .querySelector('figure[aria-label="Repository check preview"]')!
+            .getBoundingClientRect();
+          return { copy: copy.y + copy.height / 2, preview: preview.y + preview.height / 2 };
+        });
+        expect(centers.copy).toBeCloseTo(centers.preview, 0);
         expect(previewBounds!.x).toBeGreaterThan(headingBounds!.x + headingBounds!.width);
         await preview.scrollIntoViewIfNeeded();
         await expect(preview).toBeInViewport({ ratio: 1 });
