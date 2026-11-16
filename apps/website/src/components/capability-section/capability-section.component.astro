@@ -10,6 +10,8 @@ import type {
 } from '../../lib/capabilities/index.ts';
 import { CapabilityExample } from '../capability-example/index.ts';
 
+import { CAPABILITY_PAGE_SIZE } from './constants.ts';
+
 // every section keeps its explanation and illustrations in the authored order
 interface Props {
   catalog: ICapabilities;
@@ -60,6 +62,7 @@ const { catalog, group, examples, position } = Astro.props;
             {catalog}
             position={index + 1}
             total={examples.length}
+            isInitiallyVisible={index < CAPABILITY_PAGE_SIZE}
           />
         ))
       }
@@ -67,7 +70,7 @@ const { catalog, group, examples, position } = Astro.props;
     <div
       class="flex flex-col items-center gap-3 data-[complete=false]:mt-5"
       data-capability-controls
-      hidden
+      data-complete={String(examples.length <= CAPABILITY_PAGE_SIZE)}
     >
       <p
         class="sr-only"
@@ -79,6 +82,8 @@ const { catalog, group, examples, position } = Astro.props;
       <ActionButton
         variant="outline"
         data-capability-load
+        disabled
+        hidden={examples.length <= CAPABILITY_PAGE_SIZE}
         aria-label={`Load more ${group.label.toLowerCase()} examples`}
         aria-controls={`${group.id}-examples`}
       >
@@ -90,3 +95,29 @@ const { catalog, group, examples, position } = Astro.props;
     </div>
   </div>
 </section>
+
+<style>
+  [data-capability-controls] {
+    display: none;
+  }
+
+  :global(html[data-capabilities-enhanced]) [data-capability-controls] {
+    display: flex;
+  }
+
+  :global(
+    html[data-capabilities-enhanced]
+      [data-capability-section]:not([data-disclosure-ready='true'])
+      [data-capability-controls]
+  ) {
+    visibility: hidden;
+  }
+
+  :global(
+    html[data-capabilities-enhanced]
+      [data-capability-section]:not([data-disclosure-ready='true'])
+      [data-capability-example]:not([data-capability-initial])
+  ) {
+    display: none;
+  }
+</style>

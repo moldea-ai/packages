@@ -230,7 +230,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '5.0.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '5.0.1' });
     expect(readFileSync(path.join(projectDirectory, 'README.md'), 'utf8')).toContain(
       `pnpm add @moldea.ai/website-ui@${packResult.version}`,
     );
@@ -584,6 +584,12 @@ describe('published website UI package', () => {
         '    <section class="relative overflow-hidden"><HeroBackdrop /><h1 class="relative">Consumer hero</h1></section>',
         '    <CodeBlock source={JSON.stringify({ valid: false })} language="json" />',
         '    <CodeBlock {...codeProps} />',
+        '    <CodeBlock source="echo panel" language="sh" headerLabel="panel.sh" ariaLabel="Panel header source" />',
+        '    <CodeBlock source="echo plain" language="sh" variant="plain" headerLabel="plain.sh" ariaLabel="Plain header source" />',
+        '    <FilePreview path="fixtures/single.ts"><CodeBlock source="const single = 1;" language="typescript" variant="plain" ariaLabel="Single preview source" /></FilePreview>',
+        '    <FilePreview path="fixtures/multiple.ts"><CodeBlock source="const first = 1;" language="typescript" variant="plain" ariaLabel="First preview source" /><CodeBlock source="const second = 2;" language="typescript" variant="plain" ariaLabel="Second preview source" /></FilePreview>',
+        '    <FilePreview path="fixtures/header.ts"><CodeBlock source="const header = 1;" language="typescript" variant="plain" headerLabel="header.ts" ariaLabel="Preview explicit header source" /></FilePreview>',
+        '    <div data-code-copy="false"><CodeBlock source="echo opt-out" language="sh" ariaLabel="Ancestor opt-out source" /></div>',
         '    <CodeBlock source={"name: example\\n\\n  literal: <tag>\\n"} language="yaml" startingLineNumber={8} highlightedLines={[8, 10]} ariaLabel="Numbered excerpt" />',
         '    <CodeDiff {...diffProps} overflow="wrap" />',
         '    <CodeDiff {...diffProps} overflow="wrap" view="split" ariaLabel="Booking changes split" />',
@@ -756,23 +762,34 @@ describe('published website UI package', () => {
     const serveConsumer = async (
       context: BrowserContext,
       scriptsReady?: Promise<void>,
+      heldScriptMarker?: string,
+      failHeldScript = false,
     ): Promise<void> => {
       await context.route('https://ui-consumer.example/**', async (route) => {
         const pathname = new URL(route.request().url()).pathname;
         if (
           pathname === '/' ||
           pathname === '/preview/' ||
+          pathname === '/without-copy/' ||
           pathname === '/runtimes/' ||
           pathname === '/videos/'
         ) {
           await route.fulfill({
             contentType: 'text/html',
             body:
-              pathname === '/' || pathname === '/preview/'
-                ? fixtureHtml
-                : pathname === '/videos/'
-                  ? videoHtml
-                  : runtimeHtml,
+              pathname === '/without-copy/'
+                ? fixtureHtml.replace(
+                    /<template\b[^>]*data-code-copy-controls-template[^>]*>[\s\S]*?<\/template>/u,
+                    '',
+                  )
+                : pathname === '/' || pathname === '/preview/'
+                  ? fixtureHtml
+                  : pathname === '/videos/'
+                    ? // let the real controllers arrive independently in the ordering regressions
+                      heldScriptMarker === undefined
+                      ? videoHtml
+                      : videoHtml.replaceAll('type="module"', 'type="module" async')
+                    : runtimeHtml,
           });
           return;
         }
@@ -781,7 +798,17 @@ describe('published website UI package', () => {
           await route.abort();
           return;
         }
-        if (asset.endsWith('.js')) await scriptsReady;
+        const body = readFileSync(path.join(fixtureDirectory, 'dist', '_astro', asset));
+        if (
+          asset.endsWith('.js') &&
+          (heldScriptMarker === undefined || body.toString().includes(heldScriptMarker))
+        ) {
+          await scriptsReady;
+          if (failHeldScript) {
+            await route.abort();
+            return;
+          }
+        }
         const contentType = asset.endsWith('.js')
           ? 'text/javascript'
           : asset.endsWith('.css')
@@ -793,14 +820,38 @@ describe('published website UI package', () => {
                 : 'font/woff2';
         await route.fulfill({
           contentType,
-          body: readFileSync(path.join(fixtureDirectory, 'dist', '_astro', asset)),
+          body,
         });
       });
     };
     const browser = await chromium.launch();
     try {
+      let unenhancedCodeHeight: number | undefined;
+      for (const javaScriptEnabled of [false, true]) {
+        const context = await browser.newContext({ javaScriptEnabled, reducedMotion: 'reduce' });
+        try {
+          await stubYouTube(context);
+          await serveConsumer(context);
+          const page = await context.newPage();
+          await page.goto(
+            `https://ui-consumer.example/${javaScriptEnabled ? 'without-copy/' : ''}`,
+          );
+          await page.evaluate(() => document.fonts.ready);
+          const height = await page
+            .getByRole('group', { name: 'Order status command', exact: true })
+            .evaluate((node) => node.closest('[data-code-block]')!.getBoundingClientRect().height);
+          expect(await page.getByRole('button', { name: 'Copy code', exact: true }).count()).toBe(
+            0,
+          );
+          if (javaScriptEnabled) expect(height).toBeCloseTo(unenhancedCodeHeight!, 0);
+          else unenhancedCodeHeight = height;
+        } finally {
+          await context.close();
+        }
+      }
       for (const width of [320, 768, 1440]) {
         const pendingContext = await browser.newContext({
+          hasTouch: width < 768,
           reducedMotion: 'reduce',
           viewport: { width, height: 740 },
         });
@@ -828,16 +879,115 @@ describe('published website UI package', () => {
             width < 768 ? 3 : width < 1280 ? 6 : 9,
           );
           await page.evaluate(() => document.fonts.ready);
+          const codeBlocks = page.getByRole('group', {
+            name: /^(Order status command|Numbered excerpt|Panel header source|Plain header source|Single preview source|First preview source|Second preview source|Preview explicit header source|Ancestor opt-out source)$/u,
+          });
+          const codeHeightsBefore = await codeBlocks.evaluateAll((nodes) =>
+            nodes.map(
+              (node) =>
+                (node.closest('[data-file-preview]') ??
+                  node.closest('[data-code-block]'))!.getBoundingClientRect().height,
+            ),
+          );
+          const fences = page.locator('[data-overflow-fences]');
+          const fencesBefore = await fences.evaluate((node) => node.getBoundingClientRect().height);
           const before = await runtime.evaluate((node) => node.getBoundingClientRect().height);
           releaseScripts();
           await page.waitForLoadState('load');
           expect(await page.locator('[data-dialog-fallback-open]').count()).toBe(0);
           const after = await runtime.evaluate((node) => node.getBoundingClientRect().height);
           expect(after).toBeCloseTo(before, 0);
+          const codeHeightsAfter = await codeBlocks.evaluateAll((nodes) =>
+            nodes.map(
+              (node) =>
+                (node.closest('[data-file-preview]') ??
+                  node.closest('[data-code-block]'))!.getBoundingClientRect().height,
+            ),
+          );
+          expect(codeHeightsBefore).toHaveLength(9);
+          for (const [index, height] of codeHeightsAfter.entries())
+            expect(height).toBeCloseTo(codeHeightsBefore[index]!, 0);
+          expect(await fences.evaluate((node) => node.getBoundingClientRect().height)).toBeCloseTo(
+            fencesBefore,
+            0,
+          );
           expect(await tabs.getByRole('tabpanel').count()).toBe(1);
         } finally {
           releaseScripts();
           await pendingContext.close();
+        }
+      }
+      for (const marker of ['[data-youtube-dialog-template]', '[data-dialog-open]']) {
+        for (const failScript of [false, true]) {
+          const context = await browser.newContext({ reducedMotion: 'reduce' });
+          let releaseScript!: () => void;
+          const scriptReady = new Promise<void>((resolve) => {
+            releaseScript = resolve;
+          });
+          try {
+            await stubYouTube(context);
+            await serveConsumer(context, scriptReady, marker, failScript);
+            const page = await context.newPage();
+            await page.goto('https://ui-consumer.example/videos/', { waitUntil: 'commit' });
+            const dialogRoot = page.locator('#video-one').locator('..');
+            if (marker === '[data-youtube-dialog-template]')
+              await expect.poll(() => dialogRoot.getAttribute('data-enhanced')).toBe('true');
+            else
+              await expect
+                .poll(() => dialogRoot.locator('..').getAttribute('data-youtube-enhanced'))
+                .toBe('true');
+            const fallback = page.getByRole('link', {
+              name: 'Watch installation video',
+              exact: true,
+            });
+            await expect.poll(() => fallback.isVisible()).toBe(true);
+            expect(await fallback.getAttribute('href')).toBe(
+              'https://www.youtube.com/watch?v=M7lc1UVf-VE',
+            );
+            expect(await fallback.getAttribute('target')).toBeNull();
+            await expect
+              .poll(() => fallback.evaluate((node) => getComputedStyle(node).display))
+              .toBe('inline-flex');
+            await page.evaluate(() => document.fonts.ready);
+            const before = await fallback.boundingBox();
+            await fallback.focus();
+            releaseScript();
+            await page.waitForLoadState('load');
+            expect(await fallback.evaluate((node) => node === document.activeElement)).toBe(true);
+            if (failScript) {
+              await expect.poll(() => fallback.isVisible()).toBe(true);
+              await page.route('https://www.youtube.com/watch?*', async (route) => {
+                await route.fulfill({
+                  contentType: 'text/html',
+                  body: '<!doctype html><title>YouTube watch fixture</title>',
+                });
+              });
+              await fallback.click();
+              await page.waitForURL('https://www.youtube.com/watch?v=M7lc1UVf-VE');
+              expect(context.pages()).toHaveLength(1);
+              continue;
+            }
+            await page.keyboard.press('Tab');
+            const trigger = page.getByRole('button', {
+              name: 'Watch installation video',
+              exact: true,
+            });
+            await expect.poll(() => trigger.isVisible()).toBe(true);
+            const after = await trigger.boundingBox();
+            expect(after?.width).toBeCloseTo(before!.width, 0);
+            expect(after?.height).toBeCloseTo(before!.height, 0);
+            await trigger.click();
+            await expect
+              .poll(() =>
+                page
+                  .getByRole('dialog', { name: 'Installation "<sample>"', exact: true })
+                  .isVisible(),
+              )
+              .toBe(true);
+          } finally {
+            releaseScript();
+            await context.close();
+          }
         }
       }
       for (const theme of ['light', 'dark'] as const) {
@@ -2539,14 +2689,13 @@ describe('published website UI package', () => {
           await page.getByRole('button', { name: 'Watch installation video', exact: true }).count(),
         ).toBe(0);
         const fallback = page.getByRole('link', {
-          name: 'Installation "<sample>": Watch on YouTube (opens in a new tab)',
+          name: 'Watch installation video',
           exact: true,
         });
         expect(await fallback.isVisible()).toBe(true);
-        const fallbackOpened = noScriptContext.waitForEvent('page');
+        expect(await fallback.getAttribute('target')).toBeNull();
         await fallback.click();
-        const fallbackPage = await fallbackOpened;
-        await fallbackPage.waitForURL('https://www.youtube.com/watch?v=M7lc1UVf-VE');
+        await page.waitForURL('https://www.youtube.com/watch?v=M7lc1UVf-VE');
       } finally {
         await noScriptContext.close();
       }
@@ -2566,7 +2715,7 @@ describe('published website UI package', () => {
         expect(
           await page
             .getByRole('link', {
-              name: 'Installation "<sample>": Watch on YouTube (opens in a new tab)',
+              name: 'Watch installation video',
               exact: true,
             })
             .isVisible(),

@@ -107,6 +107,13 @@ const verifyHtmlLinks = (
       continue;
     }
 
+    if (
+      /\sdata-youtube-dialog-fallback(?:\s|=|$)/u.test(attributes) &&
+      !/\starget=/u.test(attributes) &&
+      /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{11}$/u.test(url.href)
+    )
+      continue;
+
     const rel = /\srel="([^"]+)"/.exec(attributes)?.[1]?.split(/\s+/) ?? [];
 
     if (

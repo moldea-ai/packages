@@ -40,23 +40,41 @@ const {
 } = Astro.props;
 const video = resolveYouTubeVideo(videoUrl, title, autoPlay);
 const hasPoster = Astro.slots.has('poster');
+const triggerSize = dialogProps.triggerSize ?? 'compact';
+const isIconTrigger = triggerSize === 'icon' || triggerSize === 'icon-xs';
 ---
 
 <div
   data-website-ui-youtube-dialog
   data-youtube-dialog-autoplay={autoPlay ? '' : undefined}
 >
-  <div data-youtube-dialog-fallback>
-    <ActionLink
-      href={video.watchUrl}
-      target="_blank"
-      aria-label={`${video.title}: Watch on YouTube`}
-      variant="link"
-      size="sm"
-    >
-      Watch on YouTube
-    </ActionLink>
-  </div>
+  <ActionLink
+    data-youtube-dialog-fallback
+    href={video.watchUrl}
+    aria-label={dialogProps.triggerAriaLabel ?? dialogProps.triggerLabel}
+    title={isIconTrigger ? dialogProps.triggerLabel : undefined}
+    variant={dialogProps.triggerVariant ?? 'outline'}
+    size={triggerSize === 'compact' ? 'sm' : triggerSize === 'icon-xs' ? 'icon' : triggerSize}
+    class:list={[
+      triggerSize === 'compact' && 'py-1 text-xs',
+      triggerSize === 'icon-xs' && 'size-6 rounded-md',
+      dialogProps.triggerClass,
+    ]}
+  >
+    {
+      isIconTrigger ? (
+        <>
+          <YouTubeIcon />
+          <span class="sr-only">{dialogProps.triggerLabel}</span>
+        </>
+      ) : (
+        <span class="inline-flex items-center gap-2">
+          <YouTubeIcon />
+          {dialogProps.triggerLabel}
+        </span>
+      )
+    }
+  </ActionLink>
   <Dialog
     {...dialogProps}
     title={video.title}
@@ -175,10 +193,34 @@ const hasPoster = Astro.slots.has('poster');
         if (!dialog.open) player.replaceChildren();
       });
       root.dataset['youtubeEnhanced'] = 'true';
-      fallback.hidden = true;
     }
   };
 
   initializeYouTubeDialogs();
   document.addEventListener('astro:page-load', initializeYouTubeDialogs);
 </script>
+
+<style>
+  :global(
+    [data-website-ui-youtube-dialog]:not([data-youtube-enhanced='true'])
+      > [data-dialog-root]
+      > [data-dialog-trigger]
+  ),
+  :global(
+    [data-website-ui-youtube-dialog]:has(> [data-youtube-dialog-fallback]:focus-within)
+      > [data-dialog-root]
+      > [data-dialog-trigger]
+  ) {
+    display: none;
+  }
+
+  /* A focused native action remains usable until the visitor moves focus away. */
+  :global(
+    [data-website-ui-youtube-dialog][data-youtube-enhanced='true']:has(
+        > [data-dialog-root][data-enhanced='true']
+      )
+      > [data-youtube-dialog-fallback]:not(:focus-within)
+  ) {
+    display: none;
+  }
+</style>

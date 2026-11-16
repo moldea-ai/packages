@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@5.0.0
+pnpm add @moldea.ai/website-ui@5.0.1
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -152,7 +152,7 @@ Every component has a dedicated public subpath:
 - `@moldea.ai/website-ui/youtube-video`
 - `@moldea.ai/website-ui/youtube-video-dialog`
 
-`ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. Mount `CodeCopyControls` once in the body to add compact header copy actions to eligible code blocks on direct loads and client navigation. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
+`ThemeBootstrap` belongs in the document head before rendered content. Pass the same app-owned storage key to `ThemeControl`. Mount `NavigationProgress` once near the start of the document body in websites that use Astro's `ClientRouter`; it reports client navigation preparation without taking ownership of the app's layout. Mount `CodeCopyControls` once near the start of the body, before code content, to add compact header copy actions to eligible code blocks on direct loads and client navigation. `BrandLogo` receives app-owned asset paths and labels rather than embedding one site's identity. `LocalSearch` receives app-owned copy, routes, and the generated index URL.
 
 `FileTree` presents static file and folder paths, with an optional removed marker. Evaluation replay uses it for path-only workspace changes. `ActionLink` adds the external-link indicator, a visually hidden “(opens in a new tab)”, and `noopener noreferrer` whenever `target="_blank"` is supplied; an explicit `aria-label`, such as an icon-size action’s, gains the notice instead. Raw anchors and handlers opening a new tab need their own indicator and notice.
 
@@ -192,7 +192,7 @@ import YouTubeVideoDialog from '@moldea.ai/website-ui/youtube-video-dialog';
 />
 ```
 
-`YouTubeVideoDialog` requires a document-unique `id`, `videoUrl`, `title`, and `triggerLabel`. Optional `description`, `triggerAriaLabel`, `triggerVariant`, `triggerSize`, `triggerClass`, `panelClass`, and `closeLabel` follow `Dialog`. Its trigger includes the YouTube icon beside text, or as the mark for an icon-size trigger. It uses the large panel, enables backdrop dismissal by default (`isOverlayCloseEnabled={false}` disables it), and defaults `autoPlay` to `false`. Titles are normalized like the inline player. Without JavaScript or usable native dialog support, a canonical Watch on YouTube link remains visible.
+`YouTubeVideoDialog` requires a document-unique `id`, `videoUrl`, `title`, and `triggerLabel`. Optional `description`, `triggerAriaLabel`, `triggerVariant`, `triggerSize`, `triggerClass`, `panelClass`, and `closeLabel` follow `Dialog`. Its trigger includes the YouTube icon beside text, or as the mark for an icon-size trigger. It uses the large panel, enables backdrop dismissal by default (`isOverlayCloseEnabled={false}` disables it), and defaults `autoPlay` to `false`. Titles are normalized like the inline player. The native same-tab YouTube link uses the final trigger label, icon and dimensions while either controller is pending or unavailable. It switches to the dialog only after both controllers are ready; a focused native link remains usable until focus moves away.
 
 Closed video dialogs make no iframe request. The player area reserves its dimensions before opening. Each opening mounts one fresh player after the shared Dialog's entry animation finishes, keeping YouTube startup out of that motion. With reduced motion, the player mounts immediately. Dismissal cancels pending startup and removes any player before exit animation or a return transition begins, including Escape, the close control, enabled backdrop dismissal, native closure, and Astro navigation. External `data-dialog-open` controls use the same controller and regain focus when closed. Each instance owns its playback session; no global playback store coordinates separate dialogs. Open dialogs do not add a watch link below the player.
 

@@ -88,6 +88,22 @@ describe('production discovery guards', () => {
       'new-tab link without an external-link icon',
     );
   });
+  test('rejects an unmarked same-tab video link', () => {
+    replaceArtifactText('index.html', 'data-youtube-dialog-fallback', 'data-unmarked-fallback');
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'external link without safe new-tab behavior',
+    );
+  });
+  test('rejects a same-tab video fallback pointing to another origin', () => {
+    replaceArtifactText(
+      'index.html',
+      'https://www.youtube.com/watch?v=',
+      'https://example.com/watch?v=',
+    );
+    expect(() => verifyProductionBuild(directory)).toThrow(
+      'external link without safe new-tab behavior',
+    );
+  });
   test.each(['MOLDEA_REFERENCE_MISSING', 'MOLDEA_TOOL_IMPLEMENTATION_MISSING'])(
     'rejects a homepage that loses %s',
     (marker) => {

@@ -37,7 +37,7 @@ const html = await renderCodeBlock(
 <div
   data-code-block
   data-code-variant={variant}
-  data-code-copy-frame={headerLabel && variant === 'panel' ? '' : undefined}
+  data-code-copy-frame={variant === 'panel' && (headerLabel || copyable) ? '' : undefined}
   data-code-copy={copyable ? undefined : 'false'}
   class:list={[
     'prose-moldea min-w-0 text-sm [&_pre]:m-0 [&_pre]:text-xs [&_pre]:leading-6',

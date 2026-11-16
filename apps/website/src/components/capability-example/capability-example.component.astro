@@ -2,6 +2,7 @@
 import Dialog from '@moldea.ai/website-ui/dialog';
 import StatusBadge from '@moldea.ai/website-ui/status-badge';
 import InspectionList from '@moldea.ai/website-ui/inspection-list';
+import ActionButton from '@moldea.ai/website-ui/action-button';
 
 import {
   getCapabilityOutcome,
@@ -17,8 +18,9 @@ interface Props {
   catalog: ICapabilities;
   position: number;
   total: number;
+  isInitiallyVisible?: boolean;
 }
-const { example, catalog, position, total } = Astro.props;
+const { example, catalog, position, total, isInitiallyVisible = true } = Astro.props;
 const outcome = getCapabilityOutcome(example);
 const directResult =
   example.id === 'inspection-mixed-diagnostics'
@@ -34,7 +36,28 @@ const positionLabel = `Example ${position} of ${total}`;
   data-capability-example
   data-capability-outcome={example.id}
   data-capability-label={outcome.label}
+  data-capability-initial={isInitiallyVisible ? '' : undefined}
 >
+  <ActionButton
+    variant="outline"
+    size="md"
+    class="min-h-12 w-full min-w-0 justify-between gap-3 rounded-lg px-3 py-2 text-left whitespace-normal disabled:opacity-100"
+    aria-label={`Open example: ${example.title}`}
+    data-capability-pending
+    disabled
+  >
+    <span class="flex min-w-0 flex-1 items-center justify-between gap-3">
+      <span class="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+        <span class="text-sm leading-6 font-semibold sm:text-base">{example.title}</span>
+        <span class="text-xs leading-5 text-muted-foreground">{positionLabel}</span>
+      </span>
+      <StatusBadge
+        label={outcome.label}
+        tone={outcome.tone}
+        size="sm"
+      />
+    </span>
+  </ActionButton>
   <Dialog
     id={dialogId}
     title={example.title}
@@ -87,6 +110,18 @@ const positionLabel = `Example ${position} of ${total}`;
 </div>
 
 <style>
+  :global([data-capability-pending]) {
+    display: none;
+  }
+
+  :global(
+    html[data-capabilities-enhanced]
+      [data-capability-example]:not(:has(> [data-dialog-root][data-enhanced='true']))
+      > [data-capability-pending]
+  ) {
+    display: inline-flex;
+  }
+
   /* Without JavaScript, the same example content remains readable in the page flow. */
   :global(
     html:not([data-capabilities-enhanced])

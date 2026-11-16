@@ -1,4 +1,4 @@
-const PAGE_SIZE = 4;
+import { CAPABILITY_PAGE_SIZE } from './constants.ts';
 let pageController: AbortController | undefined;
 
 /** Enhances the single static catalog only after each section's controls are available. */
@@ -17,7 +17,7 @@ const initializeDisclosure = (): void => {
     const examples = Array.from(
       list.querySelectorAll<HTMLElement>(':scope > [data-capability-example]'),
     );
-    let visible = Math.min(PAGE_SIZE, examples.length);
+    let visible = Math.min(CAPABILITY_PAGE_SIZE, examples.length);
     for (const [index, example] of examples.entries()) example.hidden = index >= visible;
 
     const updateControls = (): void => {
@@ -31,14 +31,13 @@ const initializeDisclosure = (): void => {
       updateControls();
     };
     updateControls();
-    controls.hidden = false;
     button.addEventListener(
       'click',
       (event) => {
         const first = examples[visible];
         if (!first) return;
         const previousTop = button.getBoundingClientRect().top;
-        reveal(Math.min(visible + PAGE_SIZE, examples.length));
+        reveal(Math.min(visible + CAPABILITY_PAGE_SIZE, examples.length));
         const trigger = first.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]');
         if (event.detail === 0) {
           trigger?.focus({ preventScroll: true });
@@ -55,10 +54,17 @@ const initializeDisclosure = (): void => {
     for (const [index, example] of examples.entries()) {
       fragments.set(example.id, () => {
         if (index >= visible)
-          reveal(Math.min(examples.length, Math.ceil((index + 1) / PAGE_SIZE) * PAGE_SIZE));
+          reveal(
+            Math.min(
+              examples.length,
+              Math.ceil((index + 1) / CAPABILITY_PAGE_SIZE) * CAPABILITY_PAGE_SIZE,
+            ),
+          );
         return example;
       });
     }
+    button.disabled = false;
+    section.dataset['disclosureReady'] = 'true';
   }
 
   const revealFragment = (): void => {

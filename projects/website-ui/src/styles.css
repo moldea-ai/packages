@@ -550,3 +550,72 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Match the existing copy action and header spacing before the controller attaches. */
+@media (scripting: enabled) {
+  html:has(template[data-code-copy-controls-template]) {
+    --website-ui-copy-control-size: calc(6 * var(--spacing));
+  }
+
+  [data-code-block] {
+    --website-ui-copy-source-inset: calc(4 * var(--spacing));
+  }
+
+  html:has(template[data-code-copy-controls-template])
+    pre[data-website-ui-copy-source]:not(
+      [data-code-copy-enhanced='true'],
+      [data-code-copy='false'],
+      [data-code-copy='false'] *
+    ):not([data-code-block]:has(> [data-code-block-header]) > pre):not(
+      [data-file-preview][data-website-ui-copy-count='1'] pre
+    ) {
+    padding-block-start: calc(
+      var(--website-ui-copy-source-inset, calc(5 * var(--spacing))) + 3 * var(--spacing) +
+        var(--website-ui-copy-control-size) + 1px
+    );
+  }
+
+  html:has(template[data-code-copy-controls-template])
+    [data-code-block][data-code-variant='plain']
+    > pre[data-website-ui-copy-source]:not(
+      [data-code-copy-enhanced='true'],
+      [data-code-copy='false'],
+      [data-code-copy='false'] *
+    ):not([data-code-block]:has(> [data-code-block-header]) > pre):not(
+      [data-file-preview][data-website-ui-copy-count='1'] pre
+    ) {
+    padding-block-start: calc(2 * var(--spacing) + var(--website-ui-copy-control-size));
+  }
+
+  html:has(template[data-code-copy-controls-template])
+    [data-code-block]:has(
+      > pre:not(
+          [data-code-copy-enhanced='true'],
+          [data-code-copy='false'],
+          [data-code-copy='false'] *
+        )
+        > code
+    )
+    > [data-code-block-header]::after,
+  html:has(template[data-code-copy-controls-template])
+    [data-file-preview][data-website-ui-copy-count='1']:not(:has([data-code-block-header])):has(
+      pre:not(
+          [data-code-copy-enhanced='true'],
+          [data-code-copy='false'],
+          [data-code-copy='false'] *
+        )
+        > code
+    )
+    > [data-file-preview-header]::after {
+    content: '';
+    flex: 0 0 var(--website-ui-copy-control-size);
+    width: var(--website-ui-copy-control-size);
+    height: var(--website-ui-copy-control-size);
+  }
+}
+
+@media (scripting: enabled) and (pointer: coarse) {
+  html:has(template[data-code-copy-controls-template]) {
+    --website-ui-copy-control-size: calc(11 * var(--spacing));
+  }
+}

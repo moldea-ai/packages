@@ -22,6 +22,38 @@ const sourceExamples = catalog.cases.filter(
 
 for (const width of [320, 1440]) {
   for (const colorScheme of ['light', 'dark'] as const) {
+    test(`keeps capability cards stable at first paint at ${width}px in ${colorScheme}`, async ({
+      page,
+    }) => {
+      let releaseScripts!: () => void;
+      const scriptsReady = new Promise<void>((resolve) => {
+        releaseScripts = resolve;
+      });
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+      await page.route('**/_astro/*.js', async (request) => {
+        await scriptsReady;
+        await request.continue();
+      });
+      try {
+        await page.goto(route, { waitUntil: 'commit' });
+        const section = sectionFor(page, 'structure');
+        await expect(section.locator('[data-capability-example]:visible')).toHaveCount(4);
+        const pending = section.getByRole('button', { name: /^Open example:/u });
+        await expect(pending).toHaveCount(4);
+        for (const button of await pending.all()) await expect(button).toBeDisabled();
+        await page.evaluate(() => document.fonts.ready);
+        const before = await section.boundingBox();
+        releaseScripts();
+        await page.waitForLoadState('load');
+        await expect(section.getByRole('button', { name: /^Open example:/u })).toHaveCount(4);
+        await expect(section.getByRole('button', { name: /Load more/u })).toBeEnabled();
+        const after = await section.boundingBox();
+        expect(after!.height).toBeCloseTo(before!.height, 0);
+      } finally {
+        releaseScripts();
+      }
+    });
     for (const example of sourceExamples) {
       test(`preserves ${example.id} literal Markdown source at ${width}px in ${colorScheme}`, async ({
         page,

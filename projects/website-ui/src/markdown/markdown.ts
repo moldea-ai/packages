@@ -101,7 +101,7 @@ const markCodeBlocks = (html: string, ariaLabel = 'Code block', overflow?: ICode
       const focusAttribute = /\btabindex=/u.test(attributes) ? '' : ' tabindex="0"';
       const language = body.match(/<code\b[^>]*\bclass="[^"]*\blanguage-([^\s"]+)/u)?.[1];
       const mode = resolveCodeOverflow(language, overflow);
-      return `<pre${attributes}${focusAttribute} role="group" aria-label="${escapeHtmlAttribute(ariaLabel)}" data-code-overflow="${escapeHtmlAttribute(mode)}">${body}</pre>`;
+      return `<pre${attributes}${focusAttribute} role="group" aria-label="${escapeHtmlAttribute(ariaLabel)}" data-code-overflow="${escapeHtmlAttribute(mode)}" data-website-ui-copy-source>${body}</pre>`;
     },
   );
 

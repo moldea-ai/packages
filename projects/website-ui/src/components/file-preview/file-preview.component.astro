@@ -20,6 +20,8 @@ const filename = filenameStart < 0 ? displayPath : displayPath.slice(filenameSta
 // conditional children can register a slot without rendering content
 const body = Astro.slots.has('default') ? await Astro.slots.render('default') : '';
 const hasBody = body.trim().length > 0;
+// rendered pre/code pairs exclude escaped source that only describes those elements
+const codeBlockCount = [...body.matchAll(/<pre\b[^>]*>\s*<code(?:\s|>)/gu)].length;
 const labelContent = Astro.slots.has('label') ? await Astro.slots.render('label') : '';
 const hasLabelContent = labelContent.trim().length > 0;
 const hasRole = Boolean(label) || hasLabelContent;
@@ -45,6 +47,7 @@ const borderClasses = {
   class:list={['min-w-0 overflow-hidden rounded-lg border', borderClasses[tone]]}
   data-file-preview
   data-file-preview-tone={tone}
+  data-website-ui-copy-count={codeBlockCount || undefined}
 >
   <div
     class:list={[

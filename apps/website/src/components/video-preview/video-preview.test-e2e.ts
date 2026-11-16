@@ -83,7 +83,9 @@ for (const preview of previews) {
               cover.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
             )
             .toBe(true);
-          await expect(card.getByRole('link', { name: /Watch on YouTube/u })).toHaveCount(0);
+          await expect(
+            card.getByRole('link', { name: preview.triggerLabel, exact: true }),
+          ).toHaveCount(0);
           await expect(player).toHaveCount(0);
           expect(requests).toStrictEqual([]);
           const unfocusedShadow = await card.evaluate((node) => getComputedStyle(node).boxShadow);
@@ -144,7 +146,9 @@ for (const preview of previews) {
         const card = page.locator(`[data-video-preview="${preview.id}"]`);
         await expect(card.locator('img').filter({ visible: true })).toHaveCount(1);
         await expect(card.getByRole('button')).toHaveCount(0);
-        await expect(card.getByRole('link', { name: /Watch on YouTube/u })).toHaveAttribute(
+        const fallback = card.getByRole('link', { name: preview.triggerLabel, exact: true });
+        expect(await fallback.getAttribute('target')).toBeNull();
+        await expect(fallback).toHaveAttribute(
           'href',
           `https://www.youtube.com/watch?v=${preview.videoId}`,
         );
