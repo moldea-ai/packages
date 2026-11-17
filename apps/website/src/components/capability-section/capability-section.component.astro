@@ -101,7 +101,8 @@ const { catalog, group, examples, position } = Astro.props;
     display: none;
   }
 
-  :global(html[data-capabilities-enhanced]) [data-capability-controls] {
+  :global(html[data-capabilities-enhanced]) [data-capability-controls],
+  :global([data-capability-section][data-disclosure-ready='true']) [data-capability-controls] {
     display: flex;
   }
 

@@ -581,6 +581,45 @@ for (const exampleId of ['cli-pattern-warning', 'cli-accepted-warning']) {
   }
 }
 
+test('keeps Load more usable without native dialog support', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  await page.addInitScript(() => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { value: undefined });
+  });
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+  await page.goto(route);
+  const { group, examples } = showcase.find(({ group }) => group.id === 'structure')!;
+  const section = page.getByRole('region', { name: group.title, exact: true });
+  const loadMore = section.getByRole('button', {
+    name: `Load more ${group.label.toLowerCase()} examples`,
+    includeHidden: true,
+  });
+  const fifthExample = section.getByRole('dialog', {
+    name: examples[4].title,
+    exact: true,
+    includeHidden: true,
+  });
+  await expect(loadMore).toBeEnabled();
+  await expect(loadMore).toBeVisible();
+  await expect(fifthExample).toBeHidden();
+  await loadMore.focus();
+  await expect(loadMore).toBeFocused();
+  await expect(loadMore).not.toHaveCSS('box-shadow', 'none');
+  await page.keyboard.press('Enter');
+  await expect(fifthExample).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+  expect(errors).toStrictEqual([]);
+});
+
 test('keeps one complete illustration catalog readable without JavaScript', async ({ browser }) => {
   const context = await browser.newContext({
     javaScriptEnabled: false,
