@@ -3,6 +3,7 @@
 **/node_modules
 .turbo
 pnpm-lock.yaml
+/jg-plans/
 **/_archive/**
 **/_archives/**
 **/_backup/**
