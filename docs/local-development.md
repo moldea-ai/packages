@@ -1,6 +1,21 @@
 # Local development
 
-The root [README](../README.md#getting-started) owns repository purpose, requirements, and installation. The [project blueprint](project-blueprint.md) owns architecture and package ownership. This guide owns the detailed development commands, package build conventions, test categories, and packed-consumer verification boundary.
+The root [README](../README.md) owns repository orientation. The [project blueprint](project-blueprint.md) owns architecture, package ownership and the read-only product-specification boundary. This guide owns requirements, setup, detailed development commands, package build conventions, test categories and packed-consumer verification.
+
+## Getting started
+
+Development requires Node.js `24.15.0` or newer within Node.js 24 and pnpm `11.9.0`.
+
+```bash
+pnpm install --frozen-lockfile
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm test
+```
+
+The sections below cover focused commands, build and test conventions, and consumer-runtime verification. Local and routine CI defaults use essential; `pnpm test:full` remains the complete explicit suite.
 
 ## Commands
 
