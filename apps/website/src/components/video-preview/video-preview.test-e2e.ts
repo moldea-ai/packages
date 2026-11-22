@@ -7,10 +7,10 @@ const previews = [
   {
     route: '/#workflow-video',
     id: 'home-context-alignment-video',
-    title: 'moldea | Keeping project context and code aligned',
+    title: 'Keep project knowledge in Git with moldea',
     triggerLabel: 'Watch the workflow',
     cover: 'context-alignment',
-    videoId: 'PyZiQXWS1ZE',
+    videoId: 'j2M65xhlQoc',
   },
   {
     route: '/getting-started/',
@@ -23,10 +23,10 @@ const previews = [
   {
     route: '/getting-started/#context-video',
     id: 'context-alignment-video',
-    title: 'moldea | Keeping project context and code aligned',
+    title: 'Keep project knowledge in Git with moldea',
     triggerLabel: 'Watch context-alignment workflow',
     cover: 'context-alignment',
-    videoId: 'PyZiQXWS1ZE',
+    videoId: 'j2M65xhlQoc',
   },
 ] as const;
 

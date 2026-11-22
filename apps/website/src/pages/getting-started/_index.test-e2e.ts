@@ -166,8 +166,8 @@ for (const width of [320, 768, 1440]) {
         ['Watch installation walkthrough', 'moldea | Install and use the skill', 'E_tNXGIyv-0'],
         [
           'Watch context-alignment workflow',
-          'moldea | Keeping project context and code aligned',
-          'PyZiQXWS1ZE',
+          'Keep project knowledge in Git with moldea',
+          'j2M65xhlQoc',
         ],
       ] as const) {
         const trigger = page.getByRole('button', { name: triggerLabel, exact: true });
@@ -459,7 +459,7 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
     await expect(assurance).toContainText('exceeding the authority set by the project rule');
     for (const [triggerLabel, videoId] of [
       ['Watch installation walkthrough', 'E_tNXGIyv-0'],
-      ['Watch context-alignment workflow', 'PyZiQXWS1ZE'],
+      ['Watch context-alignment workflow', 'j2M65xhlQoc'],
     ] as const) {
       const videoLink = page.getByRole('link', { name: triggerLabel, exact: true });
       await expect(videoLink).toBeVisible();
