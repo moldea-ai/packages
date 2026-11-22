@@ -163,7 +163,7 @@ for (const width of [320, 768, 1440]) {
       await page.goto(guidePath);
       await expect(page.locator('iframe[src*="youtube"]')).toHaveCount(0);
       for (const [triggerLabel, title, videoId] of [
-        ['Watch installation walkthrough', 'moldea | Install and use the skill', 'dwl_RFm95Tg'],
+        ['Watch installation walkthrough', 'moldea | Install and use the skill', 'E_tNXGIyv-0'],
         [
           'Watch context-alignment workflow',
           'moldea | Keeping project context and code aligned',
@@ -457,17 +457,14 @@ test('keeps the guide usable without JavaScript', async ({ browser }) => {
       assurance.getByRole('heading', { name: /exceeding the authority set by the project rule/u }),
     ).toBeVisible();
     await expect(assurance).toContainText('exceeding the authority set by the project rule');
-    for (const [title, videoId] of [
-      ['moldea | Install and use the skill', 'dwl_RFm95Tg'],
-      ['moldea | Keeping project context and code aligned', 'PyZiQXWS1ZE'],
+    for (const [triggerLabel, videoId] of [
+      ['Watch installation walkthrough', 'E_tNXGIyv-0'],
+      ['Watch context-alignment workflow', 'PyZiQXWS1ZE'],
     ] as const) {
-      const videoLink = page.getByRole('link', {
-        name: `${title}: Watch on YouTube (opens in a new tab)`,
-        exact: true,
-      });
+      const videoLink = page.getByRole('link', { name: triggerLabel, exact: true });
       await expect(videoLink).toBeVisible();
       await expect(videoLink).toHaveAttribute('href', `https://www.youtube.com/watch?v=${videoId}`);
-      await expect(videoLink).toHaveAttribute('target', '_blank');
+      expect(await videoLink.getAttribute('target')).toBeNull();
     }
     await expect(page.locator('iframe')).toHaveCount(0);
     await page

@@ -18,7 +18,7 @@ const previews = [
     title: 'moldea | Install and use the skill',
     triggerLabel: 'Watch installation walkthrough',
     cover: 'skill-installation',
-    videoId: 'dwl_RFm95Tg',
+    videoId: 'E_tNXGIyv-0',
   },
   {
     route: '/getting-started/#context-video',
