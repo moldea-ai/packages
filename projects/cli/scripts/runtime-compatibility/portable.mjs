@@ -22,7 +22,10 @@ const PORTABLE_FILE =
 /** Extracts just the portable distribution and verifies that its manifest covers every file. */
 const extractPortableArtifact = async (tarball, directory) => {
   await mkdir(directory);
-  const entries = execFileSync('tar', ['-tzf', tarball], { encoding: 'utf8' })
+  // Git for Windows' GNU tar interprets drive letters in archive names as remote hosts.
+  const archive = path.basename(tarball);
+  const cwd = path.dirname(tarball);
+  const entries = execFileSync('tar', ['-tzf', archive], { cwd, encoding: 'utf8' })
     .split(/\r?\n/u)
     .filter((name) => name.startsWith(PORTABLE_PREFIX) && name !== PORTABLE_PREFIX);
   const names = entries.map((entry) => entry.slice(PORTABLE_PREFIX.length)).sort();
@@ -38,7 +41,9 @@ const extractPortableArtifact = async (tarball, directory) => {
     assert.ok(names.includes(name), `The CLI artifact has no ${name}.`);
   }
 
-  execFileSync('tar', ['-xzf', tarball, '-C', directory, '--strip-components=3', ...entries]);
+  execFileSync('tar', ['-xzf', archive, '-C', directory, '--strip-components=3', ...entries], {
+    cwd,
+  });
   assert.deepEqual((await readdir(directory)).sort(), names);
 
   const sums = await Promise.all(
