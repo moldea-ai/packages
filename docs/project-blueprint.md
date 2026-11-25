@@ -30,14 +30,14 @@ Shared internal packages may support first-class projects but never depend on th
 | `cli`           | `@moldea.ai/cli`           | Public       | [CLI package](https://github.com/moldea-ai/platform/blob/main/moldea/context/cli-package.md)                     |
 | `website-ui`    | `@moldea.ai/website-ui`    | Public       | [Central package architecture](https://github.com/moldea-ai/platform/blob/main/moldea/context/packages.md)       |
 
-The catalog records the five public packages. Core treats runtime IDs as guidance labels and checks declared files and supported syntax-only exports. It does not verify SDK compatibility, runtime wiring, or execution.
+The catalog records the five public packages. Core checks the repository format, declared files, and supported export syntax. Website UI owns the SDK catalog.
 
 `scripts/workspace-graph/` owns exact-commit manifest discovery and shared dependency facts. `scripts/npm-release/` retains release relevance and private-input propagation policy. `scripts/ci/` owns conservative affected selection independently of essential/full priority, validated execution plans and compact/full consumer matrices, task isolation, and the final job gate. CI follows all downstream consumers; npm release selection stops private-input propagation at public package boundaries. See [affected CI](local-development.md#affected-ci).
 
 ## Boundaries and sources of truth
 
 - **Repository reading:** `@moldea.ai/repository` defines source-neutral logical paths, bounded pages and ranges, deterministic comparisons, snapshot identities, and the reader contract. Its memory reader backs shared conformance tests. `@moldea.ai/repository-fs` supplies lazy, resource-limited local access without an eager repository-wide content inventory.
-- **Public website presentation:** Website UI owns shared tokens, Astro components, and the plain runtime-label catalog with static logo assets. Its development-only Core dependency keeps the 35 labels synchronized; consumers do not load Core through the catalog. Logo provenance and launch follow-ups live in [runtime logos](runtime-logos.md).
+- **Public website presentation** owns shared tokens, Astro components, and the SDK catalog with its static logo assets.
 - **Format interpretation:** Core validates canonical structure, declared file references and supported runtime exports. It owns paged binding coverage, diagnostics with severity and group, accepted warnings, coding-agent integration checks, and manifest-only changed-path matching. Errors invalidate a project; warnings and accepted warnings remain visible without changing validity.
 
 ## Documentation ownership

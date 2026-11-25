@@ -8,7 +8,7 @@ import { serializeMoldeaCliJsonEnvelope } from './document.js';
 /** Serializes one envelope around a result. */
 const serializeResult = (result: unknown): string =>
   serializeMoldeaCliJsonEnvelope({
-    cliVersion: '13.0.0',
+    cliVersion: '14.0.0',
     command: 'validate',
     error: null,
     result,
@@ -25,13 +25,13 @@ describe('serializeMoldeaCliJsonEnvelope', () => {
         array: [{ z: 2, a: 1 }, null],
       }),
     ).toBe(
-      '{"cliVersion":"13.0.0","command":"validate","error":null,"result":{"array":[{"a":1,"z":2},null],"nested":{"10":"ten","2":"two","a":true},"\u{10000}":"astral","\ue000":"private-use"},"schemaVersion":7,"status":"valid"}\n',
+      '{"cliVersion":"14.0.0","command":"validate","error":null,"result":{"array":[{"a":1,"z":2},null],"nested":{"10":"ten","2":"two","a":true},"\u{10000}":"astral","\ue000":"private-use"},"schemaVersion":8,"status":"valid"}\n',
     );
   });
 
   test('writes negative zero as zero and escapes strings as JSON does', () => {
     expect(serializeResult({ negativeZero: -0, text: 'line\n"quoted"\\end' })).toBe(
-      '{"cliVersion":"13.0.0","command":"validate","error":null,"result":{"negativeZero":0,"text":"line\\n\\"quoted\\"\\\\end"},"schemaVersion":7,"status":"valid"}\n',
+      '{"cliVersion":"14.0.0","command":"validate","error":null,"result":{"negativeZero":0,"text":"line\\n\\"quoted\\"\\\\end"},"schemaVersion":8,"status":"valid"}\n',
     );
   });
 

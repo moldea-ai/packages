@@ -1,6 +1,6 @@
 {
   "name": "@moldea.ai/cli",
-  "version": "13.0.4",
+  "version": "14.0.0",
   "description": "The canonical read-only local command-line composition for moldea repositories.",
   "homepage": "https://github.com/moldea-ai/packages/tree/main/projects/cli#readme",
   "bugs": {
@@ -29,7 +29,7 @@
     "node": ">=22.17.0"
   },
   "scripts": {
-    "build": "vite build --emptyOutDir",
+    "build": "vite build --emptyOutDir && vite build --config portable.config.ts",
     "dev": "vite build --watch",
     "lint": "eslint .",
     "test": "pnpm run test:unit && pnpm run test:integration && pnpm run test:e2e",
@@ -39,7 +39,7 @@
     "typecheck": "tsc -p tsconfig.src.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@moldea.ai/core": "workspace:^9.2.0",
+    "@moldea.ai/core": "workspace:^10.0.0",
     "@moldea.ai/repository": "workspace:^4.0.0",
     "@moldea.ai/repository-fs": "workspace:^4.0.0",
     "jg-crypto": "0.3.0",

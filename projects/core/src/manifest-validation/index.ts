@@ -4,7 +4,7 @@ import type { IRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICoreResourceLimits } from '../contracts/index.js';
 import { CoreOperationException, type ICoreOperation } from '../exceptions/index.js';
-import { ACCEPTABLE_WARNING_CODES, RECOGNIZED_RUNTIME_IDS } from '../constants/index.js';
+import { ACCEPTABLE_WARNING_CODES } from '../constants/index.js';
 import {
   escapeJsonPointerSegment,
   type ICoreDiagnosticCollector,
@@ -22,26 +22,20 @@ import {
   isNonEmptySingleLine,
   isRepositorySymbol,
   isReservedId,
-  isRuntimeGuidancePath,
   isSimpleGlob,
   isStableId,
-  isVariableId,
   parseManifestPath,
 } from '../format-validation/index.js';
 import type {
   IAcceptedWarningManifestEntry,
   IAgentBindingsManifestEntry,
   IAgentManifestEntry,
-  IRuntimeManifestEntry,
   IMoldeaManifestV1,
   IRelationshipManifestEntry,
   IRepositoryFormatVersion,
   IRepositoryReference,
-  IRuntimeVariableManifestEntry,
   ISkillManifestEntry,
   IToolManifestEntry,
-  IUnresolvedRequirementEffect,
-  IUnresolvedRequirementManifestEntry,
 } from '../format/index.js';
 import { createNullPrototypeRecord } from '../immutable/index.js';
 import type { IYamlNode, IYamlScalarNode } from '../yaml/index.js';
@@ -523,157 +517,17 @@ const readPathList = (
   return paths;
 };
 
-const readRuntime = (
-  node: IYamlNode,
-  pointer: string,
-  context: IManifestValidationContext,
-  agentId: string,
-): IRuntimeManifestEntry | null => {
-  const entity = { agentId };
-  const entries = readMapping(node, pointer, new Set(['guidance', 'id']), context, entity);
-
-  if (entries === null) {
-    return null;
-  }
-
-  const idEntry = entries.get('id');
-
-  if (idEntry?.value.kind !== 'scalar' || typeof idEntry.value.value !== 'string') {
-    context.diagnostics.add({
-      code: 'MOLDEA_RUNTIME_ID_INVALID',
-      entity,
-      path: context.path,
-      pointer: childPointer(pointer, 'id'),
-      range: idEntry?.value.range ?? null,
-    });
-    return null;
-  }
-
-  const id = idEntry.value.value;
-
-  if (
-    !isStableId(id) ||
-    isReservedId(id) ||
-    !(RECOGNIZED_RUNTIME_IDS as readonly string[]).includes(id)
-  ) {
-    context.diagnostics.add({
-      code: 'MOLDEA_RUNTIME_ID_INVALID',
-      entity,
-      path: context.path,
-      pointer: childPointer(pointer, 'id'),
-      range: idEntry.value.range,
-    });
-  }
-
-  const guidanceEntry = entries.get('guidance');
-  let guidance: IRepositoryPath | null = null;
-
-  if (guidanceEntry !== undefined) {
-    if (guidanceEntry.value.kind === 'scalar' && typeof guidanceEntry.value.value === 'string') {
-      const candidate = parseManifestPath(guidanceEntry.value.value);
-
-      if (candidate !== null && isRuntimeGuidancePath(candidate)) {
-        guidance = candidate;
-      } else {
-        context.diagnostics.add({
-          code: 'MOLDEA_PATH_INVALID',
-          details: { reason: 'runtime-guidance' },
-          entity,
-          path: context.path,
-          pointer: childPointer(pointer, 'guidance'),
-          range: guidanceEntry.value.range,
-        });
-      }
-    } else {
-      context.diagnostics.add({
-        code: 'MOLDEA_PATH_INVALID',
-        details: { reason: 'runtime-guidance' },
-        entity,
-        path: context.path,
-        pointer: childPointer(pointer, 'guidance'),
-        range: guidanceEntry.value.range,
-      });
-    }
-  }
-
-  return { id, ...(guidance === null ? {} : { guidance }) };
-};
-
-const readVariables = (
-  node: IYamlNode,
-  pointer: string,
-  context: IManifestValidationContext,
-  agentId: string,
-): Readonly<Record<string, IRuntimeVariableManifestEntry>> | null => {
-  const entries = readMapping(node, pointer, null, context, { agentId });
-
-  if (entries === null) {
-    return null;
-  }
-
-  const normalized: Array<readonly [string, IRuntimeVariableManifestEntry]> = [];
-
-  for (const [variableId, entry] of [...entries].sort(([left], [right]) =>
-    compareCodePoints(left, right),
-  )) {
-    const entity = { agentId, variableId };
-
-    if (!isVariableId(variableId)) {
-      context.diagnostics.add({
-        code: 'MOLDEA_VARIABLE_ID_INVALID',
-        entity,
-        path: context.path,
-        pointer: childPointer(pointer, variableId),
-        range: entry.key.range,
-      });
-    }
-
-    const variablePointer = childPointer(pointer, variableId);
-    const variableEntries = readMapping(
-      entry.value,
-      variablePointer,
-      new Set(['description']),
-      context,
-      entity,
-    );
-
-    if (variableEntries === null) {
-      continue;
-    }
-
-    const description = readString(
-      variableEntries.get('description'),
-      childPointer(variablePointer, 'description'),
-      context,
-      { entity, required: true },
-    );
-
-    if (description !== null) {
-      normalized.push([variableId, { description }]);
-    }
-  }
-
-  return createNullPrototypeRecord(normalized);
-};
-
 const readBindings = (
   node: IYamlNode,
   pointer: string,
   context: IManifestValidationContext,
   agentId: string,
-  declaredVariables: ReadonlySet<string>,
 ): IAgentBindingsManifestEntry | null => {
   const entity = { agentId };
   const entries = readMapping(
     node,
     pointer,
-    new Set([
-      'inputSchema',
-      'instructionLoader',
-      'outputSchema',
-      'runtimeAgent',
-      'variableProviders',
-    ]),
+    new Set(['inputSchema', 'instructionLoader', 'outputSchema', 'runtimeAgent']),
     context,
     entity,
   );
@@ -694,70 +548,11 @@ const readBindings = (
   const instructionLoader = referenceProperty('instructionLoader');
   const outputSchema = referenceProperty('outputSchema');
   const runtimeAgent = referenceProperty('runtimeAgent');
-  const providersEntry = entries.get('variableProviders');
-  let variableProviders: Readonly<Record<string, IRepositoryReference>> | null = null;
-
-  if (providersEntry !== undefined) {
-    const providers = readMapping(
-      providersEntry.value,
-      childPointer(pointer, 'variableProviders'),
-      null,
-      context,
-      entity,
-    );
-
-    if (providers !== null) {
-      const normalized: Array<readonly [string, IRepositoryReference]> = [];
-
-      for (const [variableId, providerEntry] of [...providers].sort(([left], [right]) =>
-        compareCodePoints(left, right),
-      )) {
-        const variableEntity = { agentId, variableId };
-        const providerPointer = childPointer(
-          childPointer(pointer, 'variableProviders'),
-          variableId,
-        );
-
-        if (!isVariableId(variableId)) {
-          context.diagnostics.add({
-            code: 'MOLDEA_VARIABLE_ID_INVALID',
-            entity: variableEntity,
-            path: context.path,
-            pointer: providerPointer,
-            range: providerEntry.key.range,
-          });
-        } else if (!declaredVariables.has(variableId)) {
-          context.diagnostics.add({
-            code: 'MOLDEA_VARIABLE_PROVIDER_UNDECLARED',
-            entity: variableEntity,
-            path: context.path,
-            pointer: providerPointer,
-            range: providerEntry.key.range,
-          });
-        }
-
-        const reference = readReference(
-          providerEntry.value,
-          providerPointer,
-          context,
-          variableEntity,
-        );
-
-        if (reference !== null) {
-          normalized.push([variableId, reference]);
-        }
-      }
-
-      variableProviders = createNullPrototypeRecord(normalized);
-    }
-  }
-
   return {
     ...(runtimeAgent === null ? {} : { runtimeAgent }),
     ...(inputSchema === null ? {} : { inputSchema }),
     ...(outputSchema === null ? {} : { outputSchema }),
     ...(instructionLoader === null ? {} : { instructionLoader }),
-    ...(variableProviders === null ? {} : { variableProviders }),
   };
 };
 
@@ -909,128 +704,6 @@ const readCapabilities = <Value extends IToolManifestEntry | ISkillManifestEntry
   return createNullPrototypeRecord(normalized);
 };
 
-const readUnresolved = (
-  node: IYamlNode,
-  pointer: string,
-  context: IManifestValidationContext,
-  agentId?: string,
-): Readonly<Record<string, IUnresolvedRequirementManifestEntry>> | null => {
-  const entries = readMapping(
-    node,
-    pointer,
-    null,
-    context,
-    agentId === undefined ? null : { agentId },
-  );
-
-  if (entries === null) {
-    return null;
-  }
-
-  const normalized: Array<readonly [string, IUnresolvedRequirementManifestEntry]> = [];
-
-  for (const [requirementId, entry] of [...entries].sort(([left], [right]) =>
-    compareCodePoints(left, right),
-  )) {
-    const entity = agentId === undefined ? null : { agentId };
-    const requirementPointer = childPointer(pointer, requirementId);
-    validateStableId(requirementId, entry.key.range, requirementPointer, context, entity);
-    const requirementEntries = readMapping(
-      entry.value,
-      requirementPointer,
-      new Set(['category', 'description', 'effect', 'reference', 'related', 'resolution']),
-      context,
-      entity,
-    );
-
-    if (requirementEntries === null) {
-      continue;
-    }
-
-    const category = readString(
-      requirementEntries.get('category'),
-      childPointer(requirementPointer, 'category'),
-      context,
-      { ...(entity === null ? {} : { entity }), required: true },
-    );
-
-    if (category !== null && !isStableId(category)) {
-      context.diagnostics.add({
-        code: 'MOLDEA_ID_INVALID',
-        entity,
-        path: context.path,
-        pointer: childPointer(requirementPointer, 'category'),
-        range: requirementEntries.get('category')?.value.range ?? null,
-      });
-    }
-
-    const effectEntry = requirementEntries.get('effect');
-    let effect: IUnresolvedRequirementEffect | null = null;
-
-    if (
-      effectEntry?.value.kind === 'scalar' &&
-      (effectEntry.value.value === 'blocking' ||
-        effectEntry.value.value === 'warning' ||
-        effectEntry.value.value === 'informational')
-    ) {
-      effect = effectEntry.value.value;
-    } else {
-      addInvalidValue(
-        context,
-        childPointer(requirementPointer, 'effect'),
-        effectEntry?.value.range ?? null,
-        effectEntry === undefined ? 'required' : 'enum',
-        entity,
-      );
-    }
-
-    const description = readString(
-      requirementEntries.get('description'),
-      childPointer(requirementPointer, 'description'),
-      context,
-      { ...(entity === null ? {} : { entity }), required: true },
-    );
-    const resolution = readString(
-      requirementEntries.get('resolution'),
-      childPointer(requirementPointer, 'resolution'),
-      context,
-      { ...(entity === null ? {} : { entity }), required: true },
-    );
-    const relatedEntry = requirementEntries.get('related');
-    const related =
-      relatedEntry === undefined
-        ? null
-        : readReferenceList(
-            relatedEntry.value,
-            childPointer(requirementPointer, 'related'),
-            context,
-            entity,
-          );
-    const reference = readString(
-      requirementEntries.get('reference'),
-      childPointer(requirementPointer, 'reference'),
-      context,
-      { ...(entity === null ? {} : { entity }), singleLine: true },
-    );
-
-    if (category !== null && effect !== null && description !== null && resolution !== null) {
-      normalized.push([
-        requirementId,
-        {
-          category,
-          effect,
-          description,
-          resolution,
-          ...(related === null ? {} : { related }),
-          ...(reference === null ? {} : { reference }),
-        },
-      ]);
-    }
-  }
-
-  return createNullPrototypeRecord(normalized);
-};
-
 const findMappingProperty = (node: IYamlNode, property: string): IYamlNode | null => {
   if (node.kind !== 'mapping') {
     return null;
@@ -1070,7 +743,7 @@ const validateAgentOwnedIdUniqueness = (
 ): void => {
   const seen = new Set<string>();
 
-  for (const property of ['tools', 'skills', 'unresolved']) {
+  for (const property of ['tools', 'skills']) {
     const record = findMappingProperty(node, property);
 
     if (record?.kind !== 'mapping') {
@@ -1107,18 +780,7 @@ const readAgent = (
   const entries = readMapping(
     node,
     pointer,
-    new Set([
-      'affectedBy',
-      'bindings',
-      'context',
-      'decisions',
-      'runtime',
-      'mirrors',
-      'skills',
-      'tools',
-      'unresolved',
-      'variables',
-    ]),
+    new Set(['affectedBy', 'bindings', 'context', 'decisions', 'mirrors', 'skills', 'tools']),
     context,
     entity,
   );
@@ -1128,32 +790,11 @@ const readAgent = (
   }
 
   validateAgentOwnedIdUniqueness(node, pointer, context, agentId);
-  const runtimeEntry = entries.get('runtime');
-  let runtime: IRuntimeManifestEntry | null = null;
-
-  if (runtimeEntry === undefined) {
-    addInvalidValue(context, childPointer(pointer, 'runtime'), null, 'required', entity);
-  } else {
-    runtime = readRuntime(runtimeEntry.value, childPointer(pointer, 'runtime'), context, agentId);
-  }
-
-  const variablesEntry = entries.get('variables');
-  const variables =
-    variablesEntry === undefined
-      ? null
-      : readVariables(variablesEntry.value, childPointer(pointer, 'variables'), context, agentId);
-  const declaredVariables = new Set(Object.keys(variables ?? {}));
   const bindingsEntry = entries.get('bindings');
   const bindings =
     bindingsEntry === undefined
       ? null
-      : readBindings(
-          bindingsEntry.value,
-          childPointer(pointer, 'bindings'),
-          context,
-          agentId,
-          declaredVariables,
-        );
+      : readBindings(bindingsEntry.value, childPointer(pointer, 'bindings'), context, agentId);
   const contextEntry = entries.get('context');
   const contextPaths =
     contextEntry === undefined
@@ -1214,32 +855,14 @@ const readAgent = (
           context,
           entity,
         );
-  const unresolvedEntry = entries.get('unresolved');
-  const unresolved =
-    unresolvedEntry === undefined
-      ? null
-      : readUnresolved(
-          unresolvedEntry.value,
-          childPointer(pointer, 'unresolved'),
-          context,
-          agentId,
-        );
-
-  if (runtime === null) {
-    return null;
-  }
-
   return {
-    runtime,
     ...(contextPaths === null ? {} : { context: contextPaths }),
     ...(decisions === null ? {} : { decisions }),
-    ...(variables === null ? {} : { variables }),
     ...(bindings === null ? {} : { bindings }),
     ...(tools === null ? {} : { tools }),
     ...(skills === null ? {} : { skills }),
     ...(affectedBy === null ? {} : { affectedBy }),
     ...(mirrors === null ? {} : { mirrors }),
-    ...(unresolved === null ? {} : { unresolved }),
   };
 };
 
@@ -1464,7 +1087,7 @@ export const validateManifest = (
   const entries = readMapping(
     node,
     '',
-    new Set(['acceptedWarnings', 'agents', 'context', 'decisions', 'unresolved', 'version']),
+    new Set(['acceptedWarnings', 'agents', 'context', 'decisions', 'version']),
     context,
   );
 
@@ -1487,11 +1110,6 @@ export const validateManifest = (
     decisionsEntry === undefined
       ? null
       : readRelationshipRecord(decisionsEntry.value, '/decisions', 'decision', context);
-  const unresolvedEntry = entries.get('unresolved');
-  const unresolved =
-    unresolvedEntry === undefined
-      ? null
-      : readUnresolved(unresolvedEntry.value, '/unresolved', context);
   const agentsEntry = entries.get('agents');
   const agents =
     agentsEntry === undefined ? null : readAgents(agentsEntry.value, '/agents', context);
@@ -1501,7 +1119,6 @@ export const validateManifest = (
     ...(acceptedWarnings === null ? {} : { acceptedWarnings }),
     ...(contextRelationships === null ? {} : { context: contextRelationships }),
     ...(decisionRelationships === null ? {} : { decisions: decisionRelationships }),
-    ...(unresolved === null ? {} : { unresolved }),
     ...(agents === null ? {} : { agents }),
   };
 };

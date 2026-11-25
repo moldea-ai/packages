@@ -340,18 +340,17 @@ export const createSearchRecords = (
 
   recordsByRoute.set('/runtimes/', {
     route: '/runtimes/',
-    title: 'Runtimes',
-    description: 'Runtime labels, declared binding checks, coverage, and agent guidance.',
-    searchText:
-      'Runtime labels binding file existence export syntax coverage agent SDK type definitions',
+    title: 'SDK guidance',
+    description: 'SDKs moldea works with, official documentation, and binding guidance.',
+    searchText: 'SDKs agent libraries frameworks documentation app bindings',
   });
   for (const runtime of RUNTIME_CATALOG) {
     const route = `/runtimes/#${runtime.id}`;
     recordsByRoute.set(route, {
       route,
       title: runtime.displayName,
-      description: 'A runtime label selects guidance for your coding agent.',
-      searchText: `${runtime.displayName} ${runtime.id} runtime label guidance`,
+      description: 'Official documentation for this SDK or framework.',
+      searchText: `${runtime.displayName} ${runtime.packageName ?? ''} SDK guidance`,
     });
   }
 
@@ -467,16 +466,16 @@ export const createLlmsText = (
           .join('\n'),
       },
       {
-        heading: 'Runtimes',
+        heading: 'SDK guidance',
         body: [
-          'Runtime IDs select agent guidance. Labels do not claim SDK compatibility, certification, or vendor endorsement.',
+          'Find the SDK your application uses and follow its official documentation.',
           'The coding agent reads the installed SDK type definitions and reviews how the application uses its declarations.',
           '',
           ...RUNTIME_CATALOG.map((runtime) =>
             toLlmsLinkItem({
               title: runtime.displayName,
               url: `/runtimes/#${runtime.id}`,
-              description: runtime.id,
+              ...(runtime.packageName === undefined ? {} : { description: runtime.packageName }),
             }),
           ),
         ].join('\n'),
@@ -489,7 +488,7 @@ export const createLlmsText = (
             url: specification.route,
             description: `Official version ${specification.formatVersion} repository contract.`,
           },
-          { title: 'Runtimes', url: '/runtimes/' },
+          { title: 'SDK guidance', url: '/runtimes/' },
           { title: 'Source repository', url: REPOSITORY_URL },
         ],
       },

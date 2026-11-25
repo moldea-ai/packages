@@ -24,18 +24,18 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
     id: 'agents',
     label: 'Agents',
     title: 'Keep agent files in sync.',
-    description: 'Check instructions, variables, tools, skills, and their declared ownership.',
+    description:
+      'Check canonical descriptions, instructions, capabilities, and their declared ownership.',
     coverage: [
       'agent identity and descriptions',
-      'variables and their sources',
-      'tools, skills and runtimes',
+      'declared tools and skills',
       'instruction copies and ownership',
     ],
     featuredExampleIds: [
       'mirror-stale',
       'tool-implementation-missing',
-      'variable-undeclared',
       'agent-context-present',
+      'description-invalid',
     ],
     reference: { route: '/repository-format/', label: 'Explore agent declarations' },
   },
@@ -75,7 +75,7 @@ export const CAPABILITY_GROUPS: ICapabilityGroup[] = [
       'binding-commonjs',
       'warning-accepted',
     ],
-    reference: { route: '/runtimes/', label: 'Explore runtime labels and binding checks' },
+    reference: { route: '/runtimes/', label: 'Find SDK guidance' },
   },
   {
     id: 'repository-access',

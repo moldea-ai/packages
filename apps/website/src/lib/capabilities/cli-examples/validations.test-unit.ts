@@ -7,7 +7,7 @@ import { parseCliExecution } from './validations.ts';
 const envelope = {
   cliVersion: '11.0.0',
   command: 'validate',
-  schemaVersion: 7,
+  schemaVersion: 8,
   status: 'valid',
   error: null,
   result: { valid: true },
@@ -165,7 +165,7 @@ test.each([
   ).toThrow();
 });
 
-test('validates complete schema 7 coverage records without dropping fields', () => {
+test('validates complete schema 8 coverage records without dropping fields', () => {
   const coverage = {
     entity: { contextPath: '/moldea/project.md' },
     relationship: 'context-binding',

@@ -11,46 +11,6 @@ export const ACCEPTABLE_WARNING_CODES = Object.freeze([
   'MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING',
 ] as const);
 
-// runtime labels selecting guidance without asserting SDK compatibility
-export const RECOGNIZED_RUNTIME_IDS = Object.freeze([
-  'amazon-bedrock',
-  'anthropic',
-  'cerebras',
-  'claude-agent-sdk',
-  'cloudflare-agents',
-  'cohere',
-  'convex-agent',
-  'cursor-sdk',
-  'custom',
-  'deep-agents',
-  'eve',
-  'genkit',
-  'github-copilot-sdk',
-  'google-adk',
-  'google-genai',
-  'groq',
-  'hugging-face',
-  'ibm-watsonx-ai',
-  'langchain',
-  'langgraph',
-  'livekit-agents',
-  'mastra',
-  'microsoft-foundry',
-  'mistral',
-  'node-llama-cpp',
-  'ollama',
-  'openai',
-  'openai-agents-sdk',
-  'openai-codex',
-  'opencode-sdk',
-  'openrouter',
-  'pi-agent',
-  'strands-agents',
-  'tanstack-ai',
-  'vercel-ai-sdk',
-  'voltagent',
-] as const);
-
 // repository-format major versions interpreted by this Core release
 export const SUPPORTED_REPOSITORY_FORMAT_VERSIONS: readonly IRepositoryFormatVersion[] =
   Object.freeze([1]);

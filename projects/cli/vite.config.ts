@@ -21,6 +21,7 @@ const libraryConfig = createLibraryConfig({
 });
 
 export default mergeConfig(libraryConfig, {
+  define: { MOLDEA_PORTABLE_PACKAGE_METADATA: 'undefined' },
   build: {
     rolldownOptions: {
       output: {

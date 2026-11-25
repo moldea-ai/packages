@@ -303,8 +303,8 @@ describe('createSearchRecords', () => {
     ).toStrictEqual([
       'mirror-stale',
       'tool-implementation-missing',
-      'variable-undeclared',
       'agent-context-present',
+      'description-invalid',
     ]);
     for (const example of examples) {
       const records = model.searchRecords.filter(
@@ -335,7 +335,7 @@ describe('createSearchRecords', () => {
     expect(JSON.stringify(capabilityRecords)).not.toContain('export async function');
     expect(JSON.stringify(capabilityRecords)).not.toContain('boundaryVersion');
   });
-  test('indexes runtime labels without retaining retired discovery routes', () => {
+  test('indexes SDK entries without retaining retired discovery routes', () => {
     const model = getCurrentWebsiteModel();
     for (const runtime of RUNTIME_CATALOG)
       expect(
@@ -384,10 +384,10 @@ test('uses the authored guide and excludes Website UI from public discovery', ()
   ).not.toContain('/packages/website-ui/');
   expect(model.discoveryCopy.packages).not.toHaveProperty('@moldea.ai/website-ui');
 });
-test('regenerates the same source-backed model with Core 9 examples', async () => {
+test('regenerates the same source-backed model with Core 10 examples', async () => {
   const model = getCurrentWebsiteModel();
   expect(await createWebsiteModel()).toStrictEqual(model);
-  expect(model.capabilities.cases).toHaveLength(119);
+  expect(model.capabilities.cases).toHaveLength(110);
   expect(model.inspectionExample.map(({ result }) => result.valid)).toStrictEqual([
     true,
     false,

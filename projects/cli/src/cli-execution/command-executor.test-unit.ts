@@ -34,8 +34,6 @@ const PROJECT_SUMMARY = Object.freeze({
     context: 0,
     decisions: 0,
     mirrors: 0,
-    runtimes: 0,
-    unresolved: 0,
   }),
   manifestDigest: `sha256:${'1'.repeat(64)}` as IContentDigest,
   manifestPath: parseRepositoryPath('/moldea/moldea.yaml'),
@@ -215,7 +213,7 @@ describe('createMoldeaCliCommandExecutor', () => {
     expect(JSON.parse(result.stdout)).toStrictEqual({
       cliVersion: '10.0.0',
       command: 'scope',
-      schemaVersion: 7,
+      schemaVersion: 8,
       status: 'error',
       result: null,
       error: {
@@ -251,7 +249,7 @@ describe('createMoldeaCliCommandExecutor', () => {
     const envelope = JSON.parse(result.stdout) as Record<string, unknown>;
 
     expect(result.exitCode).toBe(0);
-    expect(envelope).toMatchObject({ command: 'validate', schemaVersion: 7, status: 'valid' });
+    expect(envelope).toMatchObject({ command: 'validate', schemaVersion: 8, status: 'valid' });
     expect(result.stdout).not.toContain('content');
     expect(coreInspection).toHaveBeenCalledWith({
       command: 'validate',
@@ -321,7 +319,7 @@ describe('createMoldeaCliCommandExecutor', () => {
     expect(JSON.parse(result.stdout)).toMatchObject({
       command: 'scope',
       result: { relevant: false, valid: true },
-      schemaVersion: 7,
+      schemaVersion: 8,
     });
     expect(snapshot.selectionPaths).toStrictEqual([MOLDEA_MANIFEST_PATH]);
     expect(coreInspection).not.toHaveBeenCalled();
@@ -359,7 +357,7 @@ describe('createMoldeaCliCommandExecutor', () => {
         asset: { path: '/moldea/project.md', totalBytes: 10 },
         chunk: { byteEnd: 10, byteStart: 0, content: '# Project\n' },
       },
-      schemaVersion: 7,
+      schemaVersion: 8,
     });
     expect(snapshot.selectionPaths).toStrictEqual([parseRepositoryPath('/moldea/project.md')]);
     expect(projectContent).toHaveBeenCalledWith(
@@ -386,7 +384,7 @@ describe('createMoldeaCliCommandExecutor', () => {
     expect(JSON.parse(result.stdout)).toMatchObject({
       error: { code: 'GIT_NOT_FOUND' },
       result: null,
-      schemaVersion: 7,
+      schemaVersion: 8,
       status: 'error',
     });
   });

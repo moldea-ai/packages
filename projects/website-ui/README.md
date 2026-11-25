@@ -7,7 +7,7 @@ The package owns the reusable design tokens, global website primitives, interact
 ## Install after release
 
 ```bash
-pnpm add @moldea.ai/website-ui@5.0.1
+pnpm add @moldea.ai/website-ui@6.0.0
 ```
 
 The package currently supports Astro `7.2.8` and Tailwind CSS `4.3.3` exactly. Import the shared stylesheet once from the website's global stylesheet:
@@ -81,13 +81,13 @@ import { isDarkTheme } from '@moldea.ai/website-ui/theme';
 
 Set `shouldFocusOnLoad` on a dedicated search page to focus its input without scrolling on direct loads and Astro client navigation. It defaults to `false` for embedded searches. Opt in at most one search per page; consumers do not need a separate focus script.
 
-## Runtime labels
+## SDK catalog
 
-`@moldea.ai/website-ui/runtime-catalog` exports `RUNTIME_CATALOG` and `IRuntimeCatalogEntry`. Its 35 stable runtime IDs select guidance; they do not certify SDK compatibility or vendor endorsement. Each entry contains its display name, official website or repository URL, and icon assets. Optional dark variants preserve contrast. `padded-icon` optical sizing accounts for clear space inside source assets, including Anthropic, Cloudflare, Convex, node-llama-cpp, and Pi Agent.
+`@moldea.ai/website-ui/runtime-catalog` exports the 35 SDK entries as `RUNTIME_CATALOG` and their type as `IRuntimeCatalogEntry`.
 
-`RuntimeGrid` displays the recognizable icon, display name, and complete runtime ID. Every entry opens its official destination in a new tab with an external-link indicator. Widely used SDKs and frameworks appear first. Three responsive rows appear before and after script initialization, with space reserved for the Load more control. Load more reveals every remaining entry and disappears. Focus moves to the first revealed link. Runtime search fragments reveal the requested entry before scrolling to it. Without JavaScript, all 35 entries remain available. Entry-level hover and focus use shared theme tokens. Assets resolve at build time and load lazily with explicit dimensions.
+`RuntimeGrid` displays each SDK’s icon, name, and package where listed. Every entry opens its official destination in a new tab.
 
-The `@moldea.ai/website-ui/runtime-logos/*` export exposes static SVG and PNG assets to other frameworks. Import named files through that public path. Catalog synchronization and asset safety are tested. The repository's [runtime logo record](../../docs/runtime-logos.md) records provenance and deferred permission follow-up; it is not shipped in the package.
+The `@moldea.ai/website-ui/runtime-logos/*` export exposes static SVG and PNG assets to other frameworks.
 
 ## Conversations
 
@@ -278,7 +278,7 @@ For a dialog heading, compose `ResultSummary` in Dialog's `heading` slot, set `a
 
 `StatusBadge` defaults to `size="md"`. Use `size="sm"` for secondary status beside compact headings: a 20px minimum height, tighter padding, and lighter 10px lettering. Badge labels stay on one line so short values such as “Exit 3” remain intact in tight flex rows. Use `truncate` when a longer label must fit a constrained width. Both sizes retain the same semantic colors.
 
-For hand-authored complete product names and technical tokens, use `<code class="inline-code">`. This shared class matches rendered Markdown's code background, padding, monospace weight, and theme colors. `FilePreview` uses it for paths while retaining filename-preserving truncation. Rendered Markdown inline code and this package's own code labels (inspection findings and dialogs, file trees, runtime IDs and replay operations) wrap only after `/`, `_`, `.` or `-`, never mid-word and never between a name and its final extension (`refund-policy.ts` wraps after `refund-`, not before `ts`). Hand-authored `<code class="inline-code">` keeps normal wrapping; do not add `break-all`. Use `CodeText` instead when a code value should wrap only at those separators. It does not parse text or add code semantics to plain strings; consumers must mark filenames and variable tokens explicitly.
+For hand-authored complete product names and technical tokens, use `<code class="inline-code">`. This shared class matches rendered Markdown's code background, padding, monospace weight, and theme colors. `FilePreview` uses it for paths while retaining filename-preserving truncation. Rendered Markdown inline code and this package's own code labels (inspection findings and dialogs, file trees, SDK package names and replay operations) wrap only after `/`, `_`, `.` or `-`, never mid-word and never between a name and its final extension (`refund-policy.ts` wraps after `refund-`, not before `ts`). Hand-authored `<code class="inline-code">` keeps normal wrapping; do not add `break-all`. Use `CodeText` instead when a code value should wrap only at those separators. It does not parse text or add code semantics to plain strings; consumers must mark filenames and code tokens explicitly.
 
 `CodeText` (`@moldea.ai/website-ui/code-text`) renders a `code` element from its `value` prop and accepts the element's other attributes. Its text wraps only after `/`, `_`, `.` or `-` between other characters. A value with none of those breaks and no whitespace, such as a SHA-256 digest or a run ID, stays on one line and truncates with an ellipsis at the available width. Its full text stays in the DOM, so selection, copying, find-in-page and screen readers get the whole value, and the element carries a `title` with the value unless the caller passes its own. Layout utilities such as `block` still apply.
 

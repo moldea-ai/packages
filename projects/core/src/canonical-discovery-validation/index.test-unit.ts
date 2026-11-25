@@ -15,16 +15,21 @@ const classify = (path: string, type: IRepositoryEntryType) => {
 };
 
 describe('Core canonical entry classification', () => {
+  test.each(['/moldea/runtimes/custom/api.md', '/moldea/agents/support/handoff-description.md'])(
+    'keeps %s outside the canonical file layout',
+    (path) => {
+      expect(classify(path, 'file')).toStrictEqual({ kind: 'unrecognized' });
+    },
+  );
+
   test.each([
     ['/moldea/moldea.yaml', 'manifest', null],
     ['/moldea/project.md', 'project', null],
     ['/moldea/context/product.md', 'context', null],
     ['/moldea/context/security/privacy.md', 'context', null],
     ['/moldea/decisions/not-yet-valid.md', 'decision', null],
-    ['/moldea/runtimes/custom/api.md', 'runtime-guidance', null],
     ['/moldea/agents/support/description.md', 'agent-description', 'support'],
     ['/moldea/agents/support/instruction.md', 'agent-instruction', 'support'],
-    ['/moldea/agents/support/handoff-description.md', 'agent-handoff-description', 'support'],
   ])('classifyCanonicalEntry(%s, file) -> %s', (path, fileKind, agentId) => {
     expect(classify(path, 'file')).toStrictEqual({
       agentId,
@@ -36,7 +41,7 @@ describe('Core canonical entry classification', () => {
   test.each([
     ['/moldea/context', { kind: 'structural-directory' }],
     ['/moldea/context/security', { kind: 'structural-directory' }],
-    ['/moldea/runtimes/custom', { kind: 'structural-directory' }],
+    ['/moldea/runtimes/custom', { kind: 'ignored-directory' }],
     ['/moldea/agents/support', { agentId: 'support', kind: 'agent-directory' }],
     ['/moldea/decisions/nested', { kind: 'ignored-directory' }],
     ['/moldea/unknown-empty', { kind: 'ignored-directory' }],

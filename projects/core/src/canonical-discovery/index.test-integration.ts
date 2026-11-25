@@ -146,7 +146,6 @@ describe('Core canonical discovery through the memory repository reader', () => 
     expect(result.inventory).toMatchObject({
       context: [],
       decisions: [],
-      runtimeGuidance: [],
     });
   });
 

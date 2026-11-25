@@ -201,16 +201,16 @@ const basePath = import.meta.env.BASE_URL;
   >
     <header class="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-end">
       <div>
-        <p class="eyebrow mb-4">Runtime labels</p><h2
+        <p class="eyebrow mb-4">SDK guidance</p><h2
           id="runtimes-title"
           class="section-title"
         >
-          Guidance for your runtime.
+          SDKs moldea works with
         </h2>
       </div>
       <p class="text-lg leading-8 text-muted-foreground">
-        A runtime label selects guidance for your coding agent. Core checks declared files and
-        exports; your agent reviews how the application uses them.
+        Find the SDK your application uses and open its official documentation. Core checks declared
+        files and exports; your agent reviews how the application uses them.
       </p>
     </header>
     <RuntimeGrid />
@@ -218,7 +218,7 @@ const basePath = import.meta.env.BASE_URL;
       <ActionLink
         href={withBase('/runtimes/', basePath)}
         variant="link"
-        >Explore runtime guidance <ArrowRight
+        >Explore SDK guidance <ArrowRight
           class="size-4"
           aria-hidden="true"
         /></ActionLink

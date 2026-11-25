@@ -36,7 +36,7 @@ const example: ICapabilityCase = {
   result: {
     kind: 'cli',
     command: 'moldea validate --json',
-    schemaVersion: 7,
+    schemaVersion: 8,
     status: 'invalid',
     exitStatus: 1,
     facts: {},
@@ -44,7 +44,7 @@ const example: ICapabilityCase = {
   output: createRecordedOutput([
     {
       cliVersion: '11.0.2',
-      schemaVersion: 7,
+      schemaVersion: 8,
       command: 'validate',
       status: 'invalid',
       error: null,
@@ -153,7 +153,7 @@ test('gives a CLI refusal the native error code from its envelope', () => {
     result: {
       kind: 'cli',
       command: 'moldea content --path /src/returns/policy.ts --json',
-      schemaVersion: 7,
+      schemaVersion: 8,
       status: 'error',
       exitStatus: 2,
       facts: { error },
@@ -161,7 +161,7 @@ test('gives a CLI refusal the native error code from its envelope', () => {
     output: createRecordedOutput([
       {
         cliVersion: '11.0.2',
-        schemaVersion: 7,
+        schemaVersion: 8,
         command: 'content',
         status: 'error',
         error,
@@ -265,7 +265,7 @@ test('locates the CLI missing export using its separately captured failed covera
       ...example.result,
       kind: 'cli',
       command: 'moldea validate --json',
-      schemaVersion: 7,
+      schemaVersion: 8,
       status: 'invalid',
       exitStatus: 1,
       facts: {
@@ -315,7 +315,7 @@ test('does not assign one coverage target to several missing-export diagnostics'
       ...example.result,
       kind: 'cli',
       command: 'moldea validate --json',
-      schemaVersion: 7,
+      schemaVersion: 8,
       status: 'invalid',
       exitStatus: 1,
       facts: { coverage: { path: '/src/missing.ts', exportCheck: 'failed' } },
@@ -523,7 +523,7 @@ test('retains the native CLI record without adding inferred export evidence to i
     result: {
       kind: 'cli',
       command: 'moldea validate --json',
-      schemaVersion: 7,
+      schemaVersion: 8,
       status: 'invalid',
       exitStatus: 1,
       facts: {

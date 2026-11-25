@@ -24,7 +24,6 @@ export const createInstructionExample = async (
     version: 1,
     agents: {
       support: {
-        runtime: { id: 'custom' },
         tools: {
           'get-delivery-status': {
             name: 'get_delivery_status',
@@ -53,11 +52,6 @@ export const createInstructionExample = async (
       content: 'Helps customers with order and delivery questions.\n',
     },
     { path: instructionPath, type: 'file', content: snapshot.instruction },
-    {
-      path: '/moldea/runtimes/custom.md',
-      type: 'file',
-      content: 'The application loads the agent instruction and registers its tools.\n',
-    },
     ...snapshot.sourceFiles.map(({ path, content }) => ({ path, type: 'file' as const, content })),
   ]);
   const validation = await createCore().validateProject({ repository });
@@ -76,8 +70,8 @@ export const createInstructionExample = async (
         entity: { agentId: 'support', capabilityKind: 'tool', capabilityId: 'get-delivery-status' },
         details: { reason: 'missing', referencedPath: '/src/orders/tracking.ts' },
         range: {
-          start: { column: 9, line: 10, offset: 212 },
-          end: { column: 1, line: 12, offset: 268 },
+          start: { column: 9, line: 8, offset: 182 },
+          end: { column: 1, line: 10, offset: 238 },
         },
         severity: 'error',
         group: 'agents',

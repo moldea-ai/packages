@@ -1,6 +1,8 @@
 # packages
 
-This repository develops the open-source `moldea` packages, private shared implementations, conformance fixtures, consumer checksums, and packages website. The separate [`platform`](https://github.com/moldea-ai/platform) repository owns hosted applications, APIs, and infrastructure.
+This repository develops the open-source `moldea` packages, private shared implementations, conformance fixtures and the packages website. The separate [`platform`](https://github.com/moldea-ai/platform) repository owns hosted applications, APIs, and infrastructure.
+
+The format reference documents the structure checked by Core. Its current catalog contains 79 diagnostic codes. See [Core diagnostics](projects/core/docs/diagnostics.md).
 
 ## Project blueprint
 
@@ -15,12 +17,11 @@ This repository develops the open-source `moldea` packages, private shared imple
 | Work on the documentation website                                                          | [Packages website](apps/website/README.md), with source discovery, verification and deployment.                                       |
 | Integrate reviewed changes                                                                 | [Delivery](docs/delivery.md), defining ordered stops, operators and evidence.                                                         |
 
-| Path                                 | Responsibility                                                          |
-| ------------------------------------ | ----------------------------------------------------------------------- |
-| [`projects/`](projects/)             | Public package projects and their own documentation                     |
-| [`packages/`](packages/)             | Private shared implementation packages                                  |
-| [`apps/`](apps/)                     | Private applications, including the packages website                    |
-| [`specifications/`](specifications/) | Public cross-package contracts                                          |
-| [`consumers/`](consumers/)           | Qualified downstream-consumer checksums and their verification evidence |
+| Path                                 | Responsibility                                       |
+| ------------------------------------ | ---------------------------------------------------- |
+| [`projects/`](projects/)             | Public package projects and their own documentation  |
+| [`packages/`](packages/)             | Private shared implementation packages               |
+| [`apps/`](apps/)                     | Private applications, including the packages website |
+| [`specifications/`](specifications/) | Public cross-package contracts                       |
 
 `docs/` holds concise durable workspace guidance. API and HTTP endpoint references remain with their owning projects. Intended product requirements, implemented contracts and published availability have distinct owners, described in the detailed blueprint.

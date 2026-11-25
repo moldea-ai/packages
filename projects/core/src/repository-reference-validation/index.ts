@@ -31,7 +31,6 @@ import type {
   IRelationshipManifestEntry,
   ISkillManifestEntry,
   IToolManifestEntry,
-  IUnresolvedRequirementManifestEntry,
 } from '../format/index.js';
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 
@@ -113,29 +112,6 @@ const addRelationshipCandidates = (
     childPointer(pointer, 'affectedBy'),
     entity,
   );
-};
-
-/** Adds related repository references from sorted unresolved requirements. */
-const addUnresolvedCandidates = (
-  candidates: IRepositoryCandidate[],
-  requirements: Readonly<Record<string, IUnresolvedRequirementManifestEntry>> | undefined,
-  pointer: string,
-  entity: IDiagnosticEntity | null,
-): void => {
-  for (const requirementId of Object.keys(requirements ?? {}).sort(compareCodePoints)) {
-    const requirement = requirements?.[requirementId];
-
-    if (requirement === undefined) {
-      continue;
-    }
-
-    addReferenceCandidates(
-      candidates,
-      requirement.related,
-      childPointer(childPointer(pointer, requirementId), 'related'),
-      entity,
-    );
-  }
 };
 
 /** Adds one capability's implementation, optional bindings, and exact impact paths. */
@@ -228,21 +204,6 @@ const addAgentCandidates = (
     }
   }
 
-  for (const variableId of Object.keys(bindings?.variableProviders ?? {}).sort(compareCodePoints)) {
-    const reference = bindings?.variableProviders?.[variableId];
-
-    if (reference !== undefined) {
-      candidates.push({
-        entity: { agentId, variableId },
-        relationship: 'variable-provider',
-        ...(reference.symbol === undefined ? {} : { symbol: reference.symbol }),
-        kind: 'reference',
-        path: reference.path,
-        pointer: childPointer(childPointer(bindingsPointer, 'variableProviders'), variableId),
-      });
-    }
-  }
-
   addImpactCandidates(candidates, agent.affectedBy, childPointer(pointer, 'affectedBy'), entity);
 
   const toolsPointer = childPointer(pointer, 'tools');
@@ -274,13 +235,6 @@ const addAgentCandidates = (
       );
     }
   }
-
-  addUnresolvedCandidates(
-    candidates,
-    agent.unresolved,
-    childPointer(pointer, 'unresolved'),
-    entity,
-  );
 };
 
 /** Collects every repository-backed manifest declaration in deterministic pointer order. */
@@ -310,8 +264,6 @@ const collectCandidates = (manifest: IMoldeaManifestV1): readonly IRepositoryCan
       );
     }
   }
-
-  addUnresolvedCandidates(candidates, manifest.unresolved, '/unresolved', null);
 
   for (const agentId of Object.keys(manifest.agents ?? {}).sort(compareCodePoints)) {
     const agent = manifest.agents?.[agentId];

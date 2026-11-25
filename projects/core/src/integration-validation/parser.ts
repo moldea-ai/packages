@@ -61,11 +61,22 @@ export const parseIntegrationBlock = (text: string): IIntegrationBlockResult => 
   if (typeof region === 'string') return { kind: 'missing', reason: region };
   const matches = text
     .slice(region.start, region.end)
-    .matchAll(/^node "<repo-root>\/([^"\r\n]+)\/scripts\/relevance-gate\.mjs"(?:[ \t\r]|$)/gm);
-  const first = matches.next().value;
-  if (first === undefined || !matches.next().done)
+    .matchAll(
+      /^node "<repo-root>\/([^"\r\n]+)\/scripts\/relevance-gate\.mjs"(?=[ \t\r]|$)([^\r\n]*)/gm,
+    );
+  const paths = new Map<'paths' | 'adoption', string>();
+  for (const match of matches) {
+    const skillPath = match[1];
+    const mode = /(?:^|[ \t])--adoption-only(?:[ \t]|$)/u.test(match[2] ?? '')
+      ? 'adoption'
+      : 'paths';
+    if (skillPath === undefined || paths.has(mode))
+      return { kind: 'missing', reason: 'skill-path-missing' };
+    paths.set(mode, skillPath);
+  }
+  const skillPath = paths.get('paths') ?? paths.get('adoption');
+  if (paths.size === 0 || (paths.size === 2 && paths.get('adoption') !== skillPath))
     return { kind: 'missing', reason: 'skill-path-missing' };
-  const skillPath = first[1];
   if (
     skillPath === undefined ||
     !/^[A-Za-z0-9._/-]+$/.test(skillPath) ||

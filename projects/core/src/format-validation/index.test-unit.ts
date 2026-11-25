@@ -12,7 +12,6 @@ import {
   isReservedId,
   isSimpleGlob,
   isStableId,
-  isVariableId,
   parseDecisionIdFromPath,
   trimRepositoryFormatWhitespace,
 } from './index.js';
@@ -62,16 +61,6 @@ describe('Core manifest-format validation', () => {
       expect(isReservedId(candidate)).toBe(false);
     },
   );
-
-  test.each([
-    ['CURRENT_DATETIME', true],
-    ['A1', true],
-    ['current', false],
-    ['_VALUE', false],
-    [`A${'B'.repeat(64)}`, false],
-  ])('isVariableId(%s) -> %s', (candidate, expected) => {
-    expect(isVariableId(candidate)).toBe(expected);
-  });
 
   test.each([
     [`/moldea/decisions/1786050123456-${'a'.repeat(64)}.md`, true],
@@ -154,7 +143,7 @@ describe('Core manifest-format validation', () => {
     expect(isCapabilityDescription('line\u000cbreak')).toBe(true);
     expect(isCapabilityDescription('line\u0085break')).toBe(false);
     expect(isCapabilityDescription('escaped\0nul')).toBe(false);
-    expect(isCapabilityDescription('{{VALUE}}')).toBe(false);
+    expect(isCapabilityDescription('{{VALUE}}')).toBe(true);
     expect(isCapabilityDescription('😀'.repeat(1_000))).toBe(true);
     expect(isCapabilityDescription('😀'.repeat(1_001))).toBe(false);
   });

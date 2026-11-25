@@ -78,18 +78,18 @@ test('orders the homepage from purpose and a real check to tools and boundaries'
     'See a project change, end to end.',
     'The structure behind every evaluation.',
     'Start with the task.',
-    'Guidance for your runtime.',
+    'SDKs moldea works with',
     'Know what a check tells you.',
   ]);
-  await expect(page.getByRole('region', { name: 'Runtime guidance' })).toHaveCount(0);
-  await expect(page.getByRole('list', { name: 'Runtime guidance' })).toHaveCount(1);
+  await expect(page.getByRole('region', { name: 'SDKs moldea works with' })).toHaveCount(1);
+  await expect(page.getByRole('list', { name: 'SDKs moldea works with' })).toHaveCount(1);
 });
 
 for (const width of [320, 768, 1024, 1440]) {
   test(`aligns architecture and runtime introductions at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(toPublicPath('/'));
-    for (const title of ['The structure behind every evaluation.', 'Guidance for your runtime.']) {
+    for (const title of ['The structure behind every evaluation.', 'SDKs moldea works with']) {
       const section = page.getByRole('region', { name: title, exact: true });
       const header = section.locator('header').first();
       const heading = await header.getByRole('heading', { level: 2 }).boundingBox();

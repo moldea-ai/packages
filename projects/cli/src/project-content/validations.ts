@@ -4,9 +4,7 @@ import { MoldeaCliProjectContentException } from './exception.js';
 
 const CONTEXT_PATH_PATTERN = /^\/moldea\/context\/(?:[^/]+\/)*[^/]+\.md$/u;
 const DECISION_PATH_PATTERN = /^\/moldea\/decisions\/[^/]+\.md$/u;
-const RUNTIME_PATH_PATTERN = /^\/moldea\/runtimes\/(?:[^/]+\/)*[^/]+\.md$/u;
-const AGENT_PATH_PATTERN =
-  /^\/moldea\/agents\/[^/]+\/(?:description|instruction|handoff-description)\.md$/u;
+const AGENT_PATH_PATTERN = /^\/moldea\/agents\/[^/]+\/(?:description|instruction)\.md$/u;
 
 /** Determines whether a logical path names one canonical moldea text asset. */
 export const isMoldeaCliCanonicalContentPath = (path: IRepositoryPath): boolean => {
@@ -19,7 +17,6 @@ export const isMoldeaCliCanonicalContentPath = (path: IRepositoryPath): boolean 
     path === '/moldea/project.md' ||
     CONTEXT_PATH_PATTERN.test(path) ||
     DECISION_PATH_PATTERN.test(path) ||
-    RUNTIME_PATH_PATTERN.test(path) ||
     AGENT_PATH_PATTERN.test(path)
   );
 };

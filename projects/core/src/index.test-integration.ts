@@ -190,7 +190,7 @@ describe('published Core package artifacts', () => {
     ) as { readonly dependencies?: Readonly<Record<string, string>> };
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '9.2.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/core', version: '10.0.0' });
     for (const entryName of [
       'index',
       'format',
@@ -257,12 +257,20 @@ describe('published Core package artifacts', () => {
         'CoreConfigurationException',
         'CoreOperationException',
         'DEFAULT_CORE_RESOURCE_LIMITS',
-        'RECOGNIZED_RUNTIME_IDS',
         'SUPPORTED_REPOSITORY_FORMAT_VERSIONS',
         'createCore',
+        'isSupportedExportSource',
         'parseIntegrationBlock',
       ],
     });
+  });
+
+  test('exposes the syntax source predicate through the main package entry', async () => {
+    const { isSupportedExportSource } = await import('@moldea.ai/core');
+
+    expect(isSupportedExportSource('/src/agent.mts')).toBe(true);
+    expect(isSupportedExportSource('/src/agent.d.mts')).toBe(false);
+    expect(isSupportedExportSource('/src/schema.json')).toBe(false);
   });
 
   test('rewrites the Repository workspace dependency in the real tarball manifest', () => {

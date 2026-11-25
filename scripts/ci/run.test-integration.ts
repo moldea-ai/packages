@@ -312,8 +312,6 @@ test('real final gate fails closed on cancelled, skipped, failed and missing nat
       'plan',
       'checks',
       'pack',
-      'consumer-conformance',
-      'cli-testing-peer-compatibility',
       'repository-fs-runtime-compatibility',
       'cli-runtime-compatibility',
       'test-cross-platform',

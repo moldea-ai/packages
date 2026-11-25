@@ -40,7 +40,6 @@ const createRepository = (symbol = 'alphaAgent', shouldAcceptWarning = false) =>
         version: 1,
         agents: {
           alpha: {
-            runtime: { id: 'openai' },
             bindings: { runtimeAgent: { path: '/src/agent.ts', symbol } },
           },
         },
@@ -123,7 +122,7 @@ describe('CLI Core composition through the real isolated boundary', () => {
     });
   });
 
-  test('inspect pages include the same coverage, warning totals, and declared runtime assignment', async () => {
+  test('inspect pages include the same coverage, warning totals, and registered agent identity', async () => {
     const result = await execute('inspect', undefined, true);
     expect(result).toMatchObject({
       valid: true,
@@ -134,7 +133,7 @@ describe('CLI Core composition through the real isolated boundary', () => {
     const items = result.page.records.map((record) => record.item);
     expect(items).toContainEqual({
       kind: 'agent',
-      agent: { agentId: 'alpha', runtimeId: 'openai' },
+      agent: { agentId: 'alpha' },
     });
     expect(items).toContainEqual(expect.objectContaining({ kind: 'coverage' }));
     expect(items).toContainEqual(expect.objectContaining({ kind: 'diagnostic' }));

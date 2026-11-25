@@ -1,5 +1,7 @@
 import { satisfies as doesVersionSatisfy, valid as isValidVersion, validRange } from 'semver';
 
+import { MOLDEA_CLI_JSON_SCHEMA_VERSION } from '../json-output-contract/index.js';
+
 import {
   MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES,
   MOLDEA_CLI_FOUNDATIONAL_PACKAGE_NAMES,
@@ -40,7 +42,7 @@ export const isMoldeaCliCompositionStateValid = (
     supportedNodeRange === null ||
     validRange(supportedNodeRange) === null ||
     isValidVersion(input.minimumGitVersion) === null ||
-    input.outputSchemaVersion !== 7 ||
+    input.outputSchemaVersion !== MOLDEA_CLI_JSON_SCHEMA_VERSION ||
     dependencies === null ||
     installedPackageVersions === null ||
     !hasUniquePositiveIntegers(input.coreSupportedRepositoryFormatVersions)

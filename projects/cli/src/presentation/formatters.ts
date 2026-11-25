@@ -23,7 +23,6 @@ const DIAGNOSTIC_ENTITY_KEYS = [
   'capabilityKind',
   'capabilityId',
   'decisionId',
-  'variableId',
   'contextPath',
   'integrationPath',
 ] as const satisfies readonly (keyof IDiagnosticEntity)[];
@@ -94,7 +93,7 @@ export const formatMoldeaCliHelp = (command: IMoldeaCliCommand | null): string =
 export const formatMoldeaCliHumanError = (error: IMoldeaCliError): string =>
   `${error.source}:${error.code} ${error.message}\n`;
 
-/** Formats any strict schema 7 JSON envelope. */
+/** Formats any strict schema 8 JSON envelope. */
 export const formatMoldeaCliJsonResult = <TResult>(
   command: IMoldeaCliCommand | null,
   result: TResult | null,
@@ -103,7 +102,7 @@ export const formatMoldeaCliJsonResult = <TResult>(
   cliVersion: string,
 ): string => serializeMoldeaCliJsonEnvelope({ cliVersion, command, error, result, status });
 
-/** Formats one safe schema 7 JSON error envelope. */
+/** Formats one safe schema 8 JSON error envelope. */
 export const formatMoldeaCliJsonError = (
   error: IMoldeaCliError,
   command: IMoldeaCliCommand | null,
@@ -129,7 +128,7 @@ export const formatMoldeaCliHumanCompositionResult = (
   return `${lines.join('\n')}\n`;
 };
 
-/** Formats one composition result in the strict schema 7 envelope. */
+/** Formats one composition result in the strict schema 8 envelope. */
 export const formatMoldeaCliJsonCompositionResult = (
   result: IMoldeaCliCompositionResult,
   cliVersion: string,
@@ -169,7 +168,7 @@ export const formatMoldeaCliHumanValidateResult = (result: IMoldeaCliValidateRes
   return `${lines.join('\n')}\n`;
 };
 
-/** Formats one validation result in the strict schema 7 envelope. */
+/** Formats one validation result in the strict schema 8 envelope. */
 export const formatMoldeaCliJsonValidateResult = (
   result: IMoldeaCliValidateResult,
   cliVersion: string,
@@ -205,7 +204,7 @@ export const formatMoldeaCliHumanInspectResult = (result: IMoldeaCliInspectResul
   return `${lines.join('\n')}\n`;
 };
 
-/** Formats one metadata inspection in the strict schema 7 envelope. */
+/** Formats one metadata inspection in the strict schema 8 envelope. */
 export const formatMoldeaCliJsonInspectResult = (
   result: IMoldeaCliInspectResult,
   cliVersion: string,
@@ -229,7 +228,7 @@ export const formatMoldeaCliHumanScopeResult = (result: IMoldeaCliScopeResult): 
   return `${lines.join('\n')}\n`;
 };
 
-/** Formats one changed-path scope result in the strict schema 7 envelope. */
+/** Formats one changed-path scope result in the strict schema 8 envelope. */
 export const formatMoldeaCliJsonScopeResult = (
   result: IMoldeaCliScopeResult,
   cliVersion: string,
@@ -259,7 +258,7 @@ export const formatMoldeaCliHumanContentResult = (result: IMoldeaCliContentResul
   return `${lines.join('\n')}\n`;
 };
 
-/** Formats one explicit canonical content chunk in the strict schema 7 envelope. */
+/** Formats one explicit canonical content chunk in the strict schema 8 envelope. */
 export const formatMoldeaCliJsonContentResult = (
   result: IMoldeaCliContentResult,
   cliVersion: string,

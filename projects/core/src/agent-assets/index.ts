@@ -17,9 +17,6 @@ import type { IAgentManifestEntry, IMoldeaManifestV1 } from '../format/index.js'
 import { createCoreOperationOptionsSnapshot, type ICoreOptionsSnapshot } from '../options/index.js';
 import type { IRepositoryInspectionReader } from '../repository-inspection-session/index.js';
 import { readRepositoryTextAsset } from '../repository-text/index.js';
-import { validateRuntimePlaceholders } from '../runtime-placeholder-validation/index.js';
-
-const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
 
 // internal agent assets retained even when later validation is still required
 export interface IInspectedAgentAssets {
@@ -27,7 +24,6 @@ export interface IInspectedAgentAssets {
   readonly declaration: IAgentManifestEntry;
   readonly description: IIndexedDescriptionAsset | null;
   readonly instruction: IIndexedTextAsset | null;
-  readonly handoffDescription: IIndexedDescriptionAsset | null;
 }
 
 // internal reconciliation result retained for final project indexing
@@ -65,12 +61,11 @@ const isBlockedPath = (path: IRepositoryPath, blockedPaths: ReadonlySet<string>)
   return false;
 };
 
-/** Reads and validates a required or optional description asset. */
+/** Reads and validates the required description asset. */
 const readDescription = async (
   repository: IRepositoryInspectionReader,
   path: IRepositoryPath,
   agentId: string,
-  kind: 'description' | 'handoff-description',
   options: ICoreOptionsSnapshot,
   collector: ICoreDiagnosticCollector,
   signal?: AbortSignal,
@@ -82,7 +77,7 @@ const readDescription = async (
     return null;
   }
 
-  const validation = validateAgentDescription(readResult.asset, agentId, kind, options.limits);
+  const validation = validateAgentDescription(readResult.asset, agentId, options.limits);
   addDiagnostics(collector, validation.diagnostics);
 
   return validation.description;
@@ -93,7 +88,6 @@ const readInstruction = async (
   repository: IRepositoryInspectionReader,
   path: IRepositoryPath,
   agentId: string,
-  declaration: IAgentManifestEntry,
   options: ICoreOptionsSnapshot,
   collector: ICoreDiagnosticCollector,
   signal?: AbortSignal,
@@ -107,19 +101,6 @@ const readInstruction = async (
 
   const validation = validateAgentInstruction(readResult.asset, agentId, options.limits);
   addDiagnostics(collector, validation.diagnostics);
-
-  if (validation.instruction !== null) {
-    addDiagnostics(
-      collector,
-      validateRuntimePlaceholders(
-        MANIFEST_PATH,
-        agentId,
-        validation.instruction,
-        declaration.variables ?? {},
-        options.limits,
-      ),
-    );
-  }
 
   return validation.instruction;
 };
@@ -196,7 +177,6 @@ export const inspectAgentAssets = async (
       agents.push({
         declaration,
         description: null,
-        handoffDescription: null,
         id: agentId,
         instruction: null,
       });
@@ -205,7 +185,6 @@ export const inspectAgentAssets = async (
 
     let description: IIndexedDescriptionAsset | null = null;
     let instruction: IIndexedTextAsset | null = null;
-    let handoffDescription: IIndexedDescriptionAsset | null = null;
 
     if (discovered.description === null) {
       const path = parseRepositoryPath(`${discovered.path}/description.md`);
@@ -221,7 +200,6 @@ export const inspectAgentAssets = async (
         repository,
         discovered.description,
         agentId,
-        'description',
         options,
         collector,
         signal,
@@ -242,19 +220,6 @@ export const inspectAgentAssets = async (
         repository,
         discovered.instruction,
         agentId,
-        declaration,
-        options,
-        collector,
-        signal,
-      );
-    }
-
-    if (discovered.handoffDescription !== null) {
-      handoffDescription = await readDescription(
-        repository,
-        discovered.handoffDescription,
-        agentId,
-        'handoff-description',
         options,
         collector,
         signal,
@@ -264,7 +229,6 @@ export const inspectAgentAssets = async (
     agents.push({
       declaration,
       description,
-      handoffDescription,
       id: agentId,
       instruction,
     });

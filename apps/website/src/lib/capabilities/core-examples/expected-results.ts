@@ -583,36 +583,6 @@ export const CORE_EXPECTED_RESULTS: Record<
       },
     ],
   },
-  'runtime-invalid-id': {
-    valid: false,
-    diagnostics: [
-      {
-        code: 'MOLDEA_RUNTIME_ID_INVALID',
-        group: 'agents',
-        details: {},
-        entity: {
-          agentId: 'support',
-        },
-        message: 'The runtime ID is invalid.',
-        path: '/moldea/moldea.yaml',
-        pointer: '/agents/support/runtime/id',
-        range: {
-          end: {
-            column: 17,
-            line: 5,
-            offset: 59,
-          },
-          start: {
-            column: 11,
-            line: 5,
-            offset: 53,
-          },
-        },
-        severity: 'error',
-        source: 'core',
-      },
-    ],
-  },
   'agent-context-present': {
     valid: true,
     diagnostics: [],
@@ -650,8 +620,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/context/0',
         range: {
-          end: { column: 41, line: 9, offset: 179 },
-          start: { column: 15, line: 9, offset: 153 },
+          end: { column: 41, line: 4, offset: 70 },
+          start: { column: 15, line: 4, offset: 44 },
         },
         severity: 'error',
         source: 'core',
@@ -785,7 +755,7 @@ export const CORE_EXPECTED_RESULTS: Record<
         code: 'MOLDEA_AGENT_DESCRIPTION_INVALID',
         group: 'agents',
         details: {
-          reason: 'runtime-variable-delimiter',
+          reason: 'empty',
         },
         entity: {
           agentId: 'support',
@@ -794,146 +764,6 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/agents/support/description.md',
         pointer: null,
         range: null,
-        severity: 'error',
-        source: 'core',
-      },
-    ],
-  },
-  'handoff-description-invalid': {
-    valid: false,
-    diagnostics: [
-      {
-        code: 'MOLDEA_AGENT_HANDOFF_DESCRIPTION_INVALID',
-        group: 'agents',
-        details: {
-          reason: 'empty',
-        },
-        entity: {
-          agentId: 'support',
-        },
-        message: 'The agent handoff description is invalid.',
-        path: '/moldea/agents/support/handoff-description.md',
-        pointer: null,
-        range: null,
-        severity: 'error',
-        source: 'core',
-      },
-    ],
-  },
-  'variable-undeclared': {
-    valid: false,
-    diagnostics: [
-      {
-        code: 'MOLDEA_VARIABLE_UNDECLARED',
-        group: 'agents',
-        details: {
-          occurrences: 1,
-        },
-        entity: {
-          agentId: 'support',
-          variableId: 'ORDER_ID',
-        },
-        message: 'The agent instruction references an undeclared runtime variable.',
-        path: '/moldea/agents/support/instruction.md',
-        pointer: null,
-        range: {
-          end: {
-            column: 45,
-            line: 4,
-            offset: 116,
-          },
-          start: {
-            column: 33,
-            line: 4,
-            offset: 104,
-          },
-        },
-        severity: 'error',
-        source: 'core',
-      },
-    ],
-  },
-  'variable-unused': {
-    valid: false,
-    diagnostics: [
-      {
-        code: 'MOLDEA_VARIABLE_UNUSED',
-        group: 'agents',
-        details: {},
-        entity: {
-          agentId: 'support',
-          variableId: 'REGION',
-        },
-        message: 'The declared runtime variable is unused by the agent instruction.',
-        path: '/moldea/moldea.yaml',
-        pointer: '/agents/support/variables/REGION',
-        range: {
-          start: { column: 7, line: 7, offset: 81 },
-          end: { column: 1, line: 9, offset: 139 },
-        },
-        severity: 'error',
-        source: 'core',
-      },
-    ],
-  },
-  'variable-malformed': {
-    valid: false,
-    diagnostics: [
-      {
-        code: 'MOLDEA_VARIABLE_PLACEHOLDER_MALFORMED',
-        group: 'agents',
-        details: {
-          reason: 'unmatched-opening',
-        },
-        entity: {
-          agentId: 'support',
-        },
-        message: 'The agent instruction contains a malformed runtime-variable placeholder.',
-        path: '/moldea/agents/support/instruction.md',
-        pointer: null,
-        range: {
-          end: {
-            column: 1,
-            line: 5,
-            offset: 93,
-          },
-          start: {
-            column: 9,
-            line: 4,
-            offset: 80,
-          },
-        },
-        severity: 'error',
-        source: 'core',
-      },
-    ],
-  },
-  'variable-provider-undeclared': {
-    valid: false,
-    diagnostics: [
-      {
-        code: 'MOLDEA_VARIABLE_PROVIDER_UNDECLARED',
-        group: 'agents',
-        details: {},
-        entity: {
-          agentId: 'support',
-          variableId: 'ORDER_ID',
-        },
-        message: 'A variable-provider binding exists for an undeclared variable.',
-        path: '/moldea/moldea.yaml',
-        pointer: '/agents/support/bindings/variableProviders/ORDER_ID',
-        range: {
-          end: {
-            column: 17,
-            line: 11,
-            offset: 194,
-          },
-          start: {
-            column: 9,
-            line: 11,
-            offset: 186,
-          },
-        },
         severity: 'error',
         source: 'core',
       },
@@ -955,16 +785,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/tools/returns/description',
         range: {
-          end: {
-            column: 65,
-            line: 12,
-            offset: 259,
-          },
-          start: {
-            column: 22,
-            line: 12,
-            offset: 216,
-          },
+          end: { column: 53, line: 7, offset: 138 },
+          start: { column: 22, line: 7, offset: 107 },
         },
         severity: 'error',
         source: 'core',
@@ -990,8 +812,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/tools/returns/implementation',
         range: {
-          start: { column: 9, line: 13, offset: 287 },
-          end: { column: 1, line: 15, offset: 335 },
+          start: { column: 9, line: 8, offset: 178 },
+          end: { column: 1, line: 10, offset: 226 },
         },
         severity: 'error',
         source: 'core',
@@ -1015,16 +837,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/skills/returns/description',
         range: {
-          end: {
-            column: 65,
-            line: 12,
-            offset: 260,
-          },
-          start: {
-            column: 22,
-            line: 12,
-            offset: 217,
-          },
+          end: { column: 53, line: 7, offset: 139 },
+          start: { column: 22, line: 7, offset: 108 },
         },
         severity: 'error',
         source: 'core',
@@ -1050,8 +864,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/skills/returns/implementation',
         range: {
-          start: { column: 9, line: 13, offset: 279 },
-          end: { column: 1, line: 15, offset: 327 },
+          start: { column: 9, line: 8, offset: 170 },
+          end: { column: 1, line: 10, offset: 218 },
         },
         severity: 'error',
         source: 'core',
@@ -1075,8 +889,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/tools/returns/description',
         range: {
-          start: { column: 7, line: 10, offset: 156 },
-          end: { column: 1, line: 14, offset: 251 },
+          start: { column: 7, line: 5, offset: 47 },
+          end: { column: 1, line: 9, offset: 142 },
         },
         severity: 'error',
         source: 'core',
@@ -1103,8 +917,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/mirrors/0',
         range: {
-          end: { column: 33, line: 10, offset: 184 },
-          start: { column: 9, line: 10, offset: 160 },
+          end: { column: 33, line: 5, offset: 75 },
+          start: { column: 9, line: 5, offset: 51 },
         },
         severity: 'error',
         source: 'core',
@@ -1127,8 +941,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/mirrors/0',
         range: {
-          end: { column: 33, line: 10, offset: 184 },
-          start: { column: 9, line: 10, offset: 160 },
+          end: { column: 33, line: 5, offset: 75 },
+          start: { column: 9, line: 5, offset: 51 },
         },
         severity: 'error',
         source: 'core',
@@ -1152,8 +966,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/mirrors/0',
         range: {
-          end: { column: 33, line: 10, offset: 184 },
-          start: { column: 9, line: 10, offset: 160 },
+          end: { column: 33, line: 5, offset: 75 },
+          start: { column: 9, line: 5, offset: 51 },
         },
         severity: 'error',
         source: 'core',
@@ -1174,16 +988,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/mirrors/0',
         range: {
-          end: {
-            column: 27,
-            line: 10,
-            offset: 178,
-          },
-          start: {
-            column: 9,
-            line: 10,
-            offset: 160,
-          },
+          end: { column: 27, line: 5, offset: 69 },
+          start: { column: 9, line: 5, offset: 51 },
         },
         severity: 'error',
         source: 'core',
@@ -1204,61 +1010,8 @@ export const CORE_EXPECTED_RESULTS: Record<
         path: '/moldea/moldea.yaml',
         pointer: '/agents/support/mirrors/1',
         range: {
-          end: {
-            column: 33,
-            line: 11,
-            offset: 217,
-          },
-          start: {
-            column: 9,
-            line: 11,
-            offset: 193,
-          },
-        },
-        severity: 'error',
-        source: 'core',
-      },
-    ],
-  },
-  'runtime-guidance-present': {
-    valid: true,
-    diagnostics: [],
-  },
-  'runtime-guidance-empty': {
-    valid: false,
-    diagnostics: [
-      {
-        code: 'MOLDEA_RUNTIME_GUIDANCE_EMPTY',
-        group: 'references',
-        details: {},
-        entity: null,
-        message: 'The runtime guidance is empty.',
-        path: '/moldea/runtimes/openai.md',
-        pointer: null,
-        range: null,
-        severity: 'error',
-        source: 'core',
-      },
-    ],
-  },
-  'runtime-guidance-missing': {
-    valid: false,
-    diagnostics: [
-      {
-        code: 'MOLDEA_RUNTIME_GUIDANCE_MISSING',
-        group: 'references',
-        details: {
-          referencedPath: '/moldea/runtimes/openai.md',
-        },
-        entity: {
-          agentId: 'support',
-        },
-        message: 'The referenced runtime guidance does not exist.',
-        path: '/moldea/moldea.yaml',
-        pointer: '/agents/support/runtime/guidance',
-        range: {
-          start: { column: 7, line: 6, offset: 66 },
-          end: { column: 43, line: 6, offset: 102 },
+          end: { column: 33, line: 6, offset: 108 },
+          start: { column: 9, line: 6, offset: 84 },
         },
         severity: 'error',
         source: 'core',

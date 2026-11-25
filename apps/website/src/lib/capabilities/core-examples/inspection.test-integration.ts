@@ -71,7 +71,7 @@ test('keeps Unicode-safe content and operational refusal distinct from a failed 
   expect(examples.find(({ id }) => id === 'manifest-change-relevance')?.result).toMatchObject({
     kind: 'inspection',
     facts: {
-      counts: { declarations: 3, inputPaths: 3, matchedOwners: 2, matchedPaths: 2, matches: 4 },
+      counts: { declarations: 2, inputPaths: 3, matchedOwners: 1, matchedPaths: 2, matches: 3 },
     },
   });
 });

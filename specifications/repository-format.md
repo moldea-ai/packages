@@ -14,7 +14,7 @@ The repository format follows one central rule:
 
 **Derive what can be derived from the repository. Declare only the project semantics and relationships that cannot be determined reliably.**
 
-The format does not define Cloud environment mappings, billing, GitHub permissions, REST routes, Assurance model prompts, runtime-version compatibility, or other hosted-platform configuration. Those are governed by the main project specification and their dedicated companion specifications.
+The format does not define Cloud environment mappings, billing, GitHub permissions, REST routes, Assurance model prompts, SDK compatibility, or other hosted-platform configuration. Those are governed by the main project specification and their dedicated companion specifications.
 
 ## Core principles
 
@@ -27,7 +27,7 @@ A conforming `moldea` repository follows these principles:
 - `/moldea/moldea.yaml` records semantic relationships rather than duplicating discoverable repository facts.
 - Every registered agent has a concise mandatory description, and complete agent instructions remain directly readable Markdown files.
 - Registered tools and skills are independently optional, but every registered capability has explicit concise metadata and model-facing instruction guidance.
-- Project context, runtime guidance, decisions, instructions, capability descriptions, code bindings, mirrors, and unresolved requirements remain explicit and inspectable.
+- Project context, decisions, instructions, capability descriptions, code bindings, and mirrors remain explicit and inspectable.
 - The format describes the project as it is implemented. It does not judge whether runtime usage follows recommended practices.
 - Local tooling may inspect the current Git working-tree view defined by the active local source composition, while `moldea Cloud` considers committed Git content authoritative.
 - Structural validation is deterministic. Semantic ambiguity is handled by the `moldea` skill, `evaluate`, `reconcile`, or PR Assurance rather than being hidden behind guesses.
@@ -73,30 +73,9 @@ An **impact path** is an exact path or simple glob under `affectedBy` naming rep
 
 An impact-path match means the affected asset should enter relevance analysis. It does not mean the asset must necessarily be changed.
 
-### Runtime guidance
-
-**Runtime guidance** is optional project-local Markdown under `/moldea/runtimes/**` that explains how the `moldea` project's agent runtime integration is implemented, wrapped, extended, or otherwise structured. In colocated mode that implementation is normally in the same repository; in dedicated-repository mode the guidance may describe the developer-identified related application implementation without creating a cross-repository manifest relationship.
-
 ### Agent description
 
 An **agent description** is the mandatory concise, vendor-independent, model-facing summary in `/moldea/agents/{agent-id}/description.md` explaining what the agent is and what it does.
-
-### Handoff description
-
-A **handoff description** is the optional concise, vendor-independent routing hint in `/moldea/agents/{agent-id}/handoff-description.md` explaining when another model, agent, workflow, or router should transfer work to the agent.
-
-### Effective routing description
-
-The **effective routing description** is the deterministic target-owned model-facing value used for runtime metadata whose semantic purpose is to help a model, agent, router, or workflow decide whether work should be routed, delegated, or handed off to the target agent.
-
-For one registered agent, the effective routing description is:
-
-1. the effective value of `/moldea/agents/{agent-id}/handoff-description.md` when that file is present
-2. otherwise, the effective value of the mandatory `/moldea/agents/{agent-id}/description.md`
-
-The fallback applies only when `handoff-description.md` is absent. A present but structurally invalid handoff description does not fall back to `description.md`; the repository remains invalid under the applicable structural rule.
-
-The semantic purpose of runtime metadata determines this mapping, not the runtime property's name. A runtime property named `description` is routing-facing when the runtime exposes it to help select, route to, delegate to, or hand off to the agent. When one runtime property serves both general agent description and routing selection, it is routing-facing for this rule.
 
 ### Capability description
 
@@ -105,10 +84,6 @@ A **capability description** is the required concise, vendor-independent, model-
 ### Mirror
 
 A **mirror** is a Git-tracked derived copy of one canonical agent instruction at another repository path required by a runtime or integration. Its equality is defined by the version `1` normalized-text comparison rules below.
-
-### Unresolved requirement
-
-An **unresolved requirement** is explicit project state describing missing or uncertain information or functionality that materially affects current project truth or declared agent behavior.
 
 ## Repository structure
 
@@ -146,7 +121,6 @@ moldea/
     customer-support/
       description.md
       instruction.md
-      handoff-description.md
 ```
 
 The recognized version `1` canonical locations are:
@@ -155,12 +129,10 @@ The recognized version `1` canonical locations are:
 - `/moldea/project.md`
 - `/moldea/context/**/*.md`
 - `/moldea/decisions/*.md`
-- `/moldea/runtimes/**/*.md`
 - `/moldea/agents/{agent-id}/description.md`
 - `/moldea/agents/{agent-id}/instruction.md`
-- `/moldea/agents/{agent-id}/handoff-description.md`
 
-`context/`, `decisions/`, `runtimes/`, and `agents/` are optional and should not be created until needed.
+`context/`, `decisions/`, and `agents/` are optional and should not be created until needed.
 
 Files under `/moldea/**` that do not match a recognized canonical location are invalid in version `1`. This keeps Cloud indexing, validation, portability, and agent discovery deterministic.
 
@@ -250,7 +222,6 @@ The following must not be symlinks:
 
 - canonical assets under `/moldea/**`
 - manifest-bound files
-- runtime-guidance files referenced by agents
 - mirror files
 
 A path resolution that encounters a symlink is invalid rather than being followed implicitly.
@@ -296,7 +267,7 @@ An `affectedBy` entry without `*` is an exact path and must resolve to an existi
 
 `moldea` IDs are short, portable, machine-readable slugs.
 
-Agent IDs, tool IDs, skill IDs, and unresolved-requirement IDs must:
+Agent, tool, and skill IDs must:
 
 - contain 1 to 64 ASCII characters
 - use lowercase letters, digits, and single hyphens only
@@ -312,9 +283,7 @@ Version `1` reserves exactly these stable IDs because they are unsafe as case-in
 
 Agent IDs are unique within the project.
 
-Tool, skill, and agent-level unresolved-requirement IDs are unique within their owning agent. The same capability ID may be used by different agents.
-
-Project-level unresolved-requirement IDs are unique within the project-level unresolved-requirement scope.
+Tool and skill IDs are unique within their owning agent. The same capability ID may be used by different agents.
 
 Changing an agent ID is a breaking change because the ID participates in paths, SDK and REST lookup, history, bindings, handoffs, findings, and other integrations.
 
@@ -350,7 +319,6 @@ The only version `1` top-level properties are:
 version: 1
 context: {}
 decisions: {}
-unresolved: {}
 agents: {}
 acceptedWarnings: []
 ```
@@ -367,103 +335,77 @@ version: 1
 
 The paths below are the complete version `1` property surface. Braced segments identify mapping keys owned by the repository. `[]` identifies one array entry. Container properties are listed alongside their nested properties so readers can distinguish a mapping, sequence, or object from its contents.
 
-| Property path                                                         | Required         | Type           | Purpose and constraints                                                                                    |
-| --------------------------------------------------------------------- | ---------------- | -------------- | ---------------------------------------------------------------------------------------------------------- |
-| `version`                                                             | yes              | integer        | Selects the repository-format major version. The only version `1` value is `1`.                            |
-| `context`                                                             | no               | mapping        | Declares relationships for discovered focused-context files. Keys are canonical context paths.             |
-| `context.{context-path}.bindings`                                     | no               | sequence       | Connects the context asset to existing implementation artifacts. Entries are unique repository references. |
-| `context.{context-path}.bindings[].path`                              | yes per entry    | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `context.{context-path}.bindings[].symbol`                            | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `context.{context-path}.affectedBy`                                   | no               | sequence       | Unique exact paths or simple globs that can affect the context asset.                                      |
-| `context.{context-path}.affectedBy[]`                                 | yes per entry    | string         | One valid impact path.                                                                                     |
-| `decisions`                                                           | no               | mapping        | Declares relationships for discovered decision records. Keys are canonical decision paths.                 |
-| `decisions.{decision-path}.bindings`                                  | no               | sequence       | Connects the decision to existing implementation artifacts. Entries are unique repository references.      |
-| `decisions.{decision-path}.bindings[].path`                           | yes per entry    | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `decisions.{decision-path}.bindings[].symbol`                         | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `decisions.{decision-path}.affectedBy`                                | no               | sequence       | Unique exact paths or simple globs that can affect the decision.                                           |
-| `decisions.{decision-path}.affectedBy[]`                              | yes per entry    | string         | One valid impact path.                                                                                     |
-| `unresolved`                                                          | no               | mapping        | Declares project-level unresolved requirements keyed by stable requirement ID.                             |
-| `unresolved.{requirement-id}.category`                                | yes              | string         | Category slug satisfying the stable-ID lexical and length rules.                                           |
-| `unresolved.{requirement-id}.effect`                                  | yes              | string         | One of `blocking`, `warning`, or `informational`.                                                          |
-| `unresolved.{requirement-id}.description`                             | yes              | string         | Concise current-state description of the unresolved requirement.                                           |
-| `unresolved.{requirement-id}.resolution`                              | yes              | string         | Concrete condition or work needed to resolve the requirement.                                              |
-| `unresolved.{requirement-id}.related`                                 | no               | sequence       | Unique repository references that add traceability.                                                        |
-| `unresolved.{requirement-id}.related[].path`                          | yes per entry    | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `unresolved.{requirement-id}.related[].symbol`                        | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `unresolved.{requirement-id}.reference`                               | no               | string         | Single-line non-empty external or project-local tracking reference.                                        |
-| `agents`                                                              | no               | mapping        | Registers agents keyed by stable agent ID.                                                                 |
-| `agents.{agent-id}.runtime`                                           | yes              | mapping        | Declares the agent's runtime integration.                                                                  |
-| `agents.{agent-id}.runtime.id`                                        | yes              | string         | Recognized runtime label or `custom`.                                                                      |
-| `agents.{agent-id}.runtime.guidance`                                  | no               | string         | Optional canonical runtime-guidance path for any runtime, including `custom`.                              |
-| `agents.{agent-id}.context`                                           | no               | sequence       | Unique canonical context paths relevant to the agent.                                                      |
-| `agents.{agent-id}.context[]`                                         | yes per entry    | string         | One discovered canonical context path.                                                                     |
-| `agents.{agent-id}.decisions`                                         | no               | sequence       | Unique canonical decision paths relevant to the agent.                                                     |
-| `agents.{agent-id}.decisions[]`                                       | yes per entry    | string         | One discovered canonical decision path.                                                                    |
-| `agents.{agent-id}.variables`                                         | no               | mapping        | Declares runtime variables keyed by their exact placeholder name.                                          |
-| `agents.{agent-id}.variables.{variable-name}.description`             | yes              | string         | Concise single-line explanation of the runtime value.                                                      |
-| `agents.{agent-id}.bindings`                                          | no               | mapping        | Connects agent semantics to executable runtime artifacts.                                                  |
-| `agents.{agent-id}.bindings.runtimeAgent`                             | no               | mapping        | References the executable runtime-agent definition.                                                        |
-| `agents.{agent-id}.bindings.runtimeAgent.path`                        | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.bindings.runtimeAgent.symbol`                      | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.bindings.inputSchema`                              | no               | mapping        | References the executable input schema.                                                                    |
-| `agents.{agent-id}.bindings.inputSchema.path`                         | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.bindings.inputSchema.symbol`                       | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.bindings.outputSchema`                             | no               | mapping        | References the executable output schema.                                                                   |
-| `agents.{agent-id}.bindings.outputSchema.path`                        | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.bindings.outputSchema.symbol`                      | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.bindings.instructionLoader`                        | no               | mapping        | References the implementation that loads the canonical instruction.                                        |
-| `agents.{agent-id}.bindings.instructionLoader.path`                   | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.bindings.instructionLoader.symbol`                 | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.bindings.variableProviders`                        | no               | mapping        | References runtime-value providers keyed by declared variable name.                                        |
-| `agents.{agent-id}.bindings.variableProviders.{variable-name}.path`   | yes per entry    | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.bindings.variableProviders.{variable-name}.symbol` | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.tools`                                             | no               | mapping        | Registers tools keyed by stable capability ID.                                                             |
-| `agents.{agent-id}.tools.{tool-id}.name`                              | yes              | string         | Exact runtime-facing tool name.                                                                            |
-| `agents.{agent-id}.tools.{tool-id}.description`                       | yes              | string         | Concise model-facing description of what the tool does and when to use it.                                 |
-| `agents.{agent-id}.tools.{tool-id}.implementation`                    | yes              | mapping        | References the tool implementation.                                                                        |
-| `agents.{agent-id}.tools.{tool-id}.implementation.path`               | yes              | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.tools.{tool-id}.implementation.symbol`             | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.tools.{tool-id}.registration`                      | no               | mapping        | References runtime registration or wiring.                                                                 |
-| `agents.{agent-id}.tools.{tool-id}.registration.path`                 | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.tools.{tool-id}.registration.symbol`               | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.tools.{tool-id}.inputSchema`                       | no               | mapping        | References the executable tool-input schema.                                                               |
-| `agents.{agent-id}.tools.{tool-id}.inputSchema.path`                  | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.tools.{tool-id}.inputSchema.symbol`                | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.tools.{tool-id}.outputSchema`                      | no               | mapping        | References the executable tool-output schema.                                                              |
-| `agents.{agent-id}.tools.{tool-id}.outputSchema.path`                 | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.tools.{tool-id}.outputSchema.symbol`               | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.tools.{tool-id}.affectedBy`                        | no               | sequence       | Unique exact paths or simple globs that can affect the tool.                                               |
-| `agents.{agent-id}.tools.{tool-id}.affectedBy[]`                      | yes per entry    | string         | One valid impact path.                                                                                     |
-| `agents.{agent-id}.skills`                                            | no               | mapping        | Registers skills keyed by stable capability ID.                                                            |
-| `agents.{agent-id}.skills.{skill-id}.name`                            | yes              | string         | Exact runtime-facing skill name.                                                                           |
-| `agents.{agent-id}.skills.{skill-id}.description`                     | yes              | string         | Concise model-facing description of what the skill does and when to use it.                                |
-| `agents.{agent-id}.skills.{skill-id}.implementation`                  | yes              | mapping        | References the skill's canonical implementation entry.                                                     |
-| `agents.{agent-id}.skills.{skill-id}.implementation.path`             | yes              | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.skills.{skill-id}.implementation.symbol`           | no               | string         | Single-line non-empty symbol within the referenced file when applicable.                                   |
-| `agents.{agent-id}.skills.{skill-id}.registration`                    | no               | mapping        | References runtime registration or wiring.                                                                 |
-| `agents.{agent-id}.skills.{skill-id}.registration.path`               | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.skills.{skill-id}.registration.symbol`             | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.skills.{skill-id}.affectedBy`                      | no               | sequence       | Unique exact paths or simple globs that can affect the skill.                                              |
-| `agents.{agent-id}.skills.{skill-id}.affectedBy[]`                    | yes per entry    | string         | One valid impact path.                                                                                     |
-| `agents.{agent-id}.affectedBy`                                        | no               | sequence       | Unique exact paths or simple globs that can affect the agent.                                              |
-| `agents.{agent-id}.affectedBy[]`                                      | yes per entry    | string         | One valid impact path.                                                                                     |
-| `agents.{agent-id}.mirrors`                                           | no               | sequence       | Unique repository-root-absolute paths to Git-tracked instruction mirrors.                                  |
-| `agents.{agent-id}.mirrors[]`                                         | yes per entry    | string         | One declared mirror path.                                                                                  |
-| `agents.{agent-id}.unresolved`                                        | no               | mapping        | Declares agent-level unresolved requirements keyed by stable requirement ID.                               |
-| `agents.{agent-id}.unresolved.{requirement-id}.category`              | yes              | string         | Category slug satisfying the stable-ID lexical and length rules.                                           |
-| `agents.{agent-id}.unresolved.{requirement-id}.effect`                | yes              | string         | One of `blocking`, `warning`, or `informational`.                                                          |
-| `agents.{agent-id}.unresolved.{requirement-id}.description`           | yes              | string         | Concise current-state description of the unresolved requirement.                                           |
-| `agents.{agent-id}.unresolved.{requirement-id}.resolution`            | yes              | string         | Concrete condition or work needed to resolve the requirement.                                              |
-| `agents.{agent-id}.unresolved.{requirement-id}.related`               | no               | sequence       | Unique repository references that add traceability.                                                        |
-| `agents.{agent-id}.unresolved.{requirement-id}.related[].path`        | yes per entry    | string         | Repository-root-absolute path to an existing regular file.                                                 |
-| `agents.{agent-id}.unresolved.{requirement-id}.related[].symbol`      | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
-| `agents.{agent-id}.unresolved.{requirement-id}.reference`             | no               | string         | Single-line non-empty external or project-local tracking reference.                                        |
-| `acceptedWarnings`                                                    | no               | sequence       | Explicit warning acceptances with code, subject, optional qualifier, and a required reason.                |
-| `acceptedWarnings[]`                                                  | yes per entry    | mapping        | One closed warning acceptance, unique by code, subject, and normalized qualifier.                          |
-| `acceptedWarnings[].code`                                             | yes per entry    | string         | One code from Core's acceptable-warning list.                                                              |
-| `acceptedWarnings[].subject`                                          | yes per entry    | string         | Repository-root-absolute logical path identifying the warning subject.                                     |
-| `acceptedWarnings[].qualifier`                                        | no               | string or null | Non-empty single-line qualifier containing non-whitespace; omission and null identify the same warning.    |
-| `acceptedWarnings[].reason`                                           | yes per entry    | string         | Non-whitespace reason containing at most 256 Unicode scalar values.                                        |
+| Property path                                               | Required         | Type           | Purpose and constraints                                                                                    |
+| ----------------------------------------------------------- | ---------------- | -------------- | ---------------------------------------------------------------------------------------------------------- |
+| `version`                                                   | yes              | integer        | Selects the repository-format major version. The only version `1` value is `1`.                            |
+| `context`                                                   | no               | mapping        | Declares relationships for discovered focused-context files. Keys are canonical context paths.             |
+| `context.{context-path}.bindings`                           | no               | sequence       | Connects the context asset to existing implementation artifacts. Entries are unique repository references. |
+| `context.{context-path}.bindings[].path`                    | yes per entry    | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `context.{context-path}.bindings[].symbol`                  | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `context.{context-path}.affectedBy`                         | no               | sequence       | Unique exact paths or simple globs that can affect the context asset.                                      |
+| `context.{context-path}.affectedBy[]`                       | yes per entry    | string         | One valid impact path.                                                                                     |
+| `decisions`                                                 | no               | mapping        | Declares relationships for discovered decision records. Keys are canonical decision paths.                 |
+| `decisions.{decision-path}.bindings`                        | no               | sequence       | Connects the decision to existing implementation artifacts. Entries are unique repository references.      |
+| `decisions.{decision-path}.bindings[].path`                 | yes per entry    | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `decisions.{decision-path}.bindings[].symbol`               | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `decisions.{decision-path}.affectedBy`                      | no               | sequence       | Unique exact paths or simple globs that can affect the decision.                                           |
+| `decisions.{decision-path}.affectedBy[]`                    | yes per entry    | string         | One valid impact path.                                                                                     |
+| `agents`                                                    | no               | mapping        | Registers agents keyed by stable agent ID.                                                                 |
+| `agents.{agent-id}.context`                                 | no               | sequence       | Unique canonical context paths relevant to the agent.                                                      |
+| `agents.{agent-id}.context[]`                               | yes per entry    | string         | One discovered canonical context path.                                                                     |
+| `agents.{agent-id}.decisions`                               | no               | sequence       | Unique canonical decision paths relevant to the agent.                                                     |
+| `agents.{agent-id}.decisions[]`                             | yes per entry    | string         | One discovered canonical decision path.                                                                    |
+| `agents.{agent-id}.bindings`                                | no               | mapping        | Connects agent semantics to executable runtime artifacts.                                                  |
+| `agents.{agent-id}.bindings.runtimeAgent`                   | no               | mapping        | References the executable runtime-agent definition.                                                        |
+| `agents.{agent-id}.bindings.runtimeAgent.path`              | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `agents.{agent-id}.bindings.runtimeAgent.symbol`            | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `agents.{agent-id}.bindings.inputSchema`                    | no               | mapping        | References the executable input schema.                                                                    |
+| `agents.{agent-id}.bindings.inputSchema.path`               | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `agents.{agent-id}.bindings.inputSchema.symbol`             | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `agents.{agent-id}.bindings.outputSchema`                   | no               | mapping        | References the executable output schema.                                                                   |
+| `agents.{agent-id}.bindings.outputSchema.path`              | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `agents.{agent-id}.bindings.outputSchema.symbol`            | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `agents.{agent-id}.bindings.instructionLoader`              | no               | mapping        | References the implementation that loads the canonical instruction.                                        |
+| `agents.{agent-id}.bindings.instructionLoader.path`         | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `agents.{agent-id}.bindings.instructionLoader.symbol`       | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `agents.{agent-id}.tools`                                   | no               | mapping        | Registers tools keyed by stable capability ID.                                                             |
+| `agents.{agent-id}.tools.{tool-id}.name`                    | yes              | string         | Exact runtime-facing tool name.                                                                            |
+| `agents.{agent-id}.tools.{tool-id}.description`             | yes              | string         | Concise model-facing description of what the tool does and when to use it.                                 |
+| `agents.{agent-id}.tools.{tool-id}.implementation`          | yes              | mapping        | References the tool implementation.                                                                        |
+| `agents.{agent-id}.tools.{tool-id}.implementation.path`     | yes              | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `agents.{agent-id}.tools.{tool-id}.implementation.symbol`   | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `agents.{agent-id}.tools.{tool-id}.registration`            | no               | mapping        | References runtime registration or wiring.                                                                 |
+| `agents.{agent-id}.tools.{tool-id}.registration.path`       | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `agents.{agent-id}.tools.{tool-id}.registration.symbol`     | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `agents.{agent-id}.tools.{tool-id}.inputSchema`             | no               | mapping        | References the executable tool-input schema.                                                               |
+| `agents.{agent-id}.tools.{tool-id}.inputSchema.path`        | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `agents.{agent-id}.tools.{tool-id}.inputSchema.symbol`      | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `agents.{agent-id}.tools.{tool-id}.outputSchema`            | no               | mapping        | References the executable tool-output schema.                                                              |
+| `agents.{agent-id}.tools.{tool-id}.outputSchema.path`       | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `agents.{agent-id}.tools.{tool-id}.outputSchema.symbol`     | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `agents.{agent-id}.tools.{tool-id}.affectedBy`              | no               | sequence       | Unique exact paths or simple globs that can affect the tool.                                               |
+| `agents.{agent-id}.tools.{tool-id}.affectedBy[]`            | yes per entry    | string         | One valid impact path.                                                                                     |
+| `agents.{agent-id}.skills`                                  | no               | mapping        | Registers skills keyed by stable capability ID.                                                            |
+| `agents.{agent-id}.skills.{skill-id}.name`                  | yes              | string         | Exact runtime-facing skill name.                                                                           |
+| `agents.{agent-id}.skills.{skill-id}.description`           | yes              | string         | Concise model-facing description of what the skill does and when to use it.                                |
+| `agents.{agent-id}.skills.{skill-id}.implementation`        | yes              | mapping        | References the skill's canonical implementation entry.                                                     |
+| `agents.{agent-id}.skills.{skill-id}.implementation.path`   | yes              | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `agents.{agent-id}.skills.{skill-id}.implementation.symbol` | no               | string         | Single-line non-empty symbol within the referenced file when applicable.                                   |
+| `agents.{agent-id}.skills.{skill-id}.registration`          | no               | mapping        | References runtime registration or wiring.                                                                 |
+| `agents.{agent-id}.skills.{skill-id}.registration.path`     | yes when present | string         | Repository-root-absolute path to an existing regular file.                                                 |
+| `agents.{agent-id}.skills.{skill-id}.registration.symbol`   | no               | string         | Single-line non-empty symbol within the referenced file.                                                   |
+| `agents.{agent-id}.skills.{skill-id}.affectedBy`            | no               | sequence       | Unique exact paths or simple globs that can affect the skill.                                              |
+| `agents.{agent-id}.skills.{skill-id}.affectedBy[]`          | yes per entry    | string         | One valid impact path.                                                                                     |
+| `agents.{agent-id}.affectedBy`                              | no               | sequence       | Unique exact paths or simple globs that can affect the agent.                                              |
+| `agents.{agent-id}.affectedBy[]`                            | yes per entry    | string         | One valid impact path.                                                                                     |
+| `agents.{agent-id}.mirrors`                                 | no               | sequence       | Unique repository-root-absolute paths to Git-tracked instruction mirrors.                                  |
+| `agents.{agent-id}.mirrors[]`                               | yes per entry    | string         | One declared mirror path.                                                                                  |
+| `acceptedWarnings`                                          | no               | sequence       | Explicit warning acceptances with code, subject, optional qualifier, and a required reason.                |
+| `acceptedWarnings[]`                                        | yes per entry    | mapping        | One closed warning acceptance, unique by code, subject, and normalized qualifier.                          |
+| `acceptedWarnings[].code`                                   | yes per entry    | string         | One code from Core's acceptable-warning list.                                                              |
+| `acceptedWarnings[].subject`                                | yes per entry    | string         | Repository-root-absolute logical path identifying the warning subject.                                     |
+| `acceptedWarnings[].qualifier`                              | no               | string or null | Non-empty single-line qualifier containing non-whitespace; omission and null identify the same warning.    |
+| `acceptedWarnings[].reason`                                 | yes per entry    | string         | Non-whitespace reason containing at most 256 Unicode scalar values.                                        |
 
 ## Manifest version
 
@@ -477,7 +419,7 @@ version: 1
 
 Version `1` is closed with respect to manifest property names, canonical locations, and the meanings of existing fields. Adding a manifest property, canonical location, or incompatible interpretation requires a new major format version.
 
-Clarifications, conformance fixtures, runtime-guidance changes, and additional runtime labels may remain within version `1` when they do not change repository syntax or the semantics of existing fields.
+Clarifications and conformance fixtures may remain within version `1` when they preserve its syntax and semantics.
 
 A conforming validator that does not support the declared version returns an explicit unsupported-version diagnostic and must not attempt best-effort interpretation.
 
@@ -632,46 +574,6 @@ At least one must be present.
 
 A manifest decision relationship may reference only an existing decision whose current status is `accepted`. Historical decisions remain visible without active relationships.
 
-## Runtime guidance
-
-Project-local runtime guidance lives under:
-
-```text
-/moldea/runtimes/**/*.md
-```
-
-Every runtime-guidance file must contain at least one non-whitespace Unicode character.
-
-Runtime guidance is optional. It records project-specific integration conventions that installed SDK types, explicit bindings, and implementation code do not explain sufficiently. In dedicated-repository mode, it may describe relevant conventions in the developer-identified related application repository even though that repository remains outside the canonical snapshot and cannot be referenced by manifest paths.
-
-Guidance may document project-specific facts such as:
-
-- where runtime agents are instantiated
-- internal wrappers around a runtime
-- how instructions are loaded
-- where tools or skills are registered
-- how schemas are represented
-- how handoffs are configured
-- how runtime variables are provided
-- generated runtime structures
-- unconventional runtime usage
-- repository-specific conventions relevant to alignment
-
-Runtime guidance must describe the project's actual implementation pattern rather than reproduce generic runtime documentation.
-
-Project-local runtime guidance provides explicit repository-specific semantics about how the customer's runtime is structured. `moldea` uses it together with manifest relationships and repository evidence to interpret project behavior, not to judge whether the implementation follows runtime-recommended practices.
-
-Runtime guidance:
-
-- may supplement the installed runtime SDK types and implementation evidence
-- may provide the primary project-specific interpretation for `custom`
-- may be shared by any number of agents
-- should be created per materially distinct runtime-integration pattern, not per agent by default
-- cannot override `moldea` repository-format, security, authorization, or Assurance rules
-- is never executable code
-
-Unreferenced runtime-guidance files are allowed.
-
 ## Agents
 
 An agent is registered by adding its stable ID under the manifest's `agents` mapping.
@@ -704,10 +606,10 @@ Every registered agent must have:
 It may also have:
 
 ```text
-/moldea/agents/{agent-id}/handoff-description.md
+
 ```
 
-The mandatory description, instruction, and optional handoff description are discovered by convention and are not redundantly declared in the manifest.
+The mandatory description and instruction are discovered by convention.
 
 Every immediate directory under `/moldea/agents/` must correspond to exactly one registered agent ID, and every registered agent must have the matching directory. Unregistered agent directories are invalid in version `1`.
 
@@ -715,13 +617,13 @@ Every immediate directory under `/moldea/agents/` must correspond to exactly one
 
 `description.md` is mandatory for every registered agent.
 
-It contains a concise, vendor-independent, model-facing description of what the agent is and what it does. It should identify the agent's primary responsibility and practical scope clearly enough to serve as generic agent metadata even when no handoff use case exists.
+It contains a concise, vendor-independent, model-facing description of the agent’s primary responsibility, practical scope, and when to route work to it.
 
-The description is not the complete instruction and is not a routing rule. It must not contain step-by-step behavior, detailed schemas, implementation details, provider-specific configuration, runtime variables, or other content that belongs in `instruction.md` or `handoff-description.md`.
+Put step-by-step behavior, detailed schemas, and other instructions in `instruction.md`.
 
 ### Description-value normalization and limits
 
-The effective value of `description.md` and, when present, `handoff-description.md` is determined independently for each file:
+The normalized value of `description.md` is determined as follows:
 
 1. decode the file as valid UTF-8
 2. remove one leading UTF-8 byte-order mark when present
@@ -734,8 +636,7 @@ The effective value must contain between 1 and 1,000 Unicode scalar values, incl
 Additional rules:
 
 - `moldea` writers should persist the effective value without leading or trailing Unicode whitespace.
-- Runtime-variable delimiters `{{` and `}}` are prohibited in both files.
-- Validation never silently truncates either value.
+- Validation never truncates the description.
 - The application must respect provider-specific limits in addition to the repository-format maximum. Core does not validate provider limits.
 - Exceeding the repository-format limit is an explicit deterministic validation failure.
 
@@ -762,21 +663,9 @@ You are the `customer-support` agent for Acme.
 Your purpose is to resolve customer-support requests within the rules and boundaries defined by this instruction.
 ```
 
-The instruction may contain purpose, project context, responsibilities, rules, input, output, schemas, tools, skills, handoff behavior, runtime variables, failure behavior, and other model-facing requirements.
+The instruction may contain purpose, project context, responsibilities, rules, input, output, schemas, tools, skills, handoff behavior, failure behavior, and other model-facing requirements.
 
 The instruction is complete and directly readable. It is not assembled from reusable `moldea` instruction fragments.
-
-### Handoff description
-
-`handoff-description.md` is optional.
-
-When present, it contains a concise, vendor-independent, model-facing routing hint describing when another model, agent, workflow, or router should transfer work to this agent. It describes routing conditions rather than generally summarizing what the agent does, and it does not duplicate the complete instruction.
-
-The file follows the common description-value normalization, 1,000-scalar-value maximum, no-truncation, and no-runtime-variable rules above.
-
-When the file is present and structurally valid, its effective value is the agent's effective routing description. When the file is absent, the effective value of the mandatory `description.md` is used as the effective routing description.
-
-This fallback does not make `description.md` a routing rule. The agent description remains general metadata explaining what the agent does and is used for routing-facing metadata only when no dedicated handoff description exists.
 
 ## Agent manifest shape
 
@@ -785,19 +674,11 @@ The following partial manifest illustrates the properties available to a registe
 ```yaml
 agents:
   customer-support:
-    runtime:
-      id: openai-agents-sdk
-      guidance: /moldea/runtimes/openai-agents-sdk-api.md
-
     context:
       - /moldea/context/customer-support.md
 
     decisions:
       - /moldea/decisions/1786050123456-support-boundaries.md
-
-    variables:
-      CURRENT_DATETIME:
-        description: Current UTC date and time.
 
     bindings:
       runtimeAgent:
@@ -812,11 +693,6 @@ agents:
       instructionLoader:
         path: /packages/agents/src/instructions.ts
         symbol: loadInstruction
-      variableProviders:
-        CURRENT_DATETIME:
-          path: /packages/agents/src/runtime-context.ts
-          symbol: getCurrentDatetime
-
     tools:
       find-order:
         name: find_order
@@ -841,47 +717,11 @@ agents:
 
     mirrors:
       - /apps/eve/instructions/customer-support.md
-
-    unresolved:
-      final-refund-policy:
-        category: policy
-        effect: blocking
-        description: The final refund-eligibility policy has not been defined.
-        resolution: Define the active refund policy in project context and update the instruction and implementation to match it.
 ```
 
-All agent properties except `runtime` are optional when they are not applicable. `runtime` is required for every registered agent. The `tools` and `skills` mappings are independently optional: an agent may define neither, either one, or both.
+Every agent property is optional. A registered agent with no manifest relationships uses an empty mapping, for example `customer-support: {}`. The `tools` and `skills` mappings are independently optional.
 
 When a tool or skill is registered, every field identified as required by its capability contract—including `name`, `description`, and `implementation`—must be present.
-
-When a material implementation relationship exists but cannot yet be registered because the implementation is unfinished, the gap is represented through an unresolved requirement rather than an invented binding.
-
-## Runtime declaration
-
-Every registered agent declares exactly one runtime label:
-
-```yaml
-runtime:
-  id: openai-agents-sdk
-```
-
-Runtime IDs satisfy the stable-ID lexical and length rules. Recognized labels are `amazon-bedrock`, `anthropic`, `cerebras`, `claude-agent-sdk`, `cloudflare-agents`, `cohere`, `convex-agent`, `cursor-sdk`, `deep-agents`, `eve`, `genkit`, `github-copilot-sdk`, `google-adk`, `google-genai`, `groq`, `hugging-face`, `ibm-watsonx-ai`, `langchain`, `langgraph`, `livekit-agents`, `mastra`, `microsoft-foundry`, `mistral`, `node-llama-cpp`, `ollama`, `openai`, `openai-agents-sdk`, `openai-codex`, `opencode-sdk`, `openrouter`, `pi-agent`, `strands-agents`, `tanstack-ai`, `vercel-ai-sdk`, `voltagent`, and `custom`. Core exports this list as `RECOGNIZED_RUNTIME_IDS`.
-
-Labels select guidance for the SDK the agent's code calls directly. When one SDK defines the agent and another carries the request, use the defining SDK's ID. Provider packages beneath a listed framework use that framework's label; OpenAI-compatible providers called through `openai` use `openai`. They do not certify a vendor, SDK version, runtime compatibility, or runtime behavior. Lower-level provider dependencies do not require additional declarations. Use `custom` for an integration without a suitable label or a composition without one primary boundary. A runtime ID outside the recognized list is invalid; Core never substitutes another label.
-
-The manifest does not duplicate runtime package versions, programming language, package-manager metadata, or lock information. The coding agent inspects the installed SDK's own type definitions, repository implementation, and real tests for those facts and for runtime wiring. Core applies identical universal file and export checks to every label.
-
-Optional project-local guidance names an existing regular Markdown file under `/moldea/runtimes/**`:
-
-```yaml
-runtime:
-  id: custom
-  guidance: /moldea/runtimes/internal-agent-runtime.md
-```
-
-In dedicated-repository mode, select the actual runtime label even when the implementation resides in the developer-identified related application repository. Core inspects only the supplied canonical repository snapshot. External implementation cannot create cross-repository bindings, references, impact paths, or mirrors in version `1`; its absence from that snapshot is not itself a runtime mismatch. Project-local guidance may preserve its relevant conventions.
-
-An agent cannot be structurally registered without a runtime ID. Resolve an unknown runtime choice before registering the agent rather than inventing a declaration.
 
 ## Agent context relationships
 
@@ -936,7 +776,7 @@ Repository-reference rules:
 
 A binding uses this shape where the manifest declares an implementation relationship, including agent bindings and capability implementation, registration, or schema fields. When a binding omits `symbol`, the entire file is the bound implementation artifact. Broad implementation relationships belong under `affectedBy` rather than in a binding.
 
-Unlike a general repository reference, a binding always identifies implementation outside the canonical `/moldea/**` tree. A binding path must therefore resolve to an existing regular repository file outside `/moldea/**`. Canonical `moldea` assets may still be used by repository-reference fields whose semantics explicitly permit them, such as an unresolved requirement's `related` references, but they cannot serve as implementation bindings.
+Unlike a general repository reference, a binding always identifies implementation outside the canonical `/moldea/**` tree. A binding path must therefore resolve to an existing regular repository file outside `/moldea/**`. Canonical `moldea` assets may still be used by repository-reference fields whose semantics explicitly permit them but they cannot serve as implementation bindings.
 
 A binding whose path is inside `/moldea/**` is structurally invalid.
 
@@ -948,7 +788,7 @@ Only a complete inventory can prove an export missing. CommonJS constructs and w
 
 Coverage records name checks performed, not runtime correctness. Each record contains `entity`, `relationship`, `path`, `symbol` (or `null`), `fileCheck: 'passed'`, and `exportCheck: 'passed' | 'failed' | 'not-checked'`. A `not-checked` record also contains `exportNotCheckedReason`: `no-symbol`, `unsupported-file-type`, `unresolved-exports`, `unparseable-source`, or `resource-limit`. Missing or non-regular files produce reference diagnostics without a successful-file coverage record.
 
-The relationship identifies one declared binding: `runtime-agent`, `instruction-loader`, `agent-input-schema`, `agent-output-schema`, `variable-provider`, `tool-implementation`, `tool-registration`, `tool-input-schema`, `tool-output-schema`, `skill-implementation`, `skill-registration`, `context-binding`, or `decision-binding`. Every declared binding, including context and decision bindings, participates. Repeated paths share one parsed inventory per operation.
+The relationship identifies one declared binding: `runtime-agent`, `instruction-loader`, `agent-input-schema`, `agent-output-schema`, `tool-implementation`, `tool-registration`, `tool-input-schema`, `tool-output-schema`, `skill-implementation`, `skill-registration`, `context-binding`, or `decision-binding`. Every declared binding, including context and decision bindings, participates. Repeated paths share one parsed inventory per operation.
 
 Validation and every inspection page expose `coverageCounts` containing `bindings`, `exportsPassed`, `exportsFailed`, and `exportsNotChecked`. Prepared inspection offers the bounded `coverage` view. `maxCoverage` defaults to 10,000 records. Coverage never claims that a runtime uses a loader, registers a capability, applies a schema, or behaves correctly. Those relationships require the coding agent's inspection and real application tests.
 
@@ -962,7 +802,6 @@ The supported agent-level `bindings` properties are:
 - `inputSchema`
 - `outputSchema`
 - `instructionLoader`
-- `variableProviders`
 
 `runtimeAgent` identifies the implementation file or exported symbol that constitutes, constructs, or performs the registered `moldea` agent's runtime execution boundary. The property name does not require the underlying SDK to expose an `Agent` class or another first-class agent object. For a direct-provider integration, the binding may therefore identify the function, factory, module, or other implementation artifact that performs the model invocation for that registered agent.
 
@@ -985,18 +824,11 @@ bindings:
   instructionLoader:
     path: /packages/agents/src/instructions.ts
     symbol: loadInstruction
-
-  variableProviders:
-    CURRENT_DATETIME:
-      path: /packages/agents/src/runtime-context.ts
-      symbol: getCurrentDatetime
 ```
 
-Each `variableProviders` key must be a declared runtime variable for that agent.
+A binding is required when a material implementation relationship has a qualifying artifact in the same repository and helps establish instruction-code alignment. In dedicated-repository mode, record relevant facts about the related application in focused context. Manifest bindings remain repository-local.
 
-A binding is required when the corresponding relationship is material, exists as a qualifying implementation artifact in the same repository, and materially helps establish instruction-code alignment. The open-source skill prefers explicit bindings for important runtime agents and executable input/output schemas because they materially improve deterministic indexing and Assurance precision. In dedicated-repository mode, an implementation relationship that is sufficiently established but exists only in a related application repository is not eligible for a version `1` binding and is not made unresolved merely because cross-repository bindings are prohibited; the skill may preserve the project-specific interpretation in runtime guidance and model-facing content while treating the missing deterministic cross-repository traceability as an intentional version `1` limitation.
-
-Missing or genuinely uncertain implementation must not be represented by a fake path or fake symbol. An unfinished material relationship is represented as an unresolved requirement.
+Use bindings only for existing implementation paths and symbols.
 
 ## Impact paths
 
@@ -1030,7 +862,6 @@ A capability description must:
 - contain no leading or trailing Unicode `White_Space` code point
 - contain no line-break character, including CR, LF, NEL, LINE SEPARATOR, or PARAGRAPH SEPARATOR
 - contain no NUL character
-- contain neither runtime-variable delimiter `{{` nor `}}`
 - remain vendor-independent and model-facing
 - never be silently truncated
 
@@ -1048,7 +879,7 @@ Tools are agent-scoped capability relationships. They are not project-global `mo
 
 A tool ID is unique only within its owning agent. Multiple agents may independently register the same underlying implementation and may use the same tool ID when appropriate.
 
-Version `1` registers only tools whose actual implementation is represented by an existing repository-local regular file. Provider-hosted, remotely implemented, or otherwise external capabilities without a repository-local implementation artifact are not represented as manifest `tools` entries in version `1`. In dedicated-repository mode, a tool implemented only in the related application repository is external to the canonical repository for this rule and therefore is not registered as a manifest tool there. Its model-facing use may still be described in the agent instruction and project-local runtime guidance, and relevant local registration or configuration code may be covered through agent bindings or `affectedBy` paths when such artifacts actually exist in the canonical repository.
+Version `1` registers only tools whose actual implementation is represented by an existing repository-local regular file. Provider-hosted, remotely implemented, or otherwise external capabilities without a repository-local implementation artifact are not represented as manifest `tools` entries in version `1`. In dedicated-repository mode, a tool implemented only in the related application repository is external to the canonical repository for this rule and therefore is not registered as a manifest tool there. Its model-facing use may still be described in the agent instruction and focused context, and relevant local registration or configuration code may be covered through agent bindings or `affectedBy` paths when such artifacts actually exist in the canonical repository.
 
 Example:
 
@@ -1099,11 +930,11 @@ Different tools within the same agent may have the same runtime-facing `name` wh
 
 When multiple agents use the same underlying tool implementation, each agent registers its own tool relationship. The implementation code itself does not need to be duplicated.
 
-A planned tool that does not exist yet must not use a fabricated `implementation` binding. The missing capability is represented as an unresolved requirement until the implementation exists.
+Register a tool once its implementation exists.
 
 ## Skills
 
-Skills are also agent-scoped capability relationships. Like tools, a version `1` manifest skill requires its implementation binding to identify a qualifying repository-local file. In dedicated-repository mode, a skill implemented only in the related application repository is therefore represented semantically through the instruction and runtime guidance rather than as a cross-repository manifest skill.
+Skills are also agent-scoped capability relationships. Like tools, a version `1` manifest skill requires its implementation binding to identify a qualifying repository-local file. In dedicated-repository mode, a skill implemented only in the related application repository is therefore represented semantically through the instruction and focused context rather than as a cross-repository manifest skill.
 
 A skill ID is unique only within its owning agent. Multiple agents may independently register the same underlying skill implementation.
 
@@ -1131,160 +962,19 @@ A skill supports:
 - `registration`: optional exact binding when registration is distinct
 - `affectedBy`: optional non-empty list of impact paths
 
-The exact runtime meaning of a skill is runtime-specific. `moldea` records the capability relationship and relies on runtime guidance, explicit bindings, implementation code, and real tests rather than imposing one universal skill runtime.
+The exact runtime meaning of a skill is runtime-specific. `moldea` records the capability relationship and relies on explicit bindings, implementation code, and real tests rather than imposing one universal skill runtime.
 
 The manifest description is authoritative for concise skill metadata. The implementation is authoritative for the skill content or executable behavior, and the instruction is authoritative for what the model is told. These surfaces must remain semantically aligned.
 
 Different skills within the same agent may have the same runtime-facing `name` when that reflects the actual implementation. If duplicate runtime names make instruction-to-code alignment ambiguous, `evaluate` or Assurance reports the ambiguity.
 
-A planned skill that does not yet exist is represented as an unresolved requirement rather than a fake binding.
+Register a skill once its implementation exists.
 
-## Runtime-native routing and handoffs
+## Agent routing
 
-Version `1` does not define a `handoffs` manifest property, stable handoff IDs, runtime handoff names, `targetAgent` references, or a canonical routing graph.
+Use the normalized value of the target agent's `description.md` for general model-facing agent metadata and for metadata used to select, delegate to, or route work to that agent. This also applies when one field serves both purposes.
 
-Routing and delegation remain native to the selected runtime and application implementation. The optional target-owned `handoff-description.md` provides portable model-facing routing guidance, but it does not declare which source agents may route to the target or how the runtime performs that routing.
-
-The effective routing description is the canonical derived value for runtime metadata whose semantic purpose is target selection, routing, delegation, or handoff. Runtime integrations, the skill, `evaluate`, `reconcile`, and PR Assurance classify runtime metadata according to its actual semantic role rather than its property name.
-
-When runtime metadata helps a model, agent, router, or workflow decide whether to select, route to, delegate to, or hand off to a target agent:
-
-- it uses the effective value of `handoff-description.md` when that file is present
-- it uses the effective value of `description.md` when `handoff-description.md` is absent
-- it does not fall back to `description.md` when a present handoff description is structurally invalid
-
-A runtime property named `description` follows this rule when the runtime uses that property for routing-facing target selection. A separate runtime property used only as general descriptive metadata continues to use `description.md`. When one runtime property serves both general description and routing selection, it uses the effective routing description.
-
-The absence of `handoff-description.md` is therefore not, by itself, missing routing metadata or routing misalignment. The mandatory `description.md` supplies the defined fallback.
-
-The skill and coding agent combine project-local runtime guidance, implementation code, installed SDK types, agent instructions, canonical descriptions, developer direction, and real application tests to create or maintain routing behavior. Core does not validate runtime-native handoff wiring or infer a routing graph.
-
-Because routing is not manifest-owned:
-
-- `handoffs` is an unknown agent property and is invalid in a version `1` manifest
-- Core performs no universal target-agent relationship validation
-- Core defines no handoff implementation binding or handoff capability ID
-- runtime-native routing changes may enter semantic relevance analysis through implementation bindings or `affectedBy` paths
-- `handoff-description.md` remains optional at the universal format level
-- applications must respect provider-specific routing metadata constraints and the effective-routing-description rule
-
-## Runtime variables
-
-Runtime variables are declared per agent.
-
-Example:
-
-```yaml
-variables:
-  CURRENT_DATETIME:
-    description: Current UTC date and time.
-
-  CUSTOMER_NAME:
-    description: Name of the current customer.
-```
-
-Variable IDs must:
-
-- match `^[A-Z][A-Z0-9_]*$`
-- contain at most 64 ASCII characters
-- use uppercase letters, digits, and underscores only
-
-Each variable value contains exactly one property:
-
-- `description`: required non-empty string describing what the runtime value represents
-
-Version `1` has no variable `required`, `optional`, `default`, `type`, or `sensitive` property.
-
-All declared runtime variables are required when resolving an instruction.
-
-### Placeholder grammar
-
-A valid runtime-variable placeholder is exactly `{{VARIABLE_ID}}`, where `VARIABLE_ID` satisfies the variable-ID rules above. Placeholder scanning applies to the complete normalized contents of `instruction.md`, including headings, inline code, fenced code blocks, examples, and other Markdown content.
-
-Version `1` has no placeholder escaping mechanism. Validation scans from left to right and applies these rules:
-
-- every occurrence of `{{` must begin a placeholder containing exactly one valid variable ID followed immediately by `}}`
-- an opening `{{` must not be immediately preceded by another `{`, and its closing `}}` must not be immediately followed by another `}`; triple-or-greater brace forms are invalid
-- every occurrence of `}}` must close the currently parsed valid placeholder; an unmatched closing delimiter is invalid
-- adjacent valid placeholders such as `{{FIRST}}{{SECOND}}` are allowed
-- whitespace, lowercase letters, hyphens, nested braces, missing delimiters, unmatched delimiters, or any other malformed placeholder-shaped text are structural validation errors
-- every valid placeholder must reference a variable declared by the owning agent
-- every declared variable must appear at least once as a valid placeholder in the canonical instruction
-
-Because placeholder-shaped text is always interpreted as syntax, an instruction cannot include a literal `{{...}}` example unless it is also a valid declared runtime variable.
-
-Runtime-variable syntax is prohibited in `description.md` and `handoff-description.md`. Any occurrence of `{{` or `}}` in either file is invalid.
-
-### Resolution rules
-
-- The supplied value mapping must contain exactly the variables declared by the owning agent. Missing variables, undeclared additional variables, and non-string values are errors.
-- Every supplied string must contain only valid Unicode scalar values and must not contain NUL. An unpaired UTF-16 surrogate, invalid decoded scalar representation, or NUL value is a runtime-resolution error rather than being replaced or normalized silently.
-- Substitution is a single, non-recursive pass over the already validated canonical instruction. Every occurrence of each valid placeholder is replaced with the corresponding supplied string. After scalar/NUL validation, supplied values are inserted exactly as provided: they are not trimmed, Unicode-normalized, line-ending-normalized, scanned, or interpreted as additional placeholders.
-- Empty strings are valid values.
-- `null`, `undefined`, and strings such as `n/a` have no special `moldea` semantics.
-- `moldea` supplies no defaults in version `1`.
-- Runtime variables are not used to represent unfinished project work.
-- Runtime substitution does not alter the canonical instruction's content digest. When a runtime-consumption SDK or REST response exposes `contentDigest`, that value identifies the Core-defined digest of the normalized canonical instruction before runtime-variable substitution. A digest of resolved variable-bearing output, if introduced later, uses a distinct field and contract.
-
-All runtime variable values are treated as private transient data regardless of their apparent sensitivity. Variable values are not stored in `moldea.yaml`, canonical instruction history, behavioral history, logs, or other durable records merely because they were used for substitution.
-
-Filesystem-based substitution keeps values inside the caller's process. REST handling follows the privacy and transient-value requirements of the main project specification.
-
-## Unresolved requirements
-
-Unresolved requirements may exist at project level or agent level.
-
-Project-level example:
-
-```yaml
-unresolved:
-  define-refund-policy:
-    category: policy
-    effect: warning
-    description: The final refund-eligibility policy has not been approved.
-    resolution: Record the accepted policy in project context and update any affected implementation bindings.
-```
-
-Agent-level example:
-
-```yaml
-agents:
-  customer-support:
-    unresolved:
-      final-refund-output-schema:
-        category: output-schema
-        effect: blocking
-        description: The final refund result schema has not been defined.
-        resolution: Define and bind the executable output schema and update the instruction's model-facing schema to match it.
-        related:
-          - path: /packages/contracts/src/customer-support.ts
-        reference: SUPPORT-1842
-```
-
-An unresolved requirement supports:
-
-- `category`: required slug satisfying the stable-ID lexical and length rules; it identifies the kind of gap and need not be unique
-- `effect`: required enum of `blocking`, `warning`, or `informational`
-- `description`: required non-empty text describing the unresolved state
-- `resolution`: required non-empty human-readable resolution criteria
-- `related`: optional non-empty list of unique existing repository references related to the requirement
-- `reference`: optional non-empty single-line external issue, ticket, URL, or project-specific reference string
-
-The unresolved-requirement key is its stable ID.
-
-`related` provides requirement-specific traceability to existing repository artifacts that help locate, understand, or verify the unresolved state. A related repository reference may identify a canonical `moldea` asset, such as a focused context file, or an implementation artifact, optionally with a symbol.
-
-`related` is the unresolved-requirement counterpart to `affectedBy`, but it is intentionally narrower. `affectedBy` uses exact paths or globs to identify repository areas whose changes may affect an asset's behavior, while `related` uses exact repository references, optionally including a symbol, to identify artifacts relevant to evaluating one unresolved requirement. A change to a related artifact causes the requirement to be re-evaluated but does not by itself resolve it.
-
-`related` is distinct from an agent's `context` list. `context` declares an enduring semantic relationship showing that a focused context asset materially informs the agent's instruction or behavior. `related` applies only to one unresolved requirement and does not make the referenced artifact agent context, an instruction dependency, a runtime composition input, or an implementation binding. A change to a related artifact makes that requirement relevant for re-evaluation, but does not by itself create a finding or establish that the requirement has been resolved.
-
-`related` does not point to fabricated files or future paths. A missing future artifact is described in `description` and `resolution` until it exists.
-
-Resolution criteria may be semantic. Version `1` does not attempt to define a general machine-executable requirement language. Deterministic checks verify the portions they can prove; the skill, `evaluate`, `reconcile`, and Assurance handle semantic resolution.
-
-Removing an unresolved requirement is semantically valid only when its resolution criteria have actually been satisfied. A related file changing does not by itself resolve the requirement. The absence of a previously declared requirement is not, by itself, a structural error in current-state validation. When prior Git state is available, `evaluate` and PR Assurance compare the prior and proposed states and report removal that is not supported by the requirement's resolution criteria.
-
-Unresolved requirements are not a roadmap, backlog, or issue tracker. They exist only when the unresolved state materially affects current project truth or declared agent behavior.
+Application code defines the routing rules and implements delegation. Manifest bindings and `affectedBy` paths can associate relevant implementation files with an agent. Core checks structural validity and does not infer application routing behavior.
 
 ## Mirrors
 
@@ -1319,16 +1009,6 @@ A missing or stale required mirror is a deterministic validation failure when va
 
 Build-generated or transformed instruction outputs are not mirrors in version `1` and are outside the repository-format contract.
 
-## Project-local runtime deviations
-
-`moldea` does not enforce runtime orthodoxy.
-
-Repository-format rules govern structurally valid `moldea` state. Project-local runtime guidance and explicit manifest relationships describe repository-specific semantics. Installed SDK types, actual implementation, and real tests establish how those integrations behave.
-
-Repositories may use internal wrappers, central registries, generated agent definitions, direct provider calls, or custom instruction loaders. The skill investigates those conventions to maintain instruction-code alignment. Core's file and export checks do not impose a runtime architecture or establish wiring.
-
-When guidance, manifest relationships, and implementation evidence disagree, the skill or evaluator investigates and reports the inconsistency. None may override repository-format, security, authorization, or Assurance rules.
-
 ## Convention-based discovery versus manifest declaration
 
 The repository format deliberately separates discoverable files from semantic relationships.
@@ -1338,17 +1018,13 @@ The repository format deliberately separates discoverable files from semantic re
 - project foundation
 - context files
 - decision files
-- runtime-guidance files
 - agent directories
 - mandatory agent descriptions
 - canonical instructions
-- optional handoff descriptions
 
 The manifest declares information that cannot be inferred safely:
 
 - registered agent identities
-- selected runtime label
-- project-local runtime guidance relationships
 - context-to-agent relationships
 - decision-to-agent relationships
 - exact code bindings
@@ -1356,9 +1032,7 @@ The manifest declares information that cannot be inferred safely:
 - agent-scoped tool and skill identities
 - runtime-facing capability names
 - concise tool and skill descriptions
-- runtime variables
 - mirrors
-- unresolved requirements
 
 Capability descriptions are declared in the manifest because their concise agent-specific meaning cannot be inferred reliably from implementation names alone. Their model-facing representation and detailed use conditions remain in `instruction.md`.
 
@@ -1369,9 +1043,7 @@ The manifest does not duplicate repository facts that are reliably authoritative
 - package-manager or lockfile data
 - agent description path
 - agent instruction path
-- handoff-description path
 - Git branches used by Cloud environments
-- runtime variable values
 - credentials or secrets
 
 ## Strict validation
@@ -1395,16 +1067,12 @@ Structural validation errors include, at minimum:
 - exact `affectedBy` paths that do not resolve to existing regular files in authoritative committed state
 - path traversal
 - symlinked canonical or bound assets
-- invalid runtime ID syntax or a runtime ID outside the recognized label list
-- missing or empty focused context or runtime-guidance files
-- referenced runtime guidance that does not exist
+- missing or empty focused context files
 - unregistered agent directories
 - registered agents without matching directories
 - missing mandatory agent descriptions
 - empty agent descriptions after description-value normalization
 - agent descriptions exceeding 1,000 Unicode scalar values
-- handoff descriptions that are empty after description-value normalization
-- handoff descriptions exceeding 1,000 Unicode scalar values
 - missing canonical agent instructions
 - missing or incorrectly placed canonical agent identification
 - invalid decision filenames, frontmatter delimiters, frontmatter properties, or metadata
@@ -1417,24 +1085,18 @@ Structural validation errors include, at minimum:
 - duplicate paths or patterns where uniqueness is required
 - binding or repository-reference paths that do not exist
 - binding paths that point inside the canonical `/moldea/**` tree
-- invalid variable names
-- malformed or unmatched runtime-variable placeholder syntax
-- undeclared runtime-variable placeholders in an instruction
-- declared runtime variables unused by the instruction
-- variable-provider entries for undeclared variables
-- runtime-variable delimiter syntax in agent descriptions or handoff descriptions
 - missing tool or skill descriptions
 - empty tool or skill descriptions
 - tool or skill descriptions exceeding 1,000 Unicode scalar values
 - multiline tool or skill descriptions
 - tool or skill descriptions with leading or trailing Unicode whitespace
-- NUL characters or runtime-variable delimiters in tool or skill descriptions
+- NUL characters in tool or skill descriptions
 - missing tool or skill implementations
 - mirror paths that collide across agents
 - missing or stale committed mirrors
 - unrecognized canonical files under `/moldea/**`
 
-Core also checks declared runtime export names under the conservative syntax-only rules above. Runtime execution, SDK compatibility, provider limits, instruction loading, capability registration, schemas, variables, and handoffs require semantic inspection and real application tests.
+Core also checks declared runtime export names under the conservative syntax-only rules above. Runtime execution, SDK compatibility, provider limits, instruction loading, capability registration, schemas, and handoffs require semantic inspection and real application tests.
 
 Validation returns explicit, actionable issues. It never silently falls back to another path, previous manifest state, previous instruction, or inferred substitute.
 
@@ -1450,15 +1112,8 @@ The following are examples of semantic evaluation rather than pure schema valida
 - whether every registered tool and skill is materially represented in the owning instruction with the correct runtime-facing name and use conditions
 - whether a removed capability remains advertised in the instruction
 - whether two runtime capabilities with the same name or similar descriptions make invocation ambiguous
-- whether an agent description accurately and concisely summarizes the instruction
-- whether a handoff description still matches the agent's responsibilities and the routing behavior observed in runtime-native implementation
-- whether routing-facing runtime metadata uses the target agent's effective routing description, including the agent-description fallback only when no handoff description exists
-- whether runtime metadata is mapped according to its actual routing or general-metadata purpose rather than its property name
-- whether a general-only runtime description incorrectly uses the handoff description
-- whether an agent description and handoff description have become misleadingly interchangeable
+- whether an agent description accurately summarizes the instruction and serves as the canonical text for general metadata and routing
 - whether a broader implementation change materially affects an agent
-- whether an unresolved requirement's semantic resolution criteria are satisfied, including whether its removal from a proposed state is justified
-- whether runtime guidance accurately describes actual repository structure
 - whether code and instruction schemas remain semantically equivalent after runtime transformation
 
 The open-source skill's `evaluate` operation and paid PR Assurance build on deterministic validation but may use runtime-aware and semantic analysis for these questions.
@@ -1479,11 +1134,11 @@ A diagnostic should identify, when applicable:
 - agent or capability ID
 - invalid value when it is safe and useful to expose
 - expected rule
-- related repository reference, binding, variable, mirror, or decision
+- related repository reference, binding, mirror, or decision
 
 Generic messages such as `Invalid project` are insufficient when the underlying failure can be identified more precisely. Diagnostics must still follow the privacy and safe-output rules of the active implementation and must not echo arbitrary confidential content merely to identify an invalid value.
 
-Core diagnostics have `source: 'core'`, `severity: 'error' | 'warning'`, and a `group`: `discovery`, `manifest`, `references`, `agents`, `mirrors`, or `integration`. Errors invalidate a project; warnings do not. A JSON Pointer into `moldea.yaml` identifies the entry's authored array position, even when Core orders diagnostics separately. This includes agent context, decision, and mirror lists; parsed manifest lists preserve authored order while derived project indexes may sort those relationships independently. The exact diagnostic-code catalog, result shape, ordering rules, and validation-mode behavior belong to the `@moldea.ai/core` package specification. A code assigned to a version `1` rule remains stable for as long as a Core release claims version `1` support. A changed rule is represented under a new repository-format major version, and a version `1` code may be removed only when the Core release drops version `1` support.
+Core diagnostics have `source: 'core'`, `severity: 'error' | 'warning'`, and a `group`: `discovery`, `manifest`, `references`, `agents`, `mirrors`, or `integration`. Errors invalidate a project; warnings do not. A JSON Pointer into `moldea.yaml` identifies the entry's authored array position, even when Core orders diagnostics separately. This includes agent context, decision, and mirror lists; parsed manifest lists preserve authored order while derived project indexes may sort those relationships independently. The exact diagnostic-code catalog, result shape, ordering rules, and validation-mode behavior belong to the `@moldea.ai/core` package specification. Core keeps diagnostic codes stable for retained rules. Its package version governs diagnostic contract changes.
 
 ### Coding-agent integration warnings
 
@@ -1499,7 +1154,7 @@ A symlinked `/AGENTS.md` is followed by reading each link's stored text, the sam
 
 Nothing outside the repository is read, and no diagnostic carries link text.
 
-A conforming installation has exactly one managed region in `/AGENTS.md`, delimited by `<!-- moldea:start -->` and `<!-- moldea:end -->` markers on complete lines. The region contains exactly one gate command line beginning `node "<repo-root>/<skill-path>/scripts/relevance-gate.mjs"`; command arguments may follow it. The relative `<skill-path>` matches `^[A-Za-z0-9._/-]+$` and has no empty, absolute, or traversal segments. The installation provides regular `SKILL.md`, `scripts/relevance-gate.mjs`, and `assets/managed-agents-block.md` files. Core renders the asset with `{{skill-path}}` replaced by that path and compares the managed region after normalizing LF/CRLF line endings, an optional final line break after the closing marker, empty lines immediately inside the markers, and trailing spaces or tabs on the marker lines. Instruction text and its internal whitespace remain exact. Markers must still appear exactly once, in order, on their own lines; leading indentation and other marker-line content remain invalid.
+A conforming installation has exactly one managed region in `/AGENTS.md`, delimited by `<!-- moldea:start -->` and `<!-- moldea:end -->` markers on complete lines. Gate command lines begin with `node "<repo-root>/<skill-path>/scripts/relevance-gate.mjs"`. The path check takes `--repository "<repo-root>"` and one or more `--path "<file>"` arguments. The adoption check takes `--repository "<repo-root>" --adoption-only`. Each form occurs at most once, and both refer to the same installation when present. The relative `<skill-path>` matches `^[A-Za-z0-9._/-]+$` and has no empty, absolute, or traversal segments. The installation provides regular `SKILL.md`, `scripts/relevance-gate.mjs`, and `assets/managed-agents-block.md` files. Core renders the asset with `{{skill-path}}` replaced by that path and compares the managed region after normalizing LF/CRLF line endings, an optional final line break after the closing marker, empty lines immediately inside the markers, and trailing spaces or tabs on the marker lines. Instruction text and its internal whitespace remain exact. Markers must still appear exactly once, in order, on their own lines; leading indentation and other marker-line content remain invalid.
 
 An unextractable gate path or missing or non-regular installation file produces `MOLDEA_INTEGRATION_SKILL_MISSING`: The skill installation referenced by the AGENTS.md moldea block was not found. Details identify the reason or referenced installation and missing file.
 
@@ -1535,13 +1190,9 @@ An acceptance that matches nothing produces `MOLDEA_ACCEPTANCE_UNMATCHED` (warni
 
 ## Security and secret handling
 
-The repository format never stores runtime variable values, API credentials, payment credentials, Git credentials, encryption keys, webhook secrets, or other runtime secrets in `moldea.yaml`.
+The repository format never stores API credentials, payment credentials, Git credentials, encryption keys, webhook secrets, or other runtime secrets in `moldea.yaml`.
 
-Canonical `moldea` content may contain confidential project information because it is client-owned source-controlled context. The skill should nevertheless avoid placing credentials or ephemeral secrets in project context, runtime guidance, instructions, decisions, or unresolved requirements.
-
-Runtime values supplied during instruction resolution are transient and do not become repository content.
-
-Project-local runtime guidance is treated as untrusted repository content by Cloud analysis in the same way as other repository files. It explains repository structure but cannot redefine `moldea`'s evaluator authority.
+Canonical `moldea` content may contain confidential project information because it is client-owned source-controlled context. The skill should nevertheless avoid placing credentials or ephemeral secrets in project context, instructions, or decisions.
 
 ## Complete example
 
@@ -1589,34 +1240,14 @@ decisions:
     affectedBy:
       - /packages/database/**
 
-unresolved:
-  finalize-refund-policy:
-    category: policy
-    effect: warning
-    description: The final refund-eligibility policy has not been approved.
-    resolution: Record the accepted refund policy and reconcile the bound refund implementation.
-    related:
-      - path: /moldea/context/refunds.md
-    reference: BILLING-204
-
 agents:
   customer-support:
-    runtime:
-      id: openai-agents-sdk
-      guidance: /moldea/runtimes/openai-agents-sdk-api.md
-
     context:
       - /moldea/context/security-and-privacy.md
       - /moldea/context/refunds.md
 
     decisions:
       - /moldea/decisions/1786050123456-use-postgresql.md
-
-    variables:
-      CURRENT_DATETIME:
-        description: Current UTC date and time.
-      CUSTOMER_NAME:
-        description: Name of the current customer.
 
     bindings:
       runtimeAgent:
@@ -1631,14 +1262,6 @@ agents:
       instructionLoader:
         path: /packages/agents/src/instructions.ts
         symbol: loadInstruction
-      variableProviders:
-        CURRENT_DATETIME:
-          path: /packages/agents/src/runtime-context.ts
-          symbol: getCurrentDatetime
-        CUSTOMER_NAME:
-          path: /packages/agents/src/runtime-context.ts
-          symbol: getCustomerName
-
     tools:
       find-order:
         name: find_order
@@ -1675,21 +1298,7 @@ agents:
     mirrors:
       - /apps/eve/instructions/customer-support.md
 
-    unresolved:
-      final-refund-output-schema:
-        category: output-schema
-        effect: blocking
-        description: The final refund-specific output contract is not yet complete.
-        resolution: Finalize and bind the executable schema, then update the model-facing schema in the instruction to match it.
-        related:
-          - path: /packages/contracts/src/customer-support.ts
-        reference: SUPPORT-1842
-
   billing-support:
-    runtime:
-      id: custom
-      guidance: /moldea/runtimes/internal-billing-agent-runtime.md
-
     context:
       - /moldea/context/refunds.md
 
@@ -1701,27 +1310,21 @@ agents:
 
 ## Conformance and future evolution
 
-A repository conforms to version `1` when its committed Git tree—including `/moldea/**`, every manifest-referenced file, and every declared mirror—satisfies all applicable structural rules in this specification. Conformance fixtures include invalid Unicode path representations, including unpaired surrogate input in implementations whose host language can represent it. Runtime-resolution conformance additionally covers invalid scalar runtime values, NUL rejection, exact non-recursive substitution, empty-string values, and canonical `contentDigest` stability before and after substitution.
+A repository conforms to version `1` when its committed Git tree satisfies every applicable structural rule in this specification, including rules for canonical assets, manifest-referenced files, and declared mirrors. Conformance includes invalid Unicode paths and bindings or canonical files that violate these rules.
 
-Consumers that map canonical agent metadata into runtime routing metadata additionally cover the effective-routing-description rule. Conformance cases include a present handoff description, the agent-description fallback when the handoff description is absent, no fallback from a present invalid handoff description, a routing-facing property named `description`, separate general and routing-facing description properties, a single property serving both purposes, and unsupported dynamic wiring that must not produce a false deterministic diagnostic.
+Consumers that supply model-facing agent metadata verify that general and routing metadata use the normalized value of the target agent’s `description.md`, including when a single field serves both purposes.
 
 The skill and local tooling may work with temporarily non-conforming working-tree state while creating or reconciling files, but they should clearly report remaining violations before presenting the work as complete.
 
-`@moldea.ai/core` is the reference deterministic implementation of version `1` parsing, path resolution, discovery, structural validation, static variable-declaration and placeholder validation, mirror comparison, content normalization, and repository indexing semantics. Runtime consumers conform separately to this specification's runtime-value validation, exact substitution, privacy, and canonical-digest provenance rules.
+`@moldea.ai/core` is the reference deterministic implementation of version `1` parsing, path resolution, discovery, structural validation, mirror comparison, content normalization, and repository indexing.
 
 The open-source skill, `moldea Cloud`, PR Assurance, and any future Node.js instruction-consumption SDK must use the same repository interpretation rather than implementing competing format rules.
 
-New runtime labels and project-local runtime guidance do not require a repository-format version change when the manifest semantics remain unchanged.
-
 The repository format should evolve conservatively. Version `1` intentionally excludes features that would add ambiguity before concrete need exists, including:
 
-- multiple runtime declarations for one agent
 - generic selector languages
 - build-generated mirrors
 - transformed mirrors
-- runtime-variable defaults
-- optional runtime variables
-- machine-executable unresolved-requirement languages
 - symlinked canonical assets or bindings
 - cross-repository bindings
 - manifest-declared handoff relationships, stable handoff IDs, or routing graphs

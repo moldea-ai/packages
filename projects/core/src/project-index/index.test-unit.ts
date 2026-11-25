@@ -8,7 +8,6 @@ import type {
   IContentDigest,
   IIndexedContextAsset,
   IIndexedManifest,
-  IIndexedRuntimeGuidance,
   IIndexedTextAsset,
 } from '../contracts/index.js';
 import type { IParsedDecision } from '../format/index.js';
@@ -53,14 +52,12 @@ const createAgent = (
     declaration: {
       context,
       decisions,
-      runtime: { id: 'custom' },
     },
     description: {
       asset: descriptionAsset,
       scalarLength: descriptionAsset.scalarLength - 1,
       value: `${id} agent.`,
     },
-    handoffDescription: null,
     id,
     instruction: createAsset(
       `/moldea/agents/${id}/instruction.md`,
@@ -79,9 +76,8 @@ const createBaseInput = (): IProjectIndexInput => {
   const alphaDeclaration = {
     context: [zetaContext, alphaContext],
     decisions: [secondDecision.path, firstDecision.path],
-    runtime: { id: 'custom' },
   } as const;
-  const zetaDeclaration = { runtime: { id: 'custom' } } as const;
+  const zetaDeclaration = {};
   const manifest: IIndexedManifest = {
     asset: createAsset('/moldea/moldea.yaml', 'version: 1\n'),
     value: {
@@ -91,24 +87,12 @@ const createBaseInput = (): IProjectIndexInput => {
       },
       context: { [alphaContext]: contextRelationship },
       decisions: { [firstDecision.path]: decisionRelationship },
-      unresolved: {
-        'release-owner': {
-          category: 'ownership',
-          description: 'Release ownership is unresolved.',
-          effect: 'warning',
-          resolution: 'Assign one owner.',
-        },
-      },
       version: 1,
     },
   };
   const context: IIndexedContextAsset[] = [
     { asset: createAsset(zetaContext, 'Zeta.\n'), relationships: null },
     { asset: createAsset(alphaContext, 'Alpha.\n'), relationships: contextRelationship },
-  ];
-  const runtimes: IIndexedRuntimeGuidance[] = [
-    { asset: createAsset('/moldea/runtimes/zeta.md', 'Zeta runtime.\n') },
-    { asset: createAsset('/moldea/runtimes/alpha.md', 'Alpha runtime.\n') },
   ];
   const agents = [
     { ...createAgent('zeta'), declaration: zetaDeclaration },
@@ -151,7 +135,6 @@ const createBaseInput = (): IProjectIndexInput => {
     decisions: [secondDecision, firstDecision],
     manifest,
     project: createAsset('/moldea/project.md', '# Project\n'),
-    runtimes,
   };
 };
 
@@ -173,10 +156,6 @@ describe('Core provisional project-index assembly', () => {
       { affectedBy: ['/src/**'] },
       null,
     ]);
-    expect(result?.runtimes.map(({ asset }) => asset.path)).toStrictEqual([
-      '/moldea/runtimes/alpha.md',
-      '/moldea/runtimes/zeta.md',
-    ]);
     expect(result?.agents.map(({ id }) => id)).toStrictEqual(['alpha', 'zeta']);
     expect(result?.agents[0]?.context).toStrictEqual([
       '/moldea/context/alpha.md',
@@ -190,36 +169,10 @@ describe('Core provisional project-index assembly', () => {
       '/mirrors/alpha.md',
       '/mirrors/zeta.md',
     ]);
-    expect(result?.unresolved).toStrictEqual({
-      'release-owner': {
-        category: 'ownership',
-        description: 'Release ownership is unresolved.',
-        effect: 'warning',
-        resolution: 'Assign one owner.',
-      },
-    });
     expect(() => JSON.stringify(result)).not.toThrow();
     expect(Object.isFrozen(result)).toBe(true);
     expect(Object.isFrozen(result?.agents)).toBe(true);
     expect(Object.isFrozen(result?.agents[0]?.mirrors)).toBe(true);
-    expect(Object.isFrozen(result?.unresolved)).toBe(true);
-  });
-
-  test('creates an empty frozen null-prototype unresolved record when absent', () => {
-    const input = createBaseInput();
-    const { unresolved, ...manifestValue } = input.manifest.value;
-    void unresolved;
-    const result = createProjectIndex({
-      ...input,
-      manifest: {
-        ...input.manifest,
-        value: manifestValue,
-      },
-    });
-
-    expect(Object.keys(result?.unresolved ?? {})).toStrictEqual([]);
-    expect(Object.getPrototypeOf(result?.unresolved)).toBeNull();
-    expect(Object.isFrozen(result?.unresolved)).toBe(true);
   });
 
   test('returns null when a mandatory agent asset is unavailable', () => {

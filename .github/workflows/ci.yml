@@ -70,11 +70,8 @@ jobs:
       test_suite: ${{ steps.selection.outputs.test_suite }}
       cli_runtime_matrix: ${{ steps.selection.outputs.cli_runtime_matrix }}
       repository_fs_runtime_matrix: ${{ steps.selection.outputs.repository_fs_runtime_matrix }}
-      consumer_conformance: ${{ steps.selection.outputs.consumer_conformance }}
-      cli_testing_peer_compatibility: ${{ steps.selection.outputs.cli_testing_peer_compatibility }}
       repository_fs_runtime_compatibility: ${{ steps.selection.outputs.repository_fs_runtime_compatibility }}
       cli_runtime_compatibility: ${{ steps.selection.outputs.cli_runtime_compatibility }}
-      registry_snapshot: ${{ steps.registry.outputs.registry_snapshot }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -96,16 +93,6 @@ jobs:
           CI_RELEASE_PROJECT: ${{ inputs.release_project || '' }}
           CI_TEST_SUITE: ${{ inputs.test_suite || 'essential' }}
         run: node scripts/ci/plan.ts
-
-      # the Skill consumer lanes receive the same snapshot; the canary passes none, so they resolve live
-      - name: Resolve Registry Snapshot
-        id: registry
-        if: ${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}
-        run: >-
-          node --input-type=module --eval
-          "import { REGISTRY_SNAPSHOT } from './configs/registry-snapshot/index.mjs';
-          console.log('registry_snapshot=' + REGISTRY_SNAPSHOT);"
-          >> "$GITHUB_OUTPUT"
 
   checks:
     name: Check Selected Workspaces
@@ -212,7 +199,7 @@ jobs:
           pnpm --dir projects/cli pack --pack-destination "$public_packages_directory"
           pnpm --dir projects/website-ui pack --pack-destination "$public_packages_directory"
           pnpm release:checksums create "$public_packages_directory"
-          pnpm release:checksums verify-consumers "$public_packages_directory"
+          pnpm release:checksums verify "$public_packages_directory"
           git rev-parse HEAD > "$public_packages_directory/packages-commit.txt"
 
           expected_tarball_count=5
@@ -233,58 +220,6 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
-
-  consumer-conformance:
-    name: Exact Artifact Skill Consumers
-    needs: [plan, pack]
-    if: ${{ needs.plan.outputs.consumer_conformance == 'true' }}
-    permissions:
-      contents: read
-    uses: moldea-ai/skill/.github/workflows/release-candidate.yml@950b89eb4c41564953fa1582fdd588992e152d37
-    with:
-      artifact_name: public-package-tarballs
-      packages_ref: ${{ github.sha }}
-      skill_ref: 950b89eb4c41564953fa1582fdd588992e152d37
-      skill_version: '10.0.0'
-      registry_snapshot: ${{ needs.plan.outputs.registry_snapshot }}
-
-  cli-testing-peer-compatibility:
-    name: CLI Existing Vitest 3.2.4 Compatibility
-    needs: [plan, pack]
-    if: ${{ needs.plan.outputs.cli_testing_peer_compatibility == 'true' }}
-    runs-on: ubuntu-latest
-    env:
-      PNPM_VERSION: 11.21.0
-      VITEST_VERSION: 3.2.4
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Download Public Package Artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: 'public-package-tarballs'
-          path: ${{ runner.temp }}/public-package-tarballs
-
-      - name: Pin Registry Snapshot
-        if: ${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}
-        run: node configs/registry-snapshot/write-environment.mjs >> "$GITHUB_ENV"
-
-      - name: Test Packed CLI with Existing Vitest
-        run: >-
-          node projects/cli/scripts/testing-peer-compatibility/index.mjs
-          "${{ runner.temp }}/public-package-tarballs"
-          "${{ env.VITEST_VERSION }}"
 
   repository-fs-runtime-compatibility:
     name: Repository FS Runtime (Node.js ${{ matrix.node-version }})
@@ -345,7 +280,19 @@ jobs:
         if: ${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}
         run: node configs/registry-snapshot/write-environment.mjs >> "$GITHUB_ENV"
 
-      - name: Test Packed CLI Runtime
+      - name: Verify Package Artifact Identity
+        env:
+          ARTIFACT_DIRECTORY: ${{ runner.temp }}/public-package-tarballs
+        run: |
+          test "$(cat "$ARTIFACT_DIRECTORY/packages-commit.txt")" = "$(git rev-parse HEAD)"
+          cd -- "$ARTIFACT_DIRECTORY"
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            shasum --algorithm 256 --check --strict SHA256SUMS
+          else
+            sha256sum --check --strict SHA256SUMS
+          fi
+
+      - name: Verify Packed and Portable CLI Runtime
         run: >-
           node projects/cli/scripts/runtime-compatibility/index.mjs
           "${{ runner.temp }}/public-package-tarballs"
@@ -407,8 +354,6 @@ jobs:
       - plan
       - checks
       - pack
-      - consumer-conformance
-      - cli-testing-peer-compatibility
       - repository-fs-runtime-compatibility
       - cli-runtime-compatibility
       - test-cross-platform

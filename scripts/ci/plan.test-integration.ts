@@ -84,7 +84,7 @@ test('planner binds actual checkout, validates outputs and reports website-only 
   expect(outputs).toContain('cross_platform=true\n');
   expect(outputs).toContain('test_suite=essential\n');
   expect(outputs).toContain(
-    'cli_runtime_matrix={"os":["ubuntu-latest"],"node-version":["22.17.0","24.15.0"]}\n',
+    'cli_runtime_matrix={"os":["ubuntu-latest","macos-latest","windows-latest"],"node-version":["22.17.0","24.16.0"]}\n',
   );
   expect(outputs).toContain('cli_runtime_compatibility=false\n');
   expect(await readFile(join(directory, 'summary.md'), 'utf8')).toContain(head);
@@ -152,7 +152,7 @@ test.each(['', 'core', 'cli-website-ui', 'website-ui'])(
       const outputs = await readFile(join(directory, 'outputs.txt'), 'utf8');
       expect(outputs).toContain('artifacts=true\n');
       expect(outputs).toContain('cross_platform=true\n');
-      expect(outputs).toContain('consumer_conformance=false\n');
+      expect(outputs).toContain('cli_runtime_compatibility=false\n');
     } else {
       expect(plan.mode).toBe('full');
       expect(plan.workspaces).toContain('@moldea.ai/cli');
@@ -234,6 +234,6 @@ test('explicit full dispatch expands workspace scope without a release input', a
   });
   const outputs = await readFile(join(directory, 'outputs.txt'), 'utf8');
   expect(outputs).toContain('test_suite=full\n');
-  expect(outputs).toContain('consumer_conformance=true\n');
+  expect(outputs).toContain('cli_runtime_compatibility=true\n');
   expect(outputs).toContain('cross_platform=true\n');
 });

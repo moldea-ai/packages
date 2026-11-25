@@ -73,17 +73,13 @@ import type {
   IAgentBindingsManifestEntry,
   IAgentManifestEntry,
   IDecisionStatus,
-  IRuntimeManifestEntry,
   IMoldeaManifestV1,
   IParsedDecision,
   IRelationshipManifestEntry,
   IRepositoryFormatVersion,
   IRepositoryReference,
-  IRuntimeVariableManifestEntry,
   ISkillManifestEntry,
   IToolManifestEntry,
-  IUnresolvedRequirementEffect,
-  IUnresolvedRequirementManifestEntry,
 } from '@moldea.ai/core/format';
 // @ts-expect-error Repository format version 1 has no manifest handoff relationship.
 import type { IHandoffManifestEntry } from '@moldea.ai/core/format';
@@ -147,17 +143,13 @@ type IFormatSurface = readonly [
   IAgentBindingsManifestEntry,
   IAgentManifestEntry,
   IDecisionStatus,
-  IRuntimeManifestEntry,
   IMoldeaManifestV1,
   IParsedDecision,
   IRelationshipManifestEntry,
   IRepositoryFormatVersion,
   IRepositoryReference,
-  IRuntimeVariableManifestEntry,
   ISkillManifestEntry,
   IToolManifestEntry,
-  IUnresolvedRequirementEffect,
-  IUnresolvedRequirementManifestEntry,
 ];
 
 type IRemovedHandoffSurface = IHandoffManifestEntry;
@@ -221,7 +213,6 @@ const operationException = new CoreOperationException({
 });
 const repositoryFormatVersion: IRepositoryFormatVersion = 1;
 const decisionStatus: IDecisionStatus = 'accepted';
-const unresolvedEffect: IUnresolvedRequirementEffect = 'warning';
 const capabilityKind: ICapabilityKind = 'tool';
 const diagnosticCode: ICoreDiagnosticCode = 'MOLDEA_TEXT_EMPTY';
 const configurationErrorCode: ICoreConfigurationErrorCode = 'INVALID_RESOURCE_LIMIT';
@@ -234,8 +225,6 @@ const scopeOperation: ICoreOperation = 'match-manifest-scope';
 const unsupportedRepositoryFormatVersion: IRepositoryFormatVersion = 2;
 // @ts-expect-error Decision statuses are a closed public union.
 const unsupportedDecisionStatus: IDecisionStatus = 'active';
-// @ts-expect-error Unresolved-requirement effects are a closed public union.
-const unsupportedUnresolvedEffect: IUnresolvedRequirementEffect = 'error';
 // @ts-expect-error Diagnostic capability kinds are limited to tools and skills.
 const unsupportedCapabilityKind: ICapabilityKind = 'handoff';
 // @ts-expect-error Built-in diagnostic codes are closed for this Core major version.
@@ -283,7 +272,6 @@ void [
   operationException,
   removedHandoffSurface,
   repositoryFormatVersion,
-  unresolvedEffect,
   unsupportedCapabilityKind,
   unsupportedConfigurationErrorCode,
   unsupportedDecisionStatus,
@@ -291,6 +279,5 @@ void [
   unsupportedOperation,
   unsupportedOperationErrorCode,
   unsupportedRepositoryFormatVersion,
-  unsupportedUnresolvedEffect,
   wrongRootFormatSurface,
 ];

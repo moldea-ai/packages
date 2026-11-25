@@ -12,7 +12,6 @@ import type {
   IParsedDecision,
   IRelationshipManifestEntry,
   IRepositoryFormatVersion,
-  IUnresolvedRequirementManifestEntry,
 } from '../format/index.js';
 import type { IManifestScopeInput, IManifestScopeResult } from '../scope-matching/types.js';
 
@@ -93,14 +92,12 @@ export interface IProjectValidationInput {
 
 export type IProjectMetadataKind =
   | 'agent-description'
-  | 'agent-handoff-description'
   | 'agent-instruction'
   | 'context'
   | 'decision'
   | 'manifest'
   | 'mirror'
-  | 'project'
-  | 'runtime-guidance';
+  | 'project';
 
 export interface IProjectMetadataItem {
   readonly agentId: string | null;
@@ -113,10 +110,9 @@ export interface IProjectMetadataItem {
   readonly scalarLength: number | null;
 }
 
-// canonical agent-to-runtime assignment exposed without manifest or agent bodies
+// canonical agent identity exposed without manifest or agent bodies
 export interface IProjectAgentAssignmentItem {
   readonly agentId: string;
-  readonly runtimeId: string;
 }
 
 // closed content-free views supported by prepared project inspection
@@ -153,9 +149,6 @@ export interface IProjectSummaryCounts {
   readonly context: number;
   readonly decisions: number;
   readonly mirrors: number;
-  readonly runtimes: number;
-  // all project- and agent-owned requirements, regardless of effect
-  readonly unresolved: number;
 }
 
 export interface IProjectValidationSummary {
@@ -274,10 +267,6 @@ export interface IIndexedDecision {
   readonly relationships: IRelationshipManifestEntry | null;
 }
 
-export interface IIndexedRuntimeGuidance {
-  readonly asset: IIndexedTextAsset;
-}
-
 export interface IIndexedMirror {
   readonly path: IRepositoryPath;
   readonly byteLength: number;
@@ -291,7 +280,6 @@ export interface IIndexedAgent {
   readonly declaration: IAgentManifestEntry;
   readonly description: IIndexedDescriptionAsset;
   readonly instruction: IIndexedTextAsset;
-  readonly handoffDescription: IIndexedDescriptionAsset | null;
   readonly context: readonly IRepositoryPath[];
   readonly decisions: readonly IRepositoryPath[];
   readonly mirrors: readonly IIndexedMirror[];
@@ -308,9 +296,7 @@ export interface IMoldeaProjectIndex {
   readonly project: IIndexedTextAsset;
   readonly context: readonly IIndexedContextAsset[];
   readonly decisions: readonly IIndexedDecision[];
-  readonly runtimes: readonly IIndexedRuntimeGuidance[];
   readonly agents: readonly IIndexedAgent[];
-  readonly unresolved: Readonly<Record<string, IUnresolvedRequirementManifestEntry>>;
 }
 
 // immutable source-neutral Core operations

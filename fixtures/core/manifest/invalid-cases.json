@@ -22,9 +22,9 @@
             "offset": 0
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
@@ -40,20 +40,20 @@
         "path": "/moldea/moldea.yaml",
         "pointer": "/version",
         "range": {
-          "start": {
-            "line": 1,
-            "column": 1,
-            "offset": 0
-          },
           "end": {
-            "line": 2,
             "column": 1,
+            "line": 2,
             "offset": 11
+          },
+          "start": {
+            "column": 1,
+            "line": 1,
+            "offset": 0
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
@@ -80,9 +80,9 @@
             "offset": 9
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
@@ -109,9 +109,9 @@
             "offset": 11
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
@@ -138,9 +138,9 @@
             "offset": 11
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
@@ -169,9 +169,9 @@
             "offset": 35
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       },
       {
         "code": "MOLDEA_YAML_FEATURE_UNSUPPORTED",
@@ -194,9 +194,9 @@
             "offset": 49
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
@@ -223,47 +223,46 @@
             "offset": 11
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
   {
-    "name": "undeclared variable provider",
-    "content": "version: 1\nagents:\n  agent:\n    runtime:\n      id: custom\n    bindings:\n      variableProviders:\n        UNKNOWN:\n          path: /src/time.ts\n",
+    "name": "unknown variableProviders property",
+    "content": "version: 1\nagents:\n  agent:\n    bindings:\n      variableProviders: {}\n",
     "expectedDiagnostics": [
       {
-        "code": "MOLDEA_VARIABLE_PROVIDER_UNDECLARED",
+        "code": "MOLDEA_MANIFEST_PROPERTY_UNKNOWN",
         "details": {},
         "entity": {
-          "agentId": "agent",
-          "variableId": "UNKNOWN"
+          "agentId": "agent"
         },
-        "message": "A variable-provider binding exists for an undeclared variable.",
+        "message": "The manifest contains an unknown property.",
         "path": "/moldea/moldea.yaml",
-        "pointer": "/agents/agent/bindings/variableProviders/UNKNOWN",
+        "pointer": "/agents/agent/bindings/variableProviders",
         "range": {
           "end": {
-            "column": 16,
-            "line": 8,
-            "offset": 112
+            "column": 24,
+            "line": 5,
+            "offset": 65
           },
           "start": {
-            "column": 9,
-            "line": 8,
-            "offset": 105
+            "column": 7,
+            "line": 5,
+            "offset": 48
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "agents"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "invalid capability description",
-    "content": "version: 1\nagents:\n  agent:\n    runtime:\n      id: custom\n    tools:\n      lookup:\n        name: lookup\n        description: ' padded'\n        implementation:\n          path: /src/lookup.ts\n",
+    "content": "version: 1\nagents:\n  agent:\n    tools:\n      lookup:\n        name: lookup\n        description: ' padded'\n        implementation:\n          path: /src/lookup.ts\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_CAPABILITY_DESCRIPTION_INVALID",
@@ -279,24 +278,24 @@
         "range": {
           "end": {
             "column": 31,
-            "line": 9,
-            "offset": 134
+            "line": 7,
+            "offset": 104
           },
           "start": {
             "column": 22,
-            "line": 9,
-            "offset": 125
+            "line": 7,
+            "offset": 95
           }
         },
-        "severity": "error",
+        "group": "agents",
         "source": "core",
-        "group": "agents"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "invalid agent ID",
-    "content": "version: 1\nagents:\n  Invalid:\n    runtime: { id: custom }\n",
+    "content": "version: 1\nagents:\n  Invalid: {}\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_ID_INVALID",
@@ -319,15 +318,15 @@
             "offset": 21
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "reserved agent ID",
-    "content": "version: 1\nagents:\n  con:\n    runtime: { id: custom }\n",
+    "content": "version: 1\nagents:\n  con: {}\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_ID_RESERVED",
@@ -350,9 +349,9 @@
             "offset": 21
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
@@ -379,9 +378,9 @@
             "offset": 42
           }
         },
-        "severity": "error",
+        "group": "references",
         "source": "core",
-        "group": "references"
+        "severity": "error"
       }
     ]
   },
@@ -408,15 +407,15 @@
             "offset": 24
           }
         },
-        "severity": "error",
+        "group": "references",
         "source": "core",
-        "group": "references"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "invalid impact glob",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    affectedBy: [/src/**x]\n",
+    "content": "version: 1\nagents:\n  agent:\n    affectedBy: [/src/**x]\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_GLOB_INVALID",
@@ -430,24 +429,24 @@
         "range": {
           "end": {
             "column": 26,
-            "line": 5,
-            "offset": 81
+            "line": 4,
+            "offset": 53
           },
           "start": {
             "column": 18,
-            "line": 5,
-            "offset": 73
+            "line": 4,
+            "offset": 45
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "duplicate exact impact path",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    affectedBy: [/src/file.ts, /src/file.ts]\n",
+    "content": "version: 1\nagents:\n  agent:\n    affectedBy: [/src/file.ts, /src/file.ts]\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_PATH_DUPLICATE",
@@ -461,24 +460,24 @@
         "range": {
           "end": {
             "column": 44,
-            "line": 5,
-            "offset": 99
+            "line": 4,
+            "offset": 71
           },
           "start": {
             "column": 32,
-            "line": 5,
-            "offset": 87
+            "line": 4,
+            "offset": 59
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "mirror inside canonical content",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    mirrors: [/moldea/project.md]\n",
+    "content": "version: 1\nagents:\n  agent:\n    mirrors: [/moldea/project.md]\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_MIRROR_PATH_INSIDE_MOLDEA",
@@ -492,24 +491,24 @@
         "range": {
           "end": {
             "column": 33,
-            "line": 5,
-            "offset": 88
+            "line": 4,
+            "offset": 60
           },
           "start": {
             "column": 15,
-            "line": 5,
-            "offset": 70
+            "line": 4,
+            "offset": 42
           }
         },
-        "severity": "error",
+        "group": "mirrors",
         "source": "core",
-        "group": "mirrors"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "symbol on canonical reference",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    bindings:\n      runtimeAgent:\n        path: /moldea/project.md\n        symbol: project\n",
+    "content": "version: 1\nagents:\n  agent:\n    bindings:\n      runtimeAgent:\n        path: /moldea/project.md\n        symbol: project\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_SYMBOL_FORBIDDEN",
@@ -523,56 +522,55 @@
         "range": {
           "end": {
             "column": 24,
-            "line": 8,
-            "offset": 146
+            "line": 7,
+            "offset": 118
           },
           "start": {
             "column": 17,
-            "line": 8,
-            "offset": 139
+            "line": 7,
+            "offset": 111
           }
         },
-        "severity": "error",
+        "group": "references",
         "source": "core",
-        "group": "references"
+        "severity": "error"
       }
     ]
   },
   {
-    "name": "invalid variable ID",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    variables:\n      current:\n        description: Current value.\n",
+    "name": "unknown variables property",
+    "content": "version: 1\nagents:\n  agent:\n    variables: {}\n",
     "expectedDiagnostics": [
       {
-        "code": "MOLDEA_VARIABLE_ID_INVALID",
+        "code": "MOLDEA_MANIFEST_PROPERTY_UNKNOWN",
         "details": {},
         "entity": {
-          "agentId": "agent",
-          "variableId": "current"
+          "agentId": "agent"
         },
-        "message": "The runtime-variable ID is invalid.",
+        "message": "The manifest contains an unknown property.",
         "path": "/moldea/moldea.yaml",
-        "pointer": "/agents/agent/variables/current",
+        "pointer": "/agents/agent/variables",
         "range": {
           "end": {
             "column": 14,
-            "line": 6,
-            "offset": 84
+            "line": 4,
+            "offset": 41
           },
           "start": {
-            "column": 7,
-            "line": 6,
-            "offset": 77
+            "column": 5,
+            "line": 4,
+            "offset": 32
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "missing skill implementation",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    skills:\n      process:\n        name: process\n        description: Applies the required process.\n",
+    "content": "version: 1\nagents:\n  agent:\n    skills:\n      process:\n        name: process\n        description: Applies the required process.\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_SKILL_IMPLEMENTATION_MISSING",
@@ -587,19 +585,19 @@
         "pointer": "/agents/agent/skills/process/implementation",
         "range": {
           "start": {
-            "line": 6,
             "column": 7,
-            "offset": 74
+            "line": 5,
+            "offset": 46
           },
           "end": {
-            "line": 9,
             "column": 1,
-            "offset": 156
+            "line": 8,
+            "offset": 128
           }
         },
-        "severity": "error",
+        "group": "agents",
         "source": "core",
-        "group": "agents"
+        "severity": "error"
       }
     ]
   },
@@ -628,15 +626,15 @@
             "offset": 19
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "unknown runtime property",
-    "content": "version: 1\nagents:\n  agent:\n    runtime:\n      id: custom\n      runtime: custom\n",
+    "content": "version: 1\nagents:\n  agent:\n    runtime: {}\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_MANIFEST_PROPERTY_UNKNOWN",
@@ -646,28 +644,28 @@
         },
         "message": "The manifest contains an unknown property.",
         "path": "/moldea/moldea.yaml",
-        "pointer": "/agents/agent/runtime/runtime",
+        "pointer": "/agents/agent/runtime",
         "range": {
           "end": {
-            "column": 14,
-            "line": 6,
-            "offset": 71
+            "column": 12,
+            "line": 4,
+            "offset": 39
           },
           "start": {
-            "column": 7,
-            "line": 6,
-            "offset": 64
+            "column": 5,
+            "line": 4,
+            "offset": 32
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "unsupported handoffs property",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    handoffs: {}\n",
+    "content": "version: 1\nagents:\n  agent:\n    handoffs: {}\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_MANIFEST_PROPERTY_UNKNOWN",
@@ -681,24 +679,24 @@
         "range": {
           "end": {
             "column": 13,
-            "line": 5,
-            "offset": 68
+            "line": 4,
+            "offset": 40
           },
           "start": {
             "column": 5,
-            "line": 5,
-            "offset": 60
+            "line": 4,
+            "offset": 32
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "invalid repository reference path",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    bindings:\n      runtimeAgent:\n        path: relative.ts\n",
+    "content": "version: 1\nagents:\n  agent:\n    bindings:\n      runtimeAgent:\n        path: relative.ts\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_PATH_INVALID",
@@ -712,24 +710,24 @@
         "range": {
           "end": {
             "column": 26,
-            "line": 7,
-            "offset": 115
+            "line": 6,
+            "offset": 87
           },
           "start": {
             "column": 15,
-            "line": 7,
-            "offset": 104
+            "line": 6,
+            "offset": 76
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "duplicate impact pattern",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    affectedBy: [/src/**, /src/**]\n",
+    "content": "version: 1\nagents:\n  agent:\n    affectedBy: [/src/**, /src/**]\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_PATTERN_DUPLICATE",
@@ -743,18 +741,18 @@
         "range": {
           "end": {
             "column": 34,
-            "line": 5,
-            "offset": 89
+            "line": 4,
+            "offset": 61
           },
           "start": {
             "column": 27,
-            "line": 5,
-            "offset": 82
+            "line": 4,
+            "offset": 54
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "manifest"
+        "severity": "error"
       }
     ]
   },
@@ -781,46 +779,44 @@
             "offset": 22
           }
         },
-        "severity": "error",
+        "group": "references",
         "source": "core",
-        "group": "references"
+        "severity": "error"
       }
     ]
   },
   {
-    "name": "invalid runtime ID",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: Invalid }\n",
+    "name": "unknown unresolved property",
+    "content": "version: 1\nunresolved: {}\n",
     "expectedDiagnostics": [
       {
-        "code": "MOLDEA_RUNTIME_ID_INVALID",
+        "code": "MOLDEA_MANIFEST_PROPERTY_UNKNOWN",
         "details": {},
-        "entity": {
-          "agentId": "agent"
-        },
-        "message": "The runtime ID is invalid.",
+        "entity": null,
+        "message": "The manifest contains an unknown property.",
         "path": "/moldea/moldea.yaml",
-        "pointer": "/agents/agent/runtime/id",
+        "pointer": "/unresolved",
         "range": {
           "end": {
-            "column": 27,
-            "line": 4,
-            "offset": 54
+            "column": 11,
+            "line": 2,
+            "offset": 21
           },
           "start": {
-            "column": 20,
-            "line": 4,
-            "offset": 47
+            "column": 1,
+            "line": 2,
+            "offset": 11
           }
         },
-        "severity": "error",
+        "group": "manifest",
         "source": "core",
-        "group": "agents"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "missing capability description",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    tools:\n      lookup:\n        name: lookup\n        implementation:\n          path: /src/lookup.ts\n",
+    "content": "version: 1\nagents:\n  agent:\n    tools:\n      lookup:\n        name: lookup\n        implementation:\n          path: /src/lookup.ts\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_CAPABILITY_DESCRIPTION_MISSING",
@@ -835,25 +831,25 @@
         "pointer": "/agents/agent/tools/lookup/description",
         "range": {
           "start": {
-            "line": 6,
             "column": 7,
-            "offset": 73
+            "line": 5,
+            "offset": 45
           },
           "end": {
-            "line": 10,
             "column": 1,
-            "offset": 157
+            "line": 9,
+            "offset": 129
           }
         },
-        "severity": "error",
+        "group": "agents",
         "source": "core",
-        "group": "agents"
+        "severity": "error"
       }
     ]
   },
   {
     "name": "invalid mirror path",
-    "content": "version: 1\nagents:\n  agent:\n    runtime: { id: custom }\n    mirrors: [relative.md]\n",
+    "content": "version: 1\nagents:\n  agent:\n    mirrors: [relative.md]\n",
     "expectedDiagnostics": [
       {
         "code": "MOLDEA_MIRROR_PATH_INVALID",
@@ -867,18 +863,18 @@
         "range": {
           "end": {
             "column": 26,
-            "line": 5,
-            "offset": 81
+            "line": 4,
+            "offset": 53
           },
           "start": {
             "column": 15,
-            "line": 5,
-            "offset": 70
+            "line": 4,
+            "offset": 42
           }
         },
-        "severity": "error",
+        "group": "mirrors",
         "source": "core",
-        "group": "mirrors"
+        "severity": "error"
       }
     ]
   }

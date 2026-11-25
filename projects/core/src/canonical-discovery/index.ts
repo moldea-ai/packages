@@ -30,7 +30,6 @@ export interface IDiscoveredAgentAssets {
   readonly path: IRepositoryPath;
   readonly description: IRepositoryPath | null;
   readonly instruction: IRepositoryPath | null;
-  readonly handoffDescription: IRepositoryPath | null;
 }
 
 // immutable canonical inventory produced before cross-file validation
@@ -39,7 +38,6 @@ export interface ICanonicalDiscoveryInventory {
   readonly project: IRepositoryPath | null;
   readonly context: readonly IRepositoryPath[];
   readonly decisions: readonly IRepositoryPath[];
-  readonly runtimeGuidance: readonly IRepositoryPath[];
   readonly agents: readonly IDiscoveredAgentAssets[];
 }
 
@@ -62,7 +60,6 @@ interface IMutableDiscoveredAgentAssets {
   path: IRepositoryPath;
   description: IRepositoryPath | null;
   instruction: IRepositoryPath | null;
-  handoffDescription: IRepositoryPath | null;
 }
 
 interface IWorkingInventory {
@@ -70,7 +67,6 @@ interface IWorkingInventory {
   project: IRepositoryPath | null;
   context: Set<IRepositoryPath>;
   decisions: Set<IRepositoryPath>;
-  runtimeGuidance: Set<IRepositoryPath>;
   agents: Map<string, IMutableDiscoveredAgentAssets>;
 }
 
@@ -80,7 +76,6 @@ const createWorkingInventory = (): IWorkingInventory => ({
   decisions: new Set(),
   manifest: null,
   project: null,
-  runtimeGuidance: new Set(),
 });
 
 const invalidSourceData = (
@@ -175,7 +170,6 @@ const getAgent = (
 
   const created: IMutableDiscoveredAgentAssets = {
     description: null,
-    handoffDescription: null,
     id: agentId,
     instruction: null,
     path: parseRepositoryPath(`/moldea/agents/${agentId}`),
@@ -204,9 +198,6 @@ const retainCanonicalFile = (
     case 'decision':
       inventory.decisions.add(path);
       return;
-    case 'runtime-guidance':
-      inventory.runtimeGuidance.add(path);
-      return;
     default:
       break;
   }
@@ -219,10 +210,8 @@ const retainCanonicalFile = (
 
   if (fileKind === 'agent-description') {
     agent.description = path;
-  } else if (fileKind === 'agent-instruction') {
-    agent.instruction = path;
   } else {
-    agent.handoffDescription = path;
+    agent.instruction = path;
   }
 };
 
@@ -240,7 +229,6 @@ const finalizeInventory = (working: IWorkingInventory): ICanonicalDiscoveryInven
     decisions: sortPaths(working.decisions),
     manifest: working.manifest,
     project: working.project,
-    runtimeGuidance: sortPaths(working.runtimeGuidance),
   });
 };
 

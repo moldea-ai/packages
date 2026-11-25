@@ -33,7 +33,7 @@ const createDiagnostic = (): ICoreDiagnostic => ({
   source: 'core',
 });
 
-describe('schema 7 CLI presentation formatters', () => {
+describe('schema 8 CLI presentation formatters', () => {
   test('returns help for every command', () => {
     expect(formatMoldeaCliHelp(null)).toBe(MOLDEA_CLI_TOP_LEVEL_HELP);
 
@@ -42,7 +42,7 @@ describe('schema 7 CLI presentation formatters', () => {
     }
   });
 
-  test('formats safe human and strict schema 7 JSON errors', () => {
+  test('formats safe human and strict schema 8 JSON errors', () => {
     const error = createMoldeaCliOwnedError('CURSOR_INVALID');
 
     expect(formatMoldeaCliHumanError(error)).toBe(
@@ -53,12 +53,12 @@ describe('schema 7 CLI presentation formatters', () => {
       command: 'inspect',
       error,
       result: null,
-      schemaVersion: 7,
+      schemaVersion: 8,
       status: 'error',
     });
   });
 
-  test('formats composition in human and schema 7 JSON forms', () => {
+  test('formats composition in human and schema 8 JSON forms', () => {
     const result: IMoldeaCliCompositionResult = {
       minimumGitVersion: '2.32.0',
       packages: [{ name: '@moldea.ai/core', version: '5.0.0' }],
@@ -67,12 +67,12 @@ describe('schema 7 CLI presentation formatters', () => {
     };
 
     expect(formatMoldeaCliHumanCompositionResult(result, '10.0.0')).toContain(
-      'JSON output schema: 7',
+      'JSON output schema: 8',
     );
     expect(JSON.parse(formatMoldeaCliJsonCompositionResult(result, '10.0.0'))).toMatchObject({
       command: 'composition',
       result,
-      schemaVersion: 7,
+      schemaVersion: 8,
       status: 'valid',
     });
   });
@@ -98,7 +98,7 @@ describe('schema 7 CLI presentation formatters', () => {
     expect(JSON.parse(formatMoldeaCliJsonValidateResult(result, '10.0.0'))).toMatchObject({
       command: 'validate',
       result: { diagnosticCount: 1 },
-      schemaVersion: 7,
+      schemaVersion: 8,
       status: 'invalid',
     });
   });

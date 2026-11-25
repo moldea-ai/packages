@@ -28,25 +28,13 @@ const createCompleteManifest = (): IMoldeaManifestV1 => ({
       affectedBy: ['/src/decision/**/*.ts'],
     },
   },
-  unresolved: {
-    'project-policy': {
-      category: 'policy',
-      effect: 'warning',
-      description: 'The project policy is unresolved.',
-      resolution: 'Resolve the project policy.',
-      related: [reference('/src/project-policy.ts')],
-    },
-  },
   agents: {
     reviewer: {
-      runtime: { id: 'custom' },
-      variables: { API_TOKEN: { description: 'The runtime token.' } },
       bindings: {
         runtimeAgent: reference('/src/agent.ts', 'reviewer'),
         inputSchema: reference('/src/input-schema.ts'),
         outputSchema: reference('/src/output-schema.ts'),
         instructionLoader: reference('/src/instruction-loader.ts'),
-        variableProviders: { API_TOKEN: reference('/src/token-provider.ts') },
       },
       affectedBy: ['/src/review/*/handler.ts'],
       mirrors: [repositoryPath('/runtime/reviewer.md')],
@@ -70,15 +58,6 @@ const createCompleteManifest = (): IMoldeaManifestV1 => ({
           affectedBy: ['/skills/**'],
         },
       },
-      unresolved: {
-        'runtime-policy': {
-          category: 'runtime',
-          effect: 'blocking',
-          description: 'The runtime policy is unresolved.',
-          resolution: 'Resolve the runtime policy.',
-          related: [reference('/src/runtime-policy.ts')],
-        },
-      },
     },
   },
 });
@@ -90,12 +69,10 @@ describe('parsed manifest scope matching', () => {
       '/src/context/current.ts',
       '/src/decision-binding.ts',
       '/src/decision/rule.ts',
-      '/src/project-policy.ts',
       '/src/agent.ts',
       '/src/input-schema.ts',
       '/src/output-schema.ts',
       '/src/instruction-loader.ts',
-      '/src/token-provider.ts',
       '/src/review/orders/handler.ts',
       '/runtime/reviewer.md',
       '/src/tools/inspect.ts',
@@ -106,7 +83,6 @@ describe('parsed manifest scope matching', () => {
       '/skills/audit/SKILL.md',
       '/skills/register.ts',
       '/skills/deeper/file.md',
-      '/src/runtime-policy.ts',
       '/unrelated/readme.md',
     ].map(repositoryPath);
     const result = matchParsedManifestScope(
@@ -116,11 +92,11 @@ describe('parsed manifest scope matching', () => {
     );
 
     expect(result.counts).toStrictEqual({
-      declarations: 21,
-      inputPaths: 22,
-      matchedOwners: 7,
-      matchedPaths: 21,
-      matches: 27,
+      declarations: 18,
+      inputPaths: 19,
+      matchedOwners: 5,
+      matchedPaths: 18,
+      matches: 24,
     });
     expect(new Set(result.matches.map(({ field }) => field))).toStrictEqual(
       new Set([
@@ -132,9 +108,7 @@ describe('parsed manifest scope matching', () => {
         'mirrors',
         'outputSchema',
         'registration',
-        'related',
         'runtimeAgent',
-        'variableProvider',
       ]),
     );
     expect(result.matches).toContainEqual({
@@ -214,15 +188,15 @@ describe('parsed manifest scope matching', () => {
     const first: IMoldeaManifestV1 = {
       version: 1,
       agents: {
-        zeta: { runtime: { id: 'custom' }, affectedBy: ['/src/**'] },
-        alpha: { runtime: { id: 'custom' }, affectedBy: ['/src/**'] },
+        zeta: { affectedBy: ['/src/**'] },
+        alpha: { affectedBy: ['/src/**'] },
       },
     };
     const second: IMoldeaManifestV1 = {
       version: 1,
       agents: {
-        alpha: { runtime: { id: 'custom' }, affectedBy: ['/src/**'] },
-        zeta: { runtime: { id: 'custom' }, affectedBy: ['/src/**'] },
+        alpha: { affectedBy: ['/src/**'] },
+        zeta: { affectedBy: ['/src/**'] },
       },
     };
     const paths = ['/src/z.ts', '/src/a.ts'].map(repositoryPath);
@@ -239,7 +213,6 @@ describe('parsed manifest scope matching', () => {
         [
           `agent-${index}`,
           {
-            runtime: { id: 'custom' },
             affectedBy: [`/area-${index}/**/*.ts`],
           },
         ] as const,
@@ -266,7 +239,7 @@ describe('parsed manifest scope matching', () => {
     const manifest: IMoldeaManifestV1 = {
       version: 1,
       agents: {
-        agent: { runtime: { id: 'custom' }, affectedBy: ['/src/**'] },
+        agent: { affectedBy: ['/src/**'] },
       },
     };
 

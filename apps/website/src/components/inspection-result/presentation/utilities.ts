@@ -151,17 +151,6 @@ export const findingTarget = (finding: IFinding, exportTarget?: IExportEvidence)
         string(details, 'impactPath') === undefined ? 'detail:pattern' : 'detail:impactPath',
       ]),
     };
-  if (finding.code.startsWith('MOLDEA_RUNTIME_GUIDANCE_'))
-    return {
-      target: row(
-        'Runtime guidance',
-        formatRepositoryPath(
-          string(details, 'missingFile') ?? finding.path ?? 'required runtime document',
-        ),
-        'runtime',
-      ),
-      consumed: new Set(['detail:missingFile']),
-    };
   const mirror = string(details, 'mirrorPath');
   if (mirror !== undefined)
     return {

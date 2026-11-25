@@ -6,14 +6,20 @@ import { ERRORS as PROCESS_ERRORS, createShutdownSignal, readStdin } from 'jg-pr
 
 import { runMoldeaCli } from '../cli-execution/index.js';
 import type { IMoldeaCliStdinReader } from '../cli-execution/index.js';
-import { loadMoldeaCliPackageMetadata } from '../package-metadata/index.js';
+import {
+  loadMoldeaCliPackageMetadata,
+  type IMoldeaCliPackageMetadata,
+} from '../package-metadata/index.js';
 import { createMoldeaCliOwnedError, formatMoldeaCliHumanError } from '../presentation/index.js';
+
+// the portable build embeds the exact package identities used by its bundle
+declare const MOLDEA_PORTABLE_PACKAGE_METADATA: IMoldeaCliPackageMetadata | undefined;
 
 const executableDirectory = path.dirname(fileURLToPath(import.meta.url));
 const packageManifestPath = path.resolve(executableDirectory, '..', 'package.json');
 
-// SIGINT, SIGTERM, or the launcher closing the IPC channel stops the run; the exit code is set here
-const shutdown = createShutdownSignal({ disconnect: true, setExitCode: false });
+// SIGINT or SIGTERM stops the run; the exit code is set here
+const shutdown = createShutdownSignal({ setExitCode: false });
 
 /** Reads process stdin without retaining bytes above the requested limit. */
 const readProcessStdin: IMoldeaCliStdinReader = async (maxBytes, signal) => {
@@ -61,7 +67,8 @@ const writeProcessOutput = async (
 
 try {
   const invocationDirectory = process.cwd();
-  const packageMetadata = await loadMoldeaCliPackageMetadata(packageManifestPath);
+  const packageMetadata =
+    MOLDEA_PORTABLE_PACKAGE_METADATA ?? (await loadMoldeaCliPackageMetadata(packageManifestPath));
   const executionResult = await runMoldeaCli({
     commandLineArguments: process.argv.slice(2),
     invocationDirectory,
@@ -93,7 +100,4 @@ try {
   process.exitCode = signalExitCode ?? 3;
 } finally {
   shutdown.dispose();
-
-  // an open IPC channel to the launcher would keep the process alive
-  if (process.connected) process.disconnect();
 }

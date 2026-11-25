@@ -8,7 +8,7 @@ import CodeText from '../code-text/code-text.component.astro';
 export interface Props {
   ariaLabel?: string;
 }
-const { ariaLabel = 'Runtime guidance' } = Astro.props;
+const { ariaLabel = 'SDKs moldea works with' } = Astro.props;
 const listId = `runtimes-${ariaLabel
   .toLowerCase()
   .replace(/[^a-z0-9]+/g, '-')
@@ -76,10 +76,12 @@ const runtimes: IRuntimeCatalogEntry[] = [...RUNTIME_CATALOG];
               <span class="text-sm leading-5 font-semibold text-foreground">
                 {runtime.displayName}
               </span>
-              <CodeText
-                class="text-xs leading-5 text-muted-foreground"
-                value={runtime.id}
-              />
+              {runtime.packageName && (
+                <CodeText
+                  class="text-xs leading-5 text-muted-foreground"
+                  value={runtime.packageName}
+                />
+              )}
               <span class="sr-only"> (opens in a new tab)</span>
             </span>
             <ExternalLink
@@ -95,7 +97,7 @@ const runtimes: IRuntimeCatalogEntry[] = [...RUNTIME_CATALOG];
   <div class="mt-5 flex justify-center has-[[hidden]]:hidden">
     <ActionButton
       variant="outline"
-      aria-label="Load more runtimes"
+      aria-label="Load more SDKs"
       aria-controls={listId}
       class="pointer-coarse:min-h-11"
       hidden

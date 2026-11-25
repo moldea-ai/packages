@@ -16,33 +16,10 @@
       "affectedBy": ["/src/database/**"]
     }
   },
-  "unresolved": {
-    "define-policy": {
-      "category": "policy",
-      "effect": "warning",
-      "description": "The final project policy has not been defined.",
-      "resolution": "Record the accepted policy and update affected implementation.",
-      "related": [
-        {
-          "path": "/src/policy.ts"
-        }
-      ],
-      "reference": "SUPPORT-1"
-    }
-  },
   "agents": {
     "customer-support": {
-      "runtime": {
-        "id": "custom",
-        "guidance": "/moldea/runtimes/custom.md"
-      },
       "context": ["/moldea/context/security.md"],
       "decisions": ["/moldea/decisions/1786050123456-use-postgresql.md"],
-      "variables": {
-        "CURRENT_DATETIME": {
-          "description": "Current UTC date and time."
-        }
-      },
       "bindings": {
         "runtimeAgent": {
           "path": "/src/agent.ts",
@@ -59,12 +36,6 @@
         "instructionLoader": {
           "path": "/src/instructions.ts",
           "symbol": "loadInstruction"
-        },
-        "variableProviders": {
-          "CURRENT_DATETIME": {
-            "path": "/src/time.ts",
-            "symbol": "now"
-          }
         }
       },
       "tools": {
@@ -105,15 +76,7 @@
         }
       },
       "affectedBy": ["/src/**"],
-      "mirrors": ["/apps/eve/instructions/customer-support.md"],
-      "unresolved": {
-        "final-policy": {
-          "category": "policy",
-          "effect": "blocking",
-          "description": "The final agent policy has not been defined.",
-          "resolution": "Define the policy and update the agent instruction."
-        }
-      }
+      "mirrors": ["/apps/eve/instructions/customer-support.md"]
     }
   }
 }

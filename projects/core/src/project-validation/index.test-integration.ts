@@ -33,13 +33,6 @@ interface IProjectValidationFixture {
   })[];
 }
 
-interface ICustomRuntimeFixture {
-  readonly cases: readonly (IRepositoryFixtureCase & {
-    readonly name: string;
-    readonly expectedGuidancePaths: readonly string[];
-  })[];
-}
-
 const fixture = JSON.parse(
   readFileSync(
     new URL('../../../../fixtures/core/project-index/cases.json', import.meta.url),
@@ -52,12 +45,6 @@ const expectedDiagnosticsByCase = JSON.parse(
     'utf8',
   ),
 ) as Readonly<Record<string, readonly unknown[]>>;
-const customRuntimeFixture = JSON.parse(
-  readFileSync(
-    new URL('../../../../fixtures/core/custom-runtime/cases.json', import.meta.url),
-    'utf8',
-  ),
-) as ICustomRuntimeFixture;
 const manifestPath = parseRepositoryPath('/moldea/moldea.yaml');
 
 const createEntries = (fixtureCase: IRepositoryFixtureCase): readonly IMemoryRepositoryEntry[] => [
@@ -138,34 +125,4 @@ describe('public Core project validation', () => {
     expect(Object.isFrozen(result.coverage)).toBe(true);
     expect(result.summary === null || Object.isFrozen(result.summary)).toBe(true);
   });
-
-  test.each(customRuntimeFixture.cases)(
-    'supports $name through the universal memory-reader path',
-    async (case_) => {
-      const core = createCore();
-      const repository = createIntegratedMemoryRepositoryReader(createEntries(case_));
-      const firstResult = await core.validateProject({ repository });
-      const secondResult = await core.validateProject({ repository });
-      const inspection = await core.createProjectInspection({ repository });
-      const metadataPage = inspection.readPage({ maxItems: 256, view: 'metadata' });
-      expect(toJsonValue(secondResult)).toStrictEqual(toJsonValue(firstResult));
-      expect(firstResult.valid).toBe(true);
-      expect(firstResult.errorCount).toBe(0);
-      expect(firstResult.warningCount).toBe(0);
-      expect(firstResult.diagnostics).toStrictEqual([]);
-      expect(firstResult.coverage).toMatchObject([
-        { relationship: 'runtime-agent', fileCheck: 'passed', exportCheck: 'passed' },
-      ]);
-      expect(firstResult.formatVersion).toBe(1);
-      expect(firstResult.summary?.counts.agents).toBe(1);
-      expect(
-        metadataPage.page.records
-          .map(({ item }) => item)
-          .filter((item) => item.kind === 'metadata')
-          .map(({ metadata }) => metadata)
-          .filter(({ kind }) => kind === 'runtime-guidance')
-          .map(({ path }) => path),
-      ).toStrictEqual(case_.expectedGuidancePaths);
-    },
-  );
 });

@@ -22,12 +22,7 @@ const createAsset = (content: string, name: string): IIndexedTextAsset => ({
 describe('Core agent description validation', () => {
   test('trims Unicode White_Space while preserving internal scalars', () => {
     const asset = createAsset('\u0085\u2003Owns 😀 support.\n\t', 'description');
-    const result = validateAgentDescription(
-      asset,
-      AGENT_ID,
-      'description',
-      DEFAULT_CORE_RESOURCE_LIMITS,
-    );
+    const result = validateAgentDescription(asset, AGENT_ID, DEFAULT_CORE_RESOURCE_LIMITS);
 
     expect(result).toStrictEqual({
       description: { asset, scalarLength: 15, value: 'Owns 😀 support.' },
@@ -44,7 +39,6 @@ describe('Core agent description validation', () => {
     const result = validateAgentDescription(
       createAsset(content, 'description'),
       AGENT_ID,
-      'description',
       DEFAULT_CORE_RESOURCE_LIMITS,
     );
 
@@ -52,22 +46,16 @@ describe('Core agent description validation', () => {
     expect(result.valid).toBe(true);
   });
 
-  test('reports every applicable description rule without truncation', () => {
+  test('rejects an overlong description without truncation', () => {
     const content = `{{${'x'.repeat(1_000)}}}`;
     const result = validateAgentDescription(
       createAsset(content, 'description'),
       AGENT_ID,
-      'description',
       DEFAULT_CORE_RESOURCE_LIMITS,
     );
 
     expect(result.description).toBeNull();
     expect(result.diagnostics).toMatchObject([
-      {
-        code: 'MOLDEA_AGENT_DESCRIPTION_INVALID',
-        details: { reason: 'runtime-variable-delimiter' },
-        entity: { agentId: AGENT_ID },
-      },
       {
         code: 'MOLDEA_AGENT_DESCRIPTION_INVALID',
         details: { reason: 'too-long' },
@@ -76,11 +64,10 @@ describe('Core agent description validation', () => {
     ]);
   });
 
-  test('uses the handoff code for an empty Unicode-whitespace effective value', () => {
+  test('rejects descriptions containing only Unicode whitespace', () => {
     const result = validateAgentDescription(
-      createAsset('\u0085\u2003\n', 'handoff-description'),
+      createAsset('\u0085\u2003\n', 'description'),
       AGENT_ID,
-      'handoff-description',
       DEFAULT_CORE_RESOURCE_LIMITS,
     );
 
@@ -88,7 +75,7 @@ describe('Core agent description validation', () => {
       description: null,
       diagnostics: [
         {
-          code: 'MOLDEA_AGENT_HANDOFF_DESCRIPTION_INVALID',
+          code: 'MOLDEA_AGENT_DESCRIPTION_INVALID',
           details: { reason: 'empty' },
         },
       ],

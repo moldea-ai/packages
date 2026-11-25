@@ -10,9 +10,9 @@
       "path": "/moldea/context/a-empty.md",
       "pointer": null,
       "range": null,
-      "severity": "error",
+      "group": "references",
       "source": "core",
-      "group": "references"
+      "severity": "error"
     },
     {
       "code": "MOLDEA_TEXT_INVALID_UTF8",
@@ -22,9 +22,9 @@
       "path": "/moldea/context/b-invalid-utf8.md",
       "pointer": null,
       "range": null,
-      "severity": "error",
+      "group": "discovery",
       "source": "core",
-      "group": "discovery"
+      "severity": "error"
     },
     {
       "code": "MOLDEA_TEXT_NUL_FORBIDDEN",
@@ -45,9 +45,9 @@
           "offset": 6
         }
       },
-      "severity": "error",
+      "group": "discovery",
       "source": "core",
-      "group": "discovery"
+      "severity": "error"
     },
     {
       "code": "MOLDEA_DECISION_BODY_EMPTY",
@@ -70,9 +70,9 @@
           "offset": 63
         }
       },
-      "severity": "error",
+      "group": "references",
       "source": "core",
-      "group": "references"
+      "severity": "error"
     },
     {
       "code": "MOLDEA_PROJECT_FILE_EMPTY",
@@ -82,21 +82,9 @@
       "path": "/moldea/project.md",
       "pointer": null,
       "range": null,
-      "severity": "error",
+      "group": "discovery",
       "source": "core",
-      "group": "discovery"
-    },
-    {
-      "code": "MOLDEA_RUNTIME_GUIDANCE_EMPTY",
-      "details": {},
-      "entity": null,
-      "message": "The runtime guidance is empty.",
-      "path": "/moldea/runtimes/empty.md",
-      "pointer": null,
-      "range": null,
-      "severity": "error",
-      "source": "core",
-      "group": "references"
+      "severity": "error"
     }
   ],
   "invalid manifest with independent failures": [
@@ -108,9 +96,9 @@
       "path": "/moldea/context/empty.md",
       "pointer": null,
       "range": null,
-      "severity": "error",
+      "group": "references",
       "source": "core",
-      "group": "references"
+      "severity": "error"
     },
     {
       "code": "MOLDEA_DECISION_SUPERSEDED_ORPHAN",
@@ -122,9 +110,9 @@
       "path": "/moldea/decisions/1767225600000-orphan.md",
       "pointer": null,
       "range": null,
-      "severity": "error",
+      "group": "references",
       "source": "core",
-      "group": "references"
+      "severity": "error"
     },
     {
       "code": "MOLDEA_MANIFEST_PROPERTY_UNKNOWN",
@@ -145,9 +133,9 @@
           "offset": 11
         }
       },
-      "severity": "error",
+      "group": "manifest",
       "source": "core",
-      "group": "manifest"
+      "severity": "error"
     },
     {
       "code": "MOLDEA_PROJECT_FILE_EMPTY",
@@ -157,21 +145,9 @@
       "path": "/moldea/project.md",
       "pointer": null,
       "range": null,
-      "severity": "error",
+      "group": "discovery",
       "source": "core",
-      "group": "discovery"
-    },
-    {
-      "code": "MOLDEA_RUNTIME_GUIDANCE_EMPTY",
-      "details": {},
-      "entity": null,
-      "message": "The runtime guidance is empty.",
-      "path": "/moldea/runtimes/empty.md",
-      "pointer": null,
-      "range": null,
-      "severity": "error",
-      "source": "core",
-      "group": "references"
+      "severity": "error"
     }
   ],
   "minimal context-only project": []

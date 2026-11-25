@@ -10,8 +10,6 @@ import type { ITestSuite } from '#test-suite/types';
 
 // artifact consumers kept in step with the existing compatibility jobs
 export const CI_COMPATIBILITY_LANES = [
-  'consumer-conformance',
-  'cli-testing-peer-compatibility',
   'repository-fs-runtime-compatibility',
   'cli-runtime-compatibility',
 ];
@@ -35,17 +33,10 @@ const isRuntimePackage = (name: string): boolean =>
   name !== CI_WEBSITE_WORKSPACE && name !== '@moldea.ai/website-ui';
 
 /** Maps selected package identities to the existing packed-consumer jobs. */
-const selectLanes = (workspaces: string[], full: boolean, testSuite: ITestSuite): string[] => {
+const selectLanes = (workspaces: string[], full: boolean): string[] => {
   const selected = new Set(workspaces);
   return CI_COMPATIBILITY_LANES.filter((lane) => {
-    if (
-      testSuite === 'essential' &&
-      (lane === 'consumer-conformance' || lane === 'cli-testing-peer-compatibility')
-    )
-      return false;
     if (full) return true;
-    if (lane === 'consumer-conformance' || lane.startsWith('cli-'))
-      return selected.has('@moldea.ai/cli');
     return selected.has(`@moldea.ai/${lane.replace(/-runtime-compatibility$/u, '')}`);
   });
 };
@@ -73,11 +64,8 @@ export const createCiMatrices = (plan: ICiPlan): ICiRuntimeMatrices => {
       : ['22.17.0', '22.x', '24.11.0', '24.x', '26.8.1'];
   return {
     cli: {
-      os:
-        plan.testSuite === 'essential'
-          ? ['ubuntu-latest']
-          : ['ubuntu-latest', 'macos-latest', 'windows-latest'],
-      'node-version': nodes,
+      os: ['ubuntu-latest', 'macos-latest', 'windows-latest'],
+      'node-version': plan.testSuite === 'essential' ? ['22.17.0', '24.16.0'] : nodes,
     },
     repositoryFs: { 'node-version': nodes },
   };
@@ -148,7 +136,7 @@ export const createCiPlan = (sources: ICiSelectionSources): ICiPlan => {
     }
   }
   const workspaces = [...selected].filter((name) => sources.current.has(name)).sort();
-  const lanes = selectLanes(workspaces, full, testSuite);
+  const lanes = selectLanes(workspaces, full);
   return {
     testedCommit: sources.testedCommit,
     comparisonCommit: sources.comparisonCommit,
@@ -211,8 +199,7 @@ export const parseCiPlan = (source: string): ICiPlan => {
   const workspaces = record['workspaces'];
   if (
     JSON.stringify(workspaces) !== JSON.stringify([...new Set(workspaces)].sort()) ||
-    JSON.stringify(record['lanes']) !==
-      JSON.stringify(selectLanes(workspaces, full, record['testSuite'])) ||
+    JSON.stringify(record['lanes']) !== JSON.stringify(selectLanes(workspaces, full)) ||
     record['artifacts'] !== (isWebsiteUiRelease || record['lanes'].length > 0) ||
     record['rootIntegration'] !== (full || workspaces.some(isRuntimePackage)) ||
     (isWebsiteUiRelease && !workspaces.includes('@moldea.ai/website-ui')) ||

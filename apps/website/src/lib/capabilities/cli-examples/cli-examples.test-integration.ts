@@ -18,24 +18,24 @@ beforeAll(async () => {
   examples = await createCliExamples(repositoryRoot, packages);
 });
 
-test('executes every public command with actual schema 7 status and process outcomes', () => {
+test('executes every public command with actual schema 8 status and process outcomes', () => {
   expect(examples).toHaveLength(11);
   expect(
     examples.map(({ result }) =>
       result.kind === 'cli' ? [result.schemaVersion, result.status, result.exitStatus] : null,
     ),
   ).toStrictEqual([
-    [7, 'valid', 0],
-    [7, 'valid', 0],
-    [7, 'valid', 0],
-    [7, 'valid', 0],
-    [7, 'valid', 0],
-    [7, 'valid', 0],
-    [7, 'error', 3],
-    [7, 'valid', 0],
-    [7, 'invalid', 1],
-    [7, 'valid', 0],
-    [7, 'valid', 0],
+    [8, 'valid', 0],
+    [8, 'valid', 0],
+    [8, 'valid', 0],
+    [8, 'valid', 0],
+    [8, 'valid', 0],
+    [8, 'valid', 0],
+    [8, 'error', 3],
+    [8, 'valid', 0],
+    [8, 'invalid', 1],
+    [8, 'valid', 0],
+    [8, 'valid', 0],
   ]);
 });
 
@@ -47,7 +47,7 @@ test.each([
   (id, warningCount, acceptedWarningCount) => {
     expect(examples.find((example) => example.id === id)?.result).toMatchObject({
       kind: 'cli',
-      schemaVersion: 7,
+      schemaVersion: 8,
       status: 'valid',
       exitStatus: 0,
       facts: {
@@ -100,7 +100,7 @@ test('retains all native envelope keys and full diagnostic/coverage records', ()
     'status',
   ]);
   expect(envelope).toMatchObject({
-    schemaVersion: 7,
+    schemaVersion: 8,
     command: 'validate',
     status: 'invalid',
     error: null,

@@ -3,18 +3,14 @@ import { expect, test } from 'vitest';
 import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
-import {
-  getIdentityIllustration,
-  getMirrorIllustration,
-  getVariableIllustration,
-} from './utilities.ts';
+import { getIdentityIllustration, getMirrorIllustration } from './utilities.ts';
 
 const instructionPath = '/moldea/agents/support/instruction.md';
 const example: ICapabilityCase = {
-  id: 'variable-undeclared',
+  id: 'agent-identity',
   groupId: 'agents',
-  title: 'Variable',
-  description: 'Missing variable.',
+  title: 'Agent identity',
+  description: 'Checks the introduced agent ID.',
   limitation: 'Structure only.',
   packageName: '@moldea.ai/core',
   operation: 'validateProject',
@@ -23,93 +19,21 @@ const example: ICapabilityCase = {
     {
       path: '/moldea/moldea.yaml',
       language: 'yaml',
-      content: 'agents:\n  support:\n    variables:\n      REGION: {}\n',
+      content: 'agents:\n  support:\n',
       isExcerpt: false,
       representation: 'source',
     },
     {
       path: instructionPath,
       language: 'markdown',
-      content: 'Agent instruction\nLook up {{ORDER_ID}}.\n',
+      content: 'You are the `support` agent.\n',
       isExcerpt: false,
       representation: 'source',
     },
   ],
   output: { kind: 'execution-facts', responses: [{}], redactions: [] },
-  result: {
-    kind: 'validation',
-    valid: false,
-    diagnostics: [
-      {
-        code: 'MOLDEA_VARIABLE_UNDECLARED',
-        group: 'agents',
-        severity: 'error',
-        source: 'core',
-        message: 'The agent instruction references an undeclared runtime variable.',
-        path: parseRepositoryPath(instructionPath),
-        pointer: null,
-        range: {
-          start: { line: 2, column: 9, offset: 26 },
-          end: { line: 2, column: 21, offset: 38 },
-        },
-        entity: { agentId: 'support', variableId: 'ORDER_ID' },
-        details: { occurrences: 1 },
-      },
-    ],
-  },
+  result: { kind: 'validation', valid: false, diagnostics: [] },
 };
-
-test('shows actual declared names and only the diagnosed line, without changing source files', () => {
-  const before = structuredClone(example);
-  expect(getVariableIllustration(example)).toStrictEqual({
-    instruction: example.files[1],
-    manifest: example.files[0],
-    token: '{{ORDER_ID}}',
-    variableId: 'ORDER_ID',
-    before: 'Look up ',
-    after: '.',
-    names: ['REGION'],
-  });
-  expect(example).toStrictEqual(before);
-  const unicode = {
-    ...example,
-    files: example.files.map((file) => ({
-      ...file,
-      content: file.content.replace('Look up', '📦 Find'),
-    })),
-  };
-  expect(getVariableIllustration(unicode).before).toBe('📦 Find ');
-});
-
-test.each([
-  ['missing instruction', { ...example, files: [example.files[0]] }],
-  [
-    'stale token',
-    {
-      ...example,
-      files: example.files.map((file) => ({
-        ...file,
-        content: file.content.replace('ORDER_ID', 'ORDER_NUMBER'),
-      })),
-    },
-  ],
-  [
-    'declared variable',
-    {
-      ...example,
-      files: example.files.map((file) => ({
-        ...file,
-        content: file.content.replace('REGION: {}', 'ORDER_ID: {}'),
-      })),
-    },
-  ],
-  [
-    'wrong manifest shape',
-    { ...example, files: [{ ...example.files[0], content: 'agents: []' }, example.files[1]] },
-  ],
-])('getVariableIllustration(%s) rejects a misleading illustration', (_label, input) => {
-  expect(() => getVariableIllustration(input)).toThrow();
-});
 
 test('isolates the changed return window and rejects missing or unrelated differences', () => {
   const original = {

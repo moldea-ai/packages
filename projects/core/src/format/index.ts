@@ -11,19 +11,10 @@ export interface IRepositoryReference {
   readonly symbol?: string;
 }
 
-// context, decision, runtime, and runtime-variable manifest declarations
+// context and decision manifest declarations
 export interface IRelationshipManifestEntry {
   readonly bindings?: readonly IRepositoryReference[];
   readonly affectedBy?: readonly string[];
-}
-
-export interface IRuntimeManifestEntry {
-  readonly id: string;
-  readonly guidance?: IRepositoryPath;
-}
-
-export interface IRuntimeVariableManifestEntry {
-  readonly description: string;
 }
 
 // agent binding and capability declarations
@@ -32,7 +23,6 @@ export interface IAgentBindingsManifestEntry {
   readonly inputSchema?: IRepositoryReference;
   readonly outputSchema?: IRepositoryReference;
   readonly instructionLoader?: IRepositoryReference;
-  readonly variableProviders?: Readonly<Record<string, IRepositoryReference>>;
 }
 
 export interface IToolManifestEntry {
@@ -53,29 +43,14 @@ export interface ISkillManifestEntry {
   readonly affectedBy?: readonly string[];
 }
 
-// unresolved requirement and complete agent declarations
-export type IUnresolvedRequirementEffect = 'blocking' | 'warning' | 'informational';
-
-export interface IUnresolvedRequirementManifestEntry {
-  readonly category: string;
-  readonly effect: IUnresolvedRequirementEffect;
-  readonly description: string;
-  readonly resolution: string;
-  readonly related?: readonly IRepositoryReference[];
-  readonly reference?: string;
-}
-
 export interface IAgentManifestEntry {
-  readonly runtime: IRuntimeManifestEntry;
   readonly context?: readonly IRepositoryPath[];
   readonly decisions?: readonly IRepositoryPath[];
-  readonly variables?: Readonly<Record<string, IRuntimeVariableManifestEntry>>;
   readonly bindings?: IAgentBindingsManifestEntry;
   readonly tools?: Readonly<Record<string, IToolManifestEntry>>;
   readonly skills?: Readonly<Record<string, ISkillManifestEntry>>;
   readonly affectedBy?: readonly string[];
   readonly mirrors?: readonly IRepositoryPath[];
-  readonly unresolved?: Readonly<Record<string, IUnresolvedRequirementManifestEntry>>;
 }
 
 // an explicit, reasoned acceptance of one stable warning identity
@@ -92,7 +67,6 @@ export interface IMoldeaManifestV1 {
   readonly acceptedWarnings?: readonly IAcceptedWarningManifestEntry[];
   readonly context?: Readonly<Record<string, IRelationshipManifestEntry>>;
   readonly decisions?: Readonly<Record<string, IRelationshipManifestEntry>>;
-  readonly unresolved?: Readonly<Record<string, IUnresolvedRequirementManifestEntry>>;
   readonly agents?: Readonly<Record<string, IAgentManifestEntry>>;
 }
 

@@ -230,7 +230,7 @@ describe('published website UI package', () => {
     const packResult = JSON.parse(output) as IPackDryRunResult;
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '5.0.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/website-ui', version: '6.0.0' });
     expect(readFileSync(path.join(projectDirectory, 'README.md'), 'utf8')).toContain(
       `pnpm add @moldea.ai/website-ui@${packResult.version}`,
     );
@@ -1011,7 +1011,7 @@ describe('published website UI package', () => {
             for (const control of [
               page.getByRole('tab', { name: 'First', exact: true }),
               page.getByRole('tab', { name: 'Second', exact: true }),
-              page.getByRole('button', { name: 'Load more runtimes', exact: true }),
+              page.getByRole('button', { name: 'Load more SDKs', exact: true }),
             ]) {
               const bounds = (await control.boundingBox())!;
               expect(bounds.width).toBeGreaterThanOrEqual(44);
@@ -1371,7 +1371,10 @@ describe('published website UI package', () => {
                 .getByText('The referenced file is missing.', { exact: true })
                 .isVisible(),
             ).toBe(true);
-            const runtimeGrid = page.getByRole('list', { name: 'Runtime guidance', exact: true });
+            const runtimeGrid = page.getByRole('list', {
+              name: 'SDKs moldea works with',
+              exact: true,
+            });
             expect(await runtimeGrid.getByRole('link').count()).toBe(35);
             const runtimeLink = runtimeGrid.getByRole('link', {
               name: /^OpenAI openai \(opens in a new tab\)$/u,
@@ -1385,7 +1388,7 @@ describe('published website UI package', () => {
             expect(
               await runtimeGrid
                 .getByRole('link', {
-                  name: /^Vercel AI SDK vercel-ai-sdk \(opens in a new tab\)$/u,
+                  name: /^Vercel AI SDK ai \(opens in a new tab\)$/u,
                 })
                 .evaluate((node) => node === document.activeElement),
             ).toBe(true);

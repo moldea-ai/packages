@@ -445,9 +445,9 @@ export const verifyProductionBuild = (
 
   for (const runtime of RUNTIME_CATALOG) {
     if (!llmsText.includes(`[${runtime.displayName}](${runtimesUrl}#${runtime.id})`))
-      throw new Error(`llms.txt omits runtime label ${runtime.id}.`);
+      throw new Error(`llms.txt omits SDK entry ${runtime.id}.`);
     if (!searchDocuments.some(({ url }) => url === `${runtimesPath}#${runtime.id}`))
-      throw new Error(`Search omits runtime label ${runtime.id}.`);
+      throw new Error(`Search omits SDK entry ${runtime.id}.`);
   }
   if (
     searchDocuments.some(({ url }) =>

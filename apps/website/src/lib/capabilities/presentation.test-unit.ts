@@ -156,7 +156,7 @@ describe('getCapabilityOutcome', () => {
         result: {
           kind: 'cli',
           status: 'valid',
-          schemaVersion: 7,
+          schemaVersion: 8,
           exitStatus: 0,
           command: 'moldea validate --json',
           facts: { warningCount: 1 },
@@ -176,7 +176,7 @@ describe('getCapabilityOutcome', () => {
       result: {
         kind: 'cli',
         status: 'valid',
-        schemaVersion: 7,
+        schemaVersion: 8,
         exitStatus: 0,
         command: 'moldea validate --json',
         facts: { valid: true, warningCount: 0, acceptedWarningCount: 0 },
@@ -199,7 +199,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'valid',
-        schemaVersion: 7,
+        schemaVersion: 8,
         exitStatus: 0,
         command: 'moldea inspect --json',
         facts: {},
@@ -211,7 +211,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'invalid',
-        schemaVersion: 7,
+        schemaVersion: 8,
         exitStatus: 1,
         command: 'moldea validate --json',
         facts: {},
@@ -223,7 +223,7 @@ describe('getCapabilityOutcome', () => {
       {
         kind: 'cli',
         status: 'error',
-        schemaVersion: 7,
+        schemaVersion: 8,
         exitStatus: 3,
         command: 'moldea content --json',
         facts: {},

@@ -129,7 +129,7 @@ const createCoverageRecord = (
     kind: 'coverage' as const,
   });
 
-/** Projects one bounded Core inspection item through the schema 7 allowlist. */
+/** Projects one bounded Core inspection item through the schema 8 allowlist. */
 const createInspectRecord = (
   item: IProjectInspectionItem,
   index: number,
@@ -139,9 +139,8 @@ const createInspectRecord = (
   if (item.kind === 'agent') {
     const record: IMoldeaCliAgentRecord = {
       agentId: item.agent.agentId,
-      key: createRecordKey(order, 'agent', item.agent.agentId, item.agent.runtimeId),
+      key: createRecordKey(order, 'agent', item.agent.agentId),
       kind: 'agent',
-      runtimeId: item.agent.runtimeId,
     };
 
     return Object.freeze(record);
@@ -227,7 +226,7 @@ export const createMoldeaCliValidateProjection = (
   });
 };
 
-/** Projects one bounded Core page through the content-free schema 7 allowlist. */
+/** Projects one bounded Core page through the content-free schema 8 allowlist. */
 export const createMoldeaCliInspectProjection = (
   inspection: IProjectInspectionPageResult,
 ): IMoldeaCliInspectProjection => {

@@ -21,7 +21,6 @@ const CORE_DIAGNOSTIC_MESSAGES: Record<ICoreDiagnosticCode, string> = {
   MOLDEA_AGENT_DESCRIPTION_MISSING: 'The agent description is missing.',
   MOLDEA_AGENT_DIRECTORY_MISSING: 'The registered agent directory is missing.',
   MOLDEA_AGENT_DIRECTORY_UNREGISTERED: 'The agent directory is not registered.',
-  MOLDEA_AGENT_HANDOFF_DESCRIPTION_INVALID: 'The agent handoff description is invalid.',
   MOLDEA_AGENT_IDENTITY_INVALID: 'The agent instruction identity is invalid.',
   MOLDEA_AGENT_INSTRUCTION_EMPTY: 'The agent instruction is empty.',
   MOLDEA_AGENT_INSTRUCTION_MISSING: 'The agent instruction is missing.',
@@ -51,7 +50,6 @@ const CORE_DIAGNOSTIC_MESSAGES: Record<ICoreDiagnosticCode, string> = {
   MOLDEA_DECISION_TIMESTAMP_MISMATCH:
     'The decision filename timestamp and createdAt value do not match.',
   MOLDEA_ENTRY_TYPE_INVALID: 'The repository entry type is invalid.',
-  MOLDEA_RUNTIME_ID_INVALID: 'The runtime ID is invalid.',
   MOLDEA_GLOB_INVALID: 'The impact pattern is invalid.',
   MOLDEA_ID_DUPLICATE: 'An ID is duplicated within its required scope.',
   MOLDEA_ID_INVALID: 'The ID is invalid.',
@@ -91,8 +89,6 @@ const CORE_DIAGNOSTIC_MESSAGES: Record<ICoreDiagnosticCode, string> = {
   MOLDEA_REFERENCE_MISSING: 'The referenced repository path does not exist.',
   MOLDEA_REFERENCE_NOT_FILE: 'The referenced repository path is not a regular file.',
   MOLDEA_REFERENCE_SYMLINK: 'The referenced repository path is a symlink.',
-  MOLDEA_RUNTIME_GUIDANCE_EMPTY: 'The runtime guidance is empty.',
-  MOLDEA_RUNTIME_GUIDANCE_MISSING: 'The referenced runtime guidance does not exist.',
   MOLDEA_SKILL_IMPLEMENTATION_MISSING: 'The registered skill implementation is missing.',
   MOLDEA_SYMBOL_FORBIDDEN: 'A canonical moldea reference must not include a symbol.',
   MOLDEA_SYMBOL_INVALID: 'The repository-reference symbol is invalid.',
@@ -102,13 +98,6 @@ const CORE_DIAGNOSTIC_MESSAGES: Record<ICoreDiagnosticCode, string> = {
   MOLDEA_TEXT_INVALID_UTF8: 'The text document is not valid UTF-8.',
   MOLDEA_TEXT_NUL_FORBIDDEN: 'The text document contains a forbidden NUL character.',
   MOLDEA_TOOL_IMPLEMENTATION_MISSING: 'The registered tool implementation is missing.',
-  MOLDEA_VARIABLE_ID_INVALID: 'The runtime-variable ID is invalid.',
-  MOLDEA_VARIABLE_PLACEHOLDER_MALFORMED:
-    'The agent instruction contains a malformed runtime-variable placeholder.',
-  MOLDEA_VARIABLE_PROVIDER_UNDECLARED:
-    'A variable-provider binding exists for an undeclared variable.',
-  MOLDEA_VARIABLE_UNDECLARED: 'The agent instruction references an undeclared runtime variable.',
-  MOLDEA_VARIABLE_UNUSED: 'The declared runtime variable is unused by the agent instruction.',
   MOLDEA_YAML_DUPLICATE_KEY: 'The YAML document contains a duplicate mapping key.',
   MOLDEA_YAML_FEATURE_UNSUPPORTED: 'The YAML document uses an unsupported feature.',
   MOLDEA_YAML_MALFORMED: 'The YAML document is malformed.',
@@ -120,7 +109,6 @@ const ENTITY_KEYS = [
   'capabilityKind',
   'capabilityId',
   'decisionId',
-  'variableId',
   'contextPath',
   'integrationPath',
 ] as const satisfies readonly (keyof IDiagnosticEntity)[];
@@ -358,10 +346,6 @@ const compareDiagnostics = (left: IDiagnostic, right: IDiagnostic): number => {
       readEntityValue(right.entity, 'decisionId'),
     ) ||
     compareCodePoints(
-      readEntityValue(left.entity, 'variableId'),
-      readEntityValue(right.entity, 'variableId'),
-    ) ||
-    compareCodePoints(
       readEntityValue(left.entity, 'contextPath'),
       readEntityValue(right.entity, 'contextPath'),
     ) ||
@@ -381,10 +365,8 @@ const compareDiagnostics = (left: IDiagnostic, right: IDiagnostic): number => {
 const getDiagnosticGroup = (code: ICoreDiagnosticCode): ICoreDiagnostic['group'] => {
   if (code.startsWith('MOLDEA_INTEGRATION_')) return 'integration';
   if (code.startsWith('MOLDEA_MIRROR_')) return 'mirrors';
-  if (/^MOLDEA_(REFERENCE|IMPACT|SYMBOL|CONTEXT|DECISION|RUNTIME_GUIDANCE)_/.test(code))
-    return 'references';
-  if (code === 'MOLDEA_VARIABLE_ID_INVALID') return 'manifest';
-  if (/^MOLDEA_(AGENT|VARIABLE|CAPABILITY|TOOL|SKILL|RUNTIME)_/.test(code)) return 'agents';
+  if (/^MOLDEA_(REFERENCE|IMPACT|SYMBOL|CONTEXT|DECISION)_/.test(code)) return 'references';
+  if (/^MOLDEA_(AGENT|CAPABILITY|TOOL|SKILL)_/.test(code)) return 'agents';
   if (/^MOLDEA_(MANIFEST_MISSING|PROJECT_FILE|ENTRY_TYPE|CANONICAL|TEXT)_/.test(code))
     return 'discovery';
   return 'manifest';
