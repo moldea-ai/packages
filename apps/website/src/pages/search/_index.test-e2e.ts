@@ -12,7 +12,7 @@ const documents = [
     url: '/snapshots/',
   },
   {
-    title: 'Runtimes',
+    title: 'SDK guidance',
     description: 'Read runtime guidance.',
     searchText: 'runtime',
     url: '/runtimes/',
@@ -67,7 +67,7 @@ for (const [query, status, resultCount] of [
       ).toHaveCount(0);
       if (resultCount > 0) {
         await expect(page.locator('[data-search-results]').getByRole('heading')).toHaveText(
-          'Runtimes',
+          'SDK guidance',
         );
         await input.fill('snapshot');
         await input.press('Enter');

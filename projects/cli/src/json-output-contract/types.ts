@@ -3,13 +3,13 @@ import type { IMoldeaCliError } from '../presentation/types.js';
 
 export type IMoldeaCliJsonStatus = 'error' | 'invalid' | 'valid';
 
-// one strict schema 7 envelope shared by every machine-readable command result
+// one strict schema 8 envelope shared by every machine-readable command result
 export interface IMoldeaCliJsonEnvelope<TResult = unknown> {
   readonly cliVersion: string;
   readonly command: IMoldeaCliCommand | null;
   readonly error: IMoldeaCliError | null;
   readonly result: TResult | null;
-  readonly schemaVersion: 7;
+  readonly schemaVersion: 8;
   readonly status: IMoldeaCliJsonStatus;
 }
 

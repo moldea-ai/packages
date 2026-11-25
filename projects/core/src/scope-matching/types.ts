@@ -4,8 +4,7 @@ import type { IContentDigest, ITextDocumentInput } from '../contracts/index.js';
 import type { ICoreDiagnostic } from '../diagnostics/index.js';
 
 // manifest owners that can declare changed-path relationships
-export type IManifestScopeOwnerKind =
-  'agent' | 'context' | 'decision' | 'skill' | 'tool' | 'unresolved';
+export type IManifestScopeOwnerKind = 'agent' | 'context' | 'decision' | 'skill' | 'tool';
 
 // exact version 1 fields whose repository paths can establish relevance
 export type IManifestScopeRelationshipField =
@@ -17,9 +16,7 @@ export type IManifestScopeRelationshipField =
   | 'mirrors'
   | 'outputSchema'
   | 'registration'
-  | 'related'
-  | 'runtimeAgent'
-  | 'variableProvider';
+  | 'runtimeAgent';
 
 export interface IManifestScopeOwner {
   readonly kind: IManifestScopeOwnerKind;

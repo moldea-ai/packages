@@ -4,17 +4,8 @@
       "context": ["/moldea/context/security.md"],
       "decisions": ["/moldea/decisions/1767225600000-use-security.md"],
       "declaration": {
-        "runtime": {
-          "id": "custom",
-          "guidance": "/moldea/runtimes/node.md"
-        },
         "context": ["/moldea/context/security.md"],
         "decisions": ["/moldea/decisions/1767225600000-use-security.md"],
-        "variables": {
-          "REGION": {
-            "description": "Deployment region."
-          }
-        },
         "bindings": {
           "runtimeAgent": {
             "path": "/src/agents.ts",
@@ -31,20 +22,7 @@
           }
         },
         "affectedBy": ["/src/**"],
-        "mirrors": ["/apps/alpha.md"],
-        "unresolved": {
-          "schema-owner": {
-            "category": "ownership",
-            "effect": "informational",
-            "description": "Schema ownership is unresolved.",
-            "resolution": "Assign one schema owner.",
-            "related": [
-              {
-                "path": "/src/schema.ts"
-              }
-            ]
-          }
-        }
+        "mirrors": ["/apps/alpha.md"]
       },
       "description": {
         "asset": {
@@ -56,17 +34,6 @@
         },
         "scalarLength": 12,
         "value": "Alpha agent."
-      },
-      "handoffDescription": {
-        "asset": {
-          "content": "Transfers Alpha work.\n",
-          "digest": "sha256:3c50760556e660f7476207c76ba91a3fcdf1f8b320f542b4e9921c83802ee85a",
-          "path": "/moldea/agents/alpha/handoff-description.md",
-          "scalarLength": 22,
-          "utf8ByteLength": 22
-        },
-        "scalarLength": 21,
-        "value": "Transfers Alpha work."
       },
       "id": "alpha",
       "instruction": {
@@ -89,11 +56,7 @@
     {
       "context": [],
       "decisions": [],
-      "declaration": {
-        "runtime": {
-          "id": "custom"
-        }
-      },
+      "declaration": {},
       "description": {
         "asset": {
           "content": "Zeta agent.\n",
@@ -105,7 +68,6 @@
         "scalarLength": 11,
         "value": "Zeta agent."
       },
-      "handoffDescription": null,
       "id": "zeta",
       "instruction": {
         "content": "You are the `zeta` agent.\n",
@@ -170,11 +132,11 @@
   "formatVersion": 1,
   "manifest": {
     "asset": {
-      "content": "version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy:\n      - /src/**\n  /moldea/context/security.md:\n    bindings:\n      - path: /src/security.ts\ndecisions:\n  /moldea/decisions/1767225600000-use-security.md:\n    affectedBy:\n      - /src/**\nunresolved:\n  release-owner:\n    category: ownership\n    effect: warning\n    description: Release ownership is unresolved.\n    resolution: Assign one release owner.\n    related:\n      - path: /src/release.ts\nagents:\n  zeta:\n    runtime:\n      id: custom\n  alpha:\n    runtime:\n      id: custom\n      guidance: /moldea/runtimes/node.md\n    context:\n      - /moldea/context/security.md\n    decisions:\n      - /moldea/decisions/1767225600000-use-security.md\n    variables:\n      REGION:\n        description: Deployment region.\n    bindings:\n      runtimeAgent:\n        path: /src/agents.ts\n        symbol: alphaAgent\n    tools:\n      audit:\n        name: auditRequests\n        description: Audits requests.\n        implementation:\n          path: /src/audit.ts\n    affectedBy:\n      - /src/**\n    mirrors:\n      - /apps/alpha.md\n    unresolved:\n      schema-owner:\n        category: ownership\n        effect: informational\n        description: Schema ownership is unresolved.\n        resolution: Assign one schema owner.\n        related:\n          - path: /src/schema.ts\n",
-      "digest": "sha256:2a407c5ced4e649022e02d08b0ec0cde8d950ecd460cb57c03426177b09aee60",
+      "content": "version: 1\ncontext:\n  /moldea/project.md:\n    affectedBy:\n      - /src/**\n  /moldea/context/security.md:\n    bindings:\n      - path: /src/security.ts\ndecisions:\n  /moldea/decisions/1767225600000-use-security.md:\n    affectedBy:\n      - /src/**\nagents:\n  zeta: {}\n  alpha:\n    context:\n      - /moldea/context/security.md\n    decisions:\n      - /moldea/decisions/1767225600000-use-security.md\n    bindings:\n      runtimeAgent:\n        path: /src/agents.ts\n        symbol: alphaAgent\n    tools:\n      audit:\n        name: auditRequests\n        description: Audits requests.\n        implementation:\n          path: /src/audit.ts\n    affectedBy:\n      - /src/**\n    mirrors:\n      - /apps/alpha.md\n",
+      "digest": "sha256:b828e8ef7fee36bd5c96f60763c142771e2f97e0af24d229802c9f5699b05777",
       "path": "/moldea/moldea.yaml",
-      "scalarLength": 1311,
-      "utf8ByteLength": 1311
+      "scalarLength": 694,
+      "utf8ByteLength": 694
     },
     "value": {
       "version": 1,
@@ -195,32 +157,10 @@
           "affectedBy": ["/src/**"]
         }
       },
-      "unresolved": {
-        "release-owner": {
-          "category": "ownership",
-          "effect": "warning",
-          "description": "Release ownership is unresolved.",
-          "resolution": "Assign one release owner.",
-          "related": [
-            {
-              "path": "/src/release.ts"
-            }
-          ]
-        }
-      },
       "agents": {
         "alpha": {
-          "runtime": {
-            "id": "custom",
-            "guidance": "/moldea/runtimes/node.md"
-          },
           "context": ["/moldea/context/security.md"],
           "decisions": ["/moldea/decisions/1767225600000-use-security.md"],
-          "variables": {
-            "REGION": {
-              "description": "Deployment region."
-            }
-          },
           "bindings": {
             "runtimeAgent": {
               "path": "/src/agents.ts",
@@ -237,26 +177,9 @@
             }
           },
           "affectedBy": ["/src/**"],
-          "mirrors": ["/apps/alpha.md"],
-          "unresolved": {
-            "schema-owner": {
-              "category": "ownership",
-              "effect": "informational",
-              "description": "Schema ownership is unresolved.",
-              "resolution": "Assign one schema owner.",
-              "related": [
-                {
-                  "path": "/src/schema.ts"
-                }
-              ]
-            }
-          }
+          "mirrors": ["/apps/alpha.md"]
         },
-        "zeta": {
-          "runtime": {
-            "id": "custom"
-          }
-        }
+        "zeta": {}
       }
     }
   },
@@ -266,29 +189,5 @@
     "path": "/moldea/project.md",
     "scalarLength": 30,
     "utf8ByteLength": 30
-  },
-  "runtimes": [
-    {
-      "asset": {
-        "content": "Node runtime guidance.\n",
-        "digest": "sha256:3d629d0d523897c03eff3ab31bf2646539bb3ca041606f7566b3ef99aaea9705",
-        "path": "/moldea/runtimes/node.md",
-        "scalarLength": 23,
-        "utf8ByteLength": 23
-      }
-    }
-  ],
-  "unresolved": {
-    "release-owner": {
-      "category": "ownership",
-      "effect": "warning",
-      "description": "Release ownership is unresolved.",
-      "resolution": "Assign one release owner.",
-      "related": [
-        {
-          "path": "/src/release.ts"
-        }
-      ]
-    }
   }
 }

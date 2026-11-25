@@ -501,14 +501,11 @@ describe('universal binding coverage through Core', () => {
       decisions: { [decisionPath]: { bindings: [reference] } },
       agents: {
         reviewer: {
-          runtime: { id: 'openai' },
-          variables: { REGION: { description: 'The region.' } },
           bindings: {
             runtimeAgent: reference,
             instructionLoader: reference,
             inputSchema: reference,
             outputSchema: reference,
-            variableProviders: { REGION: reference },
           },
           tools: {
             lookup: {
@@ -548,7 +545,7 @@ describe('universal binding coverage through Core', () => {
       {
         path: '/moldea/agents/reviewer/instruction.md',
         type: 'file',
-        content: 'You are the `reviewer` agent. Region: {{REGION}}.\n',
+        content: 'You are the `reviewer` agent. Reviews changes.\n',
       },
       { path: reference.path, type: 'file', content: 'export const entry = 1;' },
     ]);
@@ -566,8 +563,8 @@ describe('universal binding coverage through Core', () => {
     const inspection = await createCore().createProjectInspection({ repository });
     expect(inspection.valid).toBe(true);
     expect(inspection.coverageCounts).toStrictEqual({
-      bindings: 13,
-      exportsPassed: 13,
+      bindings: 12,
+      exportsPassed: 12,
       exportsFailed: 0,
       exportsNotChecked: 0,
     });
@@ -587,7 +584,7 @@ describe('universal binding coverage through Core', () => {
       }
       cursor = page.page.nextCursor ?? undefined;
     } while (cursor !== undefined);
-    expect(new Set(records).size).toBe(13);
+    expect(new Set(records).size).toBe(12);
     expect(reads).toBe(1);
   });
 

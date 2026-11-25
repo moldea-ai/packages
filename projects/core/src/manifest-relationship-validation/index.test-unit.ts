@@ -30,7 +30,6 @@ const createDiscovery = (overrides: IDiscoveryOverrides = {}): ICanonicalDiscove
     decisions: overrides.decisions ?? [],
     manifest: MANIFEST_PATH,
     project: overrides.project === undefined ? PROJECT_PATH : overrides.project,
-    runtimeGuidance: [],
   },
   valid: (overrides.diagnostics?.length ?? 0) === 0,
 });
@@ -74,7 +73,6 @@ describe('Core manifest relationship validation', () => {
         reviewer: {
           context: [contextPath],
           decisions: [decision.path],
-          runtime: { id: 'custom' },
         },
       },
       context: {
@@ -104,7 +102,6 @@ describe('Core manifest relationship validation', () => {
         reviewer: {
           context: [contextPath],
           decisions: [decisionPath],
-          runtime: { id: 'custom' },
         },
       },
       context: { [contextPath]: { affectedBy: ['/src/**'] } },
@@ -164,7 +161,6 @@ describe('Core manifest relationship validation', () => {
       version: 1,
       agents: {
         reviewer: {
-          runtime: { id: 'custom' },
           context: contextPaths,
           decisions: decisions.map(({ path }) => path),
         },
@@ -211,7 +207,6 @@ describe('Core manifest relationship validation', () => {
       agents: {
         reviewer: {
           decisions: [acceptedDecision.path, decision.path],
-          runtime: { id: 'custom' },
         },
       },
       version: 1,
@@ -244,7 +239,6 @@ describe('Core manifest relationship validation', () => {
         reviewer: {
           context: [blockedContextPath],
           decisions: [blockedDecisionPath, invalidDecisionPath],
-          runtime: { id: 'custom' },
         },
       },
       context: { [blockedContextPath]: { affectedBy: ['/src/**'] } },
@@ -285,7 +279,6 @@ describe('Core manifest relationship validation', () => {
       agents: {
         constructor: {
           context: [contextPath],
-          runtime: { id: 'custom' },
         },
       },
       context: { [contextPath]: { affectedBy: ['/src/**'] } },
@@ -319,12 +312,10 @@ describe('Core manifest relationship validation', () => {
         reviewer: {
           context: [secondContextPath, firstContextPath],
           decisions: [secondDecisionPath, firstDecisionPath],
-          runtime: { id: 'custom' },
         },
         auditor: {
           context: [secondContextPath, firstContextPath],
           decisions: [secondDecisionPath, firstDecisionPath],
-          runtime: { id: 'custom' },
         },
       },
       version: 1,
@@ -334,12 +325,10 @@ describe('Core manifest relationship validation', () => {
         auditor: {
           context: [secondContextPath, firstContextPath],
           decisions: [secondDecisionPath, firstDecisionPath],
-          runtime: { id: 'custom' },
         },
         reviewer: {
           context: [secondContextPath, firstContextPath],
           decisions: [secondDecisionPath, firstDecisionPath],
-          runtime: { id: 'custom' },
         },
       },
       version: 1,

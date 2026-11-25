@@ -27,7 +27,7 @@ const COVERAGE: IBindingCoverage = {
 };
 const COVERAGE_COUNTS = { bindings: 1, exportsPassed: 0, exportsFailed: 0, exportsNotChecked: 1 };
 const SUMMARY = {
-  counts: { agents: 1, context: 0, decisions: 0, mirrors: 0, runtimes: 0, unresolved: 0 },
+  counts: { agents: 1, context: 0, decisions: 0, mirrors: 0 },
   manifestDigest: `sha256:${'a'.repeat(64)}` as IContentDigest,
   manifestPath: parseRepositoryPath('/moldea/moldea.yaml'),
   projectDigest: `sha256:${'b'.repeat(64)}` as IContentDigest,
@@ -68,7 +68,7 @@ const createValidation = (
   valid: !diagnostics.some((diagnostic) => diagnostic.severity === 'error'),
 });
 
-describe('schema 7 presentation projections', () => {
+describe('schema 8 presentation projections', () => {
   test('projects bounded coverage and assignments with source cursors', () => {
     const inspection: IProjectInspectionPageResult = {
       coverageCounts: COVERAGE_COUNTS,
@@ -93,7 +93,7 @@ describe('schema 7 presentation projections', () => {
         totalItems: 2,
         records: [
           {
-            item: { kind: 'agent', agent: { agentId: 'assistant', runtimeId: 'openai' } },
+            item: { kind: 'agent', agent: { agentId: 'assistant' } },
             nextCursor: 'agent-cursor',
           },
           { item: { kind: 'coverage', coverage: COVERAGE }, nextCursor: null },
@@ -104,7 +104,7 @@ describe('schema 7 presentation projections', () => {
     expect(projection.counts).toStrictEqual(inspection.counts);
     expect(projection.coverageCounts).toStrictEqual(COVERAGE_COUNTS);
     expect(projection.records).toMatchObject([
-      { kind: 'agent', agentId: 'assistant', runtimeId: 'openai' },
+      { kind: 'agent', agentId: 'assistant' },
       { kind: 'coverage', ...COVERAGE },
     ]);
     expect(projection.getSourceCursor(projection.records[0]!)).toBe('agent-cursor');

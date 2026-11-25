@@ -55,7 +55,6 @@ export interface IMoldeaCliAssetIdentity {
 export interface IMoldeaCliAgentRecord extends IMoldeaCliOutputRecord {
   readonly agentId: string;
   readonly kind: 'agent';
-  readonly runtimeId: string;
 }
 
 interface IMoldeaCliDiagnosticRecordBase extends IMoldeaCliOutputRecord {

@@ -1,11 +1,6 @@
 {
   "entries": [
     {
-      "path": "/moldea/runtimes/custom/api.md",
-      "type": "file",
-      "text": "# Custom runtime\n"
-    },
-    {
       "path": "/moldea/agents/customer-support/instruction.md",
       "type": "file",
       "text": "You are the customer-support agent.\n"
@@ -39,11 +34,6 @@
       "path": "/moldea/context/product.md",
       "type": "file",
       "text": "# Product\n"
-    },
-    {
-      "path": "/moldea/agents/customer-support/handoff-description.md",
-      "type": "file",
-      "text": "Use for customer account support.\n"
     }
   ],
   "expectedInventory": {
@@ -51,14 +41,12 @@
     "project": "/moldea/project.md",
     "context": ["/moldea/context/product.md", "/moldea/context/security/privacy.md"],
     "decisions": ["/moldea/decisions/1786131723456-use-postgresql.md"],
-    "runtimeGuidance": ["/moldea/runtimes/custom/api.md"],
     "agents": [
       {
         "id": "customer-support",
         "path": "/moldea/agents/customer-support",
         "description": "/moldea/agents/customer-support/description.md",
-        "instruction": "/moldea/agents/customer-support/instruction.md",
-        "handoffDescription": "/moldea/agents/customer-support/handoff-description.md"
+        "instruction": "/moldea/agents/customer-support/instruction.md"
       }
     ]
   }

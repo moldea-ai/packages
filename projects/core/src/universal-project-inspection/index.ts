@@ -29,7 +29,6 @@ import { readProjectAssets, readProjectFile } from '../project-assets/index.js';
 import { createProjectIndex } from '../project-index/index.js';
 import type { IRepositoryInspectionSession } from '../repository-inspection-session/index.js';
 import { validateRepositoryReferences } from '../repository-reference-validation/index.js';
-import { readRuntimeGuidance } from '../runtime-guidance/index.js';
 import { getRetainedMemory } from '../retained-memory/index.js';
 import { measureYamlRetainedBytes, type IYamlNode } from '../yaml/index.js';
 
@@ -159,16 +158,6 @@ export const inspectUniversalProject = async (
     );
     addDiagnostics(collector, projectAssets.diagnostics);
 
-    const runtimeGuidance = await readRuntimeGuidance(
-      session.reader,
-      discovery.inventory.manifest ?? MANIFEST_PATH,
-      indexedManifest?.value ?? null,
-      discovery,
-      options,
-      signal,
-    );
-    addDiagnostics(collector, runtimeGuidance.diagnostics);
-
     const decisionGraph = await readDecisionGraph(
       session.reader,
       discovery.inventory.decisions,
@@ -278,7 +267,6 @@ export const inspectUniversalProject = async (
             decisions: decisionGraph.decisions,
             manifest: indexedManifest,
             project: projectAssets.project,
-            runtimes: runtimeGuidance.runtimes,
           })
         : null;
 

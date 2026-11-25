@@ -35,17 +35,11 @@ const agentCase = (
   operation: 'validateProject',
 });
 
-const mirrorManifest = `${AGENT_MANIFEST}    mirrors:\n      - /instructions/support.md\n`;
+const agentFieldsPrefix = AGENT_MANIFEST.replace(' {}', '');
+const mirrorManifest = `${agentFieldsPrefix}    mirrors:\n      - /instructions/support.md\n`;
 
 // canonical instructions, declared assets, and mirrors remain independent of runtime execution
 export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
-  agentCase(
-    'runtime-invalid-id',
-    'A runtime ID uses invalid syntax',
-    'Runtime identifiers follow the manifest naming contract.',
-    createAgentEntries(AGENT_MANIFEST.replace('id: custom', 'id: OpenAI')),
-    ['MOLDEA_RUNTIME_ID_INVALID'],
-  ),
   ...(['present', 'empty', 'missing'] as const).map((state) =>
     agentCase(
       `agent-context-${state}`,
@@ -56,7 +50,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
           : 'The linked policy document is missing',
       'Canonical context references must identify non-empty knowledge documents.',
       [
-        ...createAgentEntries(`${AGENT_MANIFEST}    context: [/moldea/context/returns.md]\n`),
+        ...createAgentEntries(`${agentFieldsPrefix}    context: [/moldea/context/returns.md]\n`),
         ...(state === 'missing'
           ? []
           : [
@@ -76,7 +70,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
   agentCase(
     'agent-valid',
     'The instruction and declarations agree',
-    'The agent identifies itself and uses its declared region variable.',
+    'The canonical description and instruction are both present, and the instruction introduces the registered agent.',
     createAgentEntries(),
     [],
   ),
@@ -126,75 +120,22 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
   ),
   agentCase(
     'description-invalid',
-    'A description requests a variable',
-    'Descriptions cannot contain runtime-variable placeholders.',
-    replaceFile(
-      '/moldea/agents/support/description.md',
-      'Explains return eligibility in {{REGION}}.\n',
-    ),
+    'A description is blank',
+    'The canonical description must contain text.',
+    replaceFile('/moldea/agents/support/description.md', '\n'),
     ['MOLDEA_AGENT_DESCRIPTION_INVALID'],
   ),
-  agentCase(
-    'handoff-description-invalid',
-    'The routing description is empty',
-    'An optional handoff description must be valid when present.',
-    [
-      ...createAgentEntries(),
-      { path: '/moldea/agents/support/handoff-description.md', type: 'file', content: '\n' },
-    ],
-    ['MOLDEA_AGENT_HANDOFF_DESCRIPTION_INVALID'],
-  ),
-  agentCase(
-    'variable-undeclared',
-    'An instruction uses an undeclared variable',
-    'The instruction uses a variable the agent has not declared.',
-    replaceFile(
-      INSTRUCTION_PATH,
-      `${INSTRUCTION_TEXT}Check delivery status for order {{ORDER_ID}}.\n`,
-    ),
-    ['MOLDEA_VARIABLE_UNDECLARED'],
-  ),
-  agentCase(
-    'variable-unused',
-    'A declared variable is never used',
-    'The region declaration has no matching placeholder in the instruction.',
-    replaceFile(INSTRUCTION_PATH, 'You are the `support` agent.\n\nExplain return eligibility.\n'),
-    ['MOLDEA_VARIABLE_UNUSED'],
-  ),
-  agentCase(
-    'variable-malformed',
-    'A placeholder is unfinished',
-    'Malformed placeholders are reported separately from undeclared variables.',
-    replaceFile(INSTRUCTION_PATH, `${INSTRUCTION_TEXT}Look up {{ORDER_ID}.\n`),
-    ['MOLDEA_VARIABLE_PLACEHOLDER_MALFORMED'],
-  ),
-  agentCase(
-    'variable-provider-undeclared',
-    'A provider has no declared variable',
-    'A variable-provider binding cannot silently introduce a new variable.',
-    [
-      ...createAgentEntries(
-        `${AGENT_MANIFEST}    bindings:\n      variableProviders:\n        ORDER_ID:\n          path: /src/order.ts\n`,
-      ),
-      {
-        path: '/src/order.ts',
-        type: 'file',
-        content: 'export const orderId = (order: { id: string }) => order.id;\n',
-      },
-    ],
-    ['MOLDEA_VARIABLE_PROVIDER_UNDECLARED'],
-  ),
   ...(['tool', 'skill'] as const).flatMap((kind) => {
-    const manifest = `${AGENT_MANIFEST}    ${kind}s:\n      returns:\n        name: explain_returns\n        description: Explains return eligibility using the current policy.\n        implementation:\n          path: /src/returns.ts\n`;
+    const manifest = `${agentFieldsPrefix}    ${kind}s:\n      returns:\n        name: explain_returns\n        description: Explains return eligibility using the current policy.\n        implementation:\n          path: /src/returns.ts\n`;
     return [
       agentCase(
         `${kind}-description-invalid`,
-        `The ${kind} description requests a runtime variable`,
-        'Capability descriptions cannot contain runtime-variable placeholders.',
+        `The ${kind} description starts with a space`,
+        'Capability descriptions must begin and end with non-whitespace text.',
         createAgentEntries(
           manifest.replace(
             'Explains return eligibility using the current policy.',
-            'Explains return eligibility for {{REGION}}.',
+            "' Explains return eligibility.'",
           ),
         ),
         ['MOLDEA_CAPABILITY_DESCRIPTION_INVALID'],
@@ -236,7 +177,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
     'A capability has no description',
     'Registered tools need a description explaining their purpose.',
     createAgentEntries(
-      `${AGENT_MANIFEST}    tools:\n      returns:\n        name: explain_returns\n        implementation:\n          path: /src/returns.ts\n`,
+      `${agentFieldsPrefix}    tools:\n      returns:\n        name: explain_returns\n        implementation:\n          path: /src/returns.ts\n`,
     ),
     ['MOLDEA_CAPABILITY_DESCRIPTION_MISSING'],
   ),
@@ -300,7 +241,7 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
     'mirror-canonical-destination',
     'A mirror cannot overwrite canonical knowledge',
     'Mirror destinations must be outside the canonical directory.',
-    createAgentEntries(`${AGENT_MANIFEST}    mirrors:\n      - /moldea/project.md\n`),
+    createAgentEntries(`${agentFieldsPrefix}    mirrors:\n      - /moldea/project.md\n`),
     ['MOLDEA_MIRROR_PATH_INSIDE_MOLDEA'],
   ),
   agentCase(
@@ -308,42 +249,8 @@ export const AGENT_EXAMPLES: ICoreExampleDefinition[] = [
     'A mirror is assigned twice',
     'A destination cannot have conflicting mirror ownership.',
     createAgentEntries(
-      `${AGENT_MANIFEST}    mirrors:\n      - /instructions/support.md\n      - /instructions/support.md\n`,
+      `${agentFieldsPrefix}    mirrors:\n      - /instructions/support.md\n      - /instructions/support.md\n`,
     ),
     ['MOLDEA_MIRROR_PATH_DUPLICATE'],
-  ),
-  ...(['present', 'empty', 'missing'] as const).map((state) =>
-    agentCase(
-      `runtime-guidance-${state}`,
-      state === 'present'
-        ? 'OpenAI guidance is connected'
-        : state === 'empty'
-          ? 'The runtime guidance is empty'
-          : 'The runtime guidance is missing',
-      'Explicit runtime guidance must identify a non-empty canonical document.',
-      [
-        ...createAgentEntries(
-          AGENT_MANIFEST.replace(
-            '      id: custom',
-            '      id: openai\n      guidance: /moldea/runtimes/openai.md',
-          ),
-        ),
-        ...(state === 'missing'
-          ? []
-          : [
-              {
-                path: '/moldea/runtimes/openai.md',
-                type: 'file' as const,
-                content:
-                  state === 'empty'
-                    ? '\n'
-                    : 'Read the installed OpenAI SDK types before changing how instructions and tools enter a request.\n',
-              },
-            ]),
-      ],
-      state === 'present'
-        ? []
-        : [state === 'empty' ? 'MOLDEA_RUNTIME_GUIDANCE_EMPTY' : 'MOLDEA_RUNTIME_GUIDANCE_MISSING'],
-    ),
   ),
 ];

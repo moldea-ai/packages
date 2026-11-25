@@ -92,7 +92,6 @@ test.each([
   'configs/vite/example.ts',
   '.github/workflows/ci.yml',
   'scripts/ci/run.ts',
-  'consumers/SHA256SUMS',
   'scripts/npm-release/checksums.ts',
   'docs/npm-releases.md',
   'unknown/input.ts',
@@ -351,11 +350,7 @@ test('mixed Core and website changes deduplicate consumers without enabling unre
     '@moldea.ai/core',
     '@moldea.ai/packages-website',
   ]);
-  expect(plan.lanes).toStrictEqual([
-    'consumer-conformance',
-    'cli-testing-peer-compatibility',
-    'cli-runtime-compatibility',
-  ]);
+  expect(plan.lanes).toStrictEqual(['cli-runtime-compatibility']);
 });
 
 test.each([
@@ -407,15 +402,18 @@ test('suite priority stays independent of affected/all-workspace scope and nativ
   expect(parseCiPlan(JSON.stringify(essential))).toStrictEqual(essential);
   const full = select(['projects/cli/src/a.ts'], 'full');
   expect(full.mode).toBe('affected');
-  expect(full.lanes).toContain('consumer-conformance');
-  expect(() =>
-    parseCiPlan(JSON.stringify({ ...essential, lanes: CI_COMPATIBILITY_LANES })),
-  ).toThrow('invalid');
+  expect(full.lanes).toStrictEqual(['cli-runtime-compatibility']);
+  expect(() => parseCiPlan(JSON.stringify({ ...focused, lanes: CI_COMPATIBILITY_LANES }))).toThrow(
+    'invalid',
+  );
 });
 
 test('packed matrices are closed and compact only for essential priority', () => {
   expect(createCiMatrices(select(['package.json'], 'essential'))).toStrictEqual({
-    cli: { os: ['ubuntu-latest'], 'node-version': ['22.17.0', '24.15.0'] },
+    cli: {
+      os: ['ubuntu-latest', 'macos-latest', 'windows-latest'],
+      'node-version': ['22.17.0', '24.16.0'],
+    },
     repositoryFs: { 'node-version': ['22.17.0', '24.15.0'] },
   });
   expect(createCiMatrices(select(['package.json'], 'full'))).toStrictEqual({

@@ -97,7 +97,7 @@ const verifyPositiveCorpus = async (consumerDirectory, executablePath) => {
           }
           assert.equal(execution.stderr, '');
           const envelope = JSON.parse(execution.stdout);
-          assert.equal(envelope.schemaVersion, 7);
+          assert.equal(envelope.schemaVersion, 8);
           assert.equal(envelope.status, errors === 0 ? 'valid' : 'invalid');
           assert.equal(envelope.result.valid, errors === 0);
           assert.equal(envelope.result.errorCount, errors);

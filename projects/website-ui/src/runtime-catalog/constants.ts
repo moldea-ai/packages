@@ -1,9 +1,10 @@
 import type { IRuntimeCatalogEntry } from './types.js';
 
 // prioritize widely used SDKs and frameworks; labels and logos imply no compatibility or endorsement
-export const RUNTIME_CATALOG = [
+export const RUNTIME_CATALOG: readonly IRuntimeCatalogEntry[] = [
   {
     id: 'anthropic',
+    packageName: '@anthropic-ai/sdk',
     websiteUrl: 'https://www.anthropic.com/',
     displayName: 'Anthropic',
     logoPath: '@moldea.ai/website-ui/runtime-logos/anthropic.png',
@@ -11,6 +12,7 @@ export const RUNTIME_CATALOG = [
   },
   {
     id: 'openai',
+    packageName: 'openai',
     websiteUrl: 'https://openai.com/',
     displayName: 'OpenAI',
     logoPath: '@moldea.ai/website-ui/runtime-logos/openai.svg',
@@ -18,24 +20,28 @@ export const RUNTIME_CATALOG = [
   },
   {
     id: 'vercel-ai-sdk',
+    packageName: 'ai',
     websiteUrl: 'https://ai-sdk.dev/',
     displayName: 'Vercel AI SDK',
     logoPath: '@moldea.ai/website-ui/runtime-logos/vercel.svg',
   },
   {
     id: 'google-genai',
+    packageName: '@google/genai',
     websiteUrl: 'https://ai.google.dev/gemini-api/docs',
     displayName: 'Google Gen AI',
     logoPath: '@moldea.ai/website-ui/runtime-logos/google.png',
   },
   {
     id: 'claude-agent-sdk',
+    packageName: '@anthropic-ai/claude-agent-sdk',
     websiteUrl: 'https://github.com/anthropics/claude-agent-sdk-typescript',
     displayName: 'Claude Agent SDK',
     logoPath: '@moldea.ai/website-ui/runtime-logos/claude.svg',
   },
   {
     id: 'langchain',
+    packageName: 'langchain',
     websiteUrl: 'https://www.langchain.com/',
     displayName: 'LangChain',
     logoPath: '@moldea.ai/website-ui/runtime-logos/langchain.svg',
@@ -43,6 +49,7 @@ export const RUNTIME_CATALOG = [
   },
   {
     id: 'langgraph',
+    packageName: '@langchain/langgraph',
     websiteUrl: 'https://www.langchain.com/langgraph',
     displayName: 'LangGraph',
     logoPath: '@moldea.ai/website-ui/runtime-logos/langchain.svg',
@@ -50,6 +57,7 @@ export const RUNTIME_CATALOG = [
   },
   {
     id: 'openai-agents-sdk',
+    packageName: '@openai/agents',
     websiteUrl: 'https://github.com/openai/openai-agents-js',
     displayName: 'OpenAI Agents SDK',
     logoPath: '@moldea.ai/website-ui/runtime-logos/openai.svg',
@@ -63,6 +71,7 @@ export const RUNTIME_CATALOG = [
   },
   {
     id: 'mastra',
+    packageName: '@mastra/core',
     websiteUrl: 'https://mastra.ai/',
     displayName: 'Mastra',
     logoPath: '@moldea.ai/website-ui/runtime-logos/mastra.svg',
@@ -232,4 +241,4 @@ export const RUNTIME_CATALOG = [
     logoPath: '@moldea.ai/website-ui/runtime-logos/watsonx.svg',
     darkLogoPath: '@moldea.ai/website-ui/runtime-logos/watsonx-dark.svg',
   },
-] as const satisfies IRuntimeCatalogEntry[];
+];

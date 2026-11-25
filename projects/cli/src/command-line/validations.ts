@@ -19,7 +19,7 @@ export const parsePositiveSafeInteger = (input: string): number | null => {
   return Number.isSafeInteger(parsedInteger) && parsedInteger > 0 ? parsedInteger : null;
 };
 
-/** Parses one output byte budget inside the schema 7 transport bounds. */
+/** Parses one output byte budget inside the schema 8 transport bounds. */
 export const parseMoldeaCliOutputByteLimit = (input: string): number | null => {
   const parsed = parsePositiveSafeInteger(input);
 

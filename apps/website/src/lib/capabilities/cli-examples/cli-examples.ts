@@ -146,7 +146,7 @@ const commandCase = (
 
 /**
  * Executes the declared CLI bin in an isolated Git fixture and verifies its read-only behavior.
- * @returns Complete schema 7 envelopes with separate real exit statuses.
+ * @returns Complete schema 8 envelopes with separate real exit statuses.
  */
 export const createCliExamples = async (
   repositoryRoot: string,

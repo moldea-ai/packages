@@ -425,7 +425,7 @@ test('connects homepage, desktop navigation, and footer to the guide', async ({ 
     ['Core', '/packages/core/'],
     ['Repository', '/packages/repository/'],
     ['Repository FS', '/packages/repository-fs/'],
-    ['Runtime labels and guidance', '/runtimes/'],
+    ['SDK guidance', '/runtimes/'],
   ] as const) {
     await expect(content.getByRole('link', { name, exact: true })).toHaveAttribute(
       'href',

@@ -8,16 +8,16 @@ import { projectDiagnostics, projectEntry, projectFile } from './transformers.ts
 
 test('drops additive process fields from diagnostics, positions, and entities', () => {
   const expected: IDiagnostic = {
-    code: 'MOLDEA_VARIABLE_UNDECLARED',
+    code: 'MOLDEA_AGENT_IDENTITY_INVALID',
     severity: 'error',
     source: 'core',
     group: 'agents',
-    message: 'The agent instruction references an undeclared runtime variable.',
+    message: 'The agent instruction identity is invalid.',
     path: parseRepositoryPath('/moldea/agents/support/instruction.md'),
     pointer: null,
     range: { start: { line: 4, column: 9, offset: 80 }, end: { line: 4, column: 21, offset: 92 } },
-    entity: { agentId: 'support', variableId: 'ORDER_ID' },
-    details: { occurrences: 1 },
+    entity: { agentId: 'support' },
+    details: { reason: 'misplaced' },
   };
   if (expected.range === null) throw new Error('Expected source range is missing.');
   const diagnostic = {

@@ -163,9 +163,9 @@ describe('production discovery guards', () => {
   test.each([
     ['id="structure"', 'data-removed="structure"', 'missing local anchor'],
     [
-      'data-capability-outcome="variable-undeclared"',
-      'data-removed="variable-undeclared"',
-      'omits visible result variable-undeclared',
+      'data-capability-outcome="description-invalid"',
+      'data-removed="description-invalid"',
+      'omits visible result description-invalid',
     ],
     [
       'data-capability-outcome="mirror-stale"',

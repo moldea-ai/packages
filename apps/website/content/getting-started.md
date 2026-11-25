@@ -29,7 +29,7 @@ Cloud review is in development. The Agent Skill, CLI, and packages can be used l
 
 ## Check an adopted repository locally
 
-Use the [CLI overview and installation guide](/packages/cli/) for the current prerequisites and commands. The CLI composes Core and a filesystem reader, so you normally do not need to assemble them yourself.
+For optional standalone checks, use the [CLI overview and installation guide](/packages/cli/) for the current prerequisites and commands. The CLI composes Core and a filesystem reader, so you normally do not need to assemble them yourself.
 
 The CLI reads only the explicitly selected repository. It does not write repository files, call models, make network requests, or send telemetry. These statements describe the local CLI, not every coding-agent or Agent Skill workflow.
 
@@ -41,9 +41,9 @@ Use [Core](/packages/core/) when you need structural checks and inspection insid
 
 These are read-only building blocks. Your application owns content acquisition and any workflow that acts on the results.
 
-## Choose runtime guidance
+## Find your SDK
 
-Browse [runtime labels and guidance](/runtimes/). A runtime ID selects guidance for your coding agent, which reads the installed SDK's type definitions and reviews the application's integration.
+Browse [SDK guidance](/runtimes/) and consult your SDK’s official documentation and installed types when connecting application behavior.
 
 Core checks declared file existence and explicit TypeScript and JavaScript ESM exports. Coverage records state which checks ran and which could not run. They do not establish runtime wiring or SDK compatibility.
 

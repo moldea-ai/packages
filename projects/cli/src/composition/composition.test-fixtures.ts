@@ -4,7 +4,7 @@ import { MOLDEA_CLI_FIRST_CLASS_PACKAGE_RANGES } from './constants.js';
 import type { IMoldeaCliCompositionStateInput } from './types.js';
 
 const PACKAGE_VERSIONS = {
-  '@moldea.ai/core': '9.2.0',
+  '@moldea.ai/core': '10.0.0',
   '@moldea.ai/repository': '4.0.0',
   '@moldea.ai/repository-fs': '4.0.0',
 } as const;
@@ -28,6 +28,6 @@ export const INSTALLED_PACKAGE_METADATA: IMoldeaCliPackageMetadata = Object.free
 export const createTestCompositionState = (): IMoldeaCliCompositionStateInput => ({
   coreSupportedRepositoryFormatVersions: [1],
   minimumGitVersion: '2.32.0',
-  outputSchemaVersion: 7,
+  outputSchemaVersion: 8,
   packageMetadata: INSTALLED_PACKAGE_METADATA,
 });

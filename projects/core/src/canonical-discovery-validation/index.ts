@@ -1,17 +1,10 @@
 import type { IRepositoryEntry, IRepositoryPath } from '@moldea.ai/repository';
 
-import { isContextPath, isRuntimeGuidancePath } from '../format-validation/index.js';
+import { isContextPath } from '../format-validation/index.js';
 
 // canonical file categories retained by repository discovery
 export type ICanonicalFileKind =
-  | 'manifest'
-  | 'project'
-  | 'context'
-  | 'decision'
-  | 'runtime-guidance'
-  | 'agent-description'
-  | 'agent-instruction'
-  | 'agent-handoff-description';
+  'manifest' | 'project' | 'context' | 'decision' | 'agent-description' | 'agent-instruction';
 
 // exhaustive internal classification for one entry below /moldea
 export type ICanonicalEntryClassification =
@@ -26,8 +19,7 @@ export type ICanonicalEntryClassification =
   | { readonly kind: 'entry-type-invalid'; readonly expectedType: 'file' | 'directory' }
   | { readonly kind: 'unrecognized' };
 
-const AGENT_ASSET_PATTERN =
-  /^\/moldea\/agents\/([^/]+)\/(description|instruction|handoff-description)\.md$/u;
+const AGENT_ASSET_PATTERN = /^\/moldea\/agents\/([^/]+)\/(description|instruction)\.md$/u;
 const AGENT_DIRECTORY_PATTERN = /^\/moldea\/agents\/([^/]+)$/u;
 const DECISION_CANDIDATE_PATTERN = /^\/moldea\/decisions\/[^/]+\.md$/u;
 
@@ -50,10 +42,6 @@ const readCanonicalFile = (
     return { agentId: null, fileKind: 'decision', kind: 'canonical-file' };
   }
 
-  if (isRuntimeGuidancePath(path)) {
-    return { agentId: null, fileKind: 'runtime-guidance', kind: 'canonical-file' };
-  }
-
   const agentAsset = AGENT_ASSET_PATTERN.exec(path);
 
   if (agentAsset === null) {
@@ -67,13 +55,7 @@ const readCanonicalFile = (
     return null;
   }
 
-  const fileKind =
-    fileName === 'description'
-      ? 'agent-description'
-      : fileName === 'instruction'
-        ? 'agent-instruction'
-        : 'agent-handoff-description';
-
+  const fileKind = fileName === 'description' ? 'agent-description' : 'agent-instruction';
   return { agentId, fileKind, kind: 'canonical-file' };
 };
 
@@ -86,17 +68,12 @@ const isRequiredDirectoryPath = (path: IRepositoryPath): boolean => {
     path === '/moldea' ||
     path === '/moldea/context' ||
     path === '/moldea/decisions' ||
-    path === '/moldea/runtimes' ||
     path === '/moldea/agents'
   );
 };
 
 const isPermittedStructuralDirectoryPath = (path: IRepositoryPath): boolean => {
-  return (
-    isRequiredDirectoryPath(path) ||
-    path.startsWith('/moldea/context/') ||
-    path.startsWith('/moldea/runtimes/')
-  );
+  return isRequiredDirectoryPath(path) || path.startsWith('/moldea/context/');
 };
 
 /**

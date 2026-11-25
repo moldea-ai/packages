@@ -44,8 +44,6 @@ The result contains source identity, validity, format version, summary counts an
 
 Coverage reports the actual file and export checks performed. It does not establish runtime wiring or SDK compatibility. Validity means zero errors; business readiness remains a separate decision. Explicit manifest acceptances retain warning findings and reasons, count them as `acceptedWarnings`, and exclude them from unaccepted `warnings`. See [diagnostics](/packages/core/diagnostics/).
 
-The `unresolved` summary count includes all project-owned and agent-owned requirements, across every effect. Identical IDs under different owners count separately. Validation and every inspection page report the same complete total. Requirements describe readiness gaps; even blocking requirements do not invalidate a structurally valid project.
-
 Structural repository errors and proven missing runtime exports return error diagnostics. A declared source too large for a bounded syntax check produces `not-checked` coverage with reason `resource-limit` without reading that source. Reader access failures, inconsistent entry and source sizes, snapshot drift, cancellation, resource exhaustion outside this optional check, and invalid operation input reject the complete operation with typed exceptions. No partial coverage is returned.
 
 ## Coding-agent integration
@@ -107,12 +105,12 @@ Callers can supply validated Core limits. These are accounting controls, not a s
 
 `createProjectInspection` validates the supplied snapshot once and prepares one immutable content-free record set with these views:
 
-- `metadata`: one canonical agent-to-runtime assignment per agent plus canonical asset paths, kinds, sizes, digests, and agent or decision identity
+- `metadata`: one canonical agent identity per agent plus canonical asset paths, kinds, sizes, digests, and agent or decision identity
 - `diagnostics`: Core diagnostics with severity, group, and warning acceptance metadata
 - `coverage`: file and syntax-only export check records
 - `all`: every assignment, metadata, diagnostic, and coverage item in deterministic order
 
-Each `agent` item contains exactly the canonical `agentId` and manifest-declared `runtimeId`. It does not contain a path, body, digest, relationship, execution result, or runtime-publication claim. The aggregate `agents` count describes the complete canonical agent collection, while `metadata` continues to count asset-metadata items only. Page totals include every record in the selected view.
+Each `agent` item contains the canonical `agentId`. It does not contain a path, body, digest, relationship, execution result, or runtime-publication claim. The aggregate `agents` count describes the complete canonical agent collection, while `metadata` continues to count asset-metadata items only. Page totals include every record in the selected view.
 
 The returned inspection exposes synchronous `readPage({ view, maxItems, cursor? })` calls. Those page reads perform no repository access, validation, source analysis, sorting, or digesting. Cursors bind progress to the inspection digest and selected view, so a cursor cannot resume another project state or output shape. Agent assignments participate in that digest, which invalidates continuation when a declared runtime changes.
 

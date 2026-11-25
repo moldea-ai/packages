@@ -164,7 +164,7 @@ describe('Core mirror inspection through the memory repository reader', () => {
           type: 'file',
           content: JSON.stringify({
             version: 1,
-            agents: { alpha: { runtime: { id: 'custom' }, mirrors } },
+            agents: { alpha: { mirrors } },
           }),
         },
         { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
@@ -231,7 +231,7 @@ describe('Core mirror inspection through the memory repository reader', () => {
   test('skips every mirror lookup when the canonical instruction is unavailable', async () => {
     const mirrorPath = parseRepositoryPath('/mirrors/not-inspected.md');
     const manifest =
-      'version: 1\nagents:\n  alpha:\n    runtime:\n      id: custom\n    mirrors:\n      - /mirrors/not-inspected.md\n';
+      'version: 1\nagents:\n  alpha:\n    mirrors:\n      - /mirrors/not-inspected.md\n';
     const repository = createMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
@@ -278,8 +278,7 @@ describe('Core mirror inspection through the memory repository reader', () => {
 
   test('compares mirrors when a non-empty canonical instruction has an identity diagnostic', async () => {
     const instruction = 'Introduction.\nYou are the `alpha` agent.\n';
-    const manifest =
-      'version: 1\nagents:\n  alpha:\n    runtime:\n      id: custom\n    mirrors:\n      - /mirrors/alpha.md\n';
+    const manifest = 'version: 1\nagents:\n  alpha:\n    mirrors:\n      - /mirrors/alpha.md\n';
     const { agentAssets, mirrorResult } = await inspectRepository(
       createMemoryRepositoryReader([
         { content: manifest, path: manifestPath, type: 'file' },

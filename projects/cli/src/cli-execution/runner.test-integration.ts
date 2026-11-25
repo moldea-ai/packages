@@ -16,7 +16,7 @@ test('reports composition from the resolved installed package versions', async (
   expect(JSON.parse(result.stdout)).toMatchObject({
     cliVersion: '11.0.2',
     command: 'composition',
-    schemaVersion: 7,
+    schemaVersion: 8,
     result: { repositoryFormatVersions: [1] },
     status: 'valid',
   });

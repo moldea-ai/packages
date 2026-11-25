@@ -12,7 +12,6 @@ import type {
   IRepositoryReference,
   ISkillManifestEntry,
   IToolManifestEntry,
-  IUnresolvedRequirementManifestEntry,
 } from '../format/index.js';
 import { calculateNormalizedTextDigest } from '../text/index.js';
 
@@ -142,31 +141,6 @@ const addAffectedByDeclarations = (
   }
 };
 
-/** Adds project-level or agent-level unresolved requirement references. */
-const addUnresolvedDeclarations = (
-  declarations: IManifestScopeRelationshipDeclaration[],
-  requirements: Readonly<Record<string, IUnresolvedRequirementManifestEntry>> | undefined,
-  pointer: string,
-  agentId: string | null,
-): void => {
-  for (const requirementId of Object.keys(requirements ?? {}).sort(compareCodePoints)) {
-    const requirement = requirements?.[requirementId];
-
-    if (requirement === undefined) {
-      continue;
-    }
-
-    const owner = createOwner('unresolved', requirementId, agentId);
-    addReferenceDeclarations(
-      declarations,
-      requirement.related,
-      owner,
-      'related',
-      childPointer(childPointer(pointer, requirementId), 'related'),
-    );
-  }
-};
-
 /** Adds exact and impact declarations owned by one tool or skill capability. */
 const addCapabilityDeclarations = (
   declarations: IManifestScopeRelationshipDeclaration[],
@@ -241,22 +215,6 @@ const addAgentDeclarations = (
     }
   }
 
-  for (const variableId of Object.keys(agent.bindings?.variableProviders ?? {}).sort(
-    compareCodePoints,
-  )) {
-    const reference = agent.bindings?.variableProviders?.[variableId];
-
-    if (reference !== undefined) {
-      addExactDeclaration(
-        declarations,
-        owner,
-        'variableProvider',
-        childPointer(childPointer(bindingsPointer, 'variableProviders'), variableId),
-        reference,
-      );
-    }
-  }
-
   addAffectedByDeclarations(
     declarations,
     agent.affectedBy,
@@ -301,13 +259,6 @@ const addAgentDeclarations = (
       mirror,
     );
   }
-
-  addUnresolvedDeclarations(
-    declarations,
-    agent.unresolved,
-    childPointer(pointer, 'unresolved'),
-    agentId,
-  );
 };
 
 /** Collects every version 1 declaration that can establish changed-path relevance. */
@@ -343,8 +294,6 @@ export const collectManifestScopeDeclarations = (
       );
     }
   }
-
-  addUnresolvedDeclarations(declarations, manifest.unresolved, '/unresolved', null);
 
   for (const agentId of Object.keys(manifest.agents ?? {}).sort(compareCodePoints)) {
     const agent = manifest.agents?.[agentId];

@@ -36,7 +36,6 @@ import {
   Tag,
   Target,
   TriangleAlert,
-  Variable,
   Wrench,
 } from '@lucide/astro';
 
@@ -64,7 +63,6 @@ export const FINDING_CATEGORY_PRESENTATIONS = {
   outputs: { label: 'Outputs', icon: ArrowUpFromLine },
   capabilities: { label: 'Capabilities', icon: Wrench },
   handoffs: { label: 'Handoffs', icon: Handshake },
-  variables: { label: 'Variables', icon: Variable },
   failureBehavior: { label: 'Failure behavior', icon: LifeBuoy },
   context: { label: 'Project context', icon: ScrollText },
   connection: { label: 'Connection', icon: Cable },
@@ -109,7 +107,6 @@ export const INSPECTION_METADATA_ICONS = {
   context: ScrollText,
   declaration: FileBraces,
   export: Braces,
-  variable: Variable,
   relationship: Link2,
   reason: MessageSquareText,
   type: Shapes,
@@ -131,7 +128,6 @@ export const INSPECTION_METADATA_ICONS = {
   'skill-implementation': BookOpen,
   'context-binding': ScrollText,
   'decision-binding': Scale,
-  'variable-provider': Variable,
 } satisfies Record<IInspectionMetadataIcon, IInspectionPresentation['icon']>;
 export const INSPECTION_RELATIONSHIP_PRESENTATIONS: Record<string, IInspectionPresentation> = {
   'runtime-agent': { label: 'Agent implementation', icon: Bot },
@@ -144,7 +140,6 @@ export const INSPECTION_RELATIONSHIP_PRESENTATIONS: Record<string, IInspectionPr
   'skill-implementation': { label: 'Skill implementation', icon: BookOpen },
   'context-binding': { label: 'Context binding', icon: ScrollText },
   'decision-binding': { label: 'Decision binding', icon: Scale },
-  'variable-provider': { label: 'Variable provider', icon: Variable },
 };
 // binding export outcomes deliberately differ from generic check outcomes
 export const INSPECTION_BINDING_PRESENTATIONS = {

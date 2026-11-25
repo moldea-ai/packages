@@ -37,6 +37,29 @@ describe('public integration block parser', () => {
   ])('reports a safe reason for %s -> %s', (text, reason) => {
     expect(parseIntegrationBlock(text)).toStrictEqual({ kind: 'missing', reason });
   });
+  test('extracts one path from path and adoption checks with the same installation', () => {
+    const closing = '<!-- moldea:end -->';
+    const command =
+      'node "<repo-root>/.agents/skills/moldea/scripts/relevance-gate.mjs" --repository "<repo-root>" --adoption-only';
+    const withAdoption = block.replace(closing, `${command}\n${closing}`);
+
+    expect(parseIntegrationBlock(withAdoption)).toStrictEqual({
+      kind: 'found',
+      skillPath: '.agents/skills/moldea',
+    });
+    expect(
+      parseIntegrationBlock(
+        block.replace(
+          closing,
+          `${command.replace('/skills/moldea/', '/skills/other/')}\n${closing}`,
+        ),
+      ),
+    ).toStrictEqual({ kind: 'missing', reason: 'skill-path-missing' });
+    expect(
+      parseIntegrationBlock(withAdoption.replace(closing, `${command}\n${closing}`)),
+    ).toStrictEqual({ kind: 'missing', reason: 'skill-path-missing' });
+  });
+
   test('rejects ambiguous gate lines without collecting every match', () => {
     const command =
       'node "<repo-root>/.agents/skills/moldea/scripts/relevance-gate.mjs" --repository "<repo-root>"\n';

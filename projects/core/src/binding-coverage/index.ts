@@ -6,7 +6,6 @@ export type IBindingRelationship =
   | 'instruction-loader'
   | 'agent-input-schema'
   | 'agent-output-schema'
-  | 'variable-provider'
   | 'tool-implementation'
   | 'tool-registration'
   | 'tool-input-schema'

@@ -62,8 +62,6 @@ const isCounts = (input: unknown): boolean =>
     'context',
     'decisions',
     'mirrors',
-    'runtimes',
-    'unresolved',
     'diagnostics',
     'errors',
     'warnings',
@@ -77,14 +75,7 @@ const isSummary = (input: unknown): boolean =>
   (isObjectValid(input, true) &&
     hasKeys(input, ['counts', 'manifestDigest', 'manifestPath', 'projectDigest', 'projectPath']) &&
     isObjectValid(input['counts'], true) &&
-    hasKeys(input['counts'], [
-      'agents',
-      'context',
-      'decisions',
-      'mirrors',
-      'runtimes',
-      'unresolved',
-    ]) &&
+    hasKeys(input['counts'], ['agents', 'context', 'decisions', 'mirrors']) &&
     Object.values(input['counts']).every(isInteger) &&
     typeof input['manifestDigest'] === 'string' &&
     typeof input['projectDigest'] === 'string' &&

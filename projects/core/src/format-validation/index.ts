@@ -1,7 +1,6 @@
 import { isRepositoryPath, parseRepositoryPath, type IRepositoryPath } from '@moldea.ai/repository';
 
 const STABLE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-const VARIABLE_ID_PATTERN = /^[A-Z][A-Z0-9_]*$/u;
 const WINDOWS_RESERVED_ID_PATTERN = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$/u;
 const LINE_BREAK_CHARACTERS = ['\n', '\r', '\u0085', '\u2028', '\u2029'] as const;
 const UNSUPPORTED_GLOB_PATTERN = /[!?[\]{}]/u;
@@ -102,11 +101,6 @@ export const isStableId = (value: string): boolean => {
 /** Determines whether an otherwise valid stable ID is filesystem-reserved. */
 export const isReservedId = (value: string): boolean => WINDOWS_RESERVED_ID_PATTERN.test(value);
 
-/** Determines whether a value satisfies runtime-variable ID syntax. */
-export const isVariableId = (value: string): boolean => {
-  return value.length <= 64 && VARIABLE_ID_PATTERN.test(value);
-};
-
 /** Determines whether a parsed capability description satisfies version 1 limits. */
 export const isCapabilityDescription = (value: string): boolean => {
   const scalarLength = countUnicodeScalars(value);
@@ -116,9 +110,7 @@ export const isCapabilityDescription = (value: string): boolean => {
     scalarLength <= 1_000 &&
     !hasSurroundingWhitespace(value) &&
     !hasLineBreak(value) &&
-    !value.includes('\0') &&
-    !value.includes('{{') &&
-    !value.includes('}}')
+    !value.includes('\0')
   );
 };
 
@@ -153,11 +145,6 @@ export const isContextPath = (path: IRepositoryPath, allowProject: boolean): boo
 /** Determines whether a path has the canonical immediate decision filename shape. */
 export const isDecisionPath = (path: IRepositoryPath): boolean => {
   return parseDecisionIdFromPath(path) !== null;
-};
-
-/** Determines whether a path is canonical runtime guidance. */
-export const isRuntimeGuidancePath = (path: IRepositoryPath): boolean => {
-  return path.startsWith('/moldea/runtimes/') && path.endsWith('.md');
 };
 
 /** Determines whether a mirror path is outside canonical moldea content. */

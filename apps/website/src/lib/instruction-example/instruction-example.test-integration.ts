@@ -22,8 +22,8 @@ test('derives the hero from the real instruction, manifest, and Core diagnostic'
       entity: { agentId: 'support', capabilityKind: 'tool', capabilityId: 'get-delivery-status' },
       details: { reason: 'missing', referencedPath: '/src/orders/tracking.ts' },
       range: {
-        start: { column: 9, line: 10, offset: 212 },
-        end: { column: 1, line: 12, offset: 268 },
+        start: { column: 9, line: 8, offset: 182 },
+        end: { column: 1, line: 10, offset: 238 },
       },
       severity: 'error',
       source: 'core',
@@ -50,7 +50,7 @@ test('rejects changed references, additional diagnostics, and malformed instruct
     { ...INSTRUCTION_SNAPSHOT, instruction: '' },
     {
       ...INSTRUCTION_SNAPSHOT,
-      instruction: `${INSTRUCTION_SNAPSHOT.instruction}Also use {{UNKNOWN}}.\n`,
+      instruction: `${INSTRUCTION_SNAPSHOT.instruction}Unexpected \u0000 byte.\n`,
     },
   ]) {
     await expect(createInstructionExample(snapshot)).rejects.toThrow(

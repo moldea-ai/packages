@@ -25,7 +25,6 @@ export const projectDiagnostics = (diagnostics: readonly IDiagnostic[]): IDiagno
                 ? {}
                 : { capabilityKind: entity.capabilityKind }),
               ...(entity.decisionId === undefined ? {} : { decisionId: entity.decisionId }),
-              ...(entity.variableId === undefined ? {} : { variableId: entity.variableId }),
               ...(entity.contextPath === undefined ? {} : { contextPath: entity.contextPath }),
               ...(entity.integrationPath === undefined
                 ? {}

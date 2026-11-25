@@ -36,17 +36,9 @@ export const iterateProjectMetadata = function* (
     yield createAssetItem(decision.asset, 'decision', null, decision.id);
   }
 
-  for (const runtime of project.runtimes) {
-    yield createAssetItem(runtime.asset, 'runtime-guidance');
-  }
-
   for (const agent of project.agents) {
     yield createAssetItem(agent.description.asset, 'agent-description', agent.id);
     yield createAssetItem(agent.instruction, 'agent-instruction', agent.id);
-
-    if (agent.handoffDescription !== null) {
-      yield createAssetItem(agent.handoffDescription.asset, 'agent-handoff-description', agent.id);
-    }
 
     for (const mirror of agent.mirrors) {
       yield {
@@ -71,11 +63,6 @@ export const createProjectSummary = (project: IMoldeaProjectIndex): IProjectVali
       context: project.context.length,
       decisions: project.decisions.length,
       mirrors: project.agents.reduce((count, agent) => count + agent.mirrors.length, 0),
-      runtimes: project.runtimes.length,
-      unresolved: project.agents.reduce(
-        (count, agent) => count + Object.keys(agent.declaration.unresolved ?? {}).length,
-        Object.keys(project.unresolved).length,
-      ),
     },
     manifestDigest: project.manifest.asset.digest,
     manifestPath: project.manifest.asset.path,

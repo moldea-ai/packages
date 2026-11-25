@@ -7,7 +7,7 @@ These fixtures compose every universal version 1 repository-format phase through
 - `minimal-context.expected.json` is the exact context-only project-index golden with no agents.
 - `capability-combinations.expected.json` is the exact project-index golden for agents with tools only, skills only, both, and neither.
 - `diagnostics.expected.json` records complete deterministic diagnostic values for every case.
-- The complete case includes project and focused context, runtime guidance, decisions, registered agents with an optional handoff description, relationships, repository references, unresolved requirements, and an exact instruction mirror.
+- The complete case includes project and focused context, decisions, canonical agent assets, repository references, and an exact instruction mirror.
 - Invalid cases preserve all-or-nothing indexing while retaining deterministic, path-ordered diagnostics without dependent cascades.
 
 Public `inspectProject` returns the index as authoritative project state only when validation has no errors. The colocated integration suites also verify binding coverage and warning counts.

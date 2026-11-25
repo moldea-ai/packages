@@ -6,12 +6,10 @@ import type {
   IIndexedContextAsset,
   IIndexedDecision,
   IIndexedManifest,
-  IIndexedRuntimeGuidance,
   IIndexedTextAsset,
   IMoldeaProjectIndex,
 } from '../contracts/index.js';
 import type { IParsedDecision } from '../format/index.js';
-import { createNullPrototypeRecord } from '../immutable/index.js';
 import type { IAgentMirrorInspection } from '../mirrors/index.js';
 
 // complete universal inputs required to construct one provisional project index
@@ -20,7 +18,6 @@ export interface IProjectIndexInput {
   readonly project: IIndexedTextAsset;
   readonly context: readonly IIndexedContextAsset[];
   readonly decisions: readonly IParsedDecision[];
-  readonly runtimes: readonly IIndexedRuntimeGuidance[];
   readonly agents: readonly IInspectedAgentAssets[];
   readonly agentMirrors: readonly IAgentMirrorInspection[];
 }
@@ -63,7 +60,6 @@ const createIndexedAgents = (
       decisions: [...(agent.declaration.decisions ?? [])].sort(compareCodePoints),
       declaration: agent.declaration,
       description: agent.description,
-      handoffDescription: agent.handoffDescription,
       id: agent.id,
       instruction: agent.instruction,
       mirrors: [...mirrors].sort((left, right) => compareCodePoints(left.path, right.path)),
@@ -85,8 +81,6 @@ export const createProjectIndex = (input: IProjectIndexInput): IMoldeaProjectInd
     return null;
   }
 
-  const unresolved = input.manifest.value.unresolved ?? createNullPrototypeRecord([]);
-
   return deepFreeze({
     agents,
     context: [...input.context].sort((left, right) =>
@@ -96,9 +90,5 @@ export const createProjectIndex = (input: IProjectIndexInput): IMoldeaProjectInd
     formatVersion: 1 as const,
     manifest: input.manifest,
     project: input.project,
-    runtimes: [...input.runtimes].sort((left, right) =>
-      compareCodePoints(left.asset.path, right.asset.path),
-    ),
-    unresolved,
   });
 };

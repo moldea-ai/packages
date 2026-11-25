@@ -8,9 +8,9 @@ order: 30
 
 ## JSON envelope
 
-`--json` writes one deterministic schema 7 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`, and every object's keys follow RFC 8785 order. No command mixes a partial success result with an operational error.
+`--json` writes one deterministic schema 8 envelope to standard output. Envelopes contain exactly `schemaVersion`, `cliVersion`, `command`, `status`, `error`, and `result`, and every object's keys follow RFC 8785 order. No command mixes a partial success result with an operational error.
 
-`validate`, `inspect`, `scope`, and `composition` are recursively content-free. `inspect` projects only allowlisted records and splits unbounded collections into independent keys. Its `agent` record contains exactly one canonical `agentId` and manifest-declared `runtimeId`; it remains distinct from installed composition and binding coverage. `content` is the only command allowed to return a `content` property, and it does so only for one explicitly selected canonical asset.
+`validate`, `inspect`, `scope`, and `composition` are recursively content-free. `inspect` projects only allowlisted records and splits unbounded collections into independent keys. Its `agent` record contains exactly one canonical `agentId`; it remains distinct from installed composition and binding coverage. `content` is the only command allowed to return a `content` property, and it does so only for one explicitly selected canonical asset.
 
 Every diagnostic has `severity` and `group`. Core diagnostic `details` are never projected, so integration warnings about linked or Git-ignored instruction files expose neither link text nor target paths; `MOLDEA_INTEGRATION_LINK_UNRESOLVED` reports its reason through `qualifier`. Warnings also have `subject`, nullable `qualifier`, `acceptable`, boolean `accepted`, and nullable `reason` (non-null only for an accepted warning). `warningCount` excludes accepted warnings; `diagnosticCount` equals `errorCount + warningCount + acceptedWarningCount`. Inspection exposes the same totals as `counts.errors`, `counts.warnings`, `counts.acceptedWarnings` and `counts.diagnostics`. Both commands return `coverageCounts` and paged `coverage` records. Zero errors produce `valid`, including warning-only results. Human output prints unaccepted warning identities, a coverage summary and an accepted-warning count.
 
@@ -20,7 +20,7 @@ Binding coverage reports the checks performed on each declared reference: `fileC
 
 ## Resource budgets
 
-These defaults describe CLI 13 with Core 9. Options take byte counts or positive safe-integer counts as appropriate.
+These defaults describe CLI 14 with Core 10. Options take byte counts or positive safe-integer counts as appropriate.
 
 | Option                 |               Default | Scope                                                                              |
 | ---------------------- | --------------------: | ---------------------------------------------------------------------------------- |
@@ -54,7 +54,7 @@ Pagination bounds output, not complete analysis. It does not reset read/entry bu
 
 Known repository and Core exceptions retain their source, code, retryability, safe logical path when applicable, and non-confidential metadata. Git and CLI errors use a closed stable registry. When the working-tree inventory's `ls-files` listing, `config` read of `core.symlinks`, or `check-attr` attribute check fails, the error's `details.subcommand` names that subcommand; no other Git output is exposed, and every other error keeps empty `details`. Unexpected failures become `cli:INTERNAL_ERROR` without raw causes, stack traces, host paths, or process diagnostics.
 
-Schema 7 includes these stable CLI-owned contracts:
+Schema 8 includes these stable CLI-owned contracts:
 
 | Code                      | Stable message                                                                                                |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -69,6 +69,6 @@ Isolated inspection adds `core:INSPECTION_BUSY` (retryable, `Project inspection 
 
 ## Cancellation and read-only guarantees
 
-One operation-scoped abort signal reaches Git processes, inventory, filesystem reader creation, repository reads, Core. A signal discards an unwritten provisional result and stops further snapshot retries. The supervised inspection has a fixed 120-second lifetime covering reads, preparation, paging, and disposal. Cleanup awaits actual repository reads and child closure before source post-checks or successful output. A private skill-launcher IPC disconnect follows the same cancellation path; standalone CLI invocation remains supported.
+One operation-scoped abort signal reaches Git processes, inventory, filesystem reader creation, repository reads, Core. A signal discards an unwritten provisional result and stops further snapshot retries. The supervised inspection has a fixed 120-second lifetime covering reads, preparation, paging, and disposal. Cleanup awaits actual repository reads and child closure before source post-checks or successful output.
 
-The executable does not modify the working tree, real index, refs or `HEAD`, Git configuration, attributes, submodules, object database, filters, or runtime environment. It never uses a temporary index or object-writing plumbing. `scope` and `content` do not load the export checker. Before `validate`, `inspect`, and `composition`, installation-integrity checks compare installed package identities, exact resolved versions, compatible-major dependency declarations, Core formats, and executable constants so a contradictory installation cannot report a misleading result. Compatible patch and minor resolutions are accepted; prerelease or breaking-major substitutions fail closed.
+The executable does not modify the working tree, real index, refs or `HEAD`, Git configuration, attributes, submodules, object database, filters, or runtime environment. It never uses a temporary index or object-writing plumbing. `scope` and `content` do not load the export checker. For npm installations, before `validate`, `inspect`, and `composition`, integrity checks compare installed package identities, exact resolved versions, compatible-major dependency declarations, Core formats, and executable constants so a contradictory installation cannot report a misleading result. Compatible patch and minor resolutions are accepted; prerelease or breaking-major substitutions fail closed.

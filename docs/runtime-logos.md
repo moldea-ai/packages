@@ -1,6 +1,6 @@
 # Runtime icon provenance and launch follow-ups
 
-The 35 runtime labels use recognizable project or company icons. They identify guidance and official destinations without asserting SDK compatibility, certification, endorsement, or a commercial relationship.
+The SDK catalog pairs names and official destinations with recognizable logos.
 
 ## Public-launch responsibility
 
@@ -47,6 +47,6 @@ Anthropic, Cloudflare, Convex, node-llama-cpp, and Pi Agent receive optical sizi
 
 ## Runtime mapping and presentation
 
-`projects/website-ui/src/runtime-catalog/constants.ts` owns the exact ID, display name, official destination, asset, and theme mapping. `custom` is absent from the company inventory and remains a manifest option. Strands uses its dark-ink asset in the light theme and gray-ink asset in the dark theme.
+`projects/website-ui/src/runtime-catalog/constants.ts` owns each anchor ID, display name, package name where applicable, official destination, and icon.
 
-The shared Astro grid and platform React composition show three responsive rows initially. Load more reveals the remaining labels. Every runtime opens its official website or repository in a new tab with an external-link icon. All 35 links remain available without JavaScript. No SDK support or vendor permission is inferred from inclusion.
+The shared Astro grid shows three responsive rows initially. Load more reveals the remaining SDKs. Every entry opens its official destination in a new tab.

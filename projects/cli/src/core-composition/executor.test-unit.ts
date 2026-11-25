@@ -45,8 +45,6 @@ const INSPECTION_RESULT = Object.freeze({
     metadata: 0,
     warnings: 0,
     mirrors: 0,
-    runtimes: 0,
-    unresolved: 0,
   }),
   formatVersion: null,
   inspectionDigest: `sha256:${'1'.repeat(64)}`,

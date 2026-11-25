@@ -1,43 +1,4 @@
-import { parse } from 'yaml';
-import { z } from 'zod';
-
 import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
-
-const VariableManifest = z.object({
-  agents: z.record(z.string(), z.object({ variables: z.record(z.string(), z.unknown()) })),
-});
-
-/**
- * Projects the diagnosed instruction line and actual declaration names, not a replacement example.
- * @throws If the recorded diagnostic and its synthetic source no longer agree.
- */
-export const getVariableIllustration = (example: ICapabilityCase) => {
-  const diagnostic =
-    example.result.kind === 'validation'
-      ? example.result.diagnostics.find(({ code }) => code === 'MOLDEA_VARIABLE_UNDECLARED')
-      : undefined;
-  const instruction = example.files.find(({ path }) => path === diagnostic?.path);
-  const manifest = example.files.find(({ path }) => path === '/moldea/moldea.yaml');
-  const variableId = diagnostic?.entity?.variableId;
-  const agentId = diagnostic?.entity?.agentId;
-  if (!instruction || !manifest || !variableId || !agentId || !diagnostic?.range)
-    throw new Error('Variable illustration requires its diagnostic, instruction, and manifest.');
-  const declarations = VariableManifest.parse(parse(manifest.content) as unknown).agents[agentId];
-  const token = `{{${variableId}}}`;
-  const line = instruction.content.split('\n')[diagnostic.range.start.line - 1];
-  const parts = line?.split(token);
-  if (!declarations || Object.hasOwn(declarations.variables, variableId) || parts?.length !== 2)
-    throw new Error('Variable illustration does not match its executed sources.');
-  return {
-    instruction,
-    manifest,
-    token,
-    variableId,
-    before: parts[0],
-    after: parts[1],
-    names: Object.keys(declarations.variables),
-  };
-};
 
 /**
  * Isolates this example's changed return window; this is not a general-purpose text diff.

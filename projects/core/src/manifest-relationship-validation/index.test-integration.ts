@@ -166,7 +166,6 @@ describe('Core manifest relationships through the memory repository reader', () 
           version: 1,
           agents: {
             reviewer: {
-              runtime: { id: 'custom' },
               context: contextPaths,
               decisions: decisions.map(createDecisionPath),
             },

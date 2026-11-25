@@ -42,7 +42,6 @@ const createDiscovery = (
     decisions: [],
     manifest: parseRepositoryPath('/moldea/moldea.yaml'),
     project,
-    runtimeGuidance: [],
   },
   valid: true,
 });

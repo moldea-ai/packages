@@ -22,7 +22,7 @@ export interface IAgentDescriptionValidationResult {
   readonly diagnostics: readonly ICoreDiagnostic[];
 }
 
-// internal instruction validation result retained for later placeholder checks
+// internal instruction validation result retained for project indexing
 export interface IAgentInstructionValidationResult {
   readonly valid: boolean;
   readonly instruction: IIndexedTextAsset | null;
@@ -44,9 +44,8 @@ const findNonblankLine = (lines: readonly string[], startIndex: number): number 
 
 /**
  * Validates the effective value of one agent description asset.
- * @param asset The normalized complete description or handoff-description asset.
+ * @param asset The normalized complete description asset.
  * @param agentId The owning registered agent ID.
- * @param kind The description role determining its diagnostic code.
  * @param limits The Core diagnostic budget.
  * @returns The frozen effective description when every version 1 rule passes.
  * @throws
@@ -55,34 +54,24 @@ const findNonblankLine = (lines: readonly string[], startIndex: number): number 
 export const validateAgentDescription = (
   asset: IIndexedTextAsset,
   agentId: string,
-  kind: 'description' | 'handoff-description',
   limits: ICoreResourceLimits,
 ): IAgentDescriptionValidationResult => {
   const diagnostics = createCoreDiagnosticCollector(limits, 'validate-project');
   const value = trimRepositoryFormatWhitespace(asset.content);
   const scalarLength = countUnicodeScalars(value);
-  const code =
-    kind === 'description'
-      ? 'MOLDEA_AGENT_DESCRIPTION_INVALID'
-      : 'MOLDEA_AGENT_HANDOFF_DESCRIPTION_INVALID';
-
   if (scalarLength === 0) {
-    diagnostics.add({ code, details: { reason: 'empty' }, entity: { agentId }, path: asset.path });
-  }
-
-  if (scalarLength > 1_000) {
     diagnostics.add({
-      code,
-      details: { reason: 'too-long' },
+      code: 'MOLDEA_AGENT_DESCRIPTION_INVALID',
+      details: { reason: 'empty' },
       entity: { agentId },
       path: asset.path,
     });
   }
 
-  if (value.includes('{{') || value.includes('}}')) {
+  if (scalarLength > 1_000) {
     diagnostics.add({
-      code,
-      details: { reason: 'runtime-variable-delimiter' },
+      code: 'MOLDEA_AGENT_DESCRIPTION_INVALID',
+      details: { reason: 'too-long' },
       entity: { agentId },
       path: asset.path,
     });

@@ -13,7 +13,6 @@ const DIAGNOSTIC_TITLES: Record<string, string> = {
   'agent-identity': '1 mismatched agent identity',
   'tool-implementation-missing': '1 missing tool implementation',
   'mirror-stale': '1 stale instruction copy',
-  'variable-undeclared': '1 undeclared variable',
   'foundation-missing': 'Project brief not found',
   'decision-cycle': 'Circular replacement links',
   'decision-reference-missing': '1 missing decision',
@@ -71,8 +70,7 @@ export const getCapabilityVisualFamily = (example: ICapabilityCase) => {
     ].includes(example.id)
   )
     return 'files';
-  if (['mirror-stale', 'variable-undeclared', 'agent-identity'].includes(example.id))
-    return 'agents';
+  if (['mirror-stale', 'agent-identity'].includes(example.id)) return 'agents';
   if (
     ['decision-replacement-chain', 'decision-cycle', 'decision-reference-missing'].includes(
       example.id,

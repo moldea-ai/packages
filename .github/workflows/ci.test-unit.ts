@@ -37,12 +37,21 @@ test('packed consumers use the reviewed registry snapshot unless the canary requ
   );
   const consumerSteps = Object.values(workflow.jobs).flatMap(({ steps = [] }) =>
     steps.flatMap((step, index) =>
-      step.name?.startsWith('Test Packed ') ? [{ step, previous: steps[index - 1] }] : [],
+      step.name?.startsWith('Test Packed ') ||
+      step.name === 'Verify Packed and Portable CLI Runtime'
+        ? [
+            {
+              step,
+              previous: steps
+                .slice(0, index)
+                .findLast(({ name }) => name === 'Pin Registry Snapshot'),
+            },
+          ]
+        : [],
     ),
   );
 
-  // the existing-Vitest CLI check and the CLI and Repository FS runtime checks
-  expect(consumerSteps).toHaveLength(3);
+  expect(consumerSteps).toHaveLength(2);
   for (const { previous } of consumerSteps) {
     expect(previous).toStrictEqual({
       name: 'Pin Registry Snapshot',
@@ -50,13 +59,6 @@ test('packed consumers use the reviewed registry snapshot unless the canary requ
       run: 'node configs/registry-snapshot/write-environment.mjs >> "$GITHUB_ENV"',
     });
   }
-  // the Skill consumer lanes receive the same snapshot, or none when the canary resolves live
-  expect(
-    workflow.jobs['plan']?.steps?.find(({ name }) => name === 'Resolve Registry Snapshot'),
-  ).toMatchObject({ if: "${{ env.MOLDEA_LIVE_REGISTRY != 'true' }}" });
-  expect(workflow.jobs['plan']?.outputs?.['registry_snapshot']).toBe(
-    '${{ steps.registry.outputs.registry_snapshot }}',
-  );
 });
 
 test('planner uses the tested merge checkout and explicit main comparison, with closed outputs', () => {
@@ -151,10 +153,7 @@ test('routine suite inputs and closed matrices preserve native platform eligibil
     changedPaths: [],
     testSuite: 'essential',
   });
-  expect(createCiMatrices(essential).cli['node-version']).toStrictEqual([
-    '22.17.0',
-    workflow.env['NODE_VERSION'],
-  ]);
+  expect(createCiMatrices(essential).cli['node-version']).toStrictEqual(['22.17.0', '24.16.0']);
   expect(workflow.on['workflow_call']?.inputs?.['test_suite']).toMatchObject({
     type: 'string',
     default: 'essential',

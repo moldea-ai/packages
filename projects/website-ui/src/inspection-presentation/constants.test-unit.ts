@@ -45,7 +45,6 @@ test('keeps the documented cross-stack inspection subject ids complete', () => {
     'outputs',
     'capabilities',
     'handoffs',
-    'variables',
     'failureBehavior',
     'context',
     'connection',

@@ -11,7 +11,6 @@ export type IFindingCategory =
   | 'outputs'
   | 'capabilities'
   | 'handoffs'
-  | 'variables'
   | 'failureBehavior'
   | 'context'
   | 'connection'
@@ -43,7 +42,6 @@ export type IInspectionMetadataIcon =
   | 'context'
   | 'declaration'
   | 'export'
-  | 'variable'
   | 'relationship'
   | 'reason'
   | 'type'
@@ -64,8 +62,7 @@ export type IInspectionMetadataIcon =
   | 'tool-output-schema'
   | 'skill-implementation'
   | 'context-binding'
-  | 'decision-binding'
-  | 'variable-provider';
+  | 'decision-binding';
 export interface IInspectionMetadataItem {
   label: string;
   value: string;

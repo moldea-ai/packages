@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-// schema 7 is a closed envelope; command results validate only the fields consumed below
+// schema 8 is a closed envelope; command results validate only the fields consumed below
 export const CliEnvelope = z.strictObject({
   cliVersion: z.string(),
   command: z.enum(['validate', 'inspect', 'scope', 'content', 'composition']),
-  schemaVersion: z.literal(7),
+  schemaVersion: z.literal(8),
   status: z.enum(['valid', 'invalid', 'error']),
   error: z
     .object({
@@ -25,7 +25,6 @@ const CliEntity = z.strictObject({
   capabilityId: z.string().optional(),
   capabilityKind: z.enum(['tool', 'skill']).optional(),
   decisionId: z.string().optional(),
-  variableId: z.string().optional(),
   contextPath: z.string().optional(),
   integrationPath: z.string().optional(),
 });
@@ -65,7 +64,6 @@ const CliCoverageFields = {
     'instruction-loader',
     'agent-input-schema',
     'agent-output-schema',
-    'variable-provider',
     'tool-implementation',
     'tool-registration',
     'tool-input-schema',
@@ -100,7 +98,6 @@ const CliAgentRecord = z.strictObject({
   agentId: z.string(),
   key: z.string(),
   kind: z.literal('agent'),
-  runtimeId: z.string(),
 });
 const CliMetadataRecord = z.strictObject({
   agentId: z.string().nullable(),
@@ -112,14 +109,12 @@ const CliMetadataRecord = z.strictObject({
   kind: z.literal('metadata'),
   metadataKind: z.enum([
     'agent-description',
-    'agent-handoff-description',
     'agent-instruction',
     'context',
     'decision',
     'manifest',
     'mirror',
     'project',
-    'runtime-guidance',
   ]),
   path: z.string(),
   scalarLength: z.number().int().nonnegative().nullable(),
@@ -138,13 +133,11 @@ const CliMatchRecord = z.strictObject({
       'mirrors',
       'outputSchema',
       'registration',
-      'related',
       'runtimeAgent',
-      'variableProvider',
     ]),
     pointer: z.string(),
     owner: z.strictObject({
-      kind: z.enum(['agent', 'context', 'decision', 'skill', 'tool', 'unresolved']),
+      kind: z.enum(['agent', 'context', 'decision', 'skill', 'tool']),
       id: z.string(),
       agentId: z.string().nullable(),
     }),
@@ -155,7 +148,7 @@ const CliMatchRecord = z.strictObject({
   }),
 });
 
-// the selected schema 7 collection fields are closed so misplaced counts cannot disappear
+// the selected schema 8 collection fields are closed so misplaced counts cannot disappear
 export const CliCollectionResult = z.strictObject({
   valid: z.boolean(),
   formatVersion: z.number().nullable().optional(),
@@ -181,8 +174,6 @@ export const CliCollectionResult = z.strictObject({
       coverage: z.number().optional(),
       metadata: z.number().optional(),
       mirrors: z.number().optional(),
-      runtimes: z.number().optional(),
-      unresolved: z.number().optional(),
       warnings: z.number().optional(),
       declarations: z.number().optional(),
       inputPaths: z.number().optional(),

@@ -2,7 +2,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
-import { RECOGNIZED_RUNTIME_IDS } from '@moldea.ai/core';
 import { describe, expect, test } from 'vitest';
 
 import { RUNTIME_CATALOG, type IRuntimeCatalogEntry } from './index.js';
@@ -86,12 +85,6 @@ describe('runtime catalog', () => {
       'eve',
     ]);
     expect(RUNTIME_CATALOG[9]?.id).toBe('mastra');
-  });
-
-  test('matches every Core runtime label exactly once, excluding custom', () => {
-    expect(RUNTIME_CATALOG.map((runtime) => runtime.id).sort()).toStrictEqual(
-      RECOGNIZED_RUNTIME_IDS.filter((id) => id !== 'custom').sort(),
-    );
   });
 
   test('uses portable package-exported assets for every catalog entry', () => {

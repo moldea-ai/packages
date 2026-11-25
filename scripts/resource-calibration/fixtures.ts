@@ -108,7 +108,6 @@ export const createCalibrationEntries = (
     const referencePath = workload === 'distinct-source' ? `/src/agent${index}.ts` : sourcePath;
     if (workload === 'distinct-source') entries.push(file(referencePath, source));
     agents[id] = {
-      runtime: { id: 'openai' },
       bindings: { runtimeAgent: { path: referencePath, symbol: 'supportAgent' } },
       ...(workload === 'broad-tool'
         ? {

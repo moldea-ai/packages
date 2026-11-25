@@ -5,7 +5,6 @@ import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import {
   DEFAULT_CORE_RESOURCE_LIMITS,
-  RECOGNIZED_RUNTIME_IDS,
   SUPPORTED_REPOSITORY_FORMAT_VERSIONS,
 } from '../constants/index.js';
 import { CoreConfigurationException, CoreOperationException } from '../exceptions/index.js';
@@ -15,44 +14,6 @@ import { createCore } from './index.js';
 
 describe('Core constants and construction', () => {
   test('exports exact deeply immutable version and resource-limit constants', () => {
-    expect(RECOGNIZED_RUNTIME_IDS).toStrictEqual([
-      'amazon-bedrock',
-      'anthropic',
-      'cerebras',
-      'claude-agent-sdk',
-      'cloudflare-agents',
-      'cohere',
-      'convex-agent',
-      'cursor-sdk',
-      'custom',
-      'deep-agents',
-      'eve',
-      'genkit',
-      'github-copilot-sdk',
-      'google-adk',
-      'google-genai',
-      'groq',
-      'hugging-face',
-      'ibm-watsonx-ai',
-      'langchain',
-      'langgraph',
-      'livekit-agents',
-      'mastra',
-      'microsoft-foundry',
-      'mistral',
-      'node-llama-cpp',
-      'ollama',
-      'openai',
-      'openai-agents-sdk',
-      'openai-codex',
-      'opencode-sdk',
-      'openrouter',
-      'pi-agent',
-      'strands-agents',
-      'tanstack-ai',
-      'vercel-ai-sdk',
-      'voltagent',
-    ]);
     expect(SUPPORTED_REPOSITORY_FORMAT_VERSIONS).toStrictEqual([1]);
     expect(DEFAULT_CORE_RESOURCE_LIMITS).toStrictEqual({
       maxDiagnostics: 10_000,
@@ -64,7 +25,6 @@ describe('Core constants and construction', () => {
       maxRetainedBytes: 536_870_912,
       maxTotalBytesRead: 134_217_728,
     });
-    expect(Object.isFrozen(RECOGNIZED_RUNTIME_IDS)).toBe(true);
     expect(Object.isFrozen(SUPPORTED_REPOSITORY_FORMAT_VERSIONS)).toBe(true);
     expect(Object.isFrozen(DEFAULT_CORE_RESOURCE_LIMITS)).toBe(true);
   });

@@ -24,17 +24,17 @@ Manifest presence, canonical paths, entry types, UTF-8 or Unicode validity, NUL,
 
 ### [YAML and manifest values](#yaml-and-manifest-values)
 
-Malformed or unsupported YAML and invalid Repository Format fields use `MOLDEA_YAML_*`, `MOLDEA_MANIFEST_*`, `MOLDEA_ID_*`, `MOLDEA_VARIABLE_ID_INVALID`, `MOLDEA_PATH_*`, `MOLDEA_GLOB_INVALID`, and `MOLDEA_PATTERN_DUPLICATE` codes.
+Malformed or unsupported YAML and invalid Repository Format fields use `MOLDEA_YAML_*`, `MOLDEA_MANIFEST_*`, `MOLDEA_ID_*`, `MOLDEA_PATH_*`, `MOLDEA_GLOB_INVALID`, and `MOLDEA_PATTERN_DUPLICATE` codes.
 
 ### [References, context, and decisions](#references-context-and-decisions)
 
-Missing or invalid references, context relationships, runtime guidance, and decision files or graphs use `MOLDEA_IMPACT_*`, `MOLDEA_REFERENCE_*`, `MOLDEA_SYMBOL_*`, `MOLDEA_CONTEXT_*`, `MOLDEA_RUNTIME_GUIDANCE_*`, and `MOLDEA_DECISION_*` codes.
+Missing or invalid references, context relationships, and decision files or graphs use `MOLDEA_IMPACT_*`, `MOLDEA_REFERENCE_*`, `MOLDEA_SYMBOL_*`, `MOLDEA_CONTEXT_*`, and `MOLDEA_DECISION_*` codes.
 
 `MOLDEA_REFERENCE_EXPORT_MISSING`: The referenced export is missing. This error is emitted only when a complete syntax-only inventory proves absence. Its details identify the path, symbol, and binding relationship. The same binding has a `failed` coverage record. An unsupported or inconclusive inventory produces `not-checked` coverage rather than an error.
 
 ### [Agents and capabilities](#agents-and-capabilities)
 
-Agent directories, identity, descriptions, instructions, variables, runtime labels, tools, and skills use `MOLDEA_AGENT_*`, `MOLDEA_RUNTIME_*`, `MOLDEA_VARIABLE_*`, `MOLDEA_CAPABILITY_*`, `MOLDEA_TOOL_*`, and `MOLDEA_SKILL_*` codes.
+Agent directories, identity, descriptions, instructions, tools, and skills use `MOLDEA_AGENT_*`, `MOLDEA_CAPABILITY_*`, `MOLDEA_TOOL_*`, and `MOLDEA_SKILL_*` codes.
 
 ### [Mirrors](#mirrors)
 

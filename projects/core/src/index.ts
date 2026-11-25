@@ -9,7 +9,6 @@ export type {
 // supported versions and default resource limits
 export {
   DEFAULT_CORE_RESOURCE_LIMITS,
-  RECOGNIZED_RUNTIME_IDS,
   ACCEPTABLE_WARNING_CODES,
   SUPPORTED_REPOSITORY_FORMAT_VERSIONS,
 } from './constants/index.js';
@@ -92,3 +91,6 @@ export { CoreConfigurationException, CoreOperationException } from './exceptions
 // coding-agent integration parser
 export type { IIntegrationBlockResult } from './integration-validation/index.js';
 export { parseIntegrationBlock } from './integration-validation/index.js';
+
+// export analysis
+export { isSupportedExportSource } from './export-inventory/index.js';

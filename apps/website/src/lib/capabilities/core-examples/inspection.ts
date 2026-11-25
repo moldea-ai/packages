@@ -20,14 +20,6 @@ context:
       - path: /src/returns/policy.ts
     affectedBy:
       - /src/returns/**
-unresolved:
-  international-returns:
-    category: policy
-    effect: warning
-    description: International return eligibility is not documented.
-    resolution: Record the approved international return policy.
-    related:
-      - path: /src/returns/international.ts
 `;
 
 /** Builds a content-bounded operation example without inventing a validation verdict. */
@@ -245,7 +237,6 @@ context:
           ? {
               kind: item.kind,
               agentId: item.agent.agentId,
-              runtimeId: item.agent.runtimeId,
             }
           : item.kind === 'metadata'
             ? {
@@ -395,7 +386,6 @@ context:
       { inputPath: '/src/returns/international.ts', owner: 'context', field: 'affectedBy' },
       { inputPath: '/src/returns/policy.ts', owner: 'context', field: 'affectedBy' },
       { inputPath: '/src/returns/policy.ts', owner: 'context', field: 'bindings' },
-      { inputPath: '/src/returns/international.ts', owner: 'unresolved', field: 'related' },
     ],
   );
   const scopeCase = operationCase(
@@ -417,8 +407,7 @@ context:
     },
     [scope],
   );
-  scopeCase.limitation =
-    'Relevance does not prove semantic impact or that an unresolved requirement has been satisfied.';
+  scopeCase.limitation = 'Relevance does not prove semantic impact.';
   scopeCase.files = [
     projectFile({ path: MANIFEST_PATH, type: 'file', content: scopeManifest }),
   ].filter((file) => file !== null);

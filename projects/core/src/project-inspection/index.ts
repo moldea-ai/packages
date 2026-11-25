@@ -100,7 +100,7 @@ const createIdentity = (parts: Iterable<string>): string =>
 
 const createItemBaseKey = (item: IProjectInspectionItem): string => {
   if (item.kind === 'agent') {
-    return ['3', item.agent.agentId, item.agent.runtimeId].join('\0');
+    return ['3', item.agent.agentId].join('\0');
   }
 
   if (item.kind === 'metadata') {
@@ -303,8 +303,6 @@ const estimatePreparedProjectInspection = (
     coverage: baseCounts.coverage,
     metadata: metadataCount,
     mirrors: baseCounts.mirrors,
-    runtimes: baseCounts.runtimes,
-    unresolved: baseCounts.unresolved,
     warnings: baseCounts.warnings,
     acceptedWarnings: baseCounts.acceptedWarnings,
   };
@@ -517,8 +515,6 @@ export const createProjectInspection = async (
     errors: state.result.errorCount,
     coverage: state.result.coverage.length,
     mirrors: state.result.summary?.counts.mirrors ?? 0,
-    runtimes: state.result.summary?.counts.runtimes ?? 0,
-    unresolved: state.result.summary?.counts.unresolved ?? 0,
     warnings: state.result.warningCount,
     acceptedWarnings: state.result.acceptedWarningCount,
   };

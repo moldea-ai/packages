@@ -237,15 +237,14 @@ for (const width of [320, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await page.goto(toPublicPath('/runtimes/'));
-      const loadMore = page.getByRole('button', { name: 'Load more runtimes' });
+      const loadMore = page.getByRole('button', { name: 'Load more SDKs' });
       while (await loadMore.isVisible()) await loadMore.click();
-      await page.locator('#runtime-check-boundaries > summary').click();
       const target = page.getByRole('link', {
         name: 'OpenAI openai (opens in a new tab)',
         exact: true,
       });
       const textLink = page.getByRole('link', {
-        name: 'Read the coverage contract',
+        name: 'Read the binding contract',
         exact: true,
       });
       const footerLink = page
@@ -334,7 +333,7 @@ for (const width of [320, 1440]) {
         name: width < 1024 ? 'Mobile navigation' : 'Primary navigation',
         exact: true,
       });
-      const current = navigation.getByRole('link', { name: 'Runtimes', exact: true });
+      const current = navigation.getByRole('link', { name: 'SDK guidance', exact: true });
       const inactive = navigation.getByRole('link', { name: 'Packages', exact: true });
       await expect(current).toHaveAttribute('aria-current', 'page');
       await expect(current).toHaveCSS('background-color', platformColors.navigationSelected);
@@ -1277,7 +1276,7 @@ test('cleans up progress after failed and interrupted navigation and across brow
     .click();
 
   await expect(progress).toBeVisible();
-  await page.getByRole('link', { name: 'Runtimes', exact: true }).first().click();
+  await page.getByRole('link', { name: 'SDK guidance', exact: true }).first().click();
   await expect(page).toHaveURL(toPublicPath('/runtimes/'));
   await expect(progress).toBeHidden();
 
@@ -1393,7 +1392,7 @@ test('marks the current desktop and mobile navigation destinations', async ({ pa
 
   const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
   const activeDesktopLink = primaryNavigation.locator('a[aria-current="page"]');
-  const inactiveDesktopLink = primaryNavigation.getByRole('link', { name: 'Runtimes' });
+  const inactiveDesktopLink = primaryNavigation.getByRole('link', { name: 'SDK guidance' });
 
   await expect(activeDesktopLink).toHaveText('Packages');
   expect(
@@ -1424,7 +1423,7 @@ test('marks the current desktop and mobile navigation destinations', async ({ pa
   const activeMobileLink = mobileNavigation.locator('a[aria-current="page"]');
   const inactiveMobileLink = mobileNavigation.getByRole('link', { name: 'Packages' });
 
-  await expect(activeMobileLink).toHaveText('Runtimes');
+  await expect(activeMobileLink).toHaveText('SDK guidance');
   expect(
     await activeMobileLink.evaluate((element) => getComputedStyle(element).backgroundColor),
   ).not.toBe(

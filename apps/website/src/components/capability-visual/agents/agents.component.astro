@@ -5,67 +5,19 @@ import ConnectionLabel from '@moldea.ai/website-ui/connection-label';
 import FilePreview from '@moldea.ai/website-ui/file-preview';
 
 import type { ICapabilityCase } from '../../../lib/capabilities/index.ts';
-import {
-  getIdentityIllustration,
-  getMirrorIllustration,
-  getVariableIllustration,
-} from './utilities.ts';
+import { getIdentityIllustration, getMirrorIllustration } from './utilities.ts';
 
 // exact excerpts emphasize the one mismatch, without displaying complete source files
 interface Props {
   example: ICapabilityCase;
 }
 const { example } = Astro.props;
-const variable =
-  example.id === 'variable-undeclared' ? getVariableIllustration(example) : undefined;
 const mirror = example.id === 'mirror-stale' ? getMirrorIllustration(example) : undefined;
 const identity = example.id === 'agent-identity' ? getIdentityIllustration(example) : undefined;
-if (!variable && !mirror && !identity)
-  throw new Error('Agent illustration requires a selected variable, mirror, or identity example.');
+if (!mirror && !identity)
+  throw new Error('Agent illustration requires a selected mirror or identity example.');
 ---
 
-{
-  variable && (
-    <div class="min-w-0">
-      <FilePreview
-        path={variable.instruction.path}
-        label="Used in the instruction"
-      >
-        <p class="px-4 py-5 text-base leading-8">
-          {variable.before}
-          <mark class="rounded border border-destructive/40 bg-destructive/10 px-1.5 py-1 text-foreground">
-            <code class="font-mono font-semibold">{variable.token}</code>
-          </mark>
-          {variable.after}
-        </p>
-      </FilePreview>
-      <ConnectionLabel tone="danger">
-        <ArrowDown
-          slot="icon"
-          class="size-4"
-          aria-hidden="true"
-        />
-        Missing from declarations
-      </ConnectionLabel>
-      <FilePreview
-        path={variable.manifest.path}
-        label="Declared variables"
-      >
-        <div class="flex flex-wrap items-center gap-2 p-4">
-          {variable.names.map((name) => (
-            <code class="inline-code">{name}</code>
-          ))}
-          <span class="ml-auto">
-            <span class="inline-flex items-center gap-2 rounded-md border border-dashed border-destructive/50 bg-destructive/5 px-2 py-1 text-xs">
-              <code class="inline-code">{variable.variableId}</code>
-              <span>Not declared</span>
-            </span>
-          </span>
-        </div>
-      </FilePreview>
-    </div>
-  )
-}
 {
   mirror && (
     <div class="min-w-0">

@@ -47,7 +47,6 @@ interface IAgentAssetFixture {
       readonly id: string;
       readonly description: string | null;
       readonly instruction: string | null;
-      readonly handoffDescription: string | null;
     }[];
     readonly expectedDiagnostics: readonly IExpectedDiagnostic[];
   }[];
@@ -113,9 +112,8 @@ const simplifyDiagnostics = (diagnostics: readonly ICoreDiagnostic[]) => {
 };
 
 const simplifyAgents = (agents: Awaited<ReturnType<typeof inspectAgentAssets>>['agents']) => {
-  return agents.map(({ description, handoffDescription, id, instruction }) => ({
+  return agents.map(({ description, id, instruction }) => ({
     description: description?.value ?? null,
-    handoffDescription: handoffDescription?.value ?? null,
     id,
     instruction: instruction?.content ?? null,
   }));
@@ -174,7 +172,7 @@ describe('Core agent assets through the memory repository reader', () => {
     const alphaInstruction = parseRepositoryPath('/moldea/agents/alpha/instruction.md');
     const rogueDescription = parseRepositoryPath('/moldea/agents/rogue/description.md');
     const rogueInstruction = parseRepositoryPath('/moldea/agents/rogue/instruction.md');
-    const manifest = 'version: 1\nagents:\n  alpha:\n    runtime:\n      id: custom\n';
+    const manifest = 'version: 1\nagents:\n  alpha: {}\n';
     const repository = createMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
@@ -219,8 +217,7 @@ describe('Core agent assets through the memory repository reader', () => {
     const blockedDirectory = parseRepositoryPath('/moldea/agents/blocked');
     const descriptionPath = parseRepositoryPath('/moldea/agents/present/description.md');
     const instructionPath = parseRepositoryPath('/moldea/agents/present/instruction.md');
-    const manifest =
-      'version: 1\nagents:\n  blocked:\n    runtime:\n      id: custom\n  present:\n    runtime:\n      id: custom\n';
+    const manifest = 'version: 1\nagents:\n  blocked: {}\n  present: {}\n';
     const repository = createMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
@@ -255,13 +252,11 @@ describe('Core agent assets through the memory repository reader', () => {
     expect(simplifyAgents(result.agents)).toStrictEqual([
       {
         description: null,
-        handoffDescription: null,
         id: 'blocked',
         instruction: null,
       },
       {
         description: null,
-        handoffDescription: null,
         id: 'present',
         instruction: null,
       },
@@ -270,7 +265,7 @@ describe('Core agent assets through the memory repository reader', () => {
 
   test('suppresses missing-agent cascades beneath a blocked structural parent', async () => {
     const agentsPath = parseRepositoryPath('/moldea/agents');
-    const manifest = 'version: 1\nagents:\n  alpha:\n    runtime:\n      id: custom\n';
+    const manifest = 'version: 1\nagents:\n  alpha: {}\n';
     const repository = createMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
@@ -300,97 +295,10 @@ describe('Core agent assets through the memory repository reader', () => {
     expect(simplifyAgents(result.agents)).toStrictEqual([
       {
         description: null,
-        handoffDescription: null,
         id: 'alpha',
         instruction: null,
       },
     ]);
-  });
-
-  test('validates placeholders even when instruction identity is invalid', async () => {
-    const instructionPath = parseRepositoryPath('/moldea/agents/alpha/instruction.md');
-    const manifest =
-      'version: 1\nagents:\n  alpha:\n    runtime:\n      id: custom\n    variables:\n      DECLARED:\n        description: Declared value.\n';
-    const repository = createMemoryRepositoryReader([
-      { content: manifest, path: manifestPath, type: 'file' },
-      { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
-      {
-        content: 'Introduction.\nYou are the `alpha` agent. {{UNKNOWN}}\n',
-        path: instructionPath,
-        type: 'file',
-      },
-      {
-        content: 'Alpha agent.\n',
-        path: '/moldea/agents/alpha/description.md',
-        type: 'file',
-      },
-    ]);
-    const result = await inspectFixture(repository, manifest);
-
-    expect(result.diagnostics).toMatchObject([
-      { code: 'MOLDEA_AGENT_IDENTITY_INVALID', path: instructionPath },
-      {
-        code: 'MOLDEA_VARIABLE_UNDECLARED',
-        entity: { agentId: 'alpha', variableId: 'UNKNOWN' },
-        path: instructionPath,
-      },
-      {
-        code: 'MOLDEA_VARIABLE_UNUSED',
-        entity: { agentId: 'alpha', variableId: 'DECLARED' },
-        path: manifestPath,
-      },
-    ]);
-  });
-
-  test('skips placeholder validation when an instruction asset is unavailable', async () => {
-    const manifest =
-      'version: 1\nagents:\n  empty:\n    runtime:\n      id: custom\n    variables:\n      VALUE:\n        description: Runtime value.\n  invalid:\n    runtime:\n      id: custom\n    variables:\n      VALUE:\n        description: Runtime value.\n  missing:\n    runtime:\n      id: custom\n    variables:\n      VALUE:\n        description: Runtime value.\n';
-    const repository = createMemoryRepositoryReader([
-      { content: manifest, path: manifestPath, type: 'file' },
-      { content: '# Project\n', path: '/moldea/project.md', type: 'file' },
-      {
-        content: 'Empty agent.',
-        path: '/moldea/agents/empty/description.md',
-        type: 'file',
-      },
-      {
-        content: '\u0085\u2003\n',
-        path: '/moldea/agents/empty/instruction.md',
-        type: 'file',
-      },
-      {
-        content: 'Invalid agent.',
-        path: '/moldea/agents/invalid/description.md',
-        type: 'file',
-      },
-      {
-        content: Uint8Array.from([0xff]),
-        path: '/moldea/agents/invalid/instruction.md',
-        type: 'file',
-      },
-      {
-        content: 'Missing agent.',
-        path: '/moldea/agents/missing/description.md',
-        type: 'file',
-      },
-    ]);
-    const result = await inspectFixture(repository, manifest);
-
-    expect(result.diagnostics).toMatchObject([
-      {
-        code: 'MOLDEA_AGENT_INSTRUCTION_EMPTY',
-        path: '/moldea/agents/empty/instruction.md',
-      },
-      {
-        code: 'MOLDEA_TEXT_INVALID_UTF8',
-        path: '/moldea/agents/invalid/instruction.md',
-      },
-      {
-        code: 'MOLDEA_AGENT_INSTRUCTION_MISSING',
-        path: '/moldea/agents/missing/instruction.md',
-      },
-    ]);
-    expect(result.diagnostics.some(({ code }) => code === 'MOLDEA_VARIABLE_UNUSED')).toBe(false);
   });
 
   test('retains unrelated validation after strict text failures', async () => {
@@ -398,8 +306,7 @@ describe('Core agent assets through the memory repository reader', () => {
     const alphaInstruction = parseRepositoryPath('/moldea/agents/alpha/instruction.md');
     const betaDescription = parseRepositoryPath('/moldea/agents/beta/description.md');
     const betaInstruction = parseRepositoryPath('/moldea/agents/beta/instruction.md');
-    const manifest =
-      'version: 1\nagents:\n  alpha:\n    runtime:\n      id: custom\n  beta:\n    runtime:\n      id: custom\n';
+    const manifest = 'version: 1\nagents:\n  alpha: {}\n  beta: {}\n';
     const repository = createMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: '# Project\n', path: '/moldea/project.md', type: 'file' },

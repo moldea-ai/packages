@@ -23,7 +23,7 @@ Validates the selected repository through Core. Human and JSON output report dia
 
 ## `inspect`
 
-Runs the same full snapshot and inspection path. Human output reports format and complete counts. The `unresolved` count includes project-owned and agent-owned requirements of every effect, counting identical IDs separately across owners; these readiness gaps do not themselves make structural validation fail. JSON output contains a deterministic page of allowlisted records, including one independent `agentId` and `runtimeId` assignment per canonical agent. It never includes canonical bodies or arbitrary diagnostic details.
+Runs the same full snapshot and inspection path. Human output reports format and complete counts. JSON output contains a deterministic page of allowlisted records, including one identity record per canonical agent. It never includes canonical bodies or arbitrary diagnostic details.
 
 ## `scope`
 
@@ -31,7 +31,7 @@ Matches changed repository paths to manifest relationships without loading the e
 
 ## `content`
 
-Reads one explicitly selected canonical moldea text asset. Accepted paths are the project manifest, project foundation, context, decisions, runtimes, and agent description, instruction, or handoff description assets. Directories, globs, traversal, Windows drive or backslash paths, and non-canonical repository files are rejected. Large text is returned in Unicode-scalar-safe chunks.
+Reads one explicitly selected canonical moldea text asset. Accepted paths are the project manifest, project foundation, focused context, decisions, and canonical agent descriptions and instructions. Directories, globs, traversal, Windows drive or backslash paths, and non-canonical repository files are rejected. Large text is returned in Unicode-scalar-safe chunks.
 
 ## `composition`
 

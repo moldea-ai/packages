@@ -97,10 +97,10 @@ importers:
         specifier: 1.31.0
         version: 1.31.0(astro@7.2.8(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
       '@moldea.ai/cli':
-        specifier: workspace:^13.0.0
+        specifier: workspace:^14.0.0
         version: link:../../projects/cli
       '@moldea.ai/core':
-        specifier: workspace:^9.0.0
+        specifier: workspace:^10.0.0
         version: link:../../projects/core
       '@moldea.ai/repository':
         specifier: workspace:^4.0.0
@@ -157,7 +157,7 @@ importers:
   projects/cli:
     dependencies:
       '@moldea.ai/core':
-        specifier: workspace:^9.2.0
+        specifier: workspace:^10.0.0
         version: link:../core
       '@moldea.ai/repository':
         specifier: workspace:^4.0.0
@@ -302,9 +302,6 @@ importers:
       '@axe-core/playwright':
         specifier: 4.13.0
         version: 4.13.0(playwright-core@1.62.1)
-      '@moldea.ai/core':
-        specifier: workspace:^9.0.0
-        version: link:../core
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1

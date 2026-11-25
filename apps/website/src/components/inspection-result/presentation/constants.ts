@@ -15,7 +15,6 @@ export const DIAGNOSTIC_GROUP_FRAGMENTS = {
 export const MISSING_TARGET_CODES = new Set([
   'MOLDEA_REFERENCE_MISSING',
   'MOLDEA_DECISION_REFERENCE_MISSING',
-  'MOLDEA_RUNTIME_GUIDANCE_MISSING',
   'MOLDEA_TOOL_IMPLEMENTATION_MISSING',
   'MOLDEA_SKILL_IMPLEMENTATION_MISSING',
   'MOLDEA_INTEGRATION_SKILL_MISSING',
@@ -27,7 +26,6 @@ export const ENTITY_FACTS: Record<string, { label: string; icon: IInspectionMeta
   capabilityKind: { label: 'Capability kind', icon: 'capability' },
   capabilityId: { label: 'Capability', icon: 'capability' },
   decisionId: { label: 'Decision', icon: 'decision' },
-  variableId: { label: 'Variable', icon: 'variable' },
   contextPath: { label: 'Context document', icon: 'context' },
   integrationPath: { label: 'Instruction file', icon: 'integration' },
 };
@@ -127,7 +125,6 @@ export const RELATIONSHIP_ICON_ROLES = new Map<string, IInspectionMetadataIcon>(
       'skill-implementation',
       'context-binding',
       'decision-binding',
-      'variable-provider',
     ] satisfies IInspectionMetadataIcon[]
   ).map((role) => [role, role]),
 );

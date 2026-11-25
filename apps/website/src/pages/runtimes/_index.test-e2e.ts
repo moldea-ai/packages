@@ -16,28 +16,31 @@ for (const width of [320, 768, 1440]) {
       for (const route of ['/', '/runtimes/']) {
         await page.goto(withBase(route, basePath));
         const grid = page.locator('[data-runtime-grid]');
-        const loadMore = page.getByRole('button', { name: 'Load more runtimes', exact: true });
+        const loadMore = page.getByRole('button', { name: 'Load more SDKs', exact: true });
         await expect(grid.locator('a:visible')).toHaveCount(batchSize);
         if (width === 1440) {
           await expect(
-            grid.getByRole('link', { name: 'eve eve (opens in a new tab)', exact: true }),
+            grid.getByRole('link', { name: 'eve (opens in a new tab)', exact: true }),
           ).toBeVisible();
           await expect(
-            grid.getByRole('link', { name: 'Mastra mastra (opens in a new tab)', exact: true }),
+            grid.getByRole('link', {
+              name: 'Mastra @mastra/core (opens in a new tab)',
+              exact: true,
+            }),
           ).toBeHidden();
         }
         await loadMore.focus();
         await page.keyboard.press('Enter');
         await expect(grid.locator('a:visible')).toHaveCount(35);
         await expect(
-          grid.getByRole('link', { name: 'Mastra mastra (opens in a new tab)', exact: true }),
+          grid.getByRole('link', { name: 'Mastra @mastra/core (opens in a new tab)', exact: true }),
         ).toBeVisible();
         await expect(grid.locator('a').nth(batchSize)).toBeFocused();
         await expect(loadMore).toBeHidden();
         await expect(grid.locator('a:visible')).toHaveCount(35);
         for (const runtime of RUNTIME_CATALOG) {
           const link = grid.getByRole('link', {
-            name: `${runtime.displayName} ${runtime.id} (opens in a new tab)`,
+            name: `${[runtime.displayName, runtime.packageName].filter(Boolean).join(' ')} (opens in a new tab)`,
             exact: true,
           });
           await expect(link).toHaveAttribute('href', runtime.websiteUrl);
@@ -54,13 +57,13 @@ for (const width of [320, 768, 1440]) {
             if (element.naturalWidth === 0) throw new Error('Runtime icon did not decode.');
           });
         }
-        // runtime IDs without separators stay on one line with their full value as a title
-        const unbreakableId = grid.locator('code').filter({ hasText: /^anthropic$/u });
+        // package names without separators stay on one line with their full value as a title
+        const unbreakableId = grid.locator('code').filter({ hasText: /^openai$/u });
         await expect(unbreakableId).toHaveAttribute('data-code-text', 'unbreakable');
-        await expect(unbreakableId).toHaveAttribute('title', 'anthropic');
+        await expect(unbreakableId).toHaveAttribute('title', 'openai');
         await expect(unbreakableId).toHaveCSS('white-space', 'nowrap');
         await expect(unbreakableId).toHaveCSS('text-overflow', 'ellipsis');
-        const breakableId = grid.locator('code').filter({ hasText: /^vercel-ai-sdk$/u });
+        const breakableId = grid.locator('code').filter({ hasText: /^@anthropic-ai\/sdk$/u });
         await expect(breakableId).not.toHaveAttribute('data-code-text');
         await expect(breakableId).not.toHaveAttribute('title');
         const first = grid.getByRole('link').first();
@@ -81,27 +84,11 @@ for (const width of [320, 768, 1440]) {
           [],
         );
       }
-      await expect(
-        page.getByRole('heading', { name: 'A declared document must exist.' }),
-      ).toBeVisible();
-      await expect(page.locator('main')).toContainText('Core does not check runtime wiring');
-      await expect(
-        page.getByRole('group', {
-          name: 'Inspected input for OpenAI guidance is connected',
-          exact: true,
-        }),
-      ).toContainText('id: openai');
-      const removedFile = page.getByRole('list', {
-        name: 'Repository after the runtime guidance file was removed',
-      });
-      await expect(removedFile).toContainText('openai.md');
-      await expect(removedFile).toContainText('Removed');
-      await expect(
-        page.getByRole('group', { name: 'Runtime declaration in moldea.yaml' }),
-      ).toContainText('guidance: /moldea/runtimes/openai.md');
-      await expect(
-        page.locator('section[aria-labelledby="example-runtime-guidance-missing-title"]'),
-      ).toContainText('The referenced runtime guidance does not exist.');
+      await expect(page.getByRole('heading', { name: 'SDKs moldea works with' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Read the binding contract' })).toHaveAttribute(
+        'href',
+        withBase('/repository-format/#repository-references-and-bindings', basePath),
+      );
     });
   }
 }
@@ -114,7 +101,7 @@ test('keeps three rows when the grid changes column count', async ({ page }) => 
   await links.nth(8).focus();
   await page.setViewportSize({ width: 320, height: 900 });
   await expect(links).toHaveCount(3);
-  await expect(page.getByRole('button', { name: 'Load more runtimes' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Load more SDKs' })).toBeFocused();
   await page.setViewportSize({ width: 768, height: 900 });
   await expect(links).toHaveCount(6);
 });
@@ -131,7 +118,7 @@ test('all official links remain available without JavaScript', async ({ browser 
     const page = await context.newPage();
     await page.goto(withBase('/runtimes/', basePath));
     await expect(page.locator('[data-runtime-grid] a:visible')).toHaveCount(35);
-    await expect(page.getByRole('button', { name: 'Load more runtimes' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Load more SDKs' })).toBeHidden();
     const popupPromise = page.waitForEvent('popup');
     await page
       .getByRole('link', { name: 'OpenAI openai (opens in a new tab)', exact: true })

@@ -219,22 +219,6 @@ describe('Core universal project inspection through the memory repository reader
         content: '# Project\n\nUniversal project.\n',
         path: '/moldea/project.md',
       },
-      runtimes: [
-        {
-          asset: {
-            content: 'Node runtime guidance.\n',
-            path: '/moldea/runtimes/node.md',
-          },
-        },
-      ],
-      unresolved: {
-        'release-owner': {
-          category: 'ownership',
-          description: 'Release ownership is unresolved.',
-          effect: 'warning',
-          resolution: 'Assign one release owner.',
-        },
-      },
     });
     expect(() => JSON.stringify(project)).not.toThrow();
     const assets = [
@@ -242,12 +226,7 @@ describe('Core universal project inspection through the memory repository reader
       project.project,
       ...project.context.map(({ asset }) => asset),
       ...project.decisions.map(({ decision }) => decision.asset),
-      ...project.runtimes.map(({ asset }) => asset),
-      ...project.agents.flatMap(({ description, handoffDescription, instruction }) => [
-        description.asset,
-        instruction,
-        ...(handoffDescription === null ? [] : [handoffDescription.asset]),
-      ]),
+      ...project.agents.flatMap(({ description, instruction }) => [description.asset, instruction]),
     ];
 
     expect(
@@ -262,11 +241,6 @@ describe('Core universal project inspection through the memory repository reader
         digest: 'sha256:7710224bb7f3b89cac874f403e799bf3d9bfa551318c28c732312739373b235c',
         scalarLength: 13,
         utf8ByteLength: 13,
-      },
-      '/moldea/agents/alpha/handoff-description.md': {
-        digest: 'sha256:3c50760556e660f7476207c76ba91a3fcdf1f8b320f542b4e9921c83802ee85a',
-        scalarLength: 22,
-        utf8ByteLength: 22,
       },
       '/moldea/agents/alpha/instruction.md': {
         digest: 'sha256:08bd85d6e1246e203458e6c91225d17d375b5d5d9ed94aee42457a8d3dcbd2e5',
@@ -299,19 +273,14 @@ describe('Core universal project inspection through the memory repository reader
         utf8ByteLength: 86,
       },
       '/moldea/moldea.yaml': {
-        digest: 'sha256:2a407c5ced4e649022e02d08b0ec0cde8d950ecd460cb57c03426177b09aee60',
-        scalarLength: 1311,
-        utf8ByteLength: 1311,
+        digest: 'sha256:b828e8ef7fee36bd5c96f60763c142771e2f97e0af24d229802c9f5699b05777',
+        scalarLength: 694,
+        utf8ByteLength: 694,
       },
       '/moldea/project.md': {
         digest: 'sha256:5b862e20cf4653aaf9087a59a4eb66515083d052167684143396df2e8c79887e',
         scalarLength: 30,
         utf8ByteLength: 30,
-      },
-      '/moldea/runtimes/node.md': {
-        digest: 'sha256:3d629d0d523897c03eff3ab31bf2646539bb3ca041606f7566b3ef99aaea9705',
-        scalarLength: 23,
-        utf8ByteLength: 23,
       },
     });
     expect(project.agents.map(({ description, id }) => ({ id, ...description }))).toMatchObject([
@@ -327,15 +296,6 @@ describe('Core universal project inspection through the memory repository reader
         scalarLength: 50,
       },
     ]);
-    expect(JSON.parse(JSON.stringify(project.unresolved))).toStrictEqual({
-      'release-owner': {
-        category: 'ownership',
-        description: 'Release ownership is unresolved.',
-        effect: 'warning',
-        related: [{ path: '/src/release.ts' }],
-        resolution: 'Assign one release owner.',
-      },
-    });
     expect(Object.isFrozen(project.agents[0]?.instruction)).toBe(true);
     expect(Object.isFrozen(project.context[0]?.relationships)).toBe(true);
   });
@@ -375,7 +335,6 @@ describe('Core universal project inspection through the memory repository reader
       '/.agents/skills/moldea/assets/managed-agents-block.md': 1,
       '/apps/alpha.md': 1,
       '/moldea/agents/alpha/description.md': 1,
-      '/moldea/agents/alpha/handoff-description.md': 1,
       '/moldea/agents/alpha/instruction.md': 1,
       '/moldea/agents/zeta/description.md': 1,
       '/moldea/agents/zeta/instruction.md': 1,
@@ -384,7 +343,6 @@ describe('Core universal project inspection through the memory repository reader
       '/moldea/decisions/1767225600000-use-security.md': 1,
       '/moldea/moldea.yaml': 1,
       '/moldea/project.md': 1,
-      '/moldea/runtimes/node.md': 1,
       '/src/agents.ts': 1,
     });
   });
@@ -402,7 +360,6 @@ describe('Core universal project inspection through the memory repository reader
       { code: 'MOLDEA_DECISION_SUPERSEDED_ORPHAN' },
       { code: 'MOLDEA_MANIFEST_PROPERTY_UNKNOWN' },
       { code: 'MOLDEA_PROJECT_FILE_EMPTY' },
-      { code: 'MOLDEA_RUNTIME_GUIDANCE_EMPTY' },
     ]);
   });
 
@@ -535,7 +492,7 @@ describe('Core universal project inspection through the memory repository reader
     const repository = createIntegratedMemoryRepositoryReader([
       { content: manifest, path: manifestPath, type: 'file' },
       { content: ' ', path: '/moldea/project.md', type: 'file' },
-      { content: ' ', path: '/moldea/runtimes/empty.md', type: 'file' },
+      { content: ' ', path: '/moldea/context/empty.md', type: 'file' },
       {
         content: '---\nstatus: accepted\ncreatedAt: "2026-01-01T00:00:00.000Z"\n---\n \n',
         path: '/moldea/decisions/1767225600000-empty.md',

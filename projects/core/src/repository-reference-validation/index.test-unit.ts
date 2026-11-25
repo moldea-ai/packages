@@ -48,7 +48,6 @@ const createDiscovery = (
     decisions: [],
     manifest: MANIFEST_PATH,
     project: PROJECT_PATH,
-    runtimeGuidance: [],
   },
   valid: diagnostics.length === 0,
 });
@@ -101,9 +100,7 @@ describe('Core repository reference validation', () => {
             instructionLoader: sharedReference,
             outputSchema: sharedReference,
             runtimeAgent: sharedReference,
-            variableProviders: { REGION: sharedReference },
           },
-          runtime: { id: 'custom' },
           skills: {
             audit: {
               affectedBy: ['/skills/**', EXACT_IMPACT_PATH],
@@ -124,16 +121,6 @@ describe('Core repository reference validation', () => {
               registration: sharedReference,
             },
           },
-          unresolved: {
-            verification: {
-              category: 'testing',
-              description: 'Verification remains incomplete.',
-              effect: 'warning',
-              related: [sharedReference],
-              resolution: 'Complete verification.',
-            },
-          },
-          variables: { REGION: { description: 'Deployment region.' } },
         },
       },
       context: {
@@ -146,15 +133,6 @@ describe('Core repository reference validation', () => {
         '/moldea/decisions/1767225600000-adopt.md': {
           affectedBy: ['/decisions/**', EXACT_IMPACT_PATH],
           bindings: [sharedReference],
-        },
-      },
-      unresolved: {
-        architecture: {
-          category: 'design',
-          description: 'Architecture remains open.',
-          effect: 'informational',
-          related: [sharedReference],
-          resolution: 'Record the decision.',
         },
       },
       version: 1,
@@ -191,11 +169,7 @@ describe('Core repository reference validation', () => {
             instructionLoader: missingReference('/references/instruction-loader.ts'),
             outputSchema: missingReference('/references/agent-output.ts'),
             runtimeAgent: missingReference('/references/runtime-agent.ts'),
-            variableProviders: {
-              REGION: missingReference('/references/region-provider.ts'),
-            },
           },
-          runtime: { id: 'custom' },
           skills: {
             audit: {
               affectedBy: ['/impact/skill.ts'],
@@ -216,16 +190,6 @@ describe('Core repository reference validation', () => {
               registration: missingReference('/references/tool-registration.ts'),
             },
           },
-          unresolved: {
-            'agent-gap': {
-              category: 'testing',
-              description: 'Agent evidence is incomplete.',
-              effect: 'warning',
-              related: [missingReference('/references/agent-unresolved.ts')],
-              resolution: 'Add agent evidence.',
-            },
-          },
-          variables: { REGION: { description: 'Deployment region.' } },
         },
       },
       context: {
@@ -238,15 +202,6 @@ describe('Core repository reference validation', () => {
         '/moldea/decisions/1767225600000-adopt.md': {
           affectedBy: ['/impact/decision.ts'],
           bindings: [missingReference('/references/decision.ts')],
-        },
-      },
-      unresolved: {
-        'project-gap': {
-          category: 'design',
-          description: 'Project evidence is incomplete.',
-          effect: 'informational',
-          related: [missingReference('/references/project-unresolved.ts')],
-          resolution: 'Add project evidence.',
         },
       },
       version: 1,
@@ -293,11 +248,6 @@ describe('Core repository reference validation', () => {
         pointer: '/agents/reviewer/bindings/runtimeAgent',
       },
       {
-        code: 'MOLDEA_REFERENCE_MISSING',
-        entity: { agentId: 'reviewer', variableId: 'REGION' },
-        pointer: '/agents/reviewer/bindings/variableProviders/REGION',
-      },
-      {
         code: 'MOLDEA_IMPACT_PATH_MISSING',
         entity: { agentId: 'reviewer', capabilityId: 'audit', capabilityKind: 'skill' },
         pointer: '/agents/reviewer/skills/audit/affectedBy/0',
@@ -338,11 +288,6 @@ describe('Core repository reference validation', () => {
         pointer: '/agents/reviewer/tools/deploy/registration',
       },
       {
-        code: 'MOLDEA_REFERENCE_MISSING',
-        entity: { agentId: 'reviewer' },
-        pointer: '/agents/reviewer/unresolved/agent-gap/related/0',
-      },
-      {
         code: 'MOLDEA_IMPACT_PATH_MISSING',
         entity: { contextPath: PROJECT_PATH },
         pointer: '/context/~1moldea~1project.md/affectedBy/0',
@@ -362,13 +307,8 @@ describe('Core repository reference validation', () => {
         entity: { decisionId: '1767225600000' },
         pointer: '/decisions/~1moldea~1decisions~11767225600000-adopt.md/bindings/0',
       },
-      {
-        code: 'MOLDEA_REFERENCE_MISSING',
-        entity: null,
-        pointer: '/unresolved/project-gap/related/0',
-      },
     ]);
-    expect(fixture.lookups).toHaveLength(20);
+    expect(fixture.lookups).toHaveLength(17);
   });
 
   test('emits deterministic type-specific diagnostics at authored pointers', async () => {
@@ -384,7 +324,6 @@ describe('Core repository reference validation', () => {
     const manifest: IMoldeaManifestV1 = {
       agents: {
         reviewer: {
-          runtime: { id: 'custom' },
           skills: {
             audit: {
               description: 'Audits changes.',

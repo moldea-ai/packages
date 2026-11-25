@@ -183,7 +183,6 @@ describe('bounded impact warnings and manifest acceptance through Core', () => {
           decisions: { [decisionPath]: { affectedBy: ['/decision-future/**'] } },
           agents: {
             reviewer: {
-              runtime: { id: 'openai' },
               affectedBy: ['/agent-future/**'],
               tools: {
                 lookup: {
