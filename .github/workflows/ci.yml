@@ -284,8 +284,13 @@ jobs:
         env:
           ARTIFACT_DIRECTORY: ${{ runner.temp }}/public-package-tarballs
         run: |
-          node --experimental-strip-types scripts/npm-release/checksums.ts verify "$ARTIFACT_DIRECTORY"
           test "$(cat "$ARTIFACT_DIRECTORY/packages-commit.txt")" = "$(git rev-parse HEAD)"
+          cd -- "$ARTIFACT_DIRECTORY"
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            shasum --algorithm 256 --check --strict SHA256SUMS
+          else
+            sha256sum --check --strict SHA256SUMS
+          fi
 
       - name: Verify Packed and Portable CLI Runtime
         run: >-

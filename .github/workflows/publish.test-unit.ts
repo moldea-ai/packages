@@ -123,7 +123,14 @@ describe('npm release workflow', () => {
     expect(ciSource).toContain(
       'git rev-parse HEAD > "$public_packages_directory/packages-commit.txt"',
     );
-    expect(ciSource).toContain('scripts/npm-release/checksums.ts verify "$ARTIFACT_DIRECTORY"');
+    const identityStep = runtime?.steps?.find(
+      ({ name }) => name === 'Verify Package Artifact Identity',
+    );
+    expect(identityStep?.run).toContain(
+      'test "$(cat "$ARTIFACT_DIRECTORY/packages-commit.txt")" = "$(git rev-parse HEAD)"',
+    );
+    expect(identityStep?.run).toContain('shasum --algorithm 256 --check --strict SHA256SUMS');
+    expect(identityStep?.run).toContain('sha256sum --check --strict SHA256SUMS');
     expect(ciSource).toContain('projects/cli/scripts/runtime-compatibility/index.mjs');
   });
 
