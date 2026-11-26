@@ -51,6 +51,7 @@ export default mergeConfig(
     build: {
       emptyOutDir: true,
       license: { fileName: 'LICENSES.md' },
+      minify: true,
       outDir: directory,
       rolldownOptions: {
         platform: 'node',

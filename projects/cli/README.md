@@ -8,7 +8,7 @@ The version 14 executable exposes one schema 8 JSON contract. `validate` and `in
 
 The CLI is optional for repositories using the moldea skill. To run it on its own from a Git checkout, use `npx @moldea.ai/cli@14 validate` or add `@moldea.ai/cli` as a development dependency.
 
-The tarball also contains `dist/portable/`. Run `node <path-to-portable>/moldea.mjs validate` with Node.js and Git. The complete directory, including its adjacent runner, worker, chunks, `SHA256SUMS`, and licenses, can move as one unit. The skill ships this build.
+The tarball also contains a minified, source-map-free CLI under `dist/portable/`. Run `node <path-to-portable>/moldea.mjs validate` with Node.js and Git. The complete directory, including its adjacent runner, worker, chunks, `SHA256SUMS`, and `LICENSES.md`, can move as one unit. The skill ships this build.
 
 ## Commands
 
