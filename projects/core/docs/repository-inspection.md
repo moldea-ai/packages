@@ -84,7 +84,7 @@ The complete check reads at most four instruction files, follows at most 32 link
 
 ## Resource limits
 
-These defaults describe Core 9. They apply independently to each Core operation.
+These defaults apply independently to each Core operation.
 
 | Limit                 |                     Default | Counted scope                                                                                                           |
 | --------------------- | --------------------------: | ----------------------------------------------------------------------------------------------------------------------- |
@@ -122,7 +122,7 @@ Resource refusals expose the exceeded limit name, configured maximum, observed o
 
 ## Isolated Node inspection
 
-The fixed Core 9 Node profile is independent of configurable input limits:
+The fixed Node inspection profile is independent of configurable input limits:
 
 | Control                 | Fixed value | Scope                                               |
 | ----------------------- | ----------: | --------------------------------------------------- |

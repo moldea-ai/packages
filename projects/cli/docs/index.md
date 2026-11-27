@@ -10,11 +10,11 @@ order: 0
 `@moldea.ai/cli` version 14 provides the `moldea` executable. It emits concise human results or deterministic schema 8 JSON pages. Full validation and metadata inspection use Core universal checks; changed-path scope and explicit canonical content use path-selected repository reads.
 
 ```bash
-pnpm add -D @moldea.ai/cli@13
+pnpm add -D @moldea.ai/cli@14
 pnpm exec moldea validate
 ```
 
-Install and invoke the CLI from each adopted repository. Global, user-home, and cross-repository installations are outside the supported trust boundary because they can expose unrelated repositories to ambient executable or skill behavior.
+For standalone use, install and invoke the CLI from the Git checkout you want to inspect. Global, user-home, and cross-repository installations are outside the supported trust boundary because they can expose unrelated repositories to ambient executable or skill behavior.
 
 For optional standalone checks, run `npx @moldea.ai/cli@14 validate` from a Git checkout. The skill ships the tarball’s portable build, which runs with Node.js and Git from its own directory.
 
