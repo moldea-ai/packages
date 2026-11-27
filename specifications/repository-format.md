@@ -113,10 +113,6 @@ moldea/
   decisions/
     1786050123456-use-postgresql.md
 
-  runtimes/
-    openai-agents-sdk-api.md
-    internal-agent-runtime.md
-
   agents/
     customer-support/
       description.md
