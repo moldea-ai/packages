@@ -2,14 +2,11 @@
 export {
   MOLDEA_CLI_COMMAND_HELP,
   MOLDEA_CLI_ERROR_DEFINITIONS,
-  MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
   MOLDEA_CLI_TOP_LEVEL_HELP,
 } from './constants.js';
 
 // types
 export type {
-  IMoldeaCliAgentRecord,
-  IMoldeaCliAssetIdentity,
   IMoldeaCliDiagnosticRecord,
   IMoldeaCliError,
   IMoldeaCliErrorCode,
@@ -18,12 +15,10 @@ export type {
   IMoldeaCliValidateRecord,
   IMoldeaCliGitErrorCode,
   IMoldeaCliInspectProjection,
-  IMoldeaCliInspectProjectMetadata,
   IMoldeaCliInspectRecord,
   IMoldeaCliInspectResult,
   IMoldeaCliMetadataRecord,
   IMoldeaCliOwnedErrorCode,
-  IMoldeaCliSource,
   IMoldeaCliValidateProjection,
   IMoldeaCliValidateResult,
 } from './types.js';

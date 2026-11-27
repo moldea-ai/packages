@@ -7,18 +7,18 @@ order: 0
 
 # The local package composition
 
-`@moldea.ai/cli` version 14 provides the `moldea` executable. It emits concise human results or deterministic schema 8 JSON pages. Full validation and metadata inspection use Core universal checks; changed-path scope and explicit canonical content use path-selected repository reads.
+`@moldea.ai/cli` version 15 provides the `moldea` executable. It emits concise human results or deterministic schema 9 JSON pages. Full validation and metadata inspection use Core universal checks; changed-path scope and explicit canonical content use path-selected repository reads.
 
 ```bash
-pnpm add -D @moldea.ai/cli@14
+pnpm add -D @moldea.ai/cli@15
 pnpm exec moldea validate
 ```
 
 For standalone use, install and invoke the CLI from the Git checkout you want to inspect. Global, user-home, and cross-repository installations are outside the supported trust boundary because they can expose unrelated repositories to ambient executable or skill behavior.
 
-For optional standalone checks, run `npx @moldea.ai/cli@14 validate` from a Git checkout. The skill ships the tarball’s portable build, which runs with Node.js and Git from its own directory.
+For optional standalone checks, run `npx @moldea.ai/cli@15 validate` from a Git checkout. The skill ships the tarball’s portable build, which runs with Node.js and Git from its own directory.
 
-The package exposes no supported JavaScript or TypeScript import API. Its public contract is the executable, command grammar, schema 8 envelope, bounded pagination and content chunks, status and exit semantics, safe operational errors, and runtime requirements.
+The package exposes no supported JavaScript or TypeScript import API. Its public contract is the executable, command grammar, schema 9 envelope, bounded pagination and content chunks, status and exit semantics, safe operational errors, and runtime requirements.
 
 Binding coverage reports the checks performed on each declared reference: `fileCheck`, `exportCheck`, and a reason when an export could not be checked. TypeScript and JavaScript ESM use conservative syntax-only export inventories; CommonJS, unsupported extensions and inconclusive syntax remain not checked. A passed export check does not establish runtime wiring or SDK compatibility. Interrupted operations return an error without a partial coverage result.
 

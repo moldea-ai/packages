@@ -150,7 +150,7 @@ Options:
       exitCode: 2,
       stderr: '',
       stdout:
-        '{"cliVersion":"11.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":8,"status":"error"}\n',
+        '{"cliVersion":"11.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":9,"status":"error"}\n',
     });
   });
 
@@ -212,7 +212,7 @@ Options:
       exitCode: 3,
       stderr: '',
       stdout:
-        '{"cliVersion":"11.0.0","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":8,"status":"error"}\n',
+        '{"cliVersion":"11.0.0","command":"inspect","error":{"code":"INTERNAL_ERROR","details":{},"message":"The command could not be completed.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":9,"status":"error"}\n',
     });
   });
 });

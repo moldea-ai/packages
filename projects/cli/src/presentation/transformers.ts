@@ -1,23 +1,17 @@
-import type {
-  IDiagnostic,
-  IBindingCoverage,
-  IProjectInspectionItem,
-  IProjectInspectionPageResult,
-  IProjectValidationResult,
-} from '@moldea.ai/core';
+import type { IDiagnostic, IBindingCoverage, IProjectValidationResult } from '@moldea.ai/core';
 
+import type {
+  IMoldeaCliCoreInspectPage,
+  IMoldeaCliInspectItem,
+} from '../core-composition/index.js';
 import type { IJsonValue } from '../json-serialization/index.js';
-import { calculateMoldeaCliJsonDigest } from '../output-page/index.js';
+import { calculateMoldeaCliJsonDigest, createMoldeaCliRecordKey } from '../output-page/index.js';
 
-import { MOLDEA_CLI_GIT_WORKING_TREE_SOURCE } from './constants.js';
 import type {
-  IMoldeaCliAgentRecord,
   IMoldeaCliDiagnosticRecord,
   IMoldeaCliCoverageRecord,
   IMoldeaCliInspectProjection,
-  IMoldeaCliInspectProjectMetadata,
   IMoldeaCliInspectRecord,
-  IMoldeaCliMetadataRecord,
   IMoldeaCliValidateProjection,
 } from './types.js';
 
@@ -46,36 +40,16 @@ const assertProjectValidationInvariant = (validation: IProjectValidationResult):
   }
 };
 
-/** Creates one stable composite record key. */
-const createRecordKey = (kind: string, ...parts: readonly unknown[]): string =>
-  JSON.stringify([kind, ...parts]);
-
 /** Projects one diagnostic without retaining arbitrary detail payloads. */
 export const createMoldeaCliDiagnosticRecord = (
   diagnostic: IDiagnostic,
-  occurrence = 0,
+  index: number,
 ): IMoldeaCliDiagnosticRecord => {
   const record = {
     code: diagnostic.code,
     group: diagnostic.group,
     entity: diagnostic.entity,
-    key: createRecordKey(
-      'diagnostic',
-      diagnostic.source,
-      diagnostic.severity,
-      diagnostic.code,
-      diagnostic.path,
-      diagnostic.pointer,
-      diagnostic.severity === 'warning'
-        ? [
-            diagnostic.subject,
-            diagnostic.qualifier,
-            diagnostic.accepted === true,
-            diagnostic.accepted === true ? diagnostic.reason : null,
-          ]
-        : null,
-      occurrence,
-    ),
+    key: createMoldeaCliRecordKey(index),
     kind: 'diagnostic' as const,
     message: diagnostic.message,
     path: diagnostic.path,
@@ -99,84 +73,29 @@ export const createMoldeaCliDiagnosticRecord = (
   return Object.freeze({ ...record, severity: 'error' as const });
 };
 
-/** Projects a binding's file and export checks with a stable record key. */
-const createCoverageRecord = (
+// Core reports missing and wrong-type binding files as diagnostics.
+const hasExceptionalCoverage = (
   coverage: IBindingCoverage,
-  index: number,
-  order = 'coverage',
-): IMoldeaCliCoverageRecord =>
-  Object.freeze({
-    entity: coverage.entity,
-    relationship: coverage.relationship,
-    path: coverage.path,
-    symbol: coverage.symbol,
-    fileCheck: coverage.fileCheck,
-    ...(coverage.exportCheck === 'not-checked'
-      ? {
-          exportCheck: coverage.exportCheck,
-          exportNotCheckedReason: coverage.exportNotCheckedReason,
-        }
-      : { exportCheck: coverage.exportCheck }),
-    key: createRecordKey(
-      order,
-      'coverage',
-      coverage.relationship,
-      coverage.entity,
-      coverage.path,
-      coverage.symbol,
-      index,
-    ),
-    kind: 'coverage' as const,
-  });
+): coverage is Exclude<IBindingCoverage, { exportCheck: 'passed' }> =>
+  coverage.fileCheck !== 'passed' || coverage.exportCheck !== 'passed';
 
-/** Projects one bounded Core inspection item through the schema 8 allowlist. */
+/** Projects one inventory item or diagnostic without exposing file identities. */
 const createInspectRecord = (
-  item: IProjectInspectionItem,
+  item: IMoldeaCliInspectItem,
   index: number,
 ): IMoldeaCliInspectRecord => {
-  const order = index.toString().padStart(6, '0');
+  if (item.kind === 'diagnostic') return createMoldeaCliDiagnosticRecord(item.diagnostic, index);
 
-  if (item.kind === 'agent') {
-    const record: IMoldeaCliAgentRecord = {
-      agentId: item.agent.agentId,
-      key: createRecordKey(order, 'agent', item.agent.agentId),
-      kind: 'agent',
-    };
-
-    return Object.freeze(record);
-  }
-
-  if (item.kind === 'diagnostic') {
-    return Object.freeze({
-      ...createMoldeaCliDiagnosticRecord(item.diagnostic, index),
-      key: createRecordKey(
-        order,
-        'diagnostic',
-        item.diagnostic.source,
-        item.diagnostic.severity,
-        item.diagnostic.code,
-        createMoldeaCliDiagnosticRecord(item.diagnostic, index).key,
-      ),
-    });
-  }
-
-  if (item.kind === 'coverage') return createCoverageRecord(item.coverage, index, order);
-
-  const metadata = item.metadata;
-  const record: IMoldeaCliMetadataRecord = {
-    agentId: metadata.agentId,
-    byteLength: metadata.byteLength,
-    canonicalDigest: metadata.canonicalDigest,
-    decisionId: metadata.decisionId,
-    digest: metadata.digest,
-    key: createRecordKey(order, 'metadata', metadata.path, metadata.kind, metadata.agentId),
+  const { agentId, byteLength, decisionId, kind, path } = item.metadata;
+  return Object.freeze({
+    agentId,
+    byteLength,
+    decisionId,
+    key: createMoldeaCliRecordKey(index),
     kind: 'metadata',
-    metadataKind: metadata.kind,
-    path: metadata.path,
-    scalarLength: metadata.scalarLength,
-  };
-
-  return Object.freeze(record);
+    metadataKind: kind,
+    path,
+  });
 };
 
 /** Creates content-free validation metadata and ordered diagnostic records. */
@@ -184,25 +103,32 @@ export const createMoldeaCliValidateProjection = (
   validation: IProjectValidationResult,
 ): IMoldeaCliValidateProjection => {
   assertProjectValidationInvariant(validation);
-  const diagnostics = validation.diagnostics.map((diagnostic, index) => {
-    const record = createMoldeaCliDiagnosticRecord(diagnostic, index);
-    return Object.freeze({
-      ...record,
-      key: createRecordKey(index.toString().padStart(6, '0'), 'diagnostic', record.key),
-    });
-  });
+  const diagnostics = validation.diagnostics.map(createMoldeaCliDiagnosticRecord);
   const records = Object.freeze([
     ...diagnostics,
-    ...validation.coverage.map((coverage, index) =>
-      createCoverageRecord(
-        coverage,
-        index,
-        (diagnostics.length + index).toString().padStart(6, '0'),
+    ...validation.coverage
+      .filter(hasExceptionalCoverage)
+      .map((coverage, index): IMoldeaCliCoverageRecord =>
+        Object.freeze({
+          entity: coverage.entity,
+          relationship: coverage.relationship,
+          path: coverage.path,
+          symbol: coverage.symbol,
+          fileCheck: coverage.fileCheck,
+          ...(coverage.exportCheck === 'not-checked'
+            ? {
+                exportCheck: coverage.exportCheck,
+                exportNotCheckedReason: coverage.exportNotCheckedReason,
+              }
+            : { exportCheck: coverage.exportCheck }),
+          key: createMoldeaCliRecordKey(diagnostics.length + index),
+          kind: 'coverage',
+        }),
       ),
-    ),
   ]);
   const snapshotDigest = calculateMoldeaCliJsonDigest({
-    records,
+    diagnostics,
+    coverage: validation.coverage,
     coverageCounts: validation.coverageCounts,
     acceptedWarningCount: validation.acceptedWarningCount,
     errorCount: validation.errorCount,
@@ -220,56 +146,35 @@ export const createMoldeaCliValidateProjection = (
     errorCount: validation.errorCount,
     formatVersion: validation.formatVersion,
     snapshotDigest,
-    source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
     valid: validation.valid,
     warningCount: validation.warningCount,
   });
 };
 
-/** Projects one bounded Core page through the content-free schema 8 allowlist. */
+/** Projects one bounded inspection page through the inventory and diagnostic allowlist. */
 export const createMoldeaCliInspectProjection = (
-  inspection: IProjectInspectionPageResult,
+  inspection: IMoldeaCliCoreInspectPage,
 ): IMoldeaCliInspectProjection => {
-  const project: IMoldeaCliInspectProjectMetadata | null =
-    inspection.summary === null
-      ? null
-      : Object.freeze({
-          manifest: Object.freeze({
-            digest: inspection.summary.manifestDigest,
-            path: inspection.summary.manifestPath,
-          }),
-          project: Object.freeze({
-            digest: inspection.summary.projectDigest,
-            path: inspection.summary.projectPath,
-          }),
-        });
   const records = Object.freeze(
-    inspection.page.records.map(({ item }, index) => createInspectRecord(item, index)),
+    inspection.records.map(({ item }, index) =>
+      createInspectRecord(item, inspection.startIndex + index),
+    ),
   );
   const sourceCursors = new Map(
-    inspection.page.records.map((record, index) => {
-      const projected = records[index];
-
-      if (projected === undefined) {
-        throw new TypeError('A projected inspection record is missing.');
-      }
-
-      return [projected.key, record.nextCursor] as const;
-    }),
+    inspection.records.map(({ nextCursor }, index) => [
+      createMoldeaCliRecordKey(inspection.startIndex + index),
+      nextCursor,
+    ]),
   );
-  const snapshotDigest = inspection.inspectionDigest;
 
   return Object.freeze({
     counts: inspection.counts,
     formatVersion: inspection.formatVersion,
     getSourceCursor: (record: IMoldeaCliInspectRecord): string | null =>
       sourceCursors.get(record.key) ?? null,
-    project,
     records,
-    snapshotDigest,
-    source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
+    snapshotDigest: inspection.inspectionDigest,
     coverageCounts: inspection.coverageCounts,
     valid: inspection.valid,
-    view: inspection.view,
   });
 };

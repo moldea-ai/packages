@@ -146,7 +146,7 @@ const commandCase = (
 
 /**
  * Executes the declared CLI bin in an isolated Git fixture and verifies its read-only behavior.
- * @returns Complete schema 8 envelopes with separate real exit statuses.
+ * @returns Complete schema 9 envelopes with separate real exit statuses.
  */
 export const createCliExamples = async (
   repositoryRoot: string,
@@ -286,9 +286,21 @@ export const createCliExamples = async (
             relevant: result.relevant ?? false,
             counts: result.counts ?? {},
             matches: result.page.records.flatMap((record) =>
-              record.kind !== 'match' || record.match === undefined
-                ? []
-                : [{ ...record.match, owner: { ...record.match.owner } }],
+              record.kind === 'match'
+                ? [
+                    {
+                      path: record.path,
+                      ownerKind: record.ownerKind,
+                      ...(record.capabilityId === undefined
+                        ? {}
+                        : { capabilityId: record.capabilityId }),
+                      relationships: record.relationships.map(({ field, path }) => ({
+                        field,
+                        path,
+                      })),
+                    },
+                  ]
+                : [],
             ),
           },
         ),

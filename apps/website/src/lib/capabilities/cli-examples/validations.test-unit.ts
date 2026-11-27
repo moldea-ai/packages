@@ -7,7 +7,7 @@ import { parseCliExecution } from './validations.ts';
 const envelope = {
   cliVersion: '11.0.0',
   command: 'validate',
-  schemaVersion: 8,
+  schemaVersion: 9,
   status: 'valid',
   error: null,
   result: { valid: true },
@@ -84,18 +84,15 @@ test('retains selected command facts and rejects unknown collection fields', () 
   const metadata = {
     agentId: null,
     byteLength: 16,
-    canonicalDigest: null,
     decisionId: null,
-    digest: 'abc123',
     key: 'metadata-1',
     kind: 'metadata',
     metadataKind: 'project',
     path: '/moldea/project.md',
-    scalarLength: 16,
   };
   const result = {
     valid: true,
-    counts: { matchedPaths: 1 },
+    counts: { metadata: 1 },
     page: { cursor: null, records: [metadata] },
   };
   expect(CliCollectionResult.parse(result)).toStrictEqual(result);
@@ -165,7 +162,7 @@ test.each([
   ).toThrow();
 });
 
-test('validates complete schema 8 coverage records without dropping fields', () => {
+test('validates complete schema 9 coverage records without dropping fields', () => {
   const coverage = {
     entity: { contextPath: '/moldea/project.md' },
     relationship: 'context-binding',

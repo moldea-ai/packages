@@ -93,7 +93,7 @@ const run = (executable, repository, env, args) => {
   if (error !== undefined) throw error;
   assert.equal(stderr, '', `${args[0]} wrote to stderr.`);
   const envelope = JSON.parse(stdout);
-  assert.equal(envelope.schemaVersion, 8);
+  assert.equal(envelope.schemaVersion, 9);
   return { status, envelope };
 };
 
@@ -149,15 +149,32 @@ const verifyPortableArtifact = async (tarball, installedCli, root, environment) 
   const scope = ['scope', '--path', '/src/agent.ts'];
   const content = ['content', '--path', '/moldea/project.md'];
   verify(['composition'], 0, 'valid');
-  verify(['validate'], 0, 'valid');
-  const result = verify(['inspect'], 0, 'valid');
-  assert.equal(result.coverageCounts.exportsPassed, 1);
+  const validation = verify(['validate'], 0, 'valid');
+  assert.equal(validation.coverageCounts.exportsPassed, 1);
+  assert.ok(validation.page.records.every((record) => record.kind !== 'coverage'));
+  const inspection = verify(['inspect'], 0, 'valid');
   assert.ok(
-    result.page.records.some(
-      (record) => record.kind === 'coverage' && record.exportCheck === 'passed',
+    inspection.page.records.some(
+      (record) =>
+        record.kind === 'metadata' && record.path === '/moldea/project.md' && record.byteLength > 0,
     ),
   );
-  assert.equal(verify(scope, 0, 'valid').relevant, true);
+  assert.ok(
+    inspection.page.records.every(
+      (record) => record.kind === 'metadata' || record.kind === 'diagnostic',
+    ),
+  );
+  const scoped = verify(scope, 0, 'valid');
+  assert.equal(scoped.relevant, true);
+  assert.deepEqual(
+    scoped.page.records.map(({ path, relationships }) => ({ path, relationships })),
+    [
+      {
+        path: '/moldea/agents/support/instruction.md',
+        relationships: [{ field: 'runtimeAgent', path: '/src/agent.ts' }],
+      },
+    ],
+  );
   assert.equal(verify(content, 0, 'valid').chunk.content, files['moldea/project.md']);
 
   await writeFile(path.join(repository, 'moldea', 'moldea.yaml'), 'version: 1\nunknown: true\n');

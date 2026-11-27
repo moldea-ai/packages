@@ -1,7 +1,8 @@
-import type { IProjectInspectionPageResult, IProjectValidationResult } from '@moldea.ai/core';
+import type { IProjectValidationResult } from '@moldea.ai/core';
 
 import type { IMoldeaCliCommand } from '../command-line/index.js';
 import type { IMoldeaCliCompositionResult } from '../composition/index.js';
+import type { IMoldeaCliCoreInspectPage } from '../core-composition/index.js';
 import { assertMoldeaCliJsonResultIsContentFree } from '../json-output-contract/index.js';
 import {
   createMoldeaCliOutputPage,
@@ -33,7 +34,6 @@ import {
   formatMoldeaCliJsonInspectResult,
   formatMoldeaCliJsonScopeResult,
   formatMoldeaCliJsonValidateResult,
-  MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
   type IMoldeaCliError,
   type IMoldeaCliInspectResult,
   type IMoldeaCliValidateResult,
@@ -121,8 +121,6 @@ export const createMoldeaCliValidateExecutionResult = (
     errorCount: projection.errorCount,
     formatVersion: projection.formatVersion,
     page,
-    snapshotDigest: projection.snapshotDigest,
-    source: projection.source,
     coverageCounts: projection.coverageCounts,
     valid: projection.valid,
     warningCount: projection.warningCount,
@@ -166,7 +164,7 @@ export const createMoldeaCliValidateExecutionResult = (
  * - OUTPUT_BUDGET_TOO_SMALL: The output byte budget cannot contain the next complete result.
  */
 export const createMoldeaCliInspectExecutionResult = (
-  inspection: IProjectInspectionPageResult,
+  inspection: IMoldeaCliCoreInspectPage,
   cliVersion: string,
   isJson: boolean,
   cursor: string | null,
@@ -177,12 +175,8 @@ export const createMoldeaCliInspectExecutionResult = (
     counts: projection.counts,
     formatVersion: projection.formatVersion,
     page,
-    project: projection.project,
-    snapshotDigest: projection.snapshotDigest,
-    source: projection.source,
     coverageCounts: projection.coverageCounts,
     valid: projection.valid,
-    view: projection.view,
   });
   const page = createMoldeaCliOutputPage({
     command: 'inspect',
@@ -233,12 +227,8 @@ export const createMoldeaCliScopeExecutionResult = (
   const projection = createMoldeaCliScopeProjection(execution);
   const createResult = (page: IMoldeaCliScopeResult['page']): IMoldeaCliScopeResult => ({
     counts: projection.counts,
-    inputDigest: projection.inputDigest,
-    manifestDigest: projection.manifestDigest,
     page,
     relevant: projection.relevant,
-    snapshotDigest: projection.snapshotDigest,
-    source: MOLDEA_CLI_GIT_WORKING_TREE_SOURCE,
     valid: projection.valid,
   });
   const page = createMoldeaCliOutputPage({

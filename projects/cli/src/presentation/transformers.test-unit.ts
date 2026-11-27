@@ -6,9 +6,10 @@ import type {
   IContentDigest,
   ICoreDiagnostic,
   IProjectValidationResult,
-  IProjectInspectionPageResult,
 } from '@moldea.ai/core';
 import { parseRepositoryPath } from '@moldea.ai/repository';
+
+import type { IMoldeaCliCoreInspectPage } from '../core-composition/index.js';
 
 import {
   createMoldeaCliInspectProjection,
@@ -68,48 +69,86 @@ const createValidation = (
   valid: !diagnostics.some((diagnostic) => diagnostic.severity === 'error'),
 });
 
-describe('schema 8 presentation projections', () => {
-  test('projects bounded coverage and assignments with source cursors', () => {
-    const inspection: IProjectInspectionPageResult = {
+describe('schema 9 presentation projections', () => {
+  test('projects a bounded inventory with global ordinal keys and independent source cursors', () => {
+    const inspection: IMoldeaCliCoreInspectPage = {
       coverageCounts: COVERAGE_COUNTS,
       counts: {
         ...SUMMARY.counts,
-        diagnostics: 0,
+        diagnostics: 1,
         errors: 0,
-        warnings: 0,
+        warnings: 1,
         acceptedWarnings: 0,
         coverage: 1,
-        metadata: 0,
+        metadata: 37,
       },
       formatVersion: 1,
       inspectionDigest: `sha256:${'c'.repeat(64)}`,
-      source: SOURCE,
-      summary: SUMMARY,
+      startIndex: 36,
       valid: true,
-      view: 'all',
-      page: {
-        isComplete: true,
-        nextCursor: null,
-        totalItems: 2,
-        records: [
-          {
-            item: { kind: 'agent', agent: { agentId: 'assistant' } },
-            nextCursor: 'agent-cursor',
+      records: [
+        {
+          item: {
+            kind: 'metadata',
+            metadata: {
+              agentId: 'assistant',
+              byteLength: 51,
+              canonicalDigest: SUMMARY.projectDigest,
+              decisionId: null,
+              digest: SUMMARY.projectDigest,
+              kind: 'agent-instruction',
+              path: parseRepositoryPath('/moldea/agents/assistant/instruction.md'),
+              scalarLength: 49,
+            },
           },
-          { item: { kind: 'coverage', coverage: COVERAGE }, nextCursor: null },
-        ],
-      },
+          nextCursor: 'diagnostics-start',
+        },
+        { item: { kind: 'diagnostic', diagnostic: WARNING }, nextCursor: null },
+      ],
     };
     const projection = createMoldeaCliInspectProjection(inspection);
     expect(projection.counts).toStrictEqual(inspection.counts);
     expect(projection.coverageCounts).toStrictEqual(COVERAGE_COUNTS);
-    expect(projection.records).toMatchObject([
-      { kind: 'agent', agentId: 'assistant' },
-      { kind: 'coverage', ...COVERAGE },
-    ]);
-    expect(projection.getSourceCursor(projection.records[0]!)).toBe('agent-cursor');
+    expect(projection.records[0]).toStrictEqual({
+      agentId: 'assistant',
+      byteLength: 51,
+      decisionId: null,
+      key: '00000000010',
+      kind: 'metadata',
+      metadataKind: 'agent-instruction',
+      path: '/moldea/agents/assistant/instruction.md',
+    });
+    expect(projection.records[1]).toMatchObject({ kind: 'diagnostic', key: '00000000011' });
+    expect(projection.getSourceCursor(projection.records[0]!)).toBe('diagnostics-start');
     expect(projection.getSourceCursor(projection.records[1]!)).toBeNull();
     expect(projection.snapshotDigest).toBe(inspection.inspectionDigest);
+  });
+
+  test('preserves full coverage totals but only pages failed and unchecked checks', () => {
+    const result = createMoldeaCliValidateProjection({
+      ...createValidation([]),
+      coverage: [
+        { ...COVERAGE, exportCheck: 'passed' },
+        { ...COVERAGE, exportCheck: 'failed' },
+        COVERAGE,
+      ],
+      coverageCounts: { bindings: 3, exportsPassed: 1, exportsFailed: 1, exportsNotChecked: 1 },
+    });
+    expect(result.coverageCounts).toStrictEqual({
+      bindings: 3,
+      exportsPassed: 1,
+      exportsFailed: 1,
+      exportsNotChecked: 1,
+    });
+    expect(result.records).toMatchObject([
+      { key: '00000000000', kind: 'coverage', exportCheck: 'failed' },
+      {
+        key: '00000000001',
+        kind: 'coverage',
+        exportCheck: 'not-checked',
+        exportNotCheckedReason: 'unresolved-exports',
+      },
+    ]);
   });
 
   test('projects warning identity and acceptance without arbitrary detail payloads', () => {

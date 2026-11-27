@@ -1,4 +1,4 @@
-// schema 8 command names accepted by the executable
+// schema 9 command names accepted by the executable
 export const MOLDEA_CLI_COMMANDS = {
   Composition: 'composition',
   Content: 'content',
@@ -7,7 +7,7 @@ export const MOLDEA_CLI_COMMANDS = {
   Validate: 'validate',
 } as const;
 
-// option names supported by the schema 8 command grammar
+// option names supported by the schema 9 command grammar
 export const MOLDEA_CLI_OPTIONS = {
   Help: '--help',
   Json: '--json',

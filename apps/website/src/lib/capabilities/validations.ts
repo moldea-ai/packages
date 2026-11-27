@@ -114,7 +114,7 @@ export const validateCapabilities = (catalog: ICapabilities, sourcePaths: Set<st
     }
     if (
       result.kind === 'cli' &&
-      (result.schemaVersion !== 8 ||
+      (result.schemaVersion !== 9 ||
         (result.status === 'valid'
           ? result.exitStatus !== 0
           : result.status === 'invalid'

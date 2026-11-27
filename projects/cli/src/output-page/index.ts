@@ -28,4 +28,4 @@ export {
 } from './cursor.js';
 
 // pages
-export { createMoldeaCliOutputPage } from './page.js';
+export { createMoldeaCliOutputPage, createMoldeaCliRecordKey } from './page.js';

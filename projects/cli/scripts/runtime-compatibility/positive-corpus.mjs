@@ -97,13 +97,12 @@ const verifyPositiveCorpus = async (consumerDirectory, executablePath) => {
           }
           assert.equal(execution.stderr, '');
           const envelope = JSON.parse(execution.stdout);
-          assert.equal(envelope.schemaVersion, 8);
+          assert.equal(envelope.schemaVersion, 9);
           assert.equal(envelope.status, errors === 0 ? 'valid' : 'invalid');
           assert.equal(envelope.result.valid, errors === 0);
           assert.equal(envelope.result.errorCount, errors);
           assert.equal(envelope.result.warningCount, warnings);
           assert.equal(envelope.result.diagnosticCount, errors + warnings);
-          assert.equal(envelope.result.formatVersion, 1);
           assert.equal(envelope.result.acceptedWarningCount, 0);
           process.stdout.write(
             JSON.stringify({

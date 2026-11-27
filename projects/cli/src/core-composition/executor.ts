@@ -5,7 +5,9 @@ import {
   MoldeaCliCompositionException,
   resolveInstalledMoldeaCliComposition,
 } from '../composition/index.js';
+import { MoldeaCliOutputPageException } from '../output-page/index.js';
 
+import { readMoldeaCliInspectPage } from './inspect-page.js';
 import type { IMoldeaCliCoreInspectionExecutor, IMoldeaCliNodeInspectionFactory } from './types.js';
 
 const calculateRetainedByteLimit = (maxTotalBytes: number): number =>
@@ -37,6 +39,7 @@ export const createMoldeaCliCoreInspectionExecutor =
       },
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     });
+    let translatedCursorCause: unknown;
     try {
       if (
         resolveInstalledMoldeaCliComposition({
@@ -45,11 +48,11 @@ export const createMoldeaCliCoreInspectionExecutor =
       )
         throw new MoldeaCliCompositionException();
       if (input.command === 'inspect')
-        return await inspection.readPage({
-          ...(input.cursor === undefined ? {} : { cursor: input.cursor }),
-          maxItems: Math.min(256, input.resourceLimits.maxEntries),
-          view: 'all',
-        });
+        return await readMoldeaCliInspectPage(
+          inspection,
+          Math.min(256, input.resourceLimits.maxEntries),
+          input.cursor,
+        );
       const diagnostics: IDiagnostic[] = [];
       const coverage: IBindingCoverage[] = [];
       for (const view of ['diagnostics', 'coverage'] as const) {
@@ -80,8 +83,14 @@ export const createMoldeaCliCoreInspectionExecutor =
         source: inspection.source,
         summary: inspection.summary,
       } satisfies IProjectValidationResult);
+    } catch (error) {
+      if (error instanceof MoldeaCliOutputPageException) translatedCursorCause = error.cause;
+      throw error;
     } finally {
-      await inspection.dispose();
+      await inspection.dispose().catch((error: unknown) => {
+        // Core repeats a terminal page failure during disposal. Keep the CLI cursor error.
+        if (translatedCursorCause === undefined || error !== translatedCursorCause) throw error;
+      });
     }
   };
 
@@ -91,6 +100,8 @@ export const createMoldeaCliCoreInspectionExecutor =
  * @throws
  * - INVALID_RESOURCE_LIMIT: A Core resource limit is invalid.
  * - INVALID_ARGUMENT: The Core operation received an invalid argument.
+ * - CURSOR_INVALID: The continuation cursor is invalid for this request.
+ * - CURSOR_SNAPSHOT_CHANGED: The continuation cursor belongs to a different repository snapshot.
  * - INVALID_REPOSITORY_PATH: The repository path is invalid.
  * - ENTRY_NOT_FOUND: The requested repository entry was not found.
  * - ENTRY_NOT_FILE: The requested repository entry is not a file.

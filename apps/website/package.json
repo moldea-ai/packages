@@ -25,7 +25,7 @@
     "typecheck": "node scripts/generate.ts && astro check"
   },
   "devDependencies": {
-    "@moldea.ai/cli": "workspace:^14.0.0",
+    "@moldea.ai/cli": "workspace:^15.0.0",
     "@moldea.ai/core": "workspace:^10.0.0",
     "@moldea.ai/repository": "workspace:^4.0.0",
     "@moldea.ai/repository-fs": "workspace:^4.0.0",

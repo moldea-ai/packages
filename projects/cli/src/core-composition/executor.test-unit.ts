@@ -120,17 +120,21 @@ describe('createMoldeaCliCoreInspectionExecutor', () => {
     expect(inspection.dispose).toHaveBeenCalledTimes(1);
   });
 
-  test('passes the opaque cursor to asynchronous inspect paging and disposes before returning', async () => {
+  test('rejects a stale inspect cursor before reading a Core page and disposes', async () => {
     const inspection = createInspectionDouble();
     const execute = createMoldeaCliCoreInspectionExecutor(() => Promise.resolve(inspection));
-    await expect(execute({ ...createInput(), command: 'inspect', cursor: 'opaque' })).resolves.toBe(
-      INSPECTION_RESULT,
-    );
-    expect(inspection.readPage).toHaveBeenCalledWith({
-      cursor: 'opaque',
-      maxItems: 128,
-      view: 'all',
-    });
+    await expect(
+      execute({
+        ...createInput(),
+        command: 'inspect',
+        cursor: {
+          lastKey: '00000000000',
+          snapshotDigest: `sha256:${'2'.repeat(64)}`,
+          sourceCursor: 'opaque',
+        },
+      }),
+    ).rejects.toMatchObject({ code: 'CURSOR_SNAPSHOT_CHANGED' });
+    expect(inspection.readPage).not.toHaveBeenCalled();
     expect(inspection.dispose).toHaveBeenCalledTimes(1);
   });
 

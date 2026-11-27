@@ -1,9 +1,12 @@
-import type { IProjectInspectionPageResult, IProjectValidationResult } from '@moldea.ai/core';
+import type { IProjectValidationResult } from '@moldea.ai/core';
 import { isRepositoryPath } from '@moldea.ai/repository';
 
 import { MOLDEA_CLI_COMMANDS } from '../command-line/index.js';
 import type { IMoldeaCliCompositionResolver } from '../composition/index.js';
-import type { IMoldeaCliCoreInspectionExecutor } from '../core-composition/index.js';
+import type {
+  IMoldeaCliCoreInspectionExecutor,
+  IMoldeaCliCoreInspectPage,
+} from '../core-composition/index.js';
 import {
   discoverGitWorkingTree,
   type IGitWorkingTreeDiscovery,
@@ -77,7 +80,7 @@ const createOperationalErrorResult = (
  * @param compositionLoader The installed executable-integrity composition boundary.
  * @param projectScopeExecutor The manifest-only manifest scope operation.
  * @param projectContentExecutor The manifest-only canonical content operation.
- * @returns A command executor for the schema 8 CLI.
+ * @returns A command executor for the schema 9 CLI.
  */
 export const createMoldeaCliCommandExecutor = (
   workingTreeDiscovery: IGitWorkingTreeDiscovery = discoverGitWorkingTree,
@@ -124,7 +127,7 @@ export const createMoldeaCliCommandExecutor = (
               command: 'inspect',
               cursor: options.cursor,
               filters: {},
-            }).sourceCursor
+            })
           : null;
 
       if (command === MOLDEA_CLI_COMMANDS.Scope) {
@@ -254,7 +257,7 @@ export const createMoldeaCliCommandExecutor = (
 
       if (command === MOLDEA_CLI_COMMANDS.Inspect) {
         return createMoldeaCliInspectExecutionResult(
-          snapshotResult.result as IProjectInspectionPageResult,
+          snapshotResult.result as IMoldeaCliCoreInspectPage,
           input.packageMetadata.version,
           options.isJson,
           options.cursor,
