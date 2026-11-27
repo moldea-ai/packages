@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-// schema 8 is a closed envelope; command results validate only the fields consumed below
+// schema 9 is a closed envelope; command results validate only the fields consumed below
 export const CliEnvelope = z.strictObject({
   cliVersion: z.string(),
   command: z.enum(['validate', 'inspect', 'scope', 'content', 'composition']),
-  schemaVersion: z.literal(8),
+  schemaVersion: z.literal(9),
   status: z.enum(['valid', 'invalid', 'error']),
   error: z
     .object({
@@ -80,7 +80,6 @@ const CliCoverageFields = {
   fileCheck: z.literal('passed'),
 };
 const CliCoverageRecord = z.discriminatedUnion('exportCheck', [
-  z.strictObject({ ...CliCoverageFields, exportCheck: z.literal('passed') }),
   z.strictObject({ ...CliCoverageFields, exportCheck: z.literal('failed') }),
   z.strictObject({
     ...CliCoverageFields,
@@ -94,17 +93,10 @@ const CliCoverageRecord = z.discriminatedUnion('exportCheck', [
     ]),
   }),
 ]);
-const CliAgentRecord = z.strictObject({
-  agentId: z.string(),
-  key: z.string(),
-  kind: z.literal('agent'),
-});
 const CliMetadataRecord = z.strictObject({
   agentId: z.string().nullable(),
   byteLength: z.number().int().nonnegative(),
-  canonicalDigest: z.string().nullable(),
   decisionId: z.string().nullable(),
-  digest: z.string(),
   key: z.string(),
   kind: z.literal('metadata'),
   metadataKind: z.enum([
@@ -117,47 +109,34 @@ const CliMetadataRecord = z.strictObject({
     'project',
   ]),
   path: z.string(),
-  scalarLength: z.number().int().nonnegative().nullable(),
 });
 const CliMatchRecord = z.strictObject({
   key: z.string(),
   kind: z.literal('match'),
-  match: z.strictObject({
-    inputPath: z.string(),
-    field: z.enum([
-      'affectedBy',
-      'bindings',
-      'implementation',
-      'inputSchema',
-      'instructionLoader',
-      'mirrors',
-      'outputSchema',
-      'registration',
-      'runtimeAgent',
-    ]),
-    pointer: z.string(),
-    owner: z.strictObject({
-      kind: z.enum(['agent', 'context', 'decision', 'skill', 'tool']),
-      id: z.string(),
-      agentId: z.string().nullable(),
+  path: z.string(),
+  ownerKind: z.enum(['agent', 'context', 'decision', 'skill', 'tool']),
+  capabilityId: z.string().optional(),
+  relationships: z.array(
+    z.strictObject({
+      field: z.enum([
+        'affectedBy',
+        'bindings',
+        'implementation',
+        'inputSchema',
+        'instructionLoader',
+        'mirrors',
+        'outputSchema',
+        'registration',
+        'runtimeAgent',
+      ]),
+      path: z.string(),
     }),
-    declaration: z.union([
-      z.strictObject({ kind: z.literal('exact'), path: z.string(), symbol: z.string().nullable() }),
-      z.strictObject({ kind: z.literal('glob'), pattern: z.string() }),
-    ]),
-  }),
+  ),
 });
 
-// the selected schema 8 collection fields are closed so misplaced counts cannot disappear
+// the selected schema 9 collection fields are closed so misplaced counts cannot disappear
 export const CliCollectionResult = z.strictObject({
   valid: z.boolean(),
-  formatVersion: z.number().nullable().optional(),
-  snapshotDigest: z.string().optional(),
-  source: z.strictObject({ kind: z.literal('git-working-tree') }).optional(),
-  project: z.unknown().optional(),
-  view: z.string().optional(),
-  inputDigest: z.string().optional(),
-  manifestDigest: z.string().nullable().optional(),
   diagnosticCount: z.number().optional(),
   errorCount: z.number().optional(),
   warningCount: z.number().optional(),
@@ -198,13 +177,7 @@ export const CliCollectionResult = z.strictObject({
   page: z.strictObject({
     cursor: z.string().nullable(),
     records: z.array(
-      z.union([
-        CliDiagnosticRecord,
-        CliCoverageRecord,
-        CliAgentRecord,
-        CliMetadataRecord,
-        CliMatchRecord,
-      ]),
+      z.union([CliDiagnosticRecord, CliCoverageRecord, CliMetadataRecord, CliMatchRecord]),
     ),
   }),
 });

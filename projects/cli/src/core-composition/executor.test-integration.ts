@@ -11,6 +11,7 @@ import {
   type IMemoryRepositoryEntry,
 } from '@moldea.ai/repository/memory';
 
+import { createMoldeaCliValidateExecutionResult } from '../cli-execution/results.js';
 import { INSTALLED_PACKAGE_METADATA } from '../composition/composition.test-fixtures.js';
 import {
   commitFixtureGitIndex,
@@ -18,6 +19,8 @@ import {
   runFixtureGit,
   type IGitRepositoryFixture,
 } from '../git-inventory/probe.test-fixtures.js';
+import { createMoldeaCliRecordKey } from '../output-page/index.js';
+import type { IMoldeaCliValidateResult } from '../presentation/index.js';
 import { executeWorkingTreeSnapshot } from '../working-tree-snapshot/index.js';
 
 import { executeMoldeaCliCoreInspection } from './executor.js';
@@ -111,6 +114,74 @@ describe('CLI Core composition through the real isolated boundary', () => {
     });
   });
 
+  test('keeps file failures in diagnostics and explains unchecked exports in coverage', async () => {
+    const result = await executeMoldeaCliCoreInspection({
+      command: 'validate',
+      packageMetadata: INSTALLED_PACKAGE_METADATA,
+      resourceLimits: RESOURCE_LIMITS,
+      repository: createMemoryRepositoryReader([
+        {
+          path: '/moldea/moldea.yaml',
+          type: 'file',
+          content: JSON.stringify({
+            version: 1,
+            context: {
+              '/moldea/project.md': {
+                bindings: [
+                  { path: '/src/missing.ts', symbol: 'entry' },
+                  { path: '/src/directory', symbol: 'entry' },
+                  { path: '/src/broken.ts', symbol: 'entry' },
+                  { path: '/src/without-symbol.ts' },
+                ],
+              },
+            },
+          }),
+        },
+        { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
+        { path: '/src/directory', type: 'directory' },
+        { path: '/src/broken.ts', type: 'file', content: 'export const entry = ;\n' },
+        { path: '/src/without-symbol.ts', type: 'file', content: 'export const entry = 1;\n' },
+      ]),
+    });
+    if (!('diagnostics' in result)) throw new Error('A validation result was expected.');
+    const response = createMoldeaCliValidateExecutionResult(result, '15.0.0', true, null, 65_536);
+    expect(response.exitCode).toBe(1);
+    const { result: output } = JSON.parse(response.stdout) as {
+      result: Omit<IMoldeaCliValidateResult, 'formatVersion'>;
+    };
+    expect(output.diagnosticCount).toBe(3);
+    expect(output.errorCount).toBe(2);
+    expect(output.coverageCounts).toStrictEqual({
+      bindings: 2,
+      exportsFailed: 0,
+      exportsPassed: 0,
+      exportsNotChecked: 2,
+    });
+    expect(output.page.records.map(({ kind }) => kind)).toStrictEqual([
+      'diagnostic',
+      'diagnostic',
+      'diagnostic',
+      'coverage',
+      'coverage',
+    ]);
+    expect(output.page.records).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'MOLDEA_REFERENCE_MISSING' }),
+        expect.objectContaining({ code: 'MOLDEA_REFERENCE_NOT_FILE' }),
+        expect.objectContaining({
+          kind: 'coverage',
+          path: '/src/broken.ts',
+          exportNotCheckedReason: 'unparseable-source',
+        }),
+        expect.objectContaining({
+          kind: 'coverage',
+          path: '/src/without-symbol.ts',
+          exportNotCheckedReason: 'no-symbol',
+        }),
+      ]),
+    );
+  });
+
   test('keeps accepted integration warnings visible with their reason and separate count', async () => {
     expect(await execute('validate', undefined, true)).toMatchObject({
       valid: true,
@@ -122,21 +193,71 @@ describe('CLI Core composition through the real isolated boundary', () => {
     });
   });
 
-  test('inspect pages include the same coverage, warning totals, and registered agent identity', async () => {
+  test('inspect pages keep warning totals and identify agents through their canonical inventory', async () => {
     const result = await execute('inspect', undefined, true);
     expect(result).toMatchObject({
       valid: true,
       counts: { coverage: 1, errors: 0, warnings: 0, acceptedWarnings: 1, diagnostics: 1 },
       coverageCounts: { bindings: 1, exportsPassed: 1 },
     });
-    if (!('page' in result)) throw new Error('An inspection page was expected.');
-    const items = result.page.records.map((record) => record.item);
-    expect(items).toContainEqual({
-      kind: 'agent',
-      agent: { agentId: 'alpha' },
+    if (!('records' in result)) throw new Error('An inspection page was expected.');
+    const items = result.records.map((record) => record.item);
+    expect(
+      items.find(
+        (item) =>
+          item.kind === 'metadata' && item.metadata.path === '/moldea/agents/alpha/instruction.md',
+      ),
+    ).toMatchObject({ kind: 'metadata', metadata: { agentId: 'alpha' } });
+    expect(items.at(-1)).toMatchObject({ kind: 'diagnostic' });
+    expect(items.every(({ kind }) => kind === 'metadata' || kind === 'diagnostic')).toBe(true);
+  });
+
+  test('continues past the worker batch boundary without returning agent assignments', async () => {
+    const entries: IMemoryRepositoryEntry[] = [
+      { path: '/moldea/moldea.yaml', type: 'file', content: 'version: 1\nagents: { alpha: {} }\n' },
+      { path: '/moldea/project.md', type: 'file', content: '# Project\n' },
+      { path: '/moldea/agents/alpha/description.md', type: 'file', content: 'Alpha.\n' },
+      { path: '/moldea/agents/alpha/instruction.md', type: 'file', content: 'You are `alpha`.\n' },
+      ...Array.from({ length: 256 }, (_, index): IMemoryRepositoryEntry => ({
+        path: `/moldea/context/note-${index}.md`,
+        type: 'file',
+        content: '# Note\n',
+      })),
+    ];
+    const input = {
+      command: 'inspect',
+      repository: createMemoryRepositoryReader(entries),
+      resourceLimits: { ...RESOURCE_LIMITS, maxEntries: 1024 },
+      packageMetadata: INSTALLED_PACKAGE_METADATA,
+    } as const;
+    const first = await executeMoldeaCliCoreInspection(input);
+    if (!('records' in first)) throw new Error('An inspection page was expected.');
+    expect(first.records).toHaveLength(256);
+    expect(first.records.every(({ item }) => item.kind === 'metadata')).toBe(true);
+    const continuation = first.records.at(-1)?.nextCursor;
+    expect(typeof continuation).toBe('string');
+    const final = await executeMoldeaCliCoreInspection({
+      ...input,
+      cursor: {
+        lastKey: createMoldeaCliRecordKey(255),
+        snapshotDigest: first.inspectionDigest,
+        sourceCursor: continuation ?? null,
+      },
     });
-    expect(items).toContainEqual(expect.objectContaining({ kind: 'coverage' }));
-    expect(items).toContainEqual(expect.objectContaining({ kind: 'diagnostic' }));
+    if (!('records' in final)) throw new Error('An inspection page was expected.');
+    expect(final.startIndex).toBe(256);
+    expect(final.records.map(({ item }) => item.kind)).toStrictEqual([
+      'metadata',
+      'metadata',
+      'metadata',
+      'metadata',
+      'diagnostic',
+    ]);
+    expect(final.records.at(-1)?.nextCursor).toBeNull();
+    const inventory = [...first.records, ...final.records].flatMap(({ item }) =>
+      item.kind === 'metadata' ? [item.metadata.path] : [],
+    );
+    expect(new Set(inventory).size).toBe(260);
   });
 
   test('refuses coverage beyond the configured record count without returning partial results', async () => {

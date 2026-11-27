@@ -240,7 +240,7 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     assertRuntimeInvariant(
       compositionEnvelope.cliVersion === cliVersion &&
         compositionEnvelope.command === 'composition' &&
-        compositionEnvelope.schemaVersion === 8,
+        compositionEnvelope.schemaVersion === 9,
       'The composition envelope is invalid.',
     );
     assertRuntimeInvariant(
@@ -372,33 +372,36 @@ const runRuntimeCompatibilityCheck = async (artifactDirectory) => {
     );
     assertRuntimeInvariant(inspectResult.stderr === '', 'The inspection command wrote stderr.');
     assertRuntimeInvariant(
-      inspectEnvelope.schemaVersion === 8 &&
-        inspectEnvelope.result?.project?.project?.path === '/moldea/project.md' &&
-        !inspectResult.stdout.includes('# Project') &&
-        !inspectResult.stdout.includes('"content"'),
-      'Inspection did not preserve the content-free schema 8 contract.',
-    );
-    assertRuntimeInvariant(
-      inspectEnvelope.result?.coverageCounts?.exportsPassed === 1 &&
+      inspectEnvelope.schemaVersion === 9 &&
         inspectEnvelope.result?.page?.records?.some(
           (record) =>
-            record.kind === 'coverage' &&
-            record.path === '/src/agent.ts' &&
-            record.exportCheck === 'passed',
+            record.kind === 'metadata' &&
+            record.path === '/moldea/project.md' &&
+            record.byteLength > 0,
+        ) &&
+        !inspectResult.stdout.includes('# Project') &&
+        !inspectResult.stdout.includes('"content"'),
+      'Inspection did not preserve the content-free schema 9 contract.',
+    );
+    assertRuntimeInvariant(
+      validateEnvelope.result?.coverageCounts?.exportsPassed === 1 &&
+        validateEnvelope.result?.page?.records?.every((record) => record.kind !== 'coverage') &&
+        inspectEnvelope.result?.page?.records?.every(
+          (record) => record.kind === 'metadata' || record.kind === 'diagnostic',
         ),
-      'Inspection omitted the successful binding export check.',
+      'The binding total must retain the passing export while both commands omit its coverage record.',
     );
     assertRuntimeInvariant(
       scopeResult.status === 0 &&
         scopeResult.stderr === '' &&
-        scopeEnvelope.schemaVersion === 8 &&
+        scopeEnvelope.schemaVersion === 9 &&
         scopeEnvelope.result?.relevant === true,
       `The installed CLI scope command failed (${describeCliResult(scopeResult)}).`,
     );
     assertRuntimeInvariant(
       contentResult.status === 0 &&
         contentResult.stderr === '' &&
-        contentEnvelope.schemaVersion === 8 &&
+        contentEnvelope.schemaVersion === 9 &&
         contentEnvelope.result?.asset?.path === '/moldea/project.md' &&
         contentEnvelope.result?.chunk?.content === '# Project\n',
       `The installed CLI content command failed (${describeCliResult(contentResult)}).`,

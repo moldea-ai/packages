@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, test } from 'vitest';
 
-import type { IProjectInspectionPageResult } from '@moldea.ai/core';
 import {
   createMemoryRepositoryReader,
   type IMemoryRepositoryEntry,
@@ -11,7 +10,10 @@ import {
 
 import { INSTALLED_PACKAGE_METADATA } from '../composition/composition.test-fixtures.js';
 
-import { executeMoldeaCliCoreInspection } from '../core-composition/index.js';
+import {
+  executeMoldeaCliCoreInspection,
+  type IMoldeaCliCoreInspectPage,
+} from '../core-composition/index.js';
 import { createMoldeaCliInspectExecutionResult } from '../cli-execution/results.js';
 
 // repository-wide Core fixture shape used by the CLI presentation boundary
@@ -37,7 +39,7 @@ const fixture = JSON.parse(
 ) as IProjectIndexFixture;
 
 /** Loads the complete repository-wide project fixture through the public memory reader. */
-const inspectCompleteProject = async (): Promise<IProjectInspectionPageResult> => {
+const inspectCompleteProject = async (): Promise<IMoldeaCliCoreInspectPage> => {
   const fixtureCase = fixture.cases.find(({ name }) => name === 'complete universal project');
 
   if (fixtureCase === undefined) {
@@ -81,7 +83,7 @@ const inspectCompleteProject = async (): Promise<IProjectInspectionPageResult> =
       maxManifestBytes: 2_097_152,
       maxTotalBytes: 134_217_728,
     },
-  })) as IProjectInspectionPageResult;
+  })) as IMoldeaCliCoreInspectPage;
 };
 
 describe('CLI inspection presentation through Core and the memory repository reader', () => {
@@ -104,7 +106,7 @@ describe('CLI inspection presentation through Core and the memory repository rea
 
     expect(execution.exitCode).toBe(0);
     expect(Buffer.byteLength(execution.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
-    expect(envelope.schemaVersion).toBe(8);
+    expect(envelope.schemaVersion).toBe(9);
     expect(envelope.result.counts).toMatchObject({ agents: 2, context: 2, decisions: 1 });
     expect(envelope.result.page.records.map(({ kind }) => kind)).toContain('metadata');
     expect(execution.stdout).not.toContain('Universal project.');

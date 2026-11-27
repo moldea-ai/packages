@@ -19,15 +19,15 @@ Top-level and command help, `moldea --version`, strict option parsing, and deter
 
 ## `validate`
 
-Validates the selected repository through Core. Human and JSON output report diagnostics and binding coverage without canonical content. Zero errors produce `valid`, including warning-only results. Every page includes complete error, unaccepted-warning and accepted-warning counts.
+Validates the selected repository through Core. Human and JSON output report diagnostics and binding coverage without canonical content. Zero errors produce `valid`, including warning-only results. Every page includes complete binding coverage, diagnostic, error, unaccepted-warning and accepted-warning counts. JSON pages carry all diagnostics and only the coverage records for failed or unchecked checks. Missing or wrong-type binding files appear in diagnostics.
 
 ## `inspect`
 
-Runs the same full snapshot and inspection path. Human output reports format and complete counts. JSON output contains a deterministic page of allowlisted records, including one identity record per canonical agent. It never includes canonical bodies or arbitrary diagnostic details.
+Runs the same full snapshot and inspection path. Human output reports format and complete counts. JSON returns validity, complete counts, and paged inventory and diagnostics. Each inventory record has its file kind, canonical path, byte length, and applicable agent or decision ID.
 
 ## `scope`
 
-Matches changed repository paths to manifest relationships without loading the export checker or inspecting project documents. Supply one leading-slash repository-logical path through `--path`, or pass NUL-delimited UTF-8 paths with the same grammar to `--paths-stdin`. Invalid paths return `PATH_INPUT_INVALID` before repository discovery; relative paths are not normalized. The result includes relevance, complete counts and digests, and paged match or diagnostic records. An empty relationship manifest returns `relevant: false` without scanning the repository.
+Matches changed repository paths to manifest relationships without loading the export checker or inspecting project documents. Supply one leading-slash repository-logical path through `--path`, or pass NUL-delimited UTF-8 paths with the same grammar to `--paths-stdin`. Invalid paths return `PATH_INPUT_INVALID` before repository discovery; relative paths are not normalized. The result reports validity, relevance, complete counts and paged diagnostics and owner matches. Each match gives the owner’s canonical path and kind, the tool or skill ID when applicable, and its matched relationships. Each relationship contains `field` and the declared `path`, exactly as written in the manifest. Counts describe the complete match set, including declarations that match multiple input paths. An empty relationship manifest returns `relevant: false` without scanning the repository.
 
 ## `content`
 

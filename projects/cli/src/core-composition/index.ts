@@ -3,6 +3,8 @@ export type {
   IMoldeaCliNodeInspectionFactory,
   IMoldeaCliCoreInspectionExecutor,
   IMoldeaCliCoreInspectionInput,
+  IMoldeaCliCoreInspectPage,
+  IMoldeaCliInspectItem,
 } from './types.js';
 
 // execution

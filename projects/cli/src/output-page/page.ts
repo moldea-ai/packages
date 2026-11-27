@@ -8,6 +8,10 @@ import type {
   IMoldeaCliOutputRecord,
 } from './types.js';
 
+/** Returns an opaque record key in lexicographic ordinal order. */
+export const createMoldeaCliRecordKey = (index: number): string =>
+  index.toString(36).padStart(11, '0');
+
 /** Ensures records have unique keys in strict ascending order. */
 const assertRecordOrder = (records: readonly IMoldeaCliOutputRecord[]): void => {
   for (let index = 0; index < records.length; index += 1) {

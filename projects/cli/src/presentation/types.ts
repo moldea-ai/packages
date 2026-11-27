@@ -4,7 +4,6 @@ import type {
   IDiagnostic,
   IDiagnosticEntity,
   IProjectInspectionCounts,
-  IProjectInspectionView,
   IProjectMetadataKind,
   IBindingCoverage,
   IBindingCoverageCounts,
@@ -41,22 +40,6 @@ export interface IMoldeaCliError {
   readonly source: IMoldeaCliErrorSource;
 }
 
-// source descriptor shared by repository command results
-export interface IMoldeaCliSource {
-  readonly kind: 'git-working-tree';
-}
-
-export interface IMoldeaCliAssetIdentity {
-  readonly digest: string;
-  readonly path: IRepositoryPath;
-}
-
-// canonical assignment record kept distinct from source coverage and installed composition
-export interface IMoldeaCliAgentRecord extends IMoldeaCliOutputRecord {
-  readonly agentId: string;
-  readonly kind: 'agent';
-}
-
 interface IMoldeaCliDiagnosticRecordBase extends IMoldeaCliOutputRecord {
   readonly code: string;
   readonly group: IDiagnostic['group'];
@@ -85,43 +68,28 @@ export type IMoldeaCliDiagnosticRecord = IMoldeaCliDiagnosticRecordBase &
 export interface IMoldeaCliMetadataRecord extends IMoldeaCliOutputRecord {
   readonly agentId: string | null;
   readonly byteLength: number;
-  readonly canonicalDigest: string | null;
   readonly decisionId: string | null;
-  readonly digest: string;
   readonly kind: 'metadata';
   readonly metadataKind: IProjectMetadataKind;
   readonly path: IRepositoryPath;
-  readonly scalarLength: number | null;
 }
 
 // one content-free record identifies the checks Core actually performed
 export type IMoldeaCliCoverageRecord = IMoldeaCliOutputRecord &
-  IBindingCoverage & { kind: 'coverage' };
+  Exclude<IBindingCoverage, { exportCheck: 'passed' }> & { kind: 'coverage' };
 
 export type IMoldeaCliValidateRecord = IMoldeaCliDiagnosticRecord | IMoldeaCliCoverageRecord;
 
-export type IMoldeaCliInspectRecord =
-  | IMoldeaCliAgentRecord
-  | IMoldeaCliDiagnosticRecord
-  | IMoldeaCliCoverageRecord
-  | IMoldeaCliMetadataRecord;
-
-export interface IMoldeaCliInspectProjectMetadata {
-  readonly manifest: IMoldeaCliAssetIdentity;
-  readonly project: IMoldeaCliAssetIdentity;
-}
+export type IMoldeaCliInspectRecord = IMoldeaCliDiagnosticRecord | IMoldeaCliMetadataRecord;
 
 export interface IMoldeaCliInspectProjection {
   readonly coverageCounts: IBindingCoverageCounts;
   readonly counts: IProjectInspectionCounts;
   readonly formatVersion: number | null;
   readonly getSourceCursor: (record: IMoldeaCliInspectRecord) => string | null;
-  readonly project: IMoldeaCliInspectProjectMetadata | null;
   readonly records: readonly IMoldeaCliInspectRecord[];
   readonly snapshotDigest: string;
-  readonly source: IMoldeaCliSource;
   readonly valid: boolean;
-  readonly view: IProjectInspectionView;
 }
 
 export interface IMoldeaCliInspectResult {
@@ -129,11 +97,7 @@ export interface IMoldeaCliInspectResult {
   readonly counts: IProjectInspectionCounts;
   readonly formatVersion: number | null;
   readonly page: IMoldeaCliOutputPage<IMoldeaCliInspectRecord>;
-  readonly project: IMoldeaCliInspectProjectMetadata | null;
-  readonly snapshotDigest: string;
-  readonly source: IMoldeaCliSource;
   readonly valid: boolean;
-  readonly view: IProjectInspectionView;
 }
 
 export interface IMoldeaCliValidateProjection {
@@ -144,7 +108,6 @@ export interface IMoldeaCliValidateProjection {
   readonly errorCount: number;
   readonly formatVersion: number | null;
   readonly snapshotDigest: string;
-  readonly source: IMoldeaCliSource;
   readonly valid: boolean;
   readonly warningCount: number;
 }
@@ -156,8 +119,6 @@ export interface IMoldeaCliValidateResult {
   readonly errorCount: number;
   readonly formatVersion: number | null;
   readonly page: IMoldeaCliOutputPage<IMoldeaCliValidateRecord>;
-  readonly snapshotDigest: string;
-  readonly source: IMoldeaCliSource;
   readonly valid: boolean;
   readonly warningCount: number;
 }

@@ -1,63 +1,84 @@
-import type { IManifestScopeMatch } from '@moldea.ai/core';
+import type { IManifestScopeOwner } from '@moldea.ai/core';
 
-import { calculateMoldeaCliJsonDigest } from '../output-page/index.js';
-import { createMoldeaCliDiagnosticRecord } from '../presentation/index.js';
 import type { IJsonValue } from '../json-serialization/index.js';
+import { calculateMoldeaCliJsonDigest, createMoldeaCliRecordKey } from '../output-page/index.js';
+import { createMoldeaCliDiagnosticRecord } from '../presentation/index.js';
 
 import type {
-  IMoldeaCliScopeProjection,
-  IMoldeaCliScopeRecord,
   IMoldeaCliProjectScopeExecutionResult,
+  IMoldeaCliScopeOwnerRecord,
+  IMoldeaCliScopeProjection,
+  IMoldeaCliScopeRelationship,
 } from './types.js';
 
-const compareKeys = (left: IMoldeaCliScopeRecord, right: IMoldeaCliScopeRecord): number =>
-  left.key < right.key ? -1 : left.key > right.key ? 1 : 0;
+const compareText = (left: string, right: string): number =>
+  left < right ? -1 : left > right ? 1 : 0;
 
-/** Creates one stable key for a relationship-match projection. */
-const createMatchKey = (match: IManifestScopeMatch): string =>
-  JSON.stringify([
-    'match',
-    match.owner.kind,
-    match.owner.agentId,
-    match.owner.id,
-    match.field,
-    match.declaration.kind === 'exact' ? match.declaration.path : match.declaration.pattern,
-    match.inputPath,
-    match.pointer,
-  ]);
+const getOwnerPath = ({ kind, id, agentId }: IManifestScopeOwner): string =>
+  kind === 'context' || kind === 'decision' ? id : `/moldea/agents/${agentId ?? id}/instruction.md`;
 
-/** Projects complete Core scope output into ordered content-free CLI records. */
+/** Projects all Core matches into one row per owner and one entry per matched declaration. */
 export const createMoldeaCliScopeProjection = (
   execution: IMoldeaCliProjectScopeExecutionResult,
 ): IMoldeaCliScopeProjection => {
-  const records: IMoldeaCliScopeRecord[] = [
-    ...execution.scope.diagnostics.map((diagnostic, index) =>
-      createMoldeaCliDiagnosticRecord(diagnostic, index),
-    ),
-    ...execution.scope.matches.map((match): IMoldeaCliScopeRecord => ({
-      key: createMatchKey(match),
+  const { scope } = execution;
+  const owners = new Map<
+    string,
+    {
+      owner: IManifestScopeOwner;
+      path: string;
+      relationships: Map<string, IMoldeaCliScopeRelationship>;
+    }
+  >();
+  for (const { owner, field, declaration } of scope.matches) {
+    const ownerKey = JSON.stringify([owner.kind, owner.agentId, owner.id]);
+    let group = owners.get(ownerKey);
+    if (group === undefined) {
+      group = { owner, path: getOwnerPath(owner), relationships: new Map() };
+      owners.set(ownerKey, group);
+    }
+    const path = declaration.kind === 'exact' ? declaration.path : declaration.pattern;
+    const relationshipKey = JSON.stringify([field, path]);
+    if (!group.relationships.has(relationshipKey)) {
+      group.relationships.set(relationshipKey, { field, path });
+    }
+  }
+  const diagnostics = scope.diagnostics.map(createMoldeaCliDiagnosticRecord);
+  const matches = [...owners.values()]
+    .sort(
+      (left, right) =>
+        compareText(left.path, right.path) ||
+        compareText(left.owner.kind, right.owner.kind) ||
+        compareText(left.owner.id, right.owner.id),
+    )
+    .map(({ owner, path, relationships }, index): IMoldeaCliScopeOwnerRecord => ({
+      key: createMoldeaCliRecordKey(diagnostics.length + index),
       kind: 'match',
-      match,
-    })),
-  ].sort(compareKeys);
+      path,
+      ownerKind: owner.kind,
+      ...(owner.kind === 'tool' || owner.kind === 'skill' ? { capabilityId: owner.id } : {}),
+      relationships: [...relationships.values()].sort(
+        (left, right) => compareText(left.field, right.field) || compareText(left.path, right.path),
+      ),
+    }));
+  const records = Object.freeze([...diagnostics, ...matches]);
   const snapshotDigest = calculateMoldeaCliJsonDigest({
-    inputDigest: execution.scope.inputDigest,
-    manifestDigest: execution.scope.manifestDigest,
+    inputDigest: scope.inputDigest,
+    manifestDigest: scope.manifestDigest,
     records,
-    valid: execution.scope.valid,
+    valid: scope.valid,
   } as unknown as IJsonValue);
 
   return Object.freeze({
     canonicalBodies: Object.freeze([execution.manifestContent]),
     counts: Object.freeze({
-      ...execution.scope.counts,
-      diagnostics: execution.scope.diagnostics.length,
+      ...scope.counts,
+      diagnostics: scope.diagnostics.length,
     }),
-    inputDigest: execution.scope.inputDigest,
-    manifestDigest: execution.scope.manifestDigest,
-    records: Object.freeze(records),
-    relevant: execution.scope.relevant,
+    inputDigest: scope.inputDigest,
+    records,
+    relevant: scope.relevant,
     snapshotDigest,
-    valid: execution.scope.valid,
+    valid: scope.valid,
   });
 };

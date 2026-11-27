@@ -5,8 +5,8 @@ export class MoldeaCliOutputPageException extends Error {
   public readonly code: IMoldeaCliOutputPageErrorCode;
 
   /** Creates one output-page failure with a stable public code. */
-  public constructor(code: IMoldeaCliOutputPageErrorCode) {
-    super(code);
+  public constructor(code: IMoldeaCliOutputPageErrorCode, options?: ErrorOptions) {
+    super(code, options);
     this.code = code;
     this.name = 'MoldeaCliOutputPageException';
   }

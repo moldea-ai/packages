@@ -18,7 +18,7 @@ export interface IMoldeaCliCompositionResult {
 export interface IMoldeaCliCompositionStateInput {
   readonly coreSupportedRepositoryFormatVersions: readonly number[];
   readonly minimumGitVersion: string;
-  readonly outputSchemaVersion: 8;
+  readonly outputSchemaVersion: 9;
   readonly packageMetadata: IMoldeaCliPackageMetadata;
 }
 

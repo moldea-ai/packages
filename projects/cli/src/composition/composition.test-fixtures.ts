@@ -28,6 +28,6 @@ export const INSTALLED_PACKAGE_METADATA: IMoldeaCliPackageMetadata = Object.free
 export const createTestCompositionState = (): IMoldeaCliCompositionStateInput => ({
   coreSupportedRepositoryFormatVersions: [1],
   minimumGitVersion: '2.32.0',
-  outputSchemaVersion: 8,
+  outputSchemaVersion: 9,
   packageMetadata: INSTALLED_PACKAGE_METADATA,
 });
