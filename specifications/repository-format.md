@@ -69,7 +69,7 @@ A **binding** is a repository reference that explicitly connects `moldea` semant
 
 ### Impact path
 
-An **impact path** is an exact path or simple glob under `affectedBy` naming repository content whose change can make the owner's stated facts or behavior wrong.
+An **impact path** is an exact path or simple glob under `affectedBy` naming repository content whose change warrants checking whether the owner's stated facts still hold or its stated rules are followed.
 
 An impact-path match means the affected asset should enter relevance analysis. It does not mean the asset must necessarily be changed.
 
@@ -456,9 +456,9 @@ Every focused context file must contain at least one non-whitespace Unicode char
 
 Context files are discovered automatically and need no manifest entry merely to exist or appear in Cloud.
 
-The `context` manifest property is used only when a context asset has explicit implementation relationships that `moldea` should not infer silently.
+The `context` manifest property declares explicit bindings and impact paths for a context asset. An impact path may cover a directly governed authored deliverable without a binding.
 
-`/moldea/project.md` may also appear as a key under `context` when explicit project-level implementation relationships need to be declared.
+`/moldea/project.md` may also appear as a key under `context` when it owns facts or rules with explicit bindings or impact paths.
 
 Example:
 
@@ -1160,13 +1160,13 @@ The check also determines whether Claude Code loads AGENTS.md. When `/CLAUDE.md`
 
 All five codes belong to `integration`, use the checked instruction file as subject and `entity.integrationPath`, and use qualifier `null`, except `MOLDEA_INTEGRATION_LINK_UNRESOLVED`, whose qualifier is its reason.
 
-The instruction reader supplies only the coding-agent instruction paths. Link targets, the referenced skill files, and the managed asset are always read from the repository, and no other check reads the instruction reader. The check reads at most four instruction files, follows at most 32 links for each with one lookup and one link-text read per link, and makes at most five bounded reads, each limited by `maxFileBytes` and reserved through the shared resource ledger; only its comparison findings are retained. Access failures, snapshot drift, cancellation, and resource exhaustion reject the operation. Manifest-only operations, the relevance gate, and `scope` do not run this check. Core's main entry exports `parseIntegrationBlock(text)`, returning the installation path or the reason none was found.
+The instruction reader supplies only the direct coding-agent instruction entries and the text of a starting link. Every link target, including an instruction-named target, is looked up and read from the repository. A target absent from the repository view resolves as `missing`. The repository also supplies the referenced skill files and managed asset. The check reads at most four instruction files, follows at most 32 links for each with one lookup and one link-text read per link, and makes at most five bounded reads, each limited by `maxFileBytes` and reserved through the shared resource ledger; only its comparison findings are retained. Access failures, snapshot drift, cancellation, and resource exhaustion reject the operation. Manifest-only operations, the relevance gate, and `scope` do not run this check. Core's main entry exports `parseIntegrationBlock(text)`, returning the installation path or the reason none was found.
 
 ### Warning identity and manifest acceptance
 
 `MOLDEA_IMPACT_PATTERN_UNMATCHED` is a warning in `references`: The impact pattern matches no files. It is not a format error because impact patterns may cover future files. The check runs after required validation, uses only remaining resource budgets, shares one bounded traversal for patterns with the same fixed directory prefix, and stops checking each pattern at its first regular-file match. If the optional pass reaches a Core or reader resource limit, it returns no pattern warnings and is marked incomplete. Cancellation and source failures propagate. Manifest-only operations and `scope` do not run it.
 
-Every warning carries `subject`, `qualifier`, and `acceptable`. Impact-pattern subjects identify the owner's canonical context or decision path; agent, tool, and skill patterns use the owning agent's instruction path. Integration warnings use the checked instruction file as subject and qualifier `null`, except `MOLDEA_INTEGRATION_LINK_UNRESOLVED`, whose qualifier is its reason, so its acceptance names that reason. Pattern qualifiers contain the exact pattern. `ACCEPTABLE_WARNING_CODES`, exported from Core's main entry, contains `MOLDEA_IMPACT_PATTERN_UNMATCHED`, `MOLDEA_INTEGRATION_BLOCK_MISSING`, `MOLDEA_INTEGRATION_SKILL_MISSING`, `MOLDEA_INTEGRATION_BLOCK_STALE`, `MOLDEA_INTEGRATION_LINK_UNRESOLVED`, and `MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING`. Every warning's `acceptable` flag is true exactly when its code appears in that list. A Core release that predates a code rejects an `acceptedWarnings` entry naming it as `code-not-acceptable`.
+Every warning carries `subject`, `qualifier`, and `acceptable`. Impact-pattern subjects identify the owner's canonical context or decision path; agent, tool, and skill patterns use the owning agent's instruction path. Integration warnings use the checked instruction file as subject and qualifier `null`, except `MOLDEA_INTEGRATION_LINK_UNRESOLVED`, whose qualifier is its reason, so its acceptance names that reason. Pattern qualifiers contain the exact pattern. `ACCEPTABLE_WARNING_CODES`, exported from Core's main entry, contains `MOLDEA_IMPACT_PATTERN_UNMATCHED`, `MOLDEA_INTEGRATION_BLOCK_MISSING`, `MOLDEA_INTEGRATION_SKILL_MISSING`, `MOLDEA_INTEGRATION_BLOCK_STALE`, `MOLDEA_INTEGRATION_LINK_UNRESOLVED`, and `MOLDEA_INTEGRATION_CLAUDE_IMPORT_MISSING`. Every warning's `acceptable` flag is true exactly when its code appears in that list.
 
 The optional top-level `acceptedWarnings` list is the sole acceptance mechanism:
 

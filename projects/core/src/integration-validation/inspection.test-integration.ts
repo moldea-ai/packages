@@ -462,17 +462,63 @@ describe('linked AGENTS.md', () => {
           ],
         ),
     ],
-    [
-      'a link to an ignored CLAUDE.local.md',
-      () =>
-        createInput([
-          link(agentsPath, 'CLAUDE.local.md'),
-          textFile('/CLAUDE.local.md', currentText),
-        ]),
-    ],
   ])('checks %s with a current block without warnings', async (_label, createLinkedInput) => {
     const result = await createCore().validateProject(createLinkedInput());
     expect(result.diagnostics).toStrictEqual([]);
+  });
+
+  test('reports a target present only in the instruction reader as missing in both views', async () => {
+    const input = createInput([
+      link(agentsPath, 'CLAUDE.local.md'),
+      textFile('/CLAUDE.local.md', `@AGENTS.md\n${currentText}`),
+    ]);
+    const committed = createInput([], [link(agentsPath, 'CLAUDE.local.md')]).repository;
+
+    for (const sources of [input, { repository: committed }]) {
+      const result = await createCore().validateProject(sources);
+      expect(result.diagnostics).toMatchObject([
+        {
+          code: 'MOLDEA_INTEGRATION_LINK_UNRESOLVED',
+          subject: agentsPath,
+          qualifier: 'missing',
+          details: { entryKind: 'symlink', reason: 'missing' },
+        },
+      ]);
+    }
+  });
+
+  test('traverses an instruction-named repository hop and reads the target from the repository', async () => {
+    const instructionCalls: string[] = [];
+    const repositoryCalls: string[] = [];
+    const hop = '/CLAUDE.md';
+    const target = '/CLAUDE.local.md';
+    const input = createInput(
+      [link(agentsPath, 'CLAUDE.md'), link(hop, 'missing.md'), textFile(target, '# Overlay\n')],
+      [link(hop, 'CLAUDE.local.md'), textFile(target, currentText)],
+    );
+    const result = await createCore().validateProject({
+      instructions: observe(instructionCalls, input.instructions),
+      repository: observe(
+        repositoryCalls,
+        input.repository,
+        (path) => path === hop || path === target,
+      ),
+    });
+
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: 'MOLDEA_INTEGRATION_LINK_UNRESOLVED',
+        subject: hop,
+        qualifier: 'missing',
+      },
+    ]);
+    expect(repositoryCalls).toStrictEqual([
+      `get:${hop}`,
+      `link:${hop}`,
+      `get:${target}`,
+      `read:${target}`,
+    ]);
+    expect(instructionCalls).not.toContain(`read:${target}`);
   });
 
   test('reports drift in a linked target as a stale block on the link itself', async () => {
@@ -533,7 +579,7 @@ describe('linked AGENTS.md', () => {
     },
   );
 
-  test('reads instruction paths from the instruction reader and every other path from the repository', async () => {
+  test('reads direct instructions from the instruction reader and linked content from the repository', async () => {
     const instructionCalls: string[] = [];
     const repositoryCalls: string[] = [];
     const input = createInput(
@@ -745,13 +791,13 @@ describe('Claude Code integration', () => {
     [
       'a CLAUDE.md link to a regular AGENTS.md',
       [agentsFile, link('/CLAUDE.md', 'AGENTS.md')],
-      [],
+      [agentsFile],
       [],
     ],
     [
       'AGENTS.md linking to CLAUDE.md',
       [link(agentsPath, 'CLAUDE.md'), textFile('/CLAUDE.md', currentText)],
-      [],
+      [textFile('/CLAUDE.md', currentText)],
       [],
     ],
     [
@@ -787,11 +833,31 @@ describe('Claude Code integration', () => {
     [
       'a CLAUDE.md link through an AGENTS.md link that leaves the repository',
       [link(agentsPath, '../shared/AGENTS.md'), link('/CLAUDE.md', 'AGENTS.md')],
-      [],
+      [link(agentsPath, '../shared/AGENTS.md')],
       [
         ['MOLDEA_INTEGRATION_LINK_UNRESOLVED', '/AGENTS.md', 'outside'],
         ['MOLDEA_INTEGRATION_LINK_UNRESOLVED', '/CLAUDE.md', 'outside'],
       ],
+    ],
+    [
+      'a shared link to an ignored instruction target',
+      [
+        agentsFile,
+        link('/CLAUDE.md', 'CLAUDE.local.md'),
+        textFile('/CLAUDE.local.md', '@AGENTS.md\n'),
+      ],
+      [],
+      [['MOLDEA_INTEGRATION_LINK_UNRESOLVED', '/CLAUDE.md', 'missing']],
+    ],
+    [
+      'a nested shared link whose original target imports AGENTS.md',
+      [
+        agentsFile,
+        link('/.claude/CLAUDE.md', '../CLAUDE.local.md'),
+        textFile('/CLAUDE.local.md', '# Overlay\n'),
+      ],
+      [textFile('/CLAUDE.local.md', '@../AGENTS.md\n')],
+      [],
     ],
     [
       'an unresolved shared file beside a loading one',

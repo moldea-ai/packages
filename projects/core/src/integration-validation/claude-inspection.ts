@@ -1,6 +1,5 @@
 import {
   parseRepositoryPath,
-  resolveRepositoryLink,
   type IRepositoryLinkResolution,
   type IRepositoryPath,
 } from '@moldea.ai/repository';
@@ -79,11 +78,11 @@ const assessClaudeFile = async (
   let load: () => Promise<IRetainedSource> = () => instructions.readSourceFile(path);
 
   if (entry.type === 'symlink') {
-    const resolution = await resolveRepositoryLink(instructions, path);
+    const resolution = await instructions.resolveLink(path);
     if (isLinkedToAgents(path, resolution, agents)) return { kind: 'loads' };
     if (resolution.state !== 'file') return { kind: 'unresolved', reason: resolution.state };
     const { targetPath } = resolution;
-    load = () => instructions.readSourceFile(targetPath);
+    load = () => ledger.readSourceFile(targetPath);
   }
 
   let document: Awaited<ReturnType<typeof readRetainedText>>;

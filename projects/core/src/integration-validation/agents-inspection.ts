@@ -1,6 +1,6 @@
 import type { IMarkedRegion } from 'jg-utilities';
 
-import { parseRepositoryPath, resolveRepositoryLink } from '@moldea.ai/repository';
+import { parseRepositoryPath } from '@moldea.ai/repository';
 
 import type { IRetainedSource } from '../retained-memory/index.js';
 
@@ -151,7 +151,7 @@ const checkAgentsDocument = async (
 export const inspectAgentsIntegration = async (
   context: IIntegrationInspectionContext,
 ): Promise<IAgentsInstructionTarget> => {
-  const { instructions } = context;
+  const { instructions, ledger } = context;
   const report: IReport = (code, details, qualifier) =>
     context.report(code, AGENTS_PATH, details, qualifier);
   const entry = await instructions.getEntry(AGENTS_PATH);
@@ -173,11 +173,11 @@ export const inspectAgentsIntegration = async (
     return { kind: 'file' };
   }
 
-  const resolution = await resolveRepositoryLink(instructions, AGENTS_PATH);
+  const resolution = await instructions.resolveLink(AGENTS_PATH);
 
   if (resolution.state === 'file') {
     const { targetPath } = resolution;
-    await checkAgentsDocument(context, report, () => instructions.readSourceFile(targetPath), {
+    await checkAgentsDocument(context, report, () => ledger.readSourceFile(targetPath), {
       entryKind: 'symlink',
     });
   } else {

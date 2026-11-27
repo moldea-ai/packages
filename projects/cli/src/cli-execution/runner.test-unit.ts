@@ -9,13 +9,13 @@ import type { IMoldeaCliCommandExecutor } from './types.js';
 const INVOCATION_DIRECTORY = '/workspace';
 const INSTALLED_PACKAGE_METADATA = Object.freeze({
   dependencies: Object.freeze({
-    '@moldea.ai/core': 'workspace:^10.0.0',
+    '@moldea.ai/core': 'workspace:^10.0.1',
     '@moldea.ai/repository': 'workspace:^4.0.0',
     '@moldea.ai/repository-fs': 'workspace:^4.0.0',
     semver: '7.8.5',
   }),
   installedPackageVersions: Object.freeze({
-    '@moldea.ai/core': '10.0.0',
+    '@moldea.ai/core': '10.0.1',
     '@moldea.ai/repository': '4.0.0',
     '@moldea.ai/repository-fs': '4.0.0',
   }),

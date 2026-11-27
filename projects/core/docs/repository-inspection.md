@@ -66,9 +66,9 @@ export const validateWithInstructions = async (
 ) => createCore().validateProject({ instructions, repository });
 ```
 
-The instruction reader holds only `/AGENTS.md`, `/CLAUDE.md`, `/.claude/CLAUDE.md`, and `/CLAUDE.local.md`, and only the integration check reads it. Every other path, including link targets, the referenced skill files, and the managed asset, is read from `repository`, so files the instruction reader adds never reach reference checks, pattern matching, discovery, coverage, or the inventory.
+Only the integration check uses the instruction reader. It supplies the direct entries at `/AGENTS.md`, `/CLAUDE.md`, `/.claude/CLAUDE.md`, and `/CLAUDE.local.md`, including the stored text when an entry is a link. Every link target, referenced skill file, and managed asset is read from `repository`. Files visible only to the instruction reader are outside reference checks, pattern matching, discovery, coverage, and the inventory.
 
-A symlinked `/AGENTS.md` is followed with Repository's `resolveRepositoryLink`, over a source that routes the four instruction paths to the instruction reader and every other path to `repository`. When it leads to a regular file in the repository, that file gets every integration check, still reported against `/AGENTS.md`. Any other result is `MOLDEA_INTEGRATION_LINK_UNRESOLVED`, with the reason (`outside`, `missing`, `loop`, `not-file`, or `unsupported`) as its qualifier and as `details.reason`. Nothing outside the repository is ever read, and diagnostics never carry document text or link text.
+A symlinked instruction is followed with Repository's `resolveRepositoryLink`. Each hop after the starting link and the bytes of the resolved file come from `repository`, including when the target is another instruction path. A target absent from `repository`, including a Git-ignored local file visible only through the instruction reader, resolves as `missing`. When `/AGENTS.md` leads to a regular file, that file gets every integration check, still reported against `/AGENTS.md`. An unresolved link is reported as `MOLDEA_INTEGRATION_LINK_UNRESOLVED` with its reason (`outside`, `missing`, `loop`, `not-file`, or `unsupported`) as its qualifier and as `details.reason`. Reads stay inside the repository, and diagnostics omit document and link text.
 
 ### Claude Code instructions
 

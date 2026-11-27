@@ -7,6 +7,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readlinkSync,
   readdirSync,
   renameSync,
   rmSync,
@@ -357,7 +358,7 @@ describe('published CLI package and executable', () => {
     test('runs the primary read-only journey through an installed packed CLI', () => {
       const { consumer, environment, invoke } = fixture;
       const before = captureGitState(consumer, environment);
-      expect(invoke(['--version']).stdout).toBe('14.0.1\n');
+      expect(invoke(['--version']).stdout).toBe('14.0.2\n');
       for (const args of [
         ['composition'],
         ['inspect'],
@@ -386,7 +387,7 @@ describe('published CLI package and executable', () => {
         expect(result.stderr).toBe('');
         expect(result.stdout).not.toContain(fixture.directory);
         expect(JSON.parse(result.stdout)).toMatchObject({
-          cliVersion: '14.0.1',
+          cliVersion: '14.0.2',
           schemaVersion: 8,
           command,
           status: 'error',
@@ -458,7 +459,7 @@ setInterval(() => undefined, 1000);
     const manifest = readCliPackageManifest();
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '14.0.1' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '14.0.2' });
     expect(packedPaths).toEqual(
       expect.arrayContaining([
         'dist/moldea.js',
@@ -487,7 +488,7 @@ setInterval(() => undefined, 1000);
       ),
     ).toBe(true);
     expect(packedPaths.every((filePath) => !filePath.includes('.test-'))).toBe(true);
-    expectPackageManifest(manifest, 'workspace:^10.0.0', 'workspace:^4.0.0', 'workspace:^4.0.0');
+    expectPackageManifest(manifest, 'workspace:^10.0.1', 'workspace:^4.0.0', 'workspace:^4.0.0');
     const executable = readFileSync(CLI_DISTRIBUTION_PATH, 'utf8');
     const executableChunks = packedPaths
       .filter((filePath) => filePath.startsWith('dist/chunks/') && filePath.endsWith('.js'))
@@ -520,7 +521,7 @@ setInterval(() => undefined, 1000);
       ) as IMoldeaCliPackageManifest;
       const executable = readTarEntry(tarball, 'package/dist/moldea.js').toString('utf8');
 
-      expectPackageManifest(manifest, '^10.0.0', '^4.0.0', '^4.0.0');
+      expectPackageManifest(manifest, '^10.0.1', '^4.0.0', '^4.0.0');
       expect(executable.startsWith('#!/usr/bin/env node\n')).toBe(true);
       expect(executable).toContain('import("./chunks/');
     } finally {
@@ -848,11 +849,30 @@ setInterval(() => undefined, 1000);
       materialize(materializedOutside, 'AGENTS.md', '../shared.md');
       const missing = createRepository('missing', {});
       link(missing, 'AGENTS.md', path.join('docs', 'missing.md'));
+      const ignoredTargetText = `@AGENTS.md\n${block}`;
+      const ignoredTarget = createRepository('ignored-target', {
+        '/.gitignore': '/CLAUDE.local.md\n',
+        '/CLAUDE.local.md': ignoredTargetText,
+      });
+      link(ignoredTarget, 'AGENTS.md', 'CLAUDE.local.md');
+      git(ignoredTarget, ['add', '--', 'AGENTS.md']);
+      expect(
+        git(ignoredTarget, [
+          'ls-files',
+          '--others',
+          '--ignored',
+          '--exclude-standard',
+          '--',
+          'CLAUDE.local.md',
+        ]).trim(),
+      ).toBe('CLAUDE.local.md');
+      const ignoredTargetState = captureGitState(ignoredTarget, environment);
       for (const [repository, reason] of [
         [ignoredOutside, 'outside'],
         [trackedOutside, 'outside'],
         [materializedOutside, 'outside'],
         [missing, 'missing'],
+        [ignoredTarget, 'missing'],
       ] as const) {
         const records = integrationRecords(repository);
         expect(records, repository).toMatchObject([
@@ -866,6 +886,11 @@ setInterval(() => undefined, 1000);
         expect(records, repository).toHaveLength(1);
         expect(Object.keys(records[0] ?? {})).not.toContain('details');
       }
+      expect(readlinkSync(path.join(ignoredTarget, 'AGENTS.md'))).toBe('CLAUDE.local.md');
+      expect(readFileSync(path.join(ignoredTarget, 'CLAUDE.local.md'), 'utf8')).toBe(
+        ignoredTargetText,
+      );
+      expect(captureGitState(ignoredTarget, environment)).toStrictEqual(ignoredTargetState);
 
       // an ignored personal file changes only the integration result
       const isolated = createRepository(
@@ -1141,7 +1166,7 @@ setInterval(() => undefined, 1000);
           cwd: consumerDirectory,
           encoding: 'utf8',
         }),
-      ).toBe('14.0.1\n');
+      ).toBe('14.0.2\n');
 
       const warningRepositoryDirectory = path.join(testDirectory, 'warning-repository');
       mkdirSync(path.join(warningRepositoryDirectory, 'moldea'), { recursive: true });
@@ -1420,7 +1445,7 @@ setInterval(() => undefined, 1000);
       expect(humanComposition.status).toBe(0);
       expect(humanComposition.stderr).toBe('');
       expect(humanComposition.stdout).toContain(
-        'The installed CLI composition state is valid.\nCLI version: 14.0.1\n',
+        'The installed CLI composition state is valid.\nCLI version: 14.0.2\n',
       );
 
       const jsonComposition = spawnPackageManager(
@@ -1465,7 +1490,7 @@ setInterval(() => undefined, 1000);
       expect(jsonUsageFailure.status).toBe(2);
       expect(jsonUsageFailure.stderr).toBe('');
       expect(jsonUsageFailure.stdout).toBe(
-        '{"cliVersion":"14.0.1","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":8,"status":"error"}\n',
+        '{"cliVersion":"14.0.2","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":8,"status":"error"}\n',
       );
 
       const nonRepositoryCommand = spawnPackageManager(
@@ -1513,7 +1538,7 @@ setInterval(() => undefined, 1000);
       expect(discoveredRepositoryCommand.stderr).toBe('');
       expect(discoveredRepositoryCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(discoveredRepositoryCommand.stdout)).toMatchObject({
-        cliVersion: '14.0.1',
+        cliVersion: '14.0.2',
         command: 'inspect',
         result: {
           counts: { diagnostics: 3, errors: 2, warnings: 1, acceptedWarnings: 0 },
@@ -1538,7 +1563,7 @@ setInterval(() => undefined, 1000);
       expect(invalidValidationCommand.stderr).toBe('');
       expect(invalidValidationCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(invalidValidationCommand.stdout)).toMatchObject({
-        cliVersion: '14.0.1',
+        cliVersion: '14.0.2',
         command: 'validate',
         result: {
           diagnosticCount: 3,
@@ -1668,7 +1693,7 @@ process.exit(0);
       expect(validJsonValidationCommand.status).toBe(0);
       expect(validJsonValidationCommand.stderr).toBe('');
       expect(JSON.parse(validJsonValidationCommand.stdout)).toMatchObject({
-        cliVersion: '14.0.1',
+        cliVersion: '14.0.2',
         command: 'validate',
         result: {
           diagnosticCount: 0,
@@ -1729,7 +1754,7 @@ acceptedWarnings: 0
       expect(validJsonInspectionCommand.status).toBe(0);
       expect(validJsonInspectionCommand.stderr).toBe('');
       expect(validInspectionEnvelope).toMatchObject({
-        cliVersion: '14.0.1',
+        cliVersion: '14.0.2',
         command: 'inspect',
         error: null,
         result: {
@@ -1777,7 +1802,7 @@ acceptedWarnings: 0
       expect(unrelatedScopeCommand.stderr).toBe('');
       expect(Buffer.byteLength(unrelatedScopeCommand.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
       expect(JSON.parse(unrelatedScopeCommand.stdout)).toMatchObject({
-        cliVersion: '14.0.1',
+        cliVersion: '14.0.2',
         command: 'scope',
         result: {
           counts: { declarations: 0, inputPaths: 1, matches: 0 },
@@ -1826,7 +1851,7 @@ acceptedWarnings: 0
         expect(invalidScope.status).toBe(3);
         expect(invalidScope.stderr).toBe('');
         expect(JSON.parse(invalidScope.stdout)).toStrictEqual({
-          cliVersion: '14.0.1',
+          cliVersion: '14.0.2',
           command: 'scope',
           schemaVersion: 8,
           status: 'error',
@@ -1884,7 +1909,7 @@ acceptedWarnings: 0
       expect(explicitContentCommand.status).toBe(0);
       expect(explicitContentCommand.stderr).toBe('');
       expect(JSON.parse(explicitContentCommand.stdout)).toMatchObject({
-        cliVersion: '14.0.1',
+        cliVersion: '14.0.2',
         command: 'content',
         result: {
           asset: { path: '/moldea/project.md' },
@@ -2187,7 +2212,7 @@ acceptedWarnings: 0
       expect(inventoryLimitCommand.status).toBe(3);
       expect(inventoryLimitCommand.stderr).toBe('');
       expect(inventoryLimitCommand.stdout).toBe(
-        '{"cliVersion":"14.0.1","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":8,"status":"error"}\n',
+        '{"cliVersion":"14.0.2","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":8,"status":"error"}\n',
       );
 
       const environmentWithoutPath = Object.fromEntries(
@@ -2209,7 +2234,7 @@ acceptedWarnings: 0
       expect(missingGitResult.status).toBe(3);
       expect(missingGitResult.stderr).toBe('');
       expect(missingGitResult.stdout).toBe(
-        '{"cliVersion":"14.0.1","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":8,"status":"error"}\n',
+        '{"cliVersion":"14.0.2","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":8,"status":"error"}\n',
       );
 
       const compositionWithoutGit = spawnSync(
