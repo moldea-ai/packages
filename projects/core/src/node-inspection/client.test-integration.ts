@@ -514,7 +514,7 @@ describe('real isolated Node inspection', () => {
     },
   );
 
-  test('resolves links across the instruction reader and the repository over both bridges', async () => {
+  test('resolves instruction links in the repository over both bridges', async () => {
     const agents = INTEGRATION_TEST_ENTRIES.find((entry) => entry.path === '/AGENTS.md')!;
     const agentsText = agents.type === 'file' ? String(agents.content) : '';
     const repository = createMemoryRepositoryReader([
@@ -538,12 +538,25 @@ describe('real isolated Node inspection', () => {
     const toIgnoredInstruction = await createNodeProjectInspection({
       instructions: createMemoryRepositoryReader([
         { path: '/AGENTS.md', target: 'CLAUDE.local.md', type: 'symlink' },
-        { path: '/CLAUDE.local.md', type: 'file', content: agentsText },
+        { path: '/CLAUDE.local.md', type: 'file', content: `@AGENTS.md\n${agentsText}` },
       ]),
       repository,
     });
     try {
-      expect(toIgnoredInstruction.counts).toMatchObject({ errors: 0, warnings: 0 });
+      expect(
+        (await toIgnoredInstruction.readPage({ view: 'diagnostics', maxItems: 8 })).page.records,
+      ).toMatchObject([
+        {
+          item: {
+            diagnostic: {
+              code: 'MOLDEA_INTEGRATION_LINK_UNRESOLVED',
+              subject: '/AGENTS.md',
+              qualifier: 'missing',
+              details: { entryKind: 'symlink', reason: 'missing' },
+            },
+          },
+        },
+      ]);
     } finally {
       await toIgnoredInstruction.dispose();
     }

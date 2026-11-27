@@ -5,10 +5,11 @@ import {
   compareRepositoryPaths,
   isRepositoryPath,
   parseRepositoryPath,
+  resolveRepositoryLink,
   type IRepositoryEntry,
   type IRepositoryFilePage,
   type IRepositoryFilePageOptions,
-  type IRepositoryLinkSource,
+  type IRepositoryLinkResolution,
   type IRepositoryOperation,
   type IRepositoryOperationOptions,
   type IRepositoryPath,
@@ -20,7 +21,7 @@ import { registerRetainedMemory, type IRetainedSource } from '../retained-memory
 import { CoreOperationException } from '../exceptions/index.js';
 
 const MANIFEST_PATH = parseRepositoryPath('/moldea/moldea.yaml');
-// the only paths an instruction reader may supply; every other read uses the repository
+// direct instruction paths that an optional instruction reader may supply
 const INSTRUCTION_PATHS: ReadonlySet<IRepositoryPath> = new Set(
   ['/AGENTS.md', '/CLAUDE.md', '/.claude/CLAUDE.md', '/CLAUDE.local.md'].map((path) =>
     parseRepositoryPath(path),
@@ -53,11 +54,12 @@ export interface IRepositoryInspectionReader {
 }
 
 /*
- * Private view used only by the integration check. The four coding-agent instruction paths read
- * the instruction reader when one was supplied, and every other path reads the repository, so a
- * link between an instruction file and a repository file resolves the same way everywhere.
+ * Private integration view for direct instruction files and starting links. Link traversal and
+ * resolved file contents use the repository.
  */
-export interface IRepositoryInstructionView extends IRepositoryLinkSource {
+export interface IRepositoryInstructionView {
+  getEntry(path: IRepositoryPath): Promise<IRepositoryEntry | null>;
+  resolveLink(path: IRepositoryPath): Promise<IRepositoryLinkResolution>;
   readSourceFile(path: IRepositoryPath): Promise<IRetainedSource>;
 }
 
@@ -595,8 +597,9 @@ export const createRepositoryInspectionSession = (
         };
   };
 
-  /** Reads one link's stored text from the routed source, rejecting text past the shared limit. */
-  const readLinkText = async (
+  /** Reads one link's stored text from the given source, rejecting text past the shared limit. */
+  const readLinkTextFrom = async (
+    source: IRepositoryReader,
     path: IRepositoryPath,
     options?: IRepositoryOperationOptions,
   ): Promise<string | null> => {
@@ -604,7 +607,7 @@ export const createRepositoryInspectionSession = (
     throwIfSignalAborted(options?.signal);
     registerPath(parsedPath);
     const text: unknown = await awaitWithCancellation(
-      readerFor(parsedPath).readLinkText(parsedPath, createSourceOptions(signal, options?.signal)),
+      source.readLinkText(parsedPath, createSourceOptions(signal, options?.signal)),
       options?.signal,
     );
     throwIfSignalAborted(options?.signal);
@@ -620,12 +623,26 @@ export const createRepositoryInspectionSession = (
   };
 
   const instructionView: IRepositoryInstructionView = Object.freeze({
-    getEntry: (path: IRepositoryPath, options?: IRepositoryOperationOptions) => {
+    getEntry: (path: IRepositoryPath) => {
       const parsedPath = parseRepositoryPath(path);
 
-      return getEntryFrom(readerFor(parsedPath), parsedPath, options);
+      return getEntryFrom(readerFor(parsedPath), parsedPath);
     },
-    readLinkText,
+    resolveLink: (path: IRepositoryPath) => {
+      const startPath = parseRepositoryPath(path);
+      const startReader = readerFor(startPath);
+      const linkReader = (linkPath: IRepositoryPath) =>
+        linkPath === startPath ? startReader : repository;
+
+      return resolveRepositoryLink(
+        {
+          getEntry: (linkPath, options) => getEntryFrom(linkReader(linkPath), linkPath, options),
+          readLinkText: (linkPath, options) =>
+            readLinkTextFrom(linkReader(linkPath), linkPath, options),
+        },
+        startPath,
+      );
+    },
     readSourceFile: (path: IRepositoryPath) => {
       const parsedPath = parseRepositoryPath(path);
 

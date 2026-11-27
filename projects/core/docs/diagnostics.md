@@ -42,7 +42,7 @@ Mirror path validity, presence, type, and digest coherence use `MOLDEA_MIRROR_*`
 
 ### [Coding-agent integration](#coding-agent-integration)
 
-Validation and inspection check `/AGENTS.md` as untrusted text. A symlinked `/AGENTS.md` is followed inside the repository with Repository's `resolveRepositoryLink`. Integration warnings identify the checked instruction file with `entity.integrationPath` and `subject`: `/AGENTS.md`, or a Claude Code file for the Claude check. Their qualifier is `null`, except `MOLDEA_INTEGRATION_LINK_UNRESOLVED`, whose qualifier is its reason.
+Validation and inspection check `/AGENTS.md` as untrusted text. Instruction links are followed inside the repository with Repository's `resolveRepositoryLink`. A target visible only to the local instruction reader is `missing`. Integration warnings identify the checked instruction file with `entity.integrationPath` and `subject`: `/AGENTS.md`, or a Claude Code file for the Claude check. Their qualifier is `null`, except `MOLDEA_INTEGRATION_LINK_UNRESOLVED`, whose qualifier is its reason.
 
 - `MOLDEA_INTEGRATION_BLOCK_MISSING`: The AGENTS.md moldea block is missing. Details report a missing, directory, regular, or linked entry and, where relevant, an invalid managed region or invalid UTF-8.
 - `MOLDEA_INTEGRATION_SKILL_MISSING`: The skill installation referenced by the AGENTS.md moldea block was not found. Details identify an unextractable installation path or the referenced installation and missing or non-regular contract file.
