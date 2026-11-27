@@ -30,7 +30,7 @@ A conforming `moldea` repository follows these principles:
 - Project context, decisions, instructions, capability descriptions, code bindings, and mirrors remain explicit and inspectable.
 - The format describes the project as it is implemented. It does not judge whether runtime usage follows recommended practices.
 - Local tooling may inspect the current Git working-tree view defined by the active local source composition, while `moldea Cloud` considers committed Git content authoritative.
-- Structural validation is deterministic. Semantic ambiguity is handled by the `moldea` skill, `evaluate`, `reconcile`, or PR Assurance rather than being hidden behind guesses.
+- Structural validation is deterministic. The `moldea` skill and PR Assurance assess semantic questions against project evidence.
 
 ## Terminology
 
@@ -261,7 +261,7 @@ Version `1` does not support:
 
 Patterns are case-sensitive and use `/` separators. A directory relationship should normally use `/**` rather than relying on directory-prefix interpretation.
 
-An `affectedBy` entry without `*` is an exact path and must resolve to an existing regular repository file in authoritative committed state. A syntactically valid glob may match zero files and remain valid so that it can cover future additions within the declared repository area. `evaluate` may surface an unexpectedly unmatched glob as a maintenance concern, but zero matches are not a structural error.
+An `affectedBy` entry without `*` is an exact path and must resolve to an existing regular repository file in authoritative committed state. A syntactically valid glob may match zero files and remain valid so that it can cover future additions within the declared repository area. A completed check may report an unmatched-pattern warning. Zero matches do not invalidate the format.
 
 ## Stable IDs
 
@@ -869,7 +869,7 @@ The parsed YAML string is the value validated and counted. No Unicode normalizat
 
 The owning agent's `instruction.md` must materially identify every registered tool and skill by its runtime-facing `name` and communicate its description, intended use conditions, and important agent-specific constraints. The repository format does not require fixed `Tools` or `Skills` headings, exact wording, or byte-for-byte duplication of the manifest description.
 
-`@moldea.ai/core` validates the manifest description shape deterministically. Whether the instruction accurately and sufficiently communicates the capability is semantic alignment handled by the skill, `evaluate`, and PR Assurance.
+`@moldea.ai/core` validates the manifest description shape deterministically. Whether the instruction accurately and sufficiently communicates the capability is semantic alignment reviewed by a read-only Check or PR Assurance.
 
 The same underlying implementation may be registered by multiple agents with different capability descriptions when its intended use differs by agent.
 
@@ -926,7 +926,7 @@ The stable ID preserves `moldea` history even when a code symbol or runtime-visi
 
 The manifest description is authoritative for concise tool metadata. The implementation is authoritative for executable behavior, and the instruction is authoritative for what the model is told. These surfaces must remain semantically aligned.
 
-Different tools within the same agent may have the same runtime-facing `name` when that reflects the actual implementation. The repository format does not reject runtime usage merely because it is unconventional. If duplicate runtime names make instruction-to-code alignment ambiguous, `evaluate` or Assurance reports the ambiguity.
+Different tools within the same agent may have the same runtime-facing `name` when that reflects the actual implementation. The repository format does not reject runtime usage merely because it is unconventional. If duplicate runtime names make instruction-to-code alignment ambiguous, Check or PR Assurance can report the ambiguity.
 
 When multiple agents use the same underlying tool implementation, each agent registers its own tool relationship. The implementation code itself does not need to be duplicated.
 
@@ -966,7 +966,7 @@ The exact runtime meaning of a skill is runtime-specific. `moldea` records the c
 
 The manifest description is authoritative for concise skill metadata. The implementation is authoritative for the skill content or executable behavior, and the instruction is authoritative for what the model is told. These surfaces must remain semantically aligned.
 
-Different skills within the same agent may have the same runtime-facing `name` when that reflects the actual implementation. If duplicate runtime names make instruction-to-code alignment ambiguous, `evaluate` or Assurance reports the ambiguity.
+Different skills within the same agent may have the same runtime-facing `name` when that reflects the actual implementation. If duplicate runtime names make instruction-to-code alignment ambiguous, Check or PR Assurance can report the ambiguity.
 
 Register a skill once its implementation exists.
 
@@ -1116,7 +1116,7 @@ The following are examples of semantic evaluation rather than pure schema valida
 - whether a broader implementation change materially affects an agent
 - whether code and instruction schemas remain semantically equivalent after runtime transformation
 
-The open-source skill's `evaluate` operation and paid PR Assurance build on deterministic validation but may use runtime-aware and semantic analysis for these questions.
+The open-source skill’s Check and paid PR Assurance use project context and implementation evidence to assess these questions.
 
 The distinction is intentional:
 
