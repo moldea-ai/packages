@@ -360,7 +360,7 @@ describe('published CLI package and executable', () => {
     test('runs the primary read-only journey through an installed packed CLI', () => {
       const { consumer, environment, invoke } = fixture;
       const before = captureGitState(consumer, environment);
-      expect(invoke(['--version']).stdout).toBe('15.0.0\n');
+      expect(invoke(['--version']).stdout).toBe('15.0.1\n');
       for (const args of [
         ['composition'],
         ['inspect'],
@@ -389,7 +389,7 @@ describe('published CLI package and executable', () => {
         expect(result.stderr).toBe('');
         expect(result.stdout).not.toContain(fixture.directory);
         expect(JSON.parse(result.stdout)).toMatchObject({
-          cliVersion: '15.0.0',
+          cliVersion: '15.0.1',
           schemaVersion: 9,
           command,
           status: 'error',
@@ -461,7 +461,7 @@ setInterval(() => undefined, 1000);
     const manifest = readCliPackageManifest();
     const packedPaths = packResult.files.map((file) => file.path);
 
-    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '15.0.0' });
+    expect(packResult).toMatchObject({ name: '@moldea.ai/cli', version: '15.0.1' });
     expect(packedPaths).toEqual(
       expect.arrayContaining([
         'dist/moldea.js',
@@ -1168,7 +1168,7 @@ setInterval(() => undefined, 1000);
           cwd: consumerDirectory,
           encoding: 'utf8',
         }),
-      ).toBe('15.0.0\n');
+      ).toBe('15.0.1\n');
 
       const warningRepositoryDirectory = path.join(testDirectory, 'warning-repository');
       mkdirSync(path.join(warningRepositoryDirectory, 'moldea'), { recursive: true });
@@ -1443,7 +1443,7 @@ setInterval(() => undefined, 1000);
       expect(humanComposition.status).toBe(0);
       expect(humanComposition.stderr).toBe('');
       expect(humanComposition.stdout).toContain(
-        'The installed CLI composition state is valid.\nCLI version: 15.0.0\n',
+        'The installed CLI composition state is valid.\nCLI version: 15.0.1\n',
       );
 
       const jsonComposition = spawnPackageManager(
@@ -1488,7 +1488,7 @@ setInterval(() => undefined, 1000);
       expect(jsonUsageFailure.status).toBe(2);
       expect(jsonUsageFailure.stderr).toBe('');
       expect(jsonUsageFailure.stdout).toBe(
-        '{"cliVersion":"15.0.0","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":9,"status":"error"}\n',
+        '{"cliVersion":"15.0.1","command":null,"error":{"code":"INVALID_ARGUMENT","details":{},"message":"The command invocation is invalid.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":9,"status":"error"}\n',
       );
 
       const nonRepositoryCommand = spawnPackageManager(
@@ -1536,7 +1536,7 @@ setInterval(() => undefined, 1000);
       expect(discoveredRepositoryCommand.stderr).toBe('');
       expect(discoveredRepositoryCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(discoveredRepositoryCommand.stdout)).toMatchObject({
-        cliVersion: '15.0.0',
+        cliVersion: '15.0.1',
         command: 'inspect',
         result: {
           counts: { diagnostics: 3, errors: 2, warnings: 1, acceptedWarnings: 0 },
@@ -1559,7 +1559,7 @@ setInterval(() => undefined, 1000);
       expect(invalidValidationCommand.stderr).toBe('');
       expect(invalidValidationCommand.stdout).not.toContain(consumerDirectory);
       expect(JSON.parse(invalidValidationCommand.stdout)).toMatchObject({
-        cliVersion: '15.0.0',
+        cliVersion: '15.0.1',
         command: 'validate',
         result: {
           diagnosticCount: 3,
@@ -1688,7 +1688,7 @@ process.exit(0);
       expect(validJsonValidationCommand.status).toBe(0);
       expect(validJsonValidationCommand.stderr).toBe('');
       expect(JSON.parse(validJsonValidationCommand.stdout)).toMatchObject({
-        cliVersion: '15.0.0',
+        cliVersion: '15.0.1',
         command: 'validate',
         result: {
           diagnosticCount: 0,
@@ -1743,7 +1743,7 @@ acceptedWarnings: 0
       expect(validJsonInspectionCommand.status).toBe(0);
       expect(validJsonInspectionCommand.stderr).toBe('');
       expect(validInspectionEnvelope).toMatchObject({
-        cliVersion: '15.0.0',
+        cliVersion: '15.0.1',
         command: 'inspect',
         error: null,
         result: {
@@ -1794,7 +1794,7 @@ acceptedWarnings: 0
       expect(unrelatedScopeCommand.stderr).toBe('');
       expect(Buffer.byteLength(unrelatedScopeCommand.stdout, 'utf8')).toBeLessThanOrEqual(65_536);
       expect(JSON.parse(unrelatedScopeCommand.stdout)).toMatchObject({
-        cliVersion: '15.0.0',
+        cliVersion: '15.0.1',
         command: 'scope',
         result: {
           counts: { declarations: 0, inputPaths: 1, matches: 0 },
@@ -1843,7 +1843,7 @@ acceptedWarnings: 0
         expect(invalidScope.status).toBe(3);
         expect(invalidScope.stderr).toBe('');
         expect(JSON.parse(invalidScope.stdout)).toStrictEqual({
-          cliVersion: '15.0.0',
+          cliVersion: '15.0.1',
           command: 'scope',
           schemaVersion: 9,
           status: 'error',
@@ -1901,7 +1901,7 @@ acceptedWarnings: 0
       expect(explicitContentCommand.status).toBe(0);
       expect(explicitContentCommand.stderr).toBe('');
       expect(JSON.parse(explicitContentCommand.stdout)).toMatchObject({
-        cliVersion: '15.0.0',
+        cliVersion: '15.0.1',
         command: 'content',
         result: {
           asset: { path: '/moldea/project.md' },
@@ -2396,7 +2396,7 @@ acceptedWarnings: 0
       expect(inventoryLimitCommand.status).toBe(3);
       expect(inventoryLimitCommand.stderr).toBe('');
       expect(inventoryLimitCommand.stdout).toBe(
-        '{"cliVersion":"15.0.0","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":9,"status":"error"}\n',
+        '{"cliVersion":"15.0.1","command":"inspect","error":{"code":"RESOURCE_LIMIT_EXCEEDED","details":{},"message":"A resource limit was exceeded.","path":null,"retryable":false,"source":"cli"},"result":null,"schemaVersion":9,"status":"error"}\n',
       );
 
       const environmentWithoutPath = Object.fromEntries(
@@ -2418,7 +2418,7 @@ acceptedWarnings: 0
       expect(missingGitResult.status).toBe(3);
       expect(missingGitResult.stderr).toBe('');
       expect(missingGitResult.stdout).toBe(
-        '{"cliVersion":"15.0.0","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":9,"status":"error"}\n',
+        '{"cliVersion":"15.0.1","command":"validate","error":{"code":"GIT_NOT_FOUND","details":{},"message":"The Git executable is unavailable.","path":null,"retryable":false,"source":"git"},"result":null,"schemaVersion":9,"status":"error"}\n',
       );
 
       const compositionWithoutGit = spawnSync(

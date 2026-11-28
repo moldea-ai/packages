@@ -69,9 +69,7 @@ A **binding** is a repository reference that explicitly connects `moldea` semant
 
 ### Impact path
 
-An **impact path** is an exact path or simple glob under `affectedBy` naming repository content whose change warrants checking whether the owner's stated facts still hold or its stated rules are followed.
-
-An impact-path match means the affected asset should enter relevance analysis. It does not mean the asset must necessarily be changed.
+An **impact path** is an exact path or simple glob under `affectedBy` for code or configuration that implements a fact or enforces a rule the owner states, a project-owned model-facing asset that governs behavior, or the authoritative source of a directly governed authored deliverable. A match calls for checking whether the owner's stated facts still hold or its stated rules are followed. Relevance can end without an edit. Human documentation stays out of impact paths, including guides, procedures, policies, READMEs, records, approvals and receipts. Link those docs from their owner. Presentation, build and CI qualify only as the sole enforcement point of a stated rule.
 
 ### Agent description
 
@@ -454,6 +452,8 @@ Focused current truth lives under:
 
 Every focused context file must contain at least one non-whitespace Unicode character.
 
+Durable product and policy rules that agents or PR Assurance rely on belong in the canonical moldea context for their area. When a rule moves into context, replace its statement in the human doc with a link to the owner within the authorized edit scope. If the doc is outside that scope, report the remaining duplicate. Human docs can explain the circumstances around a rule. The owner links to the docs for supporting detail.
+
 Context files are discovered automatically and need no manifest entry merely to exist or appear in Cloud.
 
 The `context` manifest property declares explicit bindings and impact paths for a context asset. An impact path may cover a directly governed authored deliverable without a binding.
@@ -597,12 +597,6 @@ Every registered agent must have:
 ```text
 /moldea/agents/{agent-id}/description.md
 /moldea/agents/{agent-id}/instruction.md
-```
-
-It may also have:
-
-```text
-
 ```
 
 The mandatory description and instruction are discovered by convention.
@@ -828,7 +822,7 @@ Use bindings only for existing implementation paths and symbols.
 
 ## Impact paths
 
-Agent-level `affectedBy` identifies broader implementation areas capable of changing the behavior supported by the agent:
+Agent-level `affectedBy` identifies eligible [impact paths](#impact-path) for the agent's behavior:
 
 ```yaml
 affectedBy:
